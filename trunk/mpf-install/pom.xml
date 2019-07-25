@@ -30,7 +30,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-install-base</artifactId>
-        <version>4.0.0</version>
+        <version>4.1.0</version>
 	    <relativePath>base-pom.xml</relativePath>
     </parent>
 

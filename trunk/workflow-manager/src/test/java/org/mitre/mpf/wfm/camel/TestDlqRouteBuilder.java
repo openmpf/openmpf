@@ -42,7 +42,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.Matchers.any;
@@ -59,7 +61,7 @@ public class TestDlqRouteBuilder {
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
     public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
     public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
-    public static final String ROUTE_ID = "Test DLQ Route";
+    public static final String ROUTE_ID_PREFIX = "Test DLQ Route";
     public static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
 
     public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
@@ -68,8 +70,11 @@ public class TestDlqRouteBuilder {
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
 
-    public static final int SLEEP_TIME_MILLISEC = 500;
-    public static final int RECEIVE_TIMEOUT_MILLISEC = 500;
+    // Ensure the number of test messages is greater than the queue prefetch, which is 1 by default.
+    public static final int NUM_MESSAGES_PER_TEST = 5;
+
+    public static final int SLEEP_TIME_MILLISEC = 1500;
+    public static final int RECEIVE_TIMEOUT_MILLISEC = 1500;
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
@@ -99,7 +104,7 @@ public class TestDlqRouteBuilder {
         session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
         DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
-                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);
+                INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
 
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
@@ -147,32 +152,36 @@ public class TestDlqRouteBuilder {
         return message;
     }
 
-    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId,
+    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, Set<String> jmsCorrelationIds,
                                  boolean isLeftover) throws JMSException, InvalidProtocolBufferException {
-        BytesMessage message = (BytesMessage) receiveMessage(dest);
+        Set<String> unseenJmsCorrelationIds = new HashSet<>(jmsCorrelationIds);
 
-        if (!isLeftover) {
-            Assert.assertNull(message);
-            return;
+        while (true) {
+            BytesMessage message = (BytesMessage) receiveMessage(dest);
+
+            if (!isLeftover || unseenJmsCorrelationIds.isEmpty()) {
+                Assert.assertNull(message);
+                return;
+            }
+
+            Assert.assertNotNull(message);
+
+            if (replyTo == null) {
+                Assert.assertNull(message.getJMSReplyTo());
+            } else {
+                Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
+            }
+
+            Assert.assertEquals(deliveryFailureCause,
+                    message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
+
+            byte[] protoBytes = new byte[(int) message.getBodyLength()];
+            message.readBytes(protoBytes);
+            DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
+            Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+
+            Assert.assertTrue(unseenJmsCorrelationIds.remove(message.getJMSCorrelationID()));
         }
-
-        Assert.assertNotNull(message);
-
-        if (replyTo == null) {
-            Assert.assertNull(message.getJMSReplyTo());
-        } else {
-            Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
-        }
-
-        Assert.assertEquals(deliveryFailureCause,
-                message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
-
-        byte[] protoBytes = new byte[(int)message.getBodyLength()];
-        message.readBytes(protoBytes);
-        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
-        Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
-
-        Assert.assertEquals(jmsCorrelationId, message.getJMSCorrelationID());
     }
 
     private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
@@ -208,17 +217,22 @@ public class TestDlqRouteBuilder {
 
     private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled,
                          boolean isLeftover) throws Exception {
-        String jmsCorrelationId = sendDlqMessage(dest, replyTo, deliveryFailureCause);
+        Set<String> jmsCorrelationIds = new HashSet<>();
+        for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+            jmsCorrelationIds.add(sendDlqMessage(dest, replyTo, deliveryFailureCause));
+        }
+
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        verify(mockDetectionDeadLetterProcessor, times(isHandled ? 1 : 0)).process(any());
-        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationId, isLeftover);
+        verify(mockDetectionDeadLetterProcessor, times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());
+
+        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationIds, isLeftover);
     }
 
     // No reply-to tests
 
     @Test
-    public void ignoreNoReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropNoReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -234,8 +248,8 @@ public class TestDlqRouteBuilder {
     // Bad reply-to tests
 
     @Test
-    public void ignoreBadReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropBadReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -251,17 +265,17 @@ public class TestDlqRouteBuilder {
     // Good reply-to tests
 
     @Test
-    public void dropDupFailure() throws Exception {
+    public void dropGoodReplyToAndDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
-    public void handleNoFailure() throws Exception {
+    public void handleGoodReplyToAndNoFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, null, true, false);
     }
 
     @Test
-    public void handleNonDupFailure() throws Exception {
+    public void handleGoodReplyToAndNonDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true, false);
     }
 }

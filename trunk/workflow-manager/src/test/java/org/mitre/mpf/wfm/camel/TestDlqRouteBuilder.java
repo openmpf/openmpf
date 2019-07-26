@@ -31,7 +31,6 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
-import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
 import org.junit.*;
@@ -49,6 +48,7 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import java.util.Queue;
 import java.util.*;
 
 import static org.mockito.Matchers.any;
@@ -79,12 +79,11 @@ public class TestDlqRouteBuilder {
 
     public static final int NUM_MESSAGES_PER_TEST = 5;
 
-    public static final int HANDLE_TIMEOUT_MILLISEC = 10_000; // time for messages to be processed by the DetectionDeadLetterProcessor
-    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000; // time for leftover message to be received from queue
+    public static final int HANDLE_TIMEOUT_MILLISEC = 60_000; // time for messages to be processed by the DetectionDeadLetterProcessor
+    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 60_000; // time for leftover message to be received from queue
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
-    private JmsComponent activeMQComponent;
     private Connection connection;
     private Session session;
 
@@ -150,54 +149,69 @@ public class TestDlqRouteBuilder {
         queueMbean.purge();
     }
 
-    private Message receiveMessage(String dest, boolean expectingMessage) throws JMSException {
+    private Queue<Message> receiveMessages(String dest, boolean expectingMessages) throws JMSException {
+        Queue<Message> messages = new LinkedList<>();
+
         Destination dlqDestination = session.createQueue(getQueueShortName(dest));
         MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
 
-        Message message;
-        if (expectingMessage) {
-            message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
-        } else {
-            message = messageConsumer.receiveNoWait(); // should not have to wait since dropped messages are prefetched
+        if (expectingMessages) {
+            for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+                Message message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
+                session.commit(); // ACK message so next can be dispatched
+                messages.add(message);
+                if (message == null) {
+                    break;
+                }
+            }
         }
 
-        session.commit();
+        // This should be a null message.
+        // If not expecting messages, we should not have to wait since dropped messages are prefetched.
+        messages.add(messageConsumer.receiveNoWait());
+        session.commit(); // ACK message so next can be dispatched
+
         messageConsumer.close();
-        return message;
+
+        return messages;
     }
 
     private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, Set<String> jmsCorrelationIds,
                                  boolean isLeftover) throws JMSException, InvalidProtocolBufferException {
         Set<String> unseenJmsCorrelationIds = new HashSet<>(jmsCorrelationIds);
 
-        while (true) {
-            boolean expectingMessage = isLeftover && !unseenJmsCorrelationIds.isEmpty();
+        Queue<Message> messages = receiveMessages(dest, isLeftover);
 
-            BytesMessage message = (BytesMessage) receiveMessage(dest, expectingMessage);
+        Assert.assertEquals(isLeftover ? NUM_MESSAGES_PER_TEST + 1 : 1, messages.size());
 
-            if (!expectingMessage) {
-                Assert.assertNull(message);
-                return;
+        if (isLeftover) {
+            for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+                BytesMessage bytesMessage = (BytesMessage) messages.poll();
+
+                Assert.assertNotNull(bytesMessage);
+
+                if (replyTo == null) {
+                    Assert.assertNull(bytesMessage.getJMSReplyTo());
+                } else {
+                    Assert.assertEquals(replyTo, bytesMessage.getJMSReplyTo().toString());
+                }
+
+                Assert.assertEquals(deliveryFailureCause,
+                        bytesMessage.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
+
+                byte[] protoBytes = new byte[(int) bytesMessage.getBodyLength()];
+                bytesMessage.readBytes(protoBytes);
+                DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
+                Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+
+                Assert.assertTrue(unseenJmsCorrelationIds.remove(bytesMessage.getJMSCorrelationID()));
             }
 
-            Assert.assertNotNull(message);
-
-            if (replyTo == null) {
-                Assert.assertNull(message.getJMSReplyTo());
-            } else {
-                Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
-            }
-
-            Assert.assertEquals(deliveryFailureCause,
-                    message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
-
-            byte[] protoBytes = new byte[(int) message.getBodyLength()];
-            message.readBytes(protoBytes);
-            DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
-            Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
-
-            Assert.assertTrue(unseenJmsCorrelationIds.remove(message.getJMSCorrelationID()));
+            Assert.assertTrue(unseenJmsCorrelationIds.isEmpty());
         }
+
+        // The last message should always be null.
+        Assert.assertNull(messages.poll());
     }
 
     private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {

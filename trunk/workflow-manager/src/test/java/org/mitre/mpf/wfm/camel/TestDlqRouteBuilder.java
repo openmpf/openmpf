@@ -100,8 +100,10 @@ public class TestDlqRouteBuilder {
         camelContext = new DefaultCamelContext(simpleRegistry);
 
         connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_BROKER_URI);
-        activeMQComponent = ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory);
-        camelContext.addComponent("jms", activeMQComponent);
+        camelContext.addComponent("jms", ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory));
+        ActiveMQComponent activeMqComponent = ActiveMQComponent.activeMQComponent();
+        activeMqComponent.setConnectionFactory(connectionFactory);
+        camelContext.addComponent("activemq", activeMqComponent);
         camelContext.start();
 
         connection = connectionFactory.createConnection();

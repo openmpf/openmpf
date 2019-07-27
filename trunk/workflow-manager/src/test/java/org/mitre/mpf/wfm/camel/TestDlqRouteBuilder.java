@@ -76,11 +76,15 @@ public class TestDlqRouteBuilder {
     public static final String DLQ_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
+    public static final String RUN_ID_PROPERTY_KEY = "runId";
 
     public static final int NUM_MESSAGES_PER_TEST = 5;
+    public static final int NUM_LEFTOVER_RECEIVE_RETRIES = 5;
 
-    public static final int HANDLE_TIMEOUT_MILLISEC = 60_000; // time for messages to be processed by the DetectionDeadLetterProcessor
-    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 60_000; // time for leftover message to be received from queue
+    public static final int HANDLE_TIMEOUT_MILLISEC = 30_000; // time for messages to be processed by the DetectionDeadLetterProcessor
+    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000; // time for leftover message to be received from queue
+
+    private static int runId = -1;
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
@@ -117,6 +121,8 @@ public class TestDlqRouteBuilder {
         camelContext.addRoutes(dlqRouteBuilder);
 
         purgeQueue(ENTRY_POINT);
+
+        runId += 1;
     }
 
     @After
@@ -153,15 +159,23 @@ public class TestDlqRouteBuilder {
         Queue<Message> messages = new LinkedList<>();
 
         Destination dlqDestination = session.createQueue(getQueueShortName(dest));
-        MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
+        MessageConsumer messageConsumer = session.createConsumer(dlqDestination, RUN_ID_PROPERTY_KEY + " = " + runId);
 
         if (expectingMessages) {
             for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
-                Message message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
-                session.commit(); // ACK message so next can be dispatched
-                messages.add(message);
-                if (message == null) {
-                    break;
+
+                Message message = null;
+                for (int j = 0; message == null && j < NUM_LEFTOVER_RECEIVE_RETRIES; j++) {
+                    message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
+                    session.commit(); // ACK message so next can be dispatched
+                }
+
+                if (message != null) {
+                    messages.add(message);
+                } else {
+                    // Failed to receive message. Abort.
+                    messageConsumer.close();
+                    return messages;
                 }
             }
         }
@@ -169,10 +183,9 @@ public class TestDlqRouteBuilder {
         // This should be a null message.
         // If not expecting messages, we should not have to wait since dropped messages are prefetched.
         messages.add(messageConsumer.receiveNoWait());
-        session.commit(); // ACK message so next can be dispatched
+        session.commit(); // ACK message
 
         messageConsumer.close();
-
         return messages;
     }
 
@@ -214,43 +227,53 @@ public class TestDlqRouteBuilder {
         Assert.assertNull(messages.poll());
     }
 
-    private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
-        BytesMessage message = session.createBytesMessage();
-        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
-                .setRequestId(123)
-                .setDataUri("file:///test")
-                .setStageIndex(1)
-                .setActionIndex(1)
-                .setActionName("TEST ACTION")
-                .build();
-        message.writeBytes(detectionRequest.toByteArray());
-
-        if (replyTo != null) {
-            Destination replyToDestination = session.createQueue(getQueueShortName(replyTo));
-            message.setJMSReplyTo(replyToDestination);
-        }
-
-        if (deliveryFailureCause != null) {
-            message.setStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
-        }
-
-        String jmsCorrelationId = UUID.randomUUID().toString();
-        message.setJMSCorrelationID(jmsCorrelationId);
-
+    private Set<String> sendDlqMessages(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
         Destination dlqDestination = session.createQueue(getQueueShortName(dest));
         MessageProducer messageProducer = session.createProducer(dlqDestination);
-        messageProducer.send(message);
-        session.commit();
 
-        return jmsCorrelationId;
+        Destination replyToDestination = null;
+        if (replyTo != null) {
+            replyToDestination = session.createQueue(getQueueShortName(replyTo));
+        }
+
+        Set<String> jmsCorrelationIds = new HashSet<>();
+
+        for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+            BytesMessage message = session.createBytesMessage();
+            DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
+                    .setRequestId(123)
+                    .setDataUri("file:///test")
+                    .setStageIndex(1)
+                    .setActionIndex(1)
+                    .setActionName("TEST ACTION")
+                    .build();
+            message.writeBytes(detectionRequest.toByteArray());
+
+            if (replyTo != null) {
+                message.setJMSReplyTo(replyToDestination);
+            }
+
+            if (deliveryFailureCause != null) {
+                message.setStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
+            }
+
+            message.setIntProperty(RUN_ID_PROPERTY_KEY, runId);
+
+            String jmsCorrelationId = UUID.randomUUID().toString();
+            jmsCorrelationIds.add(jmsCorrelationId);
+            message.setJMSCorrelationID(jmsCorrelationId);
+
+            messageProducer.send(message);
+            session.commit();
+        }
+
+        messageProducer.close();
+        return jmsCorrelationIds;
     }
 
     private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled,
                          boolean isLeftover) throws Exception {
-        Set<String> jmsCorrelationIds = new HashSet<>();
-        for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
-            jmsCorrelationIds.add(sendDlqMessage(dest, replyTo, deliveryFailureCause));
-        }
+        Set<String> jmsCorrelationIds = sendDlqMessages(dest, replyTo, deliveryFailureCause);
 
         verify(mockDetectionDeadLetterProcessor,
                 timeout(HANDLE_TIMEOUT_MILLISEC).times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());

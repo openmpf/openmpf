@@ -433,6 +433,26 @@ public class TestArtifactExtractionSplitter {
     }
 
     //////////////////////////////////////////////////////////
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void throwsExceptionWhenTopConfidenceCountTooLarge() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+            -1, false, false, false, 12);
+
+        ImmutableMap<Integer, Float> detectionFramesAndConfidences = ImmutableMap.of(
+                5, 0.5f,
+                9, 0.0f,
+                10, 1.0f,
+                14, 0.0f);
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10,
+                detectionFramesAndConfidences,
+                Arrays.asList(5, 10));
+
+    }
+
+    //////////////////////////////////////////////////////////
 
     private static SystemPropertiesSnapshot createExtractionPropertySnapshot(
             int framePlus, boolean first, boolean middle, boolean last, int confidenceCount) {

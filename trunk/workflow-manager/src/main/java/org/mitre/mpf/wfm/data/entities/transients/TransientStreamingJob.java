@@ -34,39 +34,39 @@ import java.time.Instant;
 import java.util.Optional;
 
 public interface TransientStreamingJob {
-	public long getId();
+    public long getId();
 
-	public StreamingJobStatus getJobStatus();
+    public StreamingJobStatus getJobStatus();
 
-	public TransientPipeline getPipeline();
+    public TransientPipeline getTransientPipeline();
 
-	public Optional<String> getExternalId();
+    public Optional<String> getExternalId();
 
-	public int getPriority();
+    public int getPriority();
 
-	public long getStallTimeout();
+    public long getStallTimeout();
 
-	public boolean isOutputEnabled();
+    public boolean isOutputEnabled();
 
-	public String getOutputObjectDirectory();
+    public String getOutputObjectDirectory();
 
-	public TransientStream getStream();
+    public TransientStream getStream();
 
-	// The table's row key is the algorithm name, the column key is the property name,
-	// and the value is the property value.
-	public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
+    // The table's row key is the algorithm name, the column key is the property name,
+    // and the value is the property value.
+    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
 
-	public ImmutableMap<String, String> getOverriddenJobProperties();
+    public ImmutableMap<String, String> getOverriddenJobProperties();
 
-	public boolean isCancelled();
+    public boolean isCancelled();
 
-	public Optional<String> getHealthReportCallbackURI();
+    public Optional<String> getHealthReportCallbackURI();
 
-	public Optional<String> getSummaryReportCallbackURI();
+    public Optional<String> getSummaryReportCallbackURI();
 
-	public long getLastActivityFrame();
+    public long getLastActivityFrame();
 
-	public Instant getLastActivityTime();
+    public Instant getLastActivityTime();
 
-	public boolean isCleanupEnabled();
+    public boolean isCleanupEnabled();
 }

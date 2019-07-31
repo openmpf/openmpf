@@ -43,6 +43,10 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -55,6 +59,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -175,15 +180,8 @@ public class TestTrackMergingProcessor {
         if (minTrackSize != null) {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        TransientStage trackMergeStageDet = new TransientStage(
-                "trackMergeDetection", "trackMergeDescription", ActionType.DETECTION,
-                Collections.singletonList(detectionAction));
-
-        TransientPipeline trackMergePipeline = new TransientPipeline(
-                "trackMergePipeline", "trackMergeDescription",
-                Collections.singletonList(trackMergeStageDet));
+        TransientPipeline transientPipeline = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -196,7 +194,7 @@ public class TestTrackMergingProcessor {
                 TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
-                trackMergePipeline,
+                transientPipeline,
                 priority,
                 false,
                 null,
@@ -270,16 +268,7 @@ public class TestTrackMergingProcessor {
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        TransientAction detectionAction = new TransientAction(
-                "detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
-
-        TransientStage trackMergeStageDet = new TransientStage(
-                "trackMergeDetection",
-                "trackMergeDescription", ActionType.DETECTION, Collections.singletonList(detectionAction));
-
-        TransientPipeline trackMergePipeline = new TransientPipeline(
-                "trackMergePipeline", "trackMergeDescription",
-                Collections.singletonList(trackMergeStageDet));
+        TransientPipeline trackMergePipeline = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -339,5 +328,28 @@ public class TestTrackMergingProcessor {
         assertEquals("track2_only_val", mergedProps.get("track2_only_prop"));
         assertEquals("same_value_val", mergedProps.get("same_value_prop"));
         assertEquals("diff_value_val1; diff_value_val2", mergedProps.get("diff_value_prop"));
+    }
+
+
+    private static TransientPipeline createTestPipeline(Map<String, String> actionPropsMap) {
+        Algorithm algorithm = new Algorithm(
+                "detectionAlgo", "description", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                true, true);
+
+        List<Action.Property> actionProps = actionPropsMap
+                .entrySet()
+                .stream()
+                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .collect(toList());
+
+        Action action = new Action("detectionAction", "description", algorithm.getName(), actionProps);
+        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline("trackMergePipeline", "description",
+                                         Collections.singleton(task.getName()));
+        return new TransientPipeline(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(algorithm));
     }
 }

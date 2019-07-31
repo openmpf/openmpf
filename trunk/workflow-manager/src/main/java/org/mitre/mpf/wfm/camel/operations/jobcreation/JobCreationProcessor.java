@@ -38,13 +38,11 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -73,6 +71,9 @@ public class JobCreationProcessor extends WfmProcessor {
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;
+
+    @Autowired
+    private PipelineService _pipelineService;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -116,7 +117,8 @@ public class JobCreationProcessor extends WfmProcessor {
             // uses a consistent set of detection system properties through all stages of the job's pipeline.
             SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-            TransientPipeline transientPipeline = TransientPipeline.from(jobRequest.getPipeline());
+            TransientPipeline transientPipeline = _pipelineService
+                    .createTransientBatchPipeline(jobRequest.getPipeline().getName());
 
             TransientJob transientJob = inProgressBatchJobs.addJob(
                     jobRequestEntity.getId(),
@@ -130,11 +132,6 @@ public class JobCreationProcessor extends WfmProcessor {
                     buildMedia(jobRequest.getMedia()),
                     jobRequest.getJobProperties(),
                     jobRequest.getAlgorithmProperties());
-
-            if (transientPipeline == null) {
-                inProgressBatchJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-                throw new WfmProcessingException(INVALID_PIPELINE_MESSAGE);
-            }
 
             long failedMediaCount = transientJob
                     .getMedia()

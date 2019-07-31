@@ -42,9 +42,11 @@ import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -76,6 +78,7 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -166,34 +169,36 @@ public abstract class TestSystem {
 
 
     protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
-        if (!pipelineService.getActionNames().contains(actionName.toUpperCase())) {
-            ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
-            for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
-                actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
-            }
-            pipelineService.saveAction(actionDef);
+        if (pipelineService.getAction(actionName) != null) {
+            return;
         }
+
+        List<Action.Property> propertyList = propertySettings.entrySet()
+                .stream()
+                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .collect(toList());
+        Action action = new Action(actionName, actionName, algorithmName, propertyList);
+        pipelineService.save(action);
     }
 
 
     protected void addTask(String taskName, String... actions) {
-        if (!pipelineService.getTaskNames().contains(taskName.toUpperCase())) {
-            TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
-            for (String actionName : actions) {
-                taskDef.getActions().add(new ActionDefinitionRef(actionName));
-            }
-            pipelineService.saveTask(taskDef);
+        if (pipelineService.getTask(taskName) != null) {
+            return;
         }
+
+        Task task = new Task(taskName, taskName, Arrays.asList(actions));
+        pipelineService.save(task);
     }
 
+
     protected void addPipeline(String pipelineName, String... tasks) {
-        if (!pipelineService.getPipelineNames().contains(pipelineName.toUpperCase())) {
-            PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
-            for (String taskName : tasks) {
-                pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
-            }
-            pipelineService.savePipeline(pipelineDef);
+        if (pipelineService.getPipeline(pipelineName) != null) {
+            return;
         }
+
+        Pipeline pipeline = new Pipeline(pipelineName, pipelineName, Arrays.asList(tasks));
+        pipelineService.save(pipeline);
     }
 
     /*

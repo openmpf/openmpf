@@ -38,11 +38,10 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.pipeline.*;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import spark.Spark;
@@ -73,7 +72,8 @@ public class TestS3StorageBackend {
 
     private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
             _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPipelineService, null, null));
+            new AggregateJobPropertiesUtil(_mockPropertiesUtil, _mockPipelineService, null,
+                                           null));
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -404,8 +404,21 @@ public class TestS3StorageBackend {
         MarkupResult markupResult = mock(MarkupResult.class);
         TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
         TransientMedia media = mock(TransientMedia.class);
-        TransientStage stage = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        TransientAction action = mock(TransientAction.class);
+
+        Algorithm algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+                                            new Algorithm.Requires(Collections.emptyList()),
+                                            new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                                            true, true);
+        Action action = new Action(
+                "TEST_ACTION", "description", algorithm.getName(),
+                Collections.singletonList(new Action.Property(MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                                                              "<ACCESS_KEY>")));
+        Task task = new Task("TEST_TASK", "description", Collections.singletonList(action.getName()));
+        Pipeline pipeline = new Pipeline("TEST_PIPELINE", "description",
+                                         Collections.singletonList(task.getName()));
+        TransientPipeline transientPipeline = new TransientPipeline(
+                pipeline, Collections.singletonList(task), Collections.singletonList(action),
+                Collections.singletonList(algorithm));
 
         when(markupResult.getJobId())
                 .thenReturn(jobId);
@@ -417,24 +430,15 @@ public class TestS3StorageBackend {
         when(job.getMedia(mediaId))
                 .thenReturn(media);
 
-        when(job.getPipeline().getStages().get(0))
-                .thenReturn(stage);
-
-        when(stage.getActions().get(0))
-                .thenReturn(action);
-
-        when(action.getAlgorithm())
-                .thenReturn("TEST_ALGO");
+        when(job.getTransientPipeline())
+                .thenReturn(transientPipeline);
 
 
-        when(media.getMediaSpecificProperties())
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET));
+        when(media.getMediaSpecificProperty(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))
+                .thenReturn(S3_HOST + RESULTS_BUCKET);
 
-        when(action.getProperties())
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>"));
-
-        when(job.getOverriddenAlgorithmProperties().row("TEST_ALGO"))
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"));
+        when(job.getOverriddenAlgorithmProperties().get("TEST_ALGO", MpfConstants.S3_SECRET_KEY_PROPERTY))
+                .thenReturn("<SECRET_KEY>");
 
         when(job.getOverriddenJobProperties())
                 .thenReturn(ImmutableMap.of());

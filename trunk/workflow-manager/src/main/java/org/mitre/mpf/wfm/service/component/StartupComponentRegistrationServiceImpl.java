@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.service.component;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -60,8 +59,6 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
     private final Path _pluginDeploymentDir;
 
-    private final ComponentDependencyFinder _componentDependencyFinder;
-
     private final ComponentStateService _componentStateSvc;
 
     private final AddComponentService _addComponentService;
@@ -72,14 +69,12 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
     @Inject
     public StartupComponentRegistrationServiceImpl(
             PropertiesUtil propertiesUtil,
-            ComponentDependencyFinder componentDependencyFinder,
             ComponentStateService componentStateService,
             AddComponentService addComponentService,
             StartupComponentServiceStarter componentServiceStarter) {
         _startupAutoRegistrationSkipped = propertiesUtil.isStartupAutoRegistrationSkipped();
         _componentUploadDir = propertiesUtil.getUploadedComponentsDirectory().toPath();
         _pluginDeploymentDir = propertiesUtil.getPluginDeploymentPath();
-        _componentDependencyFinder = componentDependencyFinder;
         _componentStateSvc = componentStateService;
         _addComponentService = addComponentService;
         _componentServiceStarter = componentServiceStarter;
@@ -109,78 +104,30 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
         Map<Path, Path> packageToDeployedDescriptorMapping = getPackageToDeployedDescriptorMapping(
                 unregisteredComponentPackages, allComponentEntries);
 
-        List<Path> registrationOrder = getComponentRegistrationOrder(
-                allComponentEntries, unregisteredComponentPackages, packageToDeployedDescriptorMapping);
-
-        registerComponents(registrationOrder, packageToDeployedDescriptorMapping);
+        registerComponents(unregisteredComponentPackages, packageToDeployedDescriptorMapping);
     }
 
 
-    private List<Path> getComponentRegistrationOrder(Collection<RegisterComponentModel> allComponents,
-                                                     Collection<Path> uploadedComponentPackages,
-                                                     Map<Path, Path> packageToDescriptorMapping) {
+    private void registerComponents(Iterable<Path> unregisteredComponentPackages,
+                                    Map<Path, Path> packageToDeployedDescriptorMapping) {
 
-        Stream<Path> registeredDescriptors = allComponents.stream()
-                .filter(rcm -> rcm.getComponentState() == ComponentState.REGISTERED)
-                .map(rcm -> Paths.get(rcm.getJsonDescriptorPath()));
-
-        Set<Path> unregisteredPaths = uploadedComponentPackages.stream()
-                .map(p -> packageToDescriptorMapping.getOrDefault(p, p))
-                .collect(toSet());
-
-        Set<Path> allPaths = Stream.concat(registeredDescriptors, unregisteredPaths.stream())
-                .collect(toSet());
-
-        try {
-            return _componentDependencyFinder.getRegistrationOrder(allPaths).stream()
-                    .filter(unregisteredPaths::contains)
-                    .collect(toList());
-        }
-        catch (IllegalStateException e) {
-            _log.error("An error occurred while trying to get component registration order.", e);
-            for (Path componentPath : uploadedComponentPackages) {
-                Path descriptorPath = packageToDescriptorMapping.get(componentPath);
-                if (descriptorPath == null) {
-                    _componentStateSvc.addRegistrationErrorEntry(componentPath);
-                }
-                else {
-                    _componentStateSvc.addEntryForDeployedPackage(componentPath, descriptorPath);
-                }
-            }
-            return Collections.emptyList();
-        }
-    }
-
-
-    private void registerComponents(Iterable<Path> registrationOrder, Map<Path, Path> packageToDescriptorMapping) {
-        Map<Path, Path> descriptorToPackageMapping = packageToDescriptorMapping
-                .entrySet()
-                .stream()
-                .collect(toMap(Map.Entry::getValue, Map.Entry::getKey));
-
-        boolean registrationFailed = false;
         List<RegisterComponentModel> registeredComponents = new ArrayList<>();
-        for (Path componentPath : registrationOrder) {
-            String packageName;
-            if (componentPath.toString().toLowerCase().endsWith(".tar.gz")) {
-                _componentStateSvc.addEntryForUploadedPackage(componentPath);
-                packageName = componentPath.getFileName().toString();
+        for (Path componentPackagePath : unregisteredComponentPackages) {
+            Path deployedDescriptor = packageToDeployedDescriptorMapping.get(componentPackagePath);
+
+            if (deployedDescriptor == null) {
+                _componentStateSvc.addEntryForUploadedPackage(componentPackagePath);
             }
             else {
-                Path packagePath = descriptorToPackageMapping.get(componentPath);
-                _componentStateSvc.addEntryForDeployedPackage(packagePath, componentPath);
-                packageName = packagePath.getFileName().toString();
+                _componentStateSvc.addEntryForDeployedPackage(componentPackagePath, deployedDescriptor);
             }
-            if (registrationFailed) {
-                continue;
-            }
+            String packageName = componentPackagePath.getFileName().toString();
 
             try {
                 RegisterComponentModel component = _addComponentService.registerComponent(packageName);
                 registeredComponents.add(component);
             }
             catch (ComponentRegistrationException e) {
-                registrationFailed = true;
                 _log.error(String.format("Failed to register %s", packageName), e);
             }
         }
@@ -225,6 +172,7 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
         return packageToDeployedDescriptorMapping;
     }
+
 
 
     private static void logDescriptorsWithNoMatchingPackages(Collection<Path> allDeployedDescriptors,

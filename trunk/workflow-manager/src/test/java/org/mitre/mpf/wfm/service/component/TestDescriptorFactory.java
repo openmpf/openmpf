@@ -26,14 +26,19 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.google.common.collect.Lists;
 import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.xml.ValueType;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
+import org.mitre.mpf.wfm.pipeline.ValueType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static java.util.stream.Collectors.toCollection;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 
 public class TestDescriptorFactory {
@@ -41,90 +46,131 @@ public class TestDescriptorFactory {
     private TestDescriptorFactory() {}
 
     public static JsonComponentDescriptor get() {
-        JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        descriptor.sourceLanguage = ComponentLanguage.CPP;
-        descriptor.componentName = COMPONENT_NAME;
-        descriptor.batchLibrary = "/path/to/batch/lib.so";
-        descriptor.streamLibrary = "/path/to/stream/lib.so";;
+        return get(false);
+    }
 
-        JsonComponentDescriptor.EnvironmentVariable envVar1 = new JsonComponentDescriptor.EnvironmentVariable();
-        envVar1.name = "env var1 name";
-        envVar1.value = "env var1 value";
-        envVar1.sep = ":";
+    private static JsonComponentDescriptor get(boolean withCustomPipeline) {
+        JsonComponentDescriptor.EnvironmentVariable envVar1 = new JsonComponentDescriptor.EnvironmentVariable(
+                "env var1 name",
+                "env var1 value",
+                ":");
 
-        JsonComponentDescriptor.EnvironmentVariable envVar2 = new JsonComponentDescriptor.EnvironmentVariable();
-        envVar2.name = "env var1 name";
-        envVar2.value = "env var1 value";
-        envVar2.sep = ":";
-        descriptor.environmentVariables = Arrays.asList(envVar1, envVar2);
+        JsonComponentDescriptor.EnvironmentVariable envVar2 = new JsonComponentDescriptor.EnvironmentVariable(
+                "env var2 name",
+                "env var2 value",
+                ":");
 
-        descriptor.algorithm = new JsonComponentDescriptor.Algorithm();
-        descriptor.algorithm.name = "Test Algorithm Name";
-        descriptor.algorithm.actionType = ActionType.DETECTION;
-        descriptor.algorithm.description = "Test Algorithm Description";
 
-        descriptor.algorithm.requiresCollection = new JsonComponentDescriptor.AlgoRequires();
-        descriptor.algorithm.requiresCollection.states = Arrays.asList("r-state1", "r-state2");
+        Algorithm.Requires requiresCollection = new Algorithm.Requires(Arrays.asList("r-state1", "r-state2"));
 
-        descriptor.algorithm.providesCollection = new JsonComponentDescriptor.AlgoProvides();
-        descriptor.algorithm.providesCollection.states = Arrays.asList("p-state1", "p-state2");
+        Algorithm.Property property1 = new Algorithm.Property(
+                ALGO_PROP_NAMES.get(0),
+                "test property1 description",
+                ValueType.INT,
+                "100",
+                null);
 
-        JsonComponentDescriptor.AlgoProvidesProp property1 = new JsonComponentDescriptor.AlgoProvidesProp();
-        property1.name = ALGO_PROP_NAMES.get(0);
-        property1.type = ValueType.INT;
-        property1.description = "test property1 description";
-        property1.defaultValue = "100";
+        Algorithm.Property property2 = new Algorithm.Property(
+                ALGO_PROP_NAMES.get(1),
+                "test property2 description",
+                ValueType.STRING,
+                null,
+                "my.test.key");
 
-        JsonComponentDescriptor.AlgoProvidesProp property2 = new JsonComponentDescriptor.AlgoProvidesProp();
-        property2.name = ALGO_PROP_NAMES.get(1);
-        property2.type = ValueType.STRING;
-        property2.description = "test property2 description";
-        property2.propertiesKey = "my.test.key";
-        descriptor.algorithm.providesCollection.properties = Arrays.asList(property1, property2);
+        Algorithm.Provides providesCollection = new Algorithm.Provides(
+                Arrays.asList("p-state1", "p-state2"),
+                Arrays.asList(property1, property2));
+
+
+        Algorithm algorithm = new Algorithm(
+                "Test Algorithm Name",
+                "Test Algorithm Description",
+                ActionType.DETECTION,
+                requiresCollection,
+                providesCollection,
+                true,
+                false);
+
+        List<Action> actions = new ArrayList<>();
+        List<Task> tasks = new ArrayList<>();
+        List<Pipeline> pipelines = new ArrayList<>();
+        if (withCustomPipeline) {
+
+            Action.Property actionProp1 = new Action.Property(ACTION1_PROP_NAMES.get(0), ACTION1_PROP_VALUES.get(0));
+            Action.Property actionProp2 = new Action.Property(ACTION1_PROP_NAMES.get(1), ACTION1_PROP_VALUES.get(1));
+
+            Action action1 = new Action(
+                    ACTION_NAMES.get(0),
+                    ACTION_NAMES.get(0) + " description",
+                    REFERENCED_ALGO_NAME,
+                    Arrays.asList(actionProp1, actionProp2));
+            actions.add(action1);
+
+            actions.add(new Action(
+                    ACTION_NAMES.get(1),
+                    ACTION_NAMES.get(1) + " description",
+                    REFERENCED_ALGO_NAME,
+                    Collections.emptyList()));
+
+            actions.add(new Action(
+                    ACTION_NAMES.get(2),
+                    ACTION_NAMES.get(2) + " description",
+                    REFERENCED_ALGO_NAME,
+                    Collections.emptyList()));
+
+            tasks.add(new Task(
+                    TASK_NAMES.get(0),
+                    TASK_NAMES.get(0) + " description",
+                    Collections.singletonList(actions.get(0).getName())));
+
+            tasks.add(new Task(
+                    TASK_NAMES.get(1),
+                    TASK_NAMES.get(1) + " description",
+                    Arrays.asList(actions.get(1).getName(), actions.get(2).getName())));
+
+            pipelines.add(new Pipeline(
+                    PIPELINE_NAME,
+                    "Pipeline description",
+                    Arrays.asList(tasks.get(0).getName(), tasks.get(1).getName())));
+
+        }
+
+        JsonComponentDescriptor descriptor = new JsonComponentDescriptor(
+                COMPONENT_NAME,
+                "4.0.0",
+                "4.0.0",
+                null,
+                null,
+                ComponentLanguage.CPP,
+                "/path/to/batch/lib.so",
+                "/path/to/stream/lib.so",
+                Arrays.asList(envVar1, envVar2),
+                algorithm,
+                actions,
+                tasks,
+                pipelines);
+
+
         return descriptor;
     }
 
     public static JsonComponentDescriptor getWithCustomPipeline() {
-        List<JsonComponentDescriptor.Action> actions = new ArrayList<>();
-        for (String actionName : ACTION_NAMES) {
-            JsonComponentDescriptor.Action action = new JsonComponentDescriptor.Action();
-            action.name = actionName;
-            action.description = actionName + " description";
-            action.properties = new ArrayList<>();
-            action.algorithm = REFERENCED_ALGO_NAME;
-            actions.add(action);
-        }
+        return get(true);
+    }
 
-        JsonComponentDescriptor.ActionProperty actionProp1 = new JsonComponentDescriptor.ActionProperty();
-        actionProp1.name = ACTION1_PROP_NAMES.get(0);
-        actionProp1.value = ACTION1_PROP_VALUES.get(0);
-        actions.get(0).properties.add(actionProp1);
+    public static Algorithm getReferencedAlgorithm() {
 
-        JsonComponentDescriptor.ActionProperty actionProp2 = new JsonComponentDescriptor.ActionProperty();
-        actionProp2.name = ACTION1_PROP_NAMES.get(1);
-        actionProp2.value = ACTION1_PROP_VALUES.get(1);
-        actions.get(0).properties.add(actionProp2);
+        List<Algorithm.Property> propertyList = ACTION1_PROP_NAMES
+                .stream()
+                .map(n -> new Algorithm.Property(n, "1", ValueType.STRING, "default_Value", null))
+                .collect(toCollection(ArrayList::new));
 
-        List<JsonComponentDescriptor.Task> tasks = new ArrayList<>();
-        for (String taskName : TASK_NAMES) {
-            JsonComponentDescriptor.Task task = new JsonComponentDescriptor.Task();
-            task.name = taskName;
-            task.description = taskName + " description";
-            tasks.add(task);
-        }
-        tasks.get(0).actions = Lists.newArrayList(actions.get(0).name);
-        tasks.get(1).actions = Arrays.asList(actions.get(1).name, actions.get(2).name);
+        propertyList.add(new Algorithm.Property("foo", "2", ValueType.INT, "0", null));
 
-        JsonComponentDescriptor.Pipeline pipeline = new JsonComponentDescriptor.Pipeline();
-        pipeline.name = PIPELINE_NAME;
-        pipeline.description = "Pipeline description";
-        pipeline.tasks = Lists.newArrayList(tasks.get(0).name, tasks.get(1).name);
-
-        JsonComponentDescriptor descriptor = get();
-        descriptor.pipelines = Lists.newArrayList(pipeline);
-        descriptor.tasks = tasks;
-        descriptor.actions = actions;
-
-        return descriptor;
+        return new Algorithm(
+                REFERENCED_ALGO_NAME, "description", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), propertyList),
+                true, false);
     }
 }

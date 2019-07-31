@@ -65,9 +65,7 @@
                     .$promise
                     .then(function (pipelineDetail) {
 
-                        var taskPromises = pipelineDetail.taskRefs.map(function (t) {
-                            return TaskService.get(t.name);
-                        });
+                        var taskPromises = pipelineDetail.tasks.map(TaskService.get);
 
                         return $q.all(taskPromises).then(function (tasks) {
                             pipelineDetail.vmTasks = tasks;
@@ -597,7 +595,7 @@
             /** sets up the viewProperties array for ease of generating the view */
             $scope.setViewProperties = function()  {
                 $scope.currentAction.viewProperties = [];
-                angular.copy($scope.currentAction.algorithm.providesCollection.algorithmProperties,
+                angular.copy($scope.currentAction.algorithm.providesCollection.properties,
                     $scope.currentAction.viewProperties);
                 var index;
                 _.each( $scope.currentAction.properties, function( prop )  {

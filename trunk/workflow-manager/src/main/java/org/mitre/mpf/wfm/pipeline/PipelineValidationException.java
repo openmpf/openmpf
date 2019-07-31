@@ -24,36 +24,34 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.pipeline.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
+package org.mitre.mpf.wfm.pipeline;
 
-import java.util.HashSet;
-import java.util.Set;
+import javax.validation.ConstraintViolation;
+import java.util.Collection;
 
-@XStreamAlias("pipelines")
-public class PipelineDefinitionCollection {
-    @XStreamImplicit
-    private Set<PipelineDefinition> pipelines;
-    public Set<PipelineDefinition> getPipelines() { return this.pipelines; }
+import static java.util.stream.Collectors.joining;
 
-    public PipelineDefinitionCollection() {
-	    this.pipelines = new HashSet<PipelineDefinition>();
+public class PipelineValidationException extends InvalidPipelineException {
+
+    public PipelineValidationException(PipelineComponent invalidPipelineComponent,
+                                       Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
+        super(createMessage(invalidPipelineComponent, validationErrors));
     }
 
-	/** While not explicitly called, this method is used by XStream when deserializing an object. */
-	public Object readResolve() {
-		// WARNING!
-		// Collections, if omitted, must be initialized here. It is not sufficient to initialize them
-		// in the declaration or constructor.
-		if(pipelines == null) {
-			pipelines = new HashSet<PipelineDefinition>();
-		}
-		return this;
-	}
 
-	public void add(PipelineDefinition p){
-		pipelines.add(p);
-	}
+    private static String createMessage(PipelineComponent invalidPipelineComponent,
+                                        Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
+        String prefix = invalidPipelineComponent.getName() + " has errors in the following fields:\n";
+        return validationErrors.stream()
+                .map(PipelineValidationException::createFieldMessage)
+                .sorted()
+                .collect(joining("\n", prefix, "\n"));
+    }
+
+    private static String createFieldMessage(ConstraintViolation<PipelineComponent> violation) {
+        return String.format("%s=\"%s\": %s", violation.getPropertyPath(), violation.getInvalidValue(),
+                             violation.getMessage());
+    }
+
 }

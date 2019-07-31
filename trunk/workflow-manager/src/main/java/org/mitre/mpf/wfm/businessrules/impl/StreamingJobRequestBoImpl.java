@@ -40,7 +40,6 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -48,8 +47,8 @@ import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.*;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.CallbackUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -161,7 +160,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
         JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
-                pipelineService.createJsonPipeline(pipelineName), priority, stream,
+                pipelineService.createStreamingJsonPipeline(pipelineName), priority, stream,
                 stallTimeout,
                 jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri,
                 algorithmProperties, jobProperties);
@@ -381,7 +380,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZING);
         streamingJobRequest.setTimeReceived(Instant.now());
         streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
-        streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
+        streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimToNullAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
 
         // Set output object version and path to null. These will be set later if creation of output objects is enabled
         // and after the job has been persisted to the long term database (when it actually is assigned a unique jobId).
@@ -415,8 +414,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         String errorMessage = null;
         Exception errorException = null; // If an exception error is caught, save it so it can be provided as root cause for the WfmProcessingException
         try {
-            TransientPipeline transientPipeline = TransientPipeline.from(jsonStreamingJobRequest.getPipeline());
-            TransientStreamingJob transientStreamingJob = buildStreamingJob(jobId, streamingJobRequestEntity, transientPipeline, jsonStreamingJobRequest);
+            TransientStreamingJob transientStreamingJob
+                    = buildStreamingJob(jobId, streamingJobRequestEntity, jsonStreamingJobRequest);
             streamingJobMessageSender.launchJob(transientStreamingJob);
 
         } catch (InvalidPipelineObjectWfmProcessingException ipe) {
@@ -454,17 +453,18 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      *
      * @param jobId                     unique id that is assigned to this job
      * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
-     * @param transientPipeline         pipeline that has been created for this streaming job
      * @param jsonStreamingJobRequest   JSON representation of the streaming job request
      * @return TransientStreamingJob
      * @throws InvalidPipelineObjectWfmProcessingException InvalidPipelineObjectWfmProcessingException is thrown if the requested pipeline is invalid.
      */
-    private TransientStreamingJob buildStreamingJob(long jobId, StreamingJobRequest streamingJobRequestEntity, TransientPipeline transientPipeline,
-                                                    JsonStreamingJobRequest jsonStreamingJobRequest) throws InvalidPipelineObjectWfmProcessingException {
+    private TransientStreamingJob buildStreamingJob(
+            long jobId, StreamingJobRequest streamingJobRequestEntity, JsonStreamingJobRequest jsonStreamingJobRequest)
+                throws InvalidPipelineObjectWfmProcessingException {
+
         TransientStreamingJob transientStreamingJob = inProgressJobs.addJob(
                 streamingJobRequestEntity.getId(),
                 jsonStreamingJobRequest.getExternalId(),
-                transientPipeline,
+                pipelineService.createTransientStreamingPipeline(jsonStreamingJobRequest.getPipeline().getName()),
                 buildTransientStream(jsonStreamingJobRequest.getStream()),
                 jsonStreamingJobRequest.getPriority(),
                 jsonStreamingJobRequest.getStallTimeout(),
@@ -475,11 +475,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 jsonStreamingJobRequest.getJobProperties(),
                 jsonStreamingJobRequest.getAlgorithmProperties());
 
-        if (transientPipeline == null) {
-            String errorMessage = "Pipeline built from " + jsonStreamingJobRequest.getPipeline() + " is invalid.";
-            inProgressJobs.setJobStatus(jobId, StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
-            throw new InvalidPipelineObjectWfmProcessingException(errorMessage);
-        }
 
         // Report the current job status (INITIALIZING). The job will report IN_PROGRESS once the WFM receives a
         // status message from the component process.

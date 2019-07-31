@@ -46,15 +46,15 @@ public class TransientJobImpl implements TransientJob {
     public void setStatus(BatchJobStatusType status) { _status = status; }
 
 
-    private final TransientPipeline _pipeline;
+    private final TransientPipeline _transientPipeline;
     @Override
-    public TransientPipeline getPipeline() { return _pipeline; }
+    public TransientPipeline getTransientPipeline() { return _transientPipeline; }
 
 
-    private int _currentStage = 0;
+    private int _currentTaskIndex = 0;
     @Override
-    public int getCurrentStage() { return _currentStage; }
-    public void setCurrentStage(int currentStage) { _currentStage = currentStage; }
+    public int getCurrentTaskIndex() { return _currentTaskIndex; }
+    public void setCurrentTaskIndex(int currentTaskIndex) { _currentTaskIndex = currentTaskIndex; }
 
 
     private final String _externalId;
@@ -150,7 +150,7 @@ public class TransientJobImpl implements TransientJob {
             long id,
             String externalId,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
-            TransientPipeline pipeline,
+            TransientPipeline transientPipeline,
             int priority,
             boolean outputEnabled,
             String callbackUrl,
@@ -161,7 +161,7 @@ public class TransientJobImpl implements TransientJob {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
-        _pipeline = pipeline;
+        _transientPipeline = transientPipeline;
         _priority = priority;
         _outputEnabled = outputEnabled;
         _callbackUrl = callbackUrl;

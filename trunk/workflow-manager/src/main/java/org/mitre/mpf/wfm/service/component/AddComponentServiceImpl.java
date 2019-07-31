@@ -34,9 +34,8 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.StreamingServiceModel;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -51,7 +50,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -77,8 +79,6 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private final ExtrasDescriptorValidator _extrasDescriptorValidator;
 
-    private final CustomPipelineValidator _customPipelineValidator;
-
     private final RemoveComponentService _removeComponentService;
 
     private final ObjectMapper _objectMapper;
@@ -93,7 +93,6 @@ public class AddComponentServiceImpl implements AddComponentService {
             ComponentStateService componentStateService,
             ComponentDescriptorValidator componentDescriptorValidator,
             ExtrasDescriptorValidator extrasDescriptorValidator,
-            CustomPipelineValidator customPipelineValidator,
             RemoveComponentService removeComponentService,
             ObjectMapper objectMapper)
     {
@@ -105,7 +104,6 @@ public class AddComponentServiceImpl implements AddComponentService {
         _componentStateService = componentStateService;
         _componentDescriptorValidator = componentDescriptorValidator;
         _extrasDescriptorValidator = extrasDescriptorValidator;
-        _customPipelineValidator = customPipelineValidator;
         _removeComponentService = removeComponentService;
         _objectMapper = objectMapper;
     }
@@ -159,7 +157,7 @@ public class AddComponentServiceImpl implements AddComponentService {
             _log.info(logMsg);
             return currentModel;
         }
-        catch (IllegalStateException | ComponentRegistrationException ex) {
+        catch (IllegalStateException | ComponentRegistrationException | InvalidPipelineException ex) {
             _componentStateService.replacePackageState(componentPackageFileName, ComponentState.REGISTER_ERROR);
             String topLevelDirectory = Paths.get(descriptorPath).getParent().getParent().getFileName().toString();
             _deployService.undeployComponent(topLevelDirectory);
@@ -172,9 +170,9 @@ public class AddComponentServiceImpl implements AddComponentService {
         JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
 
         RegisterComponentModel registrationModel = _componentStateService
-                .getByComponentName(descriptor.componentName)
+                .getByComponentName(descriptor.getComponentName())
                 .orElseGet(RegisterComponentModel::new);
-        registrationModel.setComponentName(descriptor.componentName);
+        registrationModel.setComponentName(descriptor.getComponentName());
         registrationModel.setJsonDescriptorPath(descriptorPath);
         registrationModel.setManaged(true);
 
@@ -187,7 +185,7 @@ public class AddComponentServiceImpl implements AddComponentService {
     private void registerDeployedComponent(JsonComponentDescriptor descriptor, RegisterComponentModel model)
             throws ComponentRegistrationException {
 
-        if (descriptor.algorithm == null) {
+        if (descriptor.getAlgorithm() == null) {
             _log.warn("Component descriptor file is missing an Algorithm definition.");
             _log.warn("Treating as an extras descriptor file. Will register Actions, Tasks, and Pipelines only.");
             _extrasDescriptorValidator.validate(new JsonExtrasDescriptor(descriptor));
@@ -195,45 +193,42 @@ public class AddComponentServiceImpl implements AddComponentService {
             _componentDescriptorValidator.validate(descriptor);
         }
 
-        _customPipelineValidator.validate(descriptor);
-
-        AlgorithmDefinition algorithmDef = null;
+        Algorithm algorithm = descriptor.getAlgorithm();
         String algoName = null;
-        if (descriptor.algorithm != null) {
-            algorithmDef = convertJsonAlgo(descriptor);
-            algoName = saveAlgorithm(algorithmDef);
+        if (algorithm != null) {
+            algoName = saveAlgorithm(algorithm);
             model.setAlgorithmName(algoName);
         }
-        model.setComponentName(descriptor.componentName);
+        model.setComponentName(descriptor.getComponentName());
 
         try {
-            Set<String> savedActions = saveActions(descriptor, algorithmDef);
+            Set<String> savedActions = saveActions(descriptor, algorithm);
             model.getActions().addAll(savedActions);
 
-            Set<String> savedTasks = saveTasks(descriptor, algorithmDef);
+            Set<String> savedTasks = saveTasks(descriptor, algorithm);
             model.getTasks().addAll(savedTasks);
 
-            Set<String> savedPipelines = savePipelines(descriptor, algorithmDef);
+            Set<String> savedPipelines = savePipelines(descriptor, algorithm);
             model.getPipelines().addAll(savedPipelines);
 
-            if (descriptor.algorithm != null && model.isManaged()) {
+            if (descriptor.getAlgorithm() != null && model.isManaged()) {
                 if (descriptor.supportsBatchProcessing()) {
-                    String serviceName = saveBatchService(descriptor, algorithmDef);
+                    String serviceName = saveBatchService(descriptor, algorithm);
                     model.setServiceName(serviceName);
                 }
                 if (descriptor.supportsStreamProcessing()) {
-                    String streamingServiceName = saveStreamingService(descriptor, algorithmDef);
+                    String streamingServiceName = saveStreamingService(descriptor, algorithm);
                     model.setStreamingServiceName(streamingServiceName);
                 }
             }
         }
-        catch (ComponentRegistrationSubsystemException ex) {
-            if (descriptor.algorithm != null) {
+        catch (ComponentRegistrationSubsystemException | InvalidPipelineException ex) {
+            if (descriptor.getAlgorithm() != null) {
                 _log.warn("Component registration failed for {}. Removing the {} algorithm and child objects.",
-                        descriptor.componentName, algoName);
+                        descriptor.getComponentName(), algoName);
             } else {
                 _log.warn("Component registration failed for {}. Removing child objects.",
-                        descriptor.componentName);
+                        descriptor.getComponentName());
             }
             _removeComponentService.deleteCustomPipelines(model, true);
             throw ex;
@@ -246,36 +241,36 @@ public class AddComponentServiceImpl implements AddComponentService {
             throws ComponentRegistrationException {
 
         RegisterComponentModel existingComponent
-                = _componentStateService.getByComponentName(descriptor.componentName).orElse(null);
+                = _componentStateService.getByComponentName(descriptor.getComponentName()).orElse(null);
         if (existingComponent != null) {
             if (existingComponent.isManaged()) {
                 throw new DuplicateComponentException(String.format(
                         "Unable to register %s because there is an existing managed component with the same name.",
-                        descriptor.componentName));
+                        descriptor.getComponentName()));
             }
 
             try {
                 JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
-                if (existingDescriptor.deepEquals(descriptor)) {
+                if (existingDescriptor.equals(descriptor)) {
                     return false;
                 }
             }
             catch (FailedToParseDescriptorException e) {
                 _log.warn("Failed to parse existing descriptor for the \"{}\" component. It will be replaced with the newly received descriptor.",
-                          descriptor.componentName);
+                          descriptor.getComponentName());
             }
-            _removeComponentService.removeComponent(descriptor.componentName);
+            _removeComponentService.removeComponent(descriptor.getComponentName());
         }
 
         RegisterComponentModel registrationModel = new RegisterComponentModel();
-        registrationModel.setComponentName(descriptor.componentName);
+        registrationModel.setComponentName(descriptor.getComponentName());
         registrationModel.setManaged(false);
         registrationModel.setDateUploaded(Instant.now());
 
         registerDeployedComponent(descriptor, registrationModel);
         try {
             Path descriptorDir = _propertiesUtil.getPluginDeploymentPath()
-                    .resolve(descriptor.componentName)
+                    .resolve(descriptor.getComponentName())
                     .resolve("descriptor");
             Files.createDirectories(descriptorDir);
             Path descriptorPath = descriptorDir.resolve("descriptor.json");
@@ -304,7 +299,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         catch (UnrecognizedPropertyException ex) {
             if (ex.getPropertyName().equals("value")
-                    && ex.getReferringClass().equals(JsonComponentDescriptor.AlgoProvidesProp.class)) {
+                    && ex.getReferringClass().equals(Algorithm.Property.class)) {
                 throw new FailedToParseDescriptorException(
                         "algorithm.providesCollection.properties.value has been renamed to defaultValue. " +
                                 "The JSON descriptor must be updated in order to register the component.",
@@ -317,43 +312,10 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
     }
 
-    private static AlgorithmDefinition convertJsonAlgo(JsonComponentDescriptor descriptor) {
-        JsonComponentDescriptor.Algorithm jsonAlgo = descriptor.algorithm;
-
-        AlgorithmDefinition algoDef = new AlgorithmDefinition(
-                jsonAlgo.actionType,
-                descriptor.algorithm.name.toUpperCase(),
-                jsonAlgo.description,
-                descriptor.supportsBatchProcessing(),
-                descriptor.supportsStreamProcessing());
-
-        jsonAlgo
-                .requiresCollection
-                .states
-                .stream()
-                .map(StateDefinitionRef::new)
-                .forEach(sd -> algoDef.getRequiresCollection().getStateRefs().add(sd));
-
-        jsonAlgo
-                .providesCollection
-                .properties
-                .stream()
-                .map(p -> new PropertyDefinition(p.name, p.type, p.description, p.defaultValue, p.propertiesKey))
-                .forEach(pd -> algoDef.getProvidesCollection().getAlgorithmProperties().add(pd));
-
-        jsonAlgo
-                .providesCollection
-                .states
-                .stream()
-                .map(StateDefinition::new)
-                .forEach(sd -> algoDef.getProvidesCollection().getStates().add(sd));
-
-        return algoDef;
-    }
 
     private static List<EnvironmentVariable> convertJsonEnvVars(JsonComponentDescriptor descriptor) {
         return descriptor
-                .environmentVariables
+                .getEnvironmentVariables()
                 .stream()
                 .map(AddComponentServiceImpl::convertJsonEnvVar)
                 .collect(toList());
@@ -361,122 +323,112 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     private static EnvironmentVariable convertJsonEnvVar(JsonComponentDescriptor.EnvironmentVariable jsonEnvVar) {
         EnvironmentVariable newEnvVar = new EnvironmentVariable();
-        newEnvVar.setKey(jsonEnvVar.name);
-        newEnvVar.setValue(jsonEnvVar.value);
-        newEnvVar.setSep(jsonEnvVar.sep);
+        newEnvVar.setKey(jsonEnvVar.getName());
+        newEnvVar.setValue(jsonEnvVar.getValue());
+        newEnvVar.setSep(jsonEnvVar.getSep());
         return newEnvVar;
     }
 
-    private String saveAlgorithm(AlgorithmDefinition algoDef)
-            throws ComponentRegistrationSubsystemException
-    {
+
+    private String saveAlgorithm(Algorithm algorithm)
+            throws ComponentRegistrationSubsystemException {
         try {
-            _pipelineService.saveAlgorithm(algoDef);
-            _log.info("Successfully added the " + algoDef.getName() + " algorithm");
-            return algoDef.getName();
+            _pipelineService.save(algorithm);
+            _log.info("Successfully added the " + algorithm.getName() + " algorithm");
+            return algorithm.getName().toUpperCase();
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(
-                    String.format("Could not add the \"%s\" algorithm.", algoDef.getName()), ex);
+                    String.format("Could not add the \"%s\" algorithm.", algorithm.getName()), ex);
         }
     }
 
-    private Set<String> saveActions(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+    private Set<String> saveActions(JsonComponentDescriptor descriptor, Algorithm algorithm)
             throws ComponentRegistrationSubsystemException {
 
-        if (descriptor.actions == null) {
-            if (algorithmDef == null) {
+        if (descriptor.getActions().isEmpty()) {
+            if (algorithm == null) {
                 return Collections.emptySet();
             }
 
             // add a default action associated with the algorithm
-            String actionDescription = "Default action for the " + algorithmDef.getName() + " algorithm.";
-            String actionName = getDefaultActionName(algorithmDef);
-            saveAction(actionName, actionDescription, algorithmDef.getName(), Collections.emptyList());
+            String actionDescription = "Default action for the " + algorithm.getName() + " algorithm.";
+            String actionName = getDefaultActionName(algorithm);
+            saveAction(new Action(actionName, actionDescription, algorithm.getName(), Collections.emptyList()));
             return Collections.singleton(actionName);
         }
 
-        for (JsonComponentDescriptor.Action action : descriptor.actions) {
-            saveAction(action.name, action.description, action.algorithm, action.properties);
+        for (Action action : descriptor.getActions()) {
+            saveAction(action);
         }
-        return descriptor.actions
+        return descriptor.getActions()
                 .stream()
-                .map(a -> a.name)
+                .map(a -> a.getName().toUpperCase())
                 .collect(toSet());
     }
 
-    private void saveAction(String actionName, String description, String algoName,
-                            List<JsonComponentDescriptor.ActionProperty> actionProps)
+    private void saveAction(Action action)
             throws ComponentRegistrationSubsystemException {
-
-        ActionDefinition action = new ActionDefinition(actionName, algoName, description);
-        actionProps.stream()
-                .map(ap -> new PropertyDefinitionRef(ap.name, ap.value))
-                .forEach(pdr -> action.getProperties().add(pdr));
-
         try {
-            _pipelineService.saveAction(action);
-            _log.info("Successfully added the {} action for the {} algorithm", actionName, algoName);
+            _pipelineService.save(action);
+            _log.info("Successfully added the {} action for the {} algorithm", action.getName(), action.getAlgorithm());
         }
         catch (WfmProcessingException ex) {
             throw new ComponentRegistrationSubsystemException(String.format(
-                    "Could not add the %s action", actionName), ex);
+                    "Could not add the %s action", action.getName()), ex);
         }
     }
 
-    private Set<String> saveTasks(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+    private Set<String> saveTasks(JsonComponentDescriptor descriptor, Algorithm algorithm)
             throws ComponentRegistrationSubsystemException {
 
-        if (descriptor.tasks == null) {
-            if (algorithmDef == null) {
+        if (descriptor.getTasks().isEmpty()) {
+            if (algorithm == null) {
                 return Collections.emptySet();
             }
 
-            String actionName = getDefaultActionName(algorithmDef);
+            String actionName = getDefaultActionName(algorithm);
             // add a default task associated with the action
-            String taskName = getDefaultTaskName(algorithmDef);
+            String taskName = getDefaultTaskName(algorithm);
             String taskDescription = "Default task for the " + actionName + " action.";
-            saveTask(taskName, taskDescription, Collections.singletonList(actionName));
+            saveTask(new Task(taskName, taskDescription, Collections.singletonList(actionName)));
             return Collections.singleton(taskName);
         }
 
-        for (JsonComponentDescriptor.Task task : descriptor.tasks) {
-            saveTask(task.name, task.description, task.actions);
+        for (Task task : descriptor.getTasks()) {
+            saveTask(task);
         }
-        return descriptor.tasks
+        return descriptor.getTasks()
                 .stream()
-                .map(t -> t.name)
+                .map(Task::getName)
                 .collect(toSet());
     }
 
-    private void saveTask(String taskName, String taskDescription, Collection<String> actionNames)
+    private void saveTask(Task task)
             throws ComponentRegistrationSubsystemException {
-        TaskDefinition task = new TaskDefinition(taskName, taskDescription);
-        actionNames.stream()
-                .map(ActionDefinitionRef::new)
-                .forEach(adr -> task.getActions().add(adr));
-
         try {
-            _pipelineService.saveTask(task);
-            _log.info("Successfully added the {} task", taskName);
+            _pipelineService.save(task);
+            _log.info("Successfully added the {} task", task.getName());
         }
         catch (WfmProcessingException ex) {
-            throw new ComponentRegistrationSubsystemException(String.format("Could not add the %s task", taskName), ex);
+            throw new ComponentRegistrationSubsystemException(
+                    String.format("Could not add the %s task", task.getName()), ex);
         }
     }
 
-    private Set<String> savePipelines(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+
+    private Set<String> savePipelines(JsonComponentDescriptor descriptor, Algorithm algorithm)
             throws ComponentRegistrationSubsystemException {
 
         // add a single action default pipeline associated with the task
         // note, can't do this if a required state must be reached by a previous
         // stage in a pipeline that uses this algorithm
-        if (descriptor.pipelines == null) {
-            if (algorithmDef != null && algorithmDef.getRequiresCollection().getStateRefs().isEmpty()) {
-                String pipelineName = getDefaultPipelineName(algorithmDef);
-                String taskName = getDefaultTaskName(algorithmDef);
+        if (descriptor.getPipelines().isEmpty()) {
+            if (algorithm != null && algorithm.getRequiresCollection().getStates().isEmpty()) {
+                String pipelineName = getDefaultPipelineName(algorithm);
+                String taskName = getDefaultTaskName(algorithm);
                 String pipelineDescription = "Default pipeline for the " + taskName + " task.";
-                savePipeline(pipelineName, pipelineDescription, Collections.singleton(taskName));
+                savePipeline(new Pipeline(pipelineName, pipelineDescription, Collections.singleton(taskName)));
                 return Collections.singleton(pipelineName);
             }
 
@@ -484,24 +436,20 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
 
 
-        for (JsonComponentDescriptor.Pipeline pipeline: descriptor.pipelines) {
-            savePipeline(pipeline.name, pipeline.description, pipeline.tasks);
+        for (Pipeline pipeline: descriptor.getPipelines()) {
+            savePipeline(pipeline);
         }
-        return descriptor.pipelines
+        return descriptor.getPipelines()
                 .stream()
-                .map(p -> p.name)
+                .map(Pipeline::getName)
                 .collect(toSet());
     }
 
-    private void savePipeline(String pipelineName, String pipelineDescription, Collection<String> taskNames)
+    private void savePipeline(Pipeline pipeline)
             throws ComponentRegistrationSubsystemException {
-        PipelineDefinition pipeline = new PipelineDefinition(pipelineName, pipelineDescription);
-        taskNames.stream()
-                .map(TaskDefinitionRef::new)
-                .forEach(tdr -> pipeline.getTaskRefs().add(tdr));
 
         try {
-            _pipelineService.savePipeline(pipeline);
+            _pipelineService.save(pipeline);
             _log.info("Successfully added the {} pipeline.", pipeline.getName());
         }
         catch (WfmProcessingException ex) {
@@ -510,20 +458,20 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
     }
 
-    private String saveBatchService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+    private String saveBatchService(JsonComponentDescriptor descriptor, Algorithm algorithm)
             throws ComponentRegistrationSubsystemException {
-        String serviceName = descriptor.componentName;
+        String serviceName = descriptor.getComponentName();
         if (_nodeManagerService.getServiceModels().containsKey(serviceName)) {
             throw new ComponentRegistrationSubsystemException(String.format(
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
-        String queueName = String.format("MPF.%s_%s_REQUEST", algorithmDef.getActionType(), algorithmDef.getName());
+        String queueName = String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(), algorithm.getName());
         Service algorithmService;
 
-        switch (descriptor.sourceLanguage) {
+        switch (descriptor.getSourceLanguage()) {
             case JAVA:
                 algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-                algorithmService.addArg(descriptor.batchLibrary);
+                algorithmService.addArg(descriptor.getBatchLibrary());
                 algorithmService.addArg(queueName);
                 algorithmService.addArg(serviceName);
                 algorithmService.setLauncher("generic");
@@ -533,18 +481,18 @@ public class AddComponentServiceImpl implements AddComponentService {
             case CPP:
             case PYTHON:
                 algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
-                algorithmService.addArg(descriptor.batchLibrary);
+                algorithmService.addArg(descriptor.getBatchLibrary());
                 algorithmService.addArg(queueName);
-                algorithmService.addArg(descriptor.sourceLanguage.getValue());
+                algorithmService.addArg(descriptor.getSourceLanguage().getValue());
                 algorithmService.setLauncher("simple");
-                algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.componentName);
+                algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
                 break;
 
             default:
-                throw new IllegalStateException("Unknown component language: " + descriptor.sourceLanguage);
+                throw new IllegalStateException("Unknown component language: " + descriptor.getSourceLanguage());
         }
 
-        algorithmService.setDescription(algorithmDef.getDescription());
+        algorithmService.setDescription(algorithm.getDescription());
         algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
         _log.debug("Created service definition");
         if (_nodeManagerService.addService(algorithmService)) {
@@ -558,10 +506,10 @@ public class AddComponentServiceImpl implements AddComponentService {
     }
 
 
-    private String saveStreamingService(JsonComponentDescriptor descriptor, AlgorithmDefinition algorithmDef)
+    private String saveStreamingService(JsonComponentDescriptor descriptor, Algorithm algorithm)
             throws ComponentRegistrationSubsystemException {
 
-        String serviceName = descriptor.componentName;
+        String serviceName = descriptor.getComponentName();
         boolean existingSvc = _streamingServiceManager.getServices().stream()
                 .anyMatch(s -> s.getServiceName().equals(serviceName));
         if (existingSvc) {
@@ -570,35 +518,38 @@ public class AddComponentServiceImpl implements AddComponentService {
                     serviceName));
         }
 
-        if (descriptor.sourceLanguage == ComponentLanguage.CPP) {
-            String libPath = descriptor.streamLibrary;
-            List<EnvironmentVariableModel> envVars = descriptor.environmentVariables.stream()
-                    .map(descEnv -> new EnvironmentVariableModel(descEnv.name, descEnv.value, descEnv.sep))
+        if (descriptor.getSourceLanguage() == ComponentLanguage.CPP) {
+            String libPath = descriptor.getStreamLibrary();
+            List<EnvironmentVariableModel> envVars = descriptor.getEnvironmentVariables().stream()
+                    .map(descEnv -> new EnvironmentVariableModel(descEnv.getName(), descEnv.getValue(),
+                                                                 descEnv.getSep()))
                     .collect(toList());
 
             StreamingServiceModel serviceModel = new StreamingServiceModel(
-                    serviceName, algorithmDef.getName(), ComponentLanguage.CPP, libPath, envVars);
+                    serviceName, algorithm.getName(), ComponentLanguage.CPP, libPath, envVars);
             _streamingServiceManager.addService(serviceModel);
             return serviceName;
         }
         else {
             // TODO: Also save services for other languages when streaming is implemented for them.
             _log.error("Streaming processing is not supported for {} components. No streaming service will be added for the {} component.",
-                       descriptor.sourceLanguage, descriptor.componentName);
+                       descriptor.getSourceLanguage(), descriptor.getComponentName());
             return null;
         }
     }
 
 
-    private static String getDefaultActionName(AlgorithmDefinition algorithmDef) {
-        return String.format("%s %s ACTION", algorithmDef.getName(), algorithmDef.getActionType().toString());
+    private static String getDefaultActionName(Algorithm algorithm) {
+        return String.format("%s %s ACTION", algorithm.getName(), algorithm.getActionType().toString()).toUpperCase();
     }
 
-    private static String getDefaultTaskName(AlgorithmDefinition algorithmDef) {
-        return String.format("%s %s TASK", algorithmDef.getName(), algorithmDef.getActionType().toString());
+    private static String getDefaultTaskName(Algorithm algorithm) {
+        return String.format("%s %s TASK", algorithm.getName(), algorithm.getActionType().toString())
+                .toUpperCase();
     }
 
-    private static String getDefaultPipelineName(AlgorithmDefinition algorithmDef) {
-        return String.format("%s %s PIPELINE", algorithmDef.getName(), algorithmDef.getActionType().toString());
+    private static String getDefaultPipelineName(Algorithm algorithm) {
+        return String.format("%s %s PIPELINE", algorithm.getName(), algorithm.getActionType().toString())
+                .toUpperCase();
     }
 }

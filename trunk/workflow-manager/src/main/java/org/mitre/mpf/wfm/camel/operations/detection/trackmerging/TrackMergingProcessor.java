@@ -36,6 +36,8 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
@@ -46,6 +48,7 @@ import org.springframework.stereotype.Component;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toCollection;
@@ -80,15 +83,19 @@ public class TrackMergingProcessor extends WfmProcessor {
 	@Autowired
 	private InProgressBatchJobsService inProgressJobs;
 
+	@Autowired
+	private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
 
 		TransientJob transientJob = inProgressJobs.getJob(trackMergingContext.getJobId());
 
-		TransientStage transientStage = transientJob.getPipeline().getStages().get(trackMergingContext.getStageIndex());
-		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			TransientAction transientAction = transientStage.getActions().get(actionIndex);
+		Task task = transientJob.getTransientPipeline().getTask(trackMergingContext.getStageIndex());
+		for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+			Action action = transientJob.getTransientPipeline()
+					.getAction(trackMergingContext.getStageIndex(), actionIndex);
 
 			for (TransientMedia transientMedia : transientJob.getMedia()) {
 
@@ -97,7 +104,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 					continue;
 				}
 
-				TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientJob, transientMedia, transientAction);
+				TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientJob, transientMedia, action);
 
 				boolean mergeRequested = trackMergingPlan.isMergeTracks();
 				boolean pruneRequested = trackMergingPlan.getMinTrackLength() > 1;
@@ -143,42 +150,19 @@ public class TrackMergingProcessor extends WfmProcessor {
 		exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
 	}
 
-	private static TrackMergingPlan createTrackMergingPlan(TransientJob transientJob, TransientMedia transientMedia,
-													TransientAction transientAction) {
+	private TrackMergingPlan createTrackMergingPlan(TransientJob transientJob, TransientMedia transientMedia,
+	                                                Action action) {
+        Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
+        		transientJob, transientMedia, action);
 
 		// If there exist media-specific properties for track merging, use them.
+		String minTrackLengthProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_LENGTH);
 
-		String minTrackLengthProperty = AggregateJobPropertiesUtil.calculateValue(
-				MpfConstants.MIN_TRACK_LENGTH,
-				transientAction.getProperties(),
-				transientJob.getOverriddenJobProperties(),
-				transientAction,
-				transientJob.getOverriddenAlgorithmProperties(),
-				transientMedia.getMediaSpecificProperties()).getValue();
+		String mergeTracksProperty = combinedProperties.apply(MpfConstants.MERGE_TRACKS_PROPERTY);
 
-		String mergeTracksProperty = AggregateJobPropertiesUtil.calculateValue(
-				MpfConstants.MERGE_TRACKS_PROPERTY,
-				transientAction.getProperties(),
-				transientJob.getOverriddenJobProperties(),
-				transientAction,
-				transientJob.getOverriddenAlgorithmProperties(),
-				transientMedia.getMediaSpecificProperties()).getValue();
+		String minGapBetweenTracksProperty = combinedProperties.apply(MpfConstants.MIN_GAP_BETWEEN_TRACKS);
 
-		String minGapBetweenTracksProperty = AggregateJobPropertiesUtil.calculateValue(
-				MpfConstants.MIN_GAP_BETWEEN_TRACKS,
-				transientAction.getProperties(),
-				transientJob.getOverriddenJobProperties(),
-				transientAction,
-				transientJob.getOverriddenAlgorithmProperties(),
-				transientMedia.getMediaSpecificProperties()).getValue();
-
-		String minTrackOverlapProperty = AggregateJobPropertiesUtil.calculateValue(
-				MpfConstants.MIN_TRACK_OVERLAP,
-				transientAction.getProperties(),
-				transientJob.getOverriddenJobProperties(),
-				transientAction,
-				transientJob.getOverriddenAlgorithmProperties(),
-				transientMedia.getMediaSpecificProperties()).getValue();
+		String minTrackOverlapProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_OVERLAP);
 
 		SystemPropertiesSnapshot transientDetectionSystemProperties = transientJob.getSystemPropertiesSnapshot();
 
@@ -188,12 +172,12 @@ public class TrackMergingProcessor extends WfmProcessor {
 		double minTrackOverlap = transientDetectionSystemProperties.getTrackOverlapThreshold();
 
 		if (mergeTracksProperty != null) {
-			mergeTracks = Boolean.valueOf(mergeTracksProperty);
+			mergeTracks = Boolean.parseBoolean(mergeTracksProperty);
 		}
 
 		if (minGapBetweenTracksProperty != null) {
 			try {
-				minGapBetweenTracks = Integer.valueOf(minGapBetweenTracksProperty);
+				minGapBetweenTracks = Integer.parseInt(minGapBetweenTracksProperty);
 			} catch (NumberFormatException exception) {
 				log.warn("Attempted to parse " + MpfConstants.MIN_GAP_BETWEEN_TRACKS + " value of '{}' " +
 						"but encountered an exception. Defaulting to '{}'.", minGapBetweenTracksProperty, minGapBetweenTracks, exception);
@@ -202,7 +186,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 		if (minTrackLengthProperty != null) {
 			try {
-				minTrackLength = Integer.valueOf(minTrackLengthProperty);
+				minTrackLength = Integer.parseInt(minTrackLengthProperty);
 			} catch (NumberFormatException exception) {
 				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' " +
 						"but encountered an exception. Defaulting to '{}'.", minTrackLengthProperty, minTrackLength, exception);
@@ -211,7 +195,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
 		if (minTrackOverlapProperty != null) {
 			try {
-				minTrackOverlap = Double.valueOf(minTrackOverlapProperty);
+				minTrackOverlap = Double.parseDouble(minTrackOverlapProperty);
 			} catch (NumberFormatException exception) {
 				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' " +
 						"but encountered an exception. Defaulting to '{}'.", minTrackOverlapProperty, minTrackOverlap, exception);

@@ -43,6 +43,9 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,205 +60,208 @@ import java.util.stream.DoubleStream;
 
 @Component(MarkupStageSplitter.REF)
 public class MarkupStageSplitter implements StageSplitter {
-	public static final String REF = "markupStageSplitter";
-	private static final Logger log = LoggerFactory.getLogger(MarkupStageSplitter.class);
+    public static final String REF = "markupStageSplitter";
+    private static final Logger log = LoggerFactory.getLogger(MarkupStageSplitter.class);
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
-	@Autowired
-	private PropertiesUtil propertiesUtil;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
-	@Autowired
-	@Qualifier(HibernateMarkupResultDaoImpl.REF)
-	private MarkupResultDao hibernateMarkupResultDao;
-
-
-	/**
-	 * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
-	 * detections so that the output is not cluttered with motion detections.
-	 */
-	private int findLastDetectionStageIndex(TransientPipeline transientPipeline) {
-		int stageIndex = -1;
-		for(int i = 0; i < transientPipeline.getStages().size(); i++) {
-			TransientStage transientStage = transientPipeline.getStages().get(i);
-			if(transientStage.getActionType() == ActionType.DETECTION) {
-				stageIndex = i;
-			}
-		}
-
-		assert 0 <= stageIndex : String.format("The stage index of %d was expected to be greater than or equal to 0.", stageIndex);
-		return stageIndex;
-	}
-
-	/** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-	private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int stageIndex, TransientStage transientStage) {
-		Iterator<Color> trackColors = getTrackColors();
-		BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
-		long mediaId = media.getId();
-		for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, stageIndex, actionIndex);
-			for (Track track : tracks) {
-				addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next());
-			}
-		}
-		return boundingBoxMap;
-	}
+    @Autowired
+    @Qualifier(HibernateMarkupResultDaoImpl.REF)
+    private MarkupResultDao hibernateMarkupResultDao;
 
 
-	private static OptionalDouble getRotation(Map<String, String> properties) {
-		String rotationString = properties.get("ROTATION");
-		if (rotationString == null) {
-			return OptionalDouble.empty();
-		}
-		return OptionalDouble.of(Double.valueOf(rotationString));
-	}
+    /**
+     * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
+     * detections so that the output is not cluttered with motion detections.
+     */
+    private static int findLastDetectionTaskIndex(TransientPipeline transientPipeline) {
+        int taskIndex = -1;
+        for(int i = 0; i < transientPipeline.getTaskCount(); i++) {
+            ActionType actionType = transientPipeline.getAlgorithm(i, 0).getActionType();
+            if(actionType == ActionType.DETECTION) {
+                taskIndex = i;
+            }
+        }
+        return taskIndex;
+    }
+
+    /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
+    private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int taskIndex, Task task) {
+        Iterator<Color> trackColors = getTrackColors();
+        BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
+        long mediaId = media.getId();
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+            SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
+            for (Track track : tracks) {
+                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next());
+            }
+        }
+        return boundingBoxMap;
+    }
 
 
-	private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
-	    OptionalDouble trackRotation = getRotation(track.getTrackProperties());
-
-		List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
-		Collections.sort(orderedDetections);
-		for (int i = 0; i < orderedDetections.size(); i++) {
-			Detection detection = orderedDetections.get(i);
-			int currentFrame = detection.getMediaOffsetFrame();
-
-			OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
-
-			// Create a bounding box at the location.
-			BoundingBox boundingBox = new BoundingBox(
-					detection.getX(),
-					detection.getY(),
-					detection.getWidth(),
-					detection.getHeight(),
-					detectionRotation.orElse(trackRotation.orElse(0)),
-					trackColor.getRed(),
-					trackColor.getGreen(),
-					trackColor.getBlue());
-
-			String objectType = track.getType();
-			if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
-				// Special case: Speech doesn't populate object locations for each frame in the video, so you have to
-				// go by the track start and stop frames.
-				boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
-				                           track.getEndOffsetFrameInclusive(), boundingBox);
-				break;
-			}
-
-			boolean isLastDetection = (i == (orderedDetections.size() - 1));
-			if (isLastDetection) {
-				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
-				break;
-			}
-
-			Detection nextDetection = orderedDetections.get(i + 1);
-			int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
-			if (gapBetweenNextDetection == 1) {
-				boundingBoxMap.putOnFrame(currentFrame, boundingBox);
-			}
-			else {
-				// Since the gap between frames is greater than 1 and we are not at the last result in the
-				// collection, we draw bounding boxes on each frame in the collection such that on the
-				// first frame, the bounding box is at the position given by the object location, and on the
-				// last frame in the interval, the bounding box is very close to the position given by the object
-				// location of the next result. Consequently, the original bounding box appears to resize
-				// and translate to the position and size of the next result's bounding box.
-
-				OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
-
-				BoundingBox nextBoundingBox = new BoundingBox(
-						nextDetection.getX(),
-						nextDetection.getY(),
-						nextDetection.getWidth(),
-						nextDetection.getHeight(),
-						nextDetectionRotation.orElse(trackRotation.orElse(0)),
-						boundingBox.getRed(),
-						boundingBox.getBlue(),
-						boundingBox.getGreen());
-				boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
-			}
-		}
-	}
+    private static OptionalDouble getRotation(Map<String, String> properties) {
+        String rotationString = properties.get("ROTATION");
+        if (rotationString == null) {
+            return OptionalDouble.empty();
+        }
+        return OptionalDouble.of(Double.valueOf(rotationString));
+    }
 
 
-	@Override
-	public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
-		List<Message> messages = new ArrayList<>();
+    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
+        OptionalDouble trackRotation = getRotation(track.getTrackProperties());
 
-		int lastDetectionStageIndex = findLastDetectionStageIndex(transientJob.getPipeline());
+        List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
+        Collections.sort(orderedDetections);
+        for (int i = 0; i < orderedDetections.size(); i++) {
+            Detection detection = orderedDetections.get(i);
+            int currentFrame = detection.getMediaOffsetFrame();
 
-		hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
+            OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
 
-		for(int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-			TransientAction transientAction = transientStage.getActions().get(actionIndex);
-			int mediaIndex = -1;
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
-				mediaIndex++;
-				if (transientMedia.isFailed()) {
-					log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
-				} else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
-					log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
-				} else {
-					List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList = createMap(transientJob, transientMedia, lastDetectionStageIndex, transientJob.getPipeline().getStages().get(lastDetectionStageIndex)).toBoundingBoxMapEntryList();
-					Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
-							.setMediaIndex(mediaIndex)
-							.setTaskIndex(transientJob.getCurrentStage())
-							.setActionIndex(actionIndex)
-							.setMediaId(transientMedia.getId())
-							.setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
-							.setRequestId(IdGenerator.next())
-							.setSourceUri(transientMedia.getLocalPath().toUri().toString())
-							.setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
-									propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
-							.addAllMapEntries(boundingBoxMapEntryList)
-							.build();
+            // Create a bounding box at the location.
+            BoundingBox boundingBox = new BoundingBox(
+                    detection.getX(),
+                    detection.getY(),
+                    detection.getWidth(),
+                    detection.getHeight(),
+                    detectionRotation.orElse(trackRotation.orElse(0)),
+                    trackColor.getRed(),
+                    trackColor.getGreen(),
+                    trackColor.getBlue());
 
-					DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
-					message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", transientStage.getActionType(), transientAction.getAlgorithm()));
-					message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
-					message.setBody(markupRequest);
-					messages.add(message);
-				}
-			}
-		}
+            String objectType = track.getType();
+            if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
+                // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
+                // go by the track start and stop frames.
+                boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
+                                           track.getEndOffsetFrameInclusive(), boundingBox);
+                break;
+            }
 
-		return messages;
-	}
+            boolean isLastDetection = (i == (orderedDetections.size() - 1));
+            if (isLastDetection) {
+                boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+                break;
+            }
 
-	/** Returns the appropriate markup extension for a given {@link org.mitre.mpf.wfm.enums.MediaType}. */
-	private String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
-		switch(mediaType) {
-			case IMAGE:
-				return ".png";
-			case VIDEO:
-				return ".avi";
+            Detection nextDetection = orderedDetections.get(i + 1);
+            int gapBetweenNextDetection = nextDetection.getMediaOffsetFrame() - detection.getMediaOffsetFrame();
+            if (gapBetweenNextDetection == 1) {
+                boundingBoxMap.putOnFrame(currentFrame, boundingBox);
+            }
+            else {
+                // Since the gap between frames is greater than 1 and we are not at the last result in the
+                // collection, we draw bounding boxes on each frame in the collection such that on the
+                // first frame, the bounding box is at the position given by the object location, and on the
+                // last frame in the interval, the bounding box is very close to the position given by the object
+                // location of the next result. Consequently, the original bounding box appears to resize
+                // and translate to the position and size of the next result's bounding box.
 
-			case AUDIO: // Falls through
-			case UNKNOWN: // Falls through
-			default:
-				return ".bin";
-		}
-	}
+                OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
 
-	private String getFileExtension(String mimeType) {
-		try {
-			return MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
-		} catch (Exception exception) {
-			log.warn("Failed to map the MIME type '{}' to an extension. Defaulting to .bin.", mimeType);
-			return ".bin";
-		}
-	}
+                BoundingBox nextBoundingBox = new BoundingBox(
+                        nextDetection.getX(),
+                        nextDetection.getY(),
+                        nextDetection.getWidth(),
+                        nextDetection.getHeight(),
+                        nextDetectionRotation.orElse(trackRotation.orElse(0)),
+                        boundingBox.getRed(),
+                        boundingBox.getBlue(),
+                        boundingBox.getGreen());
+                boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
+            }
+        }
+    }
 
-	private static final double GOLDEN_RATIO_CONJUGATE = 2 / (1 + Math.sqrt(5));
 
-	// Uses method described in https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
-	// to create an infinite iterator of randomish colors.
-	// The article says to use the HSV color space, but HSB is identical.
-	private static Iterator<Color> getTrackColors() {
-		return DoubleStream.iterate(0.5, x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
-				.mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
-				.iterator();
-	}
+    @Override
+    public final List<Message> performSplit(TransientJob transientJob, Task task) {
+        List<Message> messages = new ArrayList<>();
+
+        int lastDetectionTaskIndex = findLastDetectionTaskIndex(transientJob.getTransientPipeline());
+
+        hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
+
+        for(int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+            String actionName = task.getActions().get(actionIndex);
+            Action action = transientJob.getTransientPipeline().getAction(actionName);
+            int mediaIndex = -1;
+            for (TransientMedia transientMedia : transientJob.getMedia()) {
+                mediaIndex++;
+                if (transientMedia.isFailed()) {
+                    log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
+                } else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
+                    log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
+                } else {
+                    List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
+                            = createMap(transientJob, transientMedia, lastDetectionTaskIndex,
+                                        transientJob.getTransientPipeline().getTask(lastDetectionTaskIndex))
+                            .toBoundingBoxMapEntryList();
+                    Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
+                            .setMediaIndex(mediaIndex)
+                            .setTaskIndex(transientJob.getCurrentTaskIndex())
+                            .setActionIndex(actionIndex)
+                            .setMediaId(transientMedia.getId())
+                            .setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
+                            .setRequestId(IdGenerator.next())
+                            .setSourceUri(transientMedia.getLocalPath().toUri().toString())
+                            .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
+                                                       propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
+                                                       propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
+                            .addAllMapEntries(boundingBoxMapEntryList)
+                            .build();
+
+                    Algorithm algorithm = transientJob.getTransientPipeline().getAlgorithm(action.getAlgorithm());
+                    DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
+                    message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
+                    message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
+                    message.setBody(markupRequest);
+                    messages.add(message);
+                }
+            }
+        }
+
+        return messages;
+    }
+
+    /** Returns the appropriate markup extension for a given {@link org.mitre.mpf.wfm.enums.MediaType}. */
+    private String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
+        switch(mediaType) {
+            case IMAGE:
+                return ".png";
+            case VIDEO:
+                return ".avi";
+
+            case AUDIO: // Falls through
+            case UNKNOWN: // Falls through
+            default:
+                return ".bin";
+        }
+    }
+
+    private String getFileExtension(String mimeType) {
+        try {
+            return MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
+        } catch (Exception exception) {
+            log.warn("Failed to map the MIME type '{}' to an extension. Defaulting to .bin.", mimeType);
+            return ".bin";
+        }
+    }
+
+    private static final double GOLDEN_RATIO_CONJUGATE = 2 / (1 + Math.sqrt(5));
+
+    // Uses method described in https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+    // to create an infinite iterator of randomish colors.
+    // The article says to use the HSV color space, but HSB is identical.
+    private static Iterator<Color> getTrackColors() {
+        return DoubleStream.iterate(0.5, x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
+                .mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
+                .iterator();
+    }
 }

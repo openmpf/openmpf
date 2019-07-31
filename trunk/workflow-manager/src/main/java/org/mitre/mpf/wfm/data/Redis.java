@@ -36,11 +36,11 @@ import java.util.SortedSet;
 @Monitored
 public interface Redis {
 
-	void addTrack(Track track);
+    void addTrack(Track track);
 
-	void clearTracks(TransientJob job);
+    void clearTracks(TransientJob job);
 
-	SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
+    SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
 
-	void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
+    void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 }

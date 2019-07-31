@@ -54,6 +54,8 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
@@ -107,6 +109,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
 
     @Override
@@ -223,7 +228,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobRequest.getId(),
                 UUID.randomUUID().toString(),
-                jsonUtils.convert(transientJob.getPipeline()),
+                jsonUtils.convert(transientJob.getTransientPipeline()),
                 transientJob.getPriority(),
                 propertiesUtil.getSiteId(),
                 transientJob.getExternalId().orElse(null),
@@ -260,71 +265,74 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
 
-            if(transientJob.getPipeline() != null) {
-                Set<Integer> suppressedStages = getSuppressedStages(transientMedia, transientJob);
+            Set<Integer> suppressedStages = getSuppressedStages(transientMedia, transientJob);
 
-                for (int stageIndex = 0; stageIndex < transientJob.getPipeline().getStages().size(); stageIndex++) {
-                    TransientStage transientStage = transientJob.getPipeline().getStages().get(stageIndex);
-                    for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
-                        TransientAction transientAction = transientStage.getActions().get(actionIndex);
-                        String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), transientAction.getName());
+            for (int taskIndex = 0; taskIndex < transientJob.getTransientPipeline().getTaskCount(); taskIndex++) {
+                Task task = transientJob.getTransientPipeline().getTask(taskIndex);
+                for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+                    Action action = transientJob.getTransientPipeline().getAction(taskIndex, actionIndex);
+                    String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
-                        for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(transientJob, transientMedia.getId(), stageIndex, actionIndex)) {
-                            hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
-                            JsonDetectionProcessingError jsonDetectionProcessingError = new JsonDetectionProcessingError(detectionProcessingError.getStartOffset(), detectionProcessingError.getEndOffset(), detectionProcessingError.getError());
-                            if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
-                                mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
-                            }
-                            mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
-                            if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
-                                mediaOutputObject.setStatus("INCOMPLETE");
-                                if (StringUtils.equalsIgnoreCase(jsonOutputObject.getStatus(), "COMPLETE")) {
-                                    jsonOutputObject.setStatus("INCOMPLETE");
-                                }
-                            }
+                    for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
+                                transientJob, transientMedia.getId(), taskIndex, actionIndex)) {
+                        hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
+                        JsonDetectionProcessingError jsonDetectionProcessingError
+                                = new JsonDetectionProcessingError(
+                                        detectionProcessingError.getStartOffset(),
+                                        detectionProcessingError.getEndOffset(),
+                                        detectionProcessingError.getError());
+                        if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
+                            mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
                         }
-
-                        Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, transientMedia.getId(),
-                                                                                 stageIndex, actionIndex);
-                        if(tracks.isEmpty()) {
-                            // Always include detection actions in the output object, even if they do not generate any results.
-                            addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey, mediaOutputObject);
-                        }
-                        else if (suppressedStages.contains(stageIndex)) {
-                            addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
-                                                mediaOutputObject);
-                        }
-                        else {
-                            for (Track track : tracks) {
-                                JsonTrackOutputObject jsonTrackOutputObject
-                                        = createTrackOutputObject(track, stateKey, transientAction, transientMedia,
-                                                                  transientJob);
-
-                                String type = jsonTrackOutputObject.getType();
-                                if (!mediaOutputObject.getTypes().containsKey(type)) {
-                                    mediaOutputObject.getTypes().put(type, new TreeSet<>());
-                                }
-
-                                SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);
-                                boolean stateFound = false;
-                                for (JsonActionOutputObject action : actionSet) {
-                                    if (stateKey.equals(action.getSource())) {
-                                        stateFound = true;
-                                        action.getTracks().add(jsonTrackOutputObject);
-                                        break;
-                                    }
-                                }
-                                if (!stateFound) {
-                                    JsonActionOutputObject action = new JsonActionOutputObject(stateKey);
-                                    actionSet.add(action);
-                                    action.getTracks().add(jsonTrackOutputObject);
-                                }
+                        mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
+                        if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
+                            mediaOutputObject.setStatus("INCOMPLETE");
+                            if (StringUtils.equalsIgnoreCase(jsonOutputObject.getStatus(), "COMPLETE")) {
+                                jsonOutputObject.setStatus("INCOMPLETE");
                             }
                         }
+                    }
 
-                        if (actionIndex == transientStage.getActions().size() - 1) {
-                            stateKeyBuilder.append('#').append(transientAction.getName());
+                    Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, transientMedia.getId(),
+                                                                             taskIndex, actionIndex);
+                    if(tracks.isEmpty()) {
+                        // Always include detection actions in the output object, even if they do not generate any results.
+                        addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey, mediaOutputObject);
+                    }
+                    else if (suppressedStages.contains(taskIndex)) {
+                        addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
+                                            mediaOutputObject);
+                    }
+                    else {
+                        for (Track track : tracks) {
+                            JsonTrackOutputObject jsonTrackOutputObject
+                                    = createTrackOutputObject(track, stateKey, action, transientMedia,
+                                                              transientJob);
+
+                            String type = jsonTrackOutputObject.getType();
+                            if (!mediaOutputObject.getTypes().containsKey(type)) {
+                                mediaOutputObject.getTypes().put(type, new TreeSet<>());
+                            }
+
+                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);
+                            boolean stateFound = false;
+                            for (JsonActionOutputObject jsonAction : actionSet) {
+                                if (stateKey.equals(jsonAction.getSource())) {
+                                    stateFound = true;
+                                    jsonAction.getTracks().add(jsonTrackOutputObject);
+                                    break;
+                                }
+                            }
+                            if (!stateFound) {
+                                JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey);
+                                actionSet.add(jsonAction);
+                                jsonAction.getTracks().add(jsonTrackOutputObject);
+                            }
                         }
+                    }
+
+                    if (actionIndex == task.getActions().size() - 1) {
+                        stateKeyBuilder.append('#').append(action.getName());
                     }
                 }
             }
@@ -355,27 +363,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
-                                                                 TransientAction transientAction,
+    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
+                                                                 Action action,
                                                                  TransientMedia transientMedia,
                                                                  TransientJob transientJob) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
-        AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
-                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY,
-                transientAction.getProperties(),
-                transientJob.getOverriddenJobProperties(),
-                transientAction,
-                transientJob.getOverriddenAlgorithmProperties(),
-                transientMedia.getMediaSpecificProperties());
-
-        boolean exemplarsOnly;
-        if (exemplarsOnlyProp.getLevel() == AggregateJobPropertiesUtil.PropertyLevel.NONE) {
-            exemplarsOnly = transientJob.getSystemPropertiesSnapshot().isOutputObjectExemplarOnly();
-        }
-        else {
-            exemplarsOnly = Boolean.valueOf(exemplarsOnlyProp.getValue());
-        }
+        String exemplarsOnlyProp = aggregateJobPropertiesUtil.calculateValue(
+                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, transientJob, transientMedia, action);
+        boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
 
         List<JsonDetectionOutputObject> detections;
         if (exemplarsOnly) {
@@ -461,11 +457,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return Collections.emptySet();
         }
 
-        List<TransientStage> stages = transientJob.getPipeline().getStages();
+        List<String> taskNames = transientJob.getTransientPipeline().getPipeline().getTasks();
         int lastDetectionStage = 0;
-        for (int i = stages.size() - 1; i >= 0; i--) {
-            TransientStage stage = stages.get(i);
-            if (stage.getActionType() == ActionType.DETECTION) {
+        for (int i = taskNames.size() - 1; i >= 0; i--) {
+            ActionType actionType = transientJob.getTransientPipeline().getAlgorithm(i, 0).getActionType();
+            if (actionType == ActionType.DETECTION) {
                 lastDetectionStage = i;
                 break;
             }

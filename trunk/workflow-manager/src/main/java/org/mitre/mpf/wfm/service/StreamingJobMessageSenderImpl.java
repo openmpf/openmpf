@@ -26,20 +26,21 @@
 
 package org.mitre.mpf.wfm.service;
 
+import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
@@ -47,96 +48,97 @@ import static java.util.stream.Collectors.toMap;
 @Service
 public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender {
 
-	private final PropertiesUtil _properties;
+    private final PropertiesUtil _properties;
 
-	private final MasterNode _masterNode;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-	private final PipelineService _pipelineService;
+    private final MasterNode _masterNode;
 
-	private final StreamingServiceManager _streamingServiceManager;
+    private final StreamingServiceManager _streamingServiceManager;
 
-	@Autowired
-	public StreamingJobMessageSenderImpl(
-			PropertiesUtil properties,
-			MasterNode masterNode,
-			PipelineService pipelineService,
-			StreamingServiceManager streamingServiceManager) {
-		_properties = properties;
-		_masterNode = masterNode;
-		_pipelineService = pipelineService;
-		_streamingServiceManager = streamingServiceManager;
-	}
-
-
-	@Override
-	public void launchJob(TransientStreamingJob job) {
-		LaunchStreamingJobMessage launchMessage = createLaunchStreamingJobMessage(job);
-		_masterNode.startStreamingJob(launchMessage);
-	}
+    @Autowired
+    public StreamingJobMessageSenderImpl(
+            PropertiesUtil properties,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            MasterNode masterNode,
+            StreamingServiceManager streamingServiceManager) {
+        _properties = properties;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _masterNode = masterNode;
+        _streamingServiceManager = streamingServiceManager;
+    }
 
 
-	@Override
-	public void stopJob(long jobId) {
-		_masterNode.stopStreamingJob(new StopStreamingJobMessage(jobId));
-	}
+    @Override
+    public void launchJob(TransientStreamingJob job) {
+        LaunchStreamingJobMessage launchMessage = createLaunchStreamingJobMessage(job);
+        _masterNode.startStreamingJob(launchMessage);
+    }
 
 
-
-	private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
-		TransientAction action = getAction(job);
-		StreamingServiceModel streamingService = _streamingServiceManager.getServices().stream()
-				.filter(sm -> sm.getAlgorithmName().equals(action.getAlgorithm()))
-				.findAny()
-				.orElseThrow(() -> new IllegalStateException(String.format(
-						"Could not start streaming job because there is no streaming service for the %s algorithm.",
-						action.getAlgorithm())));
-
-		Map<String, String> environmentVariables = streamingService.getEnvironmentVariables().stream()
-				.collect(toMap(EnvironmentVariableModel::getName, EnvironmentVariableModel::getValue));
-
-		Map<String, String> jobProperties = AggregateJobPropertiesUtil.getCombinedJobProperties(
-				_pipelineService.getAlgorithm(action.getAlgorithm()), action, job);
-
-		return new LaunchStreamingJobMessage(
-				job.getId(),
-				job.getStream().getUri(),
-				job.getStream().getSegmentSize(),
-				job.getStallTimeout(),
-				_properties.getStreamingJobStallAlertThreshold(),
-				streamingService.getServiceName(),
-				streamingService.getLibraryPath(),
-				environmentVariables,
-				jobProperties,
-				job.getStream().getMetadata(),
-				_properties.getAmqUri(),
-				StreamingEndpoints.WFM_STREAMING_JOB_STATUS.queueName(),
-				StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.queueName(),
-				StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.queueName());
-	}
-
-
-	private static TransientAction getAction(TransientStreamingJob job) {
-		List<TransientStage> stages = job.getPipeline().getStages();
-		//TODO: Remove method when support for the multi-stage pipelines is added.
-		if (stages.size() > 1) {
-			throw new IllegalStateException(String.format(
-					"Streaming job %s uses the %s pipeline which has multiple stages, but streaming pipelines only support one stage.",
-					job.getId(), job.getPipeline().getName()));
-		}
-
-		TransientStage stage = stages.get(0);
-		if (stage.getActions().size() > 1) {
-			throw new IllegalStateException(String.format(
-					"Streaming job %s uses the %s pipeline which contains a stage with multiple actions, but streaming pipelines only support a single action.",
-					job.getId(), job.getPipeline().getName()));
-		}
-		return stage.getActions().get(0);
-	}
+    @Override
+    public void stopJob(long jobId) {
+        _masterNode.stopStreamingJob(new StopStreamingJobMessage(jobId));
+    }
 
 
 
+    private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
+        Action action = getAction(job);
+        StreamingServiceModel streamingService = _streamingServiceManager.getServices().stream()
+                .filter(sm -> sm.getAlgorithmName().equals(action.getAlgorithm()))
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException(String.format(
+                        "Could not start streaming job because there is no streaming service for the %s algorithm.",
+                        action.getAlgorithm())));
 
-	//TODO: For future use. Untested.
+        Map<String, String> environmentVariables = streamingService.getEnvironmentVariables().stream()
+                .collect(toMap(EnvironmentVariableModel::getName, EnvironmentVariableModel::getValue));
+
+        Map<String, String> jobProperties = _aggregateJobPropertiesUtil.getCombinedJobProperties(action, job);
+
+        return new LaunchStreamingJobMessage(
+                job.getId(),
+                job.getStream().getUri(),
+                job.getStream().getSegmentSize(),
+                job.getStallTimeout(),
+                _properties.getStreamingJobStallAlertThreshold(),
+                streamingService.getServiceName(),
+                streamingService.getLibraryPath(),
+                environmentVariables,
+                jobProperties,
+                job.getStream().getMetadata(),
+                _properties.getAmqUri(),
+                StreamingEndpoints.WFM_STREAMING_JOB_STATUS.queueName(),
+                StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.queueName(),
+                StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.queueName());
+    }
+
+
+
+    private static Action getAction(TransientStreamingJob job) {
+        Pipeline pipeline = job.getTransientPipeline().getPipeline();
+        ImmutableList<String> tasks = pipeline.getTasks();
+        //TODO: Remove method when support for the multi-stage pipelines is added.
+        if (tasks.size() > 1) {
+            throw new IllegalStateException(String.format(
+                    "Streaming job %s uses the %s pipeline which has multiple stages, but streaming pipelines only support one stage.",
+                    job.getId(), pipeline.getName()));
+        }
+        Task task = job.getTransientPipeline().getTask(tasks.get(0));
+        if (task.getActions().size() > 1) {
+            throw new IllegalStateException(String.format(
+                    "Streaming job %s uses the %s pipeline which contains a stage with multiple actions, but streaming pipelines only support a single action.",
+                    job.getId(), pipeline.getName()));
+        }
+
+        return job.getTransientPipeline()
+                .getAction(task.getActions().get(0));
+    }
+
+
+
+    //TODO: For future use. Untested.
 //	private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
 //		LaunchFrameReaderMessage frameReaderMessage = createFrameReaderMessage(job);
 //		LaunchVideoWriterMessage videoWriterMessage = createVideoWriterMessage(job);

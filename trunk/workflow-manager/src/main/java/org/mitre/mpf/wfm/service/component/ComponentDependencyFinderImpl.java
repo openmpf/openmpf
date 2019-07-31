@@ -60,15 +60,6 @@ public class ComponentDependencyFinderImpl implements ComponentDependencyFinder 
 	}
 
 
-	@Override
-	public List<Path> getRegistrationOrder(Collection<Path> componentPaths) {
-		List<String> arguments = componentPaths.stream()
-				.map(Path::toString)
-				.collect(toList());
-
-		return runCommand(arguments);
-	}
-
 
 	@Override
 	public List<Path> getReRegistrationOrder(Path componentToReReg, Collection<Path> registeredComponentPaths) {

@@ -210,22 +210,17 @@ public class TestRedis {
         when(media.getId())
                 .thenReturn(TEST_MEDIA_ID);
 
-        TransientStage stage1 = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        when(stage1.getActions().size())
-                .thenReturn(1);
-
-        TransientStage stage2 = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        when(stage2.getActions().size())
-                .thenReturn(1);
-
-
         TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
-        when(job.getPipeline().getStages())
-                .thenReturn(ImmutableList.of(stage1, stage2));
         when(job.getMedia())
                 .thenAnswer(invocation -> ImmutableList.of(media));
+        when(job.getTransientPipeline().getPipeline().getTasks().size())
+                .thenReturn(2);
+        when(job.getTransientPipeline().getTask(0).getActions().size())
+                .thenReturn(1);
+        when(job.getTransientPipeline().getTask(1).getActions().size())
+                .thenReturn(1);
 
 
         _redis.clearTracks(job);

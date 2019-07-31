@@ -26,311 +26,239 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.ScriptAssert;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.xml.ValueType;
-import org.mitre.mpf.wfm.util.AllNotBlank;
-import org.mitre.mpf.wfm.util.ValidAlgoPropValue;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.BiPredicate;
 
-/**
- * This class is only used to avoid manually extracting information from the JSON descriptor file.
- * <p>
- * This intentionally does not use getters and setters. Adding getters and setters to this class
- * would only make it harder to figure out the structure of the descriptor.
- */
-@SuppressWarnings("PublicField")
+
 @ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
         message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
+    private final String _componentName;
     @NotBlank
-    public String componentName;
+    public String getComponentName() {
+        return _componentName;
+    }
 
+    private final String _componentVersion;
     @NotNull
-    public String componentVersion;
+    public String getComponentVersion() {
+        return _componentVersion;
+    }
 
+    private final String _middlewareVersion;
     @NotNull
-    public String middlewareVersion;
+    public String getMiddlewareVersion() {
+        return _middlewareVersion;
+    }
 
-    public String setupFile;
+    private final String _setupFile;
+    public String getSetupFile() {
+        return _setupFile;
+    }
 
-    public String instructionsFile;
+    private final String _instructionsFile;
+    public String getInstructionsFile() {
+        return _instructionsFile;
+    }
 
+    private final ComponentLanguage _sourceLanguage;
     @NotNull(message = "must be java, c++, or python")
-    public ComponentLanguage sourceLanguage;
+    public ComponentLanguage getSourceLanguage() {
+        return _sourceLanguage;
+    }
 
-    public String batchLibrary;
+    private final String _batchLibrary;
+    public String getBatchLibrary() {
+        return _batchLibrary;
+    }
 
     public boolean supportsBatchProcessing() {
-        return batchLibrary != null;
+        return _batchLibrary != null;
     }
 
-    public String streamLibrary;
+
+    private final String _streamLibrary;
+    public String getStreamLibrary() {
+        return _streamLibrary;
+    }
 
     public boolean supportsStreamProcessing() {
-        return streamLibrary != null;
+        return _streamLibrary != null;
     }
 
-    @NotNull
+    private final ImmutableList<EnvironmentVariable> _environmentVariables;
+    @NotNull @Valid
+    public ImmutableList<EnvironmentVariable> getEnvironmentVariables() {
+        return _environmentVariables;
+    }
+
+    private final Algorithm _algorithm;
+    @NotNull @Valid
+    public Algorithm getAlgorithm() {
+        return _algorithm;
+    }
+
+    private final ImmutableList<Action> _actions;
     @Valid
-    public List<EnvironmentVariable> environmentVariables;
+    public ImmutableList<Action> getActions() {
+        return _actions;
+    }
 
-    @NotNull
+    private final ImmutableList<Task> _tasks;
     @Valid
-    public Algorithm algorithm;
+    public ImmutableList<Task> getTasks() {
+        return _tasks;
+    }
 
+    private final ImmutableList<Pipeline> _pipelines;
     @Valid
-    public List<Action> actions;
-
-    @Valid
-    public List<Task> tasks;
-
-    @Valid
-    public List<Pipeline> pipelines;
-
-
-    public boolean deepEquals(JsonComponentDescriptor other) {
-        return other != null
-                && Objects.equals(componentName, other.componentName)
-                && Objects.equals(componentVersion, other.componentVersion)
-                && Objects.equals(middlewareVersion, other.middlewareVersion)
-                && Objects.equals(setupFile, other.setupFile)
-                && Objects.equals(instructionsFile, other.instructionsFile)
-                && sourceLanguage == other.sourceLanguage
-                && Objects.equals(batchLibrary, other.batchLibrary)
-                && Objects.equals(streamLibrary, other.streamLibrary)
-                && collectionDeepEquals(environmentVariables, other.environmentVariables,
-                                        EnvironmentVariable::deepEquals)
-                && algorithm.deepEquals(other.algorithm)
-                && collectionDeepEquals(actions, other.actions, Action::deepEquals)
-                && collectionDeepEquals(tasks, other.tasks, Task::deepEquals)
-                && collectionDeepEquals(pipelines, pipelines, Pipeline::deepEquals);
+    public ImmutableList<Pipeline> getPipelines() {
+        return _pipelines;
     }
 
 
-    public static class EnvironmentVariable {
-        @NotBlank
-        public String name;
+    public JsonComponentDescriptor(
+            @JsonProperty("componentName") String componentName,
+            @JsonProperty("componentVersion") String componentVersion,
+            @JsonProperty("middlewareVersion") String middlewareVersion,
+            @JsonProperty("setupFile") String setupFile,
+            @JsonProperty("instructionsFile") String instructionsFile,
+            @JsonProperty("sourceLanguage") ComponentLanguage sourceLanguage,
+            @JsonProperty("batchLibrary") String batchLibrary,
+            @JsonProperty("streamLibrary") String streamLibrary,
+            @JsonProperty("environmentVariables") Collection<EnvironmentVariable> environmentVariables,
+            @JsonProperty("algorithm") Algorithm algorithm,
+            @JsonProperty("actions") Collection<Action> actions,
+            @JsonProperty("tasks") Collection<Task> tasks,
+            @JsonProperty("pipelines") Collection<Pipeline> pipelines) {
+        _componentName = componentName;
+        _componentVersion = componentVersion;
+        _middlewareVersion = middlewareVersion;
+        _setupFile = setupFile;
+        _instructionsFile = instructionsFile;
+        _sourceLanguage = sourceLanguage;
+        _batchLibrary = batchLibrary;
+        _streamLibrary = streamLibrary;
+        _environmentVariables = ImmutableList.copyOf(environmentVariables);
+        _algorithm = new Algorithm(
+                algorithm.getName(),
+                algorithm.getDescription(),
+                algorithm.getActionType(),
+                algorithm.getRequiresCollection(),
+                algorithm.getProvidesCollection(),
+                batchLibrary != null,
+                streamLibrary != null);
 
-        @NotNull
-        public String value;
+        _actions = actions == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(actions);
+        _tasks = tasks == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(tasks);
+        _pipelines = pipelines == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(pipelines);
+    }
 
-        @Pattern(regexp = ":", message = "must be \":\" or null")
-        public String sep;
-
-        private boolean deepEquals(EnvironmentVariable other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(value, other.value)
-                    && Objects.equals(sep, other.sep);
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-    }
-
-    public static class Algorithm {
-        @NotBlank
-        public String name;
-
-        @NotBlank
-        public String description;
-
-        @NotNull
-        public ActionType actionType;
-
-        @NotNull
-        @Valid
-        public AlgoRequires requiresCollection;
-
-        @NotNull
-        @Valid
-        public AlgoProvides providesCollection;
-
-        public boolean deepEquals(Algorithm other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(description, other.description)
-                    && actionType == other.actionType
-                    && requiresCollection.deepEquals(other.requiresCollection)
-                    && providesCollection.deepEquals(other.providesCollection);
-        }
-    }
-
-    public static class AlgoRequires {
-        @NotNull
-        @Valid
-        public List<@AllNotBlank String> states;
-
-        public boolean deepEquals(AlgoRequires other) {
-            return other != null
-                    && collectionDeepEquals(states, other.states);
-        }
-    }
-
-
-    public static class AlgoProvides {
-        @NotNull
-        @Valid
-        public List<@AllNotBlank String> states;
-
-        @NotNull
-        @Valid
-        public List<AlgoProvidesProp> properties;
-
-        private boolean deepEquals(AlgoProvides other) {
-            return other != null
-                    && collectionDeepEquals(states, other.states)
-                    && collectionDeepEquals(properties, other.properties, AlgoProvidesProp::deepEquals);
-        }
-    }
-
-    @ValidAlgoPropValue
-    public static class AlgoProvidesProp {
-        @NotBlank
-        public String description;
-
-        @NotBlank
-        public String name;
-
-        @NotNull
-        public ValueType type;
-
-        // option A
-        public String defaultValue;
-
-        // option B
-        public String propertiesKey;
-
-
-        private boolean deepEquals(AlgoProvidesProp other) {
-            return other != null
-                    && Objects.equals(description, other.description)
-                    && Objects.equals(name, other.name)
-                    && type == other.type
-                    && Objects.equals(defaultValue, other.defaultValue)
-                    && Objects.equals(propertiesKey, other.propertiesKey);
-
-        }
-    }
-
-    public static class Pipeline {
-        @NotBlank
-        public String name;
-
-        @NotBlank
-        public String description;
-
-        @NotEmpty
-        @Valid
-        public List<@AllNotBlank String> tasks;
-
-        private boolean deepEquals(Pipeline other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(description, other.description)
-                    && collectionDeepEquals(tasks, other.tasks);
-        }
-    }
-
-
-    public static class Task {
-        @NotBlank
-        public String name;
-
-        @NotBlank
-        public String description;
-
-        @NotEmpty
-        @Valid
-        public List<@AllNotBlank String> actions;
-
-        private boolean deepEquals(Task other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(description, other.description)
-                    && collectionDeepEquals(actions, other.actions);
-        }
-    }
-
-
-    public static class Action {
-        @NotBlank
-        public String name;
-
-        @NotBlank
-        public String description;
-
-        @NotBlank
-        public String algorithm;
-
-        @NotNull
-        @Valid
-        public List<ActionProperty> properties;
-
-        private boolean deepEquals(Action other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(description, other.description)
-                    && Objects.equals(algorithm, other.algorithm)
-                    && collectionDeepEquals(properties, other.properties, ActionProperty::deepEquals);
-        }
-    }
-
-    public static class ActionProperty {
-        @NotBlank
-        public String name;
-
-        @NotNull
-        public String value;
-
-
-        private boolean deepEquals(ActionProperty other) {
-            return other != null
-                    && Objects.equals(name, other.name)
-                    && Objects.equals(value, other.value);
-        }
-    }
-
-
-    private static <T> boolean collectionDeepEquals(Collection<T> collection1, Collection<T> collection2) {
-        return collectionDeepEquals(collection1, collection2, Objects::equals);
-    }
-
-
-    private static <T> boolean collectionDeepEquals(Collection<T> collection1, Collection<T> collection2,
-                                                    BiPredicate <T, T> equalsPred) {
-        if (collection1 == null || collection2 == null) {
-            return collection1 == null && collection2 == null;
-        }
-        if (collection1.size() != collection2.size()) {
+        if (!(obj instanceof JsonComponentDescriptor)) {
             return false;
         }
+        JsonComponentDescriptor other = (JsonComponentDescriptor) obj;
+        return Objects.equals(_componentName, other._componentName)
+                && Objects.equals(_componentVersion, other._componentVersion)
+                && Objects.equals(_middlewareVersion, other._middlewareVersion)
+                && Objects.equals(_setupFile, other._setupFile)
+                && Objects.equals(_instructionsFile, other._instructionsFile)
+                && _sourceLanguage == other._sourceLanguage
+                && Objects.equals(_batchLibrary, other._batchLibrary)
+                && Objects.equals(_streamLibrary, other._streamLibrary)
+                && Objects.equals(_environmentVariables, other._environmentVariables)
+                && Objects.equals(_algorithm, other._algorithm)
+                && Objects.equals(_actions, other._actions)
+                && Objects.equals(_tasks, other._tasks)
+                && Objects.equals(_pipelines, other._pipelines);
+    }
 
-        Iterator<T> iter1 = collection1.iterator();
-        Iterator<T> iter2 = collection2.iterator();
-        while (iter1.hasNext()) {
-            T el1 = iter1.next();
-            T el2 = iter2.next();
-            if (el1 == null || el2 == null) {
-                if (el1 == null && el2 == null) {
-                    continue;
-                }
-                return false;
-            }
+    @Override
+    public int hashCode() {
+        return Objects.hash(_componentName,
+                            _componentVersion,
+                            _middlewareVersion,
+                            _setupFile,
+                            _instructionsFile,
+                            _sourceLanguage,
+                            _batchLibrary,
+                            _streamLibrary,
+                            _environmentVariables,
+                            _algorithm,
+                            _actions,
+                            _tasks,
+                            _pipelines);
+    }
 
-            if (!equalsPred.test(el1, el2)) {
-                return false;
-            }
+    public static class EnvironmentVariable {
+        private final String _name;
+        @NotBlank
+        public String getName() {
+            return _name;
         }
-        return true;
+
+        private final String _value;
+        @NotNull
+        public String getValue() {
+            return _value;
+        }
+
+        private final String _sep;
+        @Pattern(regexp = ":", message = "must be \":\" or null")
+        public String getSep() {
+            return _sep;
+        }
+
+        public EnvironmentVariable(
+                @JsonProperty("name") String name,
+                @JsonProperty("value") String value,
+                @JsonProperty("sep") String sep) {
+            _name = name;
+            _value = value;
+            _sep = sep;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof EnvironmentVariable)) {
+                return false;
+            }
+            EnvironmentVariable other = (EnvironmentVariable) obj;
+            return Objects.equals(_name, other._name)
+                    && Objects.equals(_value, other._value)
+                    && Objects.equals(_sep, other._sep);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(_name, _value, _sep);
+        }
     }
 }

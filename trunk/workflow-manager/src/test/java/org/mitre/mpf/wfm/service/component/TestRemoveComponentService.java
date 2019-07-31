@@ -35,9 +35,11 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -92,8 +94,8 @@ public class TestRemoveComponentService {
     public void testRemoveComponentHappyPath() throws IOException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
-        String serviceName = descriptor.algorithm.name;
-        String algoName = descriptor.algorithm.name.toUpperCase();
+        String serviceName = descriptor.getAlgorithm().getName();
+        String algoName = descriptor.getAlgorithm().getName();
 
         RegisterComponentModel rcm = new RegisterComponentModel();
         rcm.setComponentState(ComponentState.REGISTERED);
@@ -122,21 +124,23 @@ public class TestRemoveComponentService {
         when(_mockStateService.getByComponentName(COMPONENT_NAME))
                 .thenReturn(Optional.of(rcm));
 
-        ActionDefinition actionDef = new ActionDefinition("action1-name", algoName, "");
-        ActionDefinition actionDef2 = new ActionDefinition("action2-name", "foo", "");
+        Action action = new Action("action1-name", "description", algoName, Collections.emptyList());
+        Action action2 = new Action("action2-name", "description", "foo",
+                                    Collections.emptyList());
         when(_mockPipelineService.getActions())
-                .thenReturn(Sets.newSet(actionDef, actionDef2));
+                .thenReturn(Arrays.asList(action, action2));
 
-        TaskDefinition taskDef = new TaskDefinition("task1-name", "");
-        taskDef.getActions().add(new ActionDefinitionRef(actionDef.getName()));
+        Task task = new Task("task1-name", "description", Collections.singleton(action.getName()));
         when(_mockPipelineService.getTasks())
-                .thenReturn(Sets.newSet(taskDef, new TaskDefinition("asdf", "")));
+                .thenReturn(Arrays.asList(task, new Task("asdf", "description",
+                                                         Collections.emptyList())));
 
-        PipelineDefinition pipelineDef = new PipelineDefinition("pipeline1-name", "");
-        pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskDef.getName()));
-
+        Pipeline pipeline = new Pipeline("pipeline1-name", "description",
+                                         Collections.singleton(task.getName()));
         when(_mockPipelineService.getPipelines())
-                .thenReturn(Sets.newSet(pipelineDef, new PipelineDefinition("sdaf", "")));
+                .thenReturn(Arrays.asList(pipeline, new Pipeline("sdaf", "description",
+                                                                 Collections.emptyList())));
+
         // Act
         _removeComponentService.removeComponent(COMPONENT_NAME);
 
@@ -160,13 +164,13 @@ public class TestRemoveComponentService {
                 .deleteAlgorithm(algoName);
 
         verify(_mockPipelineService)
-                .deleteAction(actionDef.getName());
+                .deleteAction(action.getName());
 
         verify(_mockPipelineService)
-                .deleteTask(taskDef.getName());
+                .deleteTask(task.getName());
 
         verify(_mockPipelineService)
-                .deletePipeline(pipelineDef.getName());
+                .deletePipeline(pipeline.getName());
 
         verify(_mockDeploymentService)
                 .undeployComponent(COMPONENT_NAME);
@@ -221,34 +225,29 @@ public class TestRemoveComponentService {
         String componentAlgoName = "Component Algo Name";
 
         String actionName = "Action Name";
-        ActionDefinition action = new ActionDefinition(actionName, componentAlgoName, "a description");
-        ActionDefinitionRef actionRef = new ActionDefinitionRef(actionName);
+        Action action = new Action(actionName, "a description", componentAlgoName, Collections.emptyList());
 
         String taskName = "TASK NAME";
-        TaskDefinition task = new TaskDefinition(taskName, "t description");
-        task.getActions().add(actionRef);
-        TaskDefinitionRef taskRef = new TaskDefinitionRef(taskName);
+        Task task = new Task(taskName, "t description", Collections.singleton(action.getName()));
 
         String pipelineName = "PIPELINE NAME";
-        PipelineDefinition pipeline = new PipelineDefinition(pipelineName, "p description");
-        pipeline.getTaskRefs().add(taskRef);
+        Pipeline pipeline = new Pipeline(pipelineName, "p description",
+                                         Collections.singleton(task.getName()));
 
 
         String externalAlgoName = "EXTERNAL ALGO NAME";
 
         String externalActionName = "EXTERNAL ACTION";
-        ActionDefinition externalAction = new ActionDefinition(externalActionName, externalAlgoName,
-                "a description");
-        ActionDefinitionRef externalActionRef = new ActionDefinitionRef(externalActionName);
+        Action externalAction = new Action(externalActionName, "a description", externalAlgoName,
+                                           Collections.emptyList());
 
         String componentTaskName = "Component Task Name";
-        TaskDefinition componentTask = new TaskDefinition(componentTaskName, "t description");
-        componentTask.getActions().add(externalActionRef);
-        TaskDefinitionRef componentTaskRef = new TaskDefinitionRef(componentTaskName);
+        Task componentTask = new Task(componentTaskName, "t description",
+                                      Collections.singleton(externalAction.getName()));
 
         String externalPipelineName = "External Pipeline Name";
-        PipelineDefinition externalPipeline = new PipelineDefinition(externalPipelineName, "p description");
-        externalPipeline.getTaskRefs().add(componentTaskRef);
+        Pipeline externalPipeline = new Pipeline(externalPipelineName, "p description",
+                                                 Collections.singleton(componentTask.getName()));
 
         String componentActionName = "Component Action Name";
         String componentPipelineName = "Component Pipeline Name";

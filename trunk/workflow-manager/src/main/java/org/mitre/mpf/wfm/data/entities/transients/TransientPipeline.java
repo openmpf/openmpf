@@ -24,46 +24,109 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.google.common.collect.ImmutableList;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.wfm.util.TextUtils;
-
-import java.util.List;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 
 public class TransientPipeline {
-	private final String _name;
-	public String getName() { return _name; }
 
-	private final String _description;
-	public String getDescription() { return _description; }
+    private final Pipeline _pipeline;
+    public Pipeline getPipeline() {
+        return _pipeline;
+    }
 
-	private final ImmutableList<TransientStage> _stages;
-	public ImmutableList<TransientStage> getStages() { return _stages; }
+    private final ImmutableMap<String, Task> _tasks;
+    public ImmutableMap<String, Task> getTasks() {
+        return _tasks;
+    }
 
+    private final ImmutableMap<String, Action> _actions;
+    public ImmutableMap<String, Action> getActions() {
+        return _actions;
+    }
 
-	public TransientPipeline(String name, String description, Iterable<TransientStage> stages) {
-		_name = TextUtils.trimAndUpper(name);
-		_description = TextUtils.trim(description);
-		_stages = ImmutableList.copyOf(stages);
-
-		assert _name != null : "name cannot be null";
-	}
-
-
-	public static TransientPipeline from(JsonPipeline pipeline) {
-		List<TransientStage> stages = pipeline.getStages()
-				.stream()
-				.map(TransientStage::from)
-				.collect(ImmutableList.toImmutableList());
-
-		return new TransientPipeline(pipeline.getName(), pipeline.getDescription(), stages);
-	}
+    private final ImmutableMap<String, Algorithm> _algorithms;
+    public ImmutableMap<String, Algorithm> getAlgorithms() {
+        return _algorithms;
+    }
 
 
-	@Override
-	public String toString() {
-		return String.format("%s#<name='%s', description='%s'>", getClass().getSimpleName(), _name, _description);
-	}
+    public String getName() {
+        return _pipeline.getName();
+    }
+
+    public int getTaskCount() {
+        return _pipeline.getTasks().size();
+    }
+
+    public Task getTask(String name) {
+        return _tasks.get(name);
+    }
+
+    public Task getTask(int taskIndex) {
+        String taskName = _pipeline.getTasks().get(taskIndex);
+        return _tasks.get(taskName);
+    }
+
+
+    public Action getAction(String name) {
+        return _actions.get(name);
+    }
+
+    public Action getAction(int taskIndex, int actionIndex) {
+        Task task = getTask(taskIndex);
+        String actionName = task.getActions().get(actionIndex);
+        return _actions.get(actionName);
+    }
+
+    public Algorithm getAlgorithm(String name) {
+        return _algorithms.get(name);
+    }
+
+    public Algorithm getAlgorithm(int taskIndex, int actionIndex) {
+        Action action = getAction(taskIndex, actionIndex);
+        return _algorithms.get(action.getAlgorithm());
+    }
+
+
+    public TransientPipeline(
+            Pipeline pipeline,
+            Iterable<Task> tasks,
+            Iterable<Action> actions,
+            Iterable<Algorithm> algorithms) {
+        _pipeline = pipeline;
+        _tasks = Maps.uniqueIndex(tasks, Task::getName);
+        _actions = Maps.uniqueIndex(actions, Action::getName);
+        _algorithms = Maps.uniqueIndex(algorithms, Algorithm::getName);
+
+        for (String taskName : pipeline.getTasks()) {
+            Task task = _tasks.get(taskName);
+            if (task == null) {
+                throw new IllegalArgumentException(
+                        "Expected the \"tasks\" parameter to contain a task named \"" + taskName + "\".");
+            }
+
+            for (String actionName : task.getActions()) {
+                Action action = _actions.get(actionName);
+                if (action == null) {
+                    throw new IllegalArgumentException(
+                            "Expected the \"actions\" parameter to contain an action named \"" + actionName + "\".");
+                }
+
+                String algoName = action.getAlgorithm();
+                Algorithm algorithm = _algorithms.get(algoName);
+                if (algorithm == null) {
+                    throw new IllegalArgumentException(
+                            "Expected the \"algorithms\" parameter to contain an algorithm named \""
+                                    + algoName + "\".");
+                }
+            }
+        }
+    }
 }

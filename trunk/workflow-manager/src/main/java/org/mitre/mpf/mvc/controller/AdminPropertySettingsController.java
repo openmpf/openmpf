@@ -29,7 +29,6 @@ package org.mitre.mpf.mvc.controller;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -62,9 +61,6 @@ public class AdminPropertySettingsController
 
 	@Autowired
 	private MpfService mpfService;
-
-	@Autowired
-	private PipelineService pipelineService;
 
     /**
      * Check to see if a change to any of the immutable system properties requires a restart to apply the change..
@@ -128,10 +124,6 @@ public class AdminPropertySettingsController
 
         // Call method to iterate through the system properties and update any properties that may have been updated on the UI,
 		propertiesUtil.setAndSaveCustomProperties(propertyModels);
-
-		// After any dynamic detection system properties have been updated, refresh the algorithm default values so
-        // they will be applied to new pipelines.
-        pipelineService.refreshAlgorithmDefaultValues();
 
 		// Add system message if a restart of OpenMPF is required.
         if ( checkForRestartRequired() ) {

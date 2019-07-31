@@ -35,8 +35,8 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.pipeline.*;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
@@ -83,9 +83,6 @@ public class TestAddComponentService {
 
     @Mock
     private ComponentDescriptorValidator _mockDescriptorValidator;
-
-    @Mock
-    private CustomPipelineValidator _mockPipelineValidator;
 
     @Mock
     private RemoveComponentService _mockRemoveComponentService;
@@ -218,17 +215,17 @@ public class TestAddComponentService {
 
         // Verify mocked methods
 
-        String expectedAlgoName = descriptor.algorithm.name.toUpperCase();
+        String expectedAlgoName = descriptor.getAlgorithm().getName();
 
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService)
-                .saveAction(whereArg(ad -> ad.getName().contains(expectedAlgoName)
-                        && ad.getAlgorithmRef().equals(expectedAlgoName)
-                        && ad.getProperties().isEmpty() ));
+                .save(whereArg((Action a) -> a.getName().contains(expectedAlgoName)
+                        && a.getAlgorithm().equals(expectedAlgoName)
+                        && a.getProperties().isEmpty() ));
 
         verify(_mockPipelineService)
-                .saveTask(whereArg(td -> td.getName().contains(expectedAlgoName)));
+                .save(whereArg((Task t) -> t.getName().contains(expectedAlgoName)));
 
         verify(_mockDeploymentService)
                 .deployComponent(_testPackageName);
@@ -239,17 +236,17 @@ public class TestAddComponentService {
         verify(_mockStreamingServiceManager)
                 .addService(whereArg(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
-                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
+                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
 
         assertNeverUndeployed();
     }
 
     private void verifyDescriptorAlgoSaved(JsonComponentDescriptor descriptor) {
         verify(_mockPipelineService)
-                .saveAlgorithm(whereArg(algo -> algo.getName().equals(descriptor.algorithm.name.toUpperCase())
-                        && algo.supportsBatchProcessing() == descriptor.supportsBatchProcessing()
-                        && algo.supportsStreamProcessing() == descriptor.supportsStreamProcessing()));
+                .save(whereArg((Algorithm algo) -> algo.getName().equals(descriptor.getAlgorithm().getName())
+                        && algo.getSupportsBatchProcessing() == descriptor.supportsBatchProcessing()
+                        && algo.getSupportsStreamProcessing() == descriptor.supportsStreamProcessing()));
 
     }
 
@@ -321,8 +318,8 @@ public class TestAddComponentService {
         verify(_mockStreamingServiceManager)
                 .addService(whereArg(
                         s -> s.getServiceName().equals(COMPONENT_NAME)
-                                && s.getAlgorithmName().equals(descriptor.algorithm.name.toUpperCase())
-                                && s.getEnvironmentVariables().size() == descriptor.environmentVariables.size()));
+                                && s.getAlgorithmName().equals(descriptor.getAlgorithm().getName())
+                                && s.getEnvironmentVariables().size() == descriptor.getEnvironmentVariables().size()));
     }
 
 
@@ -338,31 +335,31 @@ public class TestAddComponentService {
         verifyDescriptorAlgoSaved(descriptor);
 
         verify(_mockPipelineService, times(3))
-                .saveAction(whereArg(ad -> ad.getAlgorithmRef().equals(REFERENCED_ALGO_NAME)));
+                .save(whereArg((Action a) -> a.getAlgorithm().equals(REFERENCED_ALGO_NAME)));
 
         verify(_mockPipelineService)
-                .saveAction(whereArg(ad -> ad.getName().equals(ACTION_NAMES.get(0))
-                        && ad.getProperties().stream()
+                .save(whereArg((Action a) -> a.getName().equals(ACTION_NAMES.get(0))
+                        && a.getProperties().stream()
                                 .anyMatch(pd -> pd.getName().equals(ACTION1_PROP_NAMES.get(0))
                                         && pd.getValue().equals(ACTION1_PROP_VALUES.get(0)))));
 
         verify(_mockPipelineService)
-                .saveTask(whereArg(t ->
+                .save(whereArg((Task t) ->
                         t.getName().equals(TASK_NAMES.get(0))
                                 && t.getDescription().equals(TASK_NAMES.get(0) + " description")
                                 && t.getActions().size() == 1));
 
         verify(_mockPipelineService)
-                .saveTask(whereArg(t ->
+                .save(whereArg((Task t) ->
                         t.getName().equals(TASK_NAMES.get(1))
                                 && t.getDescription().equals(TASK_NAMES.get(1) + " description")
                                 && t.getActions().size() == 2));
 
         verify(_mockPipelineService)
-                .savePipeline(whereArg(p ->
+                .save(whereArg((Pipeline p) ->
                         p.getName().equals(PIPELINE_NAME)
                                 && p.getDescription().contains("description")
-                                && p.getTaskRefs().size() == 2));
+                                && p.getTasks().size() == 2));
     }
 
 
@@ -392,8 +389,6 @@ public class TestAddComponentService {
                 .thenReturn(_tempDir.newFolder("plugins").toPath());
 
         JsonComponentDescriptor existingDescriptor = TestDescriptorFactory.getWithCustomPipeline();
-        // Just pick a random field to change
-        existingDescriptor.algorithm.requiresCollection.states = Collections.singletonList("asdf");
 
         RegisterComponentModel alreadyRegisteredComponent = new RegisterComponentModel();
         alreadyRegisteredComponent.setManaged(false);
@@ -405,8 +400,31 @@ public class TestAddComponentService {
         when(_mockObjectMapper.readValue(new File(existingDescriptorPath), JsonComponentDescriptor.class))
                 .thenReturn(existingDescriptor);
 
+        Algorithm existingAlgo = existingDescriptor.getAlgorithm();
+        Algorithm algoWithChange = new Algorithm(
+                existingAlgo.getName(),
+                existingAlgo.getDescription(),
+                existingAlgo.getActionType(),
+                // Just pick a random field to change
+                new Algorithm.Requires(Collections.singleton("asdf")),
+                existingAlgo.getProvidesCollection(),
+                existingAlgo.getSupportsBatchProcessing(),
+                existingAlgo.getSupportsStreamProcessing());
 
-        JsonComponentDescriptor newDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+        JsonComponentDescriptor newDescriptor = new JsonComponentDescriptor(
+                existingDescriptor.getComponentName(),
+                existingDescriptor.getComponentVersion(),
+                existingDescriptor.getMiddlewareVersion(),
+                existingDescriptor.getSetupFile(),
+                existingDescriptor.getInstructionsFile(),
+                existingDescriptor.getSourceLanguage(),
+                existingDescriptor.getBatchLibrary(),
+                existingDescriptor.getStreamLibrary(),
+                existingDescriptor.getEnvironmentVariables(),
+                algoWithChange,
+                existingDescriptor.getActions(),
+                existingDescriptor.getTasks(),
+                existingDescriptor.getPipelines());
 
 
         boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
@@ -459,7 +477,7 @@ public class TestAddComponentService {
         assertFalse(wasModified);
 
 
-        verifyZeroInteractions(_mockRemoveComponentService, _mockDescriptorValidator, _mockPipelineValidator,
+        verifyZeroInteractions(_mockRemoveComponentService, _mockDescriptorValidator,
                                _mockPipelineService, _mockNodeManager);
 
         verify(_mockObjectMapper, never())
@@ -515,7 +533,7 @@ public class TestAddComponentService {
         setUpMocksForDescriptor(descriptor);
 
         doThrow(WfmProcessingException.class)
-                .when(_mockPipelineService).saveAlgorithm(any());
+                .when(_mockPipelineService).save(any(Algorithm.class));
 
         // Act
         try {
@@ -547,10 +565,10 @@ public class TestAddComponentService {
         }
 
         verify(_mockPipelineService, never())
-                .saveAlgorithm(any());
+                .save(any(Algorithm.class));
 
         verify(_mockPipelineService, never())
-                .saveAction(any());
+                .save(any(Action.class));
         assertUndeployed(COMPONENT_NAME);
     }
 
@@ -559,21 +577,24 @@ public class TestAddComponentService {
         JsonComponentDescriptor descriptor = TestDescriptorFactory.getWithCustomPipeline();
         setUpMocksForDescriptor(descriptor);
 
-        doThrow(InvalidCustomPipelinesException.class)
-                .when(_mockPipelineValidator)
-                .validate(descriptor);
+        doThrow(InvalidPipelineException.class)
+                .when(_mockPipelineService)
+                .save(eq(descriptor.getAlgorithm()));
         try {
             _addComponentService.registerComponent(_testPackageName);
             fail();
         }
-        catch (InvalidCustomPipelinesException ignored) {
+        catch (InvalidPipelineException ignored) {
         }
 
-        verify(_mockPipelineService, never())
-                .saveAlgorithm(any());
 
         verify(_mockPipelineService, never())
-                .saveAction(any());
+                .save(any(Action.class));
+        verify(_mockPipelineService, never())
+                .save(any(Task.class));
+        verify(_mockPipelineService, never())
+                .save(any(Pipeline.class));
+
         assertUndeployed(COMPONENT_NAME);
     }
 

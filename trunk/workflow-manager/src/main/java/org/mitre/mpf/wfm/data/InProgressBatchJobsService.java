@@ -180,7 +180,7 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
-        LOG.info("Adding detection processing error for job {}'s media {} with message: ",
+        LOG.info("Adding detection processing error for job {}'s media {} with message: {}",
                  error.getJobId(), error.getMediaId(), error.getError());
         getJobImpl(error.getJobId()).addDetectionProcessingError(error);
     }
@@ -193,12 +193,12 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void incrementStage(long jobId) {
+    public synchronized void incrementTask(long jobId) {
         TransientJobImpl job = getJobImpl(jobId);
-        int currentStage = job.getCurrentStage();
-        int nextStage = currentStage + 1;
-        LOG.info("Changing job {}'s current stage from {} to {}", jobId, currentStage, nextStage);
-        job.setCurrentStage(nextStage);
+        int currentTask = job.getCurrentTaskIndex();
+        int nextTask = currentTask + 1;
+        LOG.info("Changing job {}'s current task index from {} to {}", jobId, currentTask, nextTask);
+        job.setCurrentTaskIndex(nextTask);
     }
 
 

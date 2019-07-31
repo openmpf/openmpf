@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -42,44 +42,44 @@ import java.lang.annotation.Target;
 @Constraint(validatedBy = ValidAlgoPropValue.Validator.class)
 public @interface ValidAlgoPropValue {
 
-	String message() default "must provide either a defaultValue or propertiesKey, but not both.";
-	Class<?>[] groups() default { };
-	Class<? extends Payload>[] payload() default { };
+    String message() default "must provide either a defaultValue or propertiesKey, but not both.";
+    Class<?>[] groups() default { };
+    Class<? extends Payload>[] payload() default { };
 
 
 
-	public static class Validator
-			implements ConstraintValidator<ValidAlgoPropValue, JsonComponentDescriptor.AlgoProvidesProp> {
+    public static class Validator
+            implements ConstraintValidator<ValidAlgoPropValue, Algorithm.Property> {
 
-		@Override
-		public void initialize(ValidAlgoPropValue constraintAnnotation) {
-		}
+        @Override
+        public void initialize(ValidAlgoPropValue constraintAnnotation) {
+        }
 
-		@Override
-		public boolean isValid(JsonComponentDescriptor.AlgoProvidesProp property, ConstraintValidatorContext ctx) {
-			boolean bothProvided = property.defaultValue != null && property.propertiesKey != null;
-			boolean neitherProvided = property.defaultValue == null && property.propertiesKey == null;
-			if (bothProvided || neitherProvided) {
-				ctx.disableDefaultConstraintViolation();
-				ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
-						.addPropertyNode("propertiesKey")
-						.addConstraintViolation();
+        @Override
+        public boolean isValid(Algorithm.Property property, ConstraintValidatorContext ctx) {
+            boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
+            boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
+            if (bothProvided || neitherProvided) {
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
+                        .addPropertyNode("propertiesKey")
+                        .addConstraintViolation();
 
-				ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
-						.addPropertyNode("defaultValue")
-						.addConstraintViolation();
-				return false;
-			}
+                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
+                        .addPropertyNode("defaultValue")
+                        .addConstraintViolation();
+                return false;
+            }
 
-			if (property.propertiesKey != null && property.propertiesKey.trim().isEmpty()) {
-				ctx.disableDefaultConstraintViolation();
-				ctx.buildConstraintViolationWithTemplate("may not be empty")
-						.addPropertyNode("propertiesKey")
-						.addConstraintViolation();
-				return false;
-			}
+            if (property.getPropertiesKey() != null && property.getPropertiesKey().trim().isEmpty()) {
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate("may not be empty")
+                        .addPropertyNode("propertiesKey")
+                        .addConstraintViolation();
+                return false;
+            }
 
-			return true;
-		}
-	}
+            return true;
+        }
+    }
 }

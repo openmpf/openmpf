@@ -36,7 +36,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,16 +203,16 @@ public class StreamingJobController {
             if ( !streamingJobCreationRequest.isValidRequest() ) {
                 // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            } else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
+            }
+            else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
                 // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
                 // Reject the job and send an error response.
                 return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
                     "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStream().getStreamUri());
-            } else if ( !pipelineService.pipelineSupportsStreaming(streamingJobCreationRequest.getPipelineName()) ) {
-                // The streaming job failed the pipeline check. The requested pipeline doesn't support streaming.
-                // Reject the job and send an error response.
-                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "Requested pipeline doesn't support streaming jobs");
-            } else {
+            }
+            else {
+                pipelineService.verifyStreamingPipelineRunnable(streamingJobCreationRequest.getPipelineName());
+
                 boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
                 if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
                   enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
@@ -251,12 +251,13 @@ public class StreamingJobController {
                 StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
                 return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
             }
-        } catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
+        }
+        catch (Exception ex) {
             StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");
             if (streamingJobCreationRequest.getExternalId() != null) {
                 errBuilder.append(String.format(" with external id '%s'", streamingJobCreationRequest.getExternalId()));
             }
-            errBuilder.append(" due to an exception. Please check server logs for more detail.");
+            errBuilder.append(" due to an exception. ").append(ex.getMessage());
             String err = errBuilder.toString();
 
             log.error(err, ex);

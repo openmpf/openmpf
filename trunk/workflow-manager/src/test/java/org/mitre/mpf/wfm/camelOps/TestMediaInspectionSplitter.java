@@ -34,7 +34,9 @@ import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJobImpl;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mockito.InjectMocks;
@@ -76,8 +78,7 @@ public class TestMediaInspectionSplitter {
                 .thenReturn(inMessage);
 
         final String testExternalId = "externID";
-        final TransientPipeline testPipe = new TransientPipeline("testPipe", "testDescr",
-                                                                 Collections.emptyList());
+
         final long testMediaId = 123456;
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
         TransientMediaImpl testMedia = new TransientMediaImpl(
@@ -88,7 +89,7 @@ public class TestMediaInspectionSplitter {
                 jobId,
                 testExternalId,
                 null,
-                testPipe,
+                null,
                 5,
                 false,
                 null,

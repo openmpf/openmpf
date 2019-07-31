@@ -80,11 +80,11 @@
                 <span class="pp-popover-show-all-params-toggle pp-algorithm"
                       ng-click="toggleShowAllProperties2()">
                     + <span class="pp-popover-param-value">
-                        {{actionObj._alg.providesCollection.algorithmProperties.length}}</span>
+                        {{actionObj._alg.providesCollection.properties.length}}</span>
                     default parameters:
                 </span>
                 <ul class="pp-popover-param-list pp-algorithm">
-                    <li ng-repeat="prop in actionObj._alg.providesCollection.algorithmProperties">
+                    <li ng-repeat="prop in actionObj._alg.providesCollection.properties">
                         <span class="pp-popover-param-name">{{prop.name}}</span>
                         <span class="pp-popover-param-value">{{prop.defaultValue}}</span>
                     </li>

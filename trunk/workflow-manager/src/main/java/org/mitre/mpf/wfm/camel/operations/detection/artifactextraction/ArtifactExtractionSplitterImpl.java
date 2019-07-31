@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -124,9 +125,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             TransientJob job, int stageIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
-        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
+        Task task = job.getTransientPipeline().getTask(stageIndex);
 
-        for (int actionIndex = 0; actionIndex < stage.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
             for (TransientMedia media : job.getMedia()) {
                 if (media.isFailed()

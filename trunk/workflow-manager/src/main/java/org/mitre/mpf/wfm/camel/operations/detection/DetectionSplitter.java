@@ -32,13 +32,18 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.segmenting.*;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +52,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
@@ -57,6 +61,9 @@ public class DetectionSplitter implements StageSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
     public static final String REF = "detectionStageSplitter";
+
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;
@@ -117,9 +124,9 @@ public class DetectionSplitter implements StageSplitter {
     // property priorities are assigned in this method.  The property priorities are defined as:
     // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
     @Override
-    public final List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
+    public final List<Message> performSplit(TransientJob transientJob, Task task) {
         assert transientJob != null : "The provided transientJob must not be null.";
-        assert transientStage != null : "The provided transientStage must not be null.";
+        assert task != null : "The provided task must not be null.";
 
         List<Message> messages = new ArrayList<>();
 
@@ -132,7 +139,7 @@ public class DetectionSplitter implements StageSplitter {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
                     log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
                             transientJob.getId(),
-                            transientJob.getCurrentStage(),
+                            transientJob.getCurrentTaskIndex(),
                             transientMedia.getId());
                     continue;
                 }
@@ -145,20 +152,25 @@ public class DetectionSplitter implements StageSplitter {
                     previousTracks = Collections.emptySortedSet();
                 } else {
                     previousTracks = inProgressBatchJobs.getTracks(transientJob.getId(), transientMedia.getId(),
-                                                                   transientJob.getCurrentStage() - 1, 0);
+                                                                   transientJob.getCurrentTaskIndex() - 1, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
-                for (int actionIndex = 0; actionIndex < transientStage.getActions().size(); actionIndex++) {
+                for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
                     // starting setting of priorities here:  getting action property defaults
-                    TransientAction transientAction = transientStage.getActions().get(actionIndex);
+                    String actionName = task.getActions().get(actionIndex);
+                    Action action = transientJob.getTransientPipeline()
+                            .getAction(actionName);
 
                     // modifiedMap initialized with algorithm specific properties
-                    Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(transientAction.getAlgorithm(), transientJob.getSystemPropertiesSnapshot()));
+                    Map<String, String> modifiedMap = new HashMap<>(
+                            getAlgorithmProperties(action.getAlgorithm(), transientJob.getSystemPropertiesSnapshot()));
 
                     // current modifiedMap properties overridden by action properties
-                    modifiedMap.putAll(transientAction.getProperties());
+                    for (Action.Property actionProperty : action.getProperties()) {
+                        modifiedMap.put(actionProperty.getName(), actionProperty.getValue());
+                    }
 
                     // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
                     // action properties to default.  We assume that when the user overrides one rotation/flip/roi
@@ -199,9 +211,9 @@ public class DetectionSplitter implements StageSplitter {
                     // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
                     // override of the action (i.e. algorithm) that we are currently processing
                     // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-                    if (transientJob.getOverriddenAlgorithmProperties().containsRow(transientAction.getAlgorithm())) {
+                    if (transientJob.getOverriddenAlgorithmProperties().containsRow(action.getAlgorithm())) {
                         // this transient job contains the a algorithm property which may override what is in our current action
-                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().row(transientAction.getAlgorithm());
+                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().row(action.getAlgorithm());
 
                         // see if any of these algorithm properties are transform properties.  If so, clear the
                         // current set of transform properties from the map to allow for this algorithm properties to
@@ -237,7 +249,7 @@ public class DetectionSplitter implements StageSplitter {
                         }
 
                         String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
-                                transientAction, transientJob, transientMedia,
+                                action, transientJob, transientMedia,
                                 transientJob.getSystemPropertiesSnapshot().getSamplingInterval(), transientJob.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
@@ -248,10 +260,10 @@ public class DetectionSplitter implements StageSplitter {
 
                     DetectionContext detectionContext = new DetectionContext(
                             transientJob.getId(),
-                            transientJob.getCurrentStage(),
-                            transientStage.getName(),
+                            transientJob.getCurrentTaskIndex(),
+                            task.getName(),
                             actionIndex,
-                            transientAction.getName(),
+                            action.getName(),
                             isFirstDetectionStage,
                             algorithmProperties,
                             previousTracks,
@@ -261,18 +273,21 @@ public class DetectionSplitter implements StageSplitter {
 
                     List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
 
+                    ActionType actionType = transientJob.getTransientPipeline()
+                            .getAlgorithm(action.getAlgorithm())
+                            .getActionType();
                     for (Message message : detectionRequestMessages) {
                         message.setHeader(MpfHeaders.RECIPIENT_QUEUE,
                                 String.format("jms:MPF.%s_%s_REQUEST",
-                                        transientStage.getActionType(),
-                                        transientAction.getAlgorithm()));
+                                        actionType,
+                                        action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
                             transientJob.getId(),
-                            transientJob.getCurrentStage(),
+                            transientJob.getCurrentTaskIndex(),
                             actionIndex,
                             detectionRequestMessages.size(), transientMedia.getId());
                 }
@@ -310,12 +325,12 @@ public class DetectionSplitter implements StageSplitter {
         }
     }
 
-	/**
-	 * Create the segmenting plan using the properties defined for the sub-job.
-	 * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
-	 * @param properties properties defined for the sub-job
-	 * @return segmenting plan for this sub-job
-	 */
+    /**
+     * Create the segmenting plan using the properties defined for the sub-job.
+     * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
+     * @param properties properties defined for the sub-job
+     * @return segmenting plan for this sub-job
+     */
     private SegmentingPlan createSegmentingPlan(SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties) {
         int targetSegmentLength = systemPropertiesSnapshot.getTargetSegmentLength();
         int minSegmentLength = systemPropertiesSnapshot.getMinSegmentLength();
@@ -396,29 +411,33 @@ public class DetectionSplitter implements StageSplitter {
      */
     private static boolean isFirstDetectionOperation(TransientJob transientJob) {
         boolean isFirst = false;
-        for (int i = 0; i < transientJob.getPipeline().getStages().size(); i++) {
-
+        for (int i = 0; i < transientJob.getTransientPipeline().getTaskCount(); i++) {
+            ActionType actionType = transientJob.getTransientPipeline().getAlgorithm(i, 0).getActionType();
             // This is a detection stage.
-            if (transientJob.getPipeline().getStages().get(i).getActionType() == ActionType.DETECTION) {
+            if (actionType == ActionType.DETECTION) {
                 // If this is the first detection stage, it must be true that the current stage's index is at most the current job stage's index.
-                isFirst = (i >= transientJob.getCurrentStage());
+                isFirst = i >= transientJob.getCurrentTaskIndex();
                 break;
             }
         }
+
         return isFirst;
     }
 
 
     private Map<String, String> getAlgorithmProperties(String algorithmName, SystemPropertiesSnapshot systemPropertiesSnapshot) {
-        AlgorithmDefinition algorithm = pipelineService.getAlgorithm(algorithmName);
+        Algorithm algorithm = pipelineService.getAlgorithm(algorithmName);
         if (algorithm == null) {
             return Collections.emptyMap();
         }
 
-        Set<String> invalidSysPropertiesSet = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-                .filter( pd -> pd.getPropertiesKey() != null && pd.getDefaultValue() == null)
-                .map(PropertyDefinition::getPropertiesKey)
+        Set<String> invalidSysPropertiesSet = algorithm.getProvidesCollection()
+                .getProperties()
+                .stream()
+                .filter(p -> p.getDefaultValue() == null && p.getValue(propertiesUtil::lookup) == null)
+                .map(Algorithm.Property::getPropertiesKey)
                 .collect(toSet());
+
 
         if (!invalidSysPropertiesSet.isEmpty()) {
             String message = "Missing default values for the following system properties: " + invalidSysPropertiesSet
@@ -430,19 +449,26 @@ public class DetectionSplitter implements StageSplitter {
         // Collect the algorithm properties into a map, but for algorithm definitions that may have been updated from detection system properties
         // changed using the web UI, get the values of those properties from the detection system properties snapshot that was generated when the job was created.
         // NOTE: A filter allows for usage of captured detection system properties when the algorithm PropertyDefinition propertiesKey is null.
-        Map<String, String> algPropertiesMap = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-                .filter( pd -> pd.getPropertiesKey() == null )
-                .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue)); // collect() will throw a NPE if the property value is null
+//        Map<String, String> algPropertiesMap = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
+//                .filter( pd -> pd.getPropertiesKey() == null )
+//                .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue)); // collect() will throw a NPE if the property value is null
+
 
         // Next statement may replace or add some properties from detection system properties whose values were captured when this job was created.
         // Only want to pull the value from the snapshot if the PropertyDefinition has a proprietiesKey set.
         // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
-        algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-                .filter( pd -> pd.getPropertiesKey() != null )
-                .forEach( pd -> algPropertiesMap.put(pd.getName(), systemPropertiesSnapshot.lookup(pd.getPropertiesKey())));
+//        algorithm.getProvidesCollection().getAlgorithmProperties().stream()
+//                .filter( pd -> pd.getPropertiesKey() != null )
+//                .forEach( pd -> algPropertiesMap.put(pd.getName(), systemPropertiesSnapshot.lookup(pd.getPropertiesKey())));
 
-        return algPropertiesMap;
 
+        Map<String, String> properties = new HashMap<>();
+        for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
+            String propVal = property.getValue(systemPropertiesSnapshot::lookup);
+            properties.put(property.getName(), propVal);
+        }
+
+        return properties;
     }
 
 }

@@ -40,9 +40,9 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
+import org.mitre.mpf.wfm.pipeline.Action;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -408,10 +408,7 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            if (!pipelineService.pipelineSupportsBatch(jobCreationRequest.getPipelineName())) {
-                return createJobCreationErrorResponse(jobCreationRequest.getExternalId(),
-                                                      "Requested pipeline doesn't support batch jobs");
-            }
+            pipelineService.verifyBatchPipelineRunnable(jobCreationRequest.getPipelineName());
             checkProperties(jobCreationRequest);
 
             boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
@@ -469,15 +466,9 @@ public class JobController {
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(jobId);
         }
-        catch (WfmProcessingException ex) {
+        catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
-            return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
-        }
-        catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
-            String err = createErrorString(jobCreationRequest, null);
-            log.error(err, ex);
-            // the job request did not parse successfully, construct the job creation response describing the error that occurred.
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
     }
@@ -544,8 +535,8 @@ public class JobController {
 
     private void checkProperties(JobCreationRequest jobCreationRequest) {
         try {
-            List<ActionDefinition> actions = pipelineService.getPipeline(jobCreationRequest.getPipelineName())
-                    .getTaskRefs()
+            List<Action> actions = pipelineService.getPipeline(jobCreationRequest.getPipelineName())
+                    .getTasks()
                     .stream()
                     .map(pipelineService::getTask)
                     .flatMap(t -> t.getActions().stream())
@@ -553,7 +544,7 @@ public class JobController {
                     .collect(toList());
 
             for (JobCreationMediaData media : jobCreationRequest.getMedia()) {
-                for (ActionDefinition action : actions) {
+                for (Action action : actions) {
                     Function<String, String> combinedProperties
                             = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
                     S3StorageBackend.requiresS3MediaDownload(combinedProperties);

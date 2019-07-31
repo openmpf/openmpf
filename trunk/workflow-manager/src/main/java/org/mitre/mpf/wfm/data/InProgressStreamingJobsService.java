@@ -30,10 +30,7 @@ package org.mitre.mpf.wfm.data;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
+import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +57,7 @@ public class InProgressStreamingJobsService {
     public synchronized TransientStreamingJob addJob(
             long jobId,
             String externalId,
-            TransientPipeline pipeline,
+            TransientPipeline transientPipeline,
             TransientStream stream,
             int priority,
             long stallTimeout,
@@ -75,12 +72,13 @@ public class InProgressStreamingJobsService {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
         }
 
-        LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId, pipeline.getName());
+        LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId,
+                 transientPipeline.getName());
 
         TransientStreamingJobImpl job = new TransientStreamingJobImpl(
                 jobId,
                 externalId,
-                pipeline,
+                transientPipeline,
                 stream,
                 priority,
                 stallTimeout,

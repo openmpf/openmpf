@@ -58,17 +58,17 @@ public class EndOfStageProcessor extends WfmProcessor {
 	@Override
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-		inProgressBatchJobs.incrementStage(jobId);
+		inProgressBatchJobs.incrementTask(jobId);
 		TransientJob job = inProgressBatchJobs.getJob(jobId);
 
-		log.info("[Job {}|{}|*] Stage Complete! Progress is now {}/{}.",
+		log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
 				jobId,
-				job.getCurrentStage() - 1,
-				job.getCurrentStage(),
-				job.getPipeline().getStages().size());
+				job.getCurrentTaskIndex() - 1,
+				job.getCurrentTaskIndex(),
+				job.getTransientPipeline().getTaskCount());
 
 
-		if(job.getCurrentStage() >= job.getPipeline().getStages().size()) {
+		if(job.getCurrentTaskIndex() >= job.getTransientPipeline().getTaskCount()) {
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
 				jobStatusBroadcaster.broadcast(

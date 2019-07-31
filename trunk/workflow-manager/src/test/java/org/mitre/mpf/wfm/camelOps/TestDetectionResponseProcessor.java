@@ -41,11 +41,17 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -151,16 +157,19 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(detectionResponse);
 
-        TransientAction detectionAction = new TransientAction(
-                "detectionAction", "detectionDescription", "detectionAlgo",
-                Collections.emptyMap());
-        TransientStage detectionStageDet = new TransientStage(
-                "detectionDetection", "detectionDescription", ActionType.DETECTION,
-                Collections.singletonList(detectionAction));
-
-        TransientPipeline detectionPipeline = new TransientPipeline(
-                "detectionPipeline", "detectionDescription",
-                Collections.singletonList(detectionStageDet));
+        Algorithm algorithm = new Algorithm(
+                "detectionAlgo", "description", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                true, true);
+        Action action = new Action("detectionAction", "description", algorithm.getName(),
+                                   Collections.emptyList());
+        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline("detectionPipeline", "description",
+                                         Collections.singleton(task.getName()));
+        TransientPipeline transientPipeline = new TransientPipeline(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(algorithm));
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -176,7 +185,7 @@ public class TestDetectionResponseProcessor {
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                detectionPipeline,
+                transientPipeline,
                 1,
                 false,
                 null,

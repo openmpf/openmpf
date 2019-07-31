@@ -24,23 +24,26 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
+package org.mitre.mpf.wfm.util;
 
-import org.apache.camel.CamelContext;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import javax.validation.constraints.Pattern;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@Component
-public class DetectionCancellationConsumer {
+@Target({ElementType.TYPE_USE, ElementType.FIELD, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = { })
+@Pattern(regexp = "[^./\\\\a-z]+",
+         message = "Names cannot be empty and cannot contain lowercase letters, dots(.), slashes(/), or backslashes(\\).")
+public @interface ValidPipelineComponentName {
 
-	@Autowired
-	private CamelContext camelContext;
+    String message() default "";
 
-	@Autowired
-	private PipelineService pipelineService;
+    Class<?>[] groups() default { };
 
-	public void cancel(long jobId) {
-
-	}
+    Class<? extends Payload>[] payload() default { };
 }

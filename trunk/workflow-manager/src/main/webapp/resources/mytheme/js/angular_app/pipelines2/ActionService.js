@@ -59,7 +59,7 @@
                 var actionResource = $resource('pipeline-actions/:name');
 
                 var setActionsAlgo = function (actionDetails) {
-                    return AlgorithmService.get(actionDetails.algorithmRef)
+                    return AlgorithmService.get(actionDetails.algorithm)
                         .$promise
                         .then(function (algo) {
                             actionDetails.algorithm = algo;

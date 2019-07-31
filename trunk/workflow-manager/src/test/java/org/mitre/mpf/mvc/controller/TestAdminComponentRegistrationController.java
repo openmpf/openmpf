@@ -182,8 +182,9 @@ public class TestAdminComponentRegistrationController {
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.ofNullable(rcm));
 
-        JsonComponentDescriptor descriptor = new JsonComponentDescriptor();
-        descriptor.componentName = _testComponentName;
+        JsonComponentDescriptor descriptor = mock(JsonComponentDescriptor.class);
+        when(descriptor.getComponentName())
+                .thenReturn(_testComponentName);
 
         when(_mockAddComponentService.registerUnmanagedComponent(descriptor))
                 .thenReturn(wasReregistered);

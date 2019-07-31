@@ -24,33 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.pipeline.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
+package org.mitre.mpf.wfm.pipeline;
 
-import java.util.HashSet;
-import java.util.Set;
-
-@XStreamAlias("algorithms")
-public class AlgorithmDefinitionCollection {
-
-    @XStreamImplicit
-    private Set<AlgorithmDefinition> algorithmDefinitions;
-    public Set<AlgorithmDefinition> getAlgorithms() { return algorithmDefinitions; }
-
-    public AlgorithmDefinitionCollection() {
-	    this.algorithmDefinitions = new HashSet<AlgorithmDefinition>();
-    }
-
-	/** While not explicitly called, this method is used by XStream when deserializing an object. */
-	public Object readResolve() {
-		// WARNING!
-		// Collections, if omitted, must be initialized here. It is not sufficient to initialize them
-		// in the declaration or constructor.
-		if(algorithmDefinitions == null) {
-			algorithmDefinitions = new HashSet<AlgorithmDefinition>();
-		}
-		return this;
-	}
+public interface PipelineComponent {
+    public String getName();
 }

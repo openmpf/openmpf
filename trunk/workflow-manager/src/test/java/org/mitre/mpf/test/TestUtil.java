@@ -30,16 +30,26 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.hamcrest.Description;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+import org.springframework.core.io.PathResource;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
@@ -135,22 +145,31 @@ public class TestUtil {
             InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
 
-        TransientAction dummyAction = new TransientAction(
-                "dummyAction", "dummyDescription", "dummyAlgo", Collections.emptyMap());
-        TransientStage dummyStageDet = new TransientStage(
-                "dummydummy", "dummyDescription", ActionType.DETECTION, Collections.singletonList(dummyAction));
-
-        TransientPipeline dummyPipeline = new TransientPipeline(
-                "dummyPipeline", "dummyDescription", Collections.singletonList(dummyStageDet));
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         TransientMedia media = new TransientMediaImpl(
                 234234, mediaUri.toString(), UriScheme.FILE, Paths.get(mediaUri), Collections.emptyMap(), null);
+
+        Algorithm algorithm = new Algorithm(
+                "dummyAlgo", "dummyDescription", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                true, true);
+        Action action = new Action("dummyAction", "dummyDescription", algorithm.getName(),
+                                   Collections.emptyList());
+        Task task = new Task("dummyTask", "dummyDescription",
+                             Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline("dummyPipeline", "dummyDescription",
+                                         Collections.singleton(task.getName()));
+        TransientPipeline transientPipeline = new TransientPipeline(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(algorithm));
+
 
         return inProgressJobs.addJob(
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                dummyPipeline,
+                transientPipeline,
                 1,
                 false,
                 null,
@@ -192,6 +211,38 @@ public class TestUtil {
                 .thenReturn(outMessage);
         return exchange;
     }
+
+
+    public static void initPipelineDataFiles(PropertiesUtil mockPropertiesUtil, TemporaryFolder temporaryFolder) throws IOException {
+        Path rootTempDir = temporaryFolder.getRoot().toPath();
+
+        Path algorithmsPath = rootTempDir.resolve("Algorithms.json");
+        when(mockPropertiesUtil.getAlgorithmDefinitions())
+                .thenReturn(new PathResource(algorithmsPath));
+        copyTemplate("Algorithms.json", algorithmsPath);
+
+        Path actionsPath = rootTempDir.resolve("Actions.json");
+        when(mockPropertiesUtil.getActionDefinitions())
+                .thenReturn(new PathResource(actionsPath));
+        copyTemplate("Actions.json", actionsPath);
+
+        Path tasksPath = rootTempDir.resolve("Tasks.json");
+        when(mockPropertiesUtil.getTaskDefinitions())
+                .thenReturn(new PathResource(tasksPath));
+        copyTemplate("Tasks.json", tasksPath);
+
+        Path pipelinesPath = rootTempDir.resolve("Pipelines.json");
+        when(mockPropertiesUtil.getPipelineDefinitions())
+                .thenReturn(new PathResource(pipelinesPath));
+        copyTemplate("Pipelines.json", pipelinesPath);
+    }
+
+
+    private static void copyTemplate(String templateFileName, Path dest) throws IOException {
+        Path source = Paths.get(TestUtil.findFile("/templates/" + templateFileName));
+        Files.copy(source, dest);
+    }
+
 }
 
 

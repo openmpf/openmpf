@@ -68,13 +68,13 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 				int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
 				long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
 				TransientJob job = inProgressBatchJobs.getJob(jobId);
-				if (!job.getPipeline().getStages().isEmpty()) {
-					int currentStage = 1 + job.getCurrentStage();
-					int totalStages = job.getPipeline().getStages().size();
-					float progressPerStage = 1 / (1f * totalStages) * 100f;
+				if (!job.getTransientPipeline().getPipeline().getTasks().isEmpty()) {
+					int currentTask = 1 + job.getCurrentTaskIndex();
+					int totalTasks = job.getTransientPipeline().getTaskCount();
+					float progressPerStage = 1 / (1f * totalTasks) * 100f;
 
 					float taskProgress = (((float) aggregateCount) / ((float) splitSize));
-					float jobProgress = (currentStage - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
+					float jobProgress = (currentTask - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
 
 					JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
 

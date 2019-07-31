@@ -24,57 +24,69 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.google.common.collect.ImmutableList;
-import org.mitre.mpf.interop.JsonStage;
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.util.TextUtils;
+package org.mitre.mpf.wfm.pipeline;
 
-import java.util.List;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 
-public class TransientStage {
-	private final String _name;
-	public String getName() { return _name; }
+import java.util.Collection;
 
-	private final String _description;
-	public String getDescription() { return _description; }
+public interface PipelineService {
 
-	private final ActionType _actionType;
-	public ActionType getActionType() { return _actionType; }
+    public TransientPipeline createTransientBatchPipeline(String pipelineName);
 
-	private final ImmutableList<TransientAction> _actions;
-	public ImmutableList<TransientAction> getActions() { return _actions; }
+    public TransientPipeline createTransientStreamingPipeline(String pipelineName);
+
+    public Algorithm getAlgorithm(String name);
+
+    public Collection<Algorithm> getAlgorithms();
 
 
-	public TransientStage(String name, String description, ActionType actionType, Iterable<TransientAction> actions) {
-		_name = TextUtils.trimAndUpper(name);
-		_description = TextUtils.trim(description);
-		_actionType = actionType;
-		_actions = ImmutableList.copyOf(actions);
+    public Action getAction(String name);
 
-		assert _name != null : "name must not be null";
-		assert _actionType != null : "operation must not be null";
-	}
+    public Collection<Action> getActions();
 
 
-	public static TransientStage from(JsonStage stage) {
-		List<TransientAction> actions = stage.getActions()
-				.stream()
-				.map(TransientAction::from)
-				.collect(ImmutableList.toImmutableList());
+    public Task getTask(String name);
 
-		return new TransientStage(
-				stage.getName(),
-                stage.getDescription(),
-				ActionType.valueOf(TextUtils.trimAndUpper(stage.getActionType())),
-				actions);
-	}
+    public Collection<Task> getTasks();
 
 
-	@Override
-	public String toString() {
-		return String.format("%s#<name='%s', description='%s', actionType='%s'>", getClass().getSimpleName(),
-		                     _name, _description, _actionType);
-	}
+    public Pipeline getPipeline(String name);
+
+    public Collection<Pipeline> getPipelines();
+
+
+    public void save(Algorithm algorithm);
+
+    public void save(Action action);
+
+    public void save(Task task);
+
+    public void save(Pipeline pipeline);
+
+
+    public void verifyBatchPipelineRunnable(String pipelineName);
+
+    public void verifyStreamingPipelineRunnable(String pipelineName);
+
+    public boolean pipelineSupportsBatch(String pipelineName);
+
+    public boolean pipelineSupportsStreaming(String pipelineName);
+
+
+    public void deleteAlgorithm(String algorithmName);
+
+    public void deleteAction(String actionName);
+
+    public void deleteTask(String taskName);
+
+    public void deletePipeline(String pipelineName);
+
+    //TODO: remove
+    public JsonPipeline createBatchJsonPipeline(String pipelineName);
+
+    //TODO: remove
+    public JsonPipeline createStreamingJsonPipeline(String pipelineName);
 }

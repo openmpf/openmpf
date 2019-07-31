@@ -26,21 +26,24 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonAction;
+import org.mitre.mpf.interop.JsonJobRequest;
+import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinition;
-import org.mitre.mpf.wfm.pipeline.xml.PropertyDefinitionRef;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -48,8 +51,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
 
 // Updated calculateValue methods to support new algorithmProperties.  Note the need to support actionProperties both as
 // a Map<String,String> and as a Collection<PropertyDefinitionRef>.  Also, need to allow for passing in which algorithm is to be checked
@@ -61,6 +62,8 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class AggregateJobPropertiesUtil {
 
+    private final PropertiesUtil _propertiesUtil;
+
     private final PipelineService _pipelineService;
 
     private final HibernateJobRequestDao _jobRequestDao;
@@ -69,9 +72,11 @@ public class AggregateJobPropertiesUtil {
 
     @Inject
     public AggregateJobPropertiesUtil(
+            PropertiesUtil propertiesUtil,
             PipelineService pipelineService,
             HibernateJobRequestDao jobRequestDao,
             JsonUtils jsonUtils) {
+        _propertiesUtil = propertiesUtil;
         _pipelineService = pipelineService;
         _jobRequestDao = jobRequestDao;
         _jsonUtils = jsonUtils;
@@ -111,229 +116,95 @@ public class AggregateJobPropertiesUtil {
         }
     }
 
-    /** private method to return the value of the named property, checking for that property in each of the categories of property collections,
+
+
+    /** Return the value of the named property, checking for that property in each of the categories of property collections,
      * using the priority scheme:
      * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the job-algorithm properties are restricted to the algorithm defined in the Action currently being processed.
-     * Note: changed this method to private since this version of the calculateValue method is only being called within this class
+     * where the algorithm properties are restricted to the algorithm defined in the Action currently being processed.
      * @param propertyName property name to check for
      * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
      * @param jobProperties job properties which are possed in to the JSON job request
-     * @param algorithmNameFromAction algorithm name from the currently defined action
+     * @param transientAction Action currently being processed
      * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
+     * @param mediaProperties highest priority media properties
      * @return property info after checking for that property within the prioritized categories of property containers
      */
-    private static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
-                                               Map<String, String> jobProperties,
-                                               String algorithmNameFromAction,
-                                               Table<String, String, String> algorithmProperties) {
-        String algoPropValue = algorithmProperties.get(algorithmNameFromAction, propertyName);
+    public static PropertyInfo calculateValue(String propertyName,
+                                              Action action,
+                                              TransientMedia media,
+                                              TransientJob job) {
+
+        Map<String, String> mediaProperties = media.getMediaSpecificProperties();
+        if (mediaProperties.containsKey(propertyName)) {
+            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
+        }
+
+        Table<String, String, String> algorithmProperties = job.getOverriddenAlgorithmProperties();
+        String algoPropValue = algorithmProperties.get(action.getAlgorithm(), propertyName);
         if (algoPropValue != null) {
             return new PropertyInfo(propertyName, algoPropValue, PropertyLevel.ALGORITHM);
         }
 
+        Map<String, String> jobProperties = job.getOverriddenJobProperties();
         if (jobProperties.containsKey(propertyName)) {
             return new PropertyInfo(propertyName, jobProperties.get(propertyName), PropertyLevel.JOB);
         }
 
-        if (actionProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, actionProperties.get(propertyName), PropertyLevel.ACTION);
-        }
-
-        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
-    }
-
-    /** Return the value of the named property, checking for that property in each of the categories of property collections,
-     * using the priority scheme:
-     * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the algorithm properties are restricted to the algorithm identified in the Action definition.
-     * @param propertyName property name to check for
-     * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
-     * @param jobProperties job properties which are possed in to the JSON job request
-     * @param actionDefinition Action definition
-     * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers
-     */
-    public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
-                                              Map<String, String> jobProperties,
-                                              ActionDefinition actionDefinition,
-                                              Table<String, String, String> algorithmProperties,
-                                              Map<String, String> mediaProperties) {
-
-        if (mediaProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
-        }
-
-        return calculateValue(propertyName, actionProperties, jobProperties, actionDefinition.getAlgorithmRef(), algorithmProperties);
-    }
-
-    /** Return the value of the named property, checking for that property in each of the categories of property collections,
-     * using the priority scheme:
-     * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the algorithm properties are restricted to the algorithm defined in the Action currently being processed.
-     * @param propertyName property name to check for
-     * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
-     * @param jobProperties job properties which are possed in to the JSON job request
-     * @param transientAction Action currently being processed
-     * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers
-     */
-    public static PropertyInfo calculateValue(String propertyName, Map<String,String> actionProperties,
-                                              Map<String, String> jobProperties,
-                                              TransientAction transientAction,
-                                              Table<String, String, String> algorithmProperties,
-                                              Map<String, String> mediaProperties) {
-
-        if (mediaProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
-        }
-
-        return calculateValue(propertyName, actionProperties, jobProperties, transientAction.getAlgorithm(), algorithmProperties);
-    }
-
-    /** Return the value of the named property, checking for that property in each of the categories of property collections,
-     * using the priority scheme:
-     * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the algorithm properties are restricted to the algorithm identified in the Action definition.
-     * @param propertyName property name to check for
-     * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
-     * @param jobProperties job properties which are possed in to the JSON job request
-     * @param actionDefinition Action definition
-     * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers
-     */
-    public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
-                                              Map<String, String> jobProperties,
-                                              ActionDefinition actionDefinition,
-                                              Table<String, String, String> algorithmProperties,
-                                              Map<String, String> mediaProperties) {
-
-        if (mediaProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
-        }
-
-        String algoPropVal = algorithmProperties.get(actionDefinition.getAlgorithmRef(), propertyName);
-        if (algoPropVal != null) {
-            return new PropertyInfo(propertyName, algoPropVal, PropertyLevel.ALGORITHM);
-        }
-
-        if (jobProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, jobProperties.get(propertyName), PropertyLevel.JOB);
-        }
-
-        for (PropertyDefinitionRef prop : actionProperties) {
-            if (propertyName.equals(prop.getName())) {
-                return new PropertyInfo(propertyName, prop.getValue(), PropertyLevel.ACTION);
-            }
-        }
-
-        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
-    }
-
-    /** Return the value of the named property, checking for that property in each of the categories of property collections,
-     * using the priority scheme:
-     * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the algorithm properties are restricted to the algorithm defined in the Action currently being processed.
-     * @param propertyName property name to check for
-     * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
-     * @param jobProperties job properties which are possed in to the JSON job request
-     * @param transientAction Action currently being processed
-     * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @param mediaProperties highest priority media properties
-     * @return property info after checking for that property within the prioritized categories of property containers
-     */
-    public static PropertyInfo calculateValue(String propertyName, Collection<PropertyDefinitionRef> actionProperties,
-                                              Map<String, String> jobProperties,
-                                              TransientAction transientAction,
-                                              Map<String,Map> algorithmProperties,
-                                              Map<String, String> mediaProperties) {
-
-        if (mediaProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
-        }
-
-        if (transientAction.getAlgorithm() != null &&
-                algorithmProperties.containsKey(transientAction.getAlgorithm()) &&
-                algorithmProperties.get(transientAction.getAlgorithm()).containsKey(propertyName) ) {
-            // if the algorithm properties includes the algorithm currently being run, then get the property value from
-            // the algorithm properties
-            Map<String,String> m = algorithmProperties.get(transientAction.getAlgorithm());
-            return new PropertyInfo(propertyName, m.get(propertyName), PropertyLevel.ALGORITHM);
-        }
-
-        if (jobProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, jobProperties.get(propertyName), PropertyLevel.JOB);
-        }
-
-        for (PropertyDefinitionRef prop : actionProperties) {
-            if (propertyName.equals(prop.getName())) {
-                return new PropertyInfo(propertyName, prop.getValue(), PropertyLevel.ACTION);
-            }
+        String actionPropertyValue = action.getPropertyValue(propertyName);
+        if (actionPropertyValue != null) {
+            return new PropertyInfo(propertyName, actionPropertyValue, PropertyLevel.ACTION);
         }
 
         return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
     }
 
 
-    public static Map<String, String> getCombinedJobProperties(AlgorithmDefinition algorithm,
-                                                               TransientAction action,
-                                                               TransientStreamingJob job) {
 
-        Map<String, String> overriddenJobProps = job.getOverriddenJobProperties();
-        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().row(algorithm.getName());
-        Map<String, String> mediaSpecificProps = job.getStream().getMediaProperties();
-        return getCombinedJobProperties(algorithm, action, overriddenJobProps, overriddenAlgoProps, mediaSpecificProps);
-    }
-
-
-    public static Map<String, String> getCombinedJobProperties(AlgorithmDefinition algorithm,
-                                                               TransientAction action,
-                                                               Map<String, String> overriddenJobProperties,
-                                                               Map<String, String> overriddenAlgorithmProperties,
-                                                               Map<String, String> mediaSpecificProperties) {
-
+    public Map<String, String> getCombinedJobProperties(Action action,
+                                                        TransientStreamingJob job) {
+        String algoName = action.getAlgorithm();
+        Algorithm algorithm = job.getTransientPipeline().getAlgorithm(algoName);
         Map<String, String> combined = getAlgorithmProperties(algorithm);
-        combined.putAll(action.getProperties());
-        combined.putAll(overriddenJobProperties);
-        combined.putAll(overriddenAlgorithmProperties);
-        combined.putAll(mediaSpecificProperties);
+
+        for (Action.Property property : action.getProperties()) {
+            combined.put(property.getName(), property.getValue());
+        }
+
+        combined.putAll(job.getOverriddenJobProperties());
+        combined.putAll(job.getOverriddenAlgorithmProperties().row(action.getAlgorithm()));
+        combined.putAll(job.getStream().getMediaProperties());
         return combined;
     }
 
+    private Map<String, String> getAlgorithmProperties(Algorithm algorithm) {
+        ImmutableList<Algorithm.Property> properties = algorithm.getProvidesCollection().getProperties();
 
-    public static Map<String, String> getAlgorithmProperties(AlgorithmDefinition algorithm) {
-        return algorithm
-                .getProvidesCollection()
-                .getAlgorithmProperties()
-                .stream()
-                .collect(toMap(PropertyDefinition::getName,
-                               PropertyDefinition::getDefaultValue,
-                               (x, y) -> y, HashMap::new));
+        Map<String, String> result = new HashMap<>(properties.size());
+        for (Algorithm.Property property : properties) {
+            String value = property.getValue(_propertiesUtil::lookup);
+            result.put(property.getName(), value);
+        }
+        return result;
     }
 
 
-    public static String calculateFrameInterval(TransientAction transientAction, TransientJob transientJob,
+
+    public static String calculateFrameInterval(Action action, TransientJob transientJob,
                                                 TransientMedia transientMedia,
                                                 int systemFrameInterval, int systemFrameRateCap, double mediaFPS) {
 
         PropertyInfo frameIntervalPropInfo = AggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-                transientAction.getProperties(),
-                transientJob.getOverriddenJobProperties(),
-                transientAction,
-                transientJob.getOverriddenAlgorithmProperties(),
-                transientMedia.getMediaSpecificProperties());
+                action,
+                transientMedia,
+                transientJob);
 
         PropertyInfo frameRateCapPropInfo = AggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.FRAME_RATE_CAP_PROPERTY,
-                transientAction.getProperties(),
-                transientJob.getOverriddenJobProperties(),
-                transientAction,
-                transientJob.getOverriddenAlgorithmProperties(),
-                transientMedia.getMediaSpecificProperties());
+                action,
+                transientMedia,
+                transientJob);
 
         if (frameIntervalPropInfo.getLevel() == PropertyLevel.NONE) {
             frameIntervalPropInfo = new PropertyInfo(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
@@ -374,30 +245,75 @@ public class AggregateJobPropertiesUtil {
 
 
 
+
+
+    public String calculateValue(String property, TransientJob job, TransientMedia media,
+                                 Action action) {
+        return getCombinedProperties(job, media, action).apply(property);
+    }
+
+
+    public Function<String, String> getCombinedProperties(TransientJob job, long mediaId, int taskIndex,
+                                                          int actionIndex) {
+        return getCombinedProperties(job, job.getMedia(mediaId),
+                                     job.getTransientPipeline().getAction(taskIndex, actionIndex));
+
+    }
+
+    // Priority:
+    // media props > overridden algorithm props > job props > action props > default algo props >
+    // snapshot props > system props
+
+    public Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media,
+                                                          Action action) {
+        return propName -> {
+            String mediaPropVal = media.getMediaSpecificProperty(propName);
+            if (mediaPropVal != null) {
+                return mediaPropVal;
+            }
+
+            TransientPipeline transientPipeline = job.getTransientPipeline();
+            String algoName = action.getAlgorithm();
+            String overriddenAlgoPropVal = job.getOverriddenAlgorithmProperties().get(algoName, propName);
+            if (overriddenAlgoPropVal != null) {
+                return overriddenAlgoPropVal;
+            }
+
+            String jobPropVal = job.getOverriddenJobProperties().get(propName);
+            if (jobPropVal != null) {
+                return jobPropVal;
+            }
+
+            for (Action.Property property : action.getProperties()) {
+                if (property.getName().equalsIgnoreCase(propName)) {
+                    return property.getValue();
+                }
+            }
+
+            Algorithm algorithm = transientPipeline.getAlgorithm(algoName);
+
+            Algorithm.Property property = algorithm.getProperty(propName);
+            if (property != null) {
+                String defaultOrSnapshotValue = property.getValue(job.getSystemPropertiesSnapshot()::lookup);
+                if (defaultOrSnapshotValue != null) {
+                    return defaultOrSnapshotValue;
+                }
+                return property.getValue(_propertiesUtil::lookup);
+            }
+
+            return null;
+        };
+    }
+
+
+
+
     public static Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media) {
         List<Map<String, String>> propertyMaps = Arrays.asList(
                 media.getMediaSpecificProperties(),
                 job.getOverriddenJobProperties());
 
         return propName -> getPropertyValue(propName, propertyMaps);
-    }
-
-
-    public Function<String, String> getCombinedProperties(TransientJob job, long mediaId, int stageIndex,
-                                                          int actionIndex) {
-        TransientMedia media = job.getMedia(mediaId);
-        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
-        TransientAction action = stage.getActions().get(actionIndex);
-        String algoName = action.getAlgorithm();
-        ImmutableMap<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().row(algoName);
-
-        List<Map<String, String>> propertyMaps = Arrays.asList(
-                media.getMediaSpecificProperties(),
-                overriddenAlgoProps,
-                job.getOverriddenJobProperties(),
-                action.getProperties());
-
-        return propName -> getPropertyValue(propName, propertyMaps, action.getName());
     }
 
 
@@ -424,10 +340,10 @@ public class AggregateJobPropertiesUtil {
     public Function<String, String> getCombinedProperties(
             JobCreationRequest jobCreationRequest,
             JobCreationMediaData media,
-            ActionDefinition action) {
+            Action action) {
 
         Map<String, String> overriddenAlgoProps
-                = jobCreationRequest.getAlgorithmProperties().get(action.getAlgorithmRef());
+                = jobCreationRequest.getAlgorithmProperties().get(action.getAlgorithm());
 
         List<Map<String, String>>  propertyMaps;
         if (overriddenAlgoProps == null) {
@@ -455,24 +371,29 @@ public class AggregateJobPropertiesUtil {
 
 
     private String getDefaultActionProperty(String propName, String actionName) {
-        ActionDefinition action = _pipelineService.getAction(actionName);
+        Action action = _pipelineService.getAction(actionName);
         if (action == null) {
             return null;
         }
 
-        PropertyDefinitionRef propDefRef = action.getProperties()
+        Action.Property actionProperty = action.getProperties()
                 .stream()
                 .filter(ap -> propName.equals(ap.getName()))
                 .findAny()
                 .orElse(null);
-        if (propDefRef != null) {
-            return propDefRef.getValue();
+        if (actionProperty != null) {
+            return actionProperty.getValue();
         }
 
-        return Optional.ofNullable(_pipelineService.getAlgorithm(action.getAlgorithmRef()))
-                .map(a -> a.getProvidesCollection().getAlgorithmProperty(propName))
-                .map(PropertyDefinition::getDefaultValue)
+
+        Algorithm.Property property = Optional.ofNullable(_pipelineService.getAlgorithm(action.getAlgorithm()))
+                .map(a -> a.getProperty(propName))
                 .orElse(null);
+        if (property == null) {
+            return null;
+        }
+
+        return property.getValue(_propertiesUtil::lookup);
     }
 
 
@@ -543,27 +464,19 @@ public class AggregateJobPropertiesUtil {
         }
 
         // Default Action Properties
-        ActionDefinition actionDef = _pipelineService.getAction(jsonAction.getName());
-        if (actionDef != null) {
-            PropertyDefinitionRef propDefRef = actionDef.getProperties()
-                    .stream()
-                    .filter(ap -> propName.equals(ap.getName()))
-                    .findAny()
-                    .orElse(null);
-            if (propDefRef != null) {
-                return propDefRef.getValue();
+        Action action = _pipelineService.getAction(jsonAction.getName());
+        if (action != null) {
+            String propVal = action.getPropertyValue(propName);
+            if (propVal != null) {
+                return propVal;
             }
         }
 
+
         // Default Algorithm Properties
-        AlgorithmDefinition algorithm = _pipelineService.getAlgorithm(jsonAction.getName());
-        if (algorithm == null) {
-            return null;
-        }
-        PropertyDefinition algorithmProperty = algorithm.getProvidesCollection().getAlgorithmProperty(propName);
-        if (algorithmProperty != null) {
-            return algorithmProperty.getDefaultValue();
-        }
-        return null;
+        return Optional.ofNullable(_pipelineService.getAlgorithm(jsonAction.getAlgorithm()))
+                .map(a -> a.getProperty(propName))
+                .map(p -> p.getValue(_propertiesUtil::lookup))
+                .orElse(null);
     }
 }

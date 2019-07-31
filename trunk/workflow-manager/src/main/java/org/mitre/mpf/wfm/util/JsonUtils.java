@@ -34,9 +34,11 @@ import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,23 +145,33 @@ public class JsonUtils {
         }
     }
 
+
     public JsonPipeline convert(TransientPipeline transientPipeline) {
-        if(transientPipeline == null) {
-            return null;
-        } else {
-            JsonPipeline jsonPipeline = new JsonPipeline(transientPipeline.getName(), transientPipeline.getDescription());
+        Pipeline pipeline = transientPipeline.getPipeline();
+        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
 
-            for(TransientStage transientStage : transientPipeline.getStages()) {
-                JsonStage jsonStage = new JsonStage(transientStage.getActionType().name(), transientStage.getName(), transientStage.getDescription());
-                for(TransientAction transientAction : transientStage.getActions()) {
-                    JsonAction jsonAction = new JsonAction(transientAction.getAlgorithm(), transientAction.getName(), transientAction.getDescription());
-                    jsonAction.getProperties().putAll(transientAction.getProperties());
-                    jsonStage.getActions().add(jsonAction);
+        for (String taskName : pipeline.getTasks()) {
+            Task task = transientPipeline.getTask(taskName);
+            JsonStage jsonStage = new JsonStage(getActionType(transientPipeline, task).name(), taskName,
+                                                task.getDescription());
+
+            for (String actionName : task.getActions()) {
+                Action action = transientPipeline.getAction(actionName);
+                JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
+                for (Action.Property property : action.getProperties()) {
+                    jsonAction.getProperties().put(property.getName(), property.getValue());
                 }
-
-                jsonPipeline.getStages().add(jsonStage);
+                jsonStage.getActions().add(jsonAction);
             }
-            return jsonPipeline;
+
+            jsonPipeline.getStages().add(jsonStage);
         }
+        return jsonPipeline;
     }
+
+    private static ActionType getActionType(TransientPipeline transientPipeline, Task task) {
+        Action action = transientPipeline.getAction(task.getActions().get(0));
+        return transientPipeline.getAlgorithm(action.getAlgorithm()).getActionType();
+    }
+
 }

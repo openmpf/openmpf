@@ -71,11 +71,7 @@
                     return taskResource.get( {name: taskName} )
                         .$promise
                         .then(function (taskDetail) {
-
-                            var actionPromises = taskDetail.actions
-                                .map(function (a) {
-                                    return getAction(a.name);
-                                });
+                            var actionPromises = taskDetail.actions.map(getAction);
 
                             return $q.all(actionPromises)
                                 .then(function (actions) {

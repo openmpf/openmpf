@@ -35,14 +35,12 @@
 
     <context:component-scan base-package="org.mitre.mpf.wfm.util" use-default-filters="false">
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.util.PropertiesUtil"/>
-        <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.PipelineService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.nodeManager.NodeManagerStatus"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.NodeManagerService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.ServerMediaService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.ComponentDeploymentService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.ComponentStateService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.ComponentDescriptorValidator"/>
-        <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.CustomPipelineValidator"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.RemoveComponentService"/>
         <context:include-filter type="assignable" expression="org.mitre.mpf.wfm.service.component.AddComponentService"/>
     </context:component-scan>
@@ -54,7 +52,6 @@
 
     <bean class="org.mitre.mpf.wfm.util.PropertiesUtil"/>
     <bean class="org.mitre.mpf.wfm.util.IoUtils"/>
-    <bean class="org.mitre.mpf.wfm.service.PipelineServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.nodeManager.NodeManagerStatus"/>
     <bean class="org.mitre.mpf.wfm.service.NodeManagerServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.service.ServerMediaServiceImpl"/>
@@ -63,7 +60,6 @@
     <bean class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"/>
     <bean class="org.mitre.mpf.wfm.service.component.ComponentDescriptorValidatorImpl"/>
     <bean class="org.mitre.mpf.wfm.service.component.ExtrasDescriptorValidatorImpl"/>
-    <bean class="org.mitre.mpf.wfm.service.component.CustomPipelineValidatorImpl"/>
     <bean class="org.mitre.mpf.wfm.service.component.RemoveComponentServiceImpl"/>
     <bean class="org.mitre.mpf.wfm.service.component.AddComponentServiceImpl"/>
 

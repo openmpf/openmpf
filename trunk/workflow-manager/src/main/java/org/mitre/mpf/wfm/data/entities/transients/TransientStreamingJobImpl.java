@@ -50,9 +50,9 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public void setJobStatus(StreamingJobStatus jobStatus) { _jobStatus = jobStatus; }
 
 
-    private final TransientPipeline _pipeline;
+    private final TransientPipeline _transientPipeline;
     @Override
-    public TransientPipeline getPipeline() { return _pipeline; }
+    public TransientPipeline getTransientPipeline() { return _transientPipeline; }
 
 
     private final String _externalId;
@@ -136,7 +136,7 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public TransientStreamingJobImpl(
             long id,
             String externalId,
-            TransientPipeline pipeline,
+            TransientPipeline transientPipeline,
             TransientStream stream,
             int priority,
             long stallTimeout,
@@ -148,7 +148,7 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
             Map<String, Map<String, String>> algorithmProperties) {
         _id = id;
         _externalId = externalId;
-        _pipeline = pipeline;
+        _transientPipeline = transientPipeline;
         _stream = stream;
         _priority = priority;
         _stallTimeout = stallTimeout;

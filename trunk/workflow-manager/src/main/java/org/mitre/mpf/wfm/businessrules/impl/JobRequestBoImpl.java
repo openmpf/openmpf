@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -131,7 +131,9 @@ public class JobRequestBoImpl implements JobRequestBo {
     @Override
     public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
-        JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority);
+        JsonJobRequest jsonJobRequest = new JsonJobRequest(
+                TextUtils.trim(externalId), buildOutput,
+                pipelineService.createBatchJsonPipeline(pipelineName), priority);
         if (media != null) {
             jsonJobRequest.getMedia().addAll(media);
         }
@@ -179,7 +181,9 @@ public class JobRequestBoImpl implements JobRequestBo {
             jsonCallbackMethod = "POST";
         }
 
-        JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority, jsonCallbackURL, jsonCallbackMethod);
+        JsonJobRequest jsonJobRequest = new JsonJobRequest(
+                TextUtils.trim(externalId), buildOutput, pipelineService.createBatchJsonPipeline(pipelineName), priority,
+                jsonCallbackURL, jsonCallbackMethod);
         if (media != null) {
             jsonJobRequest.getMedia().addAll(media);
         }
@@ -335,7 +339,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
         jobRequest.setTimeReceived(Instant.now());
         jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
-        jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimAndUpper(jsonJobRequest.getPipeline().getName()));
+        jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimToNullAndUpper(jsonJobRequest.getPipeline().getName()));
 
         // Reset output object paths.
         jobRequest.setOutputObjectPath(null);

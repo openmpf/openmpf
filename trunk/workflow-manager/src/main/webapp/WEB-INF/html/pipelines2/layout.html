@@ -97,10 +97,10 @@
                                            id="action-selector" theme="selectize">
                                     <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
                                     <ui-select-choices
-                                            group-by="'algorithmRef'"
+                                            group-by="'algorithm'"
                                             repeat="action.name as action in actions | filter: $select.search">
                                         <div ng-bind-html="action.name | highlight: $select.search"
-                                             uib-popover="[{{action.algorithmRef}}]  {{action.description}}" popover-placement="right"
+                                             uib-popover="[{{action.algorithm}}]  {{action.description}}" popover-placement="right"
                                              popover-append-to-body="true" popover-trigger="mouseenter">
                                         </div>
                                         <!--<div>-->

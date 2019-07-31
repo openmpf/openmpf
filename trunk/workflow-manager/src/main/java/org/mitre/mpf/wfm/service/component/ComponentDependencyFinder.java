@@ -33,7 +33,5 @@ import java.util.List;
 
 public interface ComponentDependencyFinder {
 
-	public List<Path> getRegistrationOrder(Collection<Path> componentPaths);
-
 	public List<Path> getReRegistrationOrder(Path componentToReReg, Collection<Path> registeredComponentPaths);
 }

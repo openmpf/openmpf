@@ -32,9 +32,9 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupStageSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,59 +51,62 @@ import java.util.List;
  */
 @Component(DefaultStageSplitter.REF)
 public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
-	private static final Logger log = LoggerFactory.getLogger(DefaultStageSplitter.class);
-	public static final String REF = "defaultStageSplitter";
+    private static final Logger log = LoggerFactory.getLogger(DefaultStageSplitter.class);
+    public static final String REF = "defaultStageSplitter";
 
-	@Autowired
-	@Qualifier(DetectionSplitter.REF)
-	private StageSplitter detectionStageSplitter;
+    @Autowired
+    @Qualifier(DetectionSplitter.REF)
+    private StageSplitter detectionStageSplitter;
 
-	@Autowired
-	@Qualifier(MarkupStageSplitter.REF)
-	private StageSplitter markupStageSplitter;
+    @Autowired
+    @Qualifier(MarkupStageSplitter.REF)
+    private StageSplitter markupStageSplitter;
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
-	@Override
-	public String getSplitterName() { return REF; }
-
-
-	@Override
-	public List<Message> performSplit(TransientJob transientJob, TransientStage transientStage) {
-		log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. No work will be performed in this stage.",
-				transientJob.getId(), transientJob.getCurrentStage(), transientJob.getCurrentStage(), transientStage.getName());
-		return new ArrayList<>();
-	}
+    @Override
+    public String getSplitterName() { return REF; }
 
 
-	@Override
-	public final List<Message> wfmSplit(Exchange exchange) {
-		TransientJob transientJob = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
-		TransientStage transientStage = transientJob.getPipeline().getStages().get(transientJob.getCurrentStage());
-		log.info("[Job {}|{}|*] Stage {}/{} - Operation: {} - ActionType: {}.",
-				transientJob.getId(),
-				transientJob.getCurrentStage(),
-				transientJob.getCurrentStage() + 1,
-				transientJob.getPipeline().getStages().size(),
-				transientJob.getPipeline().getStages().get(transientJob.getCurrentStage()).getActionType(),
-				transientStage.getActionType().name());
+    @Override
+    public List<Message> performSplit(TransientJob transientJob, Task task) {
+        log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. No work will be performed in this stage.",
+                 transientJob.getId(), transientJob.getCurrentTaskIndex(), transientJob.getCurrentTaskIndex(),
+                 task.getName());
+        return new ArrayList<>();
+    }
 
-		if(transientJob.isCancelled()) {
-			// Check if this job has been cancelled prior to performing the split. If it has been, do not produce any work units.
-			log.warn("[Job {}|{}|*] This job has been cancelled. No work will be performed in this stage.",
-					transientJob.getId(), transientJob.getCurrentStage(), transientJob.getCurrentStage(), transientStage.getName());
-			return new ArrayList<>(0);
-		} else {
-			ActionType actionType = transientStage.getActionType();
-			switch (actionType) {
-				case DETECTION:
-					return detectionStageSplitter.performSplit(transientJob, transientStage);
-				case MARKUP:
-					return markupStageSplitter.performSplit(transientJob, transientStage);
-				default:
-					return performSplit(transientJob, transientStage);
-			}
-		}
-	}
+
+    @Override
+    public final List<Message> wfmSplit(Exchange exchange) {
+        TransientJob transientJob = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
+        Task task = transientJob.getTransientPipeline().getTask(transientJob.getCurrentTaskIndex());
+        ActionType actionType = transientJob.getTransientPipeline()
+                .getAlgorithm(transientJob.getCurrentTaskIndex(), 0)
+                .getActionType();
+        log.info("[Job {}|{}|*] Stage {}/{} - Operation: {} - ActionType: {}.",
+                 transientJob.getId(),
+                 transientJob.getCurrentTaskIndex(),
+                 transientJob.getCurrentTaskIndex() + 1,
+                 transientJob.getTransientPipeline().getTaskCount(),
+                 actionType,
+                 actionType.name());
+
+        if(transientJob.isCancelled()) {
+            // Check if this job has been cancelled prior to performing the split. If it has been, do not produce any work units.
+            log.warn("[Job {}|{}|*] This job has been cancelled. No work will be performed in this stage.",
+                     transientJob.getId(), transientJob.getCurrentTaskIndex());
+            return new ArrayList<>(0);
+        } else {
+            switch (actionType) {
+                case DETECTION:
+                    return detectionStageSplitter.performSplit(transientJob, task);
+                case MARKUP:
+                    return markupStageSplitter.performSplit(transientJob, task);
+                default:
+                    return performSplit(transientJob, task);
+            }
+        }
+    }
 }

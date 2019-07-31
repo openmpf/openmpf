@@ -31,9 +31,11 @@ import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.*;
+import org.mitre.mpf.wfm.pipeline.Action;
+import org.mitre.mpf.wfm.pipeline.Pipeline;
+import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -45,8 +47,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class RemoveComponentServiceImpl implements RemoveComponentService {
@@ -226,17 +227,17 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
             _streamingServiceManager.deleteService(registrationModel.getStreamingServiceName());
         }
         if (registrationModel.getAlgorithmName() != null) {
-            removeAlgorithm(registrationModel.getAlgorithmName(), recursive);
+            removeAlgorithm(registrationModel.getAlgorithmName().toUpperCase(), recursive);
         }
 
         registrationModel.getPipelines()
                 .forEach(this::removePipeline);
 
         registrationModel.getTasks()
-                .forEach(tn -> removeTask(tn, recursive));
+                .forEach(tn -> removeTask(tn.toUpperCase(), recursive));
 
         registrationModel.getActions()
-                .forEach(an -> removeAction(an, recursive));
+                .forEach(an -> removeAction(an.toUpperCase(), recursive));
     }
 
     private void removePipeline(String pipelineName) {
@@ -245,10 +246,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private void removeTask(String taskName, boolean recursive) {
         if (recursive) {
-            _pipelineService.getPipelines()
-                    .stream()
-                    .filter(pd -> referencesTask(pd, taskName))
-                    .map(PipelineDefinition::getName)
+            // Copy to avoid ConcurrentModificationException
+            Collection<Pipeline> allPipelines = new ArrayList<>(_pipelineService.getPipelines());
+            allPipelines.stream()
+                    .filter(p -> p.getTasks().contains(taskName))
+                    .map(Pipeline::getName)
                     .forEach(this::removePipeline);
         }
 
@@ -257,10 +259,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private void removeAction(String actionName, boolean recursive) {
         if (recursive) {
-            _pipelineService.getTasks()
-                    .stream()
-                    .filter(td -> referencesAction(td, actionName))
-                    .map(TaskDefinition::getName)
+            // Copy to avoid ConcurrentModificationException
+            Collection<Task> allTasks = new ArrayList<>(_pipelineService.getTasks());
+            allTasks.stream()
+                    .filter(t -> t.getActions().contains(actionName))
+                    .map(Task::getName)
                     .forEach(tn -> removeTask(tn, true));
         }
 
@@ -273,10 +276,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     private void removeAlgorithm(String algorithmName, boolean recursive) {
         if (recursive) {
-            _pipelineService.getActions()
-                    .stream()
-                    .filter(ad -> ad.getAlgorithmRef().equalsIgnoreCase(algorithmName))
-                    .map(ActionDefinition::getName)
+            // Copy to avoid ConcurrentModificationException
+            Collection<Action> allActions = new ArrayList<>(_pipelineService.getActions());
+            allActions.stream()
+                    .filter(action -> action.getAlgorithm().equalsIgnoreCase(algorithmName))
+                    .map(Action::getName)
                     .forEach(an -> removeAction(an, true));
         }
 
@@ -306,19 +310,4 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     private static Path getComponentTopLevelDir(String pathToJsonDescriptor) {
         return Paths.get(pathToJsonDescriptor).getParent().getParent();
     }
-
-    private static boolean referencesTask(PipelineDefinition pipelineDef, String taskName) {
-        return pipelineDef.getTaskRefs()
-                .stream()
-                .map(TaskDefinitionRef::getName)
-                .anyMatch(taskName::equalsIgnoreCase);
-    }
-
-    private static boolean referencesAction(TaskDefinition taskDef, String actionName) {
-        return taskDef.getActions()
-                .stream()
-                .map(ActionDefinitionRef::getName)
-                .anyMatch(actionName::equalsIgnoreCase);
-    }
-
 }

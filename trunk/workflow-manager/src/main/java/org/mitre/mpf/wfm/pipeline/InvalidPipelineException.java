@@ -24,48 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.wfm.util.TextUtils;
+package org.mitre.mpf.wfm.pipeline;
 
-import java.util.Map;
+public class InvalidPipelineException extends RuntimeException {
 
-public class TransientAction {
-	private final String _name;
-	public String getName() { return _name; }
-
-	private final String _description;
-	public String getDescription() { return _description; }
-
-	private final String _algorithm;
-	public String getAlgorithm() { return _algorithm; }
-
-	private final ImmutableMap<String, String> _properties;
-	public ImmutableMap<String, String> getProperties() { return _properties; }
-
-
-	public TransientAction(String name, String description, String algorithm, Map<String, String> properties) {
-		_name = TextUtils.trimAndUpper(name);
-		_description = TextUtils.trim(description);
-		_algorithm = TextUtils.trimAndUpper(algorithm);
-		_properties = ImmutableMap.copyOf(properties);
-	}
-
-
-	public static TransientAction from(JsonAction action) {
-		Map<String, String> properties = action.getProperties()
-				.entrySet()
-				.stream()
-				.filter(p -> StringUtils.isNotBlank(p.getKey()) && StringUtils.isNotBlank(p.getValue()))
-				.collect(ImmutableMap.toImmutableMap(p -> p.getKey().toUpperCase(), Map.Entry::getValue));
-
-		return new TransientAction(
-                action.getName(),
-                action.getDescription(),
-                action.getAlgorithm(),
-				properties);
-	}
+    public InvalidPipelineException(String message) {
+        super(message);
+    }
 }

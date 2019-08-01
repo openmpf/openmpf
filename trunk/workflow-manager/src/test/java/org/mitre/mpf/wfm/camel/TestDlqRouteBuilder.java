@@ -28,9 +28,9 @@ package org.mitre.mpf.wfm.camel;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
-import org.apache.camel.component.jms.JmsComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
 import org.junit.*;
@@ -42,24 +42,33 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import javax.jms.*;
-import java.util.Optional;
-import java.util.UUID;
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+import java.util.Queue;
+import java.util.*;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder {
 
     public static final String ACTIVE_MQ_HOST =
-            "tcp://" + Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost") + ":61616";
+            Optional.ofNullable(System.getenv("ACTIVE_MQ_HOST")).orElse("localhost");
+    public static final String ACTIVE_MQ_BROKER_JMX_URI =
+            "service:jmx:rmi:///jndi/rmi://" + ACTIVE_MQ_HOST + ":1099/jmxrmi";
+    public static final String ACTIVE_MQ_BROKER_URI = "tcp://" + ACTIVE_MQ_HOST + ":61616";
 
-    public static final String ENTRY_POINT = "jms://MPF.TEST.ActiveMQ.DLQ";
+    public static final String ENTRY_POINT = "activemq:MPF.TEST.ActiveMQ.DLQ";
     public static final String EXIT_POINT = "jms:MPF.TEST.COMPLETED_DETECTIONS";
     public static final String AUDIT_EXIT_POINT = "jms://MPF.TEST.DLQ_PROCESSED_MESSAGES";
     public static final String INVALID_EXIT_POINT = "jms:MPF.TEST.DLQ_INVALID_MESSAGES";
-    public static final String ROUTE_ID = "Test DLQ Route";
+    public static final String ROUTE_ID_PREFIX = "Test DLQ Route";
     public static final String SELECTOR_REPLY_TO = "queue://MPF.TEST.COMPLETED_DETECTIONS";
 
     public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
@@ -67,13 +76,18 @@ public class TestDlqRouteBuilder {
     public static final String DLQ_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
     public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
+    public static final String RUN_ID_PROPERTY_KEY = "runId";
 
-    public static final int SLEEP_TIME_MILLISEC = 1500;
-    public static final int RECEIVE_TIMEOUT_MILLISEC = 1500;
+    public static final int NUM_MESSAGES_PER_TEST = 5;
+    public static final int NUM_LEFTOVER_RECEIVE_RETRIES = 5;
+
+    public static final int HANDLE_TIMEOUT_MILLISEC = 30_000; // time for messages to be processed by the DetectionDeadLetterProcessor
+    public static final int LEFTOVER_RECEIVE_TIMEOUT_MILLISEC = 10_000; // time for leftover message to be received from queue
+
+    private static int runId = -1;
 
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
-    private JmsComponent activeMQComponent;
     private Connection connection;
     private Session session;
 
@@ -88,9 +102,11 @@ public class TestDlqRouteBuilder {
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
         camelContext = new DefaultCamelContext(simpleRegistry);
 
-        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_HOST);
-        activeMQComponent = ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory);
-        camelContext.addComponent("jms", activeMQComponent);
+        connectionFactory = new ActiveMQConnectionFactory(ACTIVE_MQ_BROKER_URI);
+        camelContext.addComponent("jms", ActiveMQComponent.jmsComponentAutoAcknowledge(connectionFactory));
+        ActiveMQComponent activeMqComponent = ActiveMQComponent.activeMQComponent();
+        activeMqComponent.setConnectionFactory(connectionFactory);
+        camelContext.addComponent("activemq", activeMqComponent);
         camelContext.start();
 
         connection = connectionFactory.createConnection();
@@ -99,12 +115,14 @@ public class TestDlqRouteBuilder {
         session = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
         DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
-                INVALID_EXIT_POINT, ROUTE_ID, SELECTOR_REPLY_TO);
+                INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
 
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);
 
-        clearoutMessages(ENTRY_POINT);
+        purgeQueue(ENTRY_POINT);
+
+        runId += 1;
     }
 
     @After
@@ -117,108 +135,157 @@ public class TestDlqRouteBuilder {
         }
     }
 
-    private String getJmsOrQueueShortName(String fullName) {
-        return fullName.replaceAll(".*//", "");
+    private String getQueueShortName(String fullName) {
+        return fullName.replaceAll(".*//", "").replaceAll(".*:", "");
     }
 
-    private void clearoutMessages(String dest) throws JMSException {
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
-        MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
+    private void purgeQueue(String queue) throws Exception {
+        Hashtable<String, String> params = new Hashtable<>();
+        params.put("type", "Broker");
+        params.put("brokerName", "localhost");
+        params.put("destinationType", "Queue");
+        params.put("destinationName", getQueueShortName(queue));
+        ObjectName queueObjectName = ObjectName.getInstance("org.apache.activemq", params);
 
-        Message message;
-        while ((message = messageConsumer.receive(RECEIVE_TIMEOUT_MILLISEC)) != null) { // don't wait
-            if (message.getJMSCorrelationID() != null) {
-                System.out.println("Clearing out message from " + dest + " with JMSCorrelationID " + message.getJMSCorrelationID());
-            } else {
-                System.out.println("Clearing out message from " + dest);
+        JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(ACTIVE_MQ_BROKER_JMX_URI));
+        MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+
+        QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(
+                mBeanServerConnection, queueObjectName, QueueViewMBean.class, true);
+        queueMbean.purge();
+    }
+
+    private Queue<Message> receiveMessages(String dest, boolean expectingMessages) throws JMSException {
+        Queue<Message> messages = new LinkedList<>();
+
+        Destination dlqDestination = session.createQueue(getQueueShortName(dest));
+        MessageConsumer messageConsumer = session.createConsumer(dlqDestination, RUN_ID_PROPERTY_KEY + " = " + runId);
+
+        if (expectingMessages) {
+            for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+
+                Message message = null;
+                for (int j = 0; message == null && j < NUM_LEFTOVER_RECEIVE_RETRIES; j++) {
+                    message = messageConsumer.receive(LEFTOVER_RECEIVE_TIMEOUT_MILLISEC);
+                    session.commit(); // ACK message so next can be dispatched
+                }
+
+                if (message != null) {
+                    messages.add(message);
+                } else {
+                    // Failed to receive message. Abort.
+                    messageConsumer.close();
+                    return messages;
+                }
             }
         }
 
-        session.commit();
+        // This should be a null message.
+        // If not expecting messages, we should not have to wait since dropped messages are prefetched.
+        messages.add(messageConsumer.receiveNoWait());
+        session.commit(); // ACK message
+
         messageConsumer.close();
+        return messages;
     }
 
-    private Message receiveMessage(String dest) throws JMSException {
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
-        MessageConsumer messageConsumer = session.createConsumer(dlqDestination);
-        Message message = messageConsumer.receive(RECEIVE_TIMEOUT_MILLISEC);
-        session.commit();
-        messageConsumer.close();
-        return message;
-    }
-
-    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, String jmsCorrelationId,
+    private void checkLeftover(String dest, String replyTo, String deliveryFailureCause, Set<String> jmsCorrelationIds,
                                  boolean isLeftover) throws JMSException, InvalidProtocolBufferException {
-        BytesMessage message = (BytesMessage) receiveMessage(dest);
+        Set<String> unseenJmsCorrelationIds = new HashSet<>(jmsCorrelationIds);
 
-        if (!isLeftover) {
-            Assert.assertNull(message);
-            return;
+        Queue<Message> messages = receiveMessages(dest, isLeftover);
+
+        Assert.assertEquals(isLeftover ? NUM_MESSAGES_PER_TEST + 1 : 1, messages.size());
+
+        if (isLeftover) {
+            for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+                BytesMessage bytesMessage = (BytesMessage) messages.poll();
+
+                Assert.assertNotNull(bytesMessage);
+
+                if (replyTo == null) {
+                    Assert.assertNull(bytesMessage.getJMSReplyTo());
+                } else {
+                    Assert.assertEquals(replyTo, bytesMessage.getJMSReplyTo().toString());
+                }
+
+                Assert.assertEquals(deliveryFailureCause,
+                        bytesMessage.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
+
+                byte[] protoBytes = new byte[(int) bytesMessage.getBodyLength()];
+                bytesMessage.readBytes(protoBytes);
+                DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
+                Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
+
+                Assert.assertTrue(unseenJmsCorrelationIds.remove(bytesMessage.getJMSCorrelationID()));
+            }
+
+            Assert.assertTrue(unseenJmsCorrelationIds.isEmpty());
         }
 
-        Assert.assertNotNull(message);
-
-        if (replyTo == null) {
-            Assert.assertNull(message.getJMSReplyTo());
-        } else {
-            Assert.assertEquals(replyTo, message.getJMSReplyTo().toString());
-        }
-
-        Assert.assertEquals(deliveryFailureCause,
-                message.getStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY));
-
-        byte[] protoBytes = new byte[(int)message.getBodyLength()];
-        message.readBytes(protoBytes);
-        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.parseFrom(protoBytes);
-        Assert.assertEquals("TEST ACTION", detectionRequest.getActionName());
-
-        Assert.assertEquals(jmsCorrelationId, message.getJMSCorrelationID());
+        // The last message should always be null.
+        Assert.assertNull(messages.poll());
     }
 
-    private String sendDlqMessage(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
-        BytesMessage message = session.createBytesMessage();
-        DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
-                .setRequestId(123)
-                .setDataUri("file:///test")
-                .setStageIndex(1)
-                .setActionIndex(1)
-                .setActionName("TEST ACTION")
-                .build();
-        message.writeBytes(detectionRequest.toByteArray());
-
-        if (replyTo != null) {
-            Destination replyToDestination = session.createQueue(getJmsOrQueueShortName(replyTo));
-            message.setJMSReplyTo(replyToDestination);
-        }
-
-        if (deliveryFailureCause != null) {
-            message.setStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
-        }
-
-        String jmsCorrelationId = UUID.randomUUID().toString();
-        message.setJMSCorrelationID(jmsCorrelationId);
-
-        Destination dlqDestination = session.createQueue(getJmsOrQueueShortName(dest));
+    private Set<String> sendDlqMessages(String dest, String replyTo, String deliveryFailureCause) throws JMSException {
+        Destination dlqDestination = session.createQueue(getQueueShortName(dest));
         MessageProducer messageProducer = session.createProducer(dlqDestination);
-        messageProducer.send(message);
-        session.commit();
 
-        return jmsCorrelationId;
+        Destination replyToDestination = null;
+        if (replyTo != null) {
+            replyToDestination = session.createQueue(getQueueShortName(replyTo));
+        }
+
+        Set<String> jmsCorrelationIds = new HashSet<>();
+
+        for (int i = 0; i < NUM_MESSAGES_PER_TEST; i++) {
+            BytesMessage message = session.createBytesMessage();
+            DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
+                    .setRequestId(123)
+                    .setDataUri("file:///test")
+                    .setStageIndex(1)
+                    .setActionIndex(1)
+                    .setActionName("TEST ACTION")
+                    .build();
+            message.writeBytes(detectionRequest.toByteArray());
+
+            if (replyTo != null) {
+                message.setJMSReplyTo(replyToDestination);
+            }
+
+            if (deliveryFailureCause != null) {
+                message.setStringProperty(DlqRouteBuilder.DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY, deliveryFailureCause);
+            }
+
+            message.setIntProperty(RUN_ID_PROPERTY_KEY, runId);
+
+            String jmsCorrelationId = UUID.randomUUID().toString();
+            jmsCorrelationIds.add(jmsCorrelationId);
+            message.setJMSCorrelationID(jmsCorrelationId);
+
+            messageProducer.send(message);
+            session.commit();
+        }
+
+        messageProducer.close();
+        return jmsCorrelationIds;
     }
 
     private void runTest(String dest, String replyTo, String deliveryFailureCause, boolean isHandled,
                          boolean isLeftover) throws Exception {
-        String jmsCorrelationId = sendDlqMessage(dest, replyTo, deliveryFailureCause);
-        Thread.sleep(SLEEP_TIME_MILLISEC);
-        verify(mockDetectionDeadLetterProcessor, times(isHandled ? 1 : 0)).process(any());
-        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationId, isLeftover);
+        Set<String> jmsCorrelationIds = sendDlqMessages(dest, replyTo, deliveryFailureCause);
+
+        verify(mockDetectionDeadLetterProcessor,
+                timeout(HANDLE_TIMEOUT_MILLISEC).times(isHandled ? NUM_MESSAGES_PER_TEST : 0)).process(any());
+
+        checkLeftover(dest, replyTo, deliveryFailureCause, jmsCorrelationIds, isLeftover);
     }
 
     // No reply-to tests
 
     @Test
-    public void ignoreNoReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropNoReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -234,8 +301,8 @@ public class TestDlqRouteBuilder {
     // Bad reply-to tests
 
     @Test
-    public void ignoreBadReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, true);
+    public void dropBadReplyToAndDupFailure() throws Exception {
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -251,17 +318,17 @@ public class TestDlqRouteBuilder {
     // Good reply-to tests
 
     @Test
-    public void dropDupFailure() throws Exception {
+    public void dropGoodReplyToAndDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
-    public void handleNoFailure() throws Exception {
+    public void handleGoodReplyToAndNoFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, null, true, false);
     }
 
     @Test
-    public void handleNonDupFailure() throws Exception {
+    public void handleGoodReplyToAndNonDupFailure() throws Exception {
         runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true, false);
     }
 }

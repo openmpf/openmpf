@@ -29,8 +29,6 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.jgroups.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,8 +72,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.AdditionalMatchers.geq;
-import static org.mockito.AdditionalMatchers.gt;
+import static org.mockito.AdditionalMatchers.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -227,23 +224,10 @@ public class TestStreamingJobStartStop {
 
 
     private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
-        return argThat(new BaseMatcher<StreamingJobStatus>() {
-            @Override
-            public boolean matches(Object item) {
-                if (!(item instanceof StreamingJobStatus)) {
-                    return false;
-                }
-                StreamingJobStatus status = (StreamingJobStatus) item;
-                return Stream.of(statuses)
-                        .anyMatch(t -> status.getType() == t);
+        return argThat(status -> Stream.of(statuses)
+                        .anyMatch(t -> status.getType() == t));
             }
-            @Override
-            public void describeTo(Description description) {
-                description.appendValueList("", " or ", "", statuses);
 
-            }
-        });
-    }
 
     private TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
                                             String mediaPath, int segmentSize, int stallTimeout) {

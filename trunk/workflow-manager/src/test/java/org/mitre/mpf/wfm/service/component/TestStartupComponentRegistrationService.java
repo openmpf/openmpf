@@ -94,9 +94,9 @@ public class TestStartupComponentRegistrationService {
 
         MockitoAnnotations.initMocks(this);
 
-        when(_mockAddComponentSvc.registerComponent(anyNonNull()))
+        when(_mockAddComponentSvc.registerComponent(notNull()))
                 .thenAnswer(invocation -> {
-                    String arg = invocation.getArgumentAt(0, String.class);
+                    String arg = invocation.getArgument(0);
                     String componentName = componentPackageToName(arg);
 
                     RegisterComponentModel result = new RegisterComponentModel();

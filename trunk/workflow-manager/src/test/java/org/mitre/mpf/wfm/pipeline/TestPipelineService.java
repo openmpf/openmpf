@@ -47,7 +47,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.mitre.mpf.test.TestUtil.anyNonNull;
 import static org.mockito.Mockito.*;
 
 public class TestPipelineService {
@@ -95,7 +94,7 @@ public class TestPipelineService {
 
         _pipelineService.save(algo1);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(algo1), anyNonNull());
+                .validateOnAdd(eq(algo1), notNull());
 
 
         Algorithm algo2 = new Algorithm(
@@ -106,44 +105,44 @@ public class TestPipelineService {
 
         _pipelineService.save(algo2);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(algo2), anyNonNull());
+                .validateOnAdd(eq(algo2), notNull());
 
         Action action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
                                     Arrays.asList(new Action.Property("PROP1", "PROP1Val"),
                                                   new Action.Property("Prop2", "Prop2Val")));
         _pipelineService.save(action1);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(action1), anyNonNull());
+                .validateOnAdd(eq(action1), notNull());
 
         Action action2 = new Action("ACTION2", "Action 2 description", "SOME ALGO",
                                     Collections.emptyList());
         _pipelineService.save(action2);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(action2), anyNonNull());
+                .validateOnAdd(eq(action2), notNull());
 
         Task task1 = new Task("TASK1", "Task1 description",
                               Arrays.asList(action1.getName(), action2.getName()));
         _pipelineService.save(task1);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(task1), anyNonNull());
+                .validateOnAdd(eq(task1), notNull());
 
         Task task2 = new Task("TASK2", "Task2 description", Collections.singletonList("SOME ACTION"));
         _pipelineService.save(task2);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(task2), anyNonNull());
+                .validateOnAdd(eq(task2), notNull());
 
 
         Pipeline pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
                                           Arrays.asList(task2.getName(), task1.getName()));
         _pipelineService.save(pipeline1);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(pipeline1), anyNonNull());
+                .validateOnAdd(eq(pipeline1), notNull());
 
         Pipeline pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 description",
                                           Collections.singleton("SOME TASK"));
         _pipelineService.save(pipeline2);
         verify(_mockPipelineValidator)
-                .validateOnAdd(eq(pipeline2), anyNonNull());
+                .validateOnAdd(eq(pipeline2), notNull());
 
 
 
@@ -174,7 +173,7 @@ public class TestPipelineService {
             assertEquals("Deserialized version should be equal to original.", expectedAlgo, loadedAlgo);
 
             verify(loaderPipelineValidator)
-                    .validateOnAdd(eq(loadedAlgo), anyNonNull());
+                    .validateOnAdd(eq(loadedAlgo), notNull());
         }
 
         for (Action expectedAction : expectedActions) {
@@ -183,7 +182,7 @@ public class TestPipelineService {
             assertEquals("Deserialized version should be equal to original.", expectedAction, loadedAction);
 
             verify(loaderPipelineValidator)
-                    .validateOnAdd(eq(loadedAction), anyNonNull());
+                    .validateOnAdd(eq(loadedAction), notNull());
         }
 
         for (Task expectedTask : expectedTasks) {
@@ -192,7 +191,7 @@ public class TestPipelineService {
             assertEquals("Deserialized version should be equal to original.", expectedTask, loadedTask);
 
             verify(loaderPipelineValidator)
-                    .validateOnAdd(eq(loadedTask), anyNonNull());
+                    .validateOnAdd(eq(loadedTask), notNull());
         }
 
 
@@ -203,7 +202,7 @@ public class TestPipelineService {
             assertEquals("Deserialized version should be equal to original.", expectedPipeline, loadedPipeline);
 
             verify(loaderPipelineValidator)
-                    .validateOnAdd(eq(loadedPipeline), anyNonNull());
+                    .validateOnAdd(eq(loadedPipeline), notNull());
         }
     }
 

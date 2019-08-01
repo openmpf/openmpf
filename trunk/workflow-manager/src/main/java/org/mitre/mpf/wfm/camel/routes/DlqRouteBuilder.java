@@ -52,6 +52,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID_PREFIX = "DLQ Route";
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
 	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
+	public static final int DUPLICATE_PREFETCH_SIZE = 1500;
 
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeIdPrefix, selectorReplyTo;
 
@@ -80,7 +81,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate from store%'";
 		String selector = "?selector=" + java.net.URLEncoder.encode(dupCondition, "UTF-8");
 
-		from(entryPoint + selector)
+		from(entryPoint + selector + "&destination.consumer.prefetchSize=" + DUPLICATE_PREFETCH_SIZE)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.stop(); // drop message without processing or forwarding

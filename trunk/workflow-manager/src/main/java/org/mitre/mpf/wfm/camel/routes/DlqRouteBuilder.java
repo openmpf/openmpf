@@ -52,6 +52,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID_PREFIX = "DLQ Route";
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
 	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
+	public static final int DUPLICATE_PREFETCH_SIZE = 1500;
 
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeIdPrefix, selectorReplyTo;
 
@@ -77,9 +78,10 @@ public class DlqRouteBuilder extends RouteBuilder {
 		String routeId = routeIdPrefix + " for Duplicate Messages";
 		log.debug("Configuring route '{}'.", routeId);
 
-		String selector = "?selector=" + java.net.URLEncoder.encode(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate from store%'", "UTF-8");
+		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate from store%'";
+		String selector = "?selector=" + java.net.URLEncoder.encode(dupCondition, "UTF-8");
 
-		from(entryPoint + selector)
+		from(entryPoint + selector + "&destination.consumer.prefetchSize=" + DUPLICATE_PREFETCH_SIZE)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.stop(); // drop message without processing or forwarding
@@ -90,7 +92,9 @@ public class DlqRouteBuilder extends RouteBuilder {
 		routeId = routeIdPrefix + " for Completed Detections";
 		log.debug("Configuring route '{}'.", routeId);
 
-		selector = "?selector=" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + selectorReplyTo + "'", "UTF-8");
+		// Ensure that this selector and the previous one are mutually exclusive.
+		selector = "?selector=(" + java.net.URLEncoder.encode(MpfHeaders.JMS_REPLY_TO + "='" + selectorReplyTo + "') " +
+				"AND ((" + DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " IS NULL) OR (NOT (" + dupCondition + ")))", "UTF-8");
 
 		from(entryPoint + selector)
 			.routeId(routeId)

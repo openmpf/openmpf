@@ -37,12 +37,6 @@ import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -72,24 +66,17 @@ public class TestPipelineService {
                                                    null);
     }
 
-    private static void copyTemplate(String templateFileName, Path dest) throws IOException {
-        Path source = Paths.get(TestUtil.findFile("/templates/" + templateFileName));
-        Files.copy(source, dest);
-    }
-
-
-
     @Test
     public void canSaveAndLoadPipelineComponents() throws IOException {
-        List<Algorithm.Property> algo1Properties = Arrays.asList(
+        var algo1Properties = List.of(
                 new Algorithm.Property("PROP1", "PROP1 description", ValueType.INT,
                                        "1", null),
                 new Algorithm.Property("PROP2", "PROP2 description", ValueType.STRING,
                                        null, "prop2.value"));
-        Algorithm algo1 = new Algorithm(
+        var algo1 = new Algorithm(
                 "ALGO1", "algo1 description", ActionType.DETECTION,
-                new Algorithm.Requires(Arrays.asList("STATE1", "STATE2")),
-                new Algorithm.Provides(Arrays.asList("STATE3", "STATE3"), algo1Properties),
+                new Algorithm.Requires(List.of("STATE1", "STATE2")),
+                new Algorithm.Provides(List.of("STATE3", "STATE3"), algo1Properties),
                 true, true);
 
         _pipelineService.save(algo1);
@@ -97,49 +84,49 @@ public class TestPipelineService {
                 .validateOnAdd(eq(algo1), notNull());
 
 
-        Algorithm algo2 = new Algorithm(
+        var algo2 = new Algorithm(
                 "ALGO2", "algo2 description", ActionType.DETECTION,
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of()),
                 true, false);
 
         _pipelineService.save(algo2);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(algo2), notNull());
 
-        Action action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
-                                    Arrays.asList(new Action.Property("PROP1", "PROP1Val"),
-                                                  new Action.Property("Prop2", "Prop2Val")));
+        var action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
+                                    List.of(new Action.Property("PROP1", "PROP1Val"),
+                                            new Action.Property("Prop2", "Prop2Val")));
         _pipelineService.save(action1);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(action1), notNull());
 
-        Action action2 = new Action("ACTION2", "Action 2 description", "SOME ALGO",
-                                    Collections.emptyList());
+        var action2 = new Action("ACTION2", "Action 2 description", "SOME ALGO",
+                                    List.of());
         _pipelineService.save(action2);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(action2), notNull());
 
-        Task task1 = new Task("TASK1", "Task1 description",
-                              Arrays.asList(action1.getName(), action2.getName()));
+        var task1 = new Task("TASK1", "Task1 description",
+                              List.of(action1.getName(), action2.getName()));
         _pipelineService.save(task1);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(task1), notNull());
 
-        Task task2 = new Task("TASK2", "Task2 description", Collections.singletonList("SOME ACTION"));
+        var task2 = new Task("TASK2", "Task2 description", List.of("SOME ACTION"));
         _pipelineService.save(task2);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(task2), notNull());
 
 
-        Pipeline pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
-                                          Arrays.asList(task2.getName(), task1.getName()));
+        var pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
+                                     List.of(task2.getName(), task1.getName()));
         _pipelineService.save(pipeline1);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(pipeline1), notNull());
 
         Pipeline pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 description",
-                                          Collections.singleton("SOME TASK"));
+                                          List.of("SOME TASK"));
         _pipelineService.save(pipeline2);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(pipeline2), notNull());
@@ -147,28 +134,28 @@ public class TestPipelineService {
 
 
         verifyLoaded(
-                Arrays.asList(algo1, algo2),
-                Arrays.asList(action1, action2),
-                Arrays.asList(task1, task2),
-                Arrays.asList(pipeline1, pipeline2));
+                List.of(algo1, algo2),
+                List.of(action1, action2),
+                List.of(task1, task2),
+                List.of(pipeline1, pipeline2));
 
     }
 
     private void verifyLoaded(
-            Collection<Algorithm> expectedAlgorithms,
-            Collection<Action> expectedActions,
-            Collection<Task> expectedTasks,
-            Collection<Pipeline> expectedPipelines) throws IOException {
+            Iterable<Algorithm> expectedAlgorithms,
+            Iterable<Action> expectedActions,
+            Iterable<Task> expectedTasks,
+            Iterable<Pipeline> expectedPipelines) throws IOException {
 
         // Use separate validator so that when we verify methods are called,
         // it won't pass from the validation that was performed when the pipeline component was saved.
-        PipelineValidator loaderPipelineValidator = mock(PipelineValidator.class);
+        var loaderPipelineValidator = mock(PipelineValidator.class);
 
-        PipelineService loaderPipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper,
+        var loaderPipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper,
                                                                         loaderPipelineValidator, null);
 
-        for (Algorithm expectedAlgo : expectedAlgorithms) {
-            Algorithm loadedAlgo = loaderPipelineService.getAlgorithm(expectedAlgo.getName());
+        for (var expectedAlgo : expectedAlgorithms) {
+            var loadedAlgo = loaderPipelineService.getAlgorithm(expectedAlgo.getName());
             assertNotSame("Deserialized version should be a different object.", expectedAlgo, loadedAlgo);
             assertEquals("Deserialized version should be equal to original.", expectedAlgo, loadedAlgo);
 
@@ -176,8 +163,8 @@ public class TestPipelineService {
                     .validateOnAdd(eq(loadedAlgo), notNull());
         }
 
-        for (Action expectedAction : expectedActions) {
-            Action loadedAction = loaderPipelineService.getAction(expectedAction.getName());
+        for (var expectedAction : expectedActions) {
+            var loadedAction = loaderPipelineService.getAction(expectedAction.getName());
             assertNotSame("Deserialized version should be a different object.", expectedAction, loadedAction);
             assertEquals("Deserialized version should be equal to original.", expectedAction, loadedAction);
 
@@ -185,8 +172,8 @@ public class TestPipelineService {
                     .validateOnAdd(eq(loadedAction), notNull());
         }
 
-        for (Task expectedTask : expectedTasks) {
-            Task loadedTask = loaderPipelineService.getTask(expectedTask.getName());
+        for (var expectedTask : expectedTasks) {
+            var loadedTask = loaderPipelineService.getTask(expectedTask.getName());
             assertNotSame("Deserialized version should be a different object.", expectedTask, loadedTask);
             assertEquals("Deserialized version should be equal to original.", expectedTask, loadedTask);
 
@@ -195,8 +182,8 @@ public class TestPipelineService {
         }
 
 
-        for (Pipeline expectedPipeline : expectedPipelines) {
-            Pipeline loadedPipeline = loaderPipelineService.getPipeline(expectedPipeline.getName());
+        for (var expectedPipeline : expectedPipelines) {
+            var loadedPipeline = loaderPipelineService.getPipeline(expectedPipeline.getName());
             assertNotSame("Deserialized version should be a different object.",
                           expectedPipeline, loadedPipeline);
             assertEquals("Deserialized version should be equal to original.", expectedPipeline, loadedPipeline);
@@ -205,7 +192,4 @@ public class TestPipelineService {
                     .validateOnAdd(eq(loadedPipeline), notNull());
         }
     }
-
-
-
 }

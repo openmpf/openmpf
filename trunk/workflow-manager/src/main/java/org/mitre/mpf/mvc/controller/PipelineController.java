@@ -182,19 +182,21 @@ public class PipelineController {
 
     /** Returns the details of a specified pipeline.
      *
-     * @param pipelineName  The name of the pipeline to retrieve.
+     * @param name  The name of the pipeline to retrieve.
      * @return  The specified pipeline.
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipelines/{pipelineName}"},
+    @RequestMapping(value = "/pipelines",
             method = RequestMethod.GET,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public Pipeline getPipeline(
-            @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-        Pipeline pipeline = _pipelineService.getPipeline(pipelineName);
+            @RequestParam("name") String name) throws WfmProcessingException{
+        Pipeline pipeline = _pipelineService.getPipeline(name);
         if (pipeline == null) {
-            throw new NotFoundWfmProcessingException("Pipeline not found: " + pipelineName + ".");
+            throw new NotFoundWfmProcessingException("Pipeline not found: " + name + '.');
         }
         return pipeline;
     }
@@ -234,16 +236,18 @@ public class PipelineController {
     //INTERNAL
     /** Deletes a specified pipeline.
      *
-     * @param pipelineName  The pipeline to delete.
+     * @param name  The pipeline to delete.
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipelines/{pipelineName}"},
+    @RequestMapping( value = "/pipelines",
             method = RequestMethod.DELETE,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public void deletePipeline(
-            @PathVariable("pipelineName") String pipelineName) throws WfmProcessingException{
-        _pipelineService.deletePipeline(pipelineName);
+            @RequestParam("name") String name) throws WfmProcessingException{
+        _pipelineService.deletePipeline(name);
     }
 
     //INTERNAL
@@ -265,19 +269,21 @@ public class PipelineController {
     //INTERNAL
     /** Returns the details of a specified task.
      *
-     * @param taskName  The name of the task to get.
+     * @param name  The name of the task to get.
      * @return  The task being retrieved.
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipeline-tasks/{taskName}"},
+    @RequestMapping(value = "/pipeline-tasks",
             method = RequestMethod.GET,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public Task getPipelineTask(
-            @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        Task task = _pipelineService.getTask(taskName);
+            @RequestParam("name") String name) throws WfmProcessingException {
+        Task task = _pipelineService.getTask(name);
         if (task == null) {
-            throw new NotFoundWfmProcessingException("Task not found: " + taskName + ".");
+            throw new NotFoundWfmProcessingException("Task not found: " + name + '.');
         }
         return task;
     }
@@ -310,16 +316,18 @@ public class PipelineController {
     //INTERNAL
     /** Deletes the specified task.
      *
-     * @param taskName  The name of the task to delete
+     * @param name  The name of the task to delete
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipeline-tasks/{taskName}"},
+    @RequestMapping(value = "/pipeline-tasks",
             method = RequestMethod.DELETE,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public void deletePipelineTask(
-            @PathVariable("taskName") String taskName) throws WfmProcessingException {
-        _pipelineService.deleteTask(taskName);
+            @RequestParam("name") String name) throws WfmProcessingException {
+        _pipelineService.deleteTask(name);
     }
 
     //INTERNAL
@@ -338,19 +346,21 @@ public class PipelineController {
     //INTERNAL
     /** Returns the details of a specified action.
      *
-     * @param actionName  The name of the action to retrieve.
+     * @param name  The name of the action to retrieve.
      * @return  The specified action.
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipeline-actions/{actionName}"},
+    @RequestMapping( value = {"/pipeline-actions"},
             method = RequestMethod.GET,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public Action getPipelineAction(
-            @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        Action action = _pipelineService.getAction(actionName);
+            @RequestParam("name") String name) throws WfmProcessingException {
+        Action action = _pipelineService.getAction(name);
         if (action == null) {
-            throw new NotFoundWfmProcessingException("Action not found: " + actionName + ".");
+            throw new NotFoundWfmProcessingException("Action not found: " + name + '.');
         }
         return action;
     }
@@ -405,16 +415,18 @@ public class PipelineController {
     //INTERNAL
     /** Deletes a specified action.
      *
-     * @param actionName  The name of the action to delete.
+     * @param name  The name of the action to delete.
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipeline-actions/{actionName}"},
+    @RequestMapping( value = "/pipeline-actions",
             method = RequestMethod.DELETE,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public void deletePipelineAction(
-            @PathVariable("actionName") String actionName) throws WfmProcessingException {
-        _pipelineService.deleteAction(actionName);
+            @RequestParam("name") String name) throws WfmProcessingException {
+        _pipelineService.deleteAction(name);
     }
 
     //INTERNAL
@@ -437,20 +449,22 @@ public class PipelineController {
     //INTERNAL
     /** Returns the details of a specified algorithm.
      *
-     * @param algorithmName  The name of the algorithm to retrieve.
+     * @param name  The name of the algorithm to retrieve.
      * @return  The specified algorithm
      * @throws WfmProcessingException
      */
-    @RequestMapping( value = {"/pipeline-algorithms/{algorithmName}"},
+    @RequestMapping( value = "/pipeline-algorithms",
             method = RequestMethod.GET,
-            produces = "application/json")
+            produces = "application/json",
+            // Uses query string parameter instead of path variable to support names with special characters.
+            params = "name")
     @ResponseBody
     public Algorithm getPipelineAlgorithm(
-            @PathVariable("algorithmName") String algorithmName) throws WfmProcessingException {
+            @RequestParam("name") String name) throws WfmProcessingException {
 
-        Algorithm algorithm = _pipelineService.getAlgorithm(algorithmName);
+        Algorithm algorithm = _pipelineService.getAlgorithm(name);
         if (algorithm == null) {
-            throw new NotFoundWfmProcessingException("Algorithm not found: " + algorithmName + '.');
+            throw new NotFoundWfmProcessingException("Algorithm not found: " + name + '.');
         }
 
         List<Algorithm.Property> propsWithDefaultSet = new ArrayList<>();

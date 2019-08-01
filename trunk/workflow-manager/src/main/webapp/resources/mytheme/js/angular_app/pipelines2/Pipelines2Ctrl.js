@@ -58,7 +58,7 @@
         '$q', '$resource', 'ActionService', 'TaskService',
         function ($q, $resource, ActionService, TaskService) {
 
-            var pipelineResource = $resource('pipelines/:name');
+            var pipelineResource = $resource('pipelines');
 
             var getPipeline = function (pipelineName) {
                 return pipelineResource.get({name: pipelineName})

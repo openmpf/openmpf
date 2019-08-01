@@ -56,7 +56,7 @@
         ['$q', '$resource', 'ActionService', 'orderByFilter',
             function ($q, $resource, ActionService, orderByFilter ) {
 
-                var taskResource = $resource('pipeline-tasks/:name');
+                var taskResource = $resource('pipeline-tasks');
 
                 var getAction = function (actionName) {
                     return ActionService.get(actionName)
@@ -100,7 +100,7 @@
                         //console.log("taskName="+JSON.stringify(taskName));
                         return taskResource.delete({name: taskName});
                     }
-                }
+                };
             }]);
 
 })();

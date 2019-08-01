@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.mitre.mpf.wfm.util.TextUtils;
-import org.mitre.mpf.wfm.util.ValidPipelineComponentName;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -43,7 +42,7 @@ public class Action implements PipelineComponent {
 
     private final String _name;
     @Override
-    @ValidPipelineComponentName
+    @NotBlank
     public String getName() {
         return _name;
     }
@@ -55,7 +54,7 @@ public class Action implements PipelineComponent {
     }
 
     private final String _algorithm;
-    @ValidPipelineComponentName
+    @NotBlank
     public String getAlgorithm() {
         return _algorithm;
     }
@@ -95,7 +94,7 @@ public class Action implements PipelineComponent {
         if (!(obj instanceof Action)) {
             return false;
         }
-        Action other = (Action) obj;
+        var other = (Action) obj;
         return Objects.equals(_name, other._name)
                 && Objects.equals(_description, other._description)
                 && Objects.equals(_properties, other._properties);
@@ -136,7 +135,7 @@ public class Action implements PipelineComponent {
             if (!(obj instanceof Property)) {
                 return false;
             }
-            Property property = (Property) obj;
+            var property = (Property) obj;
             return Objects.equals(_name, property._name)
                     && Objects.equals(_value, property._value);
         }

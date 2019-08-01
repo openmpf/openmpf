@@ -36,7 +36,6 @@ import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.AllNotBlank;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.mitre.mpf.wfm.util.ValidAlgoPropValue;
-import org.mitre.mpf.wfm.util.ValidPipelineComponentName;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -50,7 +49,7 @@ public class Algorithm implements PipelineComponent {
 
     private final String _name;
     @Override
-    @ValidPipelineComponentName
+    @NotBlank
     public String getName() {
         return _name;
     }
@@ -125,7 +124,7 @@ public class Algorithm implements PipelineComponent {
         if (!(obj instanceof Algorithm)) {
             return false;
         }
-        Algorithm other = (Algorithm) obj;
+        var other = (Algorithm) obj;
         return Objects.equals(_name, other._name)
                 && Objects.equals(_description, other._description)
                 && _actionType == other._actionType
@@ -205,7 +204,7 @@ public class Algorithm implements PipelineComponent {
             if (!(obj instanceof Provides)) {
                 return false;
             }
-            Provides other = (Provides) obj;
+            var other = (Provides) obj;
             return Objects.equals(_states, other._states)
                     && Objects.equals(_properties, other._properties);
         }
@@ -281,7 +280,7 @@ public class Algorithm implements PipelineComponent {
             if (!(obj instanceof Property)) {
                 return false;
             }
-            Property other = (Property) obj;
+            var other = (Property) obj;
             return Objects.equals(_name, other._name)
                     && Objects.equals(_description, other._description)
                     && _type == other._type

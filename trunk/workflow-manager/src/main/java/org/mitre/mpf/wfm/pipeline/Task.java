@@ -32,8 +32,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.mitre.mpf.wfm.util.AllNotBlank;
 import org.mitre.mpf.wfm.util.TextUtils;
-import org.mitre.mpf.wfm.util.ValidPipelineComponentName;
 
 import javax.validation.Valid;
 import java.util.Collection;
@@ -43,7 +43,7 @@ public class Task implements PipelineComponent {
 
     private final String _name;
     @Override
-    @ValidPipelineComponentName
+    @NotBlank
     public String getName() {
         return _name;
     }
@@ -56,7 +56,7 @@ public class Task implements PipelineComponent {
 
     private final ImmutableList<String> _actions;
     @NotEmpty @Valid
-    public ImmutableList<@ValidPipelineComponentName String> getActions() {
+    public ImmutableList<@AllNotBlank String> getActions() {
         return _actions;
     }
 
@@ -79,7 +79,7 @@ public class Task implements PipelineComponent {
             return false;
         }
 
-        Task other = (Task) obj;
+        var other = (Task) obj;
         return Objects.equals(_name, other._name) &&
                 Objects.equals(_description, other._description) &&
                 Objects.equals(_actions, other._actions);

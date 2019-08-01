@@ -55,6 +55,10 @@ public class PipelineValidator {
 
 
     public <T extends PipelineComponent> void validateOnAdd(T newPipelineComponent, Map<String, T> existingItems) {
+        Set<ConstraintViolation<PipelineComponent>> violations = _validator.validate(newPipelineComponent);
+        if (!violations.isEmpty()) {
+            throw new PipelineValidationException(newPipelineComponent, violations);
+        }
 
         T existing = existingItems.get(newPipelineComponent.getName());
         if (existing != null && !existing.equals(newPipelineComponent)) {
@@ -64,10 +68,6 @@ public class PipelineValidator {
                     type, newPipelineComponent.getName(), type));
         }
 
-        Set<ConstraintViolation<PipelineComponent>> violations = _validator.validate(newPipelineComponent);
-        if (!violations.isEmpty()) {
-            throw new PipelineValidationException(newPipelineComponent, violations);
-        }
     }
 
 

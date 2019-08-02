@@ -475,7 +475,7 @@ public class PipelineController {
             else {
                 Algorithm.Property propWithDefault = new Algorithm.Property(
                         property.getName(), property.getDescription(), property.getType(),
-                        property.getValue(_propertiesUtil::lookup), property.getPropertiesKey());
+                        _propertiesUtil.lookup(property.getPropertiesKey()), property.getPropertiesKey());
                 propsWithDefaultSet.add(propWithDefault);
             }
         }

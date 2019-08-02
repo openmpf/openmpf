@@ -37,7 +37,6 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.pipeline.Action;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -63,9 +62,6 @@ public class DetectionResponseProcessor
 
     @Autowired
     private JsonUtils jsonUtils;
-
-    @Autowired
-    private PipelineService pipelineService;
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
@@ -138,7 +134,7 @@ public class DetectionResponseProcessor
 
         } else {
             // Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
-            Action action = pipelineService.getAction(detectionResponse.getActionName());
+            Action action = job.getTransientPipeline().getAction(detectionResponse.getActionName());
 
             double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 

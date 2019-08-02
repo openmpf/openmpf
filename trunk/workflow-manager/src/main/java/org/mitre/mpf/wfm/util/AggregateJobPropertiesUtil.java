@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonJobRequest;
@@ -163,9 +162,19 @@ public class AggregateJobPropertiesUtil {
 
     public Map<String, String> getCombinedJobProperties(Action action,
                                                         TransientStreamingJob job) {
-        String algoName = action.getAlgorithm();
-        Algorithm algorithm = job.getTransientPipeline().getAlgorithm(algoName);
-        Map<String, String> combined = getAlgorithmProperties(algorithm);
+        var algoName = action.getAlgorithm();
+        var algorithm = job.getTransientPipeline().getAlgorithm(algoName);
+
+        var combined = new HashMap<String, String>();
+        for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
+            String defaultValue = property.getDefaultValue();
+            if (defaultValue != null) {
+                combined.put(property.getName(), defaultValue);
+            }
+            else {
+                combined.put(property.getName(), _propertiesUtil.lookup(property.getPropertiesKey()));
+            }
+        }
 
         for (Action.Property property : action.getProperties()) {
             combined.put(property.getName(), property.getValue());
@@ -177,16 +186,6 @@ public class AggregateJobPropertiesUtil {
         return combined;
     }
 
-    private Map<String, String> getAlgorithmProperties(Algorithm algorithm) {
-        ImmutableList<Algorithm.Property> properties = algorithm.getProvidesCollection().getProperties();
-
-        Map<String, String> result = new HashMap<>(properties.size());
-        for (Algorithm.Property property : properties) {
-            String value = property.getValue(_propertiesUtil::lookup);
-            result.put(property.getName(), value);
-        }
-        return result;
-    }
 
 
 
@@ -247,9 +246,46 @@ public class AggregateJobPropertiesUtil {
 
 
 
-    public String calculateValue(String property, TransientJob job, TransientMedia media,
+    public String calculateValue(String propertyName, TransientJob job, TransientMedia media,
                                  Action action) {
-        return getCombinedProperties(job, media, action).apply(property);
+        String mediaPropVal = media.getMediaSpecificProperty(propertyName);
+        if (mediaPropVal != null) {
+            return mediaPropVal;
+        }
+
+        TransientPipeline transientPipeline = job.getTransientPipeline();
+        String algoName = action.getAlgorithm();
+        String overriddenAlgoPropVal = job.getOverriddenAlgorithmProperties().get(algoName, propertyName);
+        if (overriddenAlgoPropVal != null) {
+            return overriddenAlgoPropVal;
+        }
+
+        String jobPropVal = job.getOverriddenJobProperties().get(propertyName);
+        if (jobPropVal != null) {
+            return jobPropVal;
+        }
+
+        for (Action.Property property : action.getProperties()) {
+            if (property.getName().equalsIgnoreCase(propertyName)) {
+                return property.getValue();
+            }
+        }
+
+        Algorithm algorithm = transientPipeline.getAlgorithm(algoName);
+
+        Algorithm.Property property = algorithm.getProperty(propertyName);
+        if (property != null) {
+            if (property.getDefaultValue() != null) {
+                return property.getDefaultValue();
+            }
+            String snapshotValue = job.getSystemPropertiesSnapshot().lookup(property.getPropertiesKey());
+            if (snapshotValue != null) {
+                return snapshotValue;
+            }
+            return _propertiesUtil.lookup(property.getPropertiesKey());
+        }
+
+        return null;
     }
 
 
@@ -266,43 +302,7 @@ public class AggregateJobPropertiesUtil {
 
     public Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media,
                                                           Action action) {
-        return propName -> {
-            String mediaPropVal = media.getMediaSpecificProperty(propName);
-            if (mediaPropVal != null) {
-                return mediaPropVal;
-            }
-
-            TransientPipeline transientPipeline = job.getTransientPipeline();
-            String algoName = action.getAlgorithm();
-            String overriddenAlgoPropVal = job.getOverriddenAlgorithmProperties().get(algoName, propName);
-            if (overriddenAlgoPropVal != null) {
-                return overriddenAlgoPropVal;
-            }
-
-            String jobPropVal = job.getOverriddenJobProperties().get(propName);
-            if (jobPropVal != null) {
-                return jobPropVal;
-            }
-
-            for (Action.Property property : action.getProperties()) {
-                if (property.getName().equalsIgnoreCase(propName)) {
-                    return property.getValue();
-                }
-            }
-
-            Algorithm algorithm = transientPipeline.getAlgorithm(algoName);
-
-            Algorithm.Property property = algorithm.getProperty(propName);
-            if (property != null) {
-                String defaultOrSnapshotValue = property.getValue(job.getSystemPropertiesSnapshot()::lookup);
-                if (defaultOrSnapshotValue != null) {
-                    return defaultOrSnapshotValue;
-                }
-                return property.getValue(_propertiesUtil::lookup);
-            }
-
-            return null;
-        };
+        return propName -> calculateValue(propName, job, media, action);
     }
 
 
@@ -392,8 +392,10 @@ public class AggregateJobPropertiesUtil {
         if (property == null) {
             return null;
         }
-
-        return property.getValue(_propertiesUtil::lookup);
+        if (property.getDefaultValue() != null) {
+            return property.getDefaultValue();
+        }
+        return _propertiesUtil.lookup(property.getPropertiesKey());
     }
 
 
@@ -474,9 +476,18 @@ public class AggregateJobPropertiesUtil {
 
 
         // Default Algorithm Properties
-        return Optional.ofNullable(_pipelineService.getAlgorithm(jsonAction.getAlgorithm()))
-                .map(a -> a.getProperty(propName))
-                .map(p -> p.getValue(_propertiesUtil::lookup))
-                .orElse(null);
+        Algorithm algorithm = _pipelineService.getAlgorithm(jsonAction.getAlgorithm());
+        if (algorithm != null) {
+            Algorithm.Property property = algorithm.getProperty(propName);
+            if (property != null) {
+                if (property.getDefaultValue() != null) {
+                    return property.getDefaultValue();
+                }
+                else {
+                    _propertiesUtil.lookup(property.getPropertiesKey());
+                }
+            }
+        }
+        return null;
     }
 }

@@ -41,7 +41,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Function;
 
 @ScriptAssert(lang = "javascript", script = "_this.getSupportsBatchProcessing() || _this.getSupportsStreamProcessing()",
         message = "must support batch processing, stream processing, or both")
@@ -249,12 +248,6 @@ public class Algorithm implements PipelineComponent {
         private final String _propertiesKey;
         public String getPropertiesKey() {
             return _propertiesKey;
-        }
-
-        public String getValue(Function<String, String> propertyLookupFn) {
-            return _defaultValue != null
-                    ? _defaultValue
-                    : propertyLookupFn.apply(_propertiesKey);
         }
 
 

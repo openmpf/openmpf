@@ -60,7 +60,7 @@ public class TestJsonDescriptor {
                 .anyMatch(p -> p.getDescription().equals("my prop 1")
                         && p.getName().equals("PROP1")
                         && p.getType() == ValueType.INT
-                        && p.getValue(s -> null).equals("2"));
+                        && p.getDefaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 
@@ -83,7 +83,7 @@ public class TestJsonDescriptor {
                 .anyMatch(p -> p.getDescription().equals("my prop 1")
                         && p.getName().equals("PROP1")
                         && p.getType() == ValueType.INT
-                        && p.getValue(s -> null).equals("2"));
+                        && p.getDefaultValue().equals("2"));
         assertTrue(propertiesLoaded);
 
 
@@ -140,7 +140,7 @@ public class TestJsonDescriptor {
                 .anyMatch(p -> p.getDescription().equals("my prop 1")
                         && p.getName().equals("PROP1")
                         && p.getType() == ValueType.INT
-                        && p.getValue(s -> null).equals("2"));
+                        && p.getDefaultValue().equals("2"));
         assertTrue(propertiesLoaded);
     }
 

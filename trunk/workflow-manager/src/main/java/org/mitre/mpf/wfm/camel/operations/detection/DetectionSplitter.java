@@ -41,7 +41,6 @@ import org.mitre.mpf.wfm.pipeline.Action;
 import org.mitre.mpf.wfm.pipeline.Algorithm;
 import org.mitre.mpf.wfm.pipeline.Task;
 import org.mitre.mpf.wfm.segmenting.*;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -51,8 +50,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-
-import static java.util.stream.Collectors.toSet;
 
 // DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
 
@@ -83,9 +80,6 @@ public class DetectionSplitter implements StageSplitter {
     @Autowired
     @Qualifier(DefaultMediaSegmenter.REF)
     private MediaSegmenter defaultMediaSegmenter;
-
-    @Autowired
-    private PipelineService pipelineService;
 
     private static final String[] transformProperties = {
             MpfConstants.ROTATION_PROPERTY,
@@ -164,8 +158,9 @@ public class DetectionSplitter implements StageSplitter {
                             .getAction(actionName);
 
                     // modifiedMap initialized with algorithm specific properties
-                    Map<String, String> modifiedMap = new HashMap<>(
-                            getAlgorithmProperties(action.getAlgorithm(), transientJob.getSystemPropertiesSnapshot()));
+                    Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(
+                            transientJob.getTransientPipeline().getAlgorithm(action.getAlgorithm()),
+                            transientJob.getSystemPropertiesSnapshot()));
 
                     // current modifiedMap properties overridden by action properties
                     for (Action.Property actionProperty : action.getProperties()) {
@@ -425,49 +420,21 @@ public class DetectionSplitter implements StageSplitter {
     }
 
 
-    private Map<String, String> getAlgorithmProperties(String algorithmName, SystemPropertiesSnapshot systemPropertiesSnapshot) {
-        Algorithm algorithm = pipelineService.getAlgorithm(algorithmName);
-        if (algorithm == null) {
-            return Collections.emptyMap();
-        }
-
-        Set<String> invalidSysPropertiesSet = algorithm.getProvidesCollection()
-                .getProperties()
-                .stream()
-                .filter(p -> p.getDefaultValue() == null && p.getValue(propertiesUtil::lookup) == null)
-                .map(Algorithm.Property::getPropertiesKey)
-                .collect(toSet());
-
-
-        if (!invalidSysPropertiesSet.isEmpty()) {
-            String message = "Missing default values for the following system properties: " + invalidSysPropertiesSet
-                    + ". They may need to be defined in one of the *.properties files.";
-            log.error(message);
-            throw new WfmProcessingException(message);
-        }
-
-        // Collect the algorithm properties into a map, but for algorithm definitions that may have been updated from detection system properties
-        // changed using the web UI, get the values of those properties from the detection system properties snapshot that was generated when the job was created.
-        // NOTE: A filter allows for usage of captured detection system properties when the algorithm PropertyDefinition propertiesKey is null.
-//        Map<String, String> algPropertiesMap = algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-//                .filter( pd -> pd.getPropertiesKey() == null )
-//                .collect(toMap(PropertyDefinition::getName, PropertyDefinition::getDefaultValue)); // collect() will throw a NPE if the property value is null
-
-
-        // Next statement may replace or add some properties from detection system properties whose values were captured when this job was created.
-        // Only want to pull the value from the snapshot if the PropertyDefinition has a proprietiesKey set.
-        // This processing is most applicable to jobs where the web UI may have been used to update properties between two stages of a pipeline.
-//        algorithm.getProvidesCollection().getAlgorithmProperties().stream()
-//                .filter( pd -> pd.getPropertiesKey() != null )
-//                .forEach( pd -> algPropertiesMap.put(pd.getName(), systemPropertiesSnapshot.lookup(pd.getPropertiesKey())));
-
-
+    private Map<String, String> getAlgorithmProperties(Algorithm algorithm,
+                                                       SystemPropertiesSnapshot systemPropertiesSnapshot) {
         Map<String, String> properties = new HashMap<>();
         for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
-            String propVal = property.getValue(systemPropertiesSnapshot::lookup);
-            properties.put(property.getName(), propVal);
+            if (property.getDefaultValue() != null) {
+                properties.put(property.getName(), property.getDefaultValue());
+                continue;
+            }
+            String snapshotValue = systemPropertiesSnapshot.lookup(property.getPropertiesKey());
+            if (snapshotValue != null) {
+                properties.put(property.getName(), snapshotValue);
+                continue;
+            }
+            properties.put(property.getName(), propertiesUtil.lookup(property.getPropertiesKey()));
         }
-
         return properties;
     }
 

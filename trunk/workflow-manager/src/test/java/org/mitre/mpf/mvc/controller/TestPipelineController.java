@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,14 +51,15 @@ import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @ContextConfiguration(classes = PipelineController.class)
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
-public class TestPipelineController extends TestCase {
+public class TestPipelineController {
 
     private MockMvc mockMvc;
 
@@ -80,7 +80,7 @@ public class TestPipelineController extends TestCase {
         var pipelineService = new PipelineServiceImpl(
                 mockPropertiesUtil, objectMapper, pipelineValidator, null);
 
-        var pipelineController = new PipelineController(mockPropertiesUtil, pipelineService, objectMapper);
+        var pipelineController = new PipelineController(mockPropertiesUtil, pipelineService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(pipelineController).build();
 
@@ -123,34 +123,41 @@ public class TestPipelineController extends TestCase {
 
         pipelineService.save(new Task("TEST_MARKUP_TASK1", "Test task for markup.",
                                       List.of("TEST_MARKUP_ACTION1")));
+
+        pipelineService.save(new Pipeline("TEST_PIPELINE", "Test pipeline",
+                                          List.of("TEST_DETECTION_TASK1")));
     }
 
 
 
     @Test
     public void testGetActions() throws Exception{
-        mockMvc.perform(get("/pipeline-actions"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/actions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
+
     }
     @Test
     public void testAddAction() throws Exception{
         var actionName = "TEST_ADD_ACTION";
 
-        mockMvc.perform(post("/pipeline-actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"actionName\": \"" + actionName + "\", \"actionDescription\": \"This is a test action\", \"algorithmName\": \"TEST_DETECTION_ALG\",\"properties\": \"{\\\"TESTPROP\\\":\\\"FALSE\\\"}\"}"))
+        mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": [{ \"name\": \"TESTPROP\", \"value\": \"FALSE\" }] }"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-actions?name=" + actionName))
+
+        mockMvc.perform(get("/actions?name=" + actionName))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(actionName))
                 .andExpect(jsonPath("$.description").value("This is a test action"))
                 .andExpect(jsonPath("$.algorithm").value("TEST_DETECTION_ALG"))
-                .andExpect(jsonPath("$.properties").isArray())
-                .andExpect(jsonPath("$.properties").isNotEmpty());
+                .andExpect(jsonPath("$.properties[0].name").value("TESTPROP"))
+                .andExpect(jsonPath("$.properties[0].value").value("FALSE"));
 
-        mockMvc.perform(delete("/pipeline-actions?name=" + actionName))
+        mockMvc.perform(delete("/actions?name=" + actionName))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/pipeline-actions?name=" + actionName))
+        mockMvc.perform(get("/actions?name=" + actionName))
                 .andExpect(status().is(HttpStatus.NOT_FOUND.value()));
     }
 
@@ -158,24 +165,23 @@ public class TestPipelineController extends TestCase {
     public void testAddActionErrors() throws Exception{
         var actionName = "TEST_ADD_ACTION_ERROR";
 
-        mockMvc.perform(post("/pipeline-actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"actionName\": \"" + actionName + "\", \"actionDescription\": \"This is a test action\", \"algorithmName\": \"TEST_DETECTION_ALG\",\"properties\": \"Stuff\"}"))
-                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Invalid properties value: Stuff."));
+        mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": \"Stuff\"}"))
+                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()));
 
-        mockMvc.perform(post("/pipeline-actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"actionName\": \"" + actionName + "\", \"actionDescription\": \"This is a test action\", \"algorithmName\": \"TEST_DETECTION_ALG\",\"properties\": \"{}\"}"))
+        mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": []}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/pipeline-actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"actionName\": \"" + actionName + "\", \"actionDescription\": \"This is a test action (duplicate)\", \"algorithmName\": \"TEST_DETECTION_ALG\",\"properties\": \"{}\"}"))
+        mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action (duplicate)\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": []}"))
                 .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Failed to add Action with name \"TEST_ADD_ACTION_ERROR\" because another Action with the same name already exists."));
+                .andExpect(jsonPath("$.message").value("Failed to add Action with name \"TEST_ADD_ACTION_ERROR\" because another Action with the same name already exists."));
 
-        mockMvc.perform(delete("/pipeline-actions?name=" + actionName))
+        mockMvc.perform(delete("/actions?name=" + actionName))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/pipeline-actions?name=" + actionName))
+        mockMvc.perform(get("/actions?name=" + actionName))
                 .andExpect(status().is(HttpStatus.NOT_FOUND.value()));
     }
 
@@ -183,10 +189,10 @@ public class TestPipelineController extends TestCase {
     @Test
     public void testAddActionWithMissingAlgorithm() throws Exception {
         var actionName = "ACTION_MISSING_ALGO";
-        mockMvc.perform(post("/pipeline-actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"actionName\": \"" + actionName + "\", \"actionDescription\": \"This is a test action\", \"algorithmName\": \"MISSING ALGO\",\"properties\": \"{}\"}"))
+        mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"MISSING ALGO\",\"properties\": []}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-actions?=name" + actionName))
+        mockMvc.perform(get("/actions?=name" + actionName))
                 .andExpect(status().isOk());
     }
 
@@ -194,21 +200,23 @@ public class TestPipelineController extends TestCase {
 
     @Test
     public void testGetTasks() throws Exception{
-        mockMvc.perform(get("/pipeline-tasks"))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/tasks"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
     }
 
     @Test
     public void testAddTask() throws Exception{
         var taskName = "TEST_ADD_TASK";
 
-        mockMvc.perform(get("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/tasks").contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actionsToAdd\": [\"TEST_DETECTION_ACTION1\"]}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": [\"TEST_DETECTION_ACTION1\"]}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(taskName))
                 .andExpect(jsonPath("$.description").value("This is a test task"))
@@ -216,10 +224,10 @@ public class TestPipelineController extends TestCase {
                 .andExpect(jsonPath("$.actions").isNotEmpty())
                 .andExpect(jsonPath("$.actions[0]").value("TEST_DETECTION_ACTION1"));;
 
-        mockMvc.perform(delete("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(delete("/tasks?name=" + taskName))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().is(HttpStatus.NOT_FOUND.value()));
     }
 
@@ -227,22 +235,23 @@ public class TestPipelineController extends TestCase {
     public void testAddTasksErrors() throws Exception{
         String taskName = "TEST_ADD_TASK_ERROR";
 
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actionsToAdd\": []}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": []}"))
                 .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Tasks must contain at least one action."));
+                .andExpect(jsonPath("$.message").value("TEST_ADD_TASK_ERROR has errors in the following fields:\n" +
+                                                               "actions=\"[]\": may not be empty"));
 
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actionsToAdd\": [\"TEST_DETECTION_ACTION1\"]}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": [\"TEST_DETECTION_ACTION1\"]}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task (duplicate)\", \"actionsToAdd\": [\"TEST_DETECTION_ACTION1\"]}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task (duplicate)\", \"actions\": [\"TEST_DETECTION_ACTION1\"]}"))
                 .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Failed to add Task with name \"TEST_ADD_TASK_ERROR\" because another Task with the same name already exists."));
+                .andExpect(jsonPath("$.message").value("Failed to add Task with name \"TEST_ADD_TASK_ERROR\" because another Task with the same name already exists."));
 
-        mockMvc.perform(delete("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(delete("/tasks?name=" + taskName))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().is(HttpStatus.NOT_FOUND.value()));
     }
 
@@ -250,10 +259,10 @@ public class TestPipelineController extends TestCase {
     @Test
     public void testAddTaskWithMissingActions() throws Exception {
         var taskName = "TASK WITH MISSING ACTION";
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actionsToAdd\": [\"MISSING ACTION1\", \"MISSING ACTION2\"]}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": [\"MISSING ACTION1\", \"MISSING ACTION2\"]}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().isOk());
     }
 
@@ -262,13 +271,13 @@ public class TestPipelineController extends TestCase {
     public void testAddTaskMultipleActions() throws Exception{
         var taskName = "TEST_MULTIPLE_ACTIONS_GOOD_TASK";
 
-        mockMvc.perform(get("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/tasks").contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/pipeline-tasks").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actionsToAdd\": [\"TEST_DETECTION_ACTION1\", \"TEST_DETECTION_ACTION2\"]}"))
+        mockMvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON).content(
+                "{\"name\": \"" + taskName + "\", \"description\": \"This is a test task\", \"actions\": [\"TEST_DETECTION_ACTION1\", \"TEST_DETECTION_ACTION2\"]}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(taskName))
                 .andExpect(jsonPath("$.description").value("This is a test task"))
@@ -277,10 +286,10 @@ public class TestPipelineController extends TestCase {
                 .andExpect(jsonPath("$.actions[0]").value("TEST_DETECTION_ACTION1"))
                 .andExpect(jsonPath("$.actions[1]").value("TEST_DETECTION_ACTION2"));
 
-        mockMvc.perform(delete("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(delete("/tasks?name=" + taskName))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/pipeline-tasks?name=" + taskName))
+        mockMvc.perform(get("/tasks?name=" + taskName))
                 .andExpect(status().is(HttpStatus.NOT_FOUND.value()));
     }
 
@@ -288,7 +297,9 @@ public class TestPipelineController extends TestCase {
     @Test
     public void testGetPipelines() throws Exception{
         mockMvc.perform(get("/pipelines"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
     }
 
     @Test
@@ -299,7 +310,7 @@ public class TestPipelineController extends TestCase {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": [\"TEST_DETECTION_TASK1\"]}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"TEST_DETECTION_TASK1\"]}"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/pipelines?name=" + pipelineName))
                 .andExpect(status().isOk())
@@ -321,17 +332,18 @@ public class TestPipelineController extends TestCase {
         var pipelineName = "TEST_ADD_PIPELINES_ERROR";
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": []}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": []}"))
                 .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Pipelines must contain at least one task."));
+                .andExpect(jsonPath("$.message").value("TEST_ADD_PIPELINES_ERROR has errors in the following fields:\n" +
+                                                               "tasks=\"[]\": may not be empty"));
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": [\"TEST_DETECTION_TASK1\"]}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"TEST_DETECTION_TASK1\"]}"))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline (duplicate)\", \"tasksToAdd\": [\"TEST_DETECTION_TASK1\"]}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline (duplicate)\", \"tasks\": [\"TEST_DETECTION_TASK1\"]}"))
                 .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Failed to add Pipeline with name \"TEST_ADD_PIPELINES_ERROR\" because another Pipeline with the same name already exists."));
+                .andExpect(jsonPath("$.message").value("Failed to add Pipeline with name \"TEST_ADD_PIPELINES_ERROR\" because another Pipeline with the same name already exists."));
 
         mockMvc.perform(delete("/pipelines?name=" + pipelineName))
                 .andExpect(status().isOk());
@@ -344,7 +356,7 @@ public class TestPipelineController extends TestCase {
     public void testAddPipelineWithMissingTask() throws Exception {
         var pipelineName = "PIPELINE  WITH MISSING TASK";
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": [\"MISSING TASK\"]}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"MISSING TASK\"]}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/pipelines?name=" + pipelineName))
@@ -357,7 +369,7 @@ public class TestPipelineController extends TestCase {
         var jsonEncodedName = "~`!@#$%^&* ()_+-=[]\\\\{}|;':\\\",./<>?";
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + jsonEncodedName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": [\"TASK\"]}"))
+                "{\"name\": \"" + jsonEncodedName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"TASK\"]}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/pipelines?name={name}", pipelineName))
@@ -374,7 +386,7 @@ public class TestPipelineController extends TestCase {
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasksToAdd\": [\"TEST_DETECTION_TASK1\", \"TEST_MARKUP_TASK1\"]}"))
+                "{\"name\": \"" + pipelineName + "\", \"description\": \"This is a test pipeline\", \"tasks\": [\"TEST_DETECTION_TASK1\", \"TEST_MARKUP_TASK1\"]}"))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/pipelines?name=" + pipelineName))
                 .andExpect(status().isOk())

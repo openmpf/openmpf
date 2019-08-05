@@ -678,11 +678,9 @@ public class TestPipelineValidator {
             }
 
             long lineCount = errorMessage.chars().filter(ch -> ch == '\n').count();
-            // First line is a message that doesn't contain an error.
-            long validationErrorCount = lineCount - 1;
 
             assertEquals("Did not contain the expected number of error messages.",
-                         validationErrorCount, messages.length);
+                         lineCount, messages.length);
         }
     }
 

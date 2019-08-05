@@ -56,7 +56,7 @@
         ['$resource', 'AlgorithmService', 'orderByFilter',
             function ( $resource, AlgorithmService, orderByFilter ) {
 
-                var actionResource = $resource('pipeline-actions');
+                var actionResource = $resource('actions');
 
                 var setActionsAlgo = function (actionDetails) {
                     return AlgorithmService.get(actionDetails.algorithm)

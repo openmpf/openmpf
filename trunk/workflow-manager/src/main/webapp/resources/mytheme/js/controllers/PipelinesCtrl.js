@@ -26,148 +26,158 @@
 
 'use strict';
 
+/* globals angular, _ */
+
+
 /**
  * PipelinesCtrl
  * @constructor
  */
 var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
 
-	$scope.selectedAction;
-	$scope.selectedTask;
-	$scope.actionsToAdd = [];
-	$scope.tasksToAdd = [];
-	//use like this: modifiedAlgValuesMap[propertyName] = value
-	$scope.modifiedAlgValuesMap = {};
+    $scope.selectedAction;
+    $scope.selectedTask;
+    $scope.actionsToAdd = [];
+    $scope.tasksToAdd = [];
+    //use like this: modifiedAlgValuesMap[propertyName] = value
+    $scope.modifiedAlgValuesMap = {};
 
-	$scope.getPipelinesModel = function() {
-		$http.get('pipelines/model').success(function(pipelinesModel){
-			$scope.algorithms = pipelinesModel.algorithms;
-			$scope.actions = pipelinesModel.actions;
-			$scope.tasks = pipelinesModel.tasks;
-			$scope.pipelines = pipelinesModel.pipelines;
-		});
-	};
+    var getAllPipelineComponents = function() {
+        $http.get('actions')
+            .success(function (actions) {
+                $scope.actions = actions;
+            });
 
-	$scope.getAlgModel = function() {
-		//reset the modifiedAlgValuesMap!
-		$scope.modifiedAlgValuesMap = {};
-		if($scope.selectedAlgorithm) {
-			$http({
-				url: 'pipelines/algorithm-properties', 
-				method: "GET",
-				params: {algName: $scope.selectedAlgorithm}
-			}).success(function(algModel){
-				$scope.algModel = algModel;
-			});
-		}
-	};
+        $http.get('tasks')
+            .success(function (tasks) {
+                $scope.tasks = tasks;
+            });
 
-	$scope.createAction = function() {		
-		if($scope.selectedAlgorithm && $scope.modifiedAlgValuesMap &&
-				$scope.modalName && $scope.modalDescription) {
+        $http.get('pipelines')
+            .success(function (pipelines) {
+                $scope.pipelines = pipelines;
+            });
 
-			var dataObj = {
-					algorithmName: $scope.selectedAlgorithm,
-					actionName: $scope.modalName, 
-					actionDescription: $scope.modalDescription,
-					properties: JSON.stringify($scope.modifiedAlgValuesMap)
-			};
-			var res = $http.post('pipelines/create-action', dataObj);
-			res.success(function(responseTuple, status, headers, config) {
-				//should be true/null on success
-				if(responseTuple.first) {
-					var successMsg = 'Successfully added the action ' + $scope.modalName;
-					
-					$scope.modalName = "";
-					$scope.modalDescription = "";
-					$scope.modalType = "";
-					//reload model
-					$scope.getPipelinesModel();
+        $http.get('algorithms')
+            .success(function (algorithms) {
+                $scope.algorithms = algorithms;
+            });
+    };
 
-					$scope.selectedAlgorithm = "";
-					$scope.modifiedAlgValuesMap = {};
-					$scope.showAddAction = false;
-					
-					//temporary jquery solution to dismiss modal
-					$('#addModal').modal('toggle');
-					
-				    $timeout(function() {
-				    	NotificationSvc.success(successMsg);
-				    }, 350);
-				} else {
-					alert('failure: ' + responseTuple.second);
-				}
-			});
-			res.error(function(data, status, headers, config) {
-				alert( "failure message: " + JSON.stringify({data: data}));
-			});
+    $scope.resetModifiedAlgoProps = function() {
+        $scope.modifiedAlgValuesMap = {};
+    };
 
-		} else {
-			alert('missing fields');
-		}
-	};
+    $scope.createAction = function() {
+        if($scope.selectedAlgorithm && $scope.modifiedAlgValuesMap &&
+            $scope.modalName && $scope.modalDescription) {
 
-	$scope.createTaskOrPipeline = function() {
-		if($scope.modalName && $scope.modalDescription) {
-			var modelToSend = {
-					type : $scope.modalType, 
-					name : $scope.modalName, 
-					description : $scope.modalDescription,
-					itemsToAdd : ($scope.modalType === 'task') ? $scope.actionsToAdd : $scope.tasksToAdd 
-			};
-	
-			var res = $http.post('pipelines/add-task-or-pipeline', modelToSend);
-			res.success(function(responseTuple, status, headers, config) {
-				if(responseTuple.first) {
-					var successMsg = 'Successfully added the ' + $scope.modalType+ ' ' + $scope.modalName;
-												
-					$scope.modalName = "";
-					$scope.modalDescription = "";
-					//reload model
-					$scope.getPipelinesModel();
-					if($scope.modalType === 'task') { 
-						$scope.actionsToAdd = [];
-						$scope.showAddTask = false;
-					} else { /*pipeline*/
-						$scope.tasksToAdd = [];
-						$scope.showAddPipeline = false;
-					}
-					$scope.modalType = "";
-					//temporary jquery solution to dismiss modal
-					$('#addModal').modal('toggle');
-					
-				    $timeout(function() {
-				    	NotificationSvc.success(successMsg);
-				    }, 350);
-				} else {
-					alert('failure: ' + responseTuple.second);
-				}
-			});
-			res.error(function(data, status, headers, config) {
-				alert( "failure message: " + JSON.stringify({data: data}));
-			});
-		} else {
-			alert('missing fields');
-		}
-	};	
-	
-	$scope.create = function() {
-		if($scope.modalType == 'action') {
-			$scope.createAction();  
-		} else {
-			$scope.createTaskOrPipeline();
-		}
-	}
+            var actionProps = _.map($scope.modifiedAlgValuesMap, function (value, key) {
+                return {name: key, value: value};
+            });
 
-	$scope.removeAction = function(index) {
-		console.log('index: ' + index);
-		$scope.actionsToAdd.splice(index,1);
-	};
+            var dataObj = {
+                name: $scope.modalName,
+                description: $scope.modalDescription,
+                algorithm: $scope.selectedAlgorithm.name,
+                properties: actionProps
+            };
+            var res = $http.post('rest/actions', dataObj);
+            res.success(function(responseTuple, status, headers, config) {
+                //should be true/null on success
+                var successMsg = 'Successfully added the action ' + $scope.modalName;
 
-	$scope.removeTask = function(index) {
-		console.log('index: ' + index);
-		$scope.tasksToAdd.splice(index,1);
-	};	
-	
-	$scope.getPipelinesModel();
+                $scope.modalName = "";
+                $scope.modalDescription = "";
+                $scope.modalType = "";
+                //reload model
+                getAllPipelineComponents();
+
+                $scope.selectedAlgorithm = "";
+                $scope.modifiedAlgValuesMap = {};
+                $scope.showAddAction = false;
+
+                //temporary jquery solution to dismiss modal
+                $('#addModal').modal('toggle');
+
+                $timeout(function() {
+                    NotificationSvc.success(successMsg);
+                }, 350);
+            });
+            res.error(function(data) {
+                alert( "failure message: " + data.message);
+            });
+
+        } else {
+            alert('missing fields');
+        }
+    };
+
+    $scope.createTaskOrPipeline = function() {
+        if($scope.modalName && $scope.modalDescription) {
+            var modelToSend = {
+                name : $scope.modalName,
+                description : $scope.modalDescription
+            };
+
+            var url;
+            if ($scope.modalType === 'task') {
+                modelToSend.actions = $scope.actionsToAdd;
+                url = 'tasks';
+            }
+            else {
+                modelToSend.tasks = $scope.tasksToAdd;
+                url = 'pipelines';
+            }
+
+            var res = $http.post(url, modelToSend);
+            res.success(function() {
+                var successMsg = 'Successfully added the ' + $scope.modalType+ ' ' + $scope.modalName;
+
+                $scope.modalName = "";
+                $scope.modalDescription = "";
+                //reload model
+                getAllPipelineComponents();
+                if($scope.modalType === 'task') {
+                    $scope.actionsToAdd = [];
+                    $scope.showAddTask = false;
+                } else { /*pipeline*/
+                    $scope.tasksToAdd = [];
+                    $scope.showAddPipeline = false;
+                }
+                $scope.modalType = "";
+                //temporary jquery solution to dismiss modal
+                $('#addModal').modal('toggle');
+
+                $timeout(function() {
+                    NotificationSvc.success(successMsg);
+                }, 350);
+            });
+            res.error(function(data) {
+                alert( "failure message: " + data.message);
+            });
+        } else {
+            alert('missing fields');
+        }
+    };
+
+    $scope.create = function() {
+        if($scope.modalType === 'action') {
+            $scope.createAction();
+        } else {
+            $scope.createTaskOrPipeline();
+        }
+    }
+
+    $scope.removeAction = function(index) {
+        console.log('index: ' + index);
+        $scope.actionsToAdd.splice(index,1);
+    };
+
+    $scope.removeTask = function(index) {
+        console.log('index: ' + index);
+        $scope.tasksToAdd.splice(index,1);
+    };
+
+    getAllPipelineComponents();
 };

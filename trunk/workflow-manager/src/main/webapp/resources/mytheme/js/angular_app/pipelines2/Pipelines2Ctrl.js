@@ -103,7 +103,7 @@
                     var pack = {
                         name: pipeline.name,
                         description: pipeline.description,
-                        tasksToAdd: _.pluck(pipeline.taskRefs, "name")
+                        tasks: _.pluck(pipeline.taskRefs, "name")
                     };
                     return pipelineResource.save(pack, function () {
                         // console.log("saved pack")
@@ -230,7 +230,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the pipeline.  Most likely, this is because the name is invalid, or no tasks are defined.'});
+                            text: 'An error occurred when saving the pipeline: ' + error.data.message});
                         console.log("***Error from Pipelines2Service.save() :");
                         console.log(error);
                     });
@@ -458,13 +458,9 @@
              *  if it does not have a value, it's relying on the defaultValue
              */
             var getChangedActionProperties = function ( action ) {
-                var ret = {};
-                _.each( action.viewProperties, function( prop )  {
-                    if ( prop.value!==undefined && prop.value!=="" ) {
-                        ret[prop.name] = prop.value;
-                    }
+                return action.viewProperties.filter(function (prop) {
+                    return prop.value !== undefined && prop.value !== "";
                 });
-                return ret;
             };
 
 
@@ -515,10 +511,10 @@
 
                 action.name = actions2.renderAsCustomName( action.name );
                 var actionObj = {
-                    algorithmName: action.algorithmRef,
-                    actionName: action.name,
-                    actionDescription: action.description,
-                    properties: JSON.stringify( getChangedActionProperties( action ) )
+                    name: action.name,
+                    description: action.description,
+                    algorithm: action.algorithmRef,
+                    properties: getChangedActionProperties( action )
                 };
 
                 var opPromise = ActionService.save( actionObj )
@@ -535,7 +531,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the action.  Most likely, this is because the name is invalid, or a parameter is missing.'});
+                            text: 'An error occurred when saving the action: ' + error.data.message});
                         console.log("***Error from ActionService.save() :");
                         console.log(error);
                     });
@@ -549,7 +545,7 @@
                 var taskObj = {
                     name: tasks2.renderAsCustomName( actionName ),
                     description: action.description,
-                    actionsToAdd: [ actionName ]
+                    actions: [ actionName ]
                 };
                 // console.log("taskObj="+JSON.stringify(taskObj));
 
@@ -566,7 +562,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the task. Most likely, this is because the name is invalid.'});
+                            text: 'An error occurred when saving the task: ' + error.data.message});
                         console.log("***Error from TaskService.save() :");
                         console.log(error);
                     });

@@ -46,7 +46,7 @@ public class PipelineValidationException extends InvalidPipelineException {
         return validationErrors.stream()
                 .map(PipelineValidationException::createFieldMessage)
                 .sorted()
-                .collect(joining("\n", prefix, "\n"));
+                .collect(joining("\n", prefix, ""));
     }
 
     private static String createFieldMessage(ConstraintViolation<PipelineComponent> violation) {

@@ -46,7 +46,6 @@ import org.mitre.mpf.wfm.pipeline.Action;
 import org.mitre.mpf.wfm.pipeline.Pipeline;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.pipeline.Task;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -116,9 +115,6 @@ public abstract class TestSystem {
     @Autowired
     @Qualifier(StreamingJobRequestBoImpl.REF)
     protected StreamingJobRequestBo streamingJobRequestBo;
-
-    @Autowired
-    protected MpfService mpfService;
 
     @Autowired
     protected PipelineService pipelineService;
@@ -245,7 +241,7 @@ public abstract class TestSystem {
     protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
         JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
                                                                    buildOutput, priority);
-        long jobRequestId = mpfService.submitJob(jsonJobRequest);
+        long jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
@@ -257,7 +253,7 @@ public abstract class TestSystem {
                                                                                               buildOutput, priority,
                                                                                               stallTimeout,
                                                                                               null,null);
-        long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
+        long jobRequestId = streamingJobRequestBo.run(jsonStreamingJobRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }

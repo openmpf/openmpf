@@ -40,9 +40,10 @@ import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -82,8 +83,11 @@ import java.util.function.Function;
 public class MarkupController {
     private static final Logger log = LoggerFactory.getLogger(MarkupController.class);
 
-    @Autowired //will grab the impl
-    private MpfService mpfService;
+    @Autowired
+    private MarkupResultDao markupResultDao;
+
+    @Autowired
+    private HibernateJobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -97,7 +101,7 @@ public class MarkupController {
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
         List<MarkupResultModel> markupResultModels = new ArrayList<MarkupResultModel>();
-        for (MarkupResult markupResult : mpfService.getAllMarkupResults()) {
+        for (MarkupResult markupResult : markupResultDao.findAll()) {
             if (jobId != null) {
                 if (markupResult.getJobId() == jobId) {
                     markupResultModels.add(ModelUtils.converMarkupResult(markupResult));
@@ -131,7 +135,7 @@ public class MarkupController {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
         //all MarkupResult objects
-        List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(jobId);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
         Collections.reverse(markupResults);
 
         //convert markup objects
@@ -142,7 +146,7 @@ public class MarkupController {
         }
 
         //add job media that may exist without markup
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest != null) {
             JsonJobRequest req = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
 
@@ -212,7 +216,7 @@ public class MarkupController {
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
     public void serve(HttpServletResponse response, @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
-        MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
+        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult != null) {
             //only on image!
             if (!StringUtils.endsWithIgnoreCase(mediaMarkupResult.getMarkupUri(), "avi")) {
@@ -230,7 +234,7 @@ public class MarkupController {
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
     public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
-        MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
+        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult == null) {
             log.debug("server download file failed for markup id = " +id);
             response.setStatus(404);

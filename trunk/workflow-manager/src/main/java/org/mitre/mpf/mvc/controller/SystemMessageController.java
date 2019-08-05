@@ -31,7 +31,7 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.SystemMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +62,7 @@ public class SystemMessageController {
     private static final Logger log = LoggerFactory.getLogger(SystemMessageController.class);
 
     @Autowired
-    private MpfService mpfService;
+    private SystemMessageService systemMessageService;
 
     /* *************** REST endpoints and implementations **************** */
     /* used http://websystique.com/springmvc/spring-mvc-4-restful-web-services-crud-example-resttemplate/ as CRUD example */
@@ -70,7 +70,7 @@ public class SystemMessageController {
     @RequestMapping(value = {"/system-message"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
     @ResponseBody
     public List<SystemMessage> getAllSystemMessages() {
-        return mpfService.getSystemMessagesByType( "all" );
+        return systemMessageService.getSystemMessagesByType( "all" );
     }
 
     @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
@@ -93,7 +93,7 @@ public class SystemMessageController {
     @ResponseBody
     public List<SystemMessage>  getFilteredSystemMessagesRest(
             @ApiParam(value = "The message type to find", allowableValues = "all,admin,login", required = true) @PathVariable("typeFilter") String typeFilter ) {
-        return mpfService.getSystemMessagesByType( typeFilter );
+        return systemMessageService.getSystemMessagesByType( typeFilter );
     }
 
 
@@ -113,13 +113,13 @@ public class SystemMessageController {
                 String logmsg = null;
                 validAuth = true;
                 if ( op.equals( "POST" ) && systemMessage != null ) {
-                    mpfService.addSystemMessage(systemMessage);
+                    systemMessageService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
                 }
                 else if ( op.equals( "PUT" ) && systemMessage != null ) {
-                    mpfService.addSystemMessage(systemMessage);
+                    systemMessageService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
@@ -131,7 +131,7 @@ public class SystemMessageController {
 //                    httpStatus = HttpStatus.CREATED;
 //                }
                 else if ( op.equals( "DELETE" ) && id > 0 ) {
-                    systemMessage = mpfService.deleteSystemMessage( id );
+                    systemMessage = systemMessageService.deleteSystemMessage( id );
                     logmsg = "Successfully deleted the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.OK;

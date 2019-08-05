@@ -32,10 +32,10 @@ import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,12 +63,11 @@ import java.util.concurrent.TimeUnit;
 public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private static final Logger log = LoggerFactory.getLogger(TestSystemNightly.class);
 
-
     @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
-    private MpfService mpfService;
+    protected JobRequestBo jobRequestBo;
 
     @Autowired
     private JobProgress jobProgress;
@@ -377,7 +376,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
                 JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(),
                         "OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(), Collections.emptyMap(), false, priority);
-                jobRequestId = mpfService.submitJob(jsonJobRequest);
+                jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {
                 log.error(String.format("Failed to run job %d due to an exception.", jobRequestId), exception);

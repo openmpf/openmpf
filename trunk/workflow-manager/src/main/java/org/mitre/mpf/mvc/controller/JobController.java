@@ -37,11 +37,12 @@ import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.Action;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -88,8 +89,11 @@ public class JobController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired //will grab the impl
-    private MpfService mpfService;
+    @Autowired
+    private JobRequestBo jobRequestBo;
+
+    @Autowired
+    private HibernateJobRequestDao jobRequestDao;
 
     @Autowired
     private SessionModel sessionModel;
@@ -163,11 +167,12 @@ public class JobController {
     public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
         if (useSession) {
             return sessionModel.getSessionJobs().stream()
-                    .map(id -> convertJob(mpfService.getJobRequest(id)))
+                    .map(id -> convertJob(jobRequestDao.findById(id)))
                     .collect(toList());
         }
         else {
-            return mpfService.getAllJobRequests().stream()
+            return jobRequestDao.findAll()
+                    .stream()
                     .map(this::convertJob)
                     .collect(toList());
         }
@@ -202,11 +207,12 @@ public class JobController {
         String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
         //handle paging
-        List<SingleJobInfo> jobInfoModels = mpfService.getPagedJobRequests(length, start, search, sortColumn,
-                sortOrderDirection).stream()
+        List<SingleJobInfo> jobInfoModels = jobRequestDao
+                .findByPage(length, start, search, sortColumn, sortOrderDirection)
+                .stream()
                 .map(this::convertJob)
                 .collect(toList());
-        int recordsTotal = mpfService.getJobRequestCount().intValue();
+        int recordsTotal = (int) jobRequestDao.countAll();
 
         JobPageListModel model = new JobPageListModel();
         // Total records, before filtering (i.e. the total number of records in the database)
@@ -214,7 +220,7 @@ public class JobController {
         // Total records, after filtering (i.e. the total number of records after filtering has been applied -
         // not just the number of records being returned for this page of data).
         model.setRecordsFiltered( search.equals("") ? recordsTotal :
-                mpfService.getJobRequestCountFiltered(search).intValue() );
+                                          (int)jobRequestDao.countFiltered(search));
 
         //convert for output
         for (int i = 0; i < jobInfoModels.size(); i++) {
@@ -246,7 +252,7 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
             return ResponseEntity.badRequest().body(null);
@@ -263,7 +269,7 @@ public class JobController {
             return null;
         }
 
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
             return null;
@@ -286,7 +292,7 @@ public class JobController {
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             return ResponseEntity.notFound().build();
         }
@@ -434,30 +440,29 @@ public class JobController {
 
             JsonJobRequest jsonJobRequest;
             if (StringUtils.isEmpty(jobCreationRequest.getCallbackURL())) {
-                jsonJobRequest = mpfService.createJob(
+                jsonJobRequest = jobRequestBo.createRequest(
+                        jobCreationRequest.getExternalId(),
+                        jobCreationRequest.getPipelineName(),
                         media,
                         jobCreationRequest.getAlgorithmProperties(),
                         jobCreationRequest.getJobProperties(),
-                        jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(),  //TODO: what do we do with this from the UI?
-                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
-
+                        buildOutput,
+                        priority);
             }
             else {
-                jsonJobRequest = mpfService.createJob(
+                jsonJobRequest = jobRequestBo.createRequest(
+                        jobCreationRequest.getExternalId(),
+                        jobCreationRequest.getPipelineName(),
                         media,
                         jobCreationRequest.getAlgorithmProperties(),
                         jobCreationRequest.getJobProperties(),
-                        jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority,     // Use the priority value if it is provided, otherwise use the default value from the properties file.
+                        buildOutput,
+                        priority,
                         jobCreationRequest.getCallbackURL(),
                         jobCreationRequest.getCallbackMethod());
             }
 
-            long jobId = mpfService.submitJob(jsonJobRequest);
+            long jobId = jobRequestBo.run(jsonJobRequest).getId();
             log.debug("Successful creation of batch JobId: {}", jobId);
 
             if (useSession) {
@@ -500,7 +505,7 @@ public class JobController {
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
         try {
-            long newJobId = mpfService.resubmitJob(jobId, jobPriority);
+            long newJobId = jobRequestBo.resubmit(jobId, jobPriority).getId();
             //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
             if (newJobId != -1 && newJobId == jobId) {
                 //make sure to reset the value in the job progress map to handle manual refreshes that will display
@@ -522,8 +527,15 @@ public class JobController {
 
     private MpfResponse cancelJobInternal(long jobId) {
         log.debug("Attempting to cancel job with id: {}.", jobId);
-        if (mpfService.cancel(jobId)) {
-            log.debug("Successful cancellation of job with id: {}");
+        boolean wasCancelled;
+        try {
+            wasCancelled = jobRequestBo.cancel(jobId);
+        } catch ( WfmProcessingException wpe ) {
+            log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
+            wasCancelled = false;
+        }
+        if (wasCancelled) {
+            log.debug("Successful cancellation of job with id: {}", jobId);
             return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
         String errorStr = "Failed to cancel the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a cancel request. "
@@ -531,7 +543,6 @@ public class JobController {
         log.error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
-
 
     private void checkProperties(JobCreationRequest jobCreationRequest) {
         try {

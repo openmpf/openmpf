@@ -32,10 +32,11 @@ import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 // swagger includes
 
 @Api(value = "streaming-jobs",
@@ -64,8 +67,11 @@ public class StreamingJobController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired //will grab the impl
-    private MpfService mpfService;
+    @Autowired
+    private HibernateStreamingJobRequestDao streamingJobRequestDao;
+
+    @Autowired
+    private StreamingJobRequestBo streamingJobRequestBo;
 
     // job progress may not be required for streaming jobs
     @Autowired
@@ -142,8 +148,21 @@ public class StreamingJobController {
     public List<Long> getStreamingJobsInfoRest(@ApiParam(name = "isActive", value = "isActive", required = false, defaultValue = "true")
                                                @RequestParam(value = "isActive", required = false) boolean isActive ) {
         //get a list of all of the streaming job ids
-        return mpfService.getAllStreamingJobIds(isActive);
+        if (isActive) {
+            return streamingJobRequestDao.findAll()
+                    .stream()
+                    .filter(j -> !j.getStatus().isTerminal())
+                    .map(StreamingJobRequest::getId)
+                    .collect(toList());
+        }
+        else {
+            return streamingJobRequestDao.findAll()
+                    .stream()
+                    .map(StreamingJobRequest::getId)
+                    .collect(toList());
+        }
     }
+
 
 // TODO:
 // /rest/streaming/jobs/{id}/output/detection
@@ -228,13 +247,14 @@ public class StreamingJobController {
                         streamingJobCreationRequest.getSegmentSize(),
                         streamingJobCreationRequest.getMediaProperties());
 
-                JsonStreamingJobRequest jsonStreamingJobRequest = mpfService.createStreamingJob(json_stream,
+                JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(
+                        streamingJobCreationRequest.getExternalId(),
+                        streamingJobCreationRequest.getPipelineName(),
+                        json_stream,
                         streamingJobCreationRequest.getAlgorithmProperties(),
                         streamingJobCreationRequest.getJobProperties(),
-                        streamingJobCreationRequest.getPipelineName(),
-                        streamingJobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        enableOutputToDisk, // Use the buildOutput value if it is provided with the streaming job, otherwise use the default value from the properties file.,
-                        priority,// Use the priority value if it is provided, otherwise use the default value from the properties file.
+                        enableOutputToDisk,
+                        priority,
                         streamingJobCreationRequest.getStallTimeout(),
                         streamingJobCreationRequest.getHealthReportCallbackUri(),
                         streamingJobCreationRequest.getSummaryReportCallbackUri());
@@ -243,12 +263,12 @@ public class StreamingJobController {
                 // created when the job is submitted to the MPF service because that is when the streaming job
                 // is persisted in the long term database, and the streaming jobs output object file system
                 // will be created using the assigned jobId, if the creation of output objects is enabled .
-                long jobId = mpfService.submitJob(jsonStreamingJobRequest);
+                long jobId = streamingJobRequestBo.run(jsonStreamingJobRequest).getId();
                 log.debug("Successful creation of streaming JobId {}", jobId);
 
                 // get the streamingJobRequest so we can pass along the output object directory in the
                 // streaming job creation response.
-                StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
+                StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
                 return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
             }
         }
@@ -276,13 +296,13 @@ public class StreamingJobController {
         try {
             List<StreamingJobRequest> jobRequests = new ArrayList<StreamingJobRequest>();
             if (jobId != null) {
-                StreamingJobRequest jobRequest = mpfService.getStreamingJobRequest(jobId);
+                StreamingJobRequest jobRequest = streamingJobRequestDao.findById(jobId);
                 if (jobRequest != null) {
                     jobRequests.add(jobRequest);
                 }
             } else {
                 // Get all of the streaming jobs from the long-term database.
-                jobRequests = mpfService.getAllStreamingJobRequests();
+                jobRequests = streamingJobRequestDao.findAll();
             }
 
             for (StreamingJobRequest jobRequest : jobRequests) {
@@ -305,14 +325,14 @@ public class StreamingJobController {
         StreamingJobCancelResponse cancelResponse = null;
         log.debug("Attempting to cancel streaming job with id {}, doCleanup {}.", jobId, doCleanup);
 
-        StreamingJobRequest streamingJobRequest = mpfService.getStreamingJobRequest(jobId);
+        StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if ( streamingJobRequest == null ) {
             // if the requested streaming job doesn't exist, it can't be marked for cancellation, so this is an error.
             cancelResponse = new StreamingJobCancelResponse(jobId, null, doCleanup,
                 MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {
-                mpfService.cancelStreamingJob(jobId, doCleanup);
+                streamingJobRequestBo.cancel(jobId, doCleanup);
 
                 log.info("Successfully marked for cancellation streaming job with id {}", jobId);
 

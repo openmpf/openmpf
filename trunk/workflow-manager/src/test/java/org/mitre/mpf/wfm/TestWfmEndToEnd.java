@@ -41,13 +41,13 @@ import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +80,7 @@ public class TestWfmEndToEnd {
 	private JobRequestBo jobRequestBo;
 
 	@Autowired
-	private MpfService mpfService;
+	private HibernateJobRequestDao jobRequestDao;
 
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
@@ -153,7 +153,7 @@ public class TestWfmEndToEnd {
 	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
 		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
 				Collections.emptyMap(), jobProperties, buildOutput, priority);
-		long jobRequestId = mpfService.submitJob(jsonJobRequest);
+		long jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
@@ -167,7 +167,7 @@ public class TestWfmEndToEnd {
 
 		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(), true, 5);
 
-		JobRequest jobRequest = mpfService.getJobRequest(jobId);
+		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
@@ -186,10 +186,10 @@ public class TestWfmEndToEnd {
 		// Ensure that there is at least some pause between jobs so that the start and stop times can be meaningfully
 		// compared to ensure that results are not erroneously being duplicated.
 		Thread.sleep(2000);
-		mpfService.resubmitJob(jobId);
+		jobRequestBo.resubmit(jobId);
 		Assert.assertTrue(waitFor(jobId));
 
-		jobRequest = mpfService.getJobRequest(jobId);
+		jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);

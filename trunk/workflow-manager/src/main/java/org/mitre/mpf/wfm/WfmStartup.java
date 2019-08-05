@@ -28,13 +28,14 @@ package org.mitre.mpf.wfm;
 
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.service.ServerMediaService;
+import org.mitre.mpf.wfm.service.SystemMessageService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -78,7 +79,12 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private HibernateStreamingJobRequestDao streamingJobRequestDao;
 
 	@Autowired
-	private MpfService mpfService;
+	private StreamingJobRequestBo streamingJobRequestBo;
+
+
+	@Autowired
+	private SystemMessageService systemMessageService;
+
 
 	@Autowired
 	private PropertiesUtil propertiesUtil;
@@ -153,7 +159,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
-                mpfService.sendStreamingJobHealthReports();
+	            streamingJobRequestBo.sendHealthReports();
             } catch (Exception e) {
                 log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }
@@ -185,10 +191,10 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	/** purge system messages that are set to be removed on server startup */
 	private void purgeServerStartupSystemMessages() {
 		log.info("WfmStartup.purgeServerStartupSystemMessages()");
-		List<SystemMessage> msgs = mpfService.getSystemMessagesByRemoveStrategy("atServerStartup");
+		List<SystemMessage> msgs = systemMessageService.getSystemMessagesByRemoveStrategy("atServerStartup");
 		for (SystemMessage m : msgs) {
 			long id = m.getId();
-			mpfService.deleteSystemMessage(id);
+			systemMessageService.deleteSystemMessage(id);
 			log.info("removed System Message #" + id + ": '" + m.getMsg() + "'");
 		}
 	}

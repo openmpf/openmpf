@@ -32,8 +32,8 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.AggregatePipelineStatsModel;
 import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
+import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +59,7 @@ public class AdminStatisticsController {
     private static final Logger log = LoggerFactory.getLogger(AdminStatisticsController.class);
 
     @Autowired
-    private MpfService mpfService;
+    private HibernateJobRequestDao jobRequestDao;
 
     @RequestMapping(value = "/adminStatistics", method = RequestMethod.GET)
     public ModelAndView getAdminStatistics(HttpServletRequest request) {
@@ -97,7 +97,7 @@ public class AdminStatisticsController {
      */
     private void updateSingleJobStatus(long jobId,
                                        final AggregatePipelineStatsModel singleJobStatisticModelRef, final Map<String, Object> dataRef) {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
 
         boolean updateError = true;
         if (jobRequest == null) {
@@ -182,7 +182,7 @@ public class AdminStatisticsController {
         long start = System.currentTimeMillis();
 
         //TODO: this is reusing some code for get jobs - this code needs to be extracted
-        List<JobRequest> jobs = mpfService.getAllJobRequests();
+        List<JobRequest> jobs = jobRequestDao.findAll();
 
         Map<String, Map<String, Object>> map = new HashMap<String, Map<String, Object>>();
         Map<String, AggregatePipelineStatsModel> objectMap = new HashMap<String, AggregatePipelineStatsModel>();

@@ -235,7 +235,7 @@ public class AddComponentServiceImpl implements AddComponentService {
                 _log.warn("Component registration failed for {}. Removing child objects.",
                         descriptor.getComponentName());
             }
-            _removeComponentService.deleteCustomPipelines(model, true);
+            _removeComponentService.deleteCustomPipelines(model);
             throw ex;
         }
     }
@@ -288,11 +288,11 @@ public class AddComponentServiceImpl implements AddComponentService {
             return true;
         }
         catch (IOException e) {
-            _removeComponentService.deleteCustomPipelines(registrationModel, true);
+            _removeComponentService.deleteCustomPipelines(registrationModel);
             throw new UncheckedIOException(e);
         }
         catch (Exception e) {
-            _removeComponentService.deleteCustomPipelines(registrationModel, true);
+            _removeComponentService.deleteCustomPipelines(registrationModel);
             throw e;
         }
     }

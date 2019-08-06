@@ -58,8 +58,6 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.toList;
-
 // swagger includes
 
 @Api(value = "Component Registrar",
@@ -331,12 +329,10 @@ public class AdminComponentRegistrationController {
     public ResponseMessage unregisterViaFileRest(
             /*@ApiParam(required = true, value = "The path to the JSON component descriptor file")*/
             @RequestParam String filePath,
-            @RequestParam(required = false, defaultValue = "true") boolean deletePackage,
-            @RequestParam(required = false, defaultValue = "true") boolean recursive
-    ) {
+            @RequestParam(required = false, defaultValue = "true") boolean deletePackage) {
         return withWriteLock(() -> {
             log.info("Entered {}", "[rest/component/unregisterViaFile]");
-                _removeComponentService.unregisterViaFile(filePath, deletePackage, recursive);
+                _removeComponentService.unregisterViaFile(filePath, deletePackage);
                 return ResponseMessage.ok("Component successfully unregistered");
         });
     }
@@ -391,29 +387,6 @@ public class AdminComponentRegistrationController {
         });
     }
 
-
-    @RequestMapping(value = {"/components/{componentPackageFileName:.+}/reRegisterOrder",
-            "/rest/components/{componentPackageFileName:.+}/reRegisterOrder"},
-            method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseEntity<?> getReRegisterOrderRest(
-            @PathVariable("componentPackageFileName") String componentPackageFileName) {
-
-        return withReadLock(() -> {
-            try {
-                List<String> registrationOrder = _reRegisterService.getReRegistrationOrder(componentPackageFileName)
-                        .stream()
-                        .map(p -> p.getFileName().toString())
-                        .collect(toList());
-                return ResponseEntity.ok(registrationOrder);
-            }
-            catch (IllegalStateException e) {
-                log.error("Error while trying to get component re-registration order.", e);
-                return new ResponseMessage("Error while trying to get component re-registration order. Check the Workflow Manager logs for details.",
-                                           HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        });
-    }
 
 
     private static <T> T withReadLock(Supplier<T> supplier) {

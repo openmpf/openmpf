@@ -44,8 +44,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -210,22 +208,6 @@ public class TestAdminComponentRegistrationController {
         assertSame(_testModel, result.getBody());
     }
 
-    @Test
-    public void canGetReRegisterOrder() {
-        Path component1 = Paths.get("/tmp/Component1.tar.gz");
-        Path component2 = Paths.get("/tmp/Component2.tar.gz");
-        when(_mockReRegisterService.getReRegistrationOrder("Component1.tar.gz"))
-                .thenReturn(Arrays.asList(component1, component2));
-
-        ResponseEntity<?> response = _controller.getReRegisterOrderRest("Component1.tar.gz");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        List<String> reRegisterOrder = (List<String>) response.getBody();
-        assertEquals(2, reRegisterOrder.size());
-        assertEquals("Component1.tar.gz", reRegisterOrder.get(0));
-        assertEquals("Component2.tar.gz", reRegisterOrder.get(1));
-
-    }
 
     @Test
     public void registerReturnsErrorResponseWhenAlreadyRegistered() throws ComponentRegistrationException {

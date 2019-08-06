@@ -37,14 +37,12 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.collections.Sets;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +54,6 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.test.TestUtil.eqIgnoreCase;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.COMPONENT_NAME;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.DESCRIPTOR_PATH;
 import static org.mockito.Mockito.*;
@@ -123,22 +120,35 @@ public class TestRemoveComponentService {
         when(_mockStateService.getByComponentName(COMPONENT_NAME))
                 .thenReturn(Optional.of(rcm));
 
-        Action action = new Action("action1-name", "description", algoName, Collections.emptyList());
-        Action action2 = new Action("action2-name", "description", "foo",
+        Action componentAction = new Action("component action", "description", algoName,
+                                            Collections.emptyList());
+        Action componentAction2 = new Action("component action2", "description", algoName,
+                                             Collections.emptyList());
+        Action otherAction = new Action("other action", "description", "foo",
                                     Collections.emptyList());
         when(_mockPipelineService.getActions())
-                .thenReturn(Arrays.asList(action, action2));
+                .thenReturn(Arrays.asList(componentAction, componentAction2, otherAction));
 
-        Task task = new Task("task1-name", "description", Collections.singleton(action.getName()));
+        rcm.getActions().add(componentAction.getName());
+        rcm.getActions().add(componentAction2.getName());
+
+        Task componentTask = new Task("component task", "description",
+                                      Collections.singleton(otherAction.getName()));
+        Task otherTask = new Task("task1-name", "description",
+                                  Collections.singleton(componentAction.getName()));
         when(_mockPipelineService.getTasks())
-                .thenReturn(Arrays.asList(task, new Task("asdf", "description",
-                                                         Collections.emptyList())));
+                .thenReturn(Arrays.asList(componentTask, otherTask, new Task("asdf", "description",
+                                                                             Collections.emptyList())));
+        rcm.getTasks().add(componentTask.getName());
 
-        Pipeline pipeline = new Pipeline("pipeline1-name", "description",
-                                         Collections.singleton(task.getName()));
+        Pipeline componentPipeline = new Pipeline("component pipeline", "description",
+                                                  Collections.singleton(otherTask.getName()));
+        Pipeline otherPipeline = new Pipeline("pipeline1-name", "description",
+                                              Collections.singleton(otherTask.getName()));
         when(_mockPipelineService.getPipelines())
-                .thenReturn(Arrays.asList(pipeline, new Pipeline("sdaf", "description",
-                                                                 Collections.emptyList())));
+                .thenReturn(Arrays.asList(componentPipeline, otherPipeline,
+                                          new Pipeline("sdaf", "description", Collections.emptyList())));
+        rcm.getPipelines().add(componentPipeline.getName());
 
         // Act
         _removeComponentService.removeComponent(COMPONENT_NAME);
@@ -163,13 +173,18 @@ public class TestRemoveComponentService {
                 .deleteAlgorithm(algoName);
 
         verify(_mockPipelineService)
-                .deleteAction(action.getName());
+                .deleteAction(componentAction.getName());
 
         verify(_mockPipelineService)
-                .deleteTask(task.getName());
+                .deleteAction(componentAction2.getName());
 
         verify(_mockPipelineService)
-                .deletePipeline(pipeline.getName());
+                .deleteTask(componentTask.getName());
+
+        verify(_mockPipelineService)
+                .deletePipeline(componentPipeline.getName());
+
+        verifyNoMoreInteractions(_mockPipelineService);
 
         verify(_mockDeploymentService)
                 .undeployComponent(COMPONENT_NAME);
@@ -215,89 +230,6 @@ public class TestRemoveComponentService {
 
         assertTrue(Files.exists(otherPluginDir));
         assertFalse(Files.exists(testComponentDir));
-    }
-
-
-    @Test
-    public void testRecursiveDelete() throws WfmProcessingException {
-        // Arrange
-        String componentAlgoName = "Component Algo Name";
-
-        String actionName = "Action Name";
-        Action action = new Action(actionName, "a description", componentAlgoName, Collections.emptyList());
-
-        String taskName = "TASK NAME";
-        Task task = new Task(taskName, "t description", Collections.singleton(action.getName()));
-
-        String pipelineName = "PIPELINE NAME";
-        Pipeline pipeline = new Pipeline(pipelineName, "p description",
-                                         Collections.singleton(task.getName()));
-
-
-        String externalAlgoName = "EXTERNAL ALGO NAME";
-
-        String externalActionName = "EXTERNAL ACTION";
-        Action externalAction = new Action(externalActionName, "a description", externalAlgoName,
-                                           Collections.emptyList());
-
-        String componentTaskName = "Component Task Name";
-        Task componentTask = new Task(componentTaskName, "t description",
-                                      Collections.singleton(externalAction.getName()));
-
-        String externalPipelineName = "External Pipeline Name";
-        Pipeline externalPipeline = new Pipeline(externalPipelineName, "p description",
-                                                 Collections.singleton(componentTask.getName()));
-
-        String componentActionName = "Component Action Name";
-        String componentPipelineName = "Component Pipeline Name";
-
-        RegisterComponentModel rcm = new RegisterComponentModel();
-        rcm.setAlgorithmName(componentAlgoName);
-        rcm.getTasks().add(componentTaskName);
-        rcm.getActions().add(componentActionName);
-        rcm.getPipelines().add(componentPipelineName);
-
-
-
-        when(_mockPipelineService.getPipelines())
-                .thenReturn(Sets.newSet(pipeline, externalPipeline));
-
-        when(_mockPipelineService.getActions())
-                .thenReturn(Sets.newSet(action, externalAction));
-
-        when(_mockPipelineService.getTasks())
-                .thenReturn(Sets.newSet(task, componentTask));
-
-        // Act
-        _removeComponentService.deleteCustomPipelines(rcm, true);
-
-
-        verify(_mockPipelineService)
-                .deleteAlgorithm(componentAlgoName.toUpperCase());
-
-        verify(_mockPipelineService, never())
-                .deleteAlgorithm(externalAlgoName.toUpperCase());
-
-
-        verify(_mockPipelineService)
-                .deleteAction(actionName.toUpperCase());
-        verify(_mockPipelineService)
-                .deleteAction(componentActionName.toUpperCase());
-
-        verify(_mockPipelineService, never())
-                .deleteAction(eqIgnoreCase(externalActionName));
-
-        verify(_mockPipelineService)
-                .deleteTask(taskName);
-        verify(_mockPipelineService)
-                .deleteTask(componentTaskName.toUpperCase());
-
-        verify(_mockPipelineService)
-                .deletePipeline(pipelineName.toUpperCase());
-        verify(_mockPipelineService)
-                .deletePipeline(externalPipelineName.toUpperCase());
-        verify(_mockPipelineService)
-                .deletePipeline(componentPipelineName.toUpperCase());
     }
 }
 

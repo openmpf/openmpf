@@ -62,9 +62,6 @@ public class TestStartupComponentRegistrationService {
     private PropertiesUtil _mockPropertiesUtil;
 
     @Mock
-    private ComponentDependencyFinder _mockDependencyFinder;
-
-    @Mock
     private ComponentStateService _mockComponentStateSvc;
 
     @Mock

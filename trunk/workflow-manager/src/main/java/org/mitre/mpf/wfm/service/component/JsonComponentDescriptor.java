@@ -30,10 +30,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.ScriptAssert;
-import org.mitre.mpf.wfm.pipeline.Action;
-import org.mitre.mpf.wfm.pipeline.Algorithm;
-import org.mitre.mpf.wfm.pipeline.Pipeline;
-import org.mitre.mpf.wfm.pipeline.Task;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;

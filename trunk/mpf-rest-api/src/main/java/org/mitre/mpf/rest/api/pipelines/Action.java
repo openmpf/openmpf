@@ -25,13 +25,12 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.rest.api.pipelines;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
-import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.rest.api.util.Utils;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -79,9 +78,9 @@ public class Action implements PipelineComponent {
             @JsonProperty("description") String description,
             @JsonProperty("algorithm") String algorithm,
             @JsonProperty("properties") Collection<Property> properties) {
-        _name = TextUtils.trimAndUpper(name);
-        _description = StringUtils.trim(description);
-        _algorithm = TextUtils.trimAndUpper(algorithm);
+        _name = Utils.trimAndUpper(name);
+        _description = Utils.trim(description);
+        _algorithm = Utils.trimAndUpper(algorithm);
         _properties = ImmutableList.copyOf(properties);
     }
 
@@ -123,8 +122,8 @@ public class Action implements PipelineComponent {
         public Property(
                 @JsonProperty("name") String name,
                 @JsonProperty("value") String value) {
-            _name = TextUtils.trimAndUpper(name);
-            _value = StringUtils.trim(value);
+            _name = Utils.trimAndUpper(name);
+            _value = Utils.trim(value);
         }
 
         @Override

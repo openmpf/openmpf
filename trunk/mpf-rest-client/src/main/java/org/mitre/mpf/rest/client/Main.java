@@ -26,6 +26,17 @@
 
 package org.mitre.mpf.rest.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import http.rest.RequestInterceptor;
+import http.rest.RestClientException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationResponse;
+import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -33,19 +44,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.JobCreationResponse;
-import org.mitre.mpf.rest.api.JobCreationMediaData;
-import org.mitre.mpf.rest.api.PipelinesResponse;
-import org.mitre.mpf.rest.api.SingleJobInfo;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import http.rest.RequestInterceptor;
-import http.rest.RestClientException;
 
 public class Main {
 	
@@ -81,9 +79,9 @@ public class Main {
 		//getAvailableWorkPipelineNames
         String url = "http://localhost:8080/workflow-manager/rest/pipelines";
         Map<String, String> params = new HashMap<String, String>();  
-        List<PipelinesResponse> pipelineResponses = client.get(url, params, new TypeReference<List<PipelinesResponse>>() {});
-        System.out.println("availableWorkPipelines size: " + pipelineResponses.size());
-        System.out.println(Arrays.toString(pipelineResponses.stream().map(pipelineResponse -> pipelineResponse.getPipelineName()).toArray()));
+        List<Pipeline> pipelines = client.get(url, params, new TypeReference<List<Pipeline>>() {});
+        System.out.println("availableWorkPipelines size: " + pipelines.size());
+        System.out.println(Arrays.toString(pipelines.stream().map(Pipeline::getName).toArray()));
         
         //processMedia        
 		JobCreationRequest jobCreationRequest = new JobCreationRequest();
@@ -94,7 +92,7 @@ public class Main {
 		jobCreationRequest.setExternalId("external id");
 		
 		//get first DLIB pipeline
-		String firstDlibPipeline = pipelineResponses.stream().map(PipelinesResponse::getPipelineName)
+		String firstDlibPipeline = pipelines.stream().map(Pipeline::getName)
 				//.peek(pipelineName -> System.out.println("will filter - " + pipelineName))
 	            .filter(pipelineName -> pipelineName.startsWith("DLIB"))
 	            .findFirst()

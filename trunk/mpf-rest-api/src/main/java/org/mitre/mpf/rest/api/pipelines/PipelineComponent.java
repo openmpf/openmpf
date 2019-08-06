@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.rest.api.pipelines;
 
 public interface PipelineComponent {
     public String getName();

@@ -28,8 +28,8 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.pipeline.Task;
 
 import java.util.List;
 

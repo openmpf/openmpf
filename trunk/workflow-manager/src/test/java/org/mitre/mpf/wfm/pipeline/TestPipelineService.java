@@ -31,8 +31,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
@@ -108,7 +108,7 @@ public class TestPipelineService {
                 .validateOnAdd(eq(action2), notNull());
 
         var task1 = new Task("TASK1", "Task1 description",
-                              List.of(action1.getName(), action2.getName()));
+                             List.of(action1.getName(), action2.getName()));
         _pipelineService.save(task1);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(task1), notNull());

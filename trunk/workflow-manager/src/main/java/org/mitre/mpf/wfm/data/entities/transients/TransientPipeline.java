@@ -29,10 +29,10 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.mitre.mpf.wfm.pipeline.Action;
-import org.mitre.mpf.wfm.pipeline.Algorithm;
-import org.mitre.mpf.wfm.pipeline.Pipeline;
-import org.mitre.mpf.wfm.pipeline.Task;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 
 public class TransientPipeline {
 

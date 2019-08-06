@@ -24,62 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.rest.api.util;
 
-import org.mitre.mpf.wfm.pipeline.Algorithm;
+import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
-import java.lang.annotation.ElementType;
+import javax.validation.ReportAsSingleViolation;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = ValidAlgoPropValue.Validator.class)
-public @interface ValidAlgoPropValue {
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    String message() default "must provide either a defaultValue or propertiesKey, but not both.";
+@Target(TYPE_USE)
+@Retention(RUNTIME)
+@Constraint(validatedBy = {})
+@ReportAsSingleViolation
+@NotBlank
+/**
+ * Verifies that all elements in a collection of strings are not blank
+ */
+public @interface AllNotBlank {
+
+    String message() default "may not be empty";
     Class<?>[] groups() default { };
     Class<? extends Payload>[] payload() default { };
-
-
-
-    public static class Validator
-            implements ConstraintValidator<ValidAlgoPropValue, Algorithm.Property> {
-
-        @Override
-        public void initialize(ValidAlgoPropValue constraintAnnotation) {
-        }
-
-        @Override
-        public boolean isValid(Algorithm.Property property, ConstraintValidatorContext ctx) {
-            boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
-            boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
-            if (bothProvided || neitherProvided) {
-                ctx.disableDefaultConstraintViolation();
-                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
-                        .addPropertyNode("propertiesKey")
-                        .addConstraintViolation();
-
-                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
-                        .addPropertyNode("defaultValue")
-                        .addConstraintViolation();
-                return false;
-            }
-
-            if (property.getPropertiesKey() != null && property.getPropertiesKey().trim().isEmpty()) {
-                ctx.disableDefaultConstraintViolation();
-                ctx.buildConstraintViolationWithTemplate("may not be empty")
-                        .addPropertyNode("propertiesKey")
-                        .addConstraintViolation();
-                return false;
-            }
-
-            return true;
-        }
-    }
 }

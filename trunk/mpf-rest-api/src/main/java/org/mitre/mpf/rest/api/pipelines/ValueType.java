@@ -24,36 +24,13 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.rest.api.pipelines;
 
-package org.mitre.mpf.wfm.pipeline;
-
-import org.mitre.mpf.rest.api.pipelines.PipelineComponent;
-
-import javax.validation.ConstraintViolation;
-import java.util.Collection;
-
-import static java.util.stream.Collectors.joining;
-
-public class PipelineValidationException extends InvalidPipelineException {
-
-    public PipelineValidationException(PipelineComponent invalidPipelineComponent,
-                                       Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
-        super(createMessage(invalidPipelineComponent, validationErrors));
-    }
-
-
-    private static String createMessage(PipelineComponent invalidPipelineComponent,
-                                        Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
-        String prefix = invalidPipelineComponent.getName() + " has errors in the following fields:\n";
-        return validationErrors.stream()
-                .map(PipelineValidationException::createFieldMessage)
-                .sorted()
-                .collect(joining("\n", prefix, ""));
-    }
-
-    private static String createFieldMessage(ConstraintViolation<PipelineComponent> violation) {
-        return String.format("%s=\"%s\": %s", violation.getPropertyPath(), violation.getInvalidValue(),
-                             violation.getMessage());
-    }
-
+public enum ValueType {
+    BOOLEAN,
+    FLOAT,
+    DOUBLE,
+    INT,
+    LONG,
+    STRING
 }

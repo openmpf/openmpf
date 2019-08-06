@@ -553,12 +553,6 @@
 
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-xstream</artifactId>
-            <version>${camel.framework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.camel</groupId>
             <artifactId>camel-gson</artifactId>
             <version>${camel.framework.version}</version>
         </dependency>

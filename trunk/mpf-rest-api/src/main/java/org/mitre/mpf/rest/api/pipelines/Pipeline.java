@@ -24,25 +24,67 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
 
-public enum ActionType {
-	/** Default: The type of operation is not specified or otherwise unknown. */
-	UNDEFINED,
-	/** A detection operation. */
-	DETECTION,
+package org.mitre.mpf.rest.api.pipelines;
 
-	/** A markup operation. */
-	MARKUP;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
 
-	/** Parses the input as an ActionType or returns {@link #UNDEFINED} if parsing fails. */
-	public static ActionType parse(String name) {
-		for(ActionType actionType : ActionType.values()) {
-			if(actionType.name().equalsIgnoreCase(name)) {
-				return actionType;
-			}
-		}
-		return UNDEFINED;
-	}
+import javax.validation.Valid;
+import java.util.Collection;
+import java.util.Objects;
 
+
+public class Pipeline implements PipelineComponent {
+
+    private final String _name;
+    @Override
+    @NotBlank
+    public String getName() {
+        return _name;
+    }
+
+    private final String _description;
+    @NotBlank
+    public String getDescription() {
+        return _description;
+    }
+
+    private final ImmutableList<String> _tasks;
+    @NotEmpty @Valid
+    public ImmutableList<@AllNotBlank String> getTasks() {
+        return _tasks;
+    }
+
+    public Pipeline(
+            @JsonProperty("name") String name,
+            @JsonProperty("description") String description,
+            @JsonProperty("tasks") Collection<String> tasks)  {
+        _name = Utils.trimAndUpper(name);
+        _description = Utils.trim(description);
+        _tasks = Utils.trimAndUpper(tasks, ImmutableList.toImmutableList());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof Pipeline)) {
+            return false;
+        }
+        var other = (Pipeline) obj;
+        return Objects.equals(_name, other._name)
+                && Objects.equals(_description, other._description)
+                && Objects.equals(_tasks, other._tasks);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_name, _description, _tasks);
+    }
 }

@@ -28,6 +28,10 @@
 package org.mitre.mpf.wfm.pipeline;
 
 import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 
 import java.util.Collection;

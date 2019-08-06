@@ -27,7 +27,7 @@
 
 package org.mitre.mpf.wfm.pipeline;
 
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

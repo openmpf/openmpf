@@ -24,30 +24,63 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.rest.api.util;
 
-import org.hibernate.validator.constraints.NotBlank;
+
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
 
 import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
-import javax.validation.ReportAsSingleViolation;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.TYPE_USE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = ValidAlgoPropValue.Validator.class)
+public @interface ValidAlgoPropValue {
 
-@Target(TYPE_USE)
-@Retention(RUNTIME)
-@Constraint(validatedBy = {})
-@ReportAsSingleViolation
-@NotBlank
-/**
- * Verifies that all elements in a collection of strings are not blank
- */
-public @interface AllNotBlank {
-
-    String message() default "may not be empty";
+    String message() default "must provide either a defaultValue or propertiesKey, but not both.";
     Class<?>[] groups() default { };
     Class<? extends Payload>[] payload() default { };
+
+
+
+    public static class Validator
+            implements ConstraintValidator<ValidAlgoPropValue, Algorithm.Property> {
+
+        @Override
+        public void initialize(ValidAlgoPropValue constraintAnnotation) {
+        }
+
+        @Override
+        public boolean isValid(Algorithm.Property property, ConstraintValidatorContext ctx) {
+            boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
+            boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
+            if (bothProvided || neitherProvided) {
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
+                        .addPropertyNode("propertiesKey")
+                        .addConstraintViolation();
+
+                ctx.buildConstraintViolationWithTemplate(ctx.getDefaultConstraintMessageTemplate())
+                        .addPropertyNode("defaultValue")
+                        .addConstraintViolation();
+                return false;
+            }
+
+            if (property.getPropertiesKey() != null && property.getPropertiesKey().trim().isEmpty()) {
+                ctx.disableDefaultConstraintViolation();
+                ctx.buildConstraintViolationWithTemplate("may not be empty")
+                        .addPropertyNode("propertiesKey")
+                        .addConstraintViolation();
+                return false;
+            }
+
+            return true;
+        }
+    }
 }

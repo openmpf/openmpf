@@ -29,12 +29,15 @@ package org.mitre.mpf.wfm.pipeline;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;

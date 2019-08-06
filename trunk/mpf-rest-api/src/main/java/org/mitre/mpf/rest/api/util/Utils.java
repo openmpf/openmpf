@@ -25,68 +25,32 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.rest.api.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
-import org.mitre.mpf.wfm.util.AllNotBlank;
-import org.mitre.mpf.wfm.util.TextUtils;
-
-import javax.validation.Valid;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.stream.Collector;
 
-public class Task implements PipelineComponent {
+public class Utils {
 
-    private final String _name;
-    @Override
-    @NotBlank
-    public String getName() {
-        return _name;
+    private Utils() {
     }
 
-    private final String _description;
-    @NotBlank
-    public String getDescription() {
-        return _description;
+    public static String trimAndUpper(String s) {
+        return s == null
+                ? null
+                : s.trim().toUpperCase();
     }
 
-    private final ImmutableList<String> _actions;
-    @NotEmpty @Valid
-    public ImmutableList<@AllNotBlank String> getActions() {
-        return _actions;
+    public static String trim(String s) {
+        return s == null
+                ? null
+                : s.trim();
     }
 
 
-    public Task(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("actions") Collection<String> actions) {
-        _name = TextUtils.trimAndUpper(name);
-        _description = StringUtils.trim(description);
-        _actions = TextUtils.trimAndUpper(actions, ImmutableList.toImmutableList());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Task)) {
-            return false;
-        }
-
-        var other = (Task) obj;
-        return Objects.equals(_name, other._name) &&
-                Objects.equals(_description, other._description) &&
-                Objects.equals(_actions, other._actions);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(_name, _description, _actions);
+    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
+        return strings.stream()
+                .map(Utils::trimAndUpper)
+                .collect(collector);
     }
 }

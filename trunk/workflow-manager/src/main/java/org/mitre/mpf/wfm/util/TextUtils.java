@@ -30,10 +30,7 @@ import com.google.common.base.Joiner;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collector;
 
 /** Utility methods for cleaning user input. */

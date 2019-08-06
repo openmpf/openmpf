@@ -26,12 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.mitre.mpf.wfm.enums.ActionType;
-import org.mitre.mpf.wfm.pipeline.Action;
-import org.mitre.mpf.wfm.pipeline.Algorithm;
-import org.mitre.mpf.wfm.pipeline.Pipeline;
-import org.mitre.mpf.wfm.pipeline.Task;
-import org.mitre.mpf.wfm.pipeline.ValueType;
+import org.mitre.mpf.rest.api.pipelines.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;

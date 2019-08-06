@@ -30,6 +30,7 @@ package org.mitre.mpf.wfm.pipeline;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;

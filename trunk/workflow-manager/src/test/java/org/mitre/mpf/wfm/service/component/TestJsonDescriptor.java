@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
-import org.mitre.mpf.wfm.pipeline.ValueType;
+import org.mitre.mpf.rest.api.pipelines.ValueType;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 
 import java.io.IOException;

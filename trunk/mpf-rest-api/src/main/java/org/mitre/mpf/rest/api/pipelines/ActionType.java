@@ -24,68 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.rest.api.pipelines;
 
-package org.mitre.mpf.wfm.pipeline;
+public enum ActionType {
+    /** Default: The type of operation is not specified or otherwise unknown. */
+    UNDEFINED,
+    /** A detection operation. */
+    DETECTION,
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
-import org.mitre.mpf.wfm.util.AllNotBlank;
-import org.mitre.mpf.wfm.util.TextUtils;
+    /** A markup operation. */
+    MARKUP;
 
-import javax.validation.Valid;
-import java.util.Collection;
-import java.util.Objects;
-
-
-public class Pipeline implements PipelineComponent {
-
-    private final String _name;
-    @Override
-    @NotBlank
-    public String getName() {
-        return _name;
-    }
-
-    private final String _description;
-    @NotBlank
-    public String getDescription() {
-        return _description;
-    }
-
-    private final ImmutableList<String> _tasks;
-    @NotEmpty @Valid
-    public ImmutableList<@AllNotBlank String> getTasks() {
-        return _tasks;
-    }
-
-    public Pipeline(
-            @JsonProperty("name") String name,
-            @JsonProperty("description") String description,
-            @JsonProperty("tasks") Collection<String> tasks)  {
-        _name = TextUtils.trimAndUpper(name);
-        _description = StringUtils.trim(description);
-        _tasks = TextUtils.trimAndUpper(tasks, ImmutableList.toImmutableList());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
+    /** Parses the input as an ActionType or returns {@link #UNDEFINED} if parsing fails. */
+    public static ActionType parse(String name) {
+        for(ActionType actionType : ActionType.values()) {
+            if(actionType.name().equalsIgnoreCase(name)) {
+                return actionType;
+            }
         }
-        if (!(obj instanceof Pipeline)) {
-            return false;
-        }
-        var other = (Pipeline) obj;
-        return Objects.equals(_name, other._name)
-                && Objects.equals(_description, other._description)
-                && Objects.equals(_tasks, other._tasks);
+        return UNDEFINED;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(_name, _description, _tasks);
-    }
 }

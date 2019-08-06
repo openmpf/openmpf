@@ -31,17 +31,23 @@
 <div class="row">
     <h3>Available Actions</h3>
     <div style="max-height: 250px; overflow: auto;">
-        <table id="actionsTable" class="table table-bordered">
+        <table id="actionsTable" class="table table-bordered table-hover">
             <thead>
             <tr>
                 <th>Action ID</th>
                 <th>Action Name</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="action in actions | orderBy:'action'">
+            <tr ng-repeat="action in actions | orderBy:'name'">
                 <td>{{$index}}</td>
                 <td>{{action.name}}</td>
+                <td>
+                    <button ng-click="deleteAction(action.name)" type="button" class="btn btn-danger btn-block btn-xs">
+                        Delete
+                    </button>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -79,7 +85,7 @@
 
             <!-- ng-init="modifiedAlgValuesMap='{}'" -->
             <tbody>
-            <tr ng-repeat="prop in selectedAlgorithm.providesCollection.properties">
+            <tr ng-repeat="prop in selectedAlgorithm.providesCollection.properties | orderBy: 'name'">
                 <td>{{prop.name}}</td>
                 <td>{{prop.description}}</td>
                 <td>{{prop.type}}</td>
@@ -103,17 +109,23 @@
 <div class="row">
     <h3>Available Tasks</h3>
     <div style="max-height: 250px; overflow: auto;">
-        <table id="tasksTable" class="table table-bordered">
+        <table id="tasksTable" class="table table-bordered table-hover">
             <thead>
             <tr>
                 <th>Task ID</th>
                 <th>Task Name</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
-            <tr ng-repeat="task in tasks">
+            <tr ng-repeat="task in tasks | orderBy: 'name'">
                 <td>{{$index}}</td>
                 <td>{{task.name}}</td>
+                <td>
+                    <button ng-click="deleteTask(task.name)" type="button" class="btn btn-danger btn-block btn-xs">
+                        Delete
+                    </button>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -166,18 +178,24 @@
 <div class="row">
     <h3>Available Pipelines</h3>
     <div style="max-height: 250px; overflow: auto;">
-        <table id="pipelinesTable" class="table table-bordered">
+        <table id="pipelinesTable" class="table table-bordered table-hover">
             <thead>
             <tr>
                 <th>Pipeline ID</th>
                 <th>Pipeline Name</th>
+                <th></th>
             </tr>
             </thead>
 
             <tbody>
-            <tr ng-repeat="pipeline in pipelines">
+            <tr ng-repeat="pipeline in pipelines | orderBy: 'name'">
                 <td>{{$index}}</td>
                 <td>{{pipeline.name}}</td>
+                <td>
+                    <button ng-click="deletePipeline(pipeline.name)" type="button" class="btn btn-danger btn-block btn-xs">
+                        Delete
+                    </button>
+                </td>
             </tr>
             </tbody>
         </table>

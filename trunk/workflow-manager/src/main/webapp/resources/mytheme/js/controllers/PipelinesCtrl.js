@@ -26,7 +26,7 @@
 
 'use strict';
 
-/* globals angular, _ */
+/* globals angular, _, console */
 
 
 /**
@@ -35,8 +35,8 @@
  */
 var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
 
-    $scope.selectedAction;
-    $scope.selectedTask;
+    $scope.selectedAction = null;
+    $scope.selectedTask = null;
     $scope.actionsToAdd = [];
     $scope.tasksToAdd = [];
     //use like this: modifiedAlgValuesMap[propertyName] = value
@@ -82,7 +82,7 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
                 algorithm: $scope.selectedAlgorithm.name,
                 properties: actionProps
             };
-            var res = $http.post('rest/actions', dataObj);
+            var res = $http.post('actions', dataObj);
             res.success(function(responseTuple, status, headers, config) {
                 //should be true/null on success
                 var successMsg = 'Successfully added the action ' + $scope.modalName;
@@ -177,6 +177,28 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
     $scope.removeTask = function(index) {
         console.log('index: ' + index);
         $scope.tasksToAdd.splice(index,1);
+    };
+
+
+    $scope.deleteAction = function (actionName) {
+        $http.delete('actions?name=' + actionName)
+            .success(function () {
+                $scope.actions = _.reject($scope.actions, {name: actionName});
+            });
+    };
+
+    $scope.deleteTask = function (taskName) {
+        $http.delete('tasks?name=' + taskName)
+            .success(function () {
+                $scope.tasks = _.reject($scope.tasks, {name: taskName});
+            });
+    };
+
+    $scope.deletePipeline = function (pipelineName) {
+        $http.delete('pipelines?name=' + pipelineName)
+            .success(function () {
+                $scope.pipelines = _.reject($scope.pipelines, {name: pipelineName});
+            });
     };
 
     getAllPipelineComponents();

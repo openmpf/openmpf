@@ -41,4 +41,6 @@ public interface HibernateDao<T> extends JpaDao<T> {
 
 	/** Gets the session associated with the current {@link #getSessionFactory() session factory}. */
 	Session getCurrentSession();
+
+	public long countAll();
 }

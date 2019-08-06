@@ -57,7 +57,6 @@ public class PipelineServiceImpl implements PipelineService {
 
     private final PipelineValidator _validator;
 
-    //TODO: remove
     private final JsonUtils _jsonUtils;
 
 
@@ -230,7 +229,6 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
     private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<Algorithm> supportsPred) {
-        //TODO: how to handle incomplete pipelines?
         return _pipelines.get(pipelineName)
                 .getTasks()
                 .stream()
@@ -266,28 +264,6 @@ public class PipelineServiceImpl implements PipelineService {
         if (_tasks.remove(taskName.toUpperCase()) != null)  {
             writeToDisk(_tasks, _propertiesUtil.getTaskDefinitions());
         }
-
-//        Task taskToDelete = getTask(taskName);
-//        if (taskToDelete == null) {
-//            return;
-//        }
-//
-//        Set<String> actionsWithOtherReferences = getTasks().stream()
-//                .filter(t -> !t.equals(taskToDelete))
-//                .flatMap(t -> t.getActions().stream())
-//                .collect(toSet());
-//
-//        Set<String> actionsToDelete = new HashSet<>(taskToDelete.getActions());
-//        actionsToDelete.removeAll(actionsWithOtherReferences);
-//        if (!actionsToDelete.isEmpty()) {
-//            for (String actionName : actionsToDelete) {
-//                _actions.remove(actionName);
-//            }
-//            writeToDisk(_actions, _propertiesUtil.getActionDefinitions());
-//        }
-//
-//        _tasks.remove(taskName);
-//        writeToDisk(_tasks, _propertiesUtil.getTaskDefinitions());
     }
 
 
@@ -296,50 +272,6 @@ public class PipelineServiceImpl implements PipelineService {
         if (_pipelines.remove(pipelineName.toUpperCase()) != null) {
             writeToDisk(_pipelines, _propertiesUtil.getPipelineDefinitions());
         }
-//        Pipeline pipelineToDelete = getPipeline(pipelineName);
-//        if (pipelineToDelete == null) {
-//            return;
-//        }
-//
-//        Set<String> tasksWithOtherReferences = getPipelines()
-//                .stream()
-//                .filter(p -> !p.equals(pipelineToDelete))
-//                .flatMap(p -> p.getTasks().stream())
-//                .collect(toSet());
-//
-//
-//        Set<String> tasksToRemove = new HashSet<>(pipelineToDelete.getTasks());
-//        tasksToRemove.removeAll(tasksWithOtherReferences);
-//
-//
-//        Set<String> actionsWithOtherReferences = getTasks().stream()
-//                .filter(t -> !tasksToRemove.contains(t.getName()))
-//                .flatMap(t -> t.getActions().stream())
-//                .collect(toSet());
-//
-//        Set<String> actionsToRemove = tasksToRemove
-//                .stream()
-//                .map(this::getTask)
-//                .flatMap(t -> t.getActions().stream())
-//                .filter(aName -> !actionsWithOtherReferences.contains(aName))
-//                .collect(toSet());
-//
-//        if (!actionsToRemove.isEmpty()) {
-//            for (String actionName : actionsToRemove) {
-//                _actions.remove(actionName);
-//            }
-//            writeToDisk(_actions, _propertiesUtil.getActionDefinitions());
-//        }
-//
-//        if (!tasksToRemove.isEmpty()) {
-//            for (String taskName : tasksToRemove) {
-//                _tasks.remove(taskName);
-//            }
-//            writeToDisk(_tasks, _propertiesUtil.getTaskDefinitions());
-//        }
-//
-//        _pipelines.remove(pipelineName);
-//        writeToDisk(_pipelines, _propertiesUtil.getPipelineDefinitions());
     }
 
 
@@ -358,13 +290,11 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
 
-    //TODO: remove
     @Override
     public JsonPipeline createBatchJsonPipeline(String pipelineName) {
         return _jsonUtils.convert(createTransientBatchPipeline(pipelineName));
     }
 
-    //TODO: remove
     @Override
     public JsonPipeline createStreamingJsonPipeline(String pipelineName) {
         return _jsonUtils.convert(createTransientStreamingPipeline(pipelineName));

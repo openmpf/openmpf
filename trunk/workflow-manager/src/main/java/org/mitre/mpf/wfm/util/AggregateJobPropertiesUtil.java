@@ -34,7 +34,7 @@ import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
@@ -65,7 +65,7 @@ public class AggregateJobPropertiesUtil {
 
     private final PipelineService _pipelineService;
 
-    private final HibernateJobRequestDao _jobRequestDao;
+    private final JobRequestDao _jobRequestDao;
 
     private final JsonUtils _jsonUtils;
 
@@ -73,7 +73,7 @@ public class AggregateJobPropertiesUtil {
     public AggregateJobPropertiesUtil(
             PropertiesUtil propertiesUtil,
             PipelineService pipelineService,
-            HibernateJobRequestDao jobRequestDao,
+            JobRequestDao jobRequestDao,
             JsonUtils jsonUtils) {
         _propertiesUtil = propertiesUtil;
         _pipelineService = pipelineService;

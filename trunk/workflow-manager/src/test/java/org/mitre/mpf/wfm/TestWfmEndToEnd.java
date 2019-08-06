@@ -41,7 +41,7 @@ import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
@@ -80,7 +80,7 @@ public class TestWfmEndToEnd {
 	private JobRequestBo jobRequestBo;
 
 	@Autowired
-	private HibernateJobRequestDao jobRequestDao;
+	private JobRequestDao jobRequestDao;
 
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)

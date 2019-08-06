@@ -29,10 +29,8 @@ package org.mitre.mpf.wfm;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.SystemMessageService;
@@ -42,7 +40,6 @@ import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
@@ -71,12 +68,10 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
 
 	@Autowired
-	@Qualifier(HibernateJobRequestDaoImpl.REF)
-	private HibernateJobRequestDao jobRequestDao;
+	private JobRequestDao jobRequestDao;
 
 	@Autowired
-	@Qualifier(HibernateStreamingJobRequestDaoImpl.REF)
-	private HibernateStreamingJobRequestDao streamingJobRequestDao;
+	private StreamingJobRequestDao streamingJobRequestDao;
 
 	@Autowired
 	private StreamingJobRequestBo streamingJobRequestBo;

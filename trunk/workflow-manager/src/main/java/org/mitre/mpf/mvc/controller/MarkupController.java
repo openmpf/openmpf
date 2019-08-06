@@ -40,8 +40,8 @@ import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
@@ -87,7 +87,7 @@ public class MarkupController {
     private MarkupResultDao markupResultDao;
 
     @Autowired
-    private HibernateJobRequestDao jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;

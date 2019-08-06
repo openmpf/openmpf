@@ -30,6 +30,7 @@ import org.apache.commons.lang3.Validate;
 import org.hibernate.Query;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ import java.util.List;
 
 @Repository(HibernateJobRequestDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)
-public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements HibernateJobRequestDao {
+public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements JobRequestDao {
 	private static final Logger log = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
 
 	public static final String REF = "hibernateJobRequestDaoImpl";
@@ -60,6 +61,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 		}
 	}
 
+	@Override
 	public List<JobRequest> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
 							  String sortOrderDirection) {
 		Validate.notNull(clazz);
@@ -96,7 +98,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 	}
 
 
-
+	@Override
 	public long countFiltered(String searchTerm) {
 		Validate.notNull(clazz);
 		Split split = SimonManager.getStopwatch(profilerName+".countFiltered(String)").start();

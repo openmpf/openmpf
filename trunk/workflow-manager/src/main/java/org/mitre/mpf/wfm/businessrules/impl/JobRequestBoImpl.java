@@ -35,15 +35,14 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JmsUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -102,8 +101,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
-    @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     @Qualifier(HibernateMarkupResultDaoImpl.REF)

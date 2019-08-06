@@ -41,8 +41,7 @@ import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.jobcreation.JobCreationProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -75,8 +74,7 @@ public class TestJobCreationProcessor {
     private JobRequestBo jobRequestBo;
 
     @Autowired
-    @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;

@@ -33,7 +33,7 @@ import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
+import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -68,7 +68,7 @@ public class StreamingJobController {
     private PropertiesUtil propertiesUtil;
 
     @Autowired
-    private HibernateStreamingJobRequestDao streamingJobRequestDao;
+    private StreamingJobRequestDao streamingJobRequestDao;
 
     @Autowired
     private StreamingJobRequestBo streamingJobRequestBo;

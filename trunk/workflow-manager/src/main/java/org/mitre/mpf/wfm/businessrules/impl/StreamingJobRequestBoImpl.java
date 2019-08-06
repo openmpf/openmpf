@@ -36,8 +36,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
@@ -57,7 +56,6 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -113,8 +111,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private InProgressStreamingJobsService inProgressJobs;
 
     @Autowired
-    @Qualifier(HibernateStreamingJobRequestDaoImpl.REF)
-    private HibernateDao<StreamingJobRequest> streamingJobRequestDao;
+    private StreamingJobRequestDao streamingJobRequestDao;
 
     @Autowired
     private JobProgress jobProgressStore;

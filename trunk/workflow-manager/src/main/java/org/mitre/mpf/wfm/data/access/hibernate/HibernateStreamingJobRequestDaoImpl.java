@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.data.access.hibernate;
 
 import org.hibernate.Query;
+import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository(HibernateStreamingJobRequestDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)
-public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements HibernateStreamingJobRequestDao {
+public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements StreamingJobRequestDao {
 	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
 
 	public static final String REF = "hibernateStreamingJobRequestDaoImpl";

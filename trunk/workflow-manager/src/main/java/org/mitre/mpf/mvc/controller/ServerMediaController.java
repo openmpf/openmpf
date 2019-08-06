@@ -35,7 +35,7 @@ import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
@@ -87,7 +87,7 @@ public class ServerMediaController {
     private ServerMediaService serverMediaService;
 
     @Autowired
-    private HibernateJobRequestDao jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;

@@ -35,14 +35,16 @@ import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -83,8 +85,7 @@ public class JobCreationProcessor extends WfmProcessor {
     private JobRequestBo jobRequestBo;
 
     @Autowired
-    @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;

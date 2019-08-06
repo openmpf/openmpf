@@ -43,9 +43,8 @@ import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -85,8 +84,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private final Set<NotificationConsumer<JobCompleteNotification>> consumers = new ConcurrentSkipListSet<>();
 
     @Autowired
-    @Qualifier(HibernateJobRequestDaoImpl.REF)
-    private HibernateDao<JobRequest> jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     @Qualifier(HibernateMarkupResultDaoImpl.REF)

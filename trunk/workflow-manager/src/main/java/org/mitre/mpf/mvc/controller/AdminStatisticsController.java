@@ -32,7 +32,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.AggregatePipelineStatsModel;
 import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public class AdminStatisticsController {
     private static final Logger log = LoggerFactory.getLogger(AdminStatisticsController.class);
 
     @Autowired
-    private HibernateJobRequestDao jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @RequestMapping(value = "/adminStatistics", method = RequestMethod.GET)
     public ModelAndView getAdminStatistics(HttpServletRequest request) {

@@ -28,8 +28,7 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -38,7 +37,6 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component(BroadcastEnabledStringCountBasedWfmAggregator.REF)
@@ -50,8 +48,7 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 	private InProgressBatchJobsService inProgressBatchJobs;
 
 	@Autowired
-	@Qualifier(HibernateJobRequestDaoImpl.REF)
-	private HibernateJobRequestDao hibernateJobRequestDao;
+	private JobRequestDao hibernateJobRequestDao;
 
 	@Autowired
 	private JobProgress jobProgressStore;

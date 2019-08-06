@@ -39,7 +39,7 @@ import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
@@ -93,7 +93,7 @@ public class JobController {
     private JobRequestBo jobRequestBo;
 
     @Autowired
-    private HibernateJobRequestDao jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private SessionModel sessionModel;

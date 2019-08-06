@@ -582,20 +582,33 @@
 
             /** deletes the action from the server */
             $scope.deleteAction = function() {
-                // todo:  should check to make sure this action can be deleted
-                //          by verifying it is not being used in a task, and then
-                //          the confirm message below can be changed
-                $confirm({text: 'Are you sure you want to delete ' + $scope.currentAction.name
-                            + '?  There may be tasks that are still using it.'})
-                    .then(
-                        function() {    // alert("You clicked OK");
-                            ActionService.delete( $scope.currentAction.name )
-                                .$promise
-                                .then( function() {
-                                    initActionsList();
-                                });
+                var actionName = $scope.currentAction.name;
+                var actionPrefix = 'CUSTOM ';
+                var actionSuffix = ' ACTION';
+
+                var confirmMessage = 'Are you sure you want to delete ' + actionName;
+
+                var taskName;
+                if (actionName.startsWith(actionPrefix) && actionName.endsWith(actionSuffix)) {
+                    var nameMiddle = actionName.substring(
+                        actionPrefix.length, actionName.length - actionSuffix.length);
+                    taskName = 'CUSTOM ' + nameMiddle + ' TASK';
+                    confirmMessage += ' and ' + taskName + '? There may be other tasks or pipelines still using them.';
+                }
+                else {
+                    confirmMessage += '? There may be other tasks that are still using it.';
+                    taskName = null;
+                }
+                $confirm({text: confirmMessage})
+                    .then(function() {
+                        if (taskName) {
+                            TaskService.delete(taskName);
                         }
-                    );
+                        return ActionService.delete(actionName).$promise;
+                    })
+                    .then(function () {
+                        initActionsList();
+                    });
             };
 
 

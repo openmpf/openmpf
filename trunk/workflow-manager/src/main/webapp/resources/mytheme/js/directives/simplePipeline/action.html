@@ -44,7 +44,15 @@
     <div ng-if="arrowIn" class="pipelineArrowIn"></div>
     <div ng-if="arrowIn" class="pipelineArrowhead glyphicon glyphicon-play"></div>
     <div ng-if="!showPopover" class="pipelineActionContent">
-        {{actionObj.name}}<ng-transclude/>
+        <span ng-if="taskObj.missing" class="text-danger">
+            {{taskObj.name}}
+            <small> (Task Missing!) </small>
+        </span>
+        <span ng-if="actionObj" ng-class="{'text-danger': actionObj.missing}">
+            {{actionObj.name}}
+            <small ng-if="actionObj.missing"> (Action Missing!) </small>
+        </span>
+        <ng-transclude/>
     </div>
     <div ng-if="showPopover" class="pipelineActionContent"
          uib-popover-template="'algorithm.popover.html'" popover-class="pp-action"

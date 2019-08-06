@@ -64,6 +64,14 @@
                         .then(function (actionDetail) {
                             actionDetail._alg = actionDetail.algorithm;
                             return actionDetail;
+                        })
+                        .catch(function (error) {
+                            if (error.status === 404) {
+                                return {
+                                    name: actionName,
+                                    missing: true
+                                };
+                            }
                         });
                 };
 

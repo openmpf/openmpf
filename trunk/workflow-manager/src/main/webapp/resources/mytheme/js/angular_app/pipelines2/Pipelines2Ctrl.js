@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-/* globals angular, _ */
+/* globals angular, _, console */
 
 /**
  *
@@ -65,7 +65,18 @@
                     .$promise
                     .then(function (pipelineDetail) {
 
-                        var taskPromises = pipelineDetail.tasks.map(TaskService.get);
+                        var taskPromises = pipelineDetail.tasks.map(function (taskName) {
+                            return TaskService.get(taskName)
+                                .catch(function (error) {
+                                    if (error.status === 404) {
+                                        return {
+                                            name: taskName,
+                                            missing: true,
+                                            actions: []
+                                        };
+                                    }
+                                });
+                        });
 
                         return $q.all(taskPromises).then(function (tasks) {
                             pipelineDetail.vmTasks = tasks;

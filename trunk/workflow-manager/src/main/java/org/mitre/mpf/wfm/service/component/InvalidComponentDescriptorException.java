@@ -46,14 +46,22 @@ public class InvalidComponentDescriptorException extends ComponentRegistrationEx
 
     private static String createMessage(Set<ConstraintViolation<JsonComponentDescriptor>> validationErrors) {
         return validationErrors.stream()
-                .map(cv -> cv.getPropertyPath() + " " + cv.getMessage())
+                .map(InvalidComponentDescriptorException::createViolationMessage)
                 .sorted()
-                .collect(joining("\n", "The following fields have errors:\n", "\n"));
+                .collect(joining("\n", "The following fields have errors:\n", ""));
+    }
+
+    private static String createViolationMessage(ConstraintViolation<JsonComponentDescriptor> violation) {
+        String violationPath = violation.getPropertyPath().toString();
+
+        String errorMsgPath = violationPath.isEmpty()
+                ? "<root>"
+                : violationPath;
+        return errorMsgPath + ": " + violation.getMessage();
     }
 
 
     public Set<ConstraintViolation<JsonComponentDescriptor>> getValidationErrors() {
         return _validationErrors;
     }
-
 }

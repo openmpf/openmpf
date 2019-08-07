@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -86,7 +87,7 @@ public class JsonComponentDescriptor {
     }
 
     public boolean supportsBatchProcessing() {
-        return _batchLibrary != null;
+        return StringUtils.isNotBlank(_batchLibrary);
     }
 
 
@@ -96,7 +97,7 @@ public class JsonComponentDescriptor {
     }
 
     public boolean supportsStreamProcessing() {
-        return _streamLibrary != null;
+        return StringUtils.isNotBlank(_streamLibrary);
     }
 
     private final ImmutableList<EnvironmentVariable> _environmentVariables;
@@ -152,15 +153,21 @@ public class JsonComponentDescriptor {
         _sourceLanguage = sourceLanguage;
         _batchLibrary = batchLibrary;
         _streamLibrary = streamLibrary;
-        _environmentVariables = ImmutableList.copyOf(environmentVariables);
-        _algorithm = new Algorithm(
-                algorithm.getName(),
-                algorithm.getDescription(),
-                algorithm.getActionType(),
-                algorithm.getRequiresCollection(),
-                algorithm.getProvidesCollection(),
-                batchLibrary != null,
-                streamLibrary != null);
+
+        _environmentVariables = environmentVariables == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(environmentVariables);
+
+        _algorithm = algorithm == null
+                ? null
+                : new Algorithm(
+                    algorithm.getName(),
+                    algorithm.getDescription(),
+                    algorithm.getActionType(),
+                    algorithm.getRequiresCollection(),
+                    algorithm.getProvidesCollection(),
+                    StringUtils.isNotBlank(batchLibrary),
+                    StringUtils.isNotBlank(streamLibrary));
 
         _actions = actions == null
                 ? ImmutableList.of()

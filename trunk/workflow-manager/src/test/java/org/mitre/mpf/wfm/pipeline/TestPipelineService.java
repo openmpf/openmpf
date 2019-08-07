@@ -125,13 +125,11 @@ public class TestPipelineService {
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(pipeline1), notNull());
 
-        Pipeline pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 description",
-                                          List.of("SOME TASK"));
+        var pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 description",
+                                     List.of("SOME TASK"));
         _pipelineService.save(pipeline2);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(pipeline2), notNull());
-
-
 
         verifyLoaded(
                 List.of(algo1, algo2),

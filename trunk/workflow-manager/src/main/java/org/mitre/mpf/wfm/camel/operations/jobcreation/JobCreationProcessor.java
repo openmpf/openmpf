@@ -75,7 +75,7 @@ public class JobCreationProcessor extends WfmProcessor {
     private InProgressBatchJobsService inProgressBatchJobs;
 
     @Autowired
-    private PipelineService _pipelineService;
+    private PipelineService pipelineService;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -118,7 +118,7 @@ public class JobCreationProcessor extends WfmProcessor {
             // uses a consistent set of detection system properties through all stages of the job's pipeline.
             SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-            TransientPipeline transientPipeline = _pipelineService
+            TransientPipeline transientPipeline = pipelineService
                     .createTransientBatchPipeline(jobRequest.getPipeline().getName());
 
             TransientJob transientJob = inProgressBatchJobs.addJob(

@@ -88,9 +88,7 @@ public interface PipelineService {
 
     public void deletePipeline(String pipelineName);
 
-    //TODO: remove
     public JsonPipeline createBatchJsonPipeline(String pipelineName);
 
-    //TODO: remove
     public JsonPipeline createStreamingJsonPipeline(String pipelineName);
 }

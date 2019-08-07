@@ -93,7 +93,7 @@ public class TestPipelineValidator {
 
 
     private void addComponents(Collection<? extends PipelineComponent> pipelineComponents) {
-        for (PipelineComponent component : pipelineComponents) {
+        for (var component : pipelineComponents) {
             addComponent(component);
         }
     }
@@ -229,7 +229,7 @@ public class TestPipelineValidator {
         var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
 
 
-        Algorithm bothAlgo = new Algorithm(
+        var bothAlgo = new Algorithm(
                 "BOTH ALGO", "descr", ActionType.DETECTION,
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
@@ -675,12 +675,15 @@ public class TestPipelineValidator {
             fail("Expected exception");
         }
         catch (PipelineValidationException e) {
-            String errorMessage = e.getMessage();
+            var errorMessage = e.getMessage();
             for (String expectedMsg : messages) {
                 assertThat(errorMessage, containsString(expectedMsg));
             }
 
-            long lineCount = errorMessage.chars().filter(ch -> ch == '\n').count();
+            var lineCount = errorMessage
+                    .chars()
+                    .filter(ch -> ch == '\n')
+                    .count();
 
             assertEquals("Did not contain the expected number of error messages.",
                          lineCount, messages.length);
@@ -690,13 +693,6 @@ public class TestPipelineValidator {
 
     private static String createViolationMessage(String field, String value, String errorMsg) {
         return String.format("%s=\"%s\": %s", field, value, errorMsg);
-    }
-
-
-    private static String createInvalidNameMessage(String field, String value) {
-        return createViolationMessage(
-                field, value,
-                "Names cannot be empty and cannot contain lowercase letters, dots(.), slashes(/), or backslashes(\\).");
     }
 
 

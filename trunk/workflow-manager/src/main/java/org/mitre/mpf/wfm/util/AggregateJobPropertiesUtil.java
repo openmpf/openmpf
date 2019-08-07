@@ -82,9 +82,9 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    public enum PropertyLevel { NONE, SYSTEM, ACTION, JOB, ALGORITHM, MEDIA }; // in order of precedence
+    private enum PropertyLevel { NONE, SYSTEM, ACTION, JOB, ALGORITHM, MEDIA }; // in order of precedence
 
-    public static class PropertyInfo {
+    private static class PropertyInfo {
         private String name;
         public String getName() {
             return name;
@@ -122,14 +122,12 @@ public class AggregateJobPropertiesUtil {
      * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
      * where the algorithm properties are restricted to the algorithm defined in the Action currently being processed.
      * @param propertyName property name to check for
-     * @param actionProperties lowest priority action properties (i.e. may also be called pipeline properties)
-     * @param jobProperties job properties which are possed in to the JSON job request
-     * @param transientAction Action currently being processed
-     * @param algorithmProperties algorithm properties (algorithm properties specific to this job)
-     * @param mediaProperties highest priority media properties
+     * @param action Action currently being processed
+     * @param media Media currently being processed
+     * @param job Job currently being processed
      * @return property info after checking for that property within the prioritized categories of property containers
      */
-    public static PropertyInfo calculateValue(String propertyName,
+    private static PropertyInfo calculateValue(String propertyName,
                                               Action action,
                                               TransientMedia media,
                                               TransientJob job) {
@@ -245,7 +243,9 @@ public class AggregateJobPropertiesUtil {
 
 
 
-
+    // Priority:
+    // media props > overridden algorithm props > job props > action props > default algo props >
+    // snapshot props > system props
     public String calculateValue(String propertyName, TransientJob job, TransientMedia media,
                                  Action action) {
         String mediaPropVal = media.getMediaSpecificProperty(propertyName);
@@ -265,10 +265,9 @@ public class AggregateJobPropertiesUtil {
             return jobPropVal;
         }
 
-        for (Action.Property property : action.getProperties()) {
-            if (property.getName().equalsIgnoreCase(propertyName)) {
-                return property.getValue();
-            }
+        String actionPropVal = action.getPropertyValue(propertyName);
+        if (actionPropVal != null) {
+            return actionPropVal;
         }
 
         Algorithm algorithm = transientPipeline.getAlgorithm(algoName);
@@ -299,7 +298,6 @@ public class AggregateJobPropertiesUtil {
     // Priority:
     // media props > overridden algorithm props > job props > action props > default algo props >
     // snapshot props > system props
-
     public Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media,
                                                           Action action) {
         return propName -> calculateValue(propName, job, media, action);
@@ -378,7 +376,7 @@ public class AggregateJobPropertiesUtil {
 
         Action.Property actionProperty = action.getProperties()
                 .stream()
-                .filter(ap -> propName.equals(ap.getName()))
+                .filter(ap -> propName.equalsIgnoreCase(ap.getName()))
                 .findAny()
                 .orElse(null);
         if (actionProperty != null) {

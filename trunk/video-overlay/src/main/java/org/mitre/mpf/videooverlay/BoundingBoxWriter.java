@@ -27,7 +27,6 @@
 package org.mitre.mpf.videooverlay;
 
 import org.slf4j.LoggerFactory;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -110,27 +109,26 @@ public class BoundingBoxWriter {
         File sourceFile = new File(sourceMedium.getPath()).getAbsoluteFile();
         File destinationFile = new File(destinationMedium.getPath()).getAbsoluteFile();
 
-        int response;
-        if(medium.equals(Medium.IMAGE)) {
-            log.debug("markupImage: source = '{}' (exists = {}), destination = '{}' (exists = {})",
-                    sourceFile.getPath(), sourceFile.exists(),
-                    destinationFile.getPath(), destinationFile.exists());
-            response = markupImageNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+        try {
+            if (medium == Medium.IMAGE) {
+                log.debug("markupImage: source = '{}' (exists = {}), destination = '{}' (exists = {})",
+                          sourceFile.getPath(), sourceFile.exists(),
+                          destinationFile.getPath(), destinationFile.exists());
+                markupImageNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+            }
+            else {
+                log.debug("markupVideo: source = '{}' (exists = {}), destination = '{}' (exists = {})",
+                          sourceFile.getPath(), sourceFile.exists(),
+                          destinationFile.getPath(), destinationFile.exists());
+                markupVideoNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+            }
         }
-        else {
-            log.debug("markupVideo: source = '{}' (exists = {}), destination = '{}' (exists = {})",
-                    sourceFile.getPath(), sourceFile.exists(),
-                    destinationFile.getPath(), destinationFile.exists());
-            response = markupVideoNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+        catch (Exception e) {
+            throw new VideoOverlayJniException(e);
         }
-
-        if(response != 0) {
-            throw new VideoOverlayJniException(response);
-        }
-
     }
 
-    private native int markupVideoNative(String sourceVideo, String destinationVideo);
-	private native int markupImageNative(String sourceVideo, String destinationVideo);
+    private native void markupVideoNative(String sourceVideo, String destinationVideo);
+	private native void markupImageNative(String sourceVideo, String destinationVideo);
 
 }

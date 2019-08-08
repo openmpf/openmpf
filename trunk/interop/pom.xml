@@ -32,7 +32,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>4.0.0</version>
+        <version>4.1.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -94,7 +94,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.14</version>
+                <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <workingDirectory>../</workingDirectory>
                 </configuration>

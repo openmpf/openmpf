@@ -29,5 +29,12 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 
+import java.util.List;
+
 public interface HibernateJobRequestDao extends JobRequestDao, HibernateDao<JobRequest> {
+
+    public long countFiltered(String searchTerm);
+
+    public List<JobRequest> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
+                                       String sortOrderDirection);
 }

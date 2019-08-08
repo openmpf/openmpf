@@ -51,19 +51,8 @@ public class TestBoundingBoxMap {
     public void testPutOnFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
 
-        BoundingBox boundingBox = new BoundingBox();
-        boundingBox.setHeight(100);
-        boundingBox.setWidth(100);
-        boundingBox.setX(25);
-        boundingBox.setY(30);
-        boundingBox.setColor(0xFFFF0000);
-
-        BoundingBox boundingBoxCopy = new BoundingBox();
-        boundingBoxCopy.setHeight(100);
-        boundingBoxCopy.setWidth(100);
-        boundingBoxCopy.setX(25);
-        boundingBoxCopy.setY(30);
-        boundingBoxCopy.setColor(0xFFFF0000);
+        BoundingBox boundingBox = new BoundingBox(25, 30, 100, 100, 0, 0xFF, 0, 0);
+        BoundingBox boundingBoxCopy = new BoundingBox(25, 30, 100, 100, 0, 0xFF, 0, 0);
 
         map.putOnFrame(1, boundingBox);
         Assert.assertNotEquals("The value for map.get(1) must not be null.", map.get(1), null);
@@ -75,19 +64,8 @@ public class TestBoundingBoxMap {
     public void testPutOnFrames() {
         BoundingBoxMap map = new BoundingBoxMap();
 
-        BoundingBox boundingBox = new BoundingBox();
-        boundingBox.setHeight(100);
-        boundingBox.setWidth(100);
-        boundingBox.setX(25);
-        boundingBox.setY(30);
-        boundingBox.setColor(0xFFFF0000);
-
-        BoundingBox boundingBoxCopy = new BoundingBox();
-        boundingBoxCopy.setHeight(100);
-        boundingBoxCopy.setWidth(100);
-        boundingBoxCopy.setX(25);
-        boundingBoxCopy.setY(30);
-        boundingBoxCopy.setColor(0xFFFF0000);
+        BoundingBox boundingBox = new BoundingBox(25, 30, 100, 100, 0, 0xFF, 0, 0);
+        BoundingBox boundingBoxCopy = new BoundingBox(25, 30, 100, 100, 0, 0xFF, 0, 0);
 
         map.putOnFrames(5, 10, boundingBox);
 
@@ -102,7 +80,7 @@ public class TestBoundingBoxMap {
     @Test(expected = IllegalArgumentException.class)
     public void testPutOnFrameNegativeFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrame(-1, new BoundingBox());
+        map.putOnFrame(-1, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -114,7 +92,7 @@ public class TestBoundingBoxMap {
     @Test(expected = IllegalArgumentException.class)
     public void testPutOnFramesStartFrameGreaterThanStopFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrames(4, 3, new BoundingBox());
+        map.putOnFrames(4, 3, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -129,13 +107,8 @@ public class TestBoundingBoxMap {
 
         int keysAdded = 0;
         for(int i = 1; i <= 10; i += 2) {
-            sourceMap.put(i, new ArrayList<BoundingBox>());
-            BoundingBox boundingBox = new BoundingBox();
-            boundingBox.setWidth(i);
-            boundingBox.setHeight(i);
-            boundingBox.setX(i);
-            boundingBox.setY(i);
-            boundingBox.setColor(i);
+            sourceMap.put(i, new ArrayList<>());
+            BoundingBox boundingBox = new BoundingBox(i, i, i, i, i, i, i, i);
 
             sourceMap.get(i).add(boundingBox);
             keysAdded++;
@@ -209,20 +182,20 @@ public class TestBoundingBoxMap {
         BoundingBoxMap map = new BoundingBoxMap();
         List<BoundingBox> boxes = new ArrayList<BoundingBox>();
         boxes.add(null);
-        boxes.add(new BoundingBox());
+        boxes.add(new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
         map.put(5, boxes);
     }
 
     @Test(expected =  IllegalArgumentException.class)
     public void testPutOnFramesWithNullStartFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrames(null, 15, new BoundingBox());
+        map.putOnFrames(null, 15, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 
     @Test(expected =  IllegalArgumentException.class)
     public void testPutOnFramesWithNullStopFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrames(15, null, new BoundingBox());
+        map.putOnFrames(15, null, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 
     @Test(expected =  IllegalArgumentException.class)
@@ -234,12 +207,12 @@ public class TestBoundingBoxMap {
     @Test(expected =  IllegalArgumentException.class)
     public void testPutOnFramesWithNegativeStartFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrames(-3, 15, new BoundingBox());
+        map.putOnFrames(-3, 15, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 
     @Test(expected =  IllegalArgumentException.class)
     public void testPutOnFramesWithNegativeStopFrame() {
         BoundingBoxMap map = new BoundingBoxMap();
-        map.putOnFrames(3, -15, new BoundingBox());
+        map.putOnFrames(3, -15, new BoundingBox(0, 0, 0, 0, 0, 0, 0, 0));
     }
 }

@@ -40,7 +40,8 @@
       "mediaMetadata": {
         "EXIF_ORIENTATION": "1",
         "HORIZONTAL_FLIP": "FALSE",
-        "ROTATION": "0"
+        "ROTATION": "0",
+        "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -110,7 +111,9 @@
       "sha256": "8702265ab5e48b937fc874bee33e9e20e44d9c5cf0e51acff574e96c7c1a4a34",
       "message": null,
       "status": "COMPLETE",
-      "mediaMetadata": {},
+      "mediaMetadata": {
+        "MIME_TYPE": "image/jpeg"
+      },
       "mediaProperties": {},
       "markupResult": null,
       "output": {
@@ -180,6 +183,7 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "MIME_TYPE": "image/png"
       },
       "mediaProperties": {},
       "markupResult": null,

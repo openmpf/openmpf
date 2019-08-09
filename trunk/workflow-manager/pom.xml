@@ -1020,7 +1020,7 @@
                             <web.rest.protocol>http</web.rest.protocol>
                             <transport.guarantee>NONE</transport.guarantee>
                         </systemProperties>
-                        <timeout>600000</timeout>
+                        <timeout>3600000</timeout>
                     </container>
                     <configuration>
                         <type>standalone</type>
@@ -1054,9 +1054,6 @@
                         <goals>
                             <goal>start</goal>
                         </goals>
-                        <configuration>
-                            <timeout>600000</timeout>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>stop-tc</id>

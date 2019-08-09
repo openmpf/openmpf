@@ -112,6 +112,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				}
 
 				Map<String, String> mediaMetadata = new HashMap<>();
+				mediaMetadata.put("MIME_TYPE", mimeType);
 				int length = -1;
 				switch(MediaTypeUtils.parse(mimeType)) {
 					case AUDIO:

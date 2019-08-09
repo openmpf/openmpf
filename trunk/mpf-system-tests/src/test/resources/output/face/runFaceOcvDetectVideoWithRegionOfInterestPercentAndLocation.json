@@ -49,7 +49,8 @@
             "mediaMetadata": {
                 "DURATION": "17007",
                 "FPS": "29.97",
-                "FRAME_COUNT": "511"
+                "FRAME_COUNT": "511",
+                "MIME_TYPE": "video/x-msvideo"
             },
             "mediaProperties": {},
             "markupResult": null,

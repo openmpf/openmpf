@@ -36,7 +36,8 @@
     "mediaMetadata": {
       "DURATION": "2025",
       "FPS": "24.0",
-      "FRAME_COUNT": "54"
+      "FRAME_COUNT": "54",
+      "MIME_TYPE": "video/quicktime"
     },
     "mediaProperties": {},
     "markupResult": null,

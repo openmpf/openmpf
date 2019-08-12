@@ -38,7 +38,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "8031"
+        "DURATION": "8031",
+        "MIME_TYPE": "audio/vnd.wave"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -203,7 +204,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "2020"
+        "DURATION": "2020",
+        "MIME_TYPE": "audio/vnd.wave"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -274,7 +276,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "5020"
+        "DURATION": "5020",
+        "MIME_TYPE": "audio/vnd.wave"
       },
       "mediaProperties": {},
       "markupResult": null,

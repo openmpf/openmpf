@@ -33,7 +33,9 @@
     "sha256": "22340bc30b3db5da9ac83834e30e35dd8f04bcf3c4c6f6a8a2f2ab62dcf38407",
     "message": null,
     "status": "COMPLETE",
-    "mediaMetadata": {},
+    "mediaMetadata": {
+      "MIME_TYPE": "image/png"
+    },
     "mediaProperties": {},
     "markupResult": null,
     "output": {
@@ -91,7 +93,9 @@
     "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
     "message": null,
     "status": "COMPLETE",
-    "mediaMetadata": {},
+    "mediaMetadata": {
+      "MIME_TYPE": "image/jpeg"
+    },
     "mediaProperties": {},
     "markupResult": null,
     "output": {
@@ -149,7 +153,9 @@
     "sha256": "49b0b640884f797cae8dc32d80110869fba24730245773a9e7ae0810b6cd6a45",
     "message": null,
     "status": "COMPLETE",
-    "mediaMetadata": {},
+    "mediaMetadata": {
+      "MIME_TYPE": "image/jpeg"
+    },
     "mediaProperties": {},
     "markupResult": null,
     "output": {

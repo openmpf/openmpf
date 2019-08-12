@@ -42,7 +42,8 @@
       "mediaMetadata": {
         "DURATION": "8070",
         "FPS": "25.28",
-        "FRAME_COUNT": "220"
+        "FRAME_COUNT": "220",
+        "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
       "markupResult": null,

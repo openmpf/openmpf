@@ -33,13 +33,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
@@ -69,7 +67,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
@@ -173,31 +174,16 @@ public class JobController {
     }
 
 
-    private static final Map<String, Comparator<SingleJobInfo>> JOB_TABLE_COLUMN_ORDERINGS
-            = ImmutableMap.<String, Comparator<SingleJobInfo>>builder()
-            .put("0", nullsFirstCompare(SingleJobInfo::getJobId))
-            .put("1", nullsFirstCompare(SingleJobInfo::getPipelineName))
-            .put("2", nullsFirstCompare(SingleJobInfo::getStartDate))
-            .put("3", nullsLastCompare(SingleJobInfo::getEndDate))
-            .put("4", nullsFirstCompare(SingleJobInfo::getJobStatus))
-            .put("5", Comparator.comparingInt(SingleJobInfo::getJobPriority))
+    private static final Map<String, String> JOB_TABLE_COLUMN_NAMES
+            = ImmutableMap.<String, String>builder()
+            .put("0", "id")
+            .put("1", "pipeline")
+            .put("2", "time_received")
+            .put("3", "time_completed")
+            .put("4", "status")
+            .put("5", "priority")
             .build();
 
-    private static <T, U extends Comparable<U>> Comparator<T> nullsFirstCompare(Function<T, U> keyExtractor) {
-        return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
-    }
-
-    private static <T, U extends Comparable<U>> Comparator<T> nullsLastCompare(Function<T, U> keyExtractor) {
-        return Comparator.comparing(keyExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
-    }
-
-    private static void sortJobs(List<SingleJobInfo> jobs, String orderByColumn, String orderDirection) {
-        Comparator<SingleJobInfo> comparator = JOB_TABLE_COLUMN_ORDERINGS.get(orderByColumn);
-        if (orderDirection.equalsIgnoreCase("desc")) {
-            comparator = comparator.reversed();
-        }
-        jobs.sort(comparator);
-    }
 
     // INTERNAL
     // Parameters come from DataTables library: https://datatables.net/manual/server-side
@@ -212,52 +198,33 @@ public class JobController {
             @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
         log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
 
-        List<SingleJobInfo> jobInfoModels = getJobStatus(false);
-        int recordsTotal = jobInfoModels.size();
+        String sortColumn = JOB_TABLE_COLUMN_NAMES.get(orderByColumn);
+        String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
-        //handle search
-        if (search != null && search.length() > 0) {
-            search = search.toLowerCase();
-            List<SingleJobInfo> search_results = new ArrayList<SingleJobInfo>();
-            for (int i = 0; i < jobInfoModels.size(); i++) {
-                SingleJobInfo info = jobInfoModels.get(i);
-                //apply search to id,pipeline name, status, dates
-                if (info.getJobId().toString().contains(search) ||
-                        (info.getPipelineName() != null && info.getPipelineName().toLowerCase().contains(search)) ||
-                        (info.getJobStatus() != null && info.getJobStatus().toLowerCase().contains(search)) ||
-                        (info.getEndDate() != null && TimeUtils.toIsoString(info.getEndDate()).toLowerCase().contains(search)) ||
-                        (info.getStartDate() != null && TimeUtils.toIsoString(info.getStartDate()).toLowerCase().contains(search))) {
-                    search_results.add(info);
-                }
-            }
-            jobInfoModels = search_results;
-        }
-        sortJobs(jobInfoModels, orderByColumn, orderDirection);
+        //handle paging
+        List<SingleJobInfo> jobInfoModels = mpfService.getPagedJobRequests(length, start, search, sortColumn,
+                sortOrderDirection).stream()
+                .map(this::convertJob)
+                .collect(toList());
+        int recordsTotal = mpfService.getJobRequestCount().intValue();
 
         JobPageListModel model = new JobPageListModel();
         // Total records, before filtering (i.e. the total number of records in the database)
         model.setRecordsTotal(recordsTotal);
         // Total records, after filtering (i.e. the total number of records after filtering has been applied -
         // not just the number of records being returned for this page of data).
-        model.setRecordsFiltered(jobInfoModels.size());
-
-        //handle paging
-        int end = start + length;
-        end = (end > jobInfoModels.size()) ? jobInfoModels.size() : end;
-        start = (start <= end) ? start : end;
-        List<SingleJobInfo> jobInfoModelsFiltered = jobInfoModels.subList(start, end);
+        model.setRecordsFiltered( search.equals("") ? recordsTotal :
+                mpfService.getJobRequestCountFiltered(search).intValue() );
 
         //convert for output
-        for (int i = 0; i < jobInfoModelsFiltered.size(); i++) {
-            SingleJobInfo job = jobInfoModelsFiltered.get(i);
+        for (int i = 0; i < jobInfoModels.size(); i++) {
+            SingleJobInfo job = jobInfoModels.get(i);
             JobPageModel job_model = new JobPageModel(job);
-            List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(job.getJobId());
-            job_model.setMarkupCount(markupResults.size());
             if(job_model.getOutputObjectPath() != null) {
-                job_model.outputFileExists
-                        = IoUtils.toLocalPath(job_model.getOutputObjectPath())
+                job_model.setOutputFileExists(
+                        IoUtils.toLocalPath(job_model.getOutputObjectPath())
                             .map(Files::exists)
-                            .orElse(true);
+                            .orElse(true));
             }
             model.addData(job_model);
         }

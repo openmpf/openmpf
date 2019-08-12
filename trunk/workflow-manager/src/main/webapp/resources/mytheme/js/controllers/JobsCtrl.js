@@ -85,14 +85,14 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                     {
                         data: "startDate",
                         render: function (data, type, job) {
-                            return (moment(job.startDate).format("MM/DD/YYYY hh:mm A"));
+                            return (moment(job.startDate).format("YYYY-MM-DD HH:mm:ss"));
                         }
                     },
                     {
                         data: "endDate",
                         render: function (data, type, job) {
                             if (job.endDate && job.jobStatus.startsWith('COMPLETE'))
-                                return (moment(job.endDate).format("MM/DD/YYYY hh:mm A"));
+                                return (moment(job.endDate).format("YYYY-MM-DD HH:mm:ss"));
                             return "";
                         }
                     },

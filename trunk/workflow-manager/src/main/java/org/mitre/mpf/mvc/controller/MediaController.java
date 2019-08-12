@@ -94,7 +94,7 @@ public class MediaController {
             log.error(err);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, err);
         }
-        ;
+
         String remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory().getAbsolutePath();
         //verify the desired path
         Path desiredPath = Paths.get(desiredpath);
@@ -274,13 +274,15 @@ public class MediaController {
                     Files.createDirectory(dir);
                     log.debug("Directory added:" + dir);
                     return new ResponseEntity<>("{\"dir\":\"" + dir + "\"}", HttpStatus.OK);
-                } catch (IOException e) {
-                    return new ResponseEntity<>("{\"error\":\"Cannot Create Folder\"}", HttpStatus.INTERNAL_SERVER_ERROR);
+                } catch (IOException | UnsupportedOperationException | SecurityException e) {
+                    log.error("Exception occurred when creating remote media directory: ", e);
+                    return new ResponseEntity<>("{\"error\":\"Cannot create folder\"}",
+                            HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             } else {
-                return new ResponseEntity<>("{\"error\":\"Path Exists\"}", HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>("{\"error\":\"Path exists\"}", HttpStatus.BAD_REQUEST);
             }
         }
-        return new ResponseEntity<>("{\"error\":\"Invalid path\"}", HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>("{\"error\":\"Invalid path\"}", HttpStatus.BAD_REQUEST);
     }
 }

@@ -32,6 +32,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.*;
@@ -177,7 +178,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         String pipelineName = baseName + " PIPELINE";
         addPipeline(pipelineName, taskName);
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -214,9 +215,9 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runOcvFaceOnRotatedImage() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
 
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-af-S419-01_40deg.jpg"));
-        media.get(0).addProperty("ROTATION", "60");
+        media.get(0).getProperties().put("ROTATION", "60");
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -226,8 +227,9 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test
     public void runOcvFaceOnRotatedVideo() {
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01_220deg.avi"));
-        media.get(0).addProperty("ROTATION", "220");
+        List<JobCreationMediaData> media
+                = toMediaObjectList(ioUtils.findFile("/samples/face/video_01_220deg.avi"));
+        media.get(0).getProperties().put("ROTATION", "220");
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
@@ -491,7 +493,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/object/ff-exact-region-object-motion.avi"));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
@@ -556,10 +558,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/object/ff-exact-region-object-motion_60deg.avi"));
 
-        long jobId = runPipelineOnMedia( pipelineName, getRotationMap(60), media);
+        long jobId = runPipelineOnMedia(pipelineName, getRotationMap(60), media);
 
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
@@ -621,7 +623,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/object/ff-exact-region-object-motion_60deg.avi"));
 
         long jobId = runPipelineOnMedia(pipelineName, getRotationMap(60), media);
@@ -902,7 +904,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
             String pipelineName, String mediaPath, Map<String, String> jobProperties,
             String detectionType, int firstDetectionFrame) {
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(mediaPath));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
         long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);

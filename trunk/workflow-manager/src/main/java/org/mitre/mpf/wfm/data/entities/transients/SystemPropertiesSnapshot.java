@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
@@ -42,10 +45,14 @@ import java.util.Optional;
 // consistent throughout all pipeline stages of a batch job, even if the system property values are changed on the
 // UI while the job is being processed. This processing is not implemented for streaming jobs, since
 // streaming jobs may only be single stage at this time.
+
+// Disable auto detect since we only want to deserialize the properties field.
+@JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 public class SystemPropertiesSnapshot {
 
     // Map contains a snapshot of the necessary system property values
     private final ImmutableMap<String, String> _properties;
+    @JsonProperty
     public ImmutableMap<String, String> getProperties() {
         return _properties;
     }
@@ -57,43 +64,43 @@ public class SystemPropertiesSnapshot {
      }
 
     public int getSamplingInterval() {
-        return Integer.valueOf(_properties.get("detection.sampling.interval"));
+        return Integer.parseInt(_properties.get("detection.sampling.interval"));
     }
 
     public int getFrameRateCap() {
-        return Integer.valueOf(_properties.get("detection.frame.rate.cap"));
+        return Integer.parseInt(_properties.get("detection.frame.rate.cap"));
     }
 
     public double getConfidenceThreshold() {
-        return Double.valueOf(_properties.get("detection.confidence.threshold"));
+        return Double.parseDouble(_properties.get("detection.confidence.threshold"));
     }
 
     public int getMinAllowableSegmentGap() {
-        return Integer.valueOf(_properties.get("detection.segment.minimum.gap"));
+        return Integer.parseInt(_properties.get("detection.segment.minimum.gap"));
     }
 
     public int getTargetSegmentLength() {
-        return Integer.valueOf(_properties.get("detection.segment.target.length"));
+        return Integer.parseInt(_properties.get("detection.segment.target.length"));
     }
 
     public int getMinSegmentLength() {
-        return Integer.valueOf(_properties.get("detection.segment.minimum.length"));
+        return Integer.parseInt(_properties.get("detection.segment.minimum.length"));
     }
 
     public boolean isTrackMerging() {
-        return Boolean.valueOf(_properties.get("detection.video.track.merging.enabled"));
+        return Boolean.parseBoolean(_properties.get("detection.video.track.merging.enabled"));
     }
 
     public int getMinAllowableTrackGap() {
-        return Integer.valueOf(_properties.get("detection.video.track.min.gap"));
+        return Integer.parseInt(_properties.get("detection.video.track.min.gap"));
     }
 
     public int getMinTrackLength() {
-        return Integer.valueOf(_properties.get("detection.video.track.min.length"));
+        return Integer.parseInt(_properties.get("detection.video.track.min.length"));
     }
 
     public double getTrackOverlapThreshold() {
-        return Double.valueOf(_properties.get("detection.video.track.overlap.threshold"));
+        return Double.parseDouble(_properties.get("detection.video.track.overlap.threshold"));
     }
 
     public Optional<URI> getNginxStorageServiceUri() throws StorageException {
@@ -133,8 +140,9 @@ public class SystemPropertiesSnapshot {
         return _properties.get(propertyName);
     }
 
-
-    public SystemPropertiesSnapshot(Map<String, String> properties) {
+    @JsonCreator
+    public SystemPropertiesSnapshot(
+            @JsonProperty("properties") Map<String, String> properties) {
         _properties = ImmutableMap.copyOf(properties);
     }
 

@@ -27,8 +27,12 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.*;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
 import java.util.function.Function;
@@ -81,16 +85,16 @@ public class TransientJobImpl implements TransientJob {
     }
 
 
-    private final ImmutableTable<String, String, String> _overriddenAlgorithmProperties;
+    private final ImmutableMap<String, ImmutableMap<String, String>> _overriddenAlgorithmProperties;
     @Override
-    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() {
+    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties() {
         return _overriddenAlgorithmProperties;
     }
 
 
-    private final ImmutableMap<String, String> _overriddenJobProperties;
+    private final ImmutableMap<String, String> _jobProperties;
     @Override
-    public ImmutableMap<String, String> getOverriddenJobProperties() { return _overriddenJobProperties; }
+    public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
 
 
     private boolean _cancelled;
@@ -146,26 +150,28 @@ public class TransientJobImpl implements TransientJob {
     }
 
 
+    @JsonCreator
     public TransientJobImpl(
-            long id,
-            String externalId,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            TransientPipeline transientPipeline,
-            int priority,
-            boolean outputEnabled,
-            String callbackUrl,
-            String callbackMethod,
-            Collection<TransientMediaImpl> media,
-            Map<String, String> jobProperties,
-            Map<String, Map<String, String>> algorithmProperties) {
+            @JsonProperty("id") long id,
+            @JsonProperty("externalId") String externalId,
+            @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,
+            @JsonProperty("transientPipeline") TransientPipeline transientPipeline,
+            @JsonProperty("priority") int priority,
+            @JsonProperty("outputEnabled") boolean outputEnabled,
+            @JsonProperty("callbackUrl") String callbackUrl,
+            @JsonProperty("callbackMethod") String callbackMethod,
+            @JsonProperty("media") Collection<TransientMediaImpl> media,
+            @JsonProperty("jobProperties") Map<String, String> jobProperties,
+            @JsonProperty("overriddenAlgorithmProperties")
+                    Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
         _transientPipeline = transientPipeline;
         _priority = priority;
         _outputEnabled = outputEnabled;
-        _callbackUrl = callbackUrl;
-        _callbackMethod = callbackMethod;
+        _callbackUrl = StringUtils.trimToNull(callbackUrl);
+        _callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
 
         _media = media.stream()
                 .collect(ImmutableSortedMap.toImmutableSortedMap(
@@ -173,14 +179,10 @@ public class TransientJobImpl implements TransientJob {
                         TransientMediaImpl::getId,
                         Function.identity()));
 
-        _overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+        _jobProperties = ImmutableMap.copyOf(jobProperties);
 
-        ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
-        for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
-            for (Map.Entry<String, String> algoProp : algoEntry.getValue().entrySet()) {
-                tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
-            }
-        }
-        _overriddenAlgorithmProperties = tableBuilder.build();
+        _overriddenAlgorithmProperties = overriddenAlgorithmProperties.entrySet()
+                .stream()
+                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
     }
 }

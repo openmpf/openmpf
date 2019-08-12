@@ -29,24 +29,18 @@ package org.mitre.mpf.mvc.controller;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -68,11 +62,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 
@@ -102,16 +93,10 @@ public class JobController {
     private JobProgress jobProgress;
 
     @Autowired
-    private PipelineService pipelineService;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
     private S3StorageBackend s3StorageBackend;
-
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     /*
      *	POST /jobs
@@ -302,7 +287,7 @@ public class JobController {
                 return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
             }
 
-            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+            var jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), TransientJob.class);
             InputStreamResource inputStreamResource;
             if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {
                 S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
@@ -414,56 +399,7 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            pipelineService.verifyBatchPipelineRunnable(jobCreationRequest.getPipelineName());
-            checkProperties(jobCreationRequest);
-
-            boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
-                    .orElseGet(propertiesUtil::isOutputObjectsEnabled);
-
-            int priority = Optional.ofNullable(jobCreationRequest.getPriority())
-                    .orElseGet(propertiesUtil::getJmsPriority);
-
-            List<JsonMediaInputObject> media = new ArrayList<>();
-            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
-            // that media will be ignored from the batch job
-            for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium
-                        = new JsonMediaInputObject(IoUtils.normalizeUri(mediaRequest.getMediaUri()));
-                if (mediaRequest.getProperties() != null) {
-                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
-                        medium.getProperties()
-                            .put(property.getKey().toUpperCase(), property.getValue());
-                    }
-                }
-                media.add(medium);
-            }
-
-            JsonJobRequest jsonJobRequest;
-            if (StringUtils.isEmpty(jobCreationRequest.getCallbackURL())) {
-                jsonJobRequest = jobRequestBo.createRequest(
-                        jobCreationRequest.getExternalId(),
-                        jobCreationRequest.getPipelineName(),
-                        media,
-                        jobCreationRequest.getAlgorithmProperties(),
-                        jobCreationRequest.getJobProperties(),
-                        buildOutput,
-                        priority);
-            }
-            else {
-                jsonJobRequest = jobRequestBo.createRequest(
-                        jobCreationRequest.getExternalId(),
-                        jobCreationRequest.getPipelineName(),
-                        media,
-                        jobCreationRequest.getAlgorithmProperties(),
-                        jobCreationRequest.getJobProperties(),
-                        buildOutput,
-                        priority,
-                        jobCreationRequest.getCallbackURL(),
-                        jobCreationRequest.getCallbackMethod());
-            }
-
-            long jobId = jobRequestBo.run(jsonJobRequest).getId();
-            log.debug("Successful creation of batch JobId: {}", jobId);
+            long jobId = jobRequestBo.run(jobCreationRequest).getId();
 
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
@@ -478,7 +414,7 @@ public class JobController {
         }
     }
 
-    private String createErrorString(JobCreationRequest jobCreationRequest, String message) {
+    private static String createErrorString(JobCreationRequest jobCreationRequest, String message) {
         StringBuilder errBuilder = new StringBuilder("Failure creating job");
         if (jobCreationRequest.getExternalId() != null) {
             errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
@@ -514,7 +450,7 @@ public class JobController {
                 log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
                 return new JobCreationResponse(newJobId);
             }
-        } catch (WfmProcessingException wpe) {
+        } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
@@ -542,29 +478,5 @@ public class JobController {
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
-    }
-
-    private void checkProperties(JobCreationRequest jobCreationRequest) {
-        try {
-            List<Action> actions = pipelineService.getPipeline(jobCreationRequest.getPipelineName())
-                    .getTasks()
-                    .stream()
-                    .map(pipelineService::getTask)
-                    .flatMap(t -> t.getActions().stream())
-                    .map(pipelineService::getAction)
-                    .collect(toList());
-
-            for (JobCreationMediaData media : jobCreationRequest.getMedia()) {
-                for (Action action : actions) {
-                    Function<String, String> combinedProperties
-                            = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
-                    S3StorageBackend.requiresS3MediaDownload(combinedProperties);
-                    S3StorageBackend.requiresS3ResultUpload(combinedProperties);
-                }
-            }
-        }
-        catch (StorageException e) {
-            throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
-        }
     }
 }

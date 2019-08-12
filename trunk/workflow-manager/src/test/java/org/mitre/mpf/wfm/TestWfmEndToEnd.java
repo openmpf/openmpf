@@ -33,9 +33,9 @@ import org.apache.camel.ExchangePattern;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
@@ -122,10 +122,10 @@ public class TestWfmEndToEnd {
 		}
 	}
 
-	private static List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
-		List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
+	private static List<JobCreationMediaData> toMediaObjectList(URI... uris) {
+		List<JobCreationMediaData> media = new ArrayList<>(uris.length);
 		for (URI uri : uris) {
-			media.add(new JsonMediaInputObject(uri.toString()));
+			media.add(new JobCreationMediaData(uri.toString()));
 		}
 		return media;
 	}
@@ -149,11 +149,18 @@ public class TestWfmEndToEnd {
 	}
 
 
-	private long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media,
+	private long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media,
 	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
-		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
-				Collections.emptyMap(), jobProperties, buildOutput, priority);
-		long jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
+
+		var jobRequest = new JobCreationRequest();
+		jobRequest.setExternalId(UUID.randomUUID().toString());
+		jobRequest.setPipelineName(pipelineName);
+		jobRequest.setMedia(media);
+		jobRequest.setJobProperties(jobProperties);
+		jobRequest.setBuildOutput(buildOutput);
+		jobRequest.setPriority(priority);
+
+		long jobRequestId = jobRequestBo.run(jobRequest).getId();
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
@@ -163,9 +170,10 @@ public class TestWfmEndToEnd {
 	public void testResubmission() throws Exception {
 		testCtr++;
 		log.info("Beginning test #{} testResubmission()", testCtr);
-		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/meds/aa/S001-01-t10_01.jpg"));
+		List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/meds/aa/S001-01-t10_01.jpg"));
 
-		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(), true, 5);
+		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media,
+		                                Collections.emptyMap(), true, 5);
 
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
@@ -186,7 +194,7 @@ public class TestWfmEndToEnd {
 		// Ensure that there is at least some pause between jobs so that the start and stop times can be meaningfully
 		// compared to ensure that results are not erroneously being duplicated.
 		Thread.sleep(2000);
-		jobRequestBo.resubmit(jobId);
+		jobRequestBo.resubmit(jobId, 5);
 		Assert.assertTrue(waitFor(jobId));
 
 		jobRequest = jobRequestDao.findById(jobId);

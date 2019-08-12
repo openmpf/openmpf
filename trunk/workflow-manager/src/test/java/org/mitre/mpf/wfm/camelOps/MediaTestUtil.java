@@ -48,7 +48,7 @@ public class MediaTestUtil {
         TransientJob job = mock(TransientJob.class);
         when(job.getMedia(media.getId()))
                 .thenReturn(media);
-        when(job.getOverriddenJobProperties())
+        when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of());
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);

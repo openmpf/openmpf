@@ -180,14 +180,14 @@ public class DetectionSplitter implements StageSplitter {
                     // If media properties are specified, overridden algorithm properties and job properties and pipeline properties are reset.
 
                     for (String key : transformProperties) {
-                        if (transientJob.getOverriddenJobProperties().containsKey(key)) {
+                        if (transientJob.getJobProperties().containsKey(key)) {
                             clearTransformPropertiesFromMap(modifiedMap);
                             break;
                         }
                     }
 
                     // Note: by this point override of system properties by job properties has already been applied to the transient job.
-                    modifiedMap.putAll(transientJob.getOverriddenJobProperties());
+                    modifiedMap.putAll(transientJob.getJobProperties());
 
                     // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
                     // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
@@ -207,9 +207,9 @@ public class DetectionSplitter implements StageSplitter {
                     // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
                     // override of the action (i.e. algorithm) that we are currently processing
                     // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-                    if (transientJob.getOverriddenAlgorithmProperties().containsRow(action.getAlgorithm())) {
+                    if (transientJob.getOverriddenAlgorithmProperties().containsKey(action.getAlgorithm())) {
                         // this transient job contains the a algorithm property which may override what is in our current action
-                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().row(action.getAlgorithm());
+                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
 
                         // see if any of these algorithm properties are transform properties.  If so, clear the
                         // current set of transform properties from the map to allow for this algorithm properties to

@@ -32,6 +32,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -127,7 +129,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         testCtr++;
         log.info("Beginning test #{} runMotionTracking1()", testCtr);
 
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/motion/five-second-marathon-clip.mkv"),
                 ioUtils.findFile("/samples/person/video_02.mp4"));
 
@@ -146,7 +148,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testBadPipeline() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testBadPipeline()", testCtr);
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
         long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                 propertiesUtil.getJmsPriority());
         log.error("Finished test testBadPipeline()"); // exception should have been thrown
@@ -156,7 +158,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testEmptyMarkupRequest() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testEmptyMarkupRequest()", testCtr);
-        List<JsonMediaInputObject> media = toMediaObjectList(
+        List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
@@ -177,8 +179,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testNonUri() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testNonUri()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
-        media.add(new JsonMediaInputObject("/not/a/file.txt"));
+        List<JobCreationMediaData> media = new LinkedList<>();
+        media.add(new JobCreationMediaData("/not/a/file.txt"));
         long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         log.info("Finished test testNonUri()");
@@ -189,7 +191,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testTiffImageMarkup() throws Exception {
         testCtr++;
         log.info("Beginning test #{} testTiffImageMarkup()", testCtr);
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
         long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
@@ -227,7 +229,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         String pipelineName = "TEST OCV FACE MIN FACE SIZE 100 PIPELINE";
         addPipeline(pipelineName, taskName);
 
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), // use this line to generate output using the custom pipeline
 //      long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),  // use this line to generate default output
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
@@ -367,16 +369,21 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
             try {
                 // NOTE: Process lots of images so that we get frequent progress updates;
                 // one update after each image is processed.
-                List<JsonMediaInputObject> media = new LinkedList<>();
+                List<JobCreationMediaData> media = new LinkedList<>();
 
                 File dir = new File(path);
                 for (File file : dir.listFiles()) {
-                    media.add(new JsonMediaInputObject(ioUtils.findFile(file.getAbsolutePath()).toString()));
+                    media.add(new JobCreationMediaData(ioUtils.findFile(file.getAbsolutePath()).toString()));
                 }
 
-                JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(),
-                        "OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(), Collections.emptyMap(), false, priority);
-                jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
+                var jobRequest = new JobCreationRequest();
+                jobRequest.setExternalId(UUID.randomUUID().toString());
+                jobRequest.setPipelineName("OCV FACE DETECTION PIPELINE");
+                jobRequest.setMedia(media);
+                jobRequest.setBuildOutput(false);
+                jobRequest.setPriority(priority);
+
+                jobRequestId = jobRequestBo.run(jobRequest).getId();
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {
                 log.error(String.format("Failed to run job %d due to an exception.", jobRequestId), exception);

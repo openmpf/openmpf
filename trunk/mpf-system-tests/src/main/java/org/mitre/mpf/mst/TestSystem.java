@@ -33,6 +33,8 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
@@ -212,36 +214,48 @@ public abstract class TestSystem {
                                         actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
     }
 
-    protected List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
-        List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
+    protected List<JobCreationMediaData> toMediaObjectList(URI... uris) {
+        List<JobCreationMediaData> media = new ArrayList<>(uris.length);
         for (URI uri : uris) {
-            media.add(new JsonMediaInputObject(uri.toString()));
+            media.add(new JobCreationMediaData(uri.toString()));
         }
         return media;
     }
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
+    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media) {
         return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
                                   propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
                                       Map<String, String> jobProperties,
-                                      List<JsonMediaInputObject> media) {
+                                      List<JobCreationMediaData> media) {
         return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
     }
 
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
+    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media, boolean buildOutput,
                                       int priority) {
         return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
     }
 
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
-        JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
-                                                                   buildOutput, priority);
-        long jobRequestId = jobRequestBo.run(jsonJobRequest).getId();
+    protected long runPipelineOnMedia(
+            String pipelineName,
+            List<JobCreationMediaData> media,
+            Map<String, String> jobProperties,
+            boolean buildOutput,
+            int priority) {
+
+        var jobRequest = new JobCreationRequest();
+        jobRequest.setExternalId(UUID.randomUUID().toString());
+        jobRequest.setPipelineName(pipelineName);
+        jobRequest.setMedia(media);
+        jobRequest.setJobProperties(jobProperties);
+        jobRequest.setBuildOutput(buildOutput);
+        jobRequest.setPriority(priority);
+
+        long jobRequestId = jobRequestBo.run(jobRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
@@ -278,9 +292,9 @@ public abstract class TestSystem {
     protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
         testCtr++;
         log.info("Beginning test #{} {}()", testCtr, testName.getMethodName());
-        List<JsonMediaInputObject> mediaPaths = new LinkedList<>();
+        List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
-            mediaPaths.add(new JsonMediaInputObject(ioUtils.findFile(filePath).toString()));
+            mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
         }
 
         long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),

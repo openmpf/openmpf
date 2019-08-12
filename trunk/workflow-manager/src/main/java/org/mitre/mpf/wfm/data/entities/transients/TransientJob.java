@@ -26,15 +26,18 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+// Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
+@SuppressWarnings("ClassReferencesSubclass")
+@JsonDeserialize(as = TransientJobImpl.class)
 public interface TransientJob {
     public long getId();
 
@@ -56,9 +59,9 @@ public interface TransientJob {
 
     // The table's row key is the algorithm name, the column key is the property name,
     // and the value is the property value.
-    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties();
+    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
 
-    public ImmutableMap<String, String> getOverriddenJobProperties();
+    public ImmutableMap<String, String> getJobProperties();
 
     public boolean isCancelled();
 

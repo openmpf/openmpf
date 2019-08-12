@@ -64,6 +64,9 @@ public class RemoteMediaProcessor extends WfmProcessor {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 
@@ -81,7 +84,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
             case HTTP:
             case HTTPS:
                 try {
-                    Function<String, String> combinedProperties = AggregateJobPropertiesUtil
+                    Function<String, String> combinedProperties = aggregateJobPropertiesUtil
                             .getCombinedProperties(job, transientMedia);
                     if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
                         s3Service.downloadFromS3(transientMedia, combinedProperties);

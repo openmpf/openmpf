@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -34,41 +35,44 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /** An in-flight media instance. */
+// Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
+@SuppressWarnings("ClassReferencesSubclass")
+@JsonSerialize(as = TransientMediaImpl.class)
 public interface TransientMedia {
 
-	/** The unique identifier for this file. */
-	public long getId();
+    /** The unique identifier for this file. */
+    public long getId();
 
-	public String getUri();
+    public String getUri();
 
-	/** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
-	public UriScheme getUriScheme();
+    /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
+    public UriScheme getUriScheme();
 
-	/** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
-	public Path getLocalPath();
+    /** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
+    public Path getLocalPath();
 
-	/** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
-	public boolean isFailed();
+    /** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
+    public boolean isFailed();
 
-	/** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
-	public String getMessage();
+    /** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
+    public String getMessage();
 
-	/** The MIME type of the medium. */
-	public String getType();
+    /** The MIME type of the medium. */
+    public String getType();
 
-	/** The Metadata for the medium. */
-	public Map<String,String> getMetadata();
-	public String getMetadata(String key);
+    /** The Metadata for the medium. */
+    public Map<String,String> getMetadata();
+    public String getMetadata(String key);
 
-	/** The Algorithm properties to override for the medium. */
-	public ImmutableMap<String, String> getMediaSpecificProperties();
-	public String getMediaSpecificProperty(String key);
+    /** The Algorithm properties to override for the medium. */
+    public ImmutableMap<String, String> getMediaSpecificProperties();
+    public String getMediaSpecificProperty(String key);
 
-	public MediaType getMediaType();
+    public MediaType getMediaType();
 
-	/** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
-	public int getLength();
+    /** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
+    public int getLength();
 
-	/** The SHA 256 hash of the local file (assuming it could be retrieved. */
-	public String getSha256();
+    /** The SHA 256 hash of the local file (assuming it could be retrieved. */
+    public String getSha256();
 }

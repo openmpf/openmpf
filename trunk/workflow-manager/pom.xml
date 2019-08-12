@@ -626,14 +626,12 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <!-- / added for Jackson -->
-
-        <!-- eventually figure out what jackson mappers are needed, are these doing the same thing? -->
         <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson.mapper.asl.version}</version>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
+        <!-- / added for Jackson -->
 
         <dependency>
             <groupId>org.springframework</groupId>

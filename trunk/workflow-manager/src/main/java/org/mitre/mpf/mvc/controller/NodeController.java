@@ -26,9 +26,9 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.*;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.h2.util.StringUtils;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.nms.ServiceDescriptor;

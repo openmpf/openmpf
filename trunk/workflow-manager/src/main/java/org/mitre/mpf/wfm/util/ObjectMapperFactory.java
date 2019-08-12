@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +40,7 @@ public class ObjectMapperFactory {
     @Bean
     public static ObjectMapper customObjectMapper() {
         return Jackson2ObjectMapperBuilder.json()
-                .modules(new InstantJsonModule())
+                .modules(new InstantJsonModule(), new Jdk8Module())
                 .build();
     }
 }

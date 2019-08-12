@@ -26,27 +26,33 @@
 
 package org.mitre.mpf.wfm.businessrules.impl;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.camel.routes.JobCreatorRouteBuilder;
+import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.util.JmsUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.wfm.service.S3StorageBackend;
+import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,32 +61,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.joining;
 
 @Component
 public class JobRequestBoImpl implements JobRequestBo {
-    /**
-     * Internal enumeration which is used to indicate whether a resubmitted job should use the original
-     * priority value or a new value which has been provided.
-     */
-    private static enum PriorityPolicy {
-        /**
-         * Resubmits the job with a different priority.
-         */
-        PROVIDED,
-
-        /**
-         * DEFAULT: Resubmits the job using the same priority as its first run.
-         */
-        EXISTING;
-
-        /**
-         * The default action is to re-use the original priority.
-         */
-        public static final PriorityPolicy DEFAULT = EXISTING;
-    }
 
     private static final Logger log = LoggerFactory.getLogger(JobRequestBoImpl.class);
     public static final String REF = "jobRequestBoImpl";
@@ -90,6 +77,9 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     @Autowired
     private PropertiesUtil propertiesUtil;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -110,136 +100,232 @@ public class JobRequestBoImpl implements JobRequestBo {
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
 
-    @EndpointInject(uri = JobCreatorRouteBuilder.ENTRY_POINT)
+    @EndpointInject(uri = MediaRetrieverRouteBuilder.ENTRY_POINT)
     private ProducerTemplate jobRequestProducerTemplate;
 
-    /**
-     * Will create and initialize a JSON representation of a job request given the raw parameters.
-     * This version of the method does not allow for a callback to be defined.
-     *
-     * @param externalId
-     * @param pipelineName
-     * @param media
-     * @param algorithmProperties
-     * @param jobProperties
-     * @param buildOutput
-     * @param priority
-     * @return
-     */
-    @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
-        JsonJobRequest jsonJobRequest = new JsonJobRequest(
-                TextUtils.trim(externalId), buildOutput,
-                pipelineService.createBatchJsonPipeline(pipelineName), priority);
-        if (media != null) {
-            jsonJobRequest.getMedia().addAll(media);
+
+    @Override
+    public JobRequest run(JobCreationRequest jobCreationRequest) {
+        List<TransientMedia> media = jobCreationRequest.getMedia()
+                .stream()
+                .map(m -> inProgressJobs.initMedia(m.getMediaUri(), m.getProperties()))
+                .collect(ImmutableList.toImmutableList());
+
+        int priority = Optional.ofNullable(jobCreationRequest.getPriority())
+                .orElseGet(propertiesUtil::getJmsPriority);
+
+        boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
+                .orElseGet(propertiesUtil::isOutputObjectsEnabled);
+
+
+
+        JobRequest jobRequestEntity = initialize(
+                new JobRequest(),
+                jobCreationRequest.getPipelineName(),
+                media,
+                jobCreationRequest.getJobProperties(),
+                jobCreationRequest.getAlgorithmProperties(),
+                jobCreationRequest.getExternalId(),
+                buildOutput,
+                priority,
+                jobCreationRequest.getCallbackURL(),
+                jobCreationRequest.getCallbackMethod());
+
+        submit(jobRequestEntity);
+        return jobRequestEntity;
+    }
+
+
+
+    @Override
+    public JobRequest resubmit(long jobId, int priority) {
+        JobRequest jobRequestEntity = jobRequestDao.findById(jobId);
+        if (jobRequestEntity == null) {
+            throw new WfmProcessingException("There was no job with id: " + jobId);
+        }
+        if (!jobRequestEntity.getStatus().isTerminal()) {
+            throw new WfmProcessingException(String.format(
+                    "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
+                    jobId, jobRequestEntity.getStatus().name()));
         }
 
-        // update to add the job algorithm-specific-properties, supporting the priority:
-        // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-        if (algorithmProperties != null) {
-            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
-                jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
+        TransientJob originalJob = jsonUtils.deserialize(jobRequestEntity.getInputObject(), TransientJob.class);
+
+        List<TransientMedia> media = originalJob.getMedia()
+                .stream()
+                .map(m -> inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties()))
+                .collect(ImmutableList.toImmutableList());
+
+
+        jobRequestEntity = initialize(jobRequestEntity,
+                    originalJob.getTransientPipeline().getName(),
+                    media,
+                    originalJob.getJobProperties(),
+                    originalJob.getOverriddenAlgorithmProperties(),
+                    originalJob.getExternalId().orElse(null),
+                    originalJob.isOutputEnabled(),
+                    priority > 0 ? priority : originalJob.getPriority(),
+                    originalJob.getCallbackUrl().orElse(null),
+                    originalJob.getCallbackMethod().orElse(null));
+
+        // Clean up old job
+        markupResultDao.deleteByJobId(jobId);
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
+
+        submit(jobRequestEntity);
+        return jobRequestEntity;
+    }
+
+
+    private JobRequest initialize(
+            JobRequest jobRequestEntity,
+            String pipelineName,
+            Collection<TransientMedia> media,
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgoProps,
+            String externalId,
+            boolean buildOutput,
+            int priority,
+            String callbackUrl,
+            String callbackMethod) {
+
+        var pipeline = pipelineService.createTransientBatchPipeline(pipelineName);
+        // Capture the current state of the detection system properties at the time when this job is created.
+        // Since the detection system properties may be changed by an administrator, we must ensure that the job
+        // uses a consistent set of detection system properties through all stages of the job's pipeline.
+        var systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+
+        callbackUrl = StringUtils.trimToNull(callbackUrl);
+        callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
+        if (callbackUrl != null && !Objects.equals("GET", callbackMethod)) {
+            callbackMethod = "POST";
+        }
+
+
+        BatchJobStatusType jobStatus = validateJobRequest(
+                pipeline,
+                media,
+                jobProperties,
+                overriddenAlgoProps,
+                systemPropertiesSnapshot);
+
+        jobRequestEntity.setPriority(priority);
+        jobRequestEntity.setStatus(BatchJobStatusType.INITIALIZED);
+        jobRequestEntity.setTimeReceived(Instant.now());
+        jobRequestEntity.setPipeline(pipeline.getName());
+        jobRequestEntity.setOutputObjectPath(null);
+        jobRequestEntity.setOutputObjectVersion(null);
+
+        jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
+
+        jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
+
+        TransientJob transientJob = inProgressJobs.addJob(
+                jobRequestEntity.getId(),
+                externalId,
+                systemPropertiesSnapshot,
+                pipeline,
+                jobRequestEntity.getPriority(),
+                buildOutput,
+                callbackUrl,
+                callbackMethod,
+                media,
+                jobProperties,
+                overriddenAlgoProps);
+
+
+        inProgressJobs.setJobStatus(transientJob.getId(), jobStatus);
+
+        jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
+        jobRequestEntity.setStatus(jobStatus);
+        jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
+
+        jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, jobStatus);
+
+
+        return jobRequestEntity;
+    }
+
+
+    private void submit(JobRequest jobRequestEntity) {
+        var headers = Map.<String, Object>of(
+                MpfHeaders.JOB_ID, jobRequestEntity.getId(),
+                MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, jobRequestEntity.getPriority())));
+
+        log.info("[Job {}|*|*] Job has started and is running at priority {}.",
+                 jobRequestEntity.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
+
+        jobRequestProducerTemplate.sendBodyAndHeaders(
+                MediaRetrieverRouteBuilder.ENTRY_POINT,
+                ExchangePattern.InOnly,
+                null,
+                headers);
+    }
+
+
+    private BatchJobStatusType validateJobRequest(
+            TransientPipeline pipeline,
+            Collection<TransientMedia> media,
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgoProps,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+
+        checkProperties(pipeline, media, jobProperties, overriddenAlgoProps, systemPropertiesSnapshot);
+
+        if (media.isEmpty()) {
+            throw new WfmProcessingException(
+                    "The job request must contain at least one piece of media, but it didn't contain any.");
+        }
+
+        long failedMediaCount = media
+                .stream()
+                .filter(TransientMedia::isFailed)
+                .count();
+
+        if (failedMediaCount == media.size()) {
+            String mediaErrors = media.stream()
+                    .map(m -> m.getUri() + ": " + m.getMessage())
+                    .collect(joining("\n"));
+
+            throw new WfmProcessingException("Could not start job because all media have errors: " + mediaErrors);
+        }
+
+        return failedMediaCount == 0
+                ? BatchJobStatusType.IN_PROGRESS
+                : BatchJobStatusType.IN_PROGRESS_ERRORS;
+    }
+
+
+    private void checkProperties(
+            TransientPipeline pipeline,
+            Iterable<TransientMedia> jobMedia,
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgoProps,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+        try {
+            for (Action action : pipeline.getActions()) {
+                for (TransientMedia media : jobMedia) {
+                    Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
+                            action,
+                            pipeline,
+                            media,
+                            jobProperties,
+                            overriddenAlgoProps,
+                            systemPropertiesSnapshot);
+
+                    S3StorageBackend.requiresS3MediaDownload(combinedProperties);
+                    S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+                }
             }
         }
-
-        if (jobProperties != null) {
-            for (Map.Entry<String, String> property : jobProperties.entrySet()) {
-                jsonJobRequest.getJobProperties().put(property.getKey().toUpperCase(), property.getValue());
-            }
+        catch (StorageException e) {
+            throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
         }
-        return jsonJobRequest;
     }
 
-    /**
-     * Will create and initialize a JSON representation of a job request given the raw parameters.
-     * This version of the method allows for a callback to be defined.
-     *
-     * @param externalId
-     * @param pipelineName
-     * @param media
-     * @param algorithmProperties
-     * @param jobProperties
-     * @param buildOutput
-     * @param priority
-     * @param callbackURL
-     * @param callbackMethod
-     * @return JSON representation of the job request
-     */
-    @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority, String callbackURL, String callbackMethod) {
-        log.debug("[createRequest] externalId:" + externalId + " pipeline:" + pipelineName + " buildOutput:" + buildOutput + " priority:" + priority + " callbackURL:" + callbackURL + " callbackMethod:" + callbackMethod);
-        String jsonCallbackURL = "";
-        String jsonCallbackMethod = "GET";
-        if (callbackURL != null && TextUtils.trim(callbackURL) != null) {
-            jsonCallbackURL = TextUtils.trim(callbackURL);
-        }
-        if (callbackMethod != null && TextUtils.trim(callbackMethod) != null && !TextUtils.trim(callbackMethod).equals("GET")) {//only GET or POST allowed
-            jsonCallbackMethod = "POST";
-        }
-
-        JsonJobRequest jsonJobRequest = new JsonJobRequest(
-                TextUtils.trim(externalId), buildOutput, pipelineService.createBatchJsonPipeline(pipelineName), priority,
-                jsonCallbackURL, jsonCallbackMethod);
-        if (media != null) {
-            jsonJobRequest.getMedia().addAll(media);
-        }
-
-        // Putting algorithm properties in here supports the priority scheme (from lowest to highest):
-        // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-        if (algorithmProperties != null) {
-            for (Map.Entry<String, Map<String, String>> property : algorithmProperties.entrySet()) {
-                jsonJobRequest.getAlgorithmProperties().put(property.getKey().toUpperCase(), property.getValue());
-            }
-        }
-
-        if (jobProperties != null) {
-            for (Map.Entry<String, String> property : jobProperties.entrySet()) {
-                jsonJobRequest.getJobProperties().put(property.getKey().toUpperCase(), property.getValue());
-            }
-        }
-        return jsonJobRequest;
-    }
-
-    /**
-     * Will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage
-     * and will send the job request to the components using the ActiveMQ routes.
-     * Upon return, the job will be persisted in the long-term database.
-     *
-     * @param jobRequest JSON representation of the job request
-     * @return initialized job request
-     * @throws WfmProcessingException
-     */
-    @Override
-    public JobRequest run(JsonJobRequest jobRequest) throws WfmProcessingException {
-        JobRequest jobRequestEntity = initialize(jobRequest);
-        return runInternal(jobRequestEntity, jobRequest, (jobRequest == null) ? propertiesUtil.getJmsPriority() : jobRequest.getPriority());
-    }
-
-    /**
-     * Will create a new JobRequest using the provided JSON job request and persist it in the database for long-term storage.
-     * Upon return, the job will be persisted in the long-term database.
-     *
-     * @param jsonJobRequest JSON representation of the job request
-     * @return initialized job request
-     * @throws WfmProcessingException
-     */
-    @Override
-    public JobRequest initialize(JsonJobRequest jsonJobRequest) throws WfmProcessingException {
-        JobRequest jobRequestEntity = new JobRequest();
-        return initializeInternal(jobRequestEntity, jsonJobRequest);
-    }
-
-    @Override
-    public JobRequest resubmit(long jobId) throws WfmProcessingException {
-        return resubmitInternal(jobId, PriorityPolicy.EXISTING, 0);
-    }
-
-    @Override
-    public JobRequest resubmit(long jobId, int priority) throws WfmProcessingException {
-        return resubmitInternal(jobId, PriorityPolicy.PROVIDED, priority);
-    }
 
     /**
      * Will cancel a batch job.
@@ -287,87 +373,5 @@ public class JobRequestBoImpl implements JobRequestBo {
             }
             return true;
         }
-    }
-
-    private JobRequest resubmitInternal(long jobId, PriorityPolicy priorityPolicy, int priority) throws WfmProcessingException {
-        priorityPolicy = (priorityPolicy == null) ? PriorityPolicy.DEFAULT : priorityPolicy;
-
-        log.debug("Attempting to resubmit job {} using {} priority of {}.", jobId, priorityPolicy.name(), priority);
-
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
-            throw new WfmProcessingException(String.format("A job with id %d is not known to the system.", priority));
-        }
-        if (!jobRequest.getStatus().isTerminal()) {
-            throw new WfmProcessingException(String.format(
-                    "The job with id %d is in the non-terminal state of '%s'. Only jobs in a terminal state may be resubmitted.",
-                    jobId, jobRequest.getStatus().name()));
-        }
-        if (pipelineService.getPipeline(jobRequest.getPipeline()) == null) {
-            throw new WfmProcessingException(String.format("The \"%s\" pipeline does not exist.",
-                                                           jobRequest.getPipeline()));
-        }
-        JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
-
-        // If the priority should be changed during resubmission, make that change now.
-        if (priorityPolicy == PriorityPolicy.PROVIDED) {
-            jsonJobRequest.setPriority(priority);
-        }
-
-        jobRequest = initializeInternal(jobRequest, jsonJobRequest);
-        markupResultDao.deleteByJobId(jobId);
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
-
-        return runInternal(jobRequest, jsonJobRequest, priority);
-    }
-
-    /**
-     * Finish initializing the JobRequest and persist it in the database for long-term storage.
-     * Upon return, the job will be persisted in the long-term database.
-     *
-     * @param jobRequest     partially initialized jobRequest
-     * @param jsonJobRequest JSON version of the job request that will be serialized into the jobRequests input object
-     * @return fully initialized jobRequest
-     * @throws WfmProcessingException
-     */
-    private JobRequest initializeInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest) throws WfmProcessingException {
-        jobRequest.setPriority(jsonJobRequest.getPriority());
-        jobRequest.setStatus(BatchJobStatusType.INITIALIZED);
-        jobRequest.setTimeReceived(Instant.now());
-        jobRequest.setInputObject(jsonUtils.serialize(jsonJobRequest));
-        jobRequest.setPipeline(jsonJobRequest.getPipeline() == null ? null : TextUtils.trimToNullAndUpper(jsonJobRequest.getPipeline().getName()));
-
-        // Reset output object paths.
-        jobRequest.setOutputObjectPath(null);
-
-        // Set output object version to null.
-        jobRequest.setOutputObjectVersion(null);
-
-        JobRequest persistedRequest = jobRequestDao.persist(jobRequest);
-
-        jobStatusBroadcaster.broadcast(persistedRequest.getId(), 0, BatchJobStatusType.INITIALIZED);
-
-        return persistedRequest;
-
-    }
-
-    /**
-     * Send the job request to the components via ActiveMQ using the JobCreatorRouteBuilder.ENTRY_POINT.
-     *
-     * @param jobRequest
-     * @param jsonJobRequest
-     * @param priority
-     * @return
-     * @throws WfmProcessingException
-     */
-    private JobRequest runInternal(JobRequest jobRequest, JsonJobRequest jsonJobRequest, int priority) throws WfmProcessingException {
-        Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put(MpfHeaders.JOB_ID, jobRequest.getId());
-        headers.put(MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, priority)));
-        log.info("[Job {}|*|*] Job has started and is running at priority {}.", jobRequest.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
-        jobRequestProducerTemplate.sendBodyAndHeaders(JobCreatorRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, jsonUtils.serialize(jsonJobRequest), headers);
-        return jobRequest;
     }
 }

@@ -32,8 +32,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
@@ -44,6 +42,8 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -148,21 +148,19 @@ public class MarkupController {
         //add job media that may exist without markup
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest != null) {
-            JsonJobRequest req = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+            TransientJob req = jsonUtils.deserialize(jobRequest.getInputObject(), TransientJob.class);
 
-            List<JsonMediaInputObject> media_list = req.getMedia();
-            for (int i = 0; i < media_list.size(); i++) {
-                JsonMediaInputObject med = media_list.get(i);
+            for (TransientMedia med : req.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
-                model.setPipeline(req.getPipeline().getName());
-                model.setSourceUri(med.getMediaUri());
+                model.setPipeline(req.getTransientPipeline().getName());
+                model.setSourceUri(med.getUri());
                 model.setSourceFileAvailable(false);
-                if (med.getMediaUri() != null) {
-                    Path path = IoUtils.toLocalPath(med.getMediaUri()).orElse(null);
+                if (med.getUri() != null) {
+                    Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
                     if (path == null || Files.exists(path)) {
                         String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                                .queryParam("sourceUri", med.getMediaUri())
+                                .queryParam("sourceUri", med.getUri())
                                 .queryParam("jobId", jobId)
                                 .toUriString();
                         model.setSourceDownloadUrl(downloadUrl);
@@ -176,9 +174,9 @@ public class MarkupController {
                 //add to the list
                 boolean found = false;
                 for (MarkupResultConvertedModel existing : markupResultModels) {
-                    if(existing.getSourceUri().equals(model.getSourceUri())) found = true;
+                    if (existing.getSourceUri().equals(model.getSourceUri())) found = true;
                 }
-                if(!found) markupResultModels.add(model);
+                if (!found) markupResultModels.add(model);
             }
         }
 
@@ -255,7 +253,7 @@ public class MarkupController {
         }
 
         Function<String, String> combinedProperties = aggregateJobPropertiesUtil
-                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
+                .getCombinedProperties(mediaMarkupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);

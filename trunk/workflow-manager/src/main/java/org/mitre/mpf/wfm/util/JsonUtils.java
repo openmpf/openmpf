@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
@@ -74,6 +75,7 @@ public class JsonUtils {
     private void init() {
         smileObjectMapper = new ObjectMapper(new SmileFactory());
         smileObjectMapper.registerModule(new InstantJsonModule());
+        smileObjectMapper.registerModule(new Jdk8Module());
     }
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */

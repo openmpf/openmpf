@@ -27,6 +27,9 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -42,25 +45,27 @@ public class TransientPipeline {
     }
 
     private final ImmutableMap<String, Task> _tasks;
-    public ImmutableMap<String, Task> getTasks() {
-        return _tasks;
+    public ImmutableCollection<Task> getTasks() {
+        return _tasks.values();
     }
 
     private final ImmutableMap<String, Action> _actions;
-    public ImmutableMap<String, Action> getActions() {
-        return _actions;
+    public ImmutableCollection<Action> getActions() {
+        return _actions.values();
     }
 
     private final ImmutableMap<String, Algorithm> _algorithms;
-    public ImmutableMap<String, Algorithm> getAlgorithms() {
-        return _algorithms;
+    public ImmutableCollection<Algorithm> getAlgorithms() {
+        return _algorithms.values();
     }
 
 
+    @JsonIgnore
     public String getName() {
         return _pipeline.getName();
     }
 
+    @JsonIgnore
     public int getTaskCount() {
         return _pipeline.getTasks().size();
     }
@@ -96,10 +101,10 @@ public class TransientPipeline {
 
 
     public TransientPipeline(
-            Pipeline pipeline,
-            Iterable<Task> tasks,
-            Iterable<Action> actions,
-            Iterable<Algorithm> algorithms) {
+            @JsonProperty("pipeline") Pipeline pipeline,
+            @JsonProperty("tasks") Iterable<Task> tasks,
+            @JsonProperty("actions") Iterable<Action> actions,
+            @JsonProperty("algorithms") Iterable<Algorithm> algorithms) {
         _pipeline = pipeline;
         _tasks = Maps.uniqueIndex(tasks, Task::getName);
         _actions = Maps.uniqueIndex(actions, Action::getName);

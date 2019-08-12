@@ -79,7 +79,7 @@ public class InProgressBatchJobsService {
             String callbackMethod,
             Collection<TransientMedia> transientMedia,
             Map<String, String> jobProperties,
-            Map<String, Map<String, String>> algorithmProperties) {
+            Map<String, ? extends Map<String, String>> algorithmProperties) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));

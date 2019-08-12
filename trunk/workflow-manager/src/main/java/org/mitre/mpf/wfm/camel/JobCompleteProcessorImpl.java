@@ -127,8 +127,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
             TransientJob transientJob = inProgressBatchJobs.getJob(jobId);
             try {
-                markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
-
                 // NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
                 createOutputObject(transientJob, jobStatus);
             } catch (Exception exception) {
@@ -148,7 +146,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                          jobId, exception);
             }
 
-            markJobStatus(jobId, jobStatus.getValue());
+            setJobCompletionStatus(jobId, jobStatus.getValue(), transientJob);
 
             try {
                 callback(transientJob);
@@ -203,14 +201,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
-        log.debug("Marking Job {} as '{}'.", jobId, jobStatus);
+
+    private void setJobCompletionStatus(long jobId, BatchJobStatusType jobStatus, TransientJob job) {
+        inProgressBatchJobs.setJobStatus(jobId, jobStatus);
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         assert jobRequest != null : String.format("A job request entity must exist with the ID %d", jobId);
 
         jobRequest.setTimeCompleted(Instant.now());
         jobRequest.setStatus(jobStatus);
+        jobRequest.setInputObject(jsonUtils.serialize(job));
         jobRequestDao.persist(jobRequest);
     }
 
@@ -234,12 +234,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.getTimeCompleted(),
                 jobStatus.getValue().toString());
 
-        if (transientJob.getOverriddenJobProperties() != null) {
-            jsonOutputObject.getJobProperties().putAll(transientJob.getOverriddenJobProperties());
+        if (transientJob.getJobProperties() != null) {
+            jsonOutputObject.getJobProperties().putAll(transientJob.getJobProperties());
         }
 
         if (transientJob.getOverriddenAlgorithmProperties() != null) {
-            jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties().rowMap());
+            jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
         }
         jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
         jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
@@ -440,7 +440,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return Boolean.parseBoolean(mediaProperty);
         }
 
-        String jobProperty = transientJob.getOverriddenJobProperties()
+        String jobProperty = transientJob.getJobProperties()
                 .get(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
         if (jobProperty != null) {
             return Boolean.parseBoolean(jobProperty);

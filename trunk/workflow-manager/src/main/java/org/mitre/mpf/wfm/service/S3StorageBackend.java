@@ -107,7 +107,7 @@ public class S3StorageBackend implements StorageBackend {
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
         TransientJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -117,7 +117,7 @@ public class S3StorageBackend implements StorageBackend {
         URI localUri = _localStorageBackend.storeImageArtifact(request);
         TransientJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return putInS3IfAbsent(Paths.get(localUri), combinedProperties);
     }
 
@@ -127,7 +127,7 @@ public class S3StorageBackend implements StorageBackend {
     public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
         TransientJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
         Map<Integer, URI> localResults = _localStorageBackend.storeVideoArtifacts(request);
         Map<Integer, URI> remoteResults = new HashMap<>();

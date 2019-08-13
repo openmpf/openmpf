@@ -40,7 +40,8 @@
       "mediaMetadata": {
         "DURATION": "7084",
         "FPS": "24.0",
-        "FRAME_COUNT": "185"
+        "FRAME_COUNT": "185",
+        "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -207,7 +208,8 @@
       "mediaMetadata": {
         "DURATION": "2025",
         "FPS": "24.0",
-        "FRAME_COUNT": "54"
+        "FRAME_COUNT": "54",
+        "MIME_TYPE": "video/quicktime"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -280,7 +282,8 @@
       "mediaMetadata": {
         "DURATION": "5008",
         "FPS": "24.0",
-        "FRAME_COUNT": "122"
+        "FRAME_COUNT": "122",
+        "MIME_TYPE": "video/x-msvideo"
       },
       "mediaProperties": {},
       "markupResult": null,

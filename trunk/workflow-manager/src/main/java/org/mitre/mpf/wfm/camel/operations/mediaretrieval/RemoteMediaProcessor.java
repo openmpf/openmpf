@@ -41,9 +41,9 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -55,17 +55,26 @@ public class RemoteMediaProcessor extends WfmProcessor {
     public static final String REF = "remoteMediaProcessor";
     private static final Logger log = LoggerFactory.getLogger(RemoteMediaProcessor.class);
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    @Autowired
-    private S3StorageBackend s3Service;
+    private final S3StorageBackend _s3Service;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    @Inject
+    public RemoteMediaProcessor(
+            InProgressBatchJobsService inProgressJobs,
+            S3StorageBackend s3Service,
+            PropertiesUtil propertiesUtil,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _inProgressJobs = inProgressJobs;
+        _s3Service = s3Service;
+        _propertiesUtil = propertiesUtil;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+    }
+
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -73,7 +82,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
-        TransientJob job = inProgressJobs.getJob(jobId);
+        TransientJob job = _inProgressJobs.getJob(jobId);
         TransientMedia transientMedia = job.getMedia(mediaId);
         log.debug("Retrieving {} and saving it to `{}`.", transientMedia.getUri(), transientMedia.getLocalPath());
 
@@ -84,10 +93,10 @@ public class RemoteMediaProcessor extends WfmProcessor {
             case HTTP:
             case HTTPS:
                 try {
-                    Function<String, String> combinedProperties = aggregateJobPropertiesUtil
+                    Function<String, String> combinedProperties = _aggregateJobPropertiesUtil
                             .getCombinedProperties(job, transientMedia);
                     if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-                        s3Service.downloadFromS3(transientMedia, combinedProperties);
+                        _s3Service.downloadFromS3(transientMedia, combinedProperties);
                     }
                     else {
                         downloadFile(jobId, transientMedia);
@@ -101,8 +110,8 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 }
                 break;
             default:
-                log.warn("The UriScheme '{}' was not expected at this time.");
-                inProgressJobs.addMediaError(jobId, mediaId, String.format(
+                log.warn("The UriScheme '{}' was not expected at this time.", transientMedia.getUriScheme());
+                _inProgressJobs.addMediaError(jobId, mediaId, String.format(
                         "The scheme '%s' was not expected or does not have a handler associated with it.",
                         transientMedia.getUriScheme()));
                 break;
@@ -117,13 +126,13 @@ public class RemoteMediaProcessor extends WfmProcessor {
 
     private void downloadFile(long jobId, TransientMedia transientMedia) {
         File localFile = null;
-        for (int i = 0; i <= propertiesUtil.getRemoteMediaDownloadRetries(); i++) {
+        for (int i = 0; i <= _propertiesUtil.getRemoteMediaDownloadRetries(); i++) {
             String errorMessage;
             try {
                 localFile = transientMedia.getLocalPath().toFile();
                 FileUtils.copyURLToFile(new URL(transientMedia.getUri()), localFile);
                 log.debug("Successfully retrieved {} and saved it to '{}'.", transientMedia.getUri(), transientMedia.getLocalPath());
-                inProgressJobs.clearMediaError(jobId, transientMedia.getId());
+                _inProgressJobs.clearMediaError(jobId, transientMedia.getId());
                 break;
             } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
                 errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
@@ -133,9 +142,9 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 break; // exception is not recoverable
             }
 
-            if (i < propertiesUtil.getRemoteMediaDownloadRetries()) {
+            if (i < _propertiesUtil.getRemoteMediaDownloadRetries()) {
                 try {
-                    int sleepMillisec = propertiesUtil.getRemoteMediaDownloadSleep() * (i + 1);
+                    int sleepMillisec = _propertiesUtil.getRemoteMediaDownloadSleep() * (i + 1);
                     log.warn("Sleeping for {} ms before trying to retrieve {} again.", sleepMillisec, transientMedia.getUri());
                     Thread.sleep(sleepMillisec);
                 } catch (InterruptedException e) {
@@ -169,8 +178,8 @@ public class RemoteMediaProcessor extends WfmProcessor {
 
     private void handleMediaRetrievalFailure(long jobId, TransientMedia transientMedia,
                                              String errorMessage) {
-        inProgressJobs.addMediaError(jobId, transientMedia.getId(),
+        _inProgressJobs.addMediaError(jobId, transientMedia.getId(),
                                      "Error retrieving media and saving it to temp file: " + errorMessage);
-        inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+        _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
     }
 }

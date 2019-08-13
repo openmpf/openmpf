@@ -140,7 +140,7 @@ public class TransientJobImpl implements TransientJob {
     public SystemPropertiesSnapshot getSystemPropertiesSnapshot() { return _systemPropertiesSnapshot; }
 
 
-    private final List<DetectionProcessingError> _detectionProcessingErrors = new ArrayList<>();
+    private final List<DetectionProcessingError> _detectionProcessingErrors;
     @Override
     public List<DetectionProcessingError> getDetectionProcessingErrors() {
         return Collections.unmodifiableList(_detectionProcessingErrors);
@@ -150,8 +150,25 @@ public class TransientJobImpl implements TransientJob {
     }
 
 
-    @JsonCreator
     public TransientJobImpl(
+            long id,
+            String externalId,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            TransientPipeline transientPipeline,
+            int priority,
+            boolean outputEnabled,
+            String callbackUrl,
+            String callbackMethod,
+            Collection<TransientMediaImpl> media,
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
+        this(id, externalId, systemPropertiesSnapshot, transientPipeline, priority, outputEnabled, callbackUrl,
+             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of());
+    }
+
+
+    @JsonCreator
+    TransientJobImpl(
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,
@@ -163,7 +180,8 @@ public class TransientJobImpl implements TransientJob {
             @JsonProperty("media") Collection<TransientMediaImpl> media,
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
-                    Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
+                    Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
+            @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
@@ -184,5 +202,6 @@ public class TransientJobImpl implements TransientJob {
         _overriddenAlgorithmProperties = overriddenAlgorithmProperties.entrySet()
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
+        _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
     }
 }

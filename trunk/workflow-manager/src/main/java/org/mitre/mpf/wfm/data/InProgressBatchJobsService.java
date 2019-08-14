@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -58,7 +60,7 @@ public class InProgressBatchJobsService {
 
     private final Redis _redis;
 
-    private final Map<Long, TransientJobImpl> _jobs = new HashMap<>();
+    private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
 
     @Inject
@@ -68,7 +70,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public TransientJob addJob(
+    public BatchJob addJob(
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,
@@ -90,7 +92,7 @@ public class InProgressBatchJobsService {
                 .map(TransientMediaImpl::toTransientMediaImpl)
                 .collect(ImmutableList.toImmutableList());
 
-        TransientJobImpl job = new TransientJobImpl(
+        var job = new BatchJobImpl(
                 jobId,
                 externalId,
                 propertiesSnapshot,
@@ -108,13 +110,13 @@ public class InProgressBatchJobsService {
 
 
 
-    public synchronized TransientJob getJob(long jobId) {
+    public synchronized BatchJob getJob(long jobId) {
         return getJobImpl(jobId);
     }
 
 
-    private TransientJobImpl getJobImpl(long jobId) {
-        TransientJobImpl job = _jobs.get(jobId);
+    private BatchJobImpl getJobImpl(long jobId) {
+        BatchJobImpl job = _jobs.get(jobId);
         if (job != null) {
             return job;
         }
@@ -124,7 +126,7 @@ public class InProgressBatchJobsService {
 
     public synchronized void clearJob(long jobId) {
         LOG.info("Clearing all job information for job: {}", jobId);
-        TransientJobImpl job = getJobImpl(jobId);
+        BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
         for (TransientMedia media : job.getMedia()) {
@@ -194,7 +196,7 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void incrementTask(long jobId) {
-        TransientJobImpl job = getJobImpl(jobId);
+        var job = getJobImpl(jobId);
         int currentTask = job.getCurrentTaskIndex();
         int nextTask = currentTask + 1;
         LOG.info("Changing job {}'s current task index from {} to {}", jobId, currentTask, nextTask);

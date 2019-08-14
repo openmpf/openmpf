@@ -24,11 +24,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
@@ -37,8 +41,8 @@ import java.util.Set;
 
 // Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
-@JsonDeserialize(as = TransientJobImpl.class)
-public interface TransientJob {
+@JsonDeserialize(as = BatchJobImpl.class)
+public interface BatchJob {
     public long getId();
 
     public BatchJobStatusType getStatus();

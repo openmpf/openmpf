@@ -40,9 +40,9 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -150,7 +150,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                     jobId, jobRequestEntity.getStatus().name()));
         }
 
-        TransientJob originalJob = jsonUtils.deserialize(jobRequestEntity.getInputObject(), TransientJob.class);
+        BatchJob originalJob = jsonUtils.deserialize(jobRequestEntity.getInputObject(), BatchJob.class);
 
         List<TransientMedia> media = originalJob.getMedia()
                 .stream()
@@ -224,7 +224,7 @@ public class JobRequestBoImpl implements JobRequestBo {
         try {
             jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
 
-            TransientJob transientJob = inProgressJobs.addJob(
+            BatchJob job = inProgressJobs.addJob(
                     jobRequestEntity.getId(),
                     externalId,
                     systemPropertiesSnapshot,
@@ -238,9 +238,9 @@ public class JobRequestBoImpl implements JobRequestBo {
                     overriddenAlgoProps);
 
 
-            inProgressJobs.setJobStatus(transientJob.getId(), jobStatus);
+            inProgressJobs.setJobStatus(job.getId(), jobStatus);
 
-            jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
+            jobRequestEntity.setInputObject(jsonUtils.serialize(job));
             jobRequestEntity.setStatus(jobStatus);
             jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 

@@ -25,19 +25,23 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
 import java.util.function.Function;
 
-public class TransientJobImpl implements TransientJob {
+public class BatchJobImpl implements BatchJob {
 
     private final long _id;
     @Override
@@ -150,7 +154,7 @@ public class TransientJobImpl implements TransientJob {
     }
 
 
-    public TransientJobImpl(
+    public BatchJobImpl(
             long id,
             String externalId,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
@@ -168,7 +172,7 @@ public class TransientJobImpl implements TransientJob {
 
 
     @JsonCreator
-    TransientJobImpl(
+    BatchJobImpl(
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,

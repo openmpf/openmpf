@@ -33,8 +33,8 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
@@ -79,9 +79,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         markupResult.setMarkupUri(markupResponse.getOutputFileUri());
         markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
-        TransientJob transientJob = inProgressJobs.getJob(jobId);
-        TransientMedia transientMedia = transientJob.getMedia(markupResponse.getMediaId());
-        markupResult.setPipeline(transientJob.getTransientPipeline().getName());
+        BatchJob job = inProgressJobs.getJob(jobId);
+        TransientMedia transientMedia = job.getMedia(markupResponse.getMediaId());
+        markupResult.setPipeline(job.getTransientPipeline().getName());
         markupResult.setSourceUri(transientMedia.getUri());
 
         storageService.store(markupResult);

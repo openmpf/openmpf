@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -73,7 +74,7 @@ public class DetectionResponseProcessor
     @Override
     public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
         String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
-        TransientJob job = inProgressJobs.getJob(jobId);
+        BatchJob job = inProgressJobs.getJob(jobId);
         Float fps = null;
         TransientMedia media = job.getMedia()
                 .stream()
@@ -149,7 +150,7 @@ public class DetectionResponseProcessor
     }
 
 
-    private double calculateConfidenceThreshold(Action action, TransientJob job, TransientMedia media) {
+    private double calculateConfidenceThreshold(Action action, BatchJob job, TransientMedia media) {
         String confidenceThresholdProperty = aggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action);
 

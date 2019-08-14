@@ -36,9 +36,9 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -92,7 +92,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     public List<Message> wfmSplit(Exchange exchange) {
         TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
                                                                          TrackMergingContext.class);
-        TransientJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
         if (job.isCancelled()) {
             LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
@@ -125,7 +125,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private Table<Long, Integer, Set<Integer>> getFrameNumbersGroupedByMediaAndAction(
-            TransientJob job, int stageIndex) {
+            BatchJob job, int stageIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
         Task task = job.getTransientPipeline().getTask(stageIndex);
@@ -197,7 +197,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     }
 
 
-    private ArtifactExtractionPolicy getExtractionPolicy(TransientJob job, TransientMedia media,
+    private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, TransientMedia media,
                                                          int stageIndex, int actionIndex) {
         Function<String, String> combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);

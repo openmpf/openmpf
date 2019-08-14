@@ -36,9 +36,9 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.segmenting.*;
@@ -119,22 +119,19 @@ public class DetectionSplitter implements StageSplitter {
     // property priorities are assigned in this method.  The property priorities are defined as:
     // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
     @Override
-    public final List<Message> performSplit(TransientJob transientJob, Task task) {
-        assert transientJob != null : "The provided transientJob must not be null.";
-        assert task != null : "The provided task must not be null.";
-
+    public final List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
         // Is this the first detection stage in the pipeline?
-        boolean isFirstDetectionStage = isFirstDetectionOperation(transientJob);
+        boolean isFirstDetectionStage = isFirstDetectionOperation(job);
 
-        for (TransientMedia transientMedia : transientJob.getMedia()) {
+        for (TransientMedia transientMedia : job.getMedia()) {
             try {
                 if (transientMedia.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
                     log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
-                            transientJob.getId(),
-                            transientJob.getCurrentTaskIndex(),
+                            job.getId(),
+                            job.getCurrentTaskIndex(),
                             transientMedia.getId());
                     continue;
                 }
@@ -145,9 +142,10 @@ public class DetectionSplitter implements StageSplitter {
                 SortedSet<Track> previousTracks;
                 if (isFirstDetectionStage) {
                     previousTracks = Collections.emptySortedSet();
-                } else {
-                    previousTracks = inProgressBatchJobs.getTracks(transientJob.getId(), transientMedia.getId(),
-                                                                   transientJob.getCurrentTaskIndex() - 1, 0);
+                }
+                else {
+                    previousTracks = inProgressBatchJobs.getTracks(
+                            job.getId(), transientMedia.getId(), job.getCurrentTaskIndex() - 1, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -155,13 +153,12 @@ public class DetectionSplitter implements StageSplitter {
 
                     // starting setting of priorities here:  getting action property defaults
                     String actionName = task.getActions().get(actionIndex);
-                    Action action = transientJob.getTransientPipeline()
-                            .getAction(actionName);
+                    Action action = job.getTransientPipeline().getAction(actionName);
 
                     // modifiedMap initialized with algorithm specific properties
                     Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(
-                            transientJob.getTransientPipeline().getAlgorithm(action.getAlgorithm()),
-                            transientJob.getSystemPropertiesSnapshot()));
+                            job.getTransientPipeline().getAlgorithm(action.getAlgorithm()),
+                            job.getSystemPropertiesSnapshot()));
 
                     // current modifiedMap properties overridden by action properties
                     for (Action.Property actionProperty : action.getProperties()) {
@@ -180,14 +177,14 @@ public class DetectionSplitter implements StageSplitter {
                     // If media properties are specified, overridden algorithm properties and job properties and pipeline properties are reset.
 
                     for (String key : transformProperties) {
-                        if (transientJob.getJobProperties().containsKey(key)) {
+                        if (job.getJobProperties().containsKey(key)) {
                             clearTransformPropertiesFromMap(modifiedMap);
                             break;
                         }
                     }
 
-                    // Note: by this point override of system properties by job properties has already been applied to the transient job.
-                    modifiedMap.putAll(transientJob.getJobProperties());
+                    // Note: by this point override of system properties by job properties has already been applied to the job.
+                    modifiedMap.putAll(job.getJobProperties());
 
                     // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
                     // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
@@ -207,9 +204,9 @@ public class DetectionSplitter implements StageSplitter {
                     // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
                     // override of the action (i.e. algorithm) that we are currently processing
                     // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
-                    if (transientJob.getOverriddenAlgorithmProperties().containsKey(action.getAlgorithm())) {
+                    if (job.getOverriddenAlgorithmProperties().containsKey(action.getAlgorithm())) {
                         // this transient job contains the a algorithm property which may override what is in our current action
-                        Map<String, String> job_alg_m = transientJob.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
+                        Map<String, String> job_alg_m = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
 
                         // see if any of these algorithm properties are transform properties.  If so, clear the
                         // current set of transform properties from the map to allow for this algorithm properties to
@@ -245,18 +242,19 @@ public class DetectionSplitter implements StageSplitter {
                         }
 
                         String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
-                                action, transientJob, transientMedia,
-                                transientJob.getSystemPropertiesSnapshot().getSamplingInterval(), transientJob.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
+                                action, job, transientMedia,
+                                job.getSystemPropertiesSnapshot().getSamplingInterval(),
+                                job.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                        segmentingPlan = createSegmentingPlan(transientJob.getSystemPropertiesSnapshot(), modifiedMap);
+                        segmentingPlan = createSegmentingPlan(job.getSystemPropertiesSnapshot(), modifiedMap);
                     }
 
                     List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties = convertPropertiesMapToAlgorithmPropertiesList(modifiedMap);
 
                     DetectionContext detectionContext = new DetectionContext(
-                            transientJob.getId(),
-                            transientJob.getCurrentTaskIndex(),
+                            job.getId(),
+                            job.getCurrentTaskIndex(),
                             task.getName(),
                             actionIndex,
                             action.getName(),
@@ -269,7 +267,7 @@ public class DetectionSplitter implements StageSplitter {
 
                     List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
 
-                    ActionType actionType = transientJob.getTransientPipeline()
+                    ActionType actionType = job.getTransientPipeline()
                             .getAlgorithm(action.getAlgorithm())
                             .getActionType();
                     for (Message message : detectionRequestMessages) {
@@ -282,14 +280,14 @@ public class DetectionSplitter implements StageSplitter {
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
-                            transientJob.getId(),
-                            transientJob.getCurrentTaskIndex(),
+                            job.getId(),
+                            job.getCurrentTaskIndex(),
                             actionIndex,
                             detectionRequestMessages.size(), transientMedia.getId());
                 }
             } catch (WfmProcessingException e) {
-                inProgressBatchJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                inProgressBatchJobs.addMediaError(transientJob.getId(), transientMedia.getId(), e.getMessage());
+                inProgressBatchJobs.setJobStatus(job.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+                inProgressBatchJobs.addMediaError(job.getId(), transientMedia.getId(), e.getMessage());
             }
         }
 
@@ -405,14 +403,14 @@ public class DetectionSplitter implements StageSplitter {
     /**
      * Returns {@literal true} iff the current stage of this job is the first detection stage in the job.
      */
-    private static boolean isFirstDetectionOperation(TransientJob transientJob) {
+    private static boolean isFirstDetectionOperation(BatchJob job) {
         boolean isFirst = false;
-        for (int i = 0; i < transientJob.getTransientPipeline().getTaskCount(); i++) {
-            ActionType actionType = transientJob.getTransientPipeline().getAlgorithm(i, 0).getActionType();
+        for (int i = 0; i < job.getTransientPipeline().getTaskCount(); i++) {
+            ActionType actionType = job.getTransientPipeline().getAlgorithm(i, 0).getActionType();
             // This is a detection stage.
             if (actionType == ActionType.DETECTION) {
                 // If this is the first detection stage, it must be true that the current stage's index is at most the current job stage's index.
-                isFirst = i >= transientJob.getCurrentTaskIndex();
+                isFirst = i >= job.getCurrentTaskIndex();
                 break;
             }
         }

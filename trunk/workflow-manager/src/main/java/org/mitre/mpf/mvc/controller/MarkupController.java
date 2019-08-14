@@ -40,9 +40,9 @@ import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -148,12 +148,12 @@ public class MarkupController {
         //add job media that may exist without markup
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest != null) {
-            TransientJob req = jsonUtils.deserialize(jobRequest.getInputObject(), TransientJob.class);
+            BatchJob job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
 
-            for (TransientMedia med : req.getMedia()) {
+            for (TransientMedia med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
-                model.setPipeline(req.getTransientPipeline().getName());
+                model.setPipeline(job.getTransientPipeline().getName());
                 model.setSourceUri(med.getUri());
                 model.setSourceFileAvailable(false);
                 if (med.getUri() != null) {

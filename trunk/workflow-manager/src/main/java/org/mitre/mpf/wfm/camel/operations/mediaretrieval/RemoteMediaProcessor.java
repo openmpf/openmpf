@@ -31,7 +31,7 @@ import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -82,7 +82,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
-        TransientJob job = _inProgressJobs.getJob(jobId);
+        BatchJob job = _inProgressJobs.getJob(jobId);
         TransientMedia transientMedia = job.getMedia(mediaId);
         log.debug("Retrieving {} and saving it to `{}`.", transientMedia.getUri(), transientMedia.getLocalPath());
 

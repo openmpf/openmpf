@@ -31,7 +31,7 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -45,41 +45,43 @@ import java.util.List;
 
 @Component(MediaInspectionSplitter.REF)
 public class MediaInspectionSplitter extends WfmSplitter {
-	private static final Logger log = LoggerFactory.getLogger(MediaInspectionSplitter.class);
-	public static final String REF = "mediaInspectionSplitter";
+    private static final Logger log = LoggerFactory.getLogger(MediaInspectionSplitter.class);
+    public static final String REF = "mediaInspectionSplitter";
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
-	@Override
-	public String getSplitterName() { return REF; }
+    @Override
+    public String getSplitterName() { return REF; }
 
 
-	@Override
-	public List<Message> wfmSplit(Exchange exchange) {
-		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-		TransientJob transientJob = inProgressJobs.getJob(jobId);
-		List<Message> messages = new ArrayList<>();
+    @Override
+    public List<Message> wfmSplit(Exchange exchange) {
+        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        BatchJob job = inProgressJobs.getJob(jobId);
+        List<Message> messages = new ArrayList<>();
 
-		if(!transientJob.isCancelled()) {
-			// If the job has not been cancelled, perform the split.
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
-				if (!transientMedia.isFailed()) {
-					Message message = new DefaultMessage();
-					message.setHeader(MpfHeaders.JOB_ID, jobId);
-					message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
-					messages.add(message);
-				} else {
-					log.warn("Skipping '{}' ({}). It is in an error state.", transientMedia.getUri(), transientMedia.getId());
-				}
-			}
-			if (messages.isEmpty()) {
-				inProgressJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.ERROR);
-			}
-		} else {
-			log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.", transientJob.getId());
-		}
+        if(!job.isCancelled()) {
+            // If the job has not been cancelled, perform the split.
+            for (TransientMedia transientMedia : job.getMedia()) {
+                if (!transientMedia.isFailed()) {
+                    Message message = new DefaultMessage();
+                    message.setHeader(MpfHeaders.JOB_ID, jobId);
+                    message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
+                    messages.add(message);
+                } else {
+                    log.warn("Skipping '{}' ({}). It is in an error state.",
+                             transientMedia.getUri(), transientMedia.getId());
+                }
+            }
+            if (messages.isEmpty()) {
+                inProgressJobs.setJobStatus(job.getId(), BatchJobStatusType.ERROR);
+            }
+        } else {
+            log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.",
+                     job.getId());
+        }
 
-		return messages;
-	}
+        return messages;
+    }
 }

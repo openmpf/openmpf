@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -74,278 +75,281 @@ import static java.util.stream.Collectors.toCollection;
  */
 @Component(TrackMergingProcessor.REF)
 public class TrackMergingProcessor extends WfmProcessor {
-	public static final String REF = "trackMergingProcessor";
-	private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
+    public static final String REF = "trackMergingProcessor";
+    private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
-	@Autowired
-	private JsonUtils jsonUtils;
+    @Autowired
+    private JsonUtils jsonUtils;
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
-	@Autowired
-	private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
-	@Override
-	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
+    @Override
+    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+        TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
 
-		TransientJob transientJob = inProgressJobs.getJob(trackMergingContext.getJobId());
+        BatchJob job = inProgressJobs.getJob(trackMergingContext.getJobId());
 
-		Task task = transientJob.getTransientPipeline().getTask(trackMergingContext.getStageIndex());
-		for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-			Action action = transientJob.getTransientPipeline()
-					.getAction(trackMergingContext.getStageIndex(), actionIndex);
+        Task task = job.getTransientPipeline().getTask(trackMergingContext.getStageIndex());
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+            Action action = job.getTransientPipeline()
+                    .getAction(trackMergingContext.getStageIndex(), actionIndex);
 
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
+            for (TransientMedia transientMedia : job.getMedia()) {
 
-				// NOTE: Only perform track merging and track pruning on video data.
-				if (!transientMedia.getMediaType().equals(MediaType.VIDEO) || transientMedia.isFailed()) {
-					continue;
-				}
+                // NOTE: Only perform track merging and track pruning on video data.
+                if (!transientMedia.getMediaType().equals(MediaType.VIDEO) || transientMedia.isFailed()) {
+                    continue;
+                }
 
-				TrackMergingPlan trackMergingPlan = createTrackMergingPlan(transientJob, transientMedia, action);
+                TrackMergingPlan trackMergingPlan = createTrackMergingPlan(job, transientMedia, action);
 
-				boolean mergeRequested = trackMergingPlan.isMergeTracks();
-				boolean pruneRequested = trackMergingPlan.getMinTrackLength() > 1;
+                boolean mergeRequested = trackMergingPlan.isMergeTracks();
+                boolean pruneRequested = trackMergingPlan.getMinTrackLength() > 1;
 
-				if (!mergeRequested && !pruneRequested) {
-					continue; // nothing to do
-				}
+                if (!mergeRequested && !pruneRequested) {
+                    continue; // nothing to do
+                }
 
-				SortedSet<Track> tracks = inProgressJobs.getTracks(
-						trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(),
-						actionIndex);
+                SortedSet<Track> tracks = inProgressJobs.getTracks(
+                        trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(),
+                        actionIndex);
 
-				if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
-					continue;
-				}
+                if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
+                    continue;
+                }
 
-				if (mergeRequested) {
-					int initialSize = tracks.size();
-					tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
+                if (mergeRequested) {
+                    int initialSize = tracks.size();
+                    tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
 
-					log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
-							trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-							initialSize, tracks.size(), transientMedia.getId());
-				}
+                    log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
+                              trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
+                              initialSize, tracks.size(), transientMedia.getId());
+                }
 
-				if (pruneRequested) {
-					int initialSize = tracks.size();
-					int minTrackLength = trackMergingPlan.getMinTrackLength();
-					tracks = tracks.stream()
-							.filter(t -> t.getEndOffsetFrameInclusive() - t.getStartOffsetFrameInclusive() >= minTrackLength - 1)
-							.collect(toCollection(TreeSet::new));
+                if (pruneRequested) {
+                    int initialSize = tracks.size();
+                    int minTrackLength = trackMergingPlan.getMinTrackLength();
+                    tracks = tracks.stream()
+                            .filter(t -> t.getEndOffsetFrameInclusive() - t.getStartOffsetFrameInclusive() >= minTrackLength - 1)
+                            .collect(toCollection(TreeSet::new));
 
-					log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
-							trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-							initialSize, tracks.size(), minTrackLength, transientMedia.getId());
-				}
+                    log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
+                              trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
+                              initialSize, tracks.size(), minTrackLength, transientMedia.getId());
+                }
 
-				inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
-				                         trackMergingContext.getStageIndex(), actionIndex, tracks);
-			}
-		}
+                inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
+                                         trackMergingContext.getStageIndex(), actionIndex, tracks);
+            }
+        }
 
-		exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
-	}
+        exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
+    }
 
-	private TrackMergingPlan createTrackMergingPlan(TransientJob transientJob, TransientMedia transientMedia,
-	                                                Action action) {
+    private TrackMergingPlan createTrackMergingPlan(BatchJob job, TransientMedia transientMedia,
+                                                    Action action) {
         Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
-        		transientJob, transientMedia, action);
+                job, transientMedia, action);
 
-		// If there exist media-specific properties for track merging, use them.
-		String minTrackLengthProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_LENGTH);
+        // If there exist media-specific properties for track merging, use them.
+        String minTrackLengthProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_LENGTH);
 
-		String mergeTracksProperty = combinedProperties.apply(MpfConstants.MERGE_TRACKS_PROPERTY);
+        String mergeTracksProperty = combinedProperties.apply(MpfConstants.MERGE_TRACKS_PROPERTY);
 
-		String minGapBetweenTracksProperty = combinedProperties.apply(MpfConstants.MIN_GAP_BETWEEN_TRACKS);
+        String minGapBetweenTracksProperty = combinedProperties.apply(MpfConstants.MIN_GAP_BETWEEN_TRACKS);
 
-		String minTrackOverlapProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_OVERLAP);
+        String minTrackOverlapProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_OVERLAP);
 
-		SystemPropertiesSnapshot transientDetectionSystemProperties = transientJob.getSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot transientDetectionSystemProperties = job.getSystemPropertiesSnapshot();
 
-		boolean mergeTracks = transientDetectionSystemProperties.isTrackMerging();
-		int minGapBetweenTracks = transientDetectionSystemProperties.getMinAllowableTrackGap();
-		int minTrackLength = transientDetectionSystemProperties.getMinTrackLength();
-		double minTrackOverlap = transientDetectionSystemProperties.getTrackOverlapThreshold();
+        boolean mergeTracks = transientDetectionSystemProperties.isTrackMerging();
+        int minGapBetweenTracks = transientDetectionSystemProperties.getMinAllowableTrackGap();
+        int minTrackLength = transientDetectionSystemProperties.getMinTrackLength();
+        double minTrackOverlap = transientDetectionSystemProperties.getTrackOverlapThreshold();
 
-		if (mergeTracksProperty != null) {
-			mergeTracks = Boolean.parseBoolean(mergeTracksProperty);
-		}
+        if (mergeTracksProperty != null) {
+            mergeTracks = Boolean.parseBoolean(mergeTracksProperty);
+        }
 
-		if (minGapBetweenTracksProperty != null) {
-			try {
-				minGapBetweenTracks = Integer.parseInt(minGapBetweenTracksProperty);
-			} catch (NumberFormatException exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_GAP_BETWEEN_TRACKS + " value of '{}' " +
-						"but encountered an exception. Defaulting to '{}'.", minGapBetweenTracksProperty, minGapBetweenTracks, exception);
-			}
-		}
+        if (minGapBetweenTracksProperty != null) {
+            try {
+                minGapBetweenTracks = Integer.parseInt(minGapBetweenTracksProperty);
+            } catch (NumberFormatException exception) {
+                log.warn(String.format(
+                        "Attempted to parse %s value of '%s' but encountered an exception. Defaulting to '%s'.",
+                         MpfConstants.MIN_GAP_BETWEEN_TRACKS, minGapBetweenTracksProperty, minGapBetweenTracks),
+                         exception);
 
-		if (minTrackLengthProperty != null) {
-			try {
-				minTrackLength = Integer.parseInt(minTrackLengthProperty);
-			} catch (NumberFormatException exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' " +
-						"but encountered an exception. Defaulting to '{}'.", minTrackLengthProperty, minTrackLength, exception);
-			}
-		}
+            }
+        }
 
-		if (minTrackOverlapProperty != null) {
-			try {
-				minTrackOverlap = Double.parseDouble(minTrackOverlapProperty);
-			} catch (NumberFormatException exception) {
-				log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' " +
-						"but encountered an exception. Defaulting to '{}'.", minTrackOverlapProperty, minTrackOverlap, exception);
-			}
-		}
+        if (minTrackLengthProperty != null) {
+            try {
+                minTrackLength = Integer.parseInt(minTrackLengthProperty);
+            } catch (NumberFormatException exception) {
+                log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' " +
+                                 "but encountered an exception. Defaulting to '{}'.", minTrackLengthProperty, minTrackLength, exception);
+            }
+        }
 
-		return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
-	}
+        if (minTrackOverlapProperty != null) {
+            try {
+                minTrackOverlap = Double.parseDouble(minTrackOverlapProperty);
+            } catch (NumberFormatException exception) {
+                log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' " +
+                                 "but encountered an exception. Defaulting to '{}'.", minTrackOverlapProperty, minTrackOverlap, exception);
+            }
+        }
 
-	private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
-		// Do not attempt to merge an empty or null set.
-		if (sourceTracks.isEmpty()) {
-			return sourceTracks;
-		}
+        return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
+    }
 
-		List<Track> tracks = new LinkedList<>(sourceTracks);
-		List<Track> mergedTracks = new LinkedList<>();
+    private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
+        // Do not attempt to merge an empty or null set.
+        if (sourceTracks.isEmpty()) {
+            return sourceTracks;
+        }
 
-		while (tracks.size() > 0) {
-			// Pop off the track with the earliest start time.
-			Track merged = tracks.remove(0);
-			boolean performedMerge = false;
-			Track trackToRemove = null;
+        List<Track> tracks = new LinkedList<>(sourceTracks);
+        List<Track> mergedTracks = new LinkedList<>();
 
-			for (Track candidate : tracks) {
-				// Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
-				if (canMerge(merged, candidate, plan)) {
-					// If one is found, merge them and then push this track back to the beginning of the collection.
-					tracks.add(0, merge(merged, candidate));
-					performedMerge = true;
+        while (tracks.size() > 0) {
+            // Pop off the track with the earliest start time.
+            Track merged = tracks.remove(0);
+            boolean performedMerge = false;
+            Track trackToRemove = null;
 
-					// Keep a reference to the track which was merged into the original - it will be removed.
-					trackToRemove = candidate;
-					break;
-				}
-			}
+            for (Track candidate : tracks) {
+                // Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
+                if (canMerge(merged, candidate, plan)) {
+                    // If one is found, merge them and then push this track back to the beginning of the collection.
+                    tracks.add(0, merge(merged, candidate));
+                    performedMerge = true;
 
-			if (performedMerge) {
-				// A merge was performed, so it is necessary to remove the merged track.
-				tracks.remove(trackToRemove);
-			} else {
-				// No merge was performed. The current track is no longer a candidate for merging.
-				mergedTracks.add(merged);
-			}
-		}
+                    // Keep a reference to the track which was merged into the original - it will be removed.
+                    trackToRemove = candidate;
+                    break;
+                }
+            }
 
-		log.trace("Track merging complete. The {} input tracks were merged as appropriate to form {} output tracks.",
-				sourceTracks.size(), mergedTracks.size());
+            if (performedMerge) {
+                // A merge was performed, so it is necessary to remove the merged track.
+                tracks.remove(trackToRemove);
+            } else {
+                // No merge was performed. The current track is no longer a candidate for merging.
+                mergedTracks.add(merged);
+            }
+        }
 
-		return new HashSet<>(mergedTracks);
-	}
+        log.trace("Track merging complete. The {} input tracks were merged as appropriate to form {} output tracks.",
+                  sourceTracks.size(), mergedTracks.size());
 
-	/** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
-	public static Track merge(Track track1, Track track2){
+        return new HashSet<>(mergedTracks);
+    }
 
-		Collection<Detection> detections = Stream.of(track1, track2)
-				.flatMap(t -> t.getDetections().stream())
-				.collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+    /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
+    public static Track merge(Track track1, Track track2){
 
-		ImmutableSortedMap<String, String> properties = Stream.of(track1, track2)
-				.flatMap(t -> t.getTrackProperties().entrySet().stream())
-				.collect(ImmutableSortedMap.toImmutableSortedMap(
-						Comparator.naturalOrder(),
-						Map.Entry::getKey,
-						Map.Entry::getValue,
-						(v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
+        Collection<Detection> detections = Stream.of(track1, track2)
+                .flatMap(t -> t.getDetections().stream())
+                .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
-		Track merged = new Track(
-				track1.getJobId(),
-				track1.getMediaId(),
-				track1.getStageIndex(),
-				track1.getActionIndex(),
-				track1.getStartOffsetFrameInclusive(),
-				track2.getEndOffsetFrameInclusive(),
-				track1.getStartOffsetTimeInclusive(),
-				track2.getEndOffsetTimeInclusive(),
-				track1.getType(),
-				Math.max(track1.getConfidence(), track2.getConfidence()),
-				detections,
-				properties);
-		return merged;
-	}
+        ImmutableSortedMap<String, String> properties = Stream.of(track1, track2)
+                .flatMap(t -> t.getTrackProperties().entrySet().stream())
+                .collect(ImmutableSortedMap.toImmutableSortedMap(
+                        Comparator.naturalOrder(),
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
 
-	private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
-		return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
-				&& isEligibleForMerge(track1, track2)
-				&& isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
-				&& intersects(track1, track2, plan.getMinTrackOverlap());
-	}
+        Track merged = new Track(
+                track1.getJobId(),
+                track1.getMediaId(),
+                track1.getStageIndex(),
+                track1.getActionIndex(),
+                track1.getStartOffsetFrameInclusive(),
+                track2.getEndOffsetFrameInclusive(),
+                track1.getStartOffsetTimeInclusive(),
+                track2.getEndOffsetTimeInclusive(),
+                track1.getType(),
+                Math.max(track1.getConfidence(), track2.getConfidence()),
+                detections,
+                properties);
+        return merged;
+    }
 
-	private static boolean isEligibleForFixup(SortedSet<Track> tracks) {
-		// NOTE: All tracks should be the same type.
-		switch (tracks.first().getType().toUpperCase()) {
-			case "SPEECH":
-			case "SCENE":
-				return false;
-			default:
-				return true;
-		}
-	}
+    private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
+        return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
+                && isEligibleForMerge(track1, track2)
+                && isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
+                && intersects(track1, track2, plan.getMinTrackOverlap());
+    }
 
-	// This method assumes that isEligibleForFixup() has been checked.
-	private static boolean isEligibleForMerge(Track track1, Track track2) {
-		// NOTE: All tracks should be the same type.
-		switch (track1.getType().toUpperCase()) {
-			case "CLASS":
-				return isSameClassification(track1, track2);
-			default:
-				return true;
-		}
-	}
+    private static boolean isEligibleForFixup(SortedSet<Track> tracks) {
+        // NOTE: All tracks should be the same type.
+        switch (tracks.first().getType().toUpperCase()) {
+            case "SPEECH":
+            case "SCENE":
+                return false;
+            default:
+                return true;
+        }
+    }
 
-	private static boolean isSameClassification(Track track1, Track track2) {
-		if (track1.getDetections().isEmpty() || track2.getDetections().isEmpty()) {
-			return false;
-		}
-		String class1 = track1.getDetections().last().getDetectionProperties().get("CLASSIFICATION");
-		String class2 = track2.getDetections().first().getDetectionProperties().get("CLASSIFICATION");
-		return StringUtils.equalsIgnoreCase(class1, class2);
-	}
+    // This method assumes that isEligibleForFixup() has been checked.
+    private static boolean isEligibleForMerge(Track track1, Track track2) {
+        // NOTE: All tracks should be the same type.
+        switch (track1.getType().toUpperCase()) {
+            case "CLASS":
+                return isSameClassification(track1, track2);
+            default:
+                return true;
+        }
+    }
 
-	private static boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
-		if (track1.getEndOffsetFrameInclusive() + 1 == track2.getStartOffsetFrameInclusive()) {
-			return true; // tracks are adjacent
-		}
-		return (track1.getEndOffsetFrameInclusive() < track2.getStartOffsetFrameInclusive()) &&
-				(minGapBetweenTracks - 1 >= track2.getStartOffsetFrameInclusive() - track1.getEndOffsetFrameInclusive());
-	}
+    private static boolean isSameClassification(Track track1, Track track2) {
+        if (track1.getDetections().isEmpty() || track2.getDetections().isEmpty()) {
+            return false;
+        }
+        String class1 = track1.getDetections().last().getDetectionProperties().get("CLASSIFICATION");
+        String class2 = track2.getDetections().first().getDetectionProperties().get("CLASSIFICATION");
+        return StringUtils.equalsIgnoreCase(class1, class2);
+    }
 
-	private static boolean intersects(Track track1, Track track2, double minTrackOverlap) {
-		Detection track1End = track1.getDetections().last();
-		Detection track2Start = track2.getDetections().first();
+    private static boolean isWithinGap(Track track1, Track track2, double minGapBetweenTracks) {
+        if (track1.getEndOffsetFrameInclusive() + 1 == track2.getStartOffsetFrameInclusive()) {
+            return true; // tracks are adjacent
+        }
+        return (track1.getEndOffsetFrameInclusive() < track2.getStartOffsetFrameInclusive()) &&
+                (minGapBetweenTracks - 1 >= track2.getStartOffsetFrameInclusive() - track1.getEndOffsetFrameInclusive());
+    }
 
-		Rectangle rectangle1 = new Rectangle(track1End.getX(), track1End.getY(), track1End.getWidth(), track1End.getHeight());
-		Rectangle rectangle2 = new Rectangle(track2Start.getX(), track2Start.getY(), track2Start.getWidth(), track2Start.getHeight());
+    private static boolean intersects(Track track1, Track track2, double minTrackOverlap) {
+        Detection track1End = track1.getDetections().last();
+        Detection track2Start = track2.getDetections().first();
 
-		if (rectangle1.getWidth() == 0 || rectangle2.getWidth() == 0 || rectangle1.getHeight() == 0 || rectangle2.getHeight() == 0) {
-			return false;
-		}
+        Rectangle rectangle1 = new Rectangle(track1End.getX(), track1End.getY(), track1End.getWidth(), track1End.getHeight());
+        Rectangle rectangle2 = new Rectangle(track2Start.getX(), track2Start.getY(), track2Start.getWidth(), track2Start.getHeight());
 
-		Rectangle intersection = rectangle1.intersection(rectangle2);
+        if (rectangle1.getWidth() == 0 || rectangle2.getWidth() == 0 || rectangle1.getHeight() == 0 || rectangle2.getHeight() == 0) {
+            return false;
+        }
 
-		if (intersection.isEmpty()) {
-			return 0 >= minTrackOverlap;
-		}
+        Rectangle intersection = rectangle1.intersection(rectangle2);
 
-		double intersectArea = intersection.getHeight() * intersection.getWidth();
-		double unionArea = (rectangle2.getHeight() * rectangle2.getWidth()) + (rectangle1.getHeight() * rectangle1.getWidth()) - intersectArea;
-		double percentOverlap = intersectArea / unionArea;
+        if (intersection.isEmpty()) {
+            return 0 >= minTrackOverlap;
+        }
 
-		return percentOverlap >= minTrackOverlap;
-	}
+        double intersectArea = intersection.getHeight() * intersection.getWidth();
+        double unionArea = (rectangle2.getHeight() * rectangle2.getWidth()) + (rectangle1.getHeight() * rectangle1.getWidth()) - intersectArea;
+        double percentOverlap = intersectArea / unionArea;
+
+        return percentOverlap >= minTrackOverlap;
+    }
 }

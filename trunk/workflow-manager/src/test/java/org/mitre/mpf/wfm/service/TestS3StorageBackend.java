@@ -38,8 +38,8 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -330,7 +330,7 @@ public class TestS3StorageBackend {
         URI remoteUri = _s3StorageBackend.storeImageArtifact(request);
         assertEquals(EXPECTED_URI, remoteUri);
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 
@@ -363,9 +363,9 @@ public class TestS3StorageBackend {
         long jobId = 1243;
         long mediaId = 432;
 
-        TransientMedia media = mock(TransientMedia.class);
+        var media = mock(TransientMedia.class);
 
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getMedia(mediaId))
                 .thenReturn(media);
         when(job.getJobProperties())
@@ -384,7 +384,7 @@ public class TestS3StorageBackend {
                 .thenReturn(job);
 
 
-        ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
+        var request = mock(ArtifactExtractionRequest.class);
         when(request.getJobId())
                 .thenReturn(jobId);
         when(request.getMediaId())
@@ -400,24 +400,24 @@ public class TestS3StorageBackend {
         long mediaId = 421;
         Path filePath = getTestFileCopy();
 
-        MarkupResult markupResult = mock(MarkupResult.class);
-        TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
-        TransientMedia media = mock(TransientMedia.class);
+        var markupResult = mock(MarkupResult.class);
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+        var media = mock(TransientMedia.class);
 
-        Algorithm algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
-                                            new Algorithm.Requires(Collections.emptyList()),
-                                            new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
-                                            true, true);
-        Action action = new Action(
+        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+                                      new Algorithm.Requires(List.of()),
+                                      new Algorithm.Provides(List.of(), List.of()),
+                                      true, true);
+        var action = new Action(
                 "TEST_ACTION", "description", algorithm.getName(),
-                Collections.singletonList(new Action.Property(MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                List.of(new Action.Property(MpfConstants.S3_ACCESS_KEY_PROPERTY,
                                                               "<ACCESS_KEY>")));
-        Task task = new Task("TEST_TASK", "description", Collections.singletonList(action.getName()));
-        Pipeline pipeline = new Pipeline("TEST_PIPELINE", "description",
-                                         Collections.singletonList(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
-                pipeline, Collections.singletonList(task), Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+        var task = new Task("TEST_TASK", "description", List.of(action.getName()));
+        var pipeline = new Pipeline("TEST_PIPELINE", "description",
+                                    List.of(task.getName()));
+        var transientPipeline = new TransientPipeline(
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         when(markupResult.getJobId())
                 .thenReturn(jobId);
@@ -457,7 +457,7 @@ public class TestS3StorageBackend {
                 .setMarkupUri(EXPECTED_URI.toString());
 
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 
@@ -475,7 +475,7 @@ public class TestS3StorageBackend {
         URI remoteUri = _s3StorageBackend.store(outputObject);
         assertEquals(EXPECTED_URI, remoteUri);
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 

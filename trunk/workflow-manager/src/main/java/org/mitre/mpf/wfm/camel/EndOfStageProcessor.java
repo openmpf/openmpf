@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -59,7 +59,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
 		inProgressBatchJobs.incrementTask(jobId);
-		TransientJob job = inProgressBatchJobs.getJob(jobId);
+		BatchJob job = inProgressBatchJobs.getJob(jobId);
 
 		log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
 				jobId,

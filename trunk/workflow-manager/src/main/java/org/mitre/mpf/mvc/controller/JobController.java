@@ -36,8 +36,8 @@ import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestBo;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -290,11 +290,11 @@ public class JobController {
                 return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
             }
 
-            var jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), TransientJob.class);
+            var job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
             InputStreamResource inputStreamResource;
-            if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {
+            if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
                 S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                               jsonJobRequest.getJobProperties()::get);
+                                                               job.getJobProperties()::get);
                 inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
             }
             else {

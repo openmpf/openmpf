@@ -34,8 +34,7 @@ import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -45,8 +44,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -71,21 +70,20 @@ public class TestMediaInspectionSplitter {
     public void testMediaInspectionSplitter() throws Exception {
         final long jobId = 54328;
 
-        Message inMessage = new DefaultMessage();
+        var inMessage = new DefaultMessage();
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
-        Exchange exchange = mock(Exchange.class);
+        var exchange = mock(Exchange.class);
         when(exchange.getIn())
                 .thenReturn(inMessage);
 
-        final String testExternalId = "externID";
+        var testExternalId = "externID";
 
-        final long testMediaId = 123456;
+        long testMediaId = 123456;
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
-        TransientMediaImpl testMedia = new TransientMediaImpl(
-                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Collections.emptyMap(),
-                null);
+        var testMedia = new TransientMediaImpl(
+                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(), null);
 
-        TransientJob testJob = new TransientJobImpl(
+        var testJob = new BatchJobImpl(
                 jobId,
                 testExternalId,
                 null,
@@ -94,9 +92,9 @@ public class TestMediaInspectionSplitter {
                 false,
                 null,
                 null,
-                Collections.singletonList(testMedia),
-                Collections.emptyMap(),
-                Collections.emptyMap());
+                List.of(testMedia),
+                Map.of(),
+                Map.of());
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(testJob);
 

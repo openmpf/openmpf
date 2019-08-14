@@ -38,7 +38,11 @@ import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -124,7 +128,7 @@ public class TestDetectionSplitter {
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
 
-        TransientJob testJob = new TransientJobImpl(
+        BatchJob testJob = new BatchJobImpl(
                 testId,
                 testExternalId,
                 systemPropertiesSnapshot,
@@ -154,7 +158,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
+        BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
                                                       "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(
                 testJob, testJob.getTransientPipeline().getTask(0));
@@ -190,7 +194,7 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
         jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
-        TransientJob testJob = createSimpleJobForTest(
+        BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(
@@ -286,7 +290,7 @@ public class TestDetectionSplitter {
         jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(
+        BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
@@ -319,7 +323,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(
+        BatchJob testJob = createSimpleJobForTest(
                 actionProperties, jobProperties, Collections.emptyMap(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
@@ -352,7 +356,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
-        TransientJob testJob = createSimpleJobForTest(
+        BatchJob testJob = createSimpleJobForTest(
                 actionProperties, Collections.emptyMap(), mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
@@ -373,7 +377,7 @@ public class TestDetectionSplitter {
         }
     }
 
-    private TransientJob createSimpleJobForTest(
+    private BatchJob createSimpleJobForTest(
             Map<String, String> actionProperties,
             Map<String, String> jobProperties,
             Map<String, String>  mediaProperties,
@@ -413,7 +417,7 @@ public class TestDetectionSplitter {
     }
 
 
-    private TransientJob createSimpleJobForTest(
+    private BatchJob createSimpleJobForTest(
             long testJobId,
             String testExternalId,
             TransientPipeline testPipe,
@@ -439,7 +443,7 @@ public class TestDetectionSplitter {
             testMedia.addMetadata("FPS", "30");
         }
 
-        TransientJob testJob = new TransientJobImpl(
+        BatchJob testJob = new BatchJobImpl(
                 testJobId,
                 testExternalId,
                 systemPropertiesSnapshot,
@@ -458,7 +462,7 @@ public class TestDetectionSplitter {
     // The following set of DetectionSplitter tests specifically test FRAME_RATE_CAP vs. FRAME_INTERVAL property
     // overrides at various category levels (system, action, job, algorithm, and media, with media properties being the highest ranking).
 
-    private TransientJob createSimpleJobForFrameRateCapTest(
+    private BatchJob createSimpleJobForFrameRateCapTest(
         Map<String, String> actionProperties, Map<String, String> jobProperties,
         Map<String, Map<String, String>> algorithmProperties, Map<String,String> mediaProperties) {
 
@@ -494,7 +498,7 @@ public class TestDetectionSplitter {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
-        return new TransientJobImpl(
+        return new BatchJobImpl(
                 nextId(),
                 null,
                 systemPropertiesSnapshot,
@@ -541,7 +545,7 @@ public class TestDetectionSplitter {
         putStringInMapIfNotNull(mediaProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalMediaPropVal);
         putStringInMapIfNotNull(mediaProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapMediaPropVal);
 
-        TransientJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
+        BatchJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
 
         String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
                 testJob.getTransientPipeline().getAction(0, 0),

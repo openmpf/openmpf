@@ -53,14 +53,9 @@ package org.mitre.mpf.wfm.camel;
  ******************************************************************************/
 
 import org.apache.camel.Exchange;
-import org.mitre.mpf.mvc.controller.AtmosphereController;
-import org.mitre.mpf.wfm.data.Redis;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 /**
  * A count-based aggregator naively counts the number of exchanges which pass through it. When the count

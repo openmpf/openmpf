@@ -29,8 +29,8 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
@@ -41,48 +41,48 @@ import org.springframework.stereotype.Component;
 
 @Component(BroadcastEnabledStringCountBasedWfmAggregator.REF)
 public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBasedWfmAggregator {
-	private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
-	public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
+    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
+    public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
 
-	@Autowired
-	private InProgressBatchJobsService inProgressBatchJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressBatchJobs;
 
-	@Autowired
-	private JobRequestDao hibernateJobRequestDao;
+    @Autowired
+    private JobRequestDao hibernateJobRequestDao;
 
-	@Autowired
-	private JobProgress jobProgressStore;
+    @Autowired
+    private JobProgress jobProgressStore;
 
-	@Autowired
-	private JobStatusBroadcaster jobStatusBroadcaster;
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
-	@Override
-	public void onResponse(Exchange newExchange) {
-		super.onResponse(newExchange);
-		if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
-			try {
-				int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
-				int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
-				long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
-				TransientJob job = inProgressBatchJobs.getJob(jobId);
-				if (!job.getTransientPipeline().getPipeline().getTasks().isEmpty()) {
-					int currentTask = 1 + job.getCurrentTaskIndex();
-					int totalTasks = job.getTransientPipeline().getTaskCount();
-					float progressPerStage = 1 / (1f * totalTasks) * 100f;
+    @Override
+    public void onResponse(Exchange newExchange) {
+        super.onResponse(newExchange);
+        if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
+            try {
+                int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
+                int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
+                long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
+                BatchJob job = inProgressBatchJobs.getJob(jobId);
+                if (!job.getTransientPipeline().getPipeline().getTasks().isEmpty()) {
+                    int currentTask = 1 + job.getCurrentTaskIndex();
+                    int totalTasks = job.getTransientPipeline().getTaskCount();
+                    float progressPerStage = 1 / (1f * totalTasks) * 100f;
 
-					float taskProgress = (((float) aggregateCount) / ((float) splitSize));
-					float jobProgress = (currentTask - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
+                    float taskProgress = (((float) aggregateCount) / ((float) splitSize));
+                    float jobProgress = (currentTask - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
 
-					JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
+                    JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
 
-					jobStatusBroadcaster.broadcast(jobId, jobProgress, jobRequest.getStatus());
+                    jobStatusBroadcaster.broadcast(jobId, jobProgress, jobRequest.getStatus());
 
-					//store the current job progress to prevent progress displaying as zero on manual refreshes
-					jobProgressStore.setJobProgress(jobId, jobProgress);
-				}
-			} catch (Exception e) {
-				log.error("Error getting necessary information to create a job progress update.");
-			}
-		}
-	}
+                    //store the current job progress to prevent progress displaying as zero on manual refreshes
+                    jobProgressStore.setJobProgress(jobId, jobProgress);
+                }
+            } catch (Exception e) {
+                log.error("Error getting necessary information to create a job progress update.");
+            }
+        }
+    }
 }

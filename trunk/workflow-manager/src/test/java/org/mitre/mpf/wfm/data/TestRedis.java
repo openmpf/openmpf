@@ -35,7 +35,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -69,7 +72,7 @@ public class TestRedis {
 
     @BeforeClass
     public static void initClass() {
-        Track t1 = new Track(
+        var t1 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -82,7 +85,7 @@ public class TestRedis {
                 0.5f,
                 createDetections(),
                 ImmutableSortedMap.of("a", "b", "c", "d"));
-        Track t2 = new Track(
+        var t2 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -94,7 +97,7 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Collections.emptyMap());
+                Map.of());
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
         _differentStageTrack = new Track(
@@ -123,18 +126,18 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Collections.emptyMap());
+                Map.of());
     }
 
 
     private static List<Detection> createDetections() {
-        Detection detection1 = new Detection(1, 2, 3, 4, 0,5, 6,
-                                            Collections.emptyMap());
+        var detection1 = new Detection(1, 2, 3, 4, 0,5, 6,
+                                       Map.of());
 
-        Detection detection2 = new Detection(7, 8, 9, 10, 11, 12, 13,
-                                             ImmutableSortedMap.of("prop1", "val1", "prop2", "val2"));
+        var detection2 = new Detection(7, 8, 9, 10, 11, 12, 13,
+                                       ImmutableSortedMap.of("prop1", "val1", "prop2", "val2"));
 
-        return Arrays.asList(detection1, detection2);
+        return List.of(detection1, detection2);
     }
 
 
@@ -169,7 +172,7 @@ public class TestRedis {
         assertTrue(_redis.getTracks(1, TEST_MEDIA_ID, 0, 0).isEmpty());
 
 
-        Track replacementTrack = new Track(
+        var replacementTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -206,11 +209,11 @@ public class TestRedis {
     public void canClearTracks() {
         addAllTestTracksToRedis();
 
-        TransientMedia media = mock(TransientMedia.class);
+        var media = mock(TransientMedia.class);
         when(media.getId())
                 .thenReturn(TEST_MEDIA_ID);
 
-        TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
         when(job.getMedia())

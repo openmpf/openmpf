@@ -32,6 +32,7 @@ import org.apache.camel.impl.DefaultMessage;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -83,14 +84,14 @@ public class TestUtil {
 
 
 
-    public static TransientJob setupJob(
+    public static BatchJob setupJob(
             long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
             InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
         return setupJob(jobId, systemPropertiesSnapshot, inProgressJobs, ioUtils, Collections.emptyMap(),
                         Collections.emptyMap());
     }
 
-    public static TransientJob setupJob(
+    public static BatchJob setupJob(
             long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
             InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {

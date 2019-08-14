@@ -34,8 +34,11 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -145,7 +148,7 @@ public class TestMarkupResponseProcessor {
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         TransientMedia media = new TransientMediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
                                                       Paths.get(mediaUri), Collections.emptyMap(), null);
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
         when(job.getTransientPipeline())

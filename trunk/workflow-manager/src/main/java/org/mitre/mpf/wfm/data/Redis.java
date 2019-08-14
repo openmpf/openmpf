@@ -27,8 +27,8 @@
 package org.mitre.mpf.wfm.data;
 
 import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 
 import java.util.Collection;
 import java.util.SortedSet;
@@ -38,7 +38,7 @@ public interface Redis {
 
     void addTrack(Track track);
 
-    void clearTracks(TransientJob job);
+    void clearTracks(BatchJob job);
 
     SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
 

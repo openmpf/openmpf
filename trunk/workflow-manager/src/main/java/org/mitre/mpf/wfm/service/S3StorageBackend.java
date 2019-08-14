@@ -44,8 +44,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -105,7 +105,7 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return requiresS3ResultUpload(combinedProperties);
@@ -115,7 +115,7 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException {
         URI localUri = _localStorageBackend.storeImageArtifact(request);
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return putInS3IfAbsent(Paths.get(localUri), combinedProperties);
@@ -125,7 +125,7 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
         TransientMedia media = job.getMedia(request.getMediaId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
@@ -157,7 +157,7 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(MarkupResult markupResult) throws StorageException {
-        TransientJob job = _inProgressJobs.getJob(markupResult.getJobId());
+        BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                 job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
         return requiresS3ResultUpload(combinedProperties);
@@ -167,7 +167,7 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public void store(MarkupResult markupResult) throws StorageException, IOException {
         _localStorageBackend.store(markupResult);
-        TransientJob job = _inProgressJobs.getJob(markupResult.getJobId());
+        BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                 job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));

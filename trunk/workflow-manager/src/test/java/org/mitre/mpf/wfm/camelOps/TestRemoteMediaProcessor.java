@@ -36,7 +36,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -184,7 +184,7 @@ public class TestRemoteMediaProcessor {
                 new TransientMediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
                                        _tempFolder.newFile().toPath(), Collections.emptyMap(), null));
 
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.isCancelled())
                 .thenReturn(false);
         when(job.getMedia())
@@ -194,10 +194,10 @@ public class TestRemoteMediaProcessor {
         when(_mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 
-        Message inMessage = new DefaultMessage();
+        var inMessage = new DefaultMessage();
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
 
-        Exchange exchange = mock(Exchange.class);
+        var exchange = mock(Exchange.class);
         when(exchange.getIn())
                 .thenReturn(inMessage);
 

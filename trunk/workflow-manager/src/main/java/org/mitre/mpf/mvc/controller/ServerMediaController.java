@@ -35,8 +35,8 @@ import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -221,16 +221,16 @@ public class ServerMediaController {
             IoUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
         }
 
-        JobRequest job = jobRequestDao.findById(jobId);
-        if (job == null) {
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        if (jobRequest == null) {
             response.setStatus(404);
             response.flushBuffer();
             return;
         }
 
-        var jsonJob = jsonUtils.deserialize(job.getInputObject(), TransientJob.class);
+        var job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
         Function<String, String> combinedProperties
-                = aggregateJobPropertiesUtil.getCombinedProperties(jsonJob, sourceUri);
+                = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {

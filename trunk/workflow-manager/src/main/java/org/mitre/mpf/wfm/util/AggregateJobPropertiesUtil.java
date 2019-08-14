@@ -30,9 +30,13 @@ import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.springframework.stereotype.Component;
 
@@ -119,7 +123,7 @@ public class AggregateJobPropertiesUtil {
     private static PropertyInfo calculateValue(String propertyName,
                                                Action action,
                                                TransientMedia media,
-                                               TransientJob job) {
+                                               BatchJob job) {
 
         Map<String, String> mediaProperties = media.getMediaSpecificProperties();
         if (mediaProperties.containsKey(propertyName)) {
@@ -182,7 +186,7 @@ public class AggregateJobPropertiesUtil {
 
 
 
-    public static String calculateFrameInterval(Action action, TransientJob transientJob,
+    public static String calculateFrameInterval(Action action, BatchJob job,
                                                 TransientMedia transientMedia,
                                                 int systemFrameInterval, int systemFrameRateCap, double mediaFPS) {
 
@@ -190,13 +194,13 @@ public class AggregateJobPropertiesUtil {
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                 action,
                 transientMedia,
-                transientJob);
+                job);
 
         PropertyInfo frameRateCapPropInfo = AggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.FRAME_RATE_CAP_PROPERTY,
                 action,
                 transientMedia,
-                transientJob);
+                job);
 
         if (frameIntervalPropInfo.getLevel() == PropertyLevel.NONE) {
             frameIntervalPropInfo = new PropertyInfo(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
@@ -241,7 +245,7 @@ public class AggregateJobPropertiesUtil {
     // Priority:
     // media props > overridden algorithm props > job props > action props > default algo props >
     // snapshot props > system props
-    public String calculateValue(String propertyName, TransientJob job, TransientMedia media,
+    public String calculateValue(String propertyName, BatchJob job, TransientMedia media,
                                  Action action) {
         return calculateValue(
                 propertyName,
@@ -327,7 +331,7 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    public Function<String, String> getCombinedProperties(TransientJob job, long mediaId, int taskIndex,
+    public Function<String, String> getCombinedProperties(BatchJob job, long mediaId, int taskIndex,
                                                           int actionIndex) {
         return getCombinedProperties(job, job.getMedia(mediaId),
                                      job.getTransientPipeline().getAction(taskIndex, actionIndex));
@@ -337,14 +341,14 @@ public class AggregateJobPropertiesUtil {
     // Priority:
     // media props > overridden algorithm props > job props > action props > default algo props >
     // snapshot props > system props
-    public Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media,
+    public Function<String, String> getCombinedProperties(BatchJob job, TransientMedia media,
                                                           Action action) {
         return propName -> calculateValue(propName, job, media, action);
     }
 
 
 
-    public Function<String, String> getCombinedProperties(TransientJob job, TransientMedia media) {
+    public Function<String, String> getCombinedProperties(BatchJob job, TransientMedia media) {
         return propName -> calculateValue(
                 propName,
                 media.getMediaSpecificProperties(),
@@ -357,7 +361,7 @@ public class AggregateJobPropertiesUtil {
 
 
 
-    public Function<String, String> getCombinedProperties(TransientJob job, URI mediaUri) {
+    public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var mediaProperties = Map.<String, String>of();
         for (TransientMedia media : job.getMedia()) {
             try {
@@ -385,9 +389,9 @@ public class AggregateJobPropertiesUtil {
 
 
     public Function<String, String> getCombinedProperties(MarkupResult markup) {
-        TransientJob transientJob = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
+        BatchJob transientJob = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
                 .map(JobRequest::getInputObject)
-                .map(bytes -> _jsonUtils.deserialize(bytes, TransientJob.class))
+                .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class))
                 .orElse(null);
 
         if (transientJob == null) {

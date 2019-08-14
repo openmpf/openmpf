@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
@@ -90,7 +91,7 @@ public class MarkupStageSplitter implements StageSplitter {
     }
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-    private BoundingBoxMap createMap(TransientJob job, TransientMedia media, int taskIndex, Task task) {
+    private BoundingBoxMap createMap(BatchJob job, TransientMedia media, int taskIndex, Task task) {
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
@@ -181,18 +182,18 @@ public class MarkupStageSplitter implements StageSplitter {
 
 
     @Override
-    public final List<Message> performSplit(TransientJob transientJob, Task task) {
+    public final List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
-        int lastDetectionTaskIndex = findLastDetectionTaskIndex(transientJob.getTransientPipeline());
+        int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getTransientPipeline());
 
-        hibernateMarkupResultDao.deleteByJobId(transientJob.getId());
+        hibernateMarkupResultDao.deleteByJobId(job.getId());
 
         for(int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             String actionName = task.getActions().get(actionIndex);
-            Action action = transientJob.getTransientPipeline().getAction(actionName);
+            Action action = job.getTransientPipeline().getAction(actionName);
             int mediaIndex = -1;
-            for (TransientMedia transientMedia : transientJob.getMedia()) {
+            for (TransientMedia transientMedia : job.getMedia()) {
                 mediaIndex++;
                 if (transientMedia.isFailed()) {
                     log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
@@ -200,24 +201,24 @@ public class MarkupStageSplitter implements StageSplitter {
                     log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
                 } else {
                     List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
-                            = createMap(transientJob, transientMedia, lastDetectionTaskIndex,
-                                        transientJob.getTransientPipeline().getTask(lastDetectionTaskIndex))
+                            = createMap(job, transientMedia, lastDetectionTaskIndex,
+                                        job.getTransientPipeline().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
                     Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
-                            .setTaskIndex(transientJob.getCurrentTaskIndex())
+                            .setTaskIndex(job.getCurrentTaskIndex())
                             .setActionIndex(actionIndex)
                             .setMediaId(transientMedia.getId())
                             .setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
                             .setSourceUri(transientMedia.getLocalPath().toUri().toString())
                             .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                                       propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
-                                                       propertiesUtil.createMarkupPath(transientJob.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
+                                                       propertiesUtil.createMarkupPath(job.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
+                                                       propertiesUtil.createMarkupPath(job.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
                             .addAllMapEntries(boundingBoxMapEntryList)
                             .build();
 
-                    Algorithm algorithm = transientJob.getTransientPipeline().getAlgorithm(action.getAlgorithm());
+                    Algorithm algorithm = job.getTransientPipeline().getAlgorithm(action.getAlgorithm());
                     DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
                     message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
                     message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));

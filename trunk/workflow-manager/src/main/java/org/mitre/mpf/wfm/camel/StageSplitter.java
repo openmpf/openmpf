@@ -29,11 +29,11 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Message;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 
 import java.util.List;
 
 @Monitored
 public interface StageSplitter {
-    List<Message> performSplit(TransientJob transientJob, Task task);
+    List<Message> performSplit(BatchJob job, Task task);
 }

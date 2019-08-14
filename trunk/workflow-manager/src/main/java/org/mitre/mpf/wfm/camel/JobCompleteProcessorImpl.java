@@ -46,6 +46,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -125,10 +126,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
             Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
-            TransientJob transientJob = inProgressBatchJobs.getJob(jobId);
+            BatchJob job = inProgressBatchJobs.getJob(jobId);
             try {
                 // NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
-                createOutputObject(transientJob, jobStatus);
+                createOutputObject(job, jobStatus);
             } catch (Exception exception) {
                 log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
@@ -146,17 +147,17 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                          jobId, exception);
             }
 
-            setJobCompletionStatus(jobId, jobStatus.getValue(), transientJob);
+            setJobCompletionStatus(jobId, jobStatus.getValue(), job);
 
             try {
-                callback(transientJob);
+                callback(job);
             } catch (Exception exception) {
                 log.warn("Failed to make callback (if appropriate) for Job #{}.", jobId);
             }
 
             // Tear down the job.
             try {
-                destroy(transientJob);
+                destroy(job);
             } catch (Exception exception) {
                 log.warn("Failed to clean up Job {} due to an exception. Data for this job will remain in the transient data store, but the status of the job has not been affected by this failure.", jobId, exception);
             }
@@ -177,13 +178,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private void callback(TransientJob transientJob) throws WfmProcessingException {
-        long jobId = transientJob.getId();
-        String jsonCallbackURL = transientJob.getCallbackUrl().orElse(null);
+    private void callback(BatchJob batchJob) throws WfmProcessingException {
+        long jobId = batchJob.getId();
+        String jsonCallbackURL = batchJob.getCallbackUrl().orElse(null);
         if (jsonCallbackURL == null) {
             return;
         }
-        String jsonCallbackMethod = transientJob.getCallbackMethod()
+        String jsonCallbackMethod = batchJob.getCallbackMethod()
                 .filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
                 .orElse(null);
         if (jsonCallbackMethod == null) {
@@ -193,7 +194,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
         try {
-            JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, transientJob.getExternalId().orElse(null));
+            JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, batchJob.getExternalId().orElse(null));
             new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
         } catch (IOException ioe) {
             log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
@@ -202,7 +203,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private void setJobCompletionStatus(long jobId, BatchJobStatusType jobStatus, TransientJob job) {
+    private void setJobCompletionStatus(long jobId, BatchJobStatusType jobStatus, BatchJob job) {
         inProgressBatchJobs.setJobStatus(jobId, jobStatus);
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
@@ -215,39 +216,39 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
     @Override
-    public void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws IOException {
-        long jobId = transientJob.getId();
+    public void createOutputObject(BatchJob job, Mutable<BatchJobStatusType> jobStatus) throws IOException {
+        long jobId = job.getId();
         JobRequest jobRequest = jobRequestDao.findById(jobId);
 
-        if(transientJob.isCancelled()) {
+        if(job.isCancelled()) {
             jobStatus.setValue(BatchJobStatusType.CANCELLED);
         }
 
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobRequest.getId(),
                 UUID.randomUUID().toString(),
-                jsonUtils.convert(transientJob.getTransientPipeline()),
-                transientJob.getPriority(),
+                jsonUtils.convert(job.getTransientPipeline()),
+                job.getPriority(),
                 propertiesUtil.getSiteId(),
-                transientJob.getExternalId().orElse(null),
+                job.getExternalId().orElse(null),
                 jobRequest.getTimeReceived(),
                 jobRequest.getTimeCompleted(),
                 jobStatus.getValue().toString());
 
-        if (transientJob.getJobProperties() != null) {
-            jsonOutputObject.getJobProperties().putAll(transientJob.getJobProperties());
+        if (job.getJobProperties() != null) {
+            jsonOutputObject.getJobProperties().putAll(job.getJobProperties());
         }
 
-        if (transientJob.getOverriddenAlgorithmProperties() != null) {
-            jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties());
+        if (job.getOverriddenAlgorithmProperties() != null) {
+            jsonOutputObject.getAlgorithmProperties().putAll(job.getOverriddenAlgorithmProperties());
         }
-        jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
-        jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
+        jsonOutputObject.getJobWarnings().addAll(job.getWarnings());
+        jsonOutputObject.getJobErrors().addAll(job.getErrors());
 
         boolean hasDetectionProcessingError = false;
 
         int mediaIndex = 0;
-        for(TransientMedia transientMedia : transientJob.getMedia()) {
+        for (TransientMedia transientMedia : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
             JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(transientMedia.getId(), transientMedia.getUri(), transientMedia.getType(),
@@ -263,16 +264,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
 
-            Set<Integer> suppressedStages = getSuppressedStages(transientMedia, transientJob);
+            Set<Integer> suppressedStages = getSuppressedStages(transientMedia, job);
 
-            for (int taskIndex = 0; taskIndex < transientJob.getTransientPipeline().getTaskCount(); taskIndex++) {
-                Task task = transientJob.getTransientPipeline().getTask(taskIndex);
+            for (int taskIndex = 0; taskIndex < job.getTransientPipeline().getTaskCount(); taskIndex++) {
+                Task task = job.getTransientPipeline().getTask(taskIndex);
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                    Action action = transientJob.getTransientPipeline().getAction(taskIndex, actionIndex);
+                    Action action = job.getTransientPipeline().getAction(taskIndex, actionIndex);
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
-                                transientJob, transientMedia.getId(), taskIndex, actionIndex)) {
+                                job, transientMedia.getId(), taskIndex, actionIndex)) {
                         hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
                         JsonDetectionProcessingError jsonDetectionProcessingError
                                 = new JsonDetectionProcessingError(
@@ -305,7 +306,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         for (Track track : tracks) {
                             JsonTrackOutputObject jsonTrackOutputObject
                                     = createTrackOutputObject(track, stateKey, action, transientMedia,
-                                                              transientJob);
+                                                              job);
 
                             String type = jsonTrackOutputObject.getType();
                             if (!mediaOutputObject.getTypes().containsKey(type)) {
@@ -352,7 +353,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private static List<DetectionProcessingError> getDetectionProcessingErrors(
-            TransientJob job, long mediaId, int stageIndex, int actionIndex) {
+            BatchJob job, long mediaId, int stageIndex, int actionIndex) {
         return job.getDetectionProcessingErrors()
                 .stream()
                 .filter(d -> d.getMediaId() == mediaId && d.getStageIndex() == stageIndex
@@ -362,22 +363,22 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
-                                                                 Action action,
-                                                                 TransientMedia transientMedia,
-                                                                 TransientJob transientJob) {
+                                                          Action action,
+                                                          TransientMedia transientMedia,
+                                                          BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
         String exemplarsOnlyProp = aggregateJobPropertiesUtil.calculateValue(
-                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, transientJob, transientMedia, action);
+                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, job, transientMedia, action);
         boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
 
         List<JsonDetectionOutputObject> detections;
         if (exemplarsOnly) {
-            detections = Collections.singletonList(exemplar);
+            detections = List.of(exemplar);
         }
         else {
             detections = track.getDetections().stream()
-                    .map(d -> createDetectionOutputObject(d))
+                    .map(JobCompleteProcessorImpl::createDetectionOutputObject)
                     .collect(toList());
         }
 
@@ -432,7 +433,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static boolean isOutputLastStageOnly(TransientMedia transientMedia, TransientJob transientJob) {
+    private static boolean isOutputLastStageOnly(TransientMedia transientMedia, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_STAGE_ONLY to a single stage.
         String mediaProperty = transientMedia.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
@@ -440,25 +441,25 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return Boolean.parseBoolean(mediaProperty);
         }
 
-        String jobProperty = transientJob.getJobProperties()
+        String jobProperty = job.getJobProperties()
                 .get(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
         if (jobProperty != null) {
             return Boolean.parseBoolean(jobProperty);
         }
 
-        return transientJob.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
+        return job.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
     }
 
 
-    private static Set<Integer> getSuppressedStages(TransientMedia transientMedia, TransientJob transientJob) {
-        if (!isOutputLastStageOnly(transientMedia, transientJob)) {
-            return Collections.emptySet();
+    private static Set<Integer> getSuppressedStages(TransientMedia transientMedia, BatchJob job) {
+        if (!isOutputLastStageOnly(transientMedia, job)) {
+            return Set.of();
         }
 
-        List<String> taskNames = transientJob.getTransientPipeline().getPipeline().getTasks();
+        List<String> taskNames = job.getTransientPipeline().getPipeline().getTasks();
         int lastDetectionStage = 0;
         for (int i = taskNames.size() - 1; i >= 0; i--) {
-            ActionType actionType = transientJob.getTransientPipeline().getAlgorithm(i, 0).getActionType();
+            ActionType actionType = job.getTransientPipeline().getAlgorithm(i, 0).getActionType();
             if (actionType == ActionType.DETECTION) {
                 lastDetectionStage = i;
                 break;
@@ -484,17 +485,18 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     @Autowired
     private JmsUtils jmsUtils;
 
-    private void destroy(TransientJob transientJob) throws WfmProcessingException {
-        for(TransientMedia transientMedia : transientJob.getMedia()) {
+    private void destroy(BatchJob batchJob) throws WfmProcessingException {
+        for(TransientMedia transientMedia : batchJob.getMedia()) {
             if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
                 try {
                     Files.deleteIfExists(transientMedia.getLocalPath());
-                } catch(Exception exception) {
-                    log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.", transientJob.getId(), transientMedia.getLocalPath());
+                } catch(IOException exception) {
+                    log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.",
+                             batchJob.getId(), transientMedia.getLocalPath());
                 }
             }
         }
-        inProgressBatchJobs.clearJob(transientJob.getId());
+        inProgressBatchJobs.clearJob(batchJob.getId());
     }
 
     @Override

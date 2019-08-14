@@ -80,7 +80,7 @@ public class TestObjectMapperFactory {
     }
 
     @Test
-    public void testInvalidKeyForClass() throws IOException {
+    public void testInvalidKeysForClass() throws IOException {
         ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
         String stringField = " \t field 1  ";

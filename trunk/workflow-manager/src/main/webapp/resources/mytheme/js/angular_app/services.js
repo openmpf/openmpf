@@ -172,12 +172,10 @@ AppServices.service('MediaService', function ($http) {
         return promise;
     };
 
-    this.getAllDirectories = function (useUploadRoot) {
-        var useUploadRoot = useUploadRoot ? useUploadRoot : false;
+    this.getAllDirectories = function () {
         var promise = $http({
             url: 'server/get-all-directories',
-            method: 'GET',
-            params: {'useUploadRoot': useUploadRoot}
+            method: 'GET'
         }).then(function (response) {
             return response.data;
         });

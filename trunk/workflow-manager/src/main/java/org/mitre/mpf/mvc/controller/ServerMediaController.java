@@ -126,28 +126,28 @@ public class ServerMediaController {
 
     @RequestMapping(value = {"/server/get-all-directories"}, method = RequestMethod.GET)
     @ResponseBody
-    public DirectoryTreeNode getAllDirectories(HttpServletRequest request,
-                                               @RequestParam(required = false) Boolean useUploadRoot) {
-
-        // if useUploadRoot is set it will take precedence over nodeFullPath
-        DirectoryTreeNode node = serverMediaService.getAllDirectories();
-        if (useUploadRoot != null && useUploadRoot) {
-            node = DirectoryTreeNode.find(node, propertiesUtil.getRemoteMediaDirectory().getAbsolutePath());
-        }
-
-        return node;
+    public ResponseEntity<DirectoryTreeNode> getAllDirectories(HttpServletRequest request) {
+        return ResponseEntity.ok(serverMediaService.getAllDirectories());
     }
 
     @RequestMapping(value = {"/server/get-all-files"}, method = RequestMethod.GET)
     @ResponseBody
-    public ServerMediaListing getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath) {
-        Path dir = Paths.get(fullPath);
-        if (!Files.isDirectory(dir) || !dir.toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot()))
-            return null; // security check
+    public ResponseEntity<ServerMediaListing> getAllFiles(HttpServletRequest request, @RequestParam(required = true) String fullPath) {
 
-        log.info("All files requested in: " + fullPath);
+        if (!Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+            // security check
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        File dir = new File(fullPath);
+        if (!dir.exists()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else if (!dir.isDirectory()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        log.debug("All files requested in: " + fullPath);
         List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
-        return new ServerMediaListing(mediaFiles);
+        return ResponseEntity.ok(new ServerMediaListing(mediaFiles));
     }
 
     //https://datatables.net/manual/server-side#Sent-parameters
@@ -165,11 +165,14 @@ public class ServerMediaController {
                                                                           @RequestParam(value = "search", required = false) String search) {
         log.debug("Params fullPath:{} draw:{} start:{} length:{} search:{} ", fullPath, draw, start, length, search);
 
+        if (!Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
+            // security check
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
         File dir = new File(fullPath);
         if (!dir.exists()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } else if (!dir.isDirectory() || !Paths.get(fullPath).toAbsolutePath().startsWith(propertiesUtil.getServerMediaTreeRoot())) {
-            // security check
+        } else if (!dir.isDirectory()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 

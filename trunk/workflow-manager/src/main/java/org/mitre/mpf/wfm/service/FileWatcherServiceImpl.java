@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -105,12 +107,13 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     private void walkAndRegisterDirectories(final Path start, WatchService watcher, Map<WatchKey, Path> watcherMap) {
         // register directory and sub-directories
         try {
-            Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
+            SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     registerDirectory(dir, watcher, watcherMap);
                     return FileVisitResult.CONTINUE;
                 }
-            });
+            };
+            Files.walkFileTree(start, Set.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, visitor);
         } catch (IOException e) {
             log.error("Failed to register file directory tree under: " + start);
             throw new UncheckedIOException(e);
@@ -121,7 +124,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // register the current media directory with a file watcher service, listening for file creation or deletion
         WatchKey key;
         try {
-            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            key = dir.toRealPath().register(watcher, ENTRY_CREATE, ENTRY_DELETE);
             log.info("File watcher registered for directory: " + dir);
             watcherMap.put(key, dir);
         } catch (IOException e) {
@@ -146,7 +149,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // Load existing files on startup since we won't see their creation event
         buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
 
-        log.info("Watcher task started");
+        log.info("File watcher task started");
         fileEventLoop(watcher, watcherMap);
     }
 
@@ -165,8 +168,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     Path eventPath = ((WatchEvent<Path>) event).context();
                     Path child = dir.resolve(eventPath);
                     if (event.kind() == ENTRY_CREATE) {
-                        File newFile = new File(child.toAbsolutePath().toString());
-                        addToCache(newFile, watcher, watcherMap);
+                        File newItem = new File(child.toAbsolutePath().toString());
+                        addToCache(newItem, watcher, watcherMap);
                     } else if (event.kind() == ENTRY_DELETE) {
                         File removedItem = new File(child.toAbsolutePath().toString());
                         removeFromCache(removedItem, watcherMap);
@@ -201,8 +204,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         File dir = new File(node.getFullPath());
 
-        // attempt to get attribute from application scope
-
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
         prepareFilesForCache(dir, mediaFiles);
 
@@ -224,6 +225,9 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             tmpFiles = item.listFiles(File::isFile);
         } else {
             tmpFiles = new File[]{item};
+        }
+        if (tmpFiles == null || tmpFiles.length == 0) {
+            return;
         }
 
         List<File> files = new ArrayList<>(); // use real paths
@@ -257,7 +261,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // update cache if it exists; else log an error
         if (fileCache.get(parentFilePath) != null) {
             if (item.isDirectory()) {
-                fileCache.put(filePath, new ServerMediaListing(new ArrayList<>()));
+                // if directory is a symlink, it may already have files in it
+                ArrayList<ServerMediaFile> fileList = new ArrayList<>();
+                prepareFilesForCache(item, fileList);
+                fileCache.put(filePath, new ServerMediaListing(fileList));
                 walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher, watcherMap);
                 log.debug("Directory added to cache: " + item.getAbsolutePath());
             } else {
@@ -282,7 +289,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     private void removeFromCache(File item, Map<WatchKey, Path> watcherMap) {
         if (item == null) return;
 
-        // attempt to get attribute from application scope
         Path removedItem = item.toPath().toAbsolutePath();
         Path parentDir = removedItem.getParent();
 

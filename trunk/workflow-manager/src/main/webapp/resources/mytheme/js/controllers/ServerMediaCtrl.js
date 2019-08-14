@@ -78,7 +78,7 @@
 
                 MediaService.getMaxFileUploadCnt().then(function (max) {
 
-                    MediaService.getAllDirectories(false).then(function (dirs) {
+                    MediaService.getAllDirectories().then(function (dirs) {
                         serverDirs = [];
                         serverDirs.push(dirs);
                         treeDirs = serverDirs;

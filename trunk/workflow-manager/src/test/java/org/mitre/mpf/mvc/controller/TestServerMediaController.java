@@ -114,7 +114,7 @@ public class TestServerMediaController {
 
     @Test
     public void getAllDirectoriesJustRoot() {
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(rootNode.getFullPath(), _mockProperties.getServerMediaTreeRoot());
     }
@@ -124,7 +124,7 @@ public class TestServerMediaController {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
@@ -137,7 +137,7 @@ public class TestServerMediaController {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
@@ -146,7 +146,7 @@ public class TestServerMediaController {
         Assert.assertTrue(subFolder.delete());
 
         Thread.sleep(100);
-        rootNode = _controller.getAllDirectories(_mockRequest, true);
+        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         Assert.assertNull(rootNode.getNodes());
     }
@@ -156,7 +156,7 @@ public class TestServerMediaController {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
@@ -166,13 +166,13 @@ public class TestServerMediaController {
         Assert.assertTrue(file.createNewFile());
 
         Thread.sleep(100);
-        DirectoryTreeNode newTree = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode newTree = _controller.getAllDirectories(_mockRequest).getBody();
 
         Assert.assertEquals(rootNode, newTree);
 
         Assert.assertTrue(file.delete());
         Thread.sleep(100);
-        newTree = _controller.getAllDirectories(_mockRequest, true);
+        newTree = _controller.getAllDirectories(_mockRequest).getBody();
 
         Assert.assertEquals(rootNode, newTree);
     }
@@ -187,7 +187,7 @@ public class TestServerMediaController {
 
         Assert.assertTrue(file.exists());
         Thread.sleep(100);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
 
         assertEquals(3, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
@@ -200,7 +200,7 @@ public class TestServerMediaController {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertNotNull(rootNode.getNodes());
         assertEquals(1, rootNode.getNodes().size());
@@ -215,7 +215,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file3.createNewFile());
 
         Thread.sleep(100);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath());
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
 
         assertEquals(3, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
@@ -231,7 +231,7 @@ public class TestServerMediaController {
 
         Assert.assertTrue(file.exists());
         Thread.sleep(100);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
 
         assertEquals(3, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
@@ -240,7 +240,7 @@ public class TestServerMediaController {
 
         Assert.assertTrue(file.delete());
         Thread.sleep(100);
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath());
+        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
 
         assertEquals(2, mediaListing.getData().size());
         assertEquals(_testFileName2, mediaListing.getData().get(0).getName());
@@ -252,7 +252,7 @@ public class TestServerMediaController {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
@@ -262,7 +262,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file.createNewFile());
 
         Thread.sleep(100);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath());
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
         assertEquals(1, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
 
@@ -270,17 +270,23 @@ public class TestServerMediaController {
         Assert.assertTrue(subFolder.delete());
 
         Thread.sleep(100);
-        rootNode = _controller.getAllDirectories(_mockRequest, true);
+        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         Assert.assertNull(rootNode.getNodes());
 
-        ServerMediaListing fileList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath());
+        ServerMediaListing fileList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
         Assert.assertNull(fileList);
     }
 
     @Test
     public void getFilesFromInvalidDirectory() {
-        ServerMediaListing fileList = _controller.getAllFiles(_mockRequest, "/tmp");
-        Assert.assertNull(fileList);
+        HttpStatus response = _controller.getAllFiles(_mockRequest, _mockProperties.getServerMediaTreeRoot() + "/lskjdflksjf").getStatusCode();
+        Assert.assertEquals(HttpStatus.NOT_FOUND, response);
+
+        response = _controller.getAllFiles(_mockRequest, "/lskjdflksjf").getStatusCode();
+        Assert.assertEquals(HttpStatus.BAD_REQUEST, response);
+
+        response = _controller.getAllFiles(_mockRequest, "/tmp").getStatusCode();
+        Assert.assertEquals(HttpStatus.BAD_REQUEST, response);
     }
 
     // get-all-files-filtered
@@ -310,7 +316,7 @@ public class TestServerMediaController {
         _tempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
-        Thread.sleep(100);
+        Thread.sleep(800);
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 mediaBase.getAbsolutePath(), 1 , 0, 10, "mp4");
 
@@ -326,7 +332,11 @@ public class TestServerMediaController {
         assertSame(mediaListingResult.getStatusCode(), HttpStatus.BAD_REQUEST);
 
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
-                mediaBase.getAbsolutePath() + "/slfkjasdlksdf", 1 , 0, 10, "");
+                "/lskjdflksjf", 1 , 0, 10, "");
+        assertSame(mediaListingResult.getStatusCode(), HttpStatus.BAD_REQUEST);
+
+        mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
+                _mockProperties.getServerMediaTreeRoot() + "/slfkjasdlksdf", 1 , 0, 10, "");
         assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
     }
 
@@ -334,7 +344,7 @@ public class TestServerMediaController {
     public void getFilesFilteredDeletedDirectory() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
         Thread.sleep(100);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest, true);
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
@@ -355,7 +365,7 @@ public class TestServerMediaController {
         Assert.assertTrue(subFolder.delete());
 
         Thread.sleep(100);
-        rootNode = _controller.getAllDirectories(_mockRequest, true);
+        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
         assertNull(rootNode.getNodes());
 

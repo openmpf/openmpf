@@ -30,7 +30,6 @@ import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
 
 import java.nio.file.Path;
-import java.util.HashMap;
 
 public interface FileWatcherService {
 

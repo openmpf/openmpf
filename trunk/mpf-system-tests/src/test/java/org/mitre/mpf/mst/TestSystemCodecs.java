@@ -36,7 +36,7 @@ import java.util.List;
 
 public class TestSystemCodecs extends TestSystemWithDefaultConfig {
 
-    private boolean testHelper(String pipelineName, String testMediaPath) {
+    private void runTest(String pipelineName, String testMediaPath) {
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(testMediaPath));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
@@ -56,88 +56,52 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
             System.err.println(outputObject.getJobErrors());
             System.out.println(outputObject.getMedia());
         }
-        return detectionFound;
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void runSpeechSphinxDetectAudioAMR() {
-        String pipelineName = "SPHINX SPEECH DETECTION PIPELINE";
-        String testMediaPath = "/samples/speech/amrnb.amr";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
         Assert.assertTrue(detectionFound);
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectVideoH264AAC() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/h264_aac.mp4";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+    public void runSpeechSphinxDetectAudioAmr() {
+        runTest("SPHINX SPEECH DETECTION PIPELINE", "/samples/speech/amrnb.amr");
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectVideoH264MP3() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/h264_mp3.mp4";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+    public void runFaceOcvDetectVideoH264Aac() {
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/h264_aac.mp4");
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectVideoH265AAC() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/h265_aac.mp4";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+    public void runFaceOcvDetectVideoH264Mp3() {
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/h264_mp3.mp4");
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectVideoMPv4AAC() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/mp4v_aac.mp4";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+    public void runFaceOcvDetectVideoH265Aac() {
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/h265_aac.mp4");
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void runFaceOcvDetectVideoXvidAAC() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/xvid_aac.avi";
+    public void runFaceOcvDetectVideoMPv4Aac() {
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/mp4v_aac.mp4");
+    }
 
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectVideoXvidAac() {
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/xvid_aac.avi");
     }
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectVideoTheoraOpus() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/theora_opus.ogg";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/theora_opus.ogg");
     }
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectVideoTheoraVorbis() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/theora_vorbis.ogg";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/theora_vorbis.ogg");
     }
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectVideoVp8Opus() {
-        String pipelineName = "OCV FACE DETECTION PIPELINE";
-        String testMediaPath = "/samples/face/vp8_opus.webm";
-
-        boolean detectionFound = testHelper(pipelineName, testMediaPath);
-        Assert.assertTrue(detectionFound);
+        runTest("OCV FACE DETECTION PIPELINE", "/samples/face/vp8_opus.webm");
     }
 
 }

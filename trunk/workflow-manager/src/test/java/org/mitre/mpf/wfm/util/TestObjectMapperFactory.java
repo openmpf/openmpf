@@ -44,7 +44,7 @@ public class TestObjectMapperFactory {
     }
 
     @Test
-    public void deserializeWithWhitespace() throws IOException {
+    public void testValuesWithWhitespace() throws IOException {
         ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
         TestModel model1 = new TestModel();
@@ -62,7 +62,7 @@ public class TestObjectMapperFactory {
     }
 
     @Test
-    public void deserializeWithoutWhitespace() throws IOException {
+    public void testValuesWithNoWhitespace() throws IOException {
         ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
         TestModel model1 = new TestModel();
@@ -80,15 +80,16 @@ public class TestObjectMapperFactory {
     }
 
     @Test
-    public void deserializeFromMapString() throws IOException {
+    public void testInvalidKeyForClass() throws IOException {
         ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
         String stringField = " \t field 1  ";
         List<String> stringListField = List.of("item 1  ", "  item 2");
         Map<String, String> stringMapField = Map.of(" key 1\t", "value 1  ", "  key 2", "    value 2");
 
+        // test deserialization problem handler by specifying invalid keys for TestModel class
         Map<String, Object> model = Map.of("stringField  ", stringField,
-                                        "stringListField", stringListField,
+                                        " stringListField", stringListField,
                                         "stringMapField", stringMapField);
 
         String serialized = objectMapper.writeValueAsString(model);

@@ -221,32 +221,39 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
-        jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
+        try {
+            jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
 
-        TransientJob transientJob = inProgressJobs.addJob(
-                jobRequestEntity.getId(),
-                externalId,
-                systemPropertiesSnapshot,
-                pipeline,
-                jobRequestEntity.getPriority(),
-                buildOutput,
-                callbackUrl,
-                callbackMethod,
-                media,
-                jobProperties,
-                overriddenAlgoProps);
-
-
-        inProgressJobs.setJobStatus(transientJob.getId(), jobStatus);
-
-        jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
-        jobRequestEntity.setStatus(jobStatus);
-        jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
-
-        jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, jobStatus);
+            TransientJob transientJob = inProgressJobs.addJob(
+                    jobRequestEntity.getId(),
+                    externalId,
+                    systemPropertiesSnapshot,
+                    pipeline,
+                    jobRequestEntity.getPriority(),
+                    buildOutput,
+                    callbackUrl,
+                    callbackMethod,
+                    media,
+                    jobProperties,
+                    overriddenAlgoProps);
 
 
-        return jobRequestEntity;
+            inProgressJobs.setJobStatus(transientJob.getId(), jobStatus);
+
+            jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
+            jobRequestEntity.setStatus(jobStatus);
+            jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
+
+            jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, jobStatus);
+
+
+            return jobRequestEntity;
+        }
+        catch (WfmProcessingException e) {
+            jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
+            jobRequestDao.persist(jobRequestEntity);
+            throw e;
+        }
     }
 
 

@@ -57,6 +57,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.*;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
 import static org.mockito.Mockito.*;
@@ -587,7 +588,8 @@ public class TestAddComponentService {
             _addComponentService.registerComponent(_testPackageName);
             fail();
         }
-        catch (InvalidPipelineException ignored) {
+        catch (ComponentRegistrationSubsystemException ex) {
+            assertThat(ex.getCause(), instanceOf(InvalidPipelineException.class));
         }
 
 

@@ -27,8 +27,9 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableTable;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
@@ -85,16 +86,16 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public TransientStream getStream() { return _stream; }
 
 
-    private final ImmutableTable<String, String, String> _overriddenAlgorithmProperties;
+    private final ImmutableMap<String, ImmutableMap<String, String>> _overriddenAlgorithmProperties;
     @Override
-    public ImmutableTable<String, String, String> getOverriddenAlgorithmProperties() {
+    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties() {
         return _overriddenAlgorithmProperties;
     }
 
 
-    private final ImmutableMap<String, String> _overriddenJobProperties;
+    private final ImmutableMap<String, String> _jobProperties;
     @Override
-    public ImmutableMap<String, String> getOverriddenJobProperties() { return _overriddenJobProperties; }
+    public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
 
 
     private boolean _cancelled;
@@ -133,19 +134,21 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public void setCleanupEnabled(boolean cleanupEnabled) { _cleanupEnabled = cleanupEnabled; }
 
 
+    @JsonCreator
     public TransientStreamingJobImpl(
-            long id,
-            String externalId,
-            TransientPipeline transientPipeline,
-            TransientStream stream,
-            int priority,
-            long stallTimeout,
-            boolean outputEnabled,
-            String outputObjectDirectory,
-            String healthReportCallbackURI,
-            String summaryReportCallbackURI,
-            Map<String, String> jobProperties,
-            Map<String, Map<String, String>> algorithmProperties) {
+            @JsonProperty("id") long id,
+            @JsonProperty("externalId") String externalId,
+            @JsonProperty("transientPipeline") TransientPipeline transientPipeline,
+            @JsonProperty("stream") TransientStream stream,
+            @JsonProperty("priority") int priority,
+            @JsonProperty("stallTimeout") long stallTimeout,
+            @JsonProperty("outputEnabled") boolean outputEnabled,
+            @JsonProperty("outputObjectDirectory") String outputObjectDirectory,
+            @JsonProperty("healthReportCallbackURI") String healthReportCallbackURI,
+            @JsonProperty("summaryReportCallbackURI") String summaryReportCallbackURI,
+            @JsonProperty("jobProperties") Map<String, String> jobProperties,
+            @JsonProperty("overriddenAlgorithmProperties")
+                    Map<String, Map<String, String>> overriddenAlgorithmProperties) {
         _id = id;
         _externalId = externalId;
         _transientPipeline = transientPipeline;
@@ -156,14 +159,11 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
         _outputObjectDirectory = outputObjectDirectory;
         _healthReportCallbackURI = healthReportCallbackURI;
         _summaryReportCallbackURI = summaryReportCallbackURI;
-        _overriddenJobProperties = ImmutableMap.copyOf(jobProperties);
+        _jobProperties = ImmutableMap.copyOf(jobProperties);
 
-        ImmutableTable.Builder<String, String, String> tableBuilder = ImmutableTable.builder();
-        for (Map.Entry<String, Map<String, String>> algoEntry : algorithmProperties.entrySet()) {
-            for (Map.Entry<String, String> algoProp : algoEntry.getValue().entrySet()) {
-                tableBuilder.put(algoEntry.getKey(), algoProp.getKey(), algoProp.getValue());
-            }
-        }
-        _overriddenAlgorithmProperties = tableBuilder.build();
+        _overriddenAlgorithmProperties = overriddenAlgorithmProperties
+                .entrySet()
+                .stream()
+                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
     }
 }

@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.businessrules;
 
 import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 
 public interface JobRequestBo {
@@ -36,6 +35,6 @@ public interface JobRequestBo {
 
     JobRequest resubmit(long jobId, int priority);
 
-    boolean cancel(long jobId) throws WfmProcessingException;
+    boolean cancel(long jobId);
 
 }

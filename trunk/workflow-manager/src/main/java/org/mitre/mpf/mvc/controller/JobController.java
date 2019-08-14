@@ -125,7 +125,10 @@ public class JobController {
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
+    public ResponseEntity<JobCreationResponse> createJobRest(
+            @ApiParam(required = true, value = "JobCreationRequest") @RequestBody
+                    JobCreationRequest jobCreationRequest) {
+
         JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
         if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);

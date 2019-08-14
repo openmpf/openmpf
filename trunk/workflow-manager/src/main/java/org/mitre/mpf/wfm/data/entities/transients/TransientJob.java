@@ -57,8 +57,7 @@ public interface TransientJob {
 
     public TransientMedia getMedia(long mediaId);
 
-    // The table's row key is the algorithm name, the column key is the property name,
-    // and the value is the property value.
+    // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
 
     public ImmutableMap<String, String> getJobProperties();

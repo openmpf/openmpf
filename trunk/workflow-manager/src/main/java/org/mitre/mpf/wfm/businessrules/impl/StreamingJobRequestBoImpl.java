@@ -30,8 +30,8 @@ package org.mitre.mpf.wfm.businessrules.impl;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
-import org.mitre.mpf.interop.JsonStreamingInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
+import org.mitre.mpf.rest.api.JobCreationStreamData;
+import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.IdGenerator;
@@ -39,20 +39,24 @@ import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
+import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.exceptions.*;
+import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
+import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.CallbackUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,10 +65,10 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
@@ -126,103 +130,133 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     private JobStatusBroadcaster jobStatusBroadcaster;
 
 
-    /**
-     * Create and initialize a JSON representation of a streaming job request given the raw parameters.
-     * This version of the method allows for callbacks to be defined, use null to disable. This method also
-     * does value checks, and sets additional parameters for the streaming job given the current state of streaming
-     * job request parameters.
-     *
-     * @param externalId
-     * @param pipelineName
-     * @param stream
-     * @param algorithmProperties
-     * @param jobProperties
-     * @param buildOutput                  if true, output objects will be stored and this method will assign the output object directory
-     * @param priority
-     * @param stallTimeout
-     * @param healthReportCallbackUri      callback for health reports to be sent using HTTP method POST, pass null to disable health reports
-     * @param summaryReportCallbackUri     callback for summary reports to be sent using HTTP method POST, pass null to disable summary reports
-     * @return JSON representation of the streaming job request
-     */
+
     @Override
-    public JsonStreamingJobRequest createRequest(String externalId, String pipelineName, JsonStreamingInputObject stream,
-                                                 Map<String, Map<String, String>> algorithmProperties,
-                                                 Map<String, String> jobProperties, boolean buildOutput, int priority,
-                                                 long stallTimeout,
-                                                 String healthReportCallbackUri, String summaryReportCallbackUri) {
-        log.debug("[streaming createRequest] externalId:" + externalId + ", pipeline:" + pipelineName + ", buildOutput:" + buildOutput + ", priority:" + priority +
-                ", healthReportCallbackUri:" + healthReportCallbackUri + ", summaryReportCallbackUri:" + summaryReportCallbackUri);
-        String jsonHealthReportCallbackUri = StringUtils.trimToNull(healthReportCallbackUri);
-        String jsonSummaryReportCallbackUri = StringUtils.trimToNull(summaryReportCallbackUri);
+    public StreamingJobRequest run(StreamingJobCreationRequest jobCreationRequest) {
+        validateRequest(jobCreationRequest);
 
-        String outputObjectPath = ""; // initialize output output object to empty string, the path will be set after the streaming job is submitted
-        JsonStreamingJobRequest jsonStreamingJobRequest = new JsonStreamingJobRequest(TextUtils.trim(externalId), buildOutput, outputObjectPath,
-                pipelineService.createStreamingJsonPipeline(pipelineName), priority, stream,
-                stallTimeout,
-                jsonHealthReportCallbackUri, jsonSummaryReportCallbackUri,
-                algorithmProperties, jobProperties);
+        // Create pipeline before persisting job so any pipeline errors will get reported before the job is
+        // persisted.
+        TransientPipeline pipeline
+                = pipelineService.createTransientStreamingPipeline(jobCreationRequest.getPipelineName());
 
-        return jsonStreamingJobRequest;
-    }
+        StreamingJobRequest jobRequestEntity = createJobRequestEntity(jobCreationRequest, pipeline);
 
-    /**
-     * Create a new StreamingJobRequest using the provided JSON streaming job request, persist it in the database for long-term storage,
-     * and send the streaming job request to the components using the ActiveMQ routes.
-     * Upon return, the streaming job will be persisted in the long-term database.
-     *
-     * @param jsonStreamingJobRequest JSON representation of the job request
-     * @return initialized streaming job request
-     * @throws WfmProcessingException
-     */
-    @Override
-    public StreamingJobRequest run(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
-        StreamingJobRequest streamingJobRequestEntity = initialize(jsonStreamingJobRequest);
-        return runInternal(streamingJobRequestEntity, jsonStreamingJobRequest, (jsonStreamingJobRequest == null) ? propertiesUtil.getJmsPriority() : jsonStreamingJobRequest.getPriority());
-    }
-
-    /**
-     * Create a new StreamingJobRequest using the provided JSON job request and persist it in the database for long-term storage.
-     * Upon return, the streaming job will be assigned a unique jobId and it will be persisted in the long-term database.
-     *
-     * @param jsonStreamingJobRequest JSON representation of the job request
-     * @return initialized job request, including assignment of a unique jobId
-     * @throws WfmProcessingException
-     */
-    @Override
-    public StreamingJobRequest initialize(JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
-
-        // construct a new streaming job request that is persisted in the long term database, and has a unique jobId
-        StreamingJobRequest streamingJobRequestEntity = initializeInternal(new StreamingJobRequest(), jsonStreamingJobRequest);
-
-        // If creation of output objects is enabled, now that a unique jobId has been defined for this streaming job,
-        // create the output object directory for the streaming job and store the absolute path to that directory
-        // (as a String) in the streaming job request and persist the update in the long-term database.
-        if (jsonStreamingJobRequest.isOutputObjectEnabled()) {
-            long jobId = streamingJobRequestEntity.getId();
-            try {
-                // create the output file system to be used for this streaming job
-                File outputObjectDir = propertiesUtil.createOutputObjectsDirectory(jobId);
-                String outputObjectPath = outputObjectDir.getAbsolutePath();
-
-                jsonStreamingJobRequest.setOutputObjectDirectory(outputObjectPath);
-
-                streamingJobRequestEntity.setOutputObjectDirectory(outputObjectPath);
-                streamingJobRequestEntity.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-
-                // update the streaming job request in the long-term database so that it includes the
-                // output object directory and object version information
-                streamingJobRequestDao.persist(streamingJobRequestEntity);
-            } catch (IOException wpe) {
-                String errorMessage =
-                        "Failed to create the output object file directory for streaming job " + jobId
-                                + " due to IO exception.";
-                log.error(errorMessage);
-                throw new WfmProcessingException(errorMessage, wpe);
+        try {
+            boolean enableOutput = Optional.ofNullable(jobCreationRequest.getEnableOutputToDisk())
+                    .orElseGet(propertiesUtil::isOutputObjectsEnabled);
+            if (enableOutput) {
+                File outputObjectDir = propertiesUtil.createOutputObjectsDirectory(jobRequestEntity.getId());
+                jobRequestEntity.setOutputObjectDirectory(outputObjectDir.getAbsolutePath());
+                jobRequestEntity.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
             }
+
+
+            TransientStreamingJob transientJob = createTransientJob(
+                    jobCreationRequest, jobRequestEntity, pipeline, enableOutput);
+
+            jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
+
+            jobRequestEntity = streamingJobRequestDao.persist(jobRequestEntity);
+
+            transientJob.getHealthReportCallbackURI()
+                    .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(transientJob)));
+
+            streamingJobMessageSender.launchJob(transientJob);
+
+
+            return jobRequestEntity;
+        }
+        catch (Exception e) {
+            String errorMsg = "An error occurred during job creation: " + e.getMessage();
+            log.error(errorMsg, e);
+            jobRequestEntity.setStatus(StreamingJobStatusType.JOB_CREATION_ERROR, errorMsg);
+            jobRequestEntity.setTimeCompleted(Instant.now());
+            streamingJobRequestDao.persist(jobRequestEntity);
+            throw e;
+        }
+    }
+
+
+    private StreamingJobRequest createJobRequestEntity(StreamingJobCreationRequest jobCreationRequest,
+                                                       TransientPipeline pipeline) {
+        int priority = Optional.ofNullable(jobCreationRequest.getPriority())
+                .orElseGet(propertiesUtil::getJmsPriority);
+
+        var jobRequestEntity = new StreamingJobRequest();
+        jobRequestEntity.setPriority(priority);
+        jobRequestEntity.setStatus(StreamingJobStatusType.INITIALIZING);
+        jobRequestEntity.setTimeReceived(Instant.now());
+        jobRequestEntity.setPipeline(pipeline.getName());
+        jobRequestEntity.setExternalId(StringUtils.trimToNull(jobCreationRequest.getExternalId()));
+
+        jobRequestEntity.setHealthReportCallbackUri(
+                StringUtils.trimToNull(jobCreationRequest.getHealthReportCallbackUri()));
+
+        jobRequestEntity.setSummaryReportCallbackUri(
+                StringUtils.trimToNull(jobCreationRequest.getSummaryReportCallbackUri()));
+
+        jobRequestEntity.setStreamUri(jobCreationRequest.getStream().getStreamUri());
+
+        return streamingJobRequestDao.persist(jobRequestEntity);
+    }
+
+
+    private TransientStreamingJob createTransientJob(StreamingJobCreationRequest jobCreationRequest,
+                                                     StreamingJobRequest jobRequestEntity,
+                                                     TransientPipeline pipeline,
+                                                     boolean enableOutput) {
+        var stream = new TransientStream(
+                IdGenerator.next(),
+                jobCreationRequest.getStream().getStreamUri(),
+                jobCreationRequest.getStream().getSegmentSize(),
+                jobCreationRequest.getStream().getMediaProperties());
+
+        return inProgressJobs.addJob(
+                jobRequestEntity.getId(),
+                jobRequestEntity.getExternalId(),
+                pipeline,
+                stream,
+                jobRequestEntity.getPriority(),
+                jobCreationRequest.getStallTimeout(),
+                enableOutput,
+                jobRequestEntity.getOutputObjectDirectory(),
+                jobRequestEntity.getHealthReportCallbackUri(),
+                jobRequestEntity.getSummaryReportCallbackUri(),
+                jobCreationRequest.getJobProperties(),
+                jobCreationRequest.getAlgorithmProperties());
+    }
+
+
+
+    private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(
+            UriScheme.RTSP, UriScheme.HTTP, UriScheme.HTTPS);
+
+
+    private static void validateRequest(StreamingJobCreationRequest jobCreationRequest) {
+        JobCreationStreamData stream = jobCreationRequest.getStream();
+        if (stream == null || StringUtils.isBlank(stream.getStreamUri())) {
+            throw new WfmProcessingException("A stream URI was not provided");
+        }
+        if (stream.getSegmentSize() < 10) {
+            throw new WfmProcessingException("The segment size must be at least 10.");
         }
 
-        return streamingJobRequestEntity;
+        try {
+            var uriScheme = UriScheme.get(new URI(stream.getStreamUri()));
+            if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
+                throw new WfmProcessingException(
+                        "The scheme of the provided URI is not supported. Only rtsp, http, and https are supported.");
+            }
+        }
+        catch (URISyntaxException e) {
+            throw new WfmProcessingException("Invalid URI: " + e.getMessage(), e);
+
+        }
     }
+
+
+
 
     /**
      * Marks a streaming job as CANCELLING in both the TransientStreamingJob and in the long-term database.
@@ -363,133 +397,6 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         */
     }
 
-    /**
-     * Finish initializing the StreamingJobRequest and persist it in the database for long-term storage.
-     * Upon return, the streaming job will be persisted in the long-term database.
-     *
-     * @param streamingJobRequest     partially initialized streamingJobRequest
-     * @param jsonStreamingJobRequest JSON version of the streaming job request that will be serialized into the streamingJobRequests input object
-     * @return fully initialized streamingJobRequest
-     * @throws WfmProcessingException
-     */
-    private StreamingJobRequest initializeInternal(StreamingJobRequest streamingJobRequest, JsonStreamingJobRequest jsonStreamingJobRequest) throws WfmProcessingException {
-        streamingJobRequest.setPriority(jsonStreamingJobRequest.getPriority());
-        streamingJobRequest.setStatus(StreamingJobStatusType.INITIALIZING);
-        streamingJobRequest.setTimeReceived(Instant.now());
-        streamingJobRequest.setInputObject(jsonUtils.serialize(jsonStreamingJobRequest));
-        streamingJobRequest.setPipeline(jsonStreamingJobRequest.getPipeline() == null ? null : TextUtils.trimToNullAndUpper(jsonStreamingJobRequest.getPipeline().getName()));
-
-        // Set output object version and path to null. These will be set later if creation of output objects is enabled
-        // and after the job has been persisted to the long term database (when it actually is assigned a unique jobId).
-        streamingJobRequest.setOutputObjectDirectory(null);
-        streamingJobRequest.setOutputObjectVersion(null);
-
-        // set remaining items that need to be persisted
-        streamingJobRequest.setExternalId(jsonStreamingJobRequest.getExternalId());
-        streamingJobRequest.setHealthReportCallbackUri(jsonStreamingJobRequest.getHealthReportCallbackUri());
-        streamingJobRequest.setSummaryReportCallbackUri(jsonStreamingJobRequest.getSummaryReportCallbackUri());
-        streamingJobRequest.setStreamUri(jsonStreamingJobRequest.getStream().getStreamUri());
-
-        // store the streaming job request in the long-term database.  Once the streaming job has been
-        // successfully persisted to the long-term database, the streaming jobs unique jobId will be valid.
-        return streamingJobRequestDao.persist(streamingJobRequest);
-    }
-
-    /**
-     * Send the streaming job request to the components via the Master Node Manager.
-     *
-     * @param streamingJobRequestEntity the streaming job request as persisted in the long term database
-     * @param jsonStreamingJobRequest   JSON representation of the streaming job request
-     * @param priority
-     * @return
-     * @throws WfmProcessingException Exception thrown if there is a failure while creating transient objects
-     */
-    private StreamingJobRequest runInternal(StreamingJobRequest streamingJobRequestEntity, JsonStreamingJobRequest jsonStreamingJobRequest, int priority) throws WfmProcessingException {
-        long jobId = streamingJobRequestEntity.getId();
-        log.info("[Streaming Job {}|*|*] is running at priority {}.", streamingJobRequestEntity.getId(), priority);
-
-        String errorMessage = null;
-        Exception errorException = null; // If an exception error is caught, save it so it can be provided as root cause for the WfmProcessingException
-        try {
-            TransientStreamingJob transientStreamingJob
-                    = buildStreamingJob(jobId, streamingJobRequestEntity, jsonStreamingJobRequest);
-            streamingJobMessageSender.launchJob(transientStreamingJob);
-
-        } catch (InvalidPipelineObjectWfmProcessingException ipe) {
-            errorMessage = "Streaming Job #" + jobId + " did not specify a valid pipeline.";
-            log.error(errorMessage, ipe);
-            errorException = ipe; // Save as root cause of error
-        } catch (Exception e) {
-            errorMessage = "Failed to parse the input object for Streaming Job #" + jobId
-                + " due to an exception.";
-            log.error(errorMessage, e);
-            errorException = e; // Save as root cause of error
-        }
-
-        // Mark any exception from building the transient objects as a failure by recording the error in the persistent database and throwing an exception.
-        // Note that it doesn't matter which exception occurred, the streaming job has to be marked as failed in the long-term database.
-        if ( errorMessage != null ) {
-            try {
-                // make an effort to mark the streaming job as failed in the long-term database
-                streamingJobRequestEntity.setStatus(StreamingJobStatusType.JOB_CREATION_ERROR, errorMessage);
-                streamingJobRequestEntity.setTimeCompleted(Instant.now());
-                streamingJobRequestEntity = streamingJobRequestDao.persist(streamingJobRequestEntity);
-            } catch (Exception persistException) {
-                log.warn("Failed to mark Streaming Job #{} as failed due to an exception. It will remain it its current state until manually changed.", streamingJobRequestEntity, persistException);
-            } // end of persist Exception catch
-
-            // Throw an exception providing with it the root cause, indicating a failure to create the transient objects
-            throw new WfmProcessingException("Failed to create transient job: " + errorMessage, errorException);
-        } // end of Exception catch
-
-        return streamingJobRequestEntity;
-    }
-
-    /**
-     * Builds a TransientStreamingJob.
-     *
-     * @param jobId                     unique id that is assigned to this job
-     * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
-     * @param jsonStreamingJobRequest   JSON representation of the streaming job request
-     * @return TransientStreamingJob
-     * @throws InvalidPipelineObjectWfmProcessingException InvalidPipelineObjectWfmProcessingException is thrown if the requested pipeline is invalid.
-     */
-    private TransientStreamingJob buildStreamingJob(
-            long jobId, StreamingJobRequest streamingJobRequestEntity, JsonStreamingJobRequest jsonStreamingJobRequest)
-                throws InvalidPipelineObjectWfmProcessingException {
-
-        TransientStreamingJob transientStreamingJob = inProgressJobs.addJob(
-                streamingJobRequestEntity.getId(),
-                jsonStreamingJobRequest.getExternalId(),
-                pipelineService.createTransientStreamingPipeline(jsonStreamingJobRequest.getPipeline().getName()),
-                buildTransientStream(jsonStreamingJobRequest.getStream()),
-                jsonStreamingJobRequest.getPriority(),
-                jsonStreamingJobRequest.getStallTimeout(),
-                jsonStreamingJobRequest.isOutputObjectEnabled(),
-                jsonStreamingJobRequest.getOutputObjectDirectory(),
-                jsonStreamingJobRequest.getHealthReportCallbackUri(),
-                jsonStreamingJobRequest.getSummaryReportCallbackUri(),
-                jsonStreamingJobRequest.getJobProperties(),
-                jsonStreamingJobRequest.getAlgorithmProperties());
-
-
-        // Report the current job status (INITIALIZING). The job will report IN_PROGRESS once the WFM receives a
-        // status message from the component process.
-        handleJobStatusChange(streamingJobRequestEntity.getId(),
-                new StreamingJobStatus(streamingJobRequestEntity.getStatus()),
-                System.currentTimeMillis());
-
-        return transientStreamingJob;
-    }
-
-    private static TransientStream buildTransientStream(JsonStreamingInputObject jsonInputStream) {
-        return new TransientStream(
-                IdGenerator.next(),
-                jsonInputStream.getStreamUri(),
-                jsonInputStream.getSegmentSize(),
-                jsonInputStream.getMediaProperties());
-    }
-    
 
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.
@@ -505,12 +412,13 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         TransientStreamingJob transientJob = inProgressJobs.getJob(jobId);
 
         transientJob.getHealthReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(transientJob)));
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(transientJob)));
 
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (status.isTerminal()) {
             streamingJobRequest.setTimeCompleted(Instant.ofEpochMilli(timestamp));
+            streamingJobRequest.setInputObject(jsonUtils.serialize(transientJob));
         }
         streamingJobRequest.setStatus(status.getType());
 
@@ -555,7 +463,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         inProgressJobs.setLastJobActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
         TransientStreamingJob job = inProgressJobs.getJob(jobId);
         job.getHealthReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, Collections.singletonList(job)));
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
     }
 
     @Override

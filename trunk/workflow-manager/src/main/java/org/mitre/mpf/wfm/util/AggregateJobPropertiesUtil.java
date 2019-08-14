@@ -170,8 +170,11 @@ public class AggregateJobPropertiesUtil {
             combined.put(property.getName(), property.getValue());
         }
 
-        combined.putAll(job.getOverriddenJobProperties());
-        combined.putAll(job.getOverriddenAlgorithmProperties().row(action.getAlgorithm()));
+        combined.putAll(job.getJobProperties());
+        Map<String, String> algoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
+        if (algoProps != null) {
+            combined.putAll(algoProps);
+        }
         combined.putAll(job.getStream().getMediaProperties());
         return combined;
     }

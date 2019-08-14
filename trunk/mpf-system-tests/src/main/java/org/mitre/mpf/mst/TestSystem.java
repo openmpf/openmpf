@@ -32,9 +32,12 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationStreamData;
+import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
@@ -260,14 +263,19 @@ public abstract class TestSystem {
         return jobRequestId;
     }
 
-    protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-                                       long stallTimeout) throws Exception {
-        JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
-                                                                                              Collections.emptyMap(), jobProperties,
-                                                                                              buildOutput, priority,
-                                                                                              stallTimeout,
-                                                                                              null,null);
-        long jobRequestId = streamingJobRequestBo.run(jsonStreamingJobRequest).getId();
+    protected long runPipelineOnStream(
+            String pipelineName, JobCreationStreamData stream, Map<String, String> jobProperties,
+            boolean buildOutput, int priority, long stallTimeout) {
+        var jobCreationRequest = new StreamingJobCreationRequest();
+        jobCreationRequest.setExternalId(UUID.randomUUID().toString());
+        jobCreationRequest.setPipelineName(pipelineName);
+        jobCreationRequest.setJobProperties(jobProperties);
+        jobCreationRequest.setEnableOutputToDisk(buildOutput);
+        jobCreationRequest.setPriority(priority);
+        jobCreationRequest.setStallTimeout(stallTimeout);
+        jobCreationRequest.setStream(stream);
+
+        long jobRequestId = streamingJobRequestBo.run(jobCreationRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }

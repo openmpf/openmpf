@@ -39,7 +39,6 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -50,8 +49,6 @@ import static java.util.stream.Collectors.toList;
 
 @Service
 public class PipelineServiceImpl implements PipelineService {
-
-    private final PropertiesUtil _propertiesUtil;
 
     private final ObjectMapper _objectMapper;
 
@@ -65,60 +62,99 @@ public class PipelineServiceImpl implements PipelineService {
     private final Map<String, Task> _tasks = new HashMap<>();
     private final Map<String, Pipeline> _pipelines = new HashMap<>();
 
+    // Used by methods that work on any pipeline component type so that they know where to save or load the
+    // pipeline components.
+    private final Map<Map<String, ? extends PipelineComponent>, WritableResource> _pipelineComponentsToDefinitions;
+
     @Inject
     public PipelineServiceImpl(
             PropertiesUtil propertiesUtil,
             ObjectMapper objectMapper,
             PipelineValidator validator,
             JsonUtils jsonUtils) throws IOException {
-        _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
         _validator = validator;
         _jsonUtils = jsonUtils;
 
+        _pipelineComponentsToDefinitions = new IdentityHashMap<>(4);
+        _pipelineComponentsToDefinitions.put(_algorithms, propertiesUtil.getAlgorithmDefinitions());
+        _pipelineComponentsToDefinitions.put(_actions, propertiesUtil.getActionDefinitions());
+        _pipelineComponentsToDefinitions.put(_tasks, propertiesUtil.getTaskDefinitions());
+        _pipelineComponentsToDefinitions.put(_pipelines, propertiesUtil.getPipelineDefinitions());
 
-        List<Algorithm> algorithmList;
-        try (InputStream inputStream = _propertiesUtil.getAlgorithmDefinitions().getInputStream()) {
-            algorithmList = _objectMapper.readValue(inputStream, new TypeReference<List<Algorithm>>() {});
+        load(_algorithms, new TypeReference<>() { });
+        load(_actions, new TypeReference<>() { });
+        load(_tasks, new TypeReference<>() { });
+        load(_pipelines, new TypeReference<>() { });
+    }
+
+
+
+    private <T extends PipelineComponent> void load(
+            Map<String, T> loadTarget, TypeReference<List<T>> typeReference) throws IOException {
+
+        List<T> loadedList;
+        try (var inputStream = _pipelineComponentsToDefinitions.get(loadTarget).getInputStream()) {
+            loadedList = _objectMapper.readValue(inputStream, typeReference);
         }
-        algorithmList.forEach(a -> add(a, _algorithms));
+        loadedList.forEach(item -> add(item, loadTarget));
+    }
 
 
-        List<Action> actionList;
-        try (InputStream inputStream = _propertiesUtil.getActionDefinitions().getInputStream()) {
-            actionList = _objectMapper.readValue(inputStream, new TypeReference<List<Action>>() {});
+    private <T extends PipelineComponent> void add(T newItem, Map<String, T> existingItems) {
+        _validator.validateOnAdd(newItem, existingItems);
+        existingItems.put(newItem.getName(), newItem);
+    }
+
+
+    private <T extends PipelineComponent> void save(T newItem, Map<String, T> existingItems) {
+        add(newItem, existingItems);
+        writeToDisk(existingItems);
+    }
+
+    private void delete(String name, Map<String, ?> items) {
+        boolean existed = items.remove(fixName(name)) != null;
+        if (existed) {
+            writeToDisk(_algorithms);
         }
-        actionList.forEach(a -> add(a, _actions));
+    }
 
-        List<Task> taskList;
-        try (InputStream inputStream = _propertiesUtil.getTaskDefinitions().getInputStream()) {
-            taskList = _objectMapper.readValue(inputStream, new TypeReference<List<Task>>() {});
-        }
-        taskList.forEach(t -> add(t, _tasks));
 
-        List<Pipeline> pipelineList;
-        try (InputStream inputStream = _propertiesUtil.getPipelineDefinitions().getInputStream()) {
-            pipelineList = _objectMapper.readValue(inputStream, new TypeReference<List<Pipeline>>() {});
+    private void writeToDisk(Map<String, ?> items) {
+        try (OutputStream outputStream = _pipelineComponentsToDefinitions.get(items).getOutputStream()) {
+            _objectMapper.writeValue(outputStream, items.values());
         }
-        pipelineList.forEach(p -> add(p, _pipelines));
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+
+    private static String fixName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Name cannot be null.");
+        }
+        return name.strip().toUpperCase();
     }
 
 
     @Override
     public TransientPipeline createTransientBatchPipeline(String pipelineName) {
+        pipelineName = fixName(pipelineName);
         verifyBatchPipelineRunnable(pipelineName);
         return createTransientPipeline(pipelineName);
     }
 
     @Override
     public TransientPipeline createTransientStreamingPipeline(String pipelineName) {
+        pipelineName = fixName(pipelineName);
         verifyStreamingPipelineRunnable(pipelineName);
         return createTransientPipeline(pipelineName);
     }
 
 
     private TransientPipeline createTransientPipeline(String pipelineName) {
-        Pipeline pipeline = getPipeline(pipelineName);
+        Pipeline pipeline = getPipeline(fixName(pipelineName));
 
         List<Task> tasks = pipeline.getTasks()
                 .stream()
@@ -140,7 +176,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public Algorithm getAlgorithm(String name) {
-        return _algorithms.get(name.toUpperCase());
+        return _algorithms.get(fixName(name));
     }
 
     @Override
@@ -150,7 +186,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public Action getAction(String name) {
-        return _actions.get(name.toUpperCase());
+        return _actions.get(fixName(name));
     }
 
     @Override
@@ -160,7 +196,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public Task getTask(String name) {
-        return _tasks.get(name.toUpperCase());
+        return _tasks.get(fixName(name));
     }
 
     @Override
@@ -170,7 +206,7 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public Pipeline getPipeline(String name) {
-        return _pipelines.get(name.toUpperCase());
+        return _pipelines.get(fixName(name));
     }
 
     @Override
@@ -181,50 +217,47 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public void save(Algorithm algorithm) {
-        add(algorithm, _algorithms);
-        writeToDisk(_algorithms, _propertiesUtil.getAlgorithmDefinitions());
+        save(algorithm, _algorithms);
     }
 
 
     @Override
     public void save(Action action) {
-        add(action, _actions);
-        writeToDisk(_actions, _propertiesUtil.getActionDefinitions());
+        save(action, _actions);
     }
 
 
     @Override
     public void save(Task task) {
-        add(task, _tasks);
-        writeToDisk(_tasks, _propertiesUtil.getTaskDefinitions());
+        save(task, _tasks);
     }
 
 
     @Override
     public void save(Pipeline pipeline) {
-        add(pipeline, _pipelines);
-        writeToDisk(_pipelines, _propertiesUtil.getPipelineDefinitions());
+        save(pipeline, _pipelines);
     }
+
 
 
     @Override
     public void verifyBatchPipelineRunnable(String pipelineName) {
-        _validator.verifyBatchPipelineRunnable(pipelineName, _pipelines, _tasks, _actions, _algorithms);
+        _validator.verifyBatchPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
 
     @Override
     public void verifyStreamingPipelineRunnable(String pipelineName) {
-        _validator.verifyStreamingPipelineRunnable(pipelineName, _pipelines, _tasks, _actions, _algorithms);
+        _validator.verifyStreamingPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
 
     @Override
     public boolean pipelineSupportsBatch(String pipelineName) {
-        return pipelineSupportsProcessingType(pipelineName, Algorithm::getSupportsBatchProcessing);
+        return pipelineSupportsProcessingType(fixName(pipelineName), Algorithm::getSupportsBatchProcessing);
     }
 
     @Override
     public boolean pipelineSupportsStreaming(String pipelineName) {
-        return pipelineSupportsProcessingType(pipelineName, Algorithm::getSupportsStreamProcessing);
+        return pipelineSupportsProcessingType(fixName(pipelineName), Algorithm::getSupportsStreamProcessing);
 
     }
 
@@ -245,58 +278,35 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public void deleteAlgorithm(String algorithmName) {
-        if (_algorithms.remove(algorithmName.toUpperCase()) != null) {
-            writeToDisk(_algorithms, _propertiesUtil.getAlgorithmDefinitions());
-        }
+        delete(algorithmName, _algorithms);
     }
-
 
     @Override
     public void deleteAction(String actionName) {
-        if (_actions.remove(actionName.toUpperCase()) != null) {
-            writeToDisk(_actions, _propertiesUtil.getActionDefinitions());
-        }
+        delete(actionName, _actions);
     }
 
 
     @Override
     public void deleteTask(String taskName) {
-        if (_tasks.remove(taskName.toUpperCase()) != null)  {
-            writeToDisk(_tasks, _propertiesUtil.getTaskDefinitions());
-        }
+        delete(taskName, _tasks);
     }
 
 
     @Override
     public void deletePipeline(String pipelineName) {
-        if (_pipelines.remove(pipelineName.toUpperCase()) != null) {
-            writeToDisk(_pipelines, _propertiesUtil.getPipelineDefinitions());
-        }
+        delete(pipelineName, _pipelines);
     }
 
-
-    private void writeToDisk(Map<String, ?> items, WritableResource destination) {
-        try (OutputStream outputStream = destination.getOutputStream()) {
-            _objectMapper.writeValue(outputStream, items.values());
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private <T extends PipelineComponent> void add(T newItem, Map<String, T> items) {
-        _validator.validateOnAdd(newItem, items);
-        items.put(newItem.getName(), newItem);
-    }
 
 
     @Override
     public JsonPipeline createBatchJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(createTransientBatchPipeline(pipelineName));
+        return _jsonUtils.convert(createTransientBatchPipeline(fixName(pipelineName)));
     }
 
     @Override
     public JsonPipeline createStreamingJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(createTransientStreamingPipeline(pipelineName));
+        return _jsonUtils.convert(createTransientStreamingPipeline(fixName(pipelineName)));
     }
 }

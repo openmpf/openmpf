@@ -107,7 +107,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
                 streamingService.getLibraryPath(),
                 environmentVariables,
                 jobProperties,
-                job.getStream().getMetadata(),
+                Map.of(),
                 _properties.getAmqUri(),
                 StreamingEndpoints.WFM_STREAMING_JOB_STATUS.queueName(),
                 StreamingEndpoints.WFM_STREAMING_JOB_ACTIVITY.queueName(),

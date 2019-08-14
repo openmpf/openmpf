@@ -135,8 +135,7 @@ public class TestStreamingJobMessageSender {
                 5234,
                 "stream://myStream",
                 543,
-                ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"),
-                ImmutableMap.of("mediaProp1", "mediaVal1"));
+                ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"));
 
         long jobId = 1234;
         TransientStreamingJob job = new TransientStreamingJobImpl(
@@ -197,8 +196,6 @@ public class TestStreamingJobMessageSender {
         assertEquals("Job Overridden Value", launchMessage.jobProperties.get("OVERRIDDEN JOB PROPERTY"));
         assertEquals("Stream Specific Value", launchMessage.jobProperties.get("OVERRIDDEN STREAM PROPERTY"));
 
-
-        assertEquals("mediaVal1", launchMessage.mediaProperties.get("mediaProp1"));
 
         assertEquals(activeMqUri, launchMessage.messageBrokerUri);
         assertEquals(StreamingEndpoints.WFM_STREAMING_JOB_STATUS.queueName(), launchMessage.jobStatusQueue);

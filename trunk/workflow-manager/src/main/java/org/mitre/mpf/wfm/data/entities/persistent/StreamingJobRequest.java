@@ -38,33 +38,33 @@ import java.time.Instant;
 @Entity
 public class StreamingJobRequest {
 
-	public StreamingJobRequest() { }
+    public StreamingJobRequest() { }
 
-	/** The unique numeric identifier for this job.
-	 * 	Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
-	 * */
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private long id;
-	public long getId() { return id; }
+    /** The unique numeric identifier for this job.
+     * 	Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
+     * */
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private long id;
+    public long getId() { return id; }
 
-	/** The timestamp indicating when the server received this streaming job. */
-	@Column
-	private Instant timeReceived;
-	public Instant getTimeReceived() { return timeReceived; }
-	public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
+    /** The timestamp indicating when the server received this streaming job. */
+    @Column
+    private Instant timeReceived;
+    public Instant getTimeReceived() { return timeReceived; }
+    public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
 
-	/** The timestamp indicating when the server completed this streaming job.*/
-	@Column
-	private Instant timeCompleted;
-	public Instant getTimeCompleted() { return timeCompleted; }
-	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
-	
-	/** The priority of the job set when creating the streaming job.*/
-	@Column	
-	private int priority;
-	public int getPriority() { return  priority; }
-	public void setPriority(int priority) { this.priority = priority; }
+    /** The timestamp indicating when the server completed this streaming job.*/
+    @Column
+    private Instant timeCompleted;
+    public Instant getTimeCompleted() { return timeCompleted; }
+    public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
+
+    /** The priority of the job set when creating the streaming job.*/
+    @Column
+    private int priority;
+    public int getPriority() { return  priority; }
+    public void setPriority(int priority) { this.priority = priority; }
 
     /** The current status of this streaming job.
      * Streaming job status includes condition status as defined by StreamingJobStatusType.
@@ -87,46 +87,46 @@ public class StreamingJobRequest {
     public String getStatusDetail() { return statusDetail; }
     public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
 
-	@Column
-	@Lob
-	private byte[] inputObject;
-	public byte[] getInputObject() { return inputObject; }
-	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
+    @Column
+    @Lob
+    private byte[] inputObject;
+    public byte[] getInputObject() { return inputObject; }
+    public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column(columnDefinition = "TEXT")
-	private String outputObjectDirectory;
-	public String getOutputObjectDirectory() { return outputObjectDirectory; }
-	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
+    @Column(columnDefinition = "TEXT")
+    private String outputObjectDirectory;
+    public String getOutputObjectDirectory() { return outputObjectDirectory; }
+    public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
 
-	@Column
-	private String pipeline;
-	public String getPipeline() { return pipeline; }
-	public void setPipeline(String pipeline) { this.pipeline = pipeline; }
+    @Column
+    private String pipeline;
+    public String getPipeline() { return pipeline; }
+    public void setPipeline(String pipeline) { this.pipeline = pipeline; }
 
-	@Column
-	private String externalId;
-	public String getExternalId() { return externalId; }
-	public void setExternalId(String externalId) { this.externalId = externalId; }
+    @Column
+    private String externalId;
+    public String getExternalId() { return externalId; }
+    public void setExternalId(String externalId) { this.externalId = externalId; }
 
-	@Column(columnDefinition = "TEXT")
-	private String streamUri;
-	public String getStreamUri() { return streamUri; }
-	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
+    @Column(columnDefinition = "TEXT")
+    private String streamUri;
+    public String getStreamUri() { return streamUri; }
+    public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
 
-	@Column(columnDefinition = "TEXT")
-	private String healthReportCallbackUri;
-	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
-	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
+    @Column(columnDefinition = "TEXT")
+    private String healthReportCallbackUri;
+    public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
+    public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
-	@Column(columnDefinition = "TEXT")
-	private String summaryReportCallbackUri;
-	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
-	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
+    @Column(columnDefinition = "TEXT")
+    private String summaryReportCallbackUri;
+    public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
+    public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }
 
-	/** The version of the output object. */
-	@Column
-	private String outputObjectVersion;
-	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
+    /** The version of the output object. */
+    @Column
+    private String outputObjectVersion;
+    public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
     @Column
     private String activityFrameId;

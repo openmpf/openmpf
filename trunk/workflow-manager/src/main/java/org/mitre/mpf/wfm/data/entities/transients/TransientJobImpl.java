@@ -199,7 +199,8 @@ public class TransientJobImpl implements TransientJob {
 
         _jobProperties = ImmutableMap.copyOf(jobProperties);
 
-        _overriddenAlgorithmProperties = overriddenAlgorithmProperties.entrySet()
+        _overriddenAlgorithmProperties = overriddenAlgorithmProperties
+                .entrySet()
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);

@@ -27,15 +27,12 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
-import org.mitre.mpf.interop.JsonStreamingInputObject;
-import org.mitre.mpf.interop.JsonStreamingJobRequest;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -102,7 +99,10 @@ public class StreamingJobController {
             @ApiResponse(code = 400, message = "Bad request"),
             @ApiResponse(code = 401, message = "Bad credentials")})
     @ResponseBody
-    public ResponseEntity<StreamingJobCreationResponse> createStreamingJobRest(@ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody StreamingJobCreationRequest streamingJobCreationRequest) {
+    public ResponseEntity<StreamingJobCreationResponse> createStreamingJobRest(
+            @ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody
+                    StreamingJobCreationRequest streamingJobCreationRequest) {
+
         StreamingJobCreationResponse createResponse = createStreamingJobInternal(streamingJobCreationRequest);
         if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
@@ -219,58 +219,9 @@ public class StreamingJobController {
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
 
         try {
-            if ( !streamingJobCreationRequest.isValidRequest() ) {
-                // The streaming job failed the API syntax check, the job request is malformed. Reject the job and send an error response.
-                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(), "malformed request");
-            }
-            else if ( !TransientStream.isSupportedUriScheme(streamingJobCreationRequest.getStream().getStreamUri()) ) {
-                // The streaming job failed the check for supported stream protocol check, so OpenMPF can't process the requested stream URI.
-                // Reject the job and send an error response.
-                return createStreamingJobCreationErrorResponse(streamingJobCreationRequest.getExternalId(),
-                    "malformed or unsupported stream URI: " + streamingJobCreationRequest.getStream().getStreamUri());
-            }
-            else {
-                pipelineService.verifyStreamingPipelineRunnable(streamingJobCreationRequest.getPipelineName());
-
-                boolean enableOutputToDisk = propertiesUtil.isOutputObjectsEnabled();
-                if ( streamingJobCreationRequest.getEnableOutputToDisk() != null ) {
-                  enableOutputToDisk = streamingJobCreationRequest.getEnableOutputToDisk();
-                }
-
-                int priority = propertiesUtil.getJmsPriority();
-                if ( streamingJobCreationRequest.getPriority() != null ) {
-                    priority = streamingJobCreationRequest.getPriority();
-                }
-
-                JsonStreamingInputObject json_stream = new JsonStreamingInputObject(
-                        streamingJobCreationRequest.getStream().getStreamUri(),
-                        streamingJobCreationRequest.getSegmentSize(),
-                        streamingJobCreationRequest.getMediaProperties());
-
-                JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(
-                        streamingJobCreationRequest.getExternalId(),
-                        streamingJobCreationRequest.getPipelineName(),
-                        json_stream,
-                        streamingJobCreationRequest.getAlgorithmProperties(),
-                        streamingJobCreationRequest.getJobProperties(),
-                        enableOutputToDisk,
-                        priority,
-                        streamingJobCreationRequest.getStallTimeout(),
-                        streamingJobCreationRequest.getHealthReportCallbackUri(),
-                        streamingJobCreationRequest.getSummaryReportCallbackUri());
-
-                // submit the streaming job to MPF services.  Note that the jobId of the streaming job is
-                // created when the job is submitted to the MPF service because that is when the streaming job
-                // is persisted in the long term database, and the streaming jobs output object file system
-                // will be created using the assigned jobId, if the creation of output objects is enabled .
-                long jobId = streamingJobRequestBo.run(jsonStreamingJobRequest).getId();
-                log.debug("Successful creation of streaming JobId {}", jobId);
-
-                // get the streamingJobRequest so we can pass along the output object directory in the
-                // streaming job creation response.
-                StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
-                return new StreamingJobCreationResponse( jobId, streamingJobRequest.getOutputObjectDirectory() );
-            }
+            StreamingJobRequest jobRequestEntity = streamingJobRequestBo.run(streamingJobCreationRequest);
+            return new StreamingJobCreationResponse(jobRequestEntity.getId(),
+                                                    jobRequestEntity.getOutputObjectDirectory());
         }
         catch (Exception ex) {
             StringBuilder errBuilder = new StringBuilder("Failure creating streaming job");

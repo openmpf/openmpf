@@ -27,7 +27,9 @@
 
 package org.mitre.mpf.wfm.pipeline;
 
-public class InvalidPipelineException extends RuntimeException {
+import org.mitre.mpf.wfm.WfmProcessingException;
+
+public class InvalidPipelineException extends WfmProcessingException {
 
     public InvalidPipelineException(String message) {
         super(message);

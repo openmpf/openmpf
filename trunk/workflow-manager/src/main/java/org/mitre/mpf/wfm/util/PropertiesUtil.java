@@ -314,11 +314,16 @@ public class PropertiesUtil {
      * @return directory that was created under the output objects directory for storage of files from this job
      * @throws IOException
      */
-    public File createOutputObjectsDirectory(long jobId) throws IOException {
-        String fileName = String.format("%d", jobId);
-        Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
-        Files.createDirectories(path);
-        return path.toFile();
+    public File createOutputObjectsDirectory(long jobId) {
+        try {
+            String fileName = String.format("%d", jobId);
+            Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
+            Files.createDirectories(path);
+            return path.toFile();
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** Create the output object file in the specified streaming job output objects directory

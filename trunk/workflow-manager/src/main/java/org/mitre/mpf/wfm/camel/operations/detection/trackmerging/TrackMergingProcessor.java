@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -98,14 +99,14 @@ public class TrackMergingProcessor extends WfmProcessor {
             Action action = job.getTransientPipeline()
                     .getAction(trackMergingContext.getStageIndex(), actionIndex);
 
-            for (TransientMedia transientMedia : job.getMedia()) {
+            for (Media media : job.getMedia()) {
 
                 // NOTE: Only perform track merging and track pruning on video data.
-                if (!transientMedia.getMediaType().equals(MediaType.VIDEO) || transientMedia.isFailed()) {
+                if (!media.getMediaType().equals(MediaType.VIDEO) || media.isFailed()) {
                     continue;
                 }
 
-                TrackMergingPlan trackMergingPlan = createTrackMergingPlan(job, transientMedia, action);
+                TrackMergingPlan trackMergingPlan = createTrackMergingPlan(job, media, action);
 
                 boolean mergeRequested = trackMergingPlan.isMergeTracks();
                 boolean pruneRequested = trackMergingPlan.getMinTrackLength() > 1;
@@ -115,7 +116,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 }
 
                 SortedSet<Track> tracks = inProgressJobs.getTracks(
-                        trackMergingContext.getJobId(), transientMedia.getId(), trackMergingContext.getStageIndex(),
+                        trackMergingContext.getJobId(), media.getId(), trackMergingContext.getStageIndex(),
                         actionIndex);
 
                 if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
@@ -128,7 +129,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
                     log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
                               trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-                              initialSize, tracks.size(), transientMedia.getId());
+                              initialSize, tracks.size(), media.getId());
                 }
 
                 if (pruneRequested) {
@@ -140,10 +141,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 
                     log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
                               trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
-                              initialSize, tracks.size(), minTrackLength, transientMedia.getId());
+                              initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 
-                inProgressJobs.setTracks(trackMergingContext.getJobId(), transientMedia.getId(),
+                inProgressJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
                                          trackMergingContext.getStageIndex(), actionIndex, tracks);
             }
         }
@@ -151,10 +152,10 @@ public class TrackMergingProcessor extends WfmProcessor {
         exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
     }
 
-    private TrackMergingPlan createTrackMergingPlan(BatchJob job, TransientMedia transientMedia,
+    private TrackMergingPlan createTrackMergingPlan(BatchJob job, Media media,
                                                     Action action) {
         Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
-                job, transientMedia, action);
+                job, media, action);
 
         // If there exist media-specific properties for track merging, use them.
         String minTrackLengthProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_LENGTH);

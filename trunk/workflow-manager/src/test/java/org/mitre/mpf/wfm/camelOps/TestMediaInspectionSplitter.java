@@ -35,7 +35,7 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mockito.InjectMocks;
@@ -80,7 +80,7 @@ public class TestMediaInspectionSplitter {
 
         long testMediaId = 123456;
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
-        var testMedia = new TransientMediaImpl(
+        var testMedia = new MediaImpl(
                 testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(), null);
 
         var testJob = new BatchJobImpl(

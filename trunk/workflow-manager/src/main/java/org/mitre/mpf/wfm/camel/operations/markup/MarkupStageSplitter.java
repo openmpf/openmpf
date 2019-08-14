@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
@@ -91,7 +92,7 @@ public class MarkupStageSplitter implements StageSplitter {
     }
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-    private BoundingBoxMap createMap(BatchJob job, TransientMedia media, int taskIndex, Task task) {
+    private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
@@ -193,28 +194,28 @@ public class MarkupStageSplitter implements StageSplitter {
             String actionName = task.getActions().get(actionIndex);
             Action action = job.getTransientPipeline().getAction(actionName);
             int mediaIndex = -1;
-            for (TransientMedia transientMedia : job.getMedia()) {
+            for (Media media : job.getMedia()) {
                 mediaIndex++;
-                if (transientMedia.isFailed()) {
-                    log.debug("Skipping '{}' - it is in an error state.", transientMedia.getId(), transientMedia.getLocalPath());
-                } else if(!StringUtils.startsWith(transientMedia.getType(), "image") && !StringUtils.startsWith(transientMedia.getType(), "video")) {
-                    log.debug("Skipping Media {} - only image and video files are eligible for markup.", transientMedia.getId());
+                if (media.isFailed()) {
+                    log.debug("Skipping '{}: {}' - it is in an error state.", media.getId(), media.getLocalPath());
+                } else if(!StringUtils.startsWith(media.getType(), "image") && !StringUtils.startsWith(media.getType(), "video")) {
+                    log.debug("Skipping Media {} - only image and video files are eligible for markup.", media.getId());
                 } else {
                     List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
-                            = createMap(job, transientMedia, lastDetectionTaskIndex,
+                            = createMap(job, media, lastDetectionTaskIndex,
                                         job.getTransientPipeline().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
                     Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
                             .setTaskIndex(job.getCurrentTaskIndex())
                             .setActionIndex(actionIndex)
-                            .setMediaId(transientMedia.getId())
-                            .setMediaType(Markup.MediaType.valueOf(transientMedia.getMediaType().toString().toUpperCase()))
+                            .setMediaId(media.getId())
+                            .setMediaType(Markup.MediaType.valueOf(media.getMediaType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
-                            .setSourceUri(transientMedia.getLocalPath().toUri().toString())
+                            .setSourceUri(media.getLocalPath().toUri().toString())
                             .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                                       propertiesUtil.createMarkupPath(job.getId(), transientMedia.getId(), getMarkedUpMediaExtensionForMediaType(transientMedia.getMediaType())).toUri().toString() :
-                                                       propertiesUtil.createMarkupPath(job.getId(), transientMedia.getId(), getFileExtension(transientMedia.getType())).toUri().toString())
+                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getMediaType())).toUri().toString() :
+                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getType())).toUri().toString())
                             .addAllMapEntries(boundingBoxMapEntryList)
                             .build();
 

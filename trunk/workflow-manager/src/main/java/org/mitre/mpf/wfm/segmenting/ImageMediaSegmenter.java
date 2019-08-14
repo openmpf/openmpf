@@ -32,7 +32,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -48,7 +48,7 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 
 
 	@Override
-	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
+	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
 
 		if (context.isFirstDetectionStage()) {
 			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
@@ -65,7 +65,7 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
+	private static Message createProtobufMessage(Media media, DetectionContext context,
 	                                             ImageRequest imageRequest) {
 		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
 				.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
@@ -78,7 +78,7 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+	private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
 			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());

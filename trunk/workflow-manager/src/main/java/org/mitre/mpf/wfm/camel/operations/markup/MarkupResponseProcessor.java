@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.service.StorageService;
@@ -80,9 +80,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
         BatchJob job = inProgressJobs.getJob(jobId);
-        TransientMedia transientMedia = job.getMedia(markupResponse.getMediaId());
+        Media media = job.getMedia(markupResponse.getMediaId());
         markupResult.setPipeline(job.getTransientPipeline().getName());
-        markupResult.setSourceUri(transientMedia.getUri());
+        markupResult.setSourceUri(media.getUri());
 
         storageService.store(markupResult);
         markupResultDao.persist(markupResult);

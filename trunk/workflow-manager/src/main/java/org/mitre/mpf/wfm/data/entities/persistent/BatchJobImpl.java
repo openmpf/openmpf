@@ -33,7 +33,6 @@ import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -80,11 +79,11 @@ public class BatchJobImpl implements BatchJob {
     public boolean isOutputEnabled() { return _outputEnabled; }
 
 
-    private final ImmutableSortedMap<Long, TransientMediaImpl> _media;
+    private final ImmutableSortedMap<Long, MediaImpl> _media;
     @Override
-    public ImmutableCollection<TransientMediaImpl> getMedia() { return _media.values(); }
+    public ImmutableCollection<MediaImpl> getMedia() { return _media.values(); }
     @Override
-    public TransientMediaImpl getMedia(long mediaId) {
+    public MediaImpl getMedia(long mediaId) {
         return _media.get(mediaId);
     }
 
@@ -163,7 +162,7 @@ public class BatchJobImpl implements BatchJob {
             boolean outputEnabled,
             String callbackUrl,
             String callbackMethod,
-            Collection<TransientMediaImpl> media,
+            Collection<MediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, transientPipeline, priority, outputEnabled, callbackUrl,
@@ -181,7 +180,7 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("outputEnabled") boolean outputEnabled,
             @JsonProperty("callbackUrl") String callbackUrl,
             @JsonProperty("callbackMethod") String callbackMethod,
-            @JsonProperty("media") Collection<TransientMediaImpl> media,
+            @JsonProperty("media") Collection<MediaImpl> media,
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
@@ -198,7 +197,7 @@ public class BatchJobImpl implements BatchJob {
         _media = media.stream()
                 .collect(ImmutableSortedMap.toImmutableSortedMap(
                         Comparator.naturalOrder(),
-                        TransientMediaImpl::getId,
+                        MediaImpl::getId,
                         Function.identity()));
 
         _jobProperties = ImmutableMap.copyOf(jobProperties);

@@ -33,7 +33,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 	@Override
 	public List<Message> createDetectionRequestMessages(
-			TransientMedia media, DetectionContext context) {
+			Media media, DetectionContext context) {
 		if (context.isFirstDetectionStage()) {
 			return createTimePairMessages(
 					media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
@@ -65,7 +65,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 
 	private static List<Message> createTimePairMessages(
-			TransientMedia media, DetectionContext context, Collection<TimePair> trackTimePairs) {
+			Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
 
 		List<TimePair> segments = MediaSegmenter.createSegments(
 				trackTimePairs,
@@ -94,7 +94,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 
 	private static Message createProtobufMessage(
-			TransientMedia media,
+			Media media,
 			DetectionContext context,
 			VideoRequest videoRequest) {
 
@@ -109,7 +109,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+	private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
 		int topConfidenceCount = getTopConfidenceCount(context);
 
 		List<Message> messages = new ArrayList<>();

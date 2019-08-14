@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.data;
 
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +102,7 @@ public class RedisImpl implements Redis {
     public void clearTracks(BatchJob job) {
         Collection<String> trackKeys = new ArrayList<>();
         int taskCount = job.getTransientPipeline().getPipeline().getTasks().size();
-        for (TransientMedia media : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             for (int taskIndex = 0; taskIndex < taskCount; taskIndex++) {
                 int actionCount = job.getTransientPipeline().getTask(taskIndex).getActions().size();
                 for (int actionIndex = 0; actionIndex < actionCount; actionIndex++) {

@@ -33,6 +33,8 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -97,7 +99,7 @@ public class TestUtil {
             Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
 
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        TransientMedia media = new TransientMediaImpl(
+        Media media = new MediaImpl(
                 234234, mediaUri.toString(), UriScheme.FILE, Paths.get(mediaUri), Collections.emptyMap(), null);
 
         Algorithm algorithm = new Algorithm(

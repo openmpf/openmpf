@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -122,7 +122,7 @@ public class AggregateJobPropertiesUtil {
      */
     private static PropertyInfo calculateValue(String propertyName,
                                                Action action,
-                                               TransientMedia media,
+                                               Media media,
                                                BatchJob job) {
 
         Map<String, String> mediaProperties = media.getMediaSpecificProperties();
@@ -187,19 +187,19 @@ public class AggregateJobPropertiesUtil {
 
 
     public static String calculateFrameInterval(Action action, BatchJob job,
-                                                TransientMedia transientMedia,
+                                                Media media,
                                                 int systemFrameInterval, int systemFrameRateCap, double mediaFPS) {
 
         PropertyInfo frameIntervalPropInfo = AggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                 action,
-                transientMedia,
+                media,
                 job);
 
         PropertyInfo frameRateCapPropInfo = AggregateJobPropertiesUtil.calculateValue(
                 MpfConstants.FRAME_RATE_CAP_PROPERTY,
                 action,
-                transientMedia,
+                media,
                 job);
 
         if (frameIntervalPropInfo.getLevel() == PropertyLevel.NONE) {
@@ -245,7 +245,7 @@ public class AggregateJobPropertiesUtil {
     // Priority:
     // media props > overridden algorithm props > job props > action props > default algo props >
     // snapshot props > system props
-    public String calculateValue(String propertyName, BatchJob job, TransientMedia media,
+    public String calculateValue(String propertyName, BatchJob job, Media media,
                                  Action action) {
         return calculateValue(
                 propertyName,
@@ -261,7 +261,7 @@ public class AggregateJobPropertiesUtil {
     public Function<String, String> getCombinedProperties(
             Action action,
             TransientPipeline pipeline,
-            TransientMedia media,
+            Media media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             SystemPropertiesSnapshot propertiesSnapshot) {
@@ -341,14 +341,14 @@ public class AggregateJobPropertiesUtil {
     // Priority:
     // media props > overridden algorithm props > job props > action props > default algo props >
     // snapshot props > system props
-    public Function<String, String> getCombinedProperties(BatchJob job, TransientMedia media,
+    public Function<String, String> getCombinedProperties(BatchJob job, Media media,
                                                           Action action) {
         return propName -> calculateValue(propName, job, media, action);
     }
 
 
 
-    public Function<String, String> getCombinedProperties(BatchJob job, TransientMedia media) {
+    public Function<String, String> getCombinedProperties(BatchJob job, Media media) {
         return propName -> calculateValue(
                 propName,
                 media.getMediaSpecificProperties(),
@@ -363,7 +363,7 @@ public class AggregateJobPropertiesUtil {
 
     public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var mediaProperties = Map.<String, String>of();
-        for (TransientMedia media : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             try {
                 if (mediaUri.equals(new URI(media.getUri()))) {
                     mediaProperties = media.getMediaSpecificProperties();
@@ -402,7 +402,7 @@ public class AggregateJobPropertiesUtil {
                 .stream()
                 .filter(m -> URI.create(m.getUri()).equals(URI.create(markup.getSourceUri())))
                 .findAny()
-                .map(TransientMedia::getMediaSpecificProperties)
+                .map(Media::getMediaSpecificProperties)
                 .orElseGet(ImmutableMap::of);
 
         Action action = transientJob.getTransientPipeline().getAction(markup.getTaskIndex(), markup.getActionIndex());

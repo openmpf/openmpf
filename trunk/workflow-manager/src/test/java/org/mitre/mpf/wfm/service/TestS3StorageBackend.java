@@ -40,7 +40,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -271,7 +271,7 @@ public class TestS3StorageBackend {
     private void verifyThrowsExceptionWhenDownloading(String uri) {
         Map<String, String> s3Properties = getS3Properties();
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(uri);
         try {
@@ -363,7 +363,7 @@ public class TestS3StorageBackend {
         long jobId = 1243;
         long mediaId = 432;
 
-        var media = mock(TransientMedia.class);
+        var media = mock(Media.class);
 
         var job = mock(BatchJob.class);
         when(job.getMedia(mediaId))
@@ -402,7 +402,7 @@ public class TestS3StorageBackend {
 
         var markupResult = mock(MarkupResult.class);
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
-        var media = mock(TransientMedia.class);
+        var media = mock(Media.class);
 
         var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
                                       new Algorithm.Requires(List.of()),
@@ -590,7 +590,7 @@ public class TestS3StorageBackend {
         Map<String, String> s3Properties = getS3Properties();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(EXPECTED_URI.toString());
         when(media.getLocalPath())
@@ -617,7 +617,7 @@ public class TestS3StorageBackend {
 
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
         when(media.getLocalPath())
@@ -641,7 +641,7 @@ public class TestS3StorageBackend {
                 .thenReturn(2);
 
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(EXPECTED_URI.toString());
         when(media.getLocalPath())
@@ -667,7 +667,7 @@ public class TestS3StorageBackend {
     public void throwsStorageExceptionWhenRemoteFileMissing() throws IOException {
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
         when(media.getLocalPath())

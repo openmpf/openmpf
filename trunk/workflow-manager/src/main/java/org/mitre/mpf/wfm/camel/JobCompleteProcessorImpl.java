@@ -49,6 +49,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -248,15 +249,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         boolean hasDetectionProcessingError = false;
 
         int mediaIndex = 0;
-        for (TransientMedia transientMedia : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(transientMedia.getId(), transientMedia.getUri(), transientMedia.getType(),
-                                                                                transientMedia.getLength(), transientMedia.getSha256(), transientMedia.getMessage(),
-                                                                                transientMedia.isFailed() ? "ERROR" : "COMPLETE");
+            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(), media.getType(),
+                                                                                media.getLength(), media.getSha256(), media.getMessage(),
+                                                                                media.isFailed() ? "ERROR" : "COMPLETE");
 
-            mediaOutputObject.getMediaMetadata().putAll(transientMedia.getMetadata());
-            mediaOutputObject.getMediaProperties().putAll(transientMedia.getMediaSpecificProperties());
+            mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
+            mediaOutputObject.getMediaProperties().putAll(media.getMediaSpecificProperties());
 
             MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
             if(markupResult != null) {
@@ -264,7 +265,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
 
-            Set<Integer> suppressedStages = getSuppressedStages(transientMedia, job);
+            Set<Integer> suppressedStages = getSuppressedStages(media, job);
 
             for (int taskIndex = 0; taskIndex < job.getTransientPipeline().getTaskCount(); taskIndex++) {
                 Task task = job.getTransientPipeline().getTask(taskIndex);
@@ -273,7 +274,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
-                                job, transientMedia.getId(), taskIndex, actionIndex)) {
+                                job, media.getId(), taskIndex, actionIndex)) {
                         hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
                         JsonDetectionProcessingError jsonDetectionProcessingError
                                 = new JsonDetectionProcessingError(
@@ -292,7 +293,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         }
                     }
 
-                    Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, transientMedia.getId(),
+                    Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
                     if(tracks.isEmpty()) {
                         // Always include detection actions in the output object, even if they do not generate any results.
@@ -305,7 +306,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     else {
                         for (Track track : tracks) {
                             JsonTrackOutputObject jsonTrackOutputObject
-                                    = createTrackOutputObject(track, stateKey, action, transientMedia,
+                                    = createTrackOutputObject(track, stateKey, action, media,
                                                               job);
 
                             String type = jsonTrackOutputObject.getType();
@@ -364,12 +365,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
                                                           Action action,
-                                                          TransientMedia transientMedia,
+                                                          Media media,
                                                           BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
         String exemplarsOnlyProp = aggregateJobPropertiesUtil.calculateValue(
-                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, job, transientMedia, action);
+                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, job, media, action);
         boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
 
         List<JsonDetectionOutputObject> detections;
@@ -383,7 +384,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
 
         return new JsonTrackOutputObject(
-                TextUtils.getTrackUuid(transientMedia.getSha256(),
+                TextUtils.getTrackUuid(media.getSha256(),
                                        track.getExemplar().getMediaOffsetFrame(),
                                        track.getExemplar().getX(),
                                        track.getExemplar().getY(),
@@ -433,10 +434,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static boolean isOutputLastStageOnly(TransientMedia transientMedia, BatchJob job) {
+    private static boolean isOutputLastStageOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_STAGE_ONLY to a single stage.
-        String mediaProperty = transientMedia.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
+        String mediaProperty = media.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
         if (mediaProperty != null) {
             return Boolean.parseBoolean(mediaProperty);
         }
@@ -451,8 +452,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static Set<Integer> getSuppressedStages(TransientMedia transientMedia, BatchJob job) {
-        if (!isOutputLastStageOnly(transientMedia, job)) {
+    private static Set<Integer> getSuppressedStages(Media media, BatchJob job) {
+        if (!isOutputLastStageOnly(media, job)) {
             return Set.of();
         }
 
@@ -486,13 +487,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private JmsUtils jmsUtils;
 
     private void destroy(BatchJob batchJob) throws WfmProcessingException {
-        for(TransientMedia transientMedia : batchJob.getMedia()) {
-            if(transientMedia.getUriScheme().isRemote() && transientMedia.getLocalPath() != null) {
+        for(Media media : batchJob.getMedia()) {
+            if(media.getUriScheme().isRemote() && media.getLocalPath() != null) {
                 try {
-                    Files.deleteIfExists(transientMedia.getLocalPath());
+                    Files.deleteIfExists(media.getLocalPath());
                 } catch(IOException exception) {
                     log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.",
-                             batchJob.getId(), transientMedia.getLocalPath());
+                             batchJob.getId(), media.getLocalPath());
                 }
             }
         }

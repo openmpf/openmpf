@@ -35,8 +35,8 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 import java.net.URI;
@@ -54,7 +54,7 @@ public class TestAudioMediaSegmenter {
 
 	@Test
 	public void canCreateFirstStageMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
 				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
@@ -73,7 +73,7 @@ public class TestAudioMediaSegmenter {
 
 	@Test
 	public void canCreateNonFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -93,7 +93,7 @@ public class TestAudioMediaSegmenter {
 
 	@Test
 	public void canCreateFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -119,14 +119,14 @@ public class TestAudioMediaSegmenter {
 
 	@Test
 	public void noMessagesCreatedWhenNoFeedForwardTracks() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 		assertTrue(runAudioSegmenter(media, feedForwardContext).isEmpty());
 	}
 
 
-	private static List<DetectionRequest> runAudioSegmenter(TransientMedia media, DetectionContext context) {
+	private static List<DetectionRequest> runAudioSegmenter(Media media, DetectionContext context) {
 		MediaSegmenter segmenter = new AudioMediaSegmenter();
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
@@ -152,9 +152,9 @@ public class TestAudioMediaSegmenter {
 	}
 
 
-	private static TransientMedia createTestMedia() {
+	private static Media createTestMedia() {
 		URI mediaUri = URI.create("file:///example.wav");
-		TransientMediaImpl media = new TransientMediaImpl(
+		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
 				null);
 		media.setLength(1);

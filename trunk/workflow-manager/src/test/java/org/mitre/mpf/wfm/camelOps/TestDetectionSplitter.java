@@ -41,7 +41,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -96,7 +96,7 @@ public class TestDetectionSplitter {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile("/samples/new_face_video.avi");
-        TransientMediaImpl testMedia = new TransientMediaImpl(
+        MediaImpl testMedia = new MediaImpl(
                 nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
         testMedia.setType("video/avi");
@@ -433,7 +433,7 @@ public class TestDetectionSplitter {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI fullMediaUri = ioUtils.findFile(mediaUri);
-        TransientMediaImpl testMedia = new TransientMediaImpl(
+        MediaImpl testMedia = new MediaImpl(
                 nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
                 mediaProperties, null);
         testMedia.setLength(300);
@@ -467,7 +467,7 @@ public class TestDetectionSplitter {
         Map<String, Map<String, String>> algorithmProperties, Map<String,String> mediaProperties) {
 
         URI mediaUri = URI.create("file:///path/to/dummy/media");
-        TransientMediaImpl testMedia = new TransientMediaImpl(
+        MediaImpl testMedia = new MediaImpl(
                 nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), mediaProperties,
                 null);
         testMedia.setType("mime/dummy");

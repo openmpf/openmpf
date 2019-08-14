@@ -32,7 +32,7 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
@@ -63,15 +63,15 @@ public class MediaInspectionSplitter extends WfmSplitter {
 
         if(!job.isCancelled()) {
             // If the job has not been cancelled, perform the split.
-            for (TransientMedia transientMedia : job.getMedia()) {
-                if (!transientMedia.isFailed()) {
+            for (Media media : job.getMedia()) {
+                if (!media.isFailed()) {
                     Message message = new DefaultMessage();
                     message.setHeader(MpfHeaders.JOB_ID, jobId);
-                    message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
+                    message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
                     messages.add(message);
                 } else {
                     log.warn("Skipping '{}' ({}). It is in an error state.",
-                             transientMedia.getUri(), transientMedia.getId());
+                             media.getUri(), media.getId());
                 }
             }
             if (messages.isEmpty()) {

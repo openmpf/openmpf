@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -171,7 +171,7 @@ public class TestDetectionResponseProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        TransientMediaImpl media = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 234234, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Collections.emptyMap(), null);
         media.addMetadata("DURATION", "3004");

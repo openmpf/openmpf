@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -40,8 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/** An in-flight media instance. */
-public class TransientMediaImpl implements TransientMedia {
+public class MediaImpl implements Media {
 
     /** The unique identifier for this file. */
     private final long _id;
@@ -127,7 +126,7 @@ public class TransientMediaImpl implements TransientMedia {
     public void setSha256(String sha256) { _sha256 = sha256; }
 
 
-    public TransientMediaImpl(
+    public MediaImpl(
             long id,
             String uri,
             UriScheme uriScheme,
@@ -147,7 +146,7 @@ public class TransientMediaImpl implements TransientMedia {
 
 
     @JsonCreator
-    public TransientMediaImpl(
+    public MediaImpl(
             @JsonProperty("id") long id,
             @JsonProperty("uri") String uri,
             @JsonProperty("uriScheme") UriScheme uriScheme,
@@ -162,12 +161,12 @@ public class TransientMediaImpl implements TransientMedia {
     }
 
 
-    public static TransientMediaImpl toTransientMediaImpl(TransientMedia originalMedia) {
-        if (originalMedia instanceof TransientMediaImpl) {
-            return (TransientMediaImpl) originalMedia;
+    public static MediaImpl toMediaImpl(Media originalMedia) {
+        if (originalMedia instanceof MediaImpl) {
+            return (MediaImpl) originalMedia;
         }
 
-        TransientMediaImpl result = new TransientMediaImpl(
+        MediaImpl result = new MediaImpl(
                 originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
                 originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
                 originalMedia.getMessage());

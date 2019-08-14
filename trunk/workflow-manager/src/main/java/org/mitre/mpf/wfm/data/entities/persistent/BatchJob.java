@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
@@ -57,9 +56,9 @@ public interface BatchJob {
 
     public boolean isOutputEnabled();
 
-    public ImmutableCollection<? extends TransientMedia> getMedia();
+    public ImmutableCollection<? extends Media> getMedia();
 
-    public TransientMedia getMedia(long mediaId);
+    public Media getMedia(long mediaId);
 
     // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();

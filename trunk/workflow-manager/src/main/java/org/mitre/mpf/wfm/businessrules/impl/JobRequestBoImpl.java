@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -107,7 +107,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     @Override
     public JobRequest run(JobCreationRequest jobCreationRequest) {
-        List<TransientMedia> media = jobCreationRequest.getMedia()
+        List<Media> media = jobCreationRequest.getMedia()
                 .stream()
                 .map(m -> inProgressJobs.initMedia(m.getMediaUri(), m.getProperties()))
                 .collect(ImmutableList.toImmutableList());
@@ -152,7 +152,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         BatchJob originalJob = jsonUtils.deserialize(jobRequestEntity.getInputObject(), BatchJob.class);
 
-        List<TransientMedia> media = originalJob.getMedia()
+        List<Media> media = originalJob.getMedia()
                 .stream()
                 .map(m -> inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties()))
                 .collect(ImmutableList.toImmutableList());
@@ -183,7 +183,7 @@ public class JobRequestBoImpl implements JobRequestBo {
     private JobRequest initialize(
             JobRequest jobRequestEntity,
             String pipelineName,
-            Collection<TransientMedia> media,
+            Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             String externalId,
@@ -275,7 +275,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     private BatchJobStatusType validateJobRequest(
             TransientPipeline pipeline,
-            Collection<TransientMedia> media,
+            Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
@@ -289,7 +289,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
         long failedMediaCount = media
                 .stream()
-                .filter(TransientMedia::isFailed)
+                .filter(Media::isFailed)
                 .count();
 
         if (failedMediaCount == media.size()) {
@@ -308,13 +308,13 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     private void checkProperties(
             TransientPipeline pipeline,
-            Iterable<TransientMedia> jobMedia,
+            Iterable<Media> jobMedia,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
         try {
             for (Action action : pipeline.getActions()) {
-                for (TransientMedia media : jobMedia) {
+                for (Media media : jobMedia) {
                     Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
                             action,
                             pipeline,

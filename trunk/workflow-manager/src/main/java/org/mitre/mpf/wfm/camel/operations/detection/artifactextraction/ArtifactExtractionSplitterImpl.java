@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -107,7 +107,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         for (long mediaId : mediaAndActionToFrames.rowKeySet()) {
             Map<Integer, Set<Integer>> actionToFrameNumbers = mediaAndActionToFrames.row(mediaId);
 
-            TransientMedia media = job.getMedia(mediaId);
+            Media media = job.getMedia(mediaId);
             ArtifactExtractionRequest request = new ArtifactExtractionRequest(
                     job.getId(),
                     mediaId,
@@ -132,7 +132,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
-            for (TransientMedia media : job.getMedia()) {
+            for (Media media : job.getMedia()) {
                 if (media.isFailed()
                         || (media.getMediaType() != MediaType.IMAGE
                             && media.getMediaType() != MediaType.VIDEO)) {
@@ -157,7 +157,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     private static void processTracks(
             Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
             Iterable<Track> tracks,
-            TransientMedia media,
+            Media media,
             int actionIndex,
             ArtifactExtractionPolicy policy) {
 
@@ -197,7 +197,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     }
 
 
-    private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, TransientMedia media,
+    private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media,
                                                          int stageIndex, int actionIndex) {
         Function<String, String> combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);

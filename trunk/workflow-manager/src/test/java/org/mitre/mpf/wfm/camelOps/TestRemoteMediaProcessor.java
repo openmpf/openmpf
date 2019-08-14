@@ -37,7 +37,7 @@ import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -129,20 +129,20 @@ public class TestRemoteMediaProcessor {
         long jobId = 123;
         long mediaId = 456;
 
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
                 Collections.emptyMap(), null);
 
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         Assert.assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(transientMedia.isFailed()),
-                                        transientMedia.getMessage()),
-                           transientMedia.isFailed());
+                        Boolean.toString(media.isFailed()),
+                                        media.getMessage()),
+                           media.isFailed());
         LOG.info("Remote valid image retrieval request passed.");
     }
 
@@ -153,16 +153,16 @@ public class TestRemoteMediaProcessor {
         long jobId = 789;
         long mediaId = 321;
 
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
                 _tempFolder.newFile().toPath(), Collections.emptyMap(), null);
 
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
-        assertTrue(transientMedia.isFailed());
+        assertTrue(media.isFailed());
 
         verify(_mockInProgressJobs)
                 .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
@@ -178,11 +178,11 @@ public class TestRemoteMediaProcessor {
     public void testSplitRequest() throws Exception {
         long mediaId1 = 634;
         long mediaId2 = 458;
-        ImmutableCollection<TransientMediaImpl> media = ImmutableList.of(
-                new TransientMediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
-                                   Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
-                new TransientMediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
-                                       _tempFolder.newFile().toPath(), Collections.emptyMap(), null));
+        ImmutableCollection<MediaImpl> media = ImmutableList.of(
+                new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
+                              Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
+                new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
+                              _tempFolder.newFile().toPath(), Collections.emptyMap(), null));
 
         var job = mock(BatchJob.class);
         when(job.isCancelled())
@@ -211,7 +211,7 @@ public class TestRemoteMediaProcessor {
     }
 
 
-    private Exchange setupExchange(long jobId, TransientMediaImpl media) {
+    private Exchange setupExchange(long jobId, MediaImpl media) {
         return MediaTestUtil.setupExchange(jobId, media, _mockInProgressJobs);
     }
 }

@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -78,19 +78,19 @@ public class TestMediaInspectionProcessor {
 		long mediaId = next();
 
         URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
 		assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-				Boolean.toString(transientMedia.isFailed()),
-				transientMedia.getMessage()),
-				transientMedia.isFailed());
+				Boolean.toString(media.isFailed()),
+				media.getMessage()),
+				media.isFailed());
 
 		String targetType = "image";
 		int targetLength = 1;
@@ -113,18 +113,18 @@ public class TestMediaInspectionProcessor {
         long mediaId = next();
 
         URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(transientMedia.isFailed()),
-                                        transientMedia.getMessage()),
-                    transientMedia.isFailed());
+                        Boolean.toString(media.isFailed()),
+                                        media.getMessage()),
+                    media.isFailed());
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
@@ -148,10 +148,10 @@ public class TestMediaInspectionProcessor {
         long mediaId = next();
 
         URI mediaUri = TestUtil.findFile("/samples/video_01_invalid.mp4");
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
@@ -171,19 +171,19 @@ public class TestMediaInspectionProcessor {
         long mediaId = next();
 
         URI mediaUri = TestUtil.findFile("/samples/green.wav");
-        TransientMediaImpl transientMedia = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(transientMedia.isFailed()),
-                                 transientMedia.getMessage()),
-                transientMedia.isFailed());
+                        Boolean.toString(media.isFailed()),
+                                 media.getMessage()),
+                media.isFailed());
 
         String targetType = "audio";
         int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
@@ -206,16 +206,16 @@ public class TestMediaInspectionProcessor {
         long mediaId = next();
 
         URI mediaUri = URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin");
-		TransientMediaImpl transientMedia = new TransientMediaImpl(
+		MediaImpl media = new MediaImpl(
 		        mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
-        Exchange exchange = setupExchange(jobId, transientMedia);
+        Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        assertTrue(transientMedia.isFailed());
+        assertTrue(media.isFailed());
 
         verifyMediaError(jobId, mediaId);
 
@@ -238,7 +238,7 @@ public class TestMediaInspectionProcessor {
                 .setJobStatus(jobId, BatchJobStatusType.ERROR);
     }
 
-	private Exchange setupExchange(long jobId, TransientMediaImpl media) {
+	private Exchange setupExchange(long jobId, MediaImpl media) {
 	    return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
     }
 }

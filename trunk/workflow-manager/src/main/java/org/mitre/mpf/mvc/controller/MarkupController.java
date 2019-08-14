@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -150,7 +150,7 @@ public class MarkupController {
         if (jobRequest != null) {
             BatchJob job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
 
-            for (TransientMedia med : job.getMedia()) {
+            for (Media med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
                 model.setPipeline(job.getTransientPipeline().getName());

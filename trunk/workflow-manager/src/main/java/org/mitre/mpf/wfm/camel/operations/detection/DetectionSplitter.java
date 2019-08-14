@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -125,14 +125,14 @@ public class DetectionSplitter implements StageSplitter {
         // Is this the first detection stage in the pipeline?
         boolean isFirstDetectionStage = isFirstDetectionOperation(job);
 
-        for (TransientMedia transientMedia : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             try {
-                if (transientMedia.isFailed()) {
+                if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
                     log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
                             job.getId(),
                             job.getCurrentTaskIndex(),
-                            transientMedia.getId());
+                            media.getId());
                     continue;
                 }
 
@@ -145,7 +145,7 @@ public class DetectionSplitter implements StageSplitter {
                 }
                 else {
                     previousTracks = inProgressBatchJobs.getTracks(
-                            job.getId(), transientMedia.getId(), job.getCurrentTaskIndex() - 1, 0);
+                            job.getId(), media.getId(), job.getCurrentTaskIndex() - 1, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -222,27 +222,27 @@ public class DetectionSplitter implements StageSplitter {
                     } // end of algorithm name conditional
 
                     for (String key : transformProperties) {
-                        if (transientMedia.getMediaSpecificProperties().containsKey(key)) {
+                        if (media.getMediaSpecificProperties().containsKey(key)) {
                             clearTransformPropertiesFromMap(modifiedMap);
                             break;
                         }
                     }
 
-                    modifiedMap.putAll(transientMedia.getMediaSpecificProperties());
+                    modifiedMap.putAll(media.getMediaSpecificProperties());
 
                     // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
                     SegmentingPlan segmentingPlan = null;
-                    if (transientMedia.getMediaType().equals(MediaType.VIDEO)) {
+                    if (media.getMediaType().equals(MediaType.VIDEO)) {
 
                         // Note that single-frame gifs are treated like videos, but have no native frame rate
                         double fps = 1.0;
-                        String fpsFromMetadata = transientMedia.getMetadata("FPS");
+                        String fpsFromMetadata = media.getMetadata("FPS");
                         if (fpsFromMetadata != null) {
                             fps = Double.valueOf(fpsFromMetadata);
                         }
 
                         String calcframeInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
-                                action, job, transientMedia,
+                                action, job, media,
                                 job.getSystemPropertiesSnapshot().getSamplingInterval(),
                                 job.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         modifiedMap.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
@@ -265,7 +265,7 @@ public class DetectionSplitter implements StageSplitter {
 
                     // get detection request messages from ActiveMQ
 
-                    List<Message> detectionRequestMessages = createDetectionRequestMessages(transientMedia, detectionContext);
+                    List<Message> detectionRequestMessages = createDetectionRequestMessages(media, detectionContext);
 
                     ActionType actionType = job.getTransientPipeline()
                             .getAlgorithm(action.getAlgorithm())
@@ -283,11 +283,11 @@ public class DetectionSplitter implements StageSplitter {
                             job.getId(),
                             job.getCurrentTaskIndex(),
                             actionIndex,
-                            detectionRequestMessages.size(), transientMedia.getId());
+                            detectionRequestMessages.size(), media.getId());
                 }
             } catch (WfmProcessingException e) {
                 inProgressBatchJobs.setJobStatus(job.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                inProgressBatchJobs.addMediaError(job.getId(), transientMedia.getId(), e.getMessage());
+                inProgressBatchJobs.addMediaError(job.getId(), media.getId(), e.getMessage());
             }
         }
 
@@ -301,7 +301,7 @@ public class DetectionSplitter implements StageSplitter {
     }
 
 
-    private List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext detectionContext) {
+    private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
         MediaSegmenter segmenter = getSegmenter(media.getMediaType());
         return segmenter.createDetectionRequestMessages(media, detectionContext);
     }

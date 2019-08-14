@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
@@ -34,11 +34,10 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import java.nio.file.Path;
 import java.util.Map;
 
-/** An in-flight media instance. */
 // Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
-@JsonSerialize(as = TransientMediaImpl.class)
-public interface TransientMedia {
+@JsonSerialize(as = MediaImpl.class)
+public interface Media {
 
     /** The unique identifier for this file. */
     public long getId();

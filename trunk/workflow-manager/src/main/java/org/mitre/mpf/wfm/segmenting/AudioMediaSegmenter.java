@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
 
 	@Override
-	public List<Message> createDetectionRequestMessages(TransientMedia media, DetectionContext context) {
+	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
 		log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", context.getJobId(),
 		         context.getStageIndex(), context.getActionIndex(), media.getId());
 
@@ -65,7 +65,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private static Message createProtobufMessage(TransientMedia media, DetectionContext context,
+	private static Message createProtobufMessage(Media media, DetectionContext context,
 	                                             AudioRequest audioRequest) {
 		DetectionProtobuf.DetectionRequest request = MediaSegmenter
 				.initializeRequest(media, context)
@@ -78,7 +78,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 		return message;
 	}
 
-	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+	private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
 

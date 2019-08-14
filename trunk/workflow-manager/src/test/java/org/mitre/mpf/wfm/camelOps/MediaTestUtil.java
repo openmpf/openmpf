@@ -32,7 +32,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 
 import static org.mitre.mpf.test.TestUtil.nonBlank;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.*;
 public class MediaTestUtil {
 
 
-    public static Exchange setupExchange(long jobId, TransientMediaImpl media,
+    public static Exchange setupExchange(long jobId, MediaImpl media,
                                          InProgressBatchJobsService mockInProgressJobs) {
         var job = mock(BatchJob.class);
         when(job.getMedia(media.getId()))

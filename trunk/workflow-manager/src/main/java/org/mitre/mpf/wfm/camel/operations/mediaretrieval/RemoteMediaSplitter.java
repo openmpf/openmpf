@@ -32,7 +32,7 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.slf4j.Logger;
@@ -67,11 +67,11 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		if(!job.isCancelled()) {
 			// If the job has not been cancelled, iterate through the collection of media associated with the job. If the
 			// media's original URI looks like an HTTP or HTTPS URL, create a work unit for that URI.
-			for (TransientMedia transientMedia : job.getMedia()) {
+			for (Media media : job.getMedia()) {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
-				if (!transientMedia.isFailed() && transientMedia.getUriScheme() != UriScheme.FILE && transientMedia.getUriScheme() != UriScheme.UNDEFINED) {
-					messages.add(createMessage(jobId, transientMedia));
+				if (!media.isFailed() && media.getUriScheme() != UriScheme.FILE && media.getUriScheme() != UriScheme.UNDEFINED) {
+					messages.add(createMessage(jobId, media));
 				}
 			}
 		} else {
@@ -82,7 +82,7 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		return messages;
 	}
 
-	private static Message createMessage(long jobId, TransientMedia sourceMessage) {
+	private static Message createMessage(long jobId, Media sourceMessage) {
         Message message = new DefaultMessage();
         message.setHeader(MpfHeaders.MEDIA_ID, sourceMessage.getId());
         message.setHeader(MpfHeaders.JOB_ID, jobId);

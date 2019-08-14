@@ -40,6 +40,8 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -183,7 +185,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        TransientMedia media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
+        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
@@ -269,7 +271,7 @@ public class TestTrackMergingProcessor {
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        TransientMedia media = new TransientMediaImpl(
+        Media media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
 

@@ -36,8 +36,8 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
@@ -146,8 +146,8 @@ public class TestMarkupResponseProcessor {
                 .thenReturn("TEST_MARKUP_PIPELINE");
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
-        TransientMedia media = new TransientMediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                                      Paths.get(mediaUri), Collections.emptyMap(), null);
+        Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
+                                    Paths.get(mediaUri), Collections.emptyMap(), null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

@@ -32,7 +32,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
@@ -83,10 +83,10 @@ public class RemoteMediaProcessor extends WfmProcessor {
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
         BatchJob job = _inProgressJobs.getJob(jobId);
-        TransientMedia transientMedia = job.getMedia(mediaId);
-        log.debug("Retrieving {} and saving it to `{}`.", transientMedia.getUri(), transientMedia.getLocalPath());
+        Media media = job.getMedia(mediaId);
+        log.debug("Retrieving {} and saving it to `{}`.", media.getUri(), media.getLocalPath());
 
-        switch(transientMedia.getUriScheme()) {
+        switch(media.getUriScheme()) {
             case FILE:
                 // Do nothing.
                 break;
@@ -94,26 +94,26 @@ public class RemoteMediaProcessor extends WfmProcessor {
             case HTTPS:
                 try {
                     Function<String, String> combinedProperties = _aggregateJobPropertiesUtil
-                            .getCombinedProperties(job, transientMedia);
+                            .getCombinedProperties(job, media);
                     if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-                        _s3Service.downloadFromS3(transientMedia, combinedProperties);
+                        _s3Service.downloadFromS3(media, combinedProperties);
                     }
                     else {
-                        downloadFile(jobId, transientMedia);
+                        downloadFile(jobId, media);
                     }
-                    transientMedia.getLocalPath().toFile().deleteOnExit();
+                    media.getLocalPath().toFile().deleteOnExit();
                 }
                 catch (StorageException e) {
                     String message = handleMediaRetrievalException(
-                            transientMedia, transientMedia.getLocalPath().toFile(), e);
-                    handleMediaRetrievalFailure(jobId, transientMedia, message);
+                            media, media.getLocalPath().toFile(), e);
+                    handleMediaRetrievalFailure(jobId, media, message);
                 }
                 break;
             default:
-                log.warn("The UriScheme '{}' was not expected at this time.", transientMedia.getUriScheme());
+                log.warn("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
                 _inProgressJobs.addMediaError(jobId, mediaId, String.format(
                         "The scheme '%s' was not expected or does not have a handler associated with it.",
-                        transientMedia.getUriScheme()));
+                        media.getUriScheme()));
                 break;
         }
 
@@ -124,28 +124,28 @@ public class RemoteMediaProcessor extends WfmProcessor {
     }
 
 
-    private void downloadFile(long jobId, TransientMedia transientMedia) {
+    private void downloadFile(long jobId, Media media) {
         File localFile = null;
         for (int i = 0; i <= _propertiesUtil.getRemoteMediaDownloadRetries(); i++) {
             String errorMessage;
             try {
-                localFile = transientMedia.getLocalPath().toFile();
-                FileUtils.copyURLToFile(new URL(transientMedia.getUri()), localFile);
-                log.debug("Successfully retrieved {} and saved it to '{}'.", transientMedia.getUri(), transientMedia.getLocalPath());
-                _inProgressJobs.clearMediaError(jobId, transientMedia.getId());
+                localFile = media.getLocalPath().toFile();
+                FileUtils.copyURLToFile(new URL(media.getUri()), localFile);
+                log.debug("Successfully retrieved {} and saved it to '{}'.", media.getUri(), media.getLocalPath());
+                _inProgressJobs.clearMediaError(jobId, media.getId());
                 break;
             } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
-                errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
+                errorMessage = handleMediaRetrievalException(media, localFile, e);
             } catch (Exception e) { // specifying "http::" will cause an IllegalArgumentException
-                errorMessage = handleMediaRetrievalException(transientMedia, localFile, e);
-                handleMediaRetrievalFailure(jobId, transientMedia, errorMessage);
+                errorMessage = handleMediaRetrievalException(media, localFile, e);
+                handleMediaRetrievalFailure(jobId, media, errorMessage);
                 break; // exception is not recoverable
             }
 
             if (i < _propertiesUtil.getRemoteMediaDownloadRetries()) {
                 try {
                     int sleepMillisec = _propertiesUtil.getRemoteMediaDownloadSleep() * (i + 1);
-                    log.warn("Sleeping for {} ms before trying to retrieve {} again.", sleepMillisec, transientMedia.getUri());
+                    log.warn("Sleeping for {} ms before trying to retrieve {} again.", sleepMillisec, media.getUri());
                     Thread.sleep(sleepMillisec);
                 } catch (InterruptedException e) {
                     log.warn("Sleep interrupted.");
@@ -153,7 +153,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                     break; // abort download attempt
                 }
             } else {
-                handleMediaRetrievalFailure(jobId, transientMedia, errorMessage);
+                handleMediaRetrievalFailure(jobId, media, errorMessage);
             }
         }
     }
@@ -169,16 +169,16 @@ public class RemoteMediaProcessor extends WfmProcessor {
         }
     }
 
-    private static String handleMediaRetrievalException(TransientMedia transientMedia, File localFile, Exception e) {
-        log.warn("Failed to retrieve {}.", transientMedia.getUri(), e);
+    private static String handleMediaRetrievalException(Media media, File localFile, Exception e) {
+        log.warn("Failed to retrieve {}.", media.getUri(), e);
         // Try to delete the local file, but do not throw an exception if this operation fails.
         deleteOrLeakFile(localFile);
         return e.toString();
     }
 
-    private void handleMediaRetrievalFailure(long jobId, TransientMedia transientMedia,
+    private void handleMediaRetrievalFailure(long jobId, Media media,
                                              String errorMessage) {
-        _inProgressJobs.addMediaError(jobId, transientMedia.getId(),
+        _inProgressJobs.addMediaError(jobId, media.getId(),
                                      "Error retrieving media and saving it to temp file: " + errorMessage);
         _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
     }

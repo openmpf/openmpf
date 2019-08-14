@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -209,7 +209,7 @@ public class TestRedis {
     public void canClearTracks() {
         addAllTestTracksToRedis();
 
-        var media = mock(TransientMedia.class);
+        var media = mock(Media.class);
         when(media.getId())
                 .thenReturn(TEST_MEDIA_ID);
 

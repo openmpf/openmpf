@@ -104,7 +104,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void walkAndRegisterDirectories(final Path start, WatchService watcher, Map<WatchKey, Path> watcherMap) {
+    private void walkAndRegisterDirectories(final Path start, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
         // register directory and sub-directories
         try {
             SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
@@ -120,13 +120,19 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void registerDirectory(Path dir, WatchService watcher, Map<WatchKey, Path> watcherMap) {
+    private void registerDirectory(Path dir, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
         // register the current media directory with a file watcher service, listening for file creation or deletion
         WatchKey key;
         try {
-            key = dir.toRealPath().register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
             log.info("File watcher registered for directory: " + dir);
-            watcherMap.put(key, dir);
+            if (watcherMap.containsKey(key)) {
+                watcherMap.get(key).add(dir);
+            } else {
+                List<Path> dirs = new ArrayList<>();
+                dirs.add(dir);
+                watcherMap.put(key, dirs);
+            }
         } catch (IOException e) {
             log.error("Failed to register file watcher: " + dir);
             throw new UncheckedIOException(e);
@@ -142,7 +148,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             log.error("Failed to get watch service: ");
             throw new UncheckedIOException(e);
         }
-        Map<WatchKey, Path> watcherMap = new HashMap<>();
+        Map<WatchKey, List<Path>> watcherMap = new HashMap<>();
 
         // Initialize caches
         walkAndRegisterDirectories(cacheFolder, watcher, watcherMap);
@@ -153,12 +159,12 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         fileEventLoop(watcher, watcherMap);
     }
 
-    private void fileEventLoop(WatchService watcher, Map<WatchKey, Path> watcherMap) {
+    private void fileEventLoop(WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
         try {
             WatchKey key;
             while ((key = watcher.take()) != null) { // blocks until watcher.take() returns an event
-                Path dir = watcherMap.get(key);
-                if (dir == null) {
+                List<Path> dirs = watcherMap.get(key);
+                if (dirs == null) {
                     log.error("WatchKey not recognized!!");
                     continue;
                 }
@@ -166,16 +172,18 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     //process
                     log.debug("File event occurred in watched directory");
                     Path eventPath = ((WatchEvent<Path>) event).context();
-                    Path child = dir.resolve(eventPath);
-                    if (event.kind() == ENTRY_CREATE) {
-                        File newItem = new File(child.toAbsolutePath().toString());
-                        addToCache(newItem, watcher, watcherMap);
-                    } else if (event.kind() == ENTRY_DELETE) {
-                        File removedItem = new File(child.toAbsolutePath().toString());
-                        removeFromCache(removedItem, watcherMap);
-                        log.debug("File deleted: " + event.context());
-                    } else {
-                        log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
+                    for (Path dir : dirs) {
+                        Path child = dir.resolve(eventPath);
+                        if (event.kind() == ENTRY_CREATE) {
+                            File newItem = new File(child.toAbsolutePath().toString());
+                            addToCache(newItem, watcher, watcherMap);
+                        } else if (event.kind() == ENTRY_DELETE) {
+                            File removedItem = new File(child.toAbsolutePath().toString());
+                            removeFromCache(removedItem, watcherMap);
+                            log.debug("File deleted: " + event.context());
+                        } else {
+                            log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
+                        }
                     }
                 }
                 key.reset();
@@ -233,12 +241,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         List<File> files = new ArrayList<>(); // use real paths
         List<File> parents = new ArrayList<>(); // use absolute paths
         for (File tmpFile : tmpFiles) {
-            try {
-                files.add(tmpFile.toPath().toRealPath().toFile()); // resolve symbolic links
-                parents.add(tmpFile.getParentFile());
-            } catch (IOException e) {
-                log.error("Error determining real path: " + e.getMessage(), e);
-            }
+            files.add(tmpFile.toPath().toAbsolutePath().toFile()); // resolve symbolic links
+            parents.add(tmpFile.getParentFile());
         }
 
         // build output
@@ -252,7 +256,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         currentFiles.addAll(mediaFiles);
     }
 
-    private void addToCache(File item, WatchService watcher, Map<WatchKey, Path> watcherMap) {
+    private void addToCache(File item, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
         if (item == null) return;
 
         Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
@@ -286,7 +290,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void removeFromCache(File item, Map<WatchKey, Path> watcherMap) {
+    private void removeFromCache(File item, Map<WatchKey, List<Path>> watcherMap) {
         if (item == null) return;
 
         Path removedItem = item.toPath().toAbsolutePath();
@@ -303,7 +307,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 fileCache.remove(removedItem);
                 WatchKey deletedDirKey = null;
                 for (WatchKey key : watcherMap.keySet()) {
-                    Path path = watcherMap.get(key);
+                    // this works because all paths in the list will get a call to removeFromCache
+                    Path path = watcherMap.get(key).get(0);
                     if (path.equals(Paths.get(item.getAbsolutePath()))) {
                         deletedDirKey = key;
                         break;
@@ -311,6 +316,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 }
                 if (deletedDirKey != null) {
                     deletedDirKey.reset();
+                    deletedDirKey.cancel();
                     watcherMap.remove(deletedDirKey);
                 }
                 log.debug("Directory removed from cache: " + item.getAbsolutePath());
@@ -320,13 +326,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
                 List<ServerMediaFile> mediaFiles = new ArrayList<>();
                 for (ServerMediaFile cachedFile : oldListing.getData()) {
-                    try {
-                        if (!cachedFile.getFullPath().equals(item.getCanonicalPath())) {
-                            mediaFiles.add(cachedFile);
-                        }
-                    } catch (IOException e) {
-                        log.error("Failed to resolve canonical path for: " + item.getAbsolutePath() +
-                                ", removing from cache.\n", e);
+                    if (!cachedFile.getFullPath().equals(item.getAbsolutePath())) {
+                        mediaFiles.add(cachedFile);
                     }
                 }
                 if (mediaFiles.size() == oldListing.getData().size()) {

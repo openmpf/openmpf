@@ -153,11 +153,11 @@ public class DetectionSplitter implements StageSplitter {
 
                     // starting setting of priorities here:  getting action property defaults
                     String actionName = task.getActions().get(actionIndex);
-                    Action action = job.getTransientPipeline().getAction(actionName);
+                    Action action = job.getPipelineComponents().getAction(actionName);
 
                     // modifiedMap initialized with algorithm specific properties
                     Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(
-                            job.getTransientPipeline().getAlgorithm(action.getAlgorithm()),
+                            job.getPipelineComponents().getAlgorithm(action.getAlgorithm()),
                             job.getSystemPropertiesSnapshot()));
 
                     // current modifiedMap properties overridden by action properties
@@ -267,7 +267,7 @@ public class DetectionSplitter implements StageSplitter {
 
                     List<Message> detectionRequestMessages = createDetectionRequestMessages(media, detectionContext);
 
-                    ActionType actionType = job.getTransientPipeline()
+                    ActionType actionType = job.getPipelineComponents()
                             .getAlgorithm(action.getAlgorithm())
                             .getActionType();
                     for (Message message : detectionRequestMessages) {
@@ -405,8 +405,8 @@ public class DetectionSplitter implements StageSplitter {
      */
     private static boolean isFirstDetectionOperation(BatchJob job) {
         boolean isFirst = false;
-        for (int i = 0; i < job.getTransientPipeline().getTaskCount(); i++) {
-            ActionType actionType = job.getTransientPipeline().getAlgorithm(i, 0).getActionType();
+        for (int i = 0; i < job.getPipelineComponents().getTaskCount(); i++) {
+            ActionType actionType = job.getPipelineComponents().getAlgorithm(i, 0).getActionType();
             // This is a detection stage.
             if (actionType == ActionType.DETECTION) {
                 // If this is the first detection stage, it must be true that the current stage's index is at most the current job stage's index.

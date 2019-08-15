@@ -218,11 +218,11 @@ public class TestRedis {
                 .thenReturn(TEST_JOB_ID);
         when(job.getMedia())
                 .thenAnswer(invocation -> ImmutableList.of(media));
-        when(job.getTransientPipeline().getPipeline().getTasks().size())
+        when(job.getPipelineComponents().getPipeline().getTasks().size())
                 .thenReturn(2);
-        when(job.getTransientPipeline().getTask(0).getActions().size())
+        when(job.getPipelineComponents().getTask(0).getActions().size())
                 .thenReturn(1);
-        when(job.getTransientPipeline().getTask(1).getActions().size())
+        when(job.getPipelineComponents().getTask(1).getActions().size())
                 .thenReturn(1);
 
 

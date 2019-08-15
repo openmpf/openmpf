@@ -65,10 +65,10 @@ public class EndOfStageProcessor extends WfmProcessor {
 				jobId,
 				job.getCurrentTaskIndex() - 1,
 				job.getCurrentTaskIndex(),
-				job.getTransientPipeline().getTaskCount());
+				job.getPipelineComponents().getTaskCount());
 
 
-		if(job.getCurrentTaskIndex() >= job.getTransientPipeline().getTaskCount()) {
+		if(job.getCurrentTaskIndex() >= job.getPipelineComponents().getTaskCount()) {
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
 				jobStatusBroadcaster.broadcast(

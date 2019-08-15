@@ -44,7 +44,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
@@ -159,7 +159,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
 
         jobRequestEntity = initialize(jobRequestEntity,
-                    originalJob.getTransientPipeline().getName(),
+                    originalJob.getPipelineComponents().getName(),
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
@@ -192,7 +192,7 @@ public class JobRequestBoImpl implements JobRequestBo {
             String callbackUrl,
             String callbackMethod) {
 
-        var pipeline = pipelineService.createTransientBatchPipeline(pipelineName);
+        var pipeline = pipelineService.getBatchPipelineComponents(pipelineName);
         // Capture the current state of the detection system properties at the time when this job is created.
         // Since the detection system properties may be changed by an administrator, we must ensure that the job
         // uses a consistent set of detection system properties through all stages of the job's pipeline.
@@ -274,7 +274,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
 
     private BatchJobStatusType validateJobRequest(
-            TransientPipeline pipeline,
+            JobPipelineComponents pipeline,
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -307,7 +307,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
 
     private void checkProperties(
-            TransientPipeline pipeline,
+            JobPipelineComponents pipeline,
             Iterable<Media> jobMedia,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,

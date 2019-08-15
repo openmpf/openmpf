@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,7 +37,12 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 
-public class TransientPipeline {
+/**
+ * Holds a reference to the complete pipeline that a job is currently processing. This is so that if a pipeline
+ * is deleted and possibly re-created after a job has been submitted, the job will proceed with the pipeline that it
+ * was originally created with.
+ */
+public class JobPipelineComponents {
 
     private final Pipeline _pipeline;
     public Pipeline getPipeline() {
@@ -100,7 +105,7 @@ public class TransientPipeline {
     }
 
 
-    public TransientPipeline(
+    public JobPipelineComponents(
             @JsonProperty("pipeline") Pipeline pipeline,
             @JsonProperty("tasks") Iterable<Task> tasks,
             @JsonProperty("actions") Iterable<Action> actions,

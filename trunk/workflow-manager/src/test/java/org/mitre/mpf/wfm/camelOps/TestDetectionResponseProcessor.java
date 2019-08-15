@@ -44,7 +44,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -163,7 +163,7 @@ public class TestDetectionResponseProcessor {
         Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline("detectionPipeline", "description",
                                          Collections.singleton(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
 
@@ -181,7 +181,7 @@ public class TestDetectionResponseProcessor {
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                transientPipeline,
+                pipelineComponents,
                 1,
                 false,
                 null,

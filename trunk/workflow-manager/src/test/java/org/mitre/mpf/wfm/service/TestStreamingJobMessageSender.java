@@ -34,7 +34,7 @@ import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
@@ -123,7 +123,7 @@ public class TestStreamingJobMessageSender {
 
         Pipeline pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
                                          Collections.singletonList(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline,
                 Collections.singletonList(task),
                 Collections.singletonList(action),
@@ -141,7 +141,7 @@ public class TestStreamingJobMessageSender {
         TransientStreamingJob job = new TransientStreamingJobImpl(
                 jobId,
                 "external id",
-                transientPipeline,
+                pipelineComponents,
                 stream,
                 5,
                 100,

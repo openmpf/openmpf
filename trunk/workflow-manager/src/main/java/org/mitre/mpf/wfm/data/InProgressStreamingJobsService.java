@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -57,7 +58,7 @@ public class InProgressStreamingJobsService {
     public synchronized TransientStreamingJob addJob(
             long jobId,
             String externalId,
-            TransientPipeline transientPipeline,
+            JobPipelineComponents pipeline,
             TransientStream stream,
             int priority,
             long stallTimeout,
@@ -73,12 +74,12 @@ public class InProgressStreamingJobsService {
         }
 
         LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId,
-                 transientPipeline.getName());
+                 pipeline.getName());
 
         TransientStreamingJobImpl job = new TransientStreamingJobImpl(
                 jobId,
                 externalId,
-                transientPipeline,
+                pipeline,
                 stream,
                 priority,
                 stallTimeout,

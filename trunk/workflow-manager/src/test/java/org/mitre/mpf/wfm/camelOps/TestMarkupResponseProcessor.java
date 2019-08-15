@@ -38,7 +38,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -141,7 +141,7 @@ public class TestMarkupResponseProcessor {
                 .setOutputFileUri("output.txt")
                 .build();
 
-        TransientPipeline dummyPipeline = mock(TransientPipeline.class);
+        JobPipelineComponents dummyPipeline = mock(JobPipelineComponents.class);
         when(dummyPipeline.getName())
                 .thenReturn("TEST_MARKUP_PIPELINE");
 
@@ -151,7 +151,7 @@ public class TestMarkupResponseProcessor {
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
-        when(job.getTransientPipeline())
+        when(job.getPipelineComponents())
                 .thenReturn(dummyPipeline);
         when(job.getMedia(mediaId))
                 .thenReturn(media);

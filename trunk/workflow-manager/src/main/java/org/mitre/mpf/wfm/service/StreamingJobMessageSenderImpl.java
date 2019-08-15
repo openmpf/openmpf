@@ -117,7 +117,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
     private static Action getAction(TransientStreamingJob job) {
-        Pipeline pipeline = job.getTransientPipeline().getPipeline();
+        Pipeline pipeline = job.getPipelineComponents().getPipeline();
         ImmutableList<String> tasks = pipeline.getTasks();
         //TODO: Remove method when support for the multi-stage pipelines is added.
         if (tasks.size() > 1) {
@@ -125,14 +125,14 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
                     "Streaming job %s uses the %s pipeline which has multiple stages, but streaming pipelines only support one stage.",
                     job.getId(), pipeline.getName()));
         }
-        Task task = job.getTransientPipeline().getTask(tasks.get(0));
+        Task task = job.getPipelineComponents().getTask(tasks.get(0));
         if (task.getActions().size() > 1) {
             throw new IllegalStateException(String.format(
                     "Streaming job %s uses the %s pipeline which contains a stage with multiple actions, but streaming pipelines only support a single action.",
                     job.getId(), pipeline.getName()));
         }
 
-        return job.getTransientPipeline()
+        return job.getPipelineComponents()
                 .getAction(task.getActions().get(0));
     }
 

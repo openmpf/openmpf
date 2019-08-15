@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.WritableResource;
@@ -139,21 +139,21 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     @Override
-    public TransientPipeline createTransientBatchPipeline(String pipelineName) {
+    public JobPipelineComponents getBatchPipelineComponents(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyBatchPipelineRunnable(pipelineName);
-        return createTransientPipeline(pipelineName);
+        return getPipelineComponents(pipelineName);
     }
 
     @Override
-    public TransientPipeline createTransientStreamingPipeline(String pipelineName) {
+    public JobPipelineComponents getStreamingPipelineComponents(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyStreamingPipelineRunnable(pipelineName);
-        return createTransientPipeline(pipelineName);
+        return getPipelineComponents(pipelineName);
     }
 
 
-    private TransientPipeline createTransientPipeline(String pipelineName) {
+    private JobPipelineComponents getPipelineComponents(String pipelineName) {
         Pipeline pipeline = getPipeline(fixName(pipelineName));
 
         List<Task> tasks = pipeline.getTasks()
@@ -170,7 +170,7 @@ public class PipelineServiceImpl implements PipelineService {
                 .map(action -> getAlgorithm(action.getAlgorithm()))
                 .collect(toList());
 
-        return new TransientPipeline(pipeline, tasks, actions, algorithms);
+        return new JobPipelineComponents(pipeline, tasks, actions, algorithms);
     }
 
 
@@ -302,11 +302,11 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public JsonPipeline createBatchJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(createTransientBatchPipeline(fixName(pipelineName)));
+        return _jsonUtils.convert(getBatchPipelineComponents(fixName(pipelineName)));
     }
 
     @Override
     public JsonPipeline createStreamingJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(createTransientStreamingPipeline(fixName(pipelineName)));
+        return _jsonUtils.convert(getStreamingPipelineComponents(fixName(pipelineName)));
     }
 }

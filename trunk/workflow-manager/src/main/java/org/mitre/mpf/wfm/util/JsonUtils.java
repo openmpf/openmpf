@@ -39,7 +39,7 @@ import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,17 +148,17 @@ public class JsonUtils {
     }
 
 
-    public JsonPipeline convert(TransientPipeline transientPipeline) {
-        Pipeline pipeline = transientPipeline.getPipeline();
+    public JsonPipeline convert(JobPipelineComponents pipelineComponents) {
+        Pipeline pipeline = pipelineComponents.getPipeline();
         JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
 
         for (String taskName : pipeline.getTasks()) {
-            Task task = transientPipeline.getTask(taskName);
-            JsonStage jsonStage = new JsonStage(getActionType(transientPipeline, task).name(), taskName,
+            Task task = pipelineComponents.getTask(taskName);
+            JsonStage jsonStage = new JsonStage(getActionType(pipelineComponents, task).name(), taskName,
                                                 task.getDescription());
 
             for (String actionName : task.getActions()) {
-                Action action = transientPipeline.getAction(actionName);
+                Action action = pipelineComponents.getAction(actionName);
                 JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
                 for (Action.Property property : action.getProperties()) {
                     jsonAction.getProperties().put(property.getName(), property.getValue());
@@ -171,9 +171,9 @@ public class JsonUtils {
         return jsonPipeline;
     }
 
-    private static ActionType getActionType(TransientPipeline transientPipeline, Task task) {
-        Action action = transientPipeline.getAction(task.getActions().get(0));
-        return transientPipeline.getAlgorithm(action.getAlgorithm()).getActionType();
+    private static ActionType getActionType(JobPipelineComponents pipeline, Task task) {
+        Action action = pipeline.getAction(task.getActions().get(0));
+        return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
     }
 
 }

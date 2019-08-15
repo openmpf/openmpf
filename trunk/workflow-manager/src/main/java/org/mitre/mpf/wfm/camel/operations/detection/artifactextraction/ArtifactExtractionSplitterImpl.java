@@ -128,7 +128,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             BatchJob job, int stageIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
-        Task task = job.getTransientPipeline().getTask(stageIndex);
+        Task task = job.getPipelineComponents().getTask(stageIndex);
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 

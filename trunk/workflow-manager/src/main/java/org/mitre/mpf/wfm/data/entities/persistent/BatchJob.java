@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
@@ -46,7 +45,7 @@ public interface BatchJob {
 
     public BatchJobStatusType getStatus();
 
-    public TransientPipeline getTransientPipeline();
+    public JobPipelineComponents getPipelineComponents();
 
     public int getCurrentTaskIndex();
 

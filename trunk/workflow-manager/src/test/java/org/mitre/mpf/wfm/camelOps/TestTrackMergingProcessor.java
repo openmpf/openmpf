@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -179,7 +180,7 @@ public class TestTrackMergingProcessor {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
 
-        TransientPipeline transientPipeline = createTestPipeline(mergeProp);
+        JobPipelineComponents pipelineComponents = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -192,7 +193,7 @@ public class TestTrackMergingProcessor {
                 TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
-                transientPipeline,
+                pipelineComponents,
                 priority,
                 false,
                 null,
@@ -266,7 +267,7 @@ public class TestTrackMergingProcessor {
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        TransientPipeline trackMergePipeline = createTestPipeline(mergeProp);
+        JobPipelineComponents trackMergePipeline = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -329,7 +330,7 @@ public class TestTrackMergingProcessor {
     }
 
 
-    private static TransientPipeline createTestPipeline(Map<String, String> actionPropsMap) {
+    private static JobPipelineComponents createTestPipeline(Map<String, String> actionPropsMap) {
         Algorithm algorithm = new Algorithm(
                 "detectionAlgo", "description", ActionType.DETECTION,
                 new Algorithm.Requires(Collections.emptyList()),
@@ -346,7 +347,7 @@ public class TestTrackMergingProcessor {
         Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline("trackMergePipeline", "description",
                                          Collections.singleton(task.getName()));
-        return new TransientPipeline(
+        return new JobPipelineComponents(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
     }

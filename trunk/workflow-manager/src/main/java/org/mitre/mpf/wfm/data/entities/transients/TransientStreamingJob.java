@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 
 import java.time.Instant;
@@ -41,7 +42,7 @@ public interface TransientStreamingJob {
 
     public StreamingJobStatus getJobStatus();
 
-    public TransientPipeline getTransientPipeline();
+    public JobPipelineComponents getPipelineComponents();
 
     public Optional<String> getExternalId();
 

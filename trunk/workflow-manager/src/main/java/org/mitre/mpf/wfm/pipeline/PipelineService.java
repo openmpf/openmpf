@@ -32,15 +32,15 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 
 import java.util.Collection;
 
 public interface PipelineService {
 
-    public TransientPipeline createTransientBatchPipeline(String pipelineName);
+    public JobPipelineComponents getBatchPipelineComponents(String pipelineName);
 
-    public TransientPipeline createTransientStreamingPipeline(String pipelineName);
+    public JobPipelineComponents getStreamingPipelineComponents(String pipelineName);
 
     public Algorithm getAlgorithm(String name);
 

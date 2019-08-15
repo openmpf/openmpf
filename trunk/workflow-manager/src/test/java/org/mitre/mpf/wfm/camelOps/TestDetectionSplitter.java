@@ -42,7 +42,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -124,7 +124,7 @@ public class TestDetectionSplitter {
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
                                          Collections.singletonList(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
 
@@ -132,7 +132,7 @@ public class TestDetectionSplitter {
                 testId,
                 testExternalId,
                 systemPropertiesSnapshot,
-                transientPipeline,
+                pipelineComponents,
                 testPriority,
                 testOutputEnabled,
                 null,
@@ -161,7 +161,7 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
                                                       "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getTransientPipeline().getTask(0));
+                testJob, testJob.getPipelineComponents().getTask(0));
 
         Assert.assertEquals(12, responseList.size());
         Message message = responseList.get(0);
@@ -198,7 +198,7 @@ public class TestDetectionSplitter {
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/new_face_video.avi", "video/avi");
         List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getTransientPipeline().getTask(0));
+                testJob, testJob.getPipelineComponents().getTask(0));
 
         Assert.assertEquals(12, responseList.size());
         Message message = responseList.get(0);
@@ -294,7 +294,7 @@ public class TestDetectionSplitter {
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getTransientPipeline().getTask(0));
+                testJob, testJob.getPipelineComponents().getTask(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
@@ -327,7 +327,7 @@ public class TestDetectionSplitter {
                 actionProperties, jobProperties, Collections.emptyMap(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getTransientPipeline().getTask(0));
+                testJob, testJob.getPipelineComponents().getTask(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
@@ -360,7 +360,7 @@ public class TestDetectionSplitter {
                 actionProperties, Collections.emptyMap(), mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
         List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getTransientPipeline().getTask(0));
+                testJob, testJob.getPipelineComponents().getTask(0));
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
@@ -406,13 +406,13 @@ public class TestDetectionSplitter {
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
                                          Collections.singletonList(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline,
                 Collections.singletonList(task),
                 Collections.singletonList(action),
                 Collections.singletonList(algorithm));
 
-        return createSimpleJobForTest(testId, testExternalId, transientPipeline, jobProperties, mediaProperties,
+        return createSimpleJobForTest(testId, testExternalId, pipelineComponents, jobProperties, mediaProperties,
                                       mediaUri, mediaType);
     }
 
@@ -420,7 +420,7 @@ public class TestDetectionSplitter {
     private BatchJob createSimpleJobForTest(
             long testJobId,
             String testExternalId,
-            TransientPipeline testPipe,
+            JobPipelineComponents testPipe,
             Map<String, String> jobProperties,
             Map<String, String> mediaProperties,
             String mediaUri,
@@ -491,7 +491,7 @@ public class TestDetectionSplitter {
         Pipeline pipeline = new Pipeline("OCV FACE DETECTION PIPELINE",
                                          "TestDetectionSplitter Pipeline",
                                          Collections.singletonList(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline, Collections.singletonList(task), Collections.singletonList(action),
                 Collections.singletonList(algorithm));
 
@@ -502,7 +502,7 @@ public class TestDetectionSplitter {
                 nextId(),
                 null,
                 systemPropertiesSnapshot,
-                transientPipeline,
+                pipelineComponents,
                 0,
                 false,
                 null,
@@ -548,7 +548,7 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
 
         String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
-                testJob.getTransientPipeline().getAction(0, 0),
+                testJob.getPipelineComponents().getAction(0, 0),
                 testJob,
                 testJob.getMedia().stream().findFirst().get(),
                 frameIntervalSystemPropVal, frameRateCapSystemPropVal, mediaFPS);

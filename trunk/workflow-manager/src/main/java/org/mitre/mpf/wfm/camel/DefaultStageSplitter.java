@@ -81,15 +81,15 @@ public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
     @Override
     public final List<Message> wfmSplit(Exchange exchange) {
         BatchJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
-        Task task = job.getTransientPipeline().getTask(job.getCurrentTaskIndex());
-        ActionType actionType = job.getTransientPipeline()
+        Task task = job.getPipelineComponents().getTask(job.getCurrentTaskIndex());
+        ActionType actionType = job.getPipelineComponents()
                 .getAlgorithm(job.getCurrentTaskIndex(), 0)
                 .getActionType();
         log.info("[Job {}|{}|*] Stage {}/{} - Operation: {} - ActionType: {}.",
                  job.getId(),
                  job.getCurrentTaskIndex(),
                  job.getCurrentTaskIndex() + 1,
-                 job.getTransientPipeline().getTaskCount(),
+                 job.getPipelineComponents().getTaskCount(),
                  actionType,
                  actionType.name());
 

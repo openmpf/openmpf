@@ -33,7 +33,6 @@ import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
@@ -53,9 +52,9 @@ public class BatchJobImpl implements BatchJob {
     public void setStatus(BatchJobStatusType status) { _status = status; }
 
 
-    private final TransientPipeline _transientPipeline;
+    private final JobPipelineComponents _pipelineComponents;
     @Override
-    public TransientPipeline getTransientPipeline() { return _transientPipeline; }
+    public JobPipelineComponents getPipelineComponents() { return _pipelineComponents; }
 
 
     private int _currentTaskIndex = 0;
@@ -157,7 +156,7 @@ public class BatchJobImpl implements BatchJob {
             long id,
             String externalId,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
-            TransientPipeline transientPipeline,
+            JobPipelineComponents pipelineComponents,
             int priority,
             boolean outputEnabled,
             String callbackUrl,
@@ -165,7 +164,7 @@ public class BatchJobImpl implements BatchJob {
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
-        this(id, externalId, systemPropertiesSnapshot, transientPipeline, priority, outputEnabled, callbackUrl,
+        this(id, externalId, systemPropertiesSnapshot, pipelineComponents, priority, outputEnabled, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of());
     }
 
@@ -175,7 +174,7 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,
-            @JsonProperty("transientPipeline") TransientPipeline transientPipeline,
+            @JsonProperty("pipelineComponents") JobPipelineComponents pipelineComponents,
             @JsonProperty("priority") int priority,
             @JsonProperty("outputEnabled") boolean outputEnabled,
             @JsonProperty("callbackUrl") String callbackUrl,
@@ -188,7 +187,7 @@ public class BatchJobImpl implements BatchJob {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
-        _transientPipeline = transientPipeline;
+        _pipelineComponents = pipelineComponents;
         _priority = priority;
         _outputEnabled = outputEnabled;
         _callbackUrl = StringUtils.trimToNull(callbackUrl);

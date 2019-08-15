@@ -33,6 +33,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -113,7 +114,7 @@ public class TestUtil {
                              Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline("dummyPipeline", "dummyDescription",
                                          Collections.singleton(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
 
@@ -122,7 +123,7 @@ public class TestUtil {
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                transientPipeline,
+                pipelineComponents,
                 1,
                 false,
                 null,

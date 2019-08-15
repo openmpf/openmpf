@@ -41,7 +41,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -415,7 +415,7 @@ public class TestS3StorageBackend {
         var task = new Task("TEST_TASK", "description", List.of(action.getName()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",
                                     List.of(task.getName()));
-        var transientPipeline = new TransientPipeline(
+        var pipelineComponents = new JobPipelineComponents(
                 pipeline, List.of(task), List.of(action),
                 List.of(algorithm));
 
@@ -429,8 +429,8 @@ public class TestS3StorageBackend {
         when(job.getMedia(mediaId))
                 .thenReturn(media);
 
-        when(job.getTransientPipeline())
-                .thenReturn(transientPipeline);
+        when(job.getPipelineComponents())
+                .thenReturn(pipelineComponents);
 
 
         when(media.getMediaSpecificProperties())

@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.springframework.stereotype.Component;
@@ -157,7 +157,7 @@ public class AggregateJobPropertiesUtil {
     public Map<String, String> getCombinedJobProperties(Action action,
                                                         TransientStreamingJob job) {
         var algoName = action.getAlgorithm();
-        var algorithm = job.getTransientPipeline().getAlgorithm(algoName);
+        var algorithm = job.getPipelineComponents().getAlgorithm(algoName);
 
         var combined = new HashMap<String, String>();
         for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
@@ -251,7 +251,7 @@ public class AggregateJobPropertiesUtil {
                 propertyName,
                 media.getMediaSpecificProperties(),
                 action,
-                job.getTransientPipeline(),
+                job.getPipelineComponents(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot());
@@ -260,7 +260,7 @@ public class AggregateJobPropertiesUtil {
 
     public Function<String, String> getCombinedProperties(
             Action action,
-            TransientPipeline pipeline,
+            JobPipelineComponents pipeline,
             Media media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -280,7 +280,7 @@ public class AggregateJobPropertiesUtil {
             String propertyName,
             Map<String, String> mediaProperties,
             Action action,
-            TransientPipeline transientPipeline,
+            JobPipelineComponents pipeline,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             Map<String, String> jobProperties,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
@@ -313,7 +313,7 @@ public class AggregateJobPropertiesUtil {
             return actionPropVal;
         }
 
-        Algorithm algorithm = transientPipeline.getAlgorithm(action.getAlgorithm());
+        Algorithm algorithm = pipeline.getAlgorithm(action.getAlgorithm());
 
         Algorithm.Property property = algorithm.getProperty(propertyName);
         if (property != null) {
@@ -334,7 +334,7 @@ public class AggregateJobPropertiesUtil {
     public Function<String, String> getCombinedProperties(BatchJob job, long mediaId, int taskIndex,
                                                           int actionIndex) {
         return getCombinedProperties(job, job.getMedia(mediaId),
-                                     job.getTransientPipeline().getAction(taskIndex, actionIndex));
+                                     job.getPipelineComponents().getAction(taskIndex, actionIndex));
 
     }
 
@@ -353,7 +353,7 @@ public class AggregateJobPropertiesUtil {
                 propName,
                 media.getMediaSpecificProperties(),
                 null,
-                job.getTransientPipeline(),
+                job.getPipelineComponents(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot());
@@ -379,7 +379,7 @@ public class AggregateJobPropertiesUtil {
                 propName,
                 finalMediaProps,
                 null,
-                job.getTransientPipeline(),
+                job.getPipelineComponents(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot());
@@ -405,12 +405,12 @@ public class AggregateJobPropertiesUtil {
                 .map(Media::getMediaSpecificProperties)
                 .orElseGet(ImmutableMap::of);
 
-        Action action = transientJob.getTransientPipeline().getAction(markup.getTaskIndex(), markup.getActionIndex());
+        Action action = transientJob.getPipelineComponents().getAction(markup.getTaskIndex(), markup.getActionIndex());
         return propName -> calculateValue(
                 propName,
                 mediaProps,
                 action,
-                transientJob.getTransientPipeline(),
+                transientJob.getPipelineComponents(),
                 transientJob.getOverriddenAlgorithmProperties(),
                 transientJob.getJobProperties(),
                 transientJob.getSystemPropertiesSnapshot());

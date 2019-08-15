@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
 import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -137,8 +137,8 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
         // Create pipeline before persisting job so any pipeline errors will get reported before the job is
         // persisted.
-        TransientPipeline pipeline
-                = pipelineService.createTransientStreamingPipeline(jobCreationRequest.getPipelineName());
+        JobPipelineComponents pipeline
+                = pipelineService.getStreamingPipelineComponents(jobCreationRequest.getPipelineName());
 
         StreamingJobRequest jobRequestEntity = createJobRequestEntity(jobCreationRequest, pipeline);
 
@@ -179,7 +179,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 
     private StreamingJobRequest createJobRequestEntity(StreamingJobCreationRequest jobCreationRequest,
-                                                       TransientPipeline pipeline) {
+                                                       JobPipelineComponents pipeline) {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(propertiesUtil::getJmsPriority);
 
@@ -204,7 +204,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
     private TransientStreamingJob createTransientJob(StreamingJobCreationRequest jobCreationRequest,
                                                      StreamingJobRequest jobRequestEntity,
-                                                     TransientPipeline pipeline,
+                                                     JobPipelineComponents pipeline,
                                                      boolean enableOutput) {
         var stream = new TransientStream(
                 IdGenerator.next(),

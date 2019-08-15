@@ -29,10 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -76,7 +73,7 @@ public class InProgressBatchJobsService {
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,
-            TransientPipeline pipeline,
+            JobPipelineComponents pipeline,
             int priority,
             boolean outputEnabled,
             String callbackUrl,

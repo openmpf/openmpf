@@ -40,11 +40,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
@@ -150,7 +146,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                     jobId, jobRequestEntity.getStatus().name()));
         }
 
-        BatchJob originalJob = jsonUtils.deserialize(jobRequestEntity.getInputObject(), BatchJob.class);
+        BatchJob originalJob = jsonUtils.deserialize(jobRequestEntity.getJob(), BatchJob.class);
 
         List<Media> media = originalJob.getMedia()
                 .stream()
@@ -240,7 +236,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
             inProgressJobs.setJobStatus(job.getId(), jobStatus);
 
-            jobRequestEntity.setInputObject(jsonUtils.serialize(job));
+            jobRequestEntity.setJob(jsonUtils.serialize(job));
             jobRequestEntity.setStatus(jobStatus);
             jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
 
@@ -374,7 +370,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                     log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
                 }
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
-                jobRequest.setInputObject(jsonUtils.serialize(inProgressJobs.getJob(jobId)));
+                jobRequest.setJob(jsonUtils.serialize(inProgressJobs.getJob(jobId)));
                 jobRequestDao.persist(jobRequest);
             } else {
                 log.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);

@@ -40,11 +40,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
@@ -74,7 +70,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.AdditionalMatchers.gt;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 
@@ -120,7 +115,7 @@ public class TestStreamingJobStartStop {
 
         waitForCorrectNodes();
 
-        TransientStreamingJob streamingJob = createJob(
+        StreamingJob streamingJob = createJob(
                 jobId,
                 "SUBSENSE",
                 "SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE",
@@ -168,7 +163,7 @@ public class TestStreamingJobStartStop {
 
         waitForCorrectNodes();
 
-        TransientStreamingJob streamingJob = createJob(
+        StreamingJob streamingJob = createJob(
                 jobId,
                 "DARKNET",
                 "TINY YOLO OBJECT DETECTION PIPELINE",
@@ -230,20 +225,20 @@ public class TestStreamingJobStartStop {
             }
 
 
-    private TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
+    private StreamingJob createJob(long jobId, String algorithm, String pipelineName,
                                             String mediaPath, int segmentSize, int stallTimeout) {
         Action action = new Action("Action1", "description", algorithm, Collections.emptyList());
         Task task = new Task("stage1", "description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline(pipelineName, "desc", Collections.singleton(task.getName()));
-        TransientPipeline transientPipeline = new TransientPipeline(
+        JobPipelineComponents transientPipeline = new JobPipelineComponents(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(_pipelineService.getAlgorithm(algorithm)));
 
 
         URI videoUri = _ioUtils.findFile(mediaPath);
-        TransientStream stream = new TransientStream(124, videoUri.toString(), segmentSize, Collections.emptyMap());
+        MediaStreamInfo stream = new MediaStreamInfo(124, videoUri.toString(), segmentSize, Collections.emptyMap());
 
-        return new TransientStreamingJobImpl(
+        return new StreamingJobImpl(
                 jobId, "ext id", transientPipeline, stream, 1, stallTimeout, false,
                 "mydir", null, null,
                 Collections.emptyMap(), Collections.emptyMap());

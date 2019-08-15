@@ -148,7 +148,7 @@ public class MarkupController {
         //add job media that may exist without markup
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest != null) {
-            BatchJob job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
+            BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
             for (Media med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();

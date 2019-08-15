@@ -38,61 +38,59 @@ import java.time.Instant;
 @Entity
 public class JobRequest {
 
-	public JobRequest() { }
+    /** The unique numeric identifier for this job.
+     * Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
+     * */
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private long id;
+    public long getId() { return id; }
 
-	/** The unique numeric identifier for this job.
-	 * Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
-	 * */
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private long id;
-	public long getId() { return id; }
+    /** The timestamp indicating when the server received this job. */
+    @Column
+    private Instant timeReceived;
+    public Instant getTimeReceived() { return timeReceived; }
+    public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
 
-	/** The timestamp indicating when the server received this job. */
-	@Column
-	private Instant timeReceived;
-	public Instant getTimeReceived() { return timeReceived; }
-	public void setTimeReceived(Instant timeReceived) { this.timeReceived = timeReceived; }
+    /** The timestamp indicating when the server completed this job.*/
+    @Column
+    private Instant timeCompleted;
+    public Instant getTimeCompleted() { return timeCompleted; }
+    public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
 
-	/** The timestamp indicating when the server completed this job.*/
-	@Column
-	private Instant timeCompleted;
-	public Instant getTimeCompleted() { return timeCompleted; }
-	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
-	
-	/** The priority of the job set when creating the job.*/
-	@Column	
-	private int priority;
-	public int getPriority() { return  priority; }
-	public void setPriority(int priority) { this.priority = priority; }
+    /** The priority of the job set when creating the job.*/
+    @Column
+    private int priority;
+    public int getPriority() { return  priority; }
+    public void setPriority(int priority) { this.priority = priority; }
 
-	/** The current status of this batch job. */
-	@Column
-	@Enumerated(EnumType.STRING)
-	private BatchJobStatusType status;
-	public BatchJobStatusType getStatus() { return status; }
-	public void setStatus(BatchJobStatusType status) { this.status = status; }
+    /** The current status of this batch job. */
+    @Column
+    @Enumerated(EnumType.STRING)
+    private BatchJobStatusType status;
+    public BatchJobStatusType getStatus() { return status; }
+    public void setStatus(BatchJobStatusType status) { this.status = status; }
 
-	@Column
-	@Lob
-	private byte[] inputObject;
-	public byte[] getInputObject() { return inputObject; }
-	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
+    @Column
+    @Lob
+    private byte[] job;
+    public byte[] getJob() { return job; }
+    public void setJob(byte[] job) { this.job = job; }
 
-	@Column(columnDefinition = "TEXT")
-	private String outputObjectPath;
-	public String getOutputObjectPath() { return outputObjectPath; }
-	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }
+    @Column(columnDefinition = "TEXT")
+    private String outputObjectPath;
+    public String getOutputObjectPath() { return outputObjectPath; }
+    public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }
 
-	@Column
-	private String pipeline;
-	public String getPipeline() { return pipeline; }
-	public void setPipeline(String pipeline) { this.pipeline = pipeline; }
+    @Column
+    private String pipeline;
+    public String getPipeline() { return pipeline; }
+    public void setPipeline(String pipeline) { this.pipeline = pipeline; }
 
-	/** The version of the output object. */
-	@Column
-	private String outputObjectVersion;
-	public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
+    /** The version of the output object. */
+    @Column
+    private String outputObjectVersion;
+    public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
-	public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
+    public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
 }

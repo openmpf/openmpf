@@ -384,7 +384,7 @@ public class AggregateJobPropertiesUtil {
 
     public Function<String, String> getCombinedProperties(MarkupResult markup) {
         BatchJob job = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
-                .map(JobRequest::getInputObject)
+                .map(JobRequest::getJob)
                 .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class))
                 .orElse(null);
 

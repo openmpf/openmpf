@@ -290,7 +290,7 @@ public class JobController {
                 return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
             }
 
-            var job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
+            var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
             InputStreamResource inputStreamResource;
             if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
                 S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),

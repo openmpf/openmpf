@@ -38,8 +38,6 @@ import java.time.Instant;
 @Entity
 public class StreamingJobRequest {
 
-    public StreamingJobRequest() { }
-
     /** The unique numeric identifier for this job.
      * 	Using SEQUENCE rather than IDENTITY to avoid conflicts between batch and streaming job Ids
      * */
@@ -89,9 +87,9 @@ public class StreamingJobRequest {
 
     @Column
     @Lob
-    private byte[] inputObject;
-    public byte[] getInputObject() { return inputObject; }
-    public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
+    private byte[] job;
+    public byte[] getJob() { return job; }
+    public void setJob(byte[] job) { this.job = job; }
 
     @Column(columnDefinition = "TEXT")
     private String outputObjectDirectory;

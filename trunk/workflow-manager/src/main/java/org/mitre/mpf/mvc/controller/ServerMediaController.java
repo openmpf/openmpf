@@ -228,7 +228,7 @@ public class ServerMediaController {
             return;
         }
 
-        var job = jsonUtils.deserialize(jobRequest.getInputObject(), BatchJob.class);
+        var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         Function<String, String> combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {

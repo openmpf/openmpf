@@ -155,7 +155,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             StreamingJob job = createJob(
                     jobCreationRequest, jobRequestEntity, pipeline, enableOutput);
 
-            jobRequestEntity.setInputObject(jsonUtils.serialize(job));
+            jobRequestEntity.setJob(jsonUtils.serialize(job));
 
             jobRequestEntity = streamingJobRequestDao.persist(jobRequestEntity);
 
@@ -418,7 +418,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (status.isTerminal()) {
             streamingJobRequest.setTimeCompleted(Instant.ofEpochMilli(timestamp));
-            streamingJobRequest.setInputObject(jsonUtils.serialize(job));
+            streamingJobRequest.setJob(jsonUtils.serialize(job));
         }
         streamingJobRequest.setStatus(status.getType());
 

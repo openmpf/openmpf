@@ -209,7 +209,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         jobRequest.setTimeCompleted(Instant.now());
         jobRequest.setStatus(jobStatus);
-        jobRequest.setInputObject(jsonUtils.serialize(job));
+        jobRequest.setJob(jsonUtils.serialize(job));
         jobRequestDao.persist(jobRequest);
     }
 

@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,19 +32,15 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
-/** transient stream data. Note that currently, only the RTSP and HTTP protocols for streams is currently supported */
-public class TransientStream {
+public class MediaStreamInfo {
 
-    /** The unique identifier for this stream. */
     private final long _id;
     public long getId() { return _id; }
 
-    /** The stream resource used to construct this transient stream, Error may occur if the URI of the stream isn't a OpenMPF supported protocol. */
     private final String _uri;
     public String getUri() { return _uri; }
 
 
-    /** The media properties to override for this stream. */
     private final ImmutableMap<String, String> _mediaProperties;
     public ImmutableMap<String, String> getMediaProperties() { return _mediaProperties; }
     public String getMediaProperty(String key) { return _mediaProperties.get(key); }
@@ -53,7 +49,7 @@ public class TransientStream {
     public int getSegmentSize() { return _segmentSize; }
 
     @JsonCreator
-    public TransientStream(
+    public MediaStreamInfo(
             @JsonProperty("id") long id,
             @JsonProperty("uri") String uri,
             @JsonProperty("segmentSize") int segmentSize,

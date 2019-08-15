@@ -44,7 +44,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;

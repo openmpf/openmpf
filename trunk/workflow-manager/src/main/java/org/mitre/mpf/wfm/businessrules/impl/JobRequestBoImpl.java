@@ -42,7 +42,7 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -336,7 +336,7 @@ public class JobRequestBoImpl implements JobRequestBo {
 
     /**
      * Will cancel a batch job.
-     * This method will mark the job as cancelled in both the TransientJob and in the long-term database.
+     * This method will mark the job as cancelled in both the BatchJob and in the long-term database.
      * The job cancel request will also be sent along to the components via ActiveMQ using the
      * JobCreatorRouteBuilder.ENTRY_POINT.
      *
@@ -374,6 +374,7 @@ public class JobRequestBoImpl implements JobRequestBo {
                     log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
                 }
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
+                jobRequest.setInputObject(jsonUtils.serialize(inProgressJobs.getJob(jobId)));
                 jobRequestDao.persist(jobRequest);
             } else {
                 log.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);

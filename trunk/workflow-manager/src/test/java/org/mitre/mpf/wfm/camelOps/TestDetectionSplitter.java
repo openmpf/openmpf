@@ -40,7 +40,7 @@ import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.enums.MediaType;

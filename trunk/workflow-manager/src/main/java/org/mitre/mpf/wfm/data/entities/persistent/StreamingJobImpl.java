@@ -25,13 +25,11 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import java.time.Instant;
@@ -39,7 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 
-public class TransientStreamingJobImpl implements TransientStreamingJob {
+public class StreamingJobImpl implements StreamingJob {
 
     private final long _id;
     @Override
@@ -82,9 +80,9 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
     public String getOutputObjectDirectory() { return _outputObjectDirectory; }
 
 
-    private final TransientStream _stream;
+    private final MediaStreamInfo _stream;
     @Override
-    public TransientStream getStream() { return _stream; }
+    public MediaStreamInfo getStream() { return _stream; }
 
 
     private final ImmutableMap<String, ImmutableMap<String, String>> _overriddenAlgorithmProperties;
@@ -136,11 +134,11 @@ public class TransientStreamingJobImpl implements TransientStreamingJob {
 
 
     @JsonCreator
-    public TransientStreamingJobImpl(
+    public StreamingJobImpl(
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("pipelineComponents") JobPipelineComponents pipelineComponents,
-            @JsonProperty("stream") TransientStream stream,
+            @JsonProperty("stream") MediaStreamInfo stream,
             @JsonProperty("priority") int priority,
             @JsonProperty("stallTimeout") long stallTimeout,
             @JsonProperty("outputEnabled") boolean outputEnabled,

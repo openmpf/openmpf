@@ -24,20 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 
 import java.time.Instant;
 import java.util.Optional;
 
-// Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
+// Suppress because it's better than having to explicitly use StreamingJobImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
-@JsonDeserialize(as = TransientStreamingJobImpl.class)
-public interface TransientStreamingJob {
+@JsonDeserialize(as = StreamingJobImpl.class)
+public interface StreamingJob {
     public long getId();
 
     public StreamingJobStatus getJobStatus();
@@ -54,7 +52,7 @@ public interface TransientStreamingJob {
 
     public String getOutputObjectDirectory();
 
-    public TransientStream getStream();
+    public MediaStreamInfo getStream();
 
     // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();

@@ -29,15 +29,13 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.wfm.data.entities.transients.DetectionProcessingError;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-// Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
+// Suppress because it's better than having to explicitly use BatchJobImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
 @JsonDeserialize(as = BatchJobImpl.class)
 public interface BatchJob {

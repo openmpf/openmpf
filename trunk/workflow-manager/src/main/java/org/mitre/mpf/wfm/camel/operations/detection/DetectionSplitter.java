@@ -37,7 +37,7 @@ import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.*;
@@ -188,7 +188,7 @@ public class DetectionSplitter implements StageSplitter {
 
                     // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
                     // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
-                    // by transientJob.getOverriddenAlgorithmProperties().  This is handled here.
+                    // by job.getOverriddenAlgorithmProperties().  This is handled here.
                     // Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
 
                     // If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
@@ -201,11 +201,11 @@ public class DetectionSplitter implements StageSplitter {
 
                     // Note: only want to consider the algorithm from algorithm properties that corresponds to the current
                     // action being processed.  Which algorithm (i.e. action) that is being processed
-                    // is available using transientAction.getAlgorithm().  So, see if our algorithm properties include
+                    // is available using action.getAlgorithm().  So, see if our algorithm properties include
                     // override of the action (i.e. algorithm) that we are currently processing
-                    // Note that this implementation depends on algorithm property keys matching what would be returned by transientAction.getAlgorithm()
+                    // Note that this implementation depends on algorithm property keys matching what would be returned by action.getAlgorithm()
                     if (job.getOverriddenAlgorithmProperties().containsKey(action.getAlgorithm())) {
-                        // this transient job contains the a algorithm property which may override what is in our current action
+                        // this job contains the a algorithm property which may override what is in our current action
                         Map<String, String> job_alg_m = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
 
                         // see if any of these algorithm properties are transform properties.  If so, clear the

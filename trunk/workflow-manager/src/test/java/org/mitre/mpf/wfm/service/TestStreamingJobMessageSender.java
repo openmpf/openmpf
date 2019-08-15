@@ -35,9 +35,9 @@ import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobImpl;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -131,14 +131,14 @@ public class TestStreamingJobMessageSender {
 
 
 
-        TransientStream stream = new TransientStream(
+        MediaStreamInfo stream = new MediaStreamInfo(
                 5234,
                 "stream://myStream",
                 543,
                 ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"));
 
         long jobId = 1234;
-        TransientStreamingJob job = new TransientStreamingJobImpl(
+        StreamingJob job = new StreamingJobImpl(
                 jobId,
                 "external id",
                 pipelineComponents,

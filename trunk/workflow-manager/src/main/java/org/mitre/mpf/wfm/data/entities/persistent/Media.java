@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import java.nio.file.Path;
 import java.util.Map;
 
-// Suppress because it's better than having to explicitly use TransientJobImpl during deserialization.
+// Suppress because it's better than having to explicitly use MediaImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
 @JsonSerialize(as = MediaImpl.class)
 public interface Media {

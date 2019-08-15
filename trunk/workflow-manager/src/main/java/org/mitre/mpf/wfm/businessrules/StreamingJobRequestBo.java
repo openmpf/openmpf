@@ -46,7 +46,7 @@ public interface StreamingJobRequestBo {
 
 
     /**
-     * Marks a streaming job as CANCELLING in both the TransientStreamingJob and in the long-term database.
+     * Marks a streaming job as CANCELLING in both the StreamingJob and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception WfmProcessingException may be thrown if a warning or error occurs.

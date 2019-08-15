@@ -33,10 +33,10 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.springframework.stereotype.Component;
 
@@ -48,12 +48,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-// Updated calculateValue methods to support new algorithmProperties.  Note the need to support actionProperties both as
-// a Map<String,String> and as a Collection<PropertyDefinitionRef>.  Also, need to allow for passing in which algorithm is to be checked
-// in algorithmProperties, where the currently processed (or defined) algorithm could originate from a
-// TransientAction or an ActionDefinition.  Both of these Action objects would include the algorithm that is currently being processed,
-// and should be used to set the scope for which algorithmProperty (key: AlgorithmName) is to be used to
-// check for the propertyName being provided
 
 @Component
 public class AggregateJobPropertiesUtil {
@@ -155,7 +149,7 @@ public class AggregateJobPropertiesUtil {
 
 
     public Map<String, String> getCombinedJobProperties(Action action,
-                                                        TransientStreamingJob job) {
+                                                        StreamingJob job) {
         var algoName = action.getAlgorithm();
         var algorithm = job.getPipelineComponents().getAlgorithm(algoName);
 
@@ -389,30 +383,30 @@ public class AggregateJobPropertiesUtil {
 
 
     public Function<String, String> getCombinedProperties(MarkupResult markup) {
-        BatchJob transientJob = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
+        BatchJob job = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
                 .map(JobRequest::getInputObject)
                 .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class))
                 .orElse(null);
 
-        if (transientJob == null) {
+        if (job == null) {
             return x -> null;
         }
 
-        Map<String, String> mediaProps = transientJob.getMedia()
+        Map<String, String> mediaProps = job.getMedia()
                 .stream()
                 .filter(m -> URI.create(m.getUri()).equals(URI.create(markup.getSourceUri())))
                 .findAny()
                 .map(Media::getMediaSpecificProperties)
                 .orElseGet(ImmutableMap::of);
 
-        Action action = transientJob.getPipelineComponents().getAction(markup.getTaskIndex(), markup.getActionIndex());
+        Action action = job.getPipelineComponents().getAction(markup.getTaskIndex(), markup.getActionIndex());
         return propName -> calculateValue(
                 propName,
                 mediaProps,
                 action,
-                transientJob.getPipelineComponents(),
-                transientJob.getOverriddenAlgorithmProperties(),
-                transientJob.getJobProperties(),
-                transientJob.getSystemPropertiesSnapshot());
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot());
     }
 }

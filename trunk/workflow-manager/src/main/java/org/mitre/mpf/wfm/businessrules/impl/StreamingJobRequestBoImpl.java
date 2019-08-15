@@ -40,8 +40,8 @@ import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -152,17 +152,17 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
             }
 
 
-            TransientStreamingJob transientJob = createTransientJob(
+            StreamingJob job = createJob(
                     jobCreationRequest, jobRequestEntity, pipeline, enableOutput);
 
-            jobRequestEntity.setInputObject(jsonUtils.serialize(transientJob));
+            jobRequestEntity.setInputObject(jsonUtils.serialize(job));
 
             jobRequestEntity = streamingJobRequestDao.persist(jobRequestEntity);
 
-            transientJob.getHealthReportCallbackURI()
-                    .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(transientJob)));
+            job.getHealthReportCallbackURI()
+                    .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
 
-            streamingJobMessageSender.launchJob(transientJob);
+            streamingJobMessageSender.launchJob(job);
 
 
             return jobRequestEntity;
@@ -202,11 +202,11 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     }
 
 
-    private TransientStreamingJob createTransientJob(StreamingJobCreationRequest jobCreationRequest,
-                                                     StreamingJobRequest jobRequestEntity,
-                                                     JobPipelineComponents pipeline,
-                                                     boolean enableOutput) {
-        var stream = new TransientStream(
+    private StreamingJob createJob(StreamingJobCreationRequest jobCreationRequest,
+                                   StreamingJobRequest jobRequestEntity,
+                                   JobPipelineComponents pipeline,
+                                   boolean enableOutput) {
+        var stream = new MediaStreamInfo(
                 IdGenerator.next(),
                 jobCreationRequest.getStream().getStreamUri(),
                 jobCreationRequest.getStream().getSegmentSize(),
@@ -259,7 +259,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 
 
     /**
-     * Marks a streaming job as CANCELLING in both the TransientStreamingJob and in the long-term database.
+     * Marks a streaming job as CANCELLING in both the StreamingJob and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
      * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job has already been cancelled or
@@ -409,16 +409,16 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     public void handleJobStatusChange(long jobId, StreamingJobStatus status, long timestamp) {
         inProgressJobs.setJobStatus(jobId, status);
 
-        TransientStreamingJob transientJob = inProgressJobs.getJob(jobId);
+        StreamingJob job = inProgressJobs.getJob(jobId);
 
-        transientJob.getHealthReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(transientJob)));
+        job.getHealthReportCallbackURI()
+                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
 
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
         if (status.isTerminal()) {
             streamingJobRequest.setTimeCompleted(Instant.ofEpochMilli(timestamp));
-            streamingJobRequest.setInputObject(jsonUtils.serialize(transientJob));
+            streamingJobRequest.setInputObject(jsonUtils.serialize(job));
         }
         streamingJobRequest.setStatus(status.getType());
 
@@ -429,7 +429,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
         streamingJobRequestDao.persist(streamingJobRequest);
 
         if (status.isTerminal()) {
-            if (transientJob.isCleanupEnabled()) {
+            if (job.isCleanupEnabled()) {
                 try {
                     cleanup(jobId, streamingJobRequest.getOutputObjectDirectory());
                 } catch (WfmProcessingException e) {
@@ -461,24 +461,24 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
     @Override
     public void handleNewActivityAlert(long jobId, long frameId, long timestamp) {
         inProgressJobs.setLastJobActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
-        TransientStreamingJob job = inProgressJobs.getJob(jobId);
+        StreamingJob job = inProgressJobs.getJob(jobId);
         job.getHealthReportCallbackURI()
                 .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
     }
 
     @Override
     public void handleNewSummaryReport(JsonSegmentSummaryReport summaryReport) {
-        TransientStreamingJob transientStreamingJob = inProgressJobs.getJob(summaryReport.getJobId());
+        StreamingJob job = inProgressJobs.getJob(summaryReport.getJobId());
 
-        transientStreamingJob.getExternalId()
+        job.getExternalId()
                 .ifPresent(summaryReport::setExternalId);
 
-        transientStreamingJob.getSummaryReportCallbackURI()
+        job.getSummaryReportCallbackURI()
                 .ifPresent(uri -> callbackUtils.sendSummaryReportCallback(summaryReport, uri));
 
-        if (transientStreamingJob.isOutputEnabled()) {
+        if (job.isOutputEnabled()) {
             try {
-                String outputPath = transientStreamingJob.getOutputObjectDirectory();
+                String outputPath = job.getOutputObjectDirectory();
                 File outputFile = propertiesUtil.createStreamingOutputObjectsFile(summaryReport.getReportDate(),
                                                                                   new File(outputPath));
                 jsonUtils.serialize(summaryReport, outputFile);

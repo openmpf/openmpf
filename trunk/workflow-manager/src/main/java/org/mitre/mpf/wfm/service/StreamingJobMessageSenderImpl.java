@@ -34,7 +34,7 @@ import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -70,7 +70,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
     @Override
-    public void launchJob(TransientStreamingJob job) {
+    public void launchJob(StreamingJob job) {
         LaunchStreamingJobMessage launchMessage = createLaunchStreamingJobMessage(job);
         _masterNode.startStreamingJob(launchMessage);
     }
@@ -83,7 +83,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
 
-    private LaunchStreamingJobMessage createLaunchStreamingJobMessage(TransientStreamingJob job) {
+    private LaunchStreamingJobMessage createLaunchStreamingJobMessage(StreamingJob job) {
         Action action = getAction(job);
         StreamingServiceModel streamingService = _streamingServiceManager.getServices().stream()
                 .filter(sm -> sm.getAlgorithmName().equals(action.getAlgorithm()))
@@ -116,7 +116,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
 
 
 
-    private static Action getAction(TransientStreamingJob job) {
+    private static Action getAction(StreamingJob job) {
         Pipeline pipeline = job.getPipelineComponents().getPipeline();
         ImmutableList<String> tasks = pipeline.getTasks();
         //TODO: Remove method when support for the multi-stage pipelines is added.

@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -41,7 +41,7 @@ import java.util.Optional;
 
 // Wrapper class for the system property values that should have been captured in a
 // ImmutableConfiguration object when a batch job is created. The system property values will be
-// stored in a TransientJob so that the system property values applicable to a job will remain
+// stored in a BatchJob so that the system property values applicable to a job will remain
 // consistent throughout all pipeline stages of a batch job, even if the system property values are changed on the
 // UI while the job is being processed. This processing is not implemented for streaming jobs, since
 // streaming jobs may only be single stage at this time.

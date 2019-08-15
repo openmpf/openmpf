@@ -26,11 +26,11 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 
 public interface StreamingJobMessageSender {
 
-	public void launchJob(TransientStreamingJob job);
+	public void launchJob(StreamingJob job);
 
 	public void stopJob(long jobId);
 

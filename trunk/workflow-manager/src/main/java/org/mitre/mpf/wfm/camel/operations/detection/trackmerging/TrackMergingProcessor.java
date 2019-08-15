@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -166,12 +167,12 @@ public class TrackMergingProcessor extends WfmProcessor {
 
         String minTrackOverlapProperty = combinedProperties.apply(MpfConstants.MIN_TRACK_OVERLAP);
 
-        SystemPropertiesSnapshot transientDetectionSystemProperties = job.getSystemPropertiesSnapshot();
+        SystemPropertiesSnapshot systemPropertiesSnapshot = job.getSystemPropertiesSnapshot();
 
-        boolean mergeTracks = transientDetectionSystemProperties.isTrackMerging();
-        int minGapBetweenTracks = transientDetectionSystemProperties.getMinAllowableTrackGap();
-        int minTrackLength = transientDetectionSystemProperties.getMinTrackLength();
-        double minTrackOverlap = transientDetectionSystemProperties.getTrackOverlapThreshold();
+        boolean mergeTracks = systemPropertiesSnapshot.isTrackMerging();
+        int minGapBetweenTracks = systemPropertiesSnapshot.getMinAllowableTrackGap();
+        int minTrackLength = systemPropertiesSnapshot.getMinTrackLength();
+        double minTrackOverlap = systemPropertiesSnapshot.getTrackOverlapThreshold();
 
         if (mergeTracksProperty != null) {
             mergeTracks = Boolean.parseBoolean(mergeTracksProperty);

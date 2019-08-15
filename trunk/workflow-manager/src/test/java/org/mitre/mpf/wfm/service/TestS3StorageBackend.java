@@ -77,7 +77,7 @@ public class TestS3StorageBackend {
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
 
-    private static final String S3_HOST = "http://localhost:5000/";
+    private static final String S3_HOST = "http://127.0.0.1:5000/";
 
     private static final String RESULTS_BUCKET = "RESULTS_BUCKET";
 

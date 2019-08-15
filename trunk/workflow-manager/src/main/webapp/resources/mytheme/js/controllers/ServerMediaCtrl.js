@@ -166,6 +166,12 @@
                         waitModal.modal('show');
                         //get all the files from the server recursively
                         MediaService.getAllFiles(node.fullPath).then(function (nodeData) {
+                            if (nodeData == null) {
+                                waitModal.modal('hide');
+                                alert("The selected directory was deleted.");
+                                reloadTree();
+                                return;
+                            }
                             addFilesToSubmit(nodeData.data);
 
                             //ugly hack because we get all the files recursively for the top directory as one list, need to map them
@@ -203,6 +209,12 @@
                         waitModal.modal('show');
                         //get all the files from the server
                         MediaService.getAllFiles(node.fullPath).then(function (nodeData) {
+                            if (nodeData == null) {
+                                waitModal.modal('hide');
+                                alert("The selected directory was deleted.");
+                                reloadTree();
+                                return;
+                            }
                             removeFilesToSubmit(nodeData.data);
 
                             //ugly hack because we get all the files recursively for the top directory as one list, need to unmap them
@@ -334,7 +346,7 @@
                                 return json.data;
                             },
                             error: function () {
-                                alert("The selected directory was deleted");
+                                alert("The selected directory was deleted.");
                                 reloadTree();
                             }
                         },

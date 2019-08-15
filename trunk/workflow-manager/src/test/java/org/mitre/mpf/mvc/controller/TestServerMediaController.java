@@ -133,7 +133,7 @@ public class TestServerMediaController {
     }
 
     @Test
-    public void getDirectoriesAfterDelete() throws IOException, InterruptedException {
+    public void getAllDirectoriesAfterDeletion() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
@@ -152,7 +152,7 @@ public class TestServerMediaController {
     }
 
     @Test
-    public void getDirectoriesAfterEvents() throws IOException, InterruptedException {
+    public void getAllDirectoriesAfterEvents() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
@@ -196,7 +196,7 @@ public class TestServerMediaController {
     }
 
     @Test
-    public void getAllFilesNestedFolder() throws IOException, InterruptedException {
+    public void getAllFilesNestedFolderAfterCreation() throws IOException, InterruptedException {
         File subFolder = _tempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
@@ -207,6 +207,9 @@ public class TestServerMediaController {
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
 
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
+        Assert.assertEquals(0, mediaListing.getData().size());
+
         File file1 = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file1.createNewFile());
         File file2 = new File(subFolder.getAbsolutePath() + "/" + _testFileName2);
@@ -215,7 +218,7 @@ public class TestServerMediaController {
         Assert.assertTrue(file3.createNewFile());
 
         Thread.sleep(100);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
+        mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
 
         assertEquals(3, mediaListing.getData().size());
         assertEquals(_testFileName1, mediaListing.getData().get(0).getName());

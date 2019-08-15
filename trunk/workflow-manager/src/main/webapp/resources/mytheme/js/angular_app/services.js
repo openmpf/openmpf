@@ -188,6 +188,9 @@ AppServices.service('MediaService', function ($http) {
             params: {'fullPath': fullPath}
         }).then(function (response) {
             return response.data;
+        }).catch(function (reason) {
+            console.log("Error response received from server.");
+            console.log(JSON.stringify(reason));
         });
         return promise;
     };

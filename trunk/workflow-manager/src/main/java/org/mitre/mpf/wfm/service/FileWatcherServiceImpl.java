@@ -320,8 +320,13 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
                 List<ServerMediaFile> mediaFiles = new ArrayList<>();
                 for (ServerMediaFile cachedFile : oldListing.getData()) {
-                    if (!cachedFile.getFullPath().equals(item.getAbsolutePath())) {
-                        mediaFiles.add(cachedFile);
+                    try {
+                        if (!cachedFile.getFullPath().equals(item.getCanonicalPath())) {
+                            mediaFiles.add(cachedFile);
+                        }
+                    } catch (IOException e) {
+                        log.error("Failed to resolve canonical path for: " + item.getAbsolutePath() +
+                                ", removing from cache.\n", e);
                     }
                 }
                 if (mediaFiles.size() == oldListing.getData().size()) {

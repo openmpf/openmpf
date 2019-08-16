@@ -103,7 +103,8 @@ public class TestRemoteMediaProcessor {
 
             String noProxyHosts = System.getenv("no_proxy");
             if (noProxyHosts != null) {
-                System.setProperty(protocol + ".nonProxyHosts", noProxyHosts);
+                String javaPropertyFormattedNoProxy = noProxyHosts.replace(',', '|');
+                System.setProperty(protocol + ".nonProxyHosts", javaPropertyFormattedNoProxy);
             }
         }
     }

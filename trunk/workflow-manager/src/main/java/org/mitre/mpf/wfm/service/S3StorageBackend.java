@@ -356,22 +356,6 @@ public class S3StorageBackend implements StorageBackend {
         ClientConfiguration clientConfig = new ClientConfiguration();
         clientConfig.setMaxErrorRetry(retryCount);
 
-        LOG.info("#############################################################");
-        LOG.info("S3 client config:");
-        LOG.info("protocol: {}", clientConfig.getProxyProtocol());
-        LOG.info("host: {}", clientConfig.getProxyHost());
-        LOG.info("port: {}", clientConfig.getProxyPort());
-        LOG.info("no proxy hosts: {}", clientConfig.getNonProxyHosts());
-        LOG.info("domain: {}", clientConfig.getProxyDomain());
-
-        LOG.info("#############################################################");
-        LOG.info("envars: {}", System.getenv());
-
-
-        LOG.info("#############################################################");
-        LOG.info("system properties: " + System.getProperties());
-
-
         AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
                 endpoint, Regions.US_EAST_1.name());
 

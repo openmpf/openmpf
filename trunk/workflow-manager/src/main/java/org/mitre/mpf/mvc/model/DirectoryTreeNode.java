@@ -41,7 +41,6 @@ public class DirectoryTreeNode {
     private String text = null; //file or dir text/path;
     private String fullPath = null;
     private List<DirectoryTreeNode> nodes = null;
-    private boolean canUpload = false;
     private static DirectoryStream.Filter<Path> directoryFilter = entry -> (Files.isDirectory(entry));
 
     public DirectoryTreeNode(File f) {
@@ -95,11 +94,16 @@ public class DirectoryTreeNode {
                 if (realPath != null) {
                     DirectoryTreeNode realChildNode = new DirectoryTreeNode(realPath.toFile()); // resolve symbolic link to real path
 
-                    if (Files.isSymbolicLink(child)) {
-                        if (seenNodes.contains(realChildNode)) {
-                            log.warn("Omitting duplicate symbolically linked directory in this branch: " + child.toAbsolutePath() + " --> " + realPath);
-                            continue; // prevent symlink loop
+                    if (seenNodes.contains(realChildNode)) {
+                        if (Files.isSymbolicLink(child)) {
+                            log.warn("Omitting duplicate symbolically linked directory: " + child.toAbsolutePath() + " --> " + realPath);
+                        } else {
+                            log.warn("Omitting previously seen directory: " + child.toAbsolutePath() + " --> " + realPath);
                         }
+                        continue;
+                    }
+
+                    if (Files.isSymbolicLink(child)) {
                         log.info("Adding symbolically linked directory: " + child.toAbsolutePath() + " --> " + realPath);
                     }
 
@@ -118,10 +122,6 @@ public class DirectoryTreeNode {
                         .thenComparing(Comparator.naturalOrder());
                 node.nodes.sort(Comparator.comparing(DirectoryTreeNode::getText, stableCaseInsensitive));
             }
-        }
-
-        if (node.getFullPath().startsWith(uploadDir)) {
-            node.canUpload = true;
         }
 
         return node;

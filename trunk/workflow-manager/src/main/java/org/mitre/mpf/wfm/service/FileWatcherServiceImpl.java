@@ -60,25 +60,34 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     private Map<Path, ServerMediaListing> fileCache = new HashMap<>();
     private DirectoryTreeNode rootDirectoryTreeCache;
 
+    private Map<WatchKey, List<Path>> watcherMap = new HashMap<>();
+
     private boolean watcherInstantiated = false;
 
     @Inject
     public FileWatcherServiceImpl(PropertiesUtil propertiesUtil, IoUtils ioUtils) {
         this.propertiesUtil = propertiesUtil;
         this.ioUtils = ioUtils;
+        updateRootDirectoryTreeCache();
+    }
 
+    private synchronized void updateRootDirectoryTreeCache() {
         File mediaRoot = propertiesUtil.getRemoteMediaDirectory();
         rootDirectoryTreeCache = new DirectoryTreeNode(mediaRoot);
-        rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, new ArrayList<>(),
+
+        List<DirectoryTreeNode> seenNodes = new ArrayList<>();
+        seenNodes.add(rootDirectoryTreeCache);
+
+        rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, seenNodes,
                 propertiesUtil.getServerMediaTreeRoot());
+    }
+
+    public synchronized DirectoryTreeNode getRootDirectoryTreeCache() {
+        return rootDirectoryTreeCache;
     }
 
     public ServerMediaListing getFileListByPath(Path path) {
         return fileCache.get(path);
-    }
-
-    public DirectoryTreeNode getRootDirectoryTreeCache() {
-        return rootDirectoryTreeCache;
     }
 
     public void launchWatcher(String nodePath) {
@@ -91,17 +100,17 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void walkAndRegisterDirectories(final Path start, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
+    private void walkAndRegisterDirectories(final Path start, WatchService watcher) {
         // register directory and sub-directories
         try {
             SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<>() {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    registerDirectory(dir, watcher, watcherMap);
+                    registerDirectory(dir, watcher);
                     return FileVisitResult.CONTINUE;
                 }
                 public FileVisitResult visitFileFailed(Path file, IOException ex) {
                     if (ex instanceof FileSystemLoopException) {
-                        log.error("Detected cycle while indexing file system. May be due to a symlink. Ignoring file: {}", file);
+                        log.warn("Detected cycle while indexing file system. May be due to a symlink. Ignoring file: {}", file);
                     } else {
                         log.error("Encountered error while indexing file system. Ignoring file: {}: {}", file, ex);
                     }
@@ -115,7 +124,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void registerDirectory(Path dir, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
+    private void registerDirectory(Path dir, WatchService watcher) {
         // register the current media directory with a file watcher service, listening for file creation or deletion
         WatchKey key;
         try {
@@ -143,22 +152,21 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             log.error("Failed to get watch service: ");
             throw new UncheckedIOException(e);
         }
-        Map<WatchKey, List<Path>> watcherMap = new HashMap<>();
 
         // Initialize caches
-        walkAndRegisterDirectories(cacheFolder, watcher, watcherMap);
+        walkAndRegisterDirectories(cacheFolder, watcher);
         // Load existing files on startup since we won't see their creation event
         buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
 
         log.info("File watcher task started");
-        fileEventLoop(watcher, watcherMap);
+        fileEventLoop(watcher);
     }
 
-    private void fileEventLoop(WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
+    private void fileEventLoop(WatchService watcher) {
         try {
             WatchKey key;
             while ((key = watcher.take()) != null) { // blocks until watcher.take() returns an event
-                List<Path> dirs = watcherMap.get(key);
+                List<Path> dirs = new ArrayList<>(watcherMap.get(key)); // copy to prevent concurrent access exception
                 if (dirs == null) {
                     log.error("WatchKey not recognized!!");
                     continue;
@@ -171,11 +179,14 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                         Path child = dir.resolve(eventPath);
                         if (event.kind() == ENTRY_CREATE) {
                             File newItem = new File(child.toAbsolutePath().toString());
-                            addToCache(newItem, watcher, watcherMap);
+                            if (newItem != null) {
+                                addToCache(newItem, watcher);
+                            }
                         } else if (event.kind() == ENTRY_DELETE) {
                             File removedItem = new File(child.toAbsolutePath().toString());
-                            removeFromCache(removedItem, watcherMap);
-                            log.debug("File deleted: " + event.context());
+                            if (removedItem != null) {
+                                removeFromCache(removedItem);
+                            }
                         } else {
                             log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
                         }
@@ -251,96 +262,109 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         currentFiles.addAll(mediaFiles);
     }
 
-    private void addToCache(File item, WatchService watcher, Map<WatchKey, List<Path>> watcherMap) {
-        if (item == null) return;
-
+    private void addToCache(File item, WatchService watcher) {
         Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
         Path filePath = Paths.get(item.getAbsolutePath());
 
         // update cache if it exists; else log an error
-        if (fileCache.get(parentFilePath) != null) {
-            if (item.isDirectory()) {
-                // if directory is a symlink, it may already have files in it
-                ArrayList<ServerMediaFile> fileList = new ArrayList<>();
-                prepareFilesForCache(item, fileList);
-                fileCache.put(filePath, new ServerMediaListing(fileList));
-                walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher, watcherMap);
-                log.debug("Directory added to cache: " + item.getAbsolutePath());
-            } else {
-                ServerMediaListing oldListing = fileCache.get(parentFilePath);
-                List<ServerMediaFile> mediaFiles = new ArrayList<>(oldListing.getData());
-                prepareFilesForCache(item, mediaFiles);
+        if (fileCache.get(parentFilePath) == null) {
+            log.warn("Item created in directory that was not cached: " + item.getAbsolutePath());
+            return;
+        }
 
-                // update cache
-                ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-                fileCache.put(parentFilePath, newListing);
-                log.debug("File" + item.getName() + " added to cache: " + filePath);
+        if (item.isDirectory()) {
+            Path realPath = null;
+            try {
+                realPath = item.toPath().toRealPath();
+            } catch (IOException e) {
+                log.error("Error determining real path: " + e.getMessage());
             }
-            // Update directory tree
-            DirectoryTreeNode oldNode =  new DirectoryTreeNode(propertiesUtil.getRemoteMediaDirectory());
-            rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
-                    new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
+
+            if (realPath == null) {
+                return;
+            }
+
+            if (fileCache.containsKey(realPath)) {
+                log.warn("Omitting previously seen directory: " + filePath + " --> " + realPath);
+                return;
+            }
+
+            // if directory is a symlink, it may already have files in it
+            ArrayList<ServerMediaFile> fileList = new ArrayList<>();
+            prepareFilesForCache(item, fileList);
+            fileCache.put(filePath, new ServerMediaListing(fileList));
+            walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher);
+            log.debug("Directory added to cache: " + item.getAbsolutePath());
+
+            updateRootDirectoryTreeCache();
         } else {
-            log.error("Item created in directory that was not cached: " + item.getAbsolutePath());
+            ServerMediaListing oldListing = fileCache.get(parentFilePath);
+            List<ServerMediaFile> mediaFiles = new ArrayList<>(oldListing.getData());
+            prepareFilesForCache(item, mediaFiles);
+
+            // update cache
+            ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
+            fileCache.put(parentFilePath, newListing);
+            log.debug("File added to cache: " + filePath);
+
+            updateRootDirectoryTreeCache();
         }
     }
 
-    private void removeFromCache(File item, Map<WatchKey, List<Path>> watcherMap) {
-        if (item == null) return;
-
+    private void removeFromCache(File item) {
         Path removedItem = item.toPath().toAbsolutePath();
         Path parentDir = removedItem.getParent();
 
-        // update cache if it exists; else do nothing
-        if (fileCache.get(parentDir) != null) {
-            // cannot determine file type since it has been deleted
-            if (fileCache.get(removedItem) != null) {
-                // directory
-                // The OS will delete files from the lowest level up, therefore we do not need to worry about
-                // subdirectories or sub files. This directory is guaranteed to be empty since those deletion events
-                // will have cleared everything below it from the cache
-                fileCache.remove(removedItem);
-                WatchKey deletedDirKey = null;
-                for (WatchKey key : watcherMap.keySet()) {
-                    // this works because all paths in the list will get a call to removeFromCache
-                    Path path = watcherMap.get(key).get(0);
-                    if (path.equals(Paths.get(item.getAbsolutePath()))) {
-                        deletedDirKey = key;
-                        break;
-                    }
-                }
-                if (deletedDirKey != null) {
-                    deletedDirKey.reset();
-                    deletedDirKey.cancel();
-                    watcherMap.remove(deletedDirKey);
-                }
-                log.debug("Directory removed from cache: " + item.getAbsolutePath());
-            } else {
-                // file
-                ServerMediaListing oldListing = fileCache.get(parentDir);
+        // do nothing if cache doesn't exist
+        if (fileCache.get(parentDir) == null) {
+            log.warn("Item deleted in a directory that was not cached: " + item.getAbsolutePath());
+            return;
+        }
 
-                List<ServerMediaFile> mediaFiles = new ArrayList<>();
-                for (ServerMediaFile cachedFile : oldListing.getData()) {
-                    if (!cachedFile.getFullPath().equals(item.getAbsolutePath())) {
-                        mediaFiles.add(cachedFile);
-                    }
+        if (fileCache.get(removedItem) != null) {
+            // directory
+            // The OS will delete files from the lowest level up, therefore we do not need to worry about
+            // subdirectories or sub files. This directory is guaranteed to be empty since those deletion events
+            // will have cleared everything below it from the cache
+            fileCache.remove(removedItem);
+            WatchKey deletedDirKey = null;
+            for (WatchKey key : watcherMap.keySet()) {
+                // this works because all paths in the list will get a call to removeFromCache
+                Path path = watcherMap.get(key).get(0);
+                if (path.equals(Paths.get(item.getAbsolutePath()))) {
+                    deletedDirKey = key;
+                    break;
                 }
-                if (mediaFiles.size() == oldListing.getData().size()) {
-                    log.error("No file removed from cache after delete event");
-                }
-
-                // update cache
-                ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-                fileCache.put(parentDir, newListing);
             }
-            // update directory tree
-            DirectoryTreeNode oldNode = new DirectoryTreeNode(propertiesUtil.getRemoteMediaDirectory());
-            rootDirectoryTreeCache = oldNode.fillDirectoryTree(oldNode,
-                    new ArrayList<>(), propertiesUtil.getServerMediaTreeRoot());
-            log.debug("Item " + item.getName() + " remove from cache: " + item.getAbsolutePath());
+            if (deletedDirKey != null) {
+                deletedDirKey.reset();
+                deletedDirKey.cancel();
+                watcherMap.remove(deletedDirKey);
+            }
+            log.debug("Directory removed from cache: " + item.getAbsolutePath());
+
+            updateRootDirectoryTreeCache();
         } else {
-            log.error("Item deleted in a directory that was not cached: " + item.getAbsolutePath());
+            // file
+            ServerMediaListing oldListing = fileCache.get(parentDir);
+
+            List<ServerMediaFile> mediaFiles = new ArrayList<>();
+            for (ServerMediaFile cachedFile : oldListing.getData()) {
+                if (!cachedFile.getFullPath().equals(item.getAbsolutePath())) {
+                    mediaFiles.add(cachedFile);
+                }
+            }
+            if (mediaFiles.size() == oldListing.getData().size()) {
+                log.warn("No file removed from cache after delete event");
+            }
+
+            // update cache
+            ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
+            fileCache.put(parentDir, newListing);
+
+            log.debug("File removed from cache: " + item.getAbsolutePath());
+
+            updateRootDirectoryTreeCache();
         }
     }
-
 }

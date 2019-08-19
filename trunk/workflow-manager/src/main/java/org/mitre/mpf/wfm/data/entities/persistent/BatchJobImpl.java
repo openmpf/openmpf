@@ -113,7 +113,7 @@ public class BatchJobImpl implements BatchJob {
     public Optional<String> getCallbackMethod() { return Optional.ofNullable(_callbackMethod); }
 
 
-    private final Set<String> _errors = new HashSet<>();
+    private final Set<String> _errors;
     @Override
     public Set<String> getErrors() {
         return Collections.unmodifiableSet(_errors);
@@ -123,7 +123,7 @@ public class BatchJobImpl implements BatchJob {
     }
 
 
-    private final Set<String> _warnings = new HashSet<>();
+    private final Set<String> _warnings;
     @Override
     public Set<String> getWarnings() {
         return Collections.unmodifiableSet(_warnings);
@@ -163,7 +163,7 @@ public class BatchJobImpl implements BatchJob {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineComponents, priority, outputEnabled, callbackUrl,
-             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of());
+             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), List.of(), List.of());
     }
 
 
@@ -181,7 +181,9 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors) {
+            @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
+            @JsonProperty("errors") Collection<String> errors,
+            @JsonProperty("warnings") Collection<String> warnings) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
@@ -204,5 +206,7 @@ public class BatchJobImpl implements BatchJob {
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
+        _errors = new HashSet<>(errors);
+        _warnings = new HashSet<>(warnings);
     }
 }

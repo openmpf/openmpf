@@ -42,11 +42,10 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -62,21 +61,24 @@ public class JsonUtils {
      * Single instance of the ObjectMapper which converts between Java objects and binary JSON. Binary JSON is expected
      * to be significantly more compact than text-based JSON.
      */
-    private ObjectMapper smileObjectMapper;
+    private final ObjectMapper _smileObjectMapper;
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient
      * in terms of space, text-based JSON remains user-readable.
      */
-    @Autowired
-    private ObjectMapper jsonObjectMapper;
+    private final ObjectMapper _jsonObjectMapper;
 
-    @PostConstruct
-    private void init() {
-        smileObjectMapper = new ObjectMapper(new SmileFactory());
-        smileObjectMapper.registerModule(new InstantJsonModule());
-        smileObjectMapper.registerModule(new Jdk8Module());
+
+    @Inject
+    public JsonUtils(ObjectMapper jsonObjectMapper) {
+        _smileObjectMapper = new ObjectMapper(new SmileFactory());
+        _smileObjectMapper.registerModule(new InstantJsonModule());
+        _smileObjectMapper.registerModule(new Jdk8Module());
+
+        _jsonObjectMapper = jsonObjectMapper;
     }
+
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */
     public <T> T deserialize(byte[] json, Class<T> targetClass) throws WfmProcessingException {
@@ -84,7 +86,7 @@ public class JsonUtils {
         assert targetClass != null : "The targetClass parameter must not be null.";
 
         try {
-            return smileObjectMapper.readValue(json, targetClass);
+            return _smileObjectMapper.readValue(json, targetClass);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s': %s", targetClass.getSimpleName(), ioe.getMessage()), ioe);
         }
@@ -96,7 +98,7 @@ public class JsonUtils {
         assert targetClass != null : "The targetClass parameter must not be null.";
 
         try {
-            return jsonObjectMapper.readValue(json, targetClass);
+            return _jsonObjectMapper.readValue(json, targetClass);
         } catch (IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s': %s", targetClass.getSimpleName(), ioe.getMessage()), ioe);
         }
@@ -105,7 +107,7 @@ public class JsonUtils {
     /** Serializes the specified object to a smile binary JSON or throws an exception if the serialization cannot be performed. */
     public byte[] serialize(Object object) throws WfmProcessingException {
         try {
-            return smileObjectMapper.writeValueAsBytes(object);
+            return _smileObjectMapper.writeValueAsBytes(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()), ioe);
         }
@@ -114,7 +116,7 @@ public class JsonUtils {
     /** Serializes the specified object to a smile binary JSON or throws an exception if the serialization cannot be performed. */
     public byte[] serializeAsText(Object object) throws WfmProcessingException {
         try {
-            return jsonObjectMapper.writeValueAsBytes(object);
+            return _jsonObjectMapper.writeValueAsBytes(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()), ioe);
         }
@@ -123,7 +125,7 @@ public class JsonUtils {
     /** Serializes the specified object to a file using text-based JSON or throws an exception if the serialization cannot be performed. */
     public void serialize(Object object, File targetFile) throws WfmProcessingException {
         try {
-            jsonObjectMapper.writeValue(targetFile, object);
+            _jsonObjectMapper.writeValue(targetFile, object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s' to '%s': %s", object, targetFile, ioe.getMessage()), ioe);
         }
@@ -132,7 +134,7 @@ public class JsonUtils {
     /** Serializes the specified object to an output stream using text-based JSON or throws an exception if the serialization cannot be performed. */
     public void serialize(Object object, OutputStream outputStream) throws WfmProcessingException {
         try {
-            jsonObjectMapper.writeValue(outputStream, object);
+            _jsonObjectMapper.writeValue(outputStream, object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s' to output stream: %s", object, ioe.getMessage()), ioe);
         }
@@ -141,7 +143,7 @@ public class JsonUtils {
     /** Serializes the specified object to a text JSON or throws an exception if the serialization cannot be performed. */
     public String serializeAsTextString(Object object) throws WfmProcessingException {
         try {
-            return jsonObjectMapper.writeValueAsString(object);
+            return _jsonObjectMapper.writeValueAsString(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()) ,ioe);
         }

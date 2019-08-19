@@ -63,7 +63,7 @@ public class InProgressBatchJobsService {
 
 
     @Inject
-    InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
+    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
     }
@@ -106,7 +106,6 @@ public class InProgressBatchJobsService {
         _jobs.put(jobId, job);
         return job;
     }
-
 
 
     public synchronized BatchJob getJob(long jobId) {

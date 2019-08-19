@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.camel.EndpointInject;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
@@ -39,7 +38,6 @@ import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -51,11 +49,10 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 
+import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -65,53 +62,65 @@ import static java.util.stream.Collectors.joining;
 @Component
 public class JobRequestServiceImpl implements JobRequestService {
 
-    private static final Logger log = LoggerFactory.getLogger(JobRequestServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JobRequestServiceImpl.class);
 
-    @Autowired
-    private PipelineService pipelineService;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final PipelineService _pipelineService;
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final JsonUtils _jsonUtils;
 
-    @Autowired
-    private JmsUtils jmsUtils;
+    private final JmsUtils _jmsUtils;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    @Autowired
-    private JobRequestDao jobRequestDao;
+    private final JobRequestDao _jobRequestDao;
 
-    @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
-    private MarkupResultDao markupResultDao;
+    private final MarkupResultDao _markupResultDao;
 
-    @Autowired
-    private JobStatusBroadcaster jobStatusBroadcaster;
+    private final JobStatusBroadcaster _jobStatusBroadcaster;
 
-    @EndpointInject(uri = MediaRetrieverRouteBuilder.ENTRY_POINT)
-    private ProducerTemplate jobRequestProducerTemplate;
+    private final ProducerTemplate _jobRequestProducerTemplate;
 
+    @Inject
+    public JobRequestServiceImpl(
+            PropertiesUtil propertiesUtil,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+            PipelineService pipelineService,
+            JsonUtils jsonUtils,
+            JmsUtils jmsUtils,
+            InProgressBatchJobsService inProgressJobs,
+            JobRequestDao jobRequestDao,
+            MarkupResultDao markupResultDao,
+            JobStatusBroadcaster jobStatusBroadcaster,
+            ProducerTemplate jobRequestProducerTemplate) {
+        _pipelineService = pipelineService;
+        _propertiesUtil = propertiesUtil;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _jsonUtils = jsonUtils;
+        _jmsUtils = jmsUtils;
+        _inProgressJobs = inProgressJobs;
+        _jobRequestDao = jobRequestDao;
+        _markupResultDao = markupResultDao;
+        _jobStatusBroadcaster = jobStatusBroadcaster;
+        _jobRequestProducerTemplate = jobRequestProducerTemplate;
+    }
 
 
     @Override
     public JobRequest run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
-                .map(m -> inProgressJobs.initMedia(m.getMediaUri(), m.getProperties()))
+                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties()))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
-                .orElseGet(propertiesUtil::getJmsPriority);
+                .orElseGet(_propertiesUtil::getJmsPriority);
 
         boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
-                .orElseGet(propertiesUtil::isOutputObjectsEnabled);
+                .orElseGet(_propertiesUtil::isOutputObjectsEnabled);
 
 
 
@@ -135,7 +144,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     @Override
     public JobRequest resubmit(long jobId, int priority) {
-        JobRequest jobRequestEntity = jobRequestDao.findById(jobId);
+        JobRequest jobRequestEntity = _jobRequestDao.findById(jobId);
         if (jobRequestEntity == null) {
             throw new WfmProcessingException("There was no job with id: " + jobId);
         }
@@ -145,11 +154,11 @@ public class JobRequestServiceImpl implements JobRequestService {
                     jobId, jobRequestEntity.getStatus().name()));
         }
 
-        BatchJob originalJob = jsonUtils.deserialize(jobRequestEntity.getJob(), BatchJob.class);
+        BatchJob originalJob = _jsonUtils.deserialize(jobRequestEntity.getJob(), BatchJob.class);
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .map(m -> inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties()))
+                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties()))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -165,10 +174,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                     originalJob.getCallbackMethod().orElse(null));
 
         // Clean up old job
-        markupResultDao.deleteByJobId(jobId);
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobArtifactsDirectory(jobId));
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId));
-        FileSystemUtils.deleteRecursively(propertiesUtil.getJobMarkupDirectory(jobId));
+        _markupResultDao.deleteByJobId(jobId);
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobArtifactsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobOutputObjectsDirectory(jobId));
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobMarkupDirectory(jobId));
 
         submit(jobRequestEntity);
         return jobRequestEntity;
@@ -187,11 +196,11 @@ public class JobRequestServiceImpl implements JobRequestService {
             String callbackUrl,
             String callbackMethod) {
 
-        var pipeline = pipelineService.getBatchPipelineComponents(pipelineName);
+        JobPipelineComponents pipelineComponents = _pipelineService.getBatchPipelineComponents(pipelineName);
         // Capture the current state of the detection system properties at the time when this job is created.
         // Since the detection system properties may be changed by an administrator, we must ensure that the job
         // uses a consistent set of detection system properties through all stages of the job's pipeline.
-        var systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+        var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();
 
         callbackUrl = StringUtils.trimToNull(callbackUrl);
         callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
@@ -201,7 +210,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
         BatchJobStatusType jobStatus = validateJobRequest(
-                pipeline,
+                pipelineComponents,
                 media,
                 jobProperties,
                 overriddenAlgoProps,
@@ -210,21 +219,22 @@ public class JobRequestServiceImpl implements JobRequestService {
         jobRequestEntity.setPriority(priority);
         jobRequestEntity.setStatus(BatchJobStatusType.INITIALIZED);
         jobRequestEntity.setTimeReceived(Instant.now());
-        jobRequestEntity.setPipeline(pipeline.getName());
+        jobRequestEntity.setPipeline(pipelineComponents.getName());
         jobRequestEntity.setOutputObjectPath(null);
         jobRequestEntity.setOutputObjectVersion(null);
+        jobRequestEntity.setJob(null);
 
-        jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
+        jobRequestEntity = _jobRequestDao.persist(jobRequestEntity);
 
         try {
-            jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
+            _jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
 
-            BatchJob job = inProgressJobs.addJob(
+            BatchJob job = _inProgressJobs.addJob(
                     jobRequestEntity.getId(),
                     externalId,
                     systemPropertiesSnapshot,
-                    pipeline,
-                    jobRequestEntity.getPriority(),
+                    pipelineComponents,
+                    priority,
                     buildOutput,
                     callbackUrl,
                     callbackMethod,
@@ -233,20 +243,20 @@ public class JobRequestServiceImpl implements JobRequestService {
                     overriddenAlgoProps);
 
 
-            inProgressJobs.setJobStatus(job.getId(), jobStatus);
+            _inProgressJobs.setJobStatus(job.getId(), jobStatus);
 
-            jobRequestEntity.setJob(jsonUtils.serialize(job));
+            jobRequestEntity.setJob(_jsonUtils.serialize(job));
             jobRequestEntity.setStatus(jobStatus);
-            jobRequestEntity = jobRequestDao.persist(jobRequestEntity);
+            jobRequestEntity = _jobRequestDao.persist(jobRequestEntity);
 
-            jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, jobStatus);
+            _jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, jobStatus);
 
 
             return jobRequestEntity;
         }
         catch (WfmProcessingException e) {
             jobRequestEntity.setStatus(BatchJobStatusType.JOB_CREATION_ERROR);
-            jobRequestDao.persist(jobRequestEntity);
+            _jobRequestDao.persist(jobRequestEntity);
             throw e;
         }
     }
@@ -257,10 +267,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                 MpfHeaders.JOB_ID, jobRequestEntity.getId(),
                 MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, jobRequestEntity.getPriority())));
 
-        log.info("[Job {}|*|*] Job has started and is running at priority {}.",
+        LOG.info("[Job {}|*|*] Job has started and is running at priority {}.",
                  jobRequestEntity.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
 
-        jobRequestProducerTemplate.sendBodyAndHeaders(
+        _jobRequestProducerTemplate.sendBodyAndHeaders(
                 MediaRetrieverRouteBuilder.ENTRY_POINT,
                 ExchangePattern.InOnly,
                 null,
@@ -310,7 +320,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         try {
             for (Action action : pipeline.getActions()) {
                 for (Media media : jobMedia) {
-                    Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
+                    Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                             action,
                             pipeline,
                             media,
@@ -341,8 +351,8 @@ public class JobRequestServiceImpl implements JobRequestService {
      */
     @Override
     public synchronized boolean cancel(long jobId) throws WfmProcessingException {
-        log.debug("[Job {}:*:*] Received request to cancel this job.", jobId);
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        LOG.debug("[Job {}:*:*] Received request to cancel this job.", jobId);
+        JobRequest jobRequest = _jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with the id %d is not known to the system.", jobId));
         }
@@ -352,27 +362,27 @@ public class JobRequestServiceImpl implements JobRequestService {
         }
 
         if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == BatchJobStatusType.CANCELLING) {
-            log.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());
+            LOG.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());
             return false;
         } else {
-            log.info("[Job {}:*:*] Cancelling job.", jobId);
+            LOG.info("[Job {}:*:*] Cancelling job.", jobId);
 
 
-            if (inProgressJobs.cancelJob(jobId)) {
+            if (_inProgressJobs.cancelJob(jobId)) {
                 try {
                     // Try to move any pending work items on the queues to the appropriate cancellation queues.
                     // If this operation fails, any remaining pending items will continue to process, but
                     // the future splitters should not create any new work items. In short, if this fails,
                     // the system should not be affected, but the job may not complete any faster.
-                    jmsUtils.cancel(jobId);
+                    _jmsUtils.cancel(jobId);
                 } catch (Exception exception) {
-                    log.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
+                    LOG.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
                 }
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
-                jobRequest.setJob(jsonUtils.serialize(inProgressJobs.getJob(jobId)));
-                jobRequestDao.persist(jobRequest);
+                jobRequest.setJob(_jsonUtils.serialize(_inProgressJobs.getJob(jobId)));
+                _jobRequestDao.persist(jobRequest);
             } else {
-                log.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);
+                LOG.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);
             }
             return true;
         }

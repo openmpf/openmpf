@@ -81,6 +81,9 @@ public class TestUtil {
         return ArgumentMatchers.argThat(m -> !m.isEmpty());
     }
 
+    public static <T> T referenceEquals(T obj)  {
+        return ArgumentMatchers.argThat(arg -> arg == obj);
+    }
 
 
     public static BatchJob setupJob(

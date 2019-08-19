@@ -40,22 +40,9 @@ import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -112,6 +99,14 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     registerDirectory(dir, watcher, watcherMap);
                     return FileVisitResult.CONTINUE;
                 }
+                public FileVisitResult visitFileFailed(Path file, IOException ex) {
+                    if (ex instanceof FileSystemLoopException) {
+                        log.error("Detected cycle while indexing file system. May be due to a symlink. Ignoring file: {}", file);
+                    } else {
+                        log.error("Encountered error while indexing file system. Ignoring file: {}: {}", file, ex);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
             };
             Files.walkFileTree(start, Set.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, visitor);
         } catch (IOException e) {
@@ -125,7 +120,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         WatchKey key;
         try {
             key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
-            log.info("File watcher registered for directory: " + dir);
+            log.debug("File watcher registered for directory: " + dir);
             if (watcherMap.containsKey(key)) {
                 watcherMap.get(key).add(dir);
             } else {

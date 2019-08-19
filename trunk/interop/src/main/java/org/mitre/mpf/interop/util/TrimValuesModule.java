@@ -24,41 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.interop.util;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
-import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.apache.commons.lang3.StringUtils;
 
-public class MpfObjectMapper extends ObjectMapper {
+import java.io.IOException;
 
-    public MpfObjectMapper() {
-        registerInstantModule();
-        registerStripWhitespaceModules();
-    }
+public final class TrimValuesModule extends SimpleModule {
 
-    public MpfObjectMapper(JsonFactory jsonFactory) {
-        super(jsonFactory);
-        registerInstantModule();
-        registerStripWhitespaceModules();
-    }
-
-    public MpfObjectMapper(JsonFactory jsonFactory, DefaultSerializerProvider serializerProvider,
-                           DefaultDeserializationContext deserializationContext) {
-        super(jsonFactory, serializerProvider, deserializationContext);
-        registerInstantModule();
-        registerStripWhitespaceModules();
-    }
-
-    private void registerInstantModule() {
-        registerModule(new InstantJsonModule());
-    }
-
-    private void registerStripWhitespaceModules() {
-        registerModule(new TrimKeysModule());
-        registerModule(new TrimValuesModule());
+    public TrimValuesModule() {
+        addDeserializer(String.class, new StdScalarDeserializer<String>(String.class) {
+            @Override
+            public String deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+                return StringUtils.trimToEmpty(parser.getValueAsString());
+            }
+        });
     }
 
 }

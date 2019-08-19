@@ -29,6 +29,8 @@ package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.interop.util.InstantJsonModule;
+import org.mitre.mpf.interop.util.TrimKeysModule;
+import org.mitre.mpf.interop.util.TrimValuesModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -39,7 +41,9 @@ public class ObjectMapperFactory {
     @Bean
     public static ObjectMapper customObjectMapper() {
         return Jackson2ObjectMapperBuilder.json()
-                .modules(new InstantJsonModule())
+                .modules(new InstantJsonModule(),
+                        new TrimKeysModule(),
+                        new TrimValuesModule())
                 .build();
     }
 }

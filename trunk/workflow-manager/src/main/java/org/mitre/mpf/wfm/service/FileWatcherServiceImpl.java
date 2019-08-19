@@ -108,6 +108,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                     if (!registerDirectory(dir, watcher)) {
                         return FileVisitResult.SKIP_SUBTREE;
                     }
+                    addFilesToCacheNoRecurse(dir.toFile(), new ArrayList<>());
                     return FileVisitResult.CONTINUE;
                 }
                 public FileVisitResult visitFileFailed(Path file, IOException ex) {
@@ -163,8 +164,9 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         // Initialize caches
         walkAndRegisterDirectories(cacheFolder, watcher);
+
         // Load existing files on startup since we won't see their creation event
-        buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
+        //buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
 
         log.info("File watcher task started");
         fileEventLoop(watcher);
@@ -187,10 +189,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                         Path child = dir.resolve(eventPath);
                         if (event.kind() == ENTRY_CREATE) {
                             File newItem = new File(child.toAbsolutePath().toString());
-                            addToCache(newItem, watcher);
+                            addEntryToCache(newItem, watcher);
                         } else if (event.kind() == ENTRY_DELETE) {
                             File removedItem = new File(child.toAbsolutePath().toString());
-                            removeFromCache(removedItem);
+                            removeEntryFromCache(removedItem);
                         } else {
                             log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
                         }
@@ -220,14 +222,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         DirectoryTreeNode node = this.rootDirectoryTreeCache;
         node = DirectoryTreeNode.find(node, dirPath);
 
-        File dir = new File(node.getFullPath());
-
-        List<ServerMediaFile> mediaFiles = new ArrayList<>();
-        prepareFilesForCache(dir, mediaFiles);
-
-        // update file cache
-        ServerMediaListing listing = new ServerMediaListing(mediaFiles);
-        fileCache.put(Paths.get(node.getFullPath()), listing);
+        addFilesToCacheNoRecurse(new File(node.getFullPath()), new ArrayList<>());
 
         // go through nested folders
         if (node.getNodes() != null) {
@@ -237,33 +232,32 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void prepareFilesForCache(File item, List<ServerMediaFile> currentFiles) {
+    private void addFilesToCacheNoRecurse(File item, List<ServerMediaFile> currentFiles) {
         File[] tmpFiles;
         if (item.isDirectory()) {
-            tmpFiles = item.listFiles(File::isFile);
+            tmpFiles = item.listFiles(File::isFile); // only includes files one level deep
         } else {
             tmpFiles = new File[]{item};
         }
-        if (tmpFiles == null || tmpFiles.length == 0) {
+        if (tmpFiles == null) { // possible permissions issue
             return;
         }
 
-        List<File> files = new ArrayList<>(); // use real paths
-        List<File> parents = new ArrayList<>(); // use absolute paths
-        for (File tmpFile : tmpFiles) {
-            files.add(tmpFile.toPath().toAbsolutePath().toFile()); // resolve symbolic links
-            parents.add(tmpFile.getParentFile());
-        }
-
-        // build output
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
+        for (int i = 0; i < tmpFiles.length; i++) {
             // file should have real path, parent should have absolute path
-            mediaFiles.add(new ServerMediaFile(files.get(i), parents.get(i),
-                    ioUtils.getMimeType(files.get(i).getAbsolutePath())));
+            File file = tmpFiles[i].toPath().toAbsolutePath().toFile();
+            mediaFiles.add(new ServerMediaFile(file, tmpFiles[i].getParentFile(),
+                    ioUtils.getMimeType(file.getAbsolutePath())));
         }
 
         currentFiles.addAll(mediaFiles);
+
+        if (item.isDirectory()) {
+            fileCache.put(item.toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
+        } else {
+            fileCache.put(item.getParentFile().toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
+        }
     }
 
     private boolean isValidDirectory(File file) {
@@ -291,7 +285,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         return true;
     }
 
-    private void addToCache(File item, WatchService watcher) {
+    private void addEntryToCache(File item, WatchService watcher) {
         if (item == null) {
             return;
         }
@@ -299,7 +293,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
         Path filePath = Paths.get(item.getAbsolutePath());
 
-        // update cache if it exists; else log an error
+        // update cache if it exists; else log a warning
         if (fileCache.get(parentFilePath) == null) {
             log.warn("Item created in directory that was not cached: " + item.getAbsolutePath());
             return;
@@ -307,31 +301,23 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         if (item.isDirectory()) {
             if (isValidDirectory(item)) {
-                // if directory is a symlink, it may already have files in it
-                ArrayList<ServerMediaFile> fileList = new ArrayList<>();
-                prepareFilesForCache(item, fileList);
-                fileCache.put(filePath, new ServerMediaListing(fileList));
-
                 walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher);
+
+                // addFilesToCacheNoRecurse(item, new ArrayList<>());
 
                 log.debug("Directory added to cache: " + item.getAbsolutePath());
                 updateRootDirectoryTreeCache();
             }
         } else {
             ServerMediaListing oldListing = fileCache.get(parentFilePath);
-            List<ServerMediaFile> mediaFiles = new ArrayList<>(oldListing.getData());
-            prepareFilesForCache(item, mediaFiles);
-
-            // update cache
-            ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-            fileCache.put(parentFilePath, newListing);
+            addFilesToCacheNoRecurse(item, new ArrayList<>(oldListing.getData()));
 
             log.debug("File added to cache: " + filePath);
             updateRootDirectoryTreeCache();
         }
     }
 
-    private void removeFromCache(File item) {
+    private void removeEntryFromCache(File item) {
         if (item == null) {
             return;
         }

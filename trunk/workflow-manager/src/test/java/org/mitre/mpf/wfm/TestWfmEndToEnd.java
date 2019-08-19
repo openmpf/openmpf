@@ -37,8 +37,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -76,8 +75,7 @@ public class TestWfmEndToEnd {
 	private IoUtils ioUtils;
 
 	@Autowired
-	@Qualifier(JobRequestBoImpl.REF)
-	private JobRequestBo jobRequestBo;
+	private JobRequestService jobRequestService;
 
 	@Autowired
 	private JobRequestDao jobRequestDao;
@@ -160,7 +158,7 @@ public class TestWfmEndToEnd {
 		jobRequest.setBuildOutput(buildOutput);
 		jobRequest.setPriority(priority);
 
-		long jobRequestId = jobRequestBo.run(jobRequest).getId();
+		long jobRequestId = jobRequestService.run(jobRequest).getId();
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
@@ -194,7 +192,7 @@ public class TestWfmEndToEnd {
 		// Ensure that there is at least some pause between jobs so that the start and stop times can be meaningfully
 		// compared to ensure that results are not erroneously being duplicated.
 		Thread.sleep(2000);
-		jobRequestBo.resubmit(jobId, 5);
+		jobRequestService.resubmit(jobId, 5);
 		Assert.assertTrue(waitFor(jobId));
 
 		jobRequest = jobRequestDao.findById(jobId);

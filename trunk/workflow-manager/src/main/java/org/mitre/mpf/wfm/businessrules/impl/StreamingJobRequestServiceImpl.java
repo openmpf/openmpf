@@ -33,7 +33,7 @@ import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.rest.api.JobCreationStreamData;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
@@ -72,7 +72,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 @Component
-public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
+public class StreamingJobRequestServiceImpl implements StreamingJobRequestService {
 
     private Set<NotificationConsumer<JobCompleteNotification>> consumers = new ConcurrentSkipListSet<>();
 
@@ -99,7 +99,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
 //        public static final PriorityPolicy DEFAULT = EXISTING;
 //    }
 
-    private static final Logger log = LoggerFactory.getLogger(StreamingJobRequestBoImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(StreamingJobRequestServiceImpl.class);
     public static final String REF = "streamingJobRequestBoImpl";
 
     @Autowired

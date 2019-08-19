@@ -34,7 +34,7 @@ import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -81,7 +81,7 @@ public class JobController {
     private PropertiesUtil propertiesUtil;
 
     @Autowired
-    private JobRequestBo jobRequestBo;
+    private JobRequestService jobRequestService;
 
     @Autowired
     private JobRequestDao jobRequestDao;
@@ -402,7 +402,7 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            long jobId = jobRequestBo.run(jobCreationRequest).getId();
+            long jobId = jobRequestService.run(jobCreationRequest).getId();
 
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
@@ -444,7 +444,7 @@ public class JobController {
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
         try {
-            long newJobId = jobRequestBo.resubmit(jobId, jobPriority).getId();
+            long newJobId = jobRequestService.resubmit(jobId, jobPriority).getId();
             //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
             if (newJobId != -1 && newJobId == jobId) {
                 //make sure to reset the value in the job progress map to handle manual refreshes that will display
@@ -468,7 +468,7 @@ public class JobController {
         log.debug("Attempting to cancel job with id: {}.", jobId);
         boolean wasCancelled;
         try {
-            wasCancelled = jobRequestBo.cancel(jobId);
+            wasCancelled = jobRequestService.cancel(jobId);
         } catch ( WfmProcessingException wpe ) {
             log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
             wasCancelled = false;

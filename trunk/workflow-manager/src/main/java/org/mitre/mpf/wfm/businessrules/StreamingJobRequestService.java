@@ -36,7 +36,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
 
-public interface StreamingJobRequestBo {
+public interface StreamingJobRequestService {
 
     StreamingJobRequest run(StreamingJobCreationRequest jobCreationRequest);
 

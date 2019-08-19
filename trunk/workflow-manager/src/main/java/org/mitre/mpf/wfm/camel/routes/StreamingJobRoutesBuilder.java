@@ -36,7 +36,7 @@ import org.mitre.mpf.interop.JsonStreamingDetectionOutputObject;
 import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -53,14 +53,14 @@ import static java.util.stream.Collectors.*;
 @Component
 public class StreamingJobRoutesBuilder extends RouteBuilder {
 
-    private final StreamingJobRequestBo _streamingJobRequestBo;
+    private final StreamingJobRequestService _streamingJobRequestService;
 
     // Used to determine of messages should be ignored if AMQ has not been purged yet
     private final WfmStartup _wfmStartup;
 
     @Autowired
-    public StreamingJobRoutesBuilder(StreamingJobRequestBo streamingJobRequestBo, WfmStartup wfmStartup) {
-        _streamingJobRequestBo = streamingJobRequestBo;
+    public StreamingJobRoutesBuilder(StreamingJobRequestService streamingJobRequestService, WfmStartup wfmStartup) {
+        _streamingJobRequestService = streamingJobRequestService;
         _wfmStartup = wfmStartup;
     }
 
@@ -73,7 +73,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();
-                        _streamingJobRequestBo.handleJobStatusChange(
+                        _streamingJobRequestService.handleJobStatusChange(
                                 msg.getHeader("JOB_ID", long.class),
                                 new StreamingJobStatus(msg.getHeader("JOB_STATUS", StreamingJobStatusType.class)),
                                 msg.getHeader("STATUS_CHANGE_TIMESTAMP", long.class));
@@ -87,7 +87,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();
-                        _streamingJobRequestBo.handleNewActivityAlert(
+                        _streamingJobRequestService.handleNewActivityAlert(
                                 msg.getHeader("JOB_ID", long.class),
                                 msg.getHeader("FRAME_NUMBER", int.class),
                                 msg.getHeader("ACTIVITY_DETECTION_TIMESTAMP", long.class));
@@ -108,7 +108,7 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                         JsonSegmentSummaryReport summaryReport
                                 = convertProtobufResponse(msg.getHeader("JOB_ID", long.class), protobuf);
 
-                        _streamingJobRequestBo.handleNewSummaryReport(summaryReport);
+                        _streamingJobRequestService.handleNewSummaryReport(summaryReport);
                     }
                 });
     }
@@ -144,8 +144,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
                 .collect(toCollection(TreeSet::new));
 
         JsonStreamingDetectionOutputObject exemplar = detections.stream()
-		        .max(Comparator.comparingDouble(JsonStreamingDetectionOutputObject::getConfidence))
-		        .orElse(null);
+                .max(Comparator.comparingDouble(JsonStreamingDetectionOutputObject::getConfidence))
+                .orElse(null);
 
         return new JsonStreamingTrackOutputObject(
                 Integer.toString(id),

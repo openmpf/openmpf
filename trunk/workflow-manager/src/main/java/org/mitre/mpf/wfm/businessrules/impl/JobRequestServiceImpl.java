@@ -34,7 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -63,10 +63,9 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.joining;
 
 @Component
-public class JobRequestBoImpl implements JobRequestBo {
+public class JobRequestServiceImpl implements JobRequestService {
 
-    private static final Logger log = LoggerFactory.getLogger(JobRequestBoImpl.class);
-    public static final String REF = "jobRequestBoImpl";
+    private static final Logger log = LoggerFactory.getLogger(JobRequestServiceImpl.class);
 
     @Autowired
     private PipelineService pipelineService;

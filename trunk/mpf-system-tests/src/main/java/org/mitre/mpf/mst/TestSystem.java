@@ -42,10 +42,9 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmStartup;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
+import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -114,12 +113,11 @@ public abstract class TestSystem {
     protected PropertiesUtil propertiesUtil;
 
     @Autowired
-    @Qualifier(JobRequestBoImpl.REF)
-    protected JobRequestBo jobRequestBo;
+    protected JobRequestService jobRequestService;
 
     @Autowired
-    @Qualifier(StreamingJobRequestBoImpl.REF)
-    protected StreamingJobRequestBo streamingJobRequestBo;
+    @Qualifier(StreamingJobRequestServiceImpl.REF)
+    protected StreamingJobRequestService streamingJobRequestService;
 
     @Autowired
     protected PipelineService pipelineService;
@@ -258,7 +256,7 @@ public abstract class TestSystem {
         jobRequest.setBuildOutput(buildOutput);
         jobRequest.setPriority(priority);
 
-        long jobRequestId = jobRequestBo.run(jobRequest).getId();
+        long jobRequestId = jobRequestService.run(jobRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
@@ -275,7 +273,7 @@ public abstract class TestSystem {
         jobCreationRequest.setStallTimeout(stallTimeout);
         jobCreationRequest.setStream(stream);
 
-        long jobRequestId = streamingJobRequestBo.run(jobCreationRequest).getId();
+        long jobRequestId = streamingJobRequestService.run(jobCreationRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }

@@ -30,7 +30,7 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -68,7 +68,7 @@ public class StreamingJobController {
     private StreamingJobRequestDao streamingJobRequestDao;
 
     @Autowired
-    private StreamingJobRequestBo streamingJobRequestBo;
+    private StreamingJobRequestService streamingJobRequestService;
 
     // job progress may not be required for streaming jobs
     @Autowired
@@ -219,7 +219,7 @@ public class StreamingJobController {
     private StreamingJobCreationResponse createStreamingJobInternal(StreamingJobCreationRequest streamingJobCreationRequest) {
 
         try {
-            StreamingJobRequest jobRequestEntity = streamingJobRequestBo.run(streamingJobCreationRequest);
+            StreamingJobRequest jobRequestEntity = streamingJobRequestService.run(streamingJobCreationRequest);
             return new StreamingJobCreationResponse(jobRequestEntity.getId(),
                                                     jobRequestEntity.getOutputObjectDirectory());
         }
@@ -283,7 +283,7 @@ public class StreamingJobController {
                 MpfResponse.RESPONSE_CODE_ERROR, "Streaming job with id " + jobId + " doesn't exist.");
         } else {
             try {
-                streamingJobRequestBo.cancel(jobId, doCleanup);
+                streamingJobRequestService.cancel(jobId, doCleanup);
 
                 log.info("Successfully marked for cancellation streaming job with id {}", jobId);
 

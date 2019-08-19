@@ -31,10 +31,13 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
@@ -69,7 +72,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private JsonUtils jsonUtils;
 
     @Autowired
-    protected JobRequestBo jobRequestBo;
+    private JobRequestService jobRequestService;
 
     @Autowired
     private JobProgress jobProgress;
@@ -383,7 +386,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 jobRequest.setBuildOutput(false);
                 jobRequest.setPriority(priority);
 
-                jobRequestId = jobRequestBo.run(jobRequest).getId();
+                jobRequestId = jobRequestService.run(jobRequest).getId();
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {
                 log.error(String.format("Failed to run job %d due to an exception.", jobRequestId), exception);

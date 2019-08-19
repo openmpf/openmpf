@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm;
 
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
 import org.apache.activemq.broker.jmx.QueueViewMBean;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
@@ -65,108 +65,108 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
-	private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
+    private static final Logger log = LoggerFactory.getLogger(WfmStartup.class);
 
-	@Autowired
-	private JobRequestDao jobRequestDao;
+    @Autowired
+    private JobRequestDao jobRequestDao;
 
-	@Autowired
-	private StreamingJobRequestDao streamingJobRequestDao;
+    @Autowired
+    private StreamingJobRequestDao streamingJobRequestDao;
 
-	@Autowired
-	private StreamingJobRequestBo streamingJobRequestBo;
-
-
-	@Autowired
-	private SystemMessageService systemMessageService;
+    @Autowired
+    private StreamingJobRequestService streamingJobRequestService;
 
 
-	@Autowired
-	private PropertiesUtil propertiesUtil;
+    @Autowired
+    private SystemMessageService systemMessageService;
 
-	@Autowired
-	private StartupComponentRegistrationService startupRegistrationService;
 
-	@Autowired
-	private ServerMediaService serverMediaService;
+    @Autowired
+    private PropertiesUtil propertiesUtil;
 
-	// used to prevent the initialization behaviors from being executed more than once
-	private static boolean applicationRefreshed = false;
-	public boolean isApplicationRefreshed() { return  applicationRefreshed; }
+    @Autowired
+    private StartupComponentRegistrationService startupRegistrationService;
 
-	private ScheduledExecutorService healthReportExecutorService = null;
+    @Autowired
+    private ServerMediaService serverMediaService;
 
-	@Override
-	public void onApplicationEvent(ApplicationEvent event) {
+    // used to prevent the initialization behaviors from being executed more than once
+    private static boolean applicationRefreshed = false;
+    public boolean isApplicationRefreshed() { return  applicationRefreshed; }
 
-		if (event instanceof ContextRefreshedEvent) {
-			// this callback will be invoked at least twice: once for the root /workflow-manager, and
-			// once for /workflow-manager/appServlet
+    private ScheduledExecutorService healthReportExecutorService = null;
 
-			ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
-			ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
 
-			ThreadUtil.start();
+        if (event instanceof ContextRefreshedEvent) {
+            // this callback will be invoked at least twice: once for the root /workflow-manager, and
+            // once for /workflow-manager/appServlet
 
-			if (!applicationRefreshed) {
-				log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
+            ContextRefreshedEvent contextRefreshedEvent = (ContextRefreshedEvent) event;
+            ApplicationContext appContext = contextRefreshedEvent.getApplicationContext();
 
-				log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
-				jobRequestDao.cancelJobsInNonTerminalState();
+            ThreadUtil.start();
 
-        		log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
-        		streamingJobRequestDao.cancelJobsInNonTerminalState();
+            if (!applicationRefreshed) {
+                log.info("onApplicationEvent: " + appContext.getDisplayName() + " " + appContext.getId()); // DEBUG
 
-				if (propertiesUtil.isAmqBrokerEnabled()) {
-					try {
-						log.info("Purging MPF-owned ActiveMQ queues...");
-						purgeQueues();
-					} catch (Exception exception) {
-						throw new RuntimeException("Failed to purge the MPF ActiveMQ queues.", exception);
-					}
-				}
+                log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
+                jobRequestDao.cancelJobsInNonTerminalState();
 
-				purgeServerStartupSystemMessages();
-				startFileIndexing(appContext);
-				startupRegistrationService.registerUnregisteredComponents();
+                log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
+                streamingJobRequestDao.cancelJobsInNonTerminalState();
+
+                if (propertiesUtil.isAmqBrokerEnabled()) {
+                    try {
+                        log.info("Purging MPF-owned ActiveMQ queues...");
+                        purgeQueues();
+                    } catch (Exception exception) {
+                        throw new RuntimeException("Failed to purge the MPF ActiveMQ queues.", exception);
+                    }
+                }
+
+                purgeServerStartupSystemMessages();
+                startFileIndexing(appContext);
+                startupRegistrationService.registerUnregisteredComponents();
                 startHealthReporting();
-				applicationRefreshed = true;
-			}
-		} else if (event instanceof ContextClosedEvent) {
-			stopHealthReporting();
-			ThreadUtil.shutdown();
-		}
-	}
+                applicationRefreshed = true;
+            }
+        } else if (event instanceof ContextClosedEvent) {
+            stopHealthReporting();
+            ThreadUtil.shutdown();
+        }
+    }
 
-	private void startFileIndexing(ApplicationContext appContext)  {
-		if (appContext instanceof WebApplicationContext) {
-			WebApplicationContext webContext = (WebApplicationContext) appContext;
-			ServletContext servletContext = webContext.getServletContext();
-			ThreadUtil.runAsync(
-					() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext,
-					                                  true, true));
-		}
-	}
+    private void startFileIndexing(ApplicationContext appContext)  {
+        if (appContext instanceof WebApplicationContext) {
+            WebApplicationContext webContext = (WebApplicationContext) appContext;
+            ServletContext servletContext = webContext.getServletContext();
+            ThreadUtil.runAsync(
+                    () -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext,
+                                                      true, true));
+        }
+    }
 
 
-	// startHealthReporting uses a scheduled executor.
-	private void startHealthReporting() {
+    // startHealthReporting uses a scheduled executor.
+    private void startHealthReporting() {
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
-	            streamingJobRequestBo.sendHealthReports();
+                streamingJobRequestService.sendHealthReports();
             } catch (Exception e) {
                 log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }
         };
 
         healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
-            propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+                                                           propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
 
     }
 
     private void stopHealthReporting() {
-	    if ( healthReportExecutorService != null ) {
+        if ( healthReportExecutorService != null ) {
             try {
                 log.info("stopHealthReporting: attempt to shutdown healthReportExecutorService");
                 healthReportExecutorService.shutdown();
@@ -183,33 +183,33 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
         }
     }
 
-	/** purge system messages that are set to be removed on server startup */
-	private void purgeServerStartupSystemMessages() {
-		log.info("WfmStartup.purgeServerStartupSystemMessages()");
-		List<SystemMessage> msgs = systemMessageService.getSystemMessagesByRemoveStrategy("atServerStartup");
-		for (SystemMessage m : msgs) {
-			long id = m.getId();
-			systemMessageService.deleteSystemMessage(id);
-			log.info("removed System Message #" + id + ": '" + m.getMsg() + "'");
-		}
-	}
+    /** purge system messages that are set to be removed on server startup */
+    private void purgeServerStartupSystemMessages() {
+        log.info("WfmStartup.purgeServerStartupSystemMessages()");
+        List<SystemMessage> msgs = systemMessageService.getSystemMessagesByRemoveStrategy("atServerStartup");
+        for (SystemMessage m : msgs) {
+            long id = m.getId();
+            systemMessageService.deleteSystemMessage(id);
+            log.info("removed System Message #" + id + ": '" + m.getMsg() + "'");
+        }
+    }
 
-	private void purgeQueues() throws Exception {
-		Map<String, Object> map = new HashMap<>();
-		map.put(JMXConnector.CREDENTIALS, new String[]{propertiesUtil.getAmqBrokerAdminUsername(), propertiesUtil.getAmqBrokerAdminPassword()});
-		JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
-		connector.connect();
-		MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
-		ObjectName activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");
-		BrokerViewMBean mbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, activeMQ, BrokerViewMBean.class, true);
-		Set<String> whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
-		log.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
-		for (ObjectName name : mbean.getQueues()) {
-			QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, name, QueueViewMBean.class, true);
-			if(!whitelist.contains(queueMbean.getName()) && queueMbean.getName().startsWith("MPF.")) {
-				log.info("Purging {}", queueMbean.getName());
-				queueMbean.purge();
-			}
-		}
-	}
+    private void purgeQueues() throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put(JMXConnector.CREDENTIALS, new String[]{propertiesUtil.getAmqBrokerAdminUsername(), propertiesUtil.getAmqBrokerAdminPassword()});
+        JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
+        connector.connect();
+        MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
+        ObjectName activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");
+        BrokerViewMBean mbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, activeMQ, BrokerViewMBean.class, true);
+        Set<String> whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
+        log.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
+        for (ObjectName name : mbean.getQueues()) {
+            QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, name, QueueViewMBean.class, true);
+            if(!whitelist.contains(queueMbean.getName()) && queueMbean.getName().startsWith("MPF.")) {
+                log.info("Purging {}", queueMbean.getName());
+                queueMbean.purge();
+            }
+        }
+    }
 }

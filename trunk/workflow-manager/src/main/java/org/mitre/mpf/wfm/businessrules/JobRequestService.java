@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.businessrules;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 
-public interface JobRequestBo {
+public interface JobRequestService {
 
     JobRequest run(JobCreationRequest jobCreationRequest);
 

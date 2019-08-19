@@ -39,7 +39,7 @@ import org.mitre.mpf.nms.NodeTypes;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
@@ -80,15 +80,16 @@ public class TestStreamingJobStartStop {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
 
-    private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
+    private static final StreamingJobRequestService _mockStreamingJobRequestService
+            = mock(StreamingJobRequestService.class);
 
     @Configuration
     public static class TestConfig {
 
         @Bean
         @Primary
-        public StreamingJobRequestBo streamingJobRequestBo() {
-            return _mockStreamingJobRequestBo;
+        public StreamingJobRequestService streamingJobRequestBo() {
+            return _mockStreamingJobRequestService;
         }
     }
 
@@ -125,20 +126,20 @@ public class TestStreamingJobStartStop {
 
         _jobSender.launchJob(streamingJob);
 
-        verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(30_000).atLeastOnce())
                 .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
         _jobSender.stopJob(jobId);
 
 
-        verify(_mockStreamingJobRequestBo, timeout(30_000))
+        verify(_mockStreamingJobRequestService, timeout(30_000))
                 .handleJobStatusChange(eq(jobId),
                                        hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
                                        gt(test_start_time));
 
         ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
 
-        verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(30_000).atLeastOnce())
                 .handleNewSummaryReport(reportCaptor.capture());
 
         JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
@@ -173,18 +174,18 @@ public class TestStreamingJobStartStop {
 
         _jobSender.launchJob(streamingJob);
 
-        verify(_mockStreamingJobRequestBo, timeout(60_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(60_000).atLeastOnce())
                 .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
 
         ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
-        verify(_mockStreamingJobRequestBo, timeout(60_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(60_000).atLeastOnce())
                 .handleNewSummaryReport(reportCaptor.capture());
 
         _jobSender.stopJob(jobId);
 
 
-        verify(_mockStreamingJobRequestBo, timeout(60_000))
+        verify(_mockStreamingJobRequestService, timeout(60_000))
                 .handleJobStatusChange(eq(jobId),
                                        hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
                                        gt(test_start_time));

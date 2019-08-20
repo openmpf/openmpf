@@ -60,7 +60,15 @@ public class FileWatcherServiceImpl implements FileWatcherService {
     private Map<Path, ServerMediaListing> fileCache = new HashMap<>();
     private DirectoryTreeNode rootDirectoryTreeCache;
 
+    // Map keys to a list of paths. The list may contain multiple paths that symlink to the same real path.
     private Map<WatchKey, List<Path>> watcherMap = new HashMap<>();
+
+    // TODO: Create map of symlink realpath to absolute paths; revert watcher map to real path;
+    // on real path event check use item to get absolute paths from symlink map; use paths to update file cache
+    
+    // TODO: use same file server listing for symlinks in file cache
+
+
 
     private boolean watcherInstantiated = false;
 
@@ -135,7 +143,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         WatchKey key;
         try {
-            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            key = dir.toRealPath().register(watcher, ENTRY_CREATE, ENTRY_DELETE);
             log.debug("File watcher registered for directory: " + dir);
             if (watcherMap.containsKey(key)) {
                 watcherMap.get(key).add(dir);
@@ -143,6 +151,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 List<Path> dirs = new ArrayList<>();
                 dirs.add(dir);
                 watcherMap.put(key, dirs);
+            }
+            if (Files.isSymbolicLink(dir)) {
+                // need to register parent dir too since it may be outside web tree root
+                registerDirectory(dir.toRealPath().getParent(), watcher);
             }
         } catch (IOException e) {
             log.error("Failed to register file watcher: " + dir);
@@ -192,7 +204,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                             addEntryToCache(newItem, watcher);
                         } else if (event.kind() == ENTRY_DELETE) {
                             File removedItem = new File(child.toAbsolutePath().toString());
-                            removeEntryFromCache(removedItem);
+                            removeEntryFromCache(key, removedItem);
                         } else {
                             log.debug("Unknown event type occurred: " + event.kind() + ", context: " + event.context());
                         }
@@ -208,27 +220,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         } catch (IOException e) {
             log.error("Error occurred in file watcher: ");
             throw new UncheckedIOException(e);
-        }
-    }
-
-    /**
-     * Should only be used on startup to load the initial cache
-     *
-     * @param dirPath
-     */
-    private void buildInitialCache(String dirPath) {
-        log.debug("Building initial cache");
-
-        DirectoryTreeNode node = this.rootDirectoryTreeCache;
-        node = DirectoryTreeNode.find(node, dirPath);
-
-        addFilesToCacheNoRecurse(new File(node.getFullPath()), new ArrayList<>());
-
-        // go through nested folders
-        if (node.getNodes() != null) {
-            for (DirectoryTreeNode subNode : node.getNodes()) {
-                buildInitialCache(subNode.getFullPath());
-            }
         }
     }
 
@@ -303,7 +294,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             if (isValidDirectory(item)) {
                 walkAndRegisterDirectories(Paths.get(item.getAbsolutePath()), watcher);
 
-                // addFilesToCacheNoRecurse(item, new ArrayList<>());
+                addFilesToCacheNoRecurse(item, new ArrayList<>());
 
                 log.debug("Directory added to cache: " + item.getAbsolutePath());
                 updateRootDirectoryTreeCache();
@@ -317,7 +308,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
     }
 
-    private void removeEntryFromCache(File item) {
+    private void removeEntryFromCache(WatchKey key, File item) {
         if (item == null) {
             return;
         }
@@ -325,55 +316,39 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         Path removedItem = item.toPath().toAbsolutePath();
         Path parentDir = removedItem.getParent();
 
-        // do nothing if cache doesn't exist
-        if (fileCache.get(parentDir) == null) {
-            log.warn("Item deleted in a directory that was not cached: " + item.getAbsolutePath());
-            return;
+        // if this item is a dir in the web root tree, it will be in the file cache
+        if (fileCache.remove(removedItem) != null) {
+            // remove sub-directories from the file cache too
+            fileCache.keySet().removeIf(k -> k.startsWith(item.getAbsolutePath()));
+            updateRootDirectoryTreeCache();
+
+        // else this item is a parent dir of a symlink, or a file;
+        // if a file, its parent dir will be in the file cache
+        } else if (fileCache.containsKey(parentDir)) {
+            if (fileCache.get(parentDir).getData().removeIf(smf -> smf.getFullPath().equals(item.getAbsolutePath()))) {
+                updateRootDirectoryTreeCache();
+            }
         }
 
-        if (fileCache.get(removedItem) != null) {
-            // directory
-            // The OS will delete files from the lowest level up, therefore we do not need to worry about
-            // subdirectories or sub files. This directory is guaranteed to be empty since those deletion events
-            // will have cleared everything below it from the cache
-            fileCache.remove(removedItem);
-            WatchKey deletedDirKey = null;
-            for (WatchKey key : watcherMap.keySet()) {
-                // this works because all paths in the list will get a call to removeFromCache
-                Path path = watcherMap.get(key).get(0);
-                if (path.equals(Paths.get(item.getAbsolutePath()))) {
-                    deletedDirKey = key;
-                    break;
+        // if this item is a dir, it will appear as a value in the watcher map
+        List<Path> dirs = watcherMap.get(key);
+        if (dirs.removeIf(d -> d.equals(item.getAbsolutePath()))) { // TODO: All paths need to be removed?
+            if (dirs.isEmpty()) {
+                key.reset();
+                key.cancel();
+                watcherMap.remove(key);
+            }
+        }
+
+        // TODO: Improve lookup time by making watch keys part of root directory tree cache.
+        for (List<Path> subdirs : watcherMap.values()) {
+            if (subdirs.removeIf(d -> d.startsWith(item.getAbsolutePath()))) { // TODO: All paths need to be removed?
+                if (subdirs.isEmpty()) {
+                    key.reset();
+                    key.cancel();
+                    watcherMap.remove(key);
                 }
             }
-            if (deletedDirKey != null) {
-                deletedDirKey.reset();
-                deletedDirKey.cancel();
-                watcherMap.remove(deletedDirKey);
-            }
-
-            log.debug("Directory removed from cache: " + item.getAbsolutePath());
-            updateRootDirectoryTreeCache();
-        } else {
-            // file
-            ServerMediaListing oldListing = fileCache.get(parentDir);
-
-            List<ServerMediaFile> mediaFiles = new ArrayList<>();
-            for (ServerMediaFile cachedFile : oldListing.getData()) {
-                if (!cachedFile.getFullPath().equals(item.getAbsolutePath())) {
-                    mediaFiles.add(cachedFile);
-                }
-            }
-            if (mediaFiles.size() == oldListing.getData().size()) {
-                log.warn("No file removed from cache after delete event");
-            }
-
-            // update cache
-            ServerMediaListing newListing = new ServerMediaListing(mediaFiles);
-            fileCache.put(parentDir, newListing);
-
-            log.debug("File removed from cache: " + item.getAbsolutePath());
-            updateRootDirectoryTreeCache();
         }
     }
 }

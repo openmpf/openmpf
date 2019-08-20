@@ -43,6 +43,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -65,7 +66,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
     // TODO: Create map of symlink realpath to absolute paths; revert watcher map to real path;
     // on real path event check use item to get absolute paths from symlink map; use paths to update file cache
-    
+
     // TODO: use same file server listing for symlinks in file cache
 
 
@@ -86,8 +87,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         List<DirectoryTreeNode> seenNodes = new ArrayList<>();
         seenNodes.add(rootDirectoryTreeCache);
 
-        rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, seenNodes,
-                propertiesUtil.getServerMediaTreeRoot());
+        rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, seenNodes);
     }
 
     public synchronized DirectoryTreeNode getRootDirectoryTreeCache() {
@@ -143,7 +143,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         WatchKey key;
         try {
-            key = dir.toRealPath().register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE); // TODO: realpath()
             log.debug("File watcher registered for directory: " + dir);
             if (watcherMap.containsKey(key)) {
                 watcherMap.get(key).add(dir);
@@ -151,11 +151,14 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 List<Path> dirs = new ArrayList<>();
                 dirs.add(dir);
                 watcherMap.put(key, dirs);
+                log.info("watcherMap.put: " + dirs); // DEBUG
             }
+            /*
             if (Files.isSymbolicLink(dir)) {
                 // need to register parent dir too since it may be outside web tree root
                 registerDirectory(dir.toRealPath().getParent(), watcher);
             }
+            */
         } catch (IOException e) {
             log.error("Failed to register file watcher: " + dir);
             throw new UncheckedIOException(e);
@@ -188,11 +191,14 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         try {
             WatchKey key;
             while ((key = watcher.take()) != null) { // blocks until watcher.take() returns an event
-                List<Path> dirs = new ArrayList<>(watcherMap.get(key)); // copy to prevent concurrent access exception
+                List<Path> dirs = watcherMap.get(key);
                 if (dirs == null) {
-                    log.error("WatchKey not recognized!!");
+                    // watch key not recognized or removed
                     continue;
                 }
+
+                dirs = new ArrayList<>(watcherMap.get(key)); // copy to prevent concurrent access exception
+
                 for (WatchEvent<?> event : key.pollEvents()) {
                     //process
                     log.debug("File event occurred in watched directory");
@@ -244,6 +250,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         currentFiles.addAll(mediaFiles);
 
+        log.info("addFilesToCacheNoRecurse: " + mediaFiles.stream().map(ServerMediaFile::getFullPath).collect(Collectors.joining(", "))); // DEBUG
+
         if (item.isDirectory()) {
             fileCache.put(item.toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
         } else {
@@ -281,6 +289,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             return;
         }
 
+        log.info("addEntryToCache: " + item); // DEBUG
+
         Path parentFilePath = Paths.get(item.getParentFile().getAbsolutePath());
         Path filePath = Paths.get(item.getAbsolutePath());
 
@@ -296,14 +306,14 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
                 addFilesToCacheNoRecurse(item, new ArrayList<>());
 
-                log.debug("Directory added to cache: " + item.getAbsolutePath());
+                log.info("Directory added to cache: " + item.getAbsolutePath()); // DEBUG
                 updateRootDirectoryTreeCache();
             }
         } else {
             ServerMediaListing oldListing = fileCache.get(parentFilePath);
-            addFilesToCacheNoRecurse(item, new ArrayList<>(oldListing.getData()));
+            addFilesToCacheNoRecurse(item, new ArrayList<>(oldListing.getData())); // DEBUG
 
-            log.debug("File added to cache: " + filePath);
+            log.info("File added to cache: " + filePath);
             updateRootDirectoryTreeCache();
         }
     }
@@ -313,11 +323,15 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             return;
         }
 
+        log.info("removeEntryFromCache: " + item); // DEBUG
+
         Path removedItem = item.toPath().toAbsolutePath();
         Path parentDir = removedItem.getParent();
 
         // if this item is a dir in the web root tree, it will be in the file cache
         if (fileCache.remove(removedItem) != null) {
+            log.info("HERE A"); // DEBUG
+
             // remove sub-directories from the file cache too
             fileCache.keySet().removeIf(k -> k.startsWith(item.getAbsolutePath()));
             updateRootDirectoryTreeCache();
@@ -325,6 +339,8 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // else this item is a parent dir of a symlink, or a file;
         // if a file, its parent dir will be in the file cache
         } else if (fileCache.containsKey(parentDir)) {
+            log.info("HERE B"); // DEBUG
+
             if (fileCache.get(parentDir).getData().removeIf(smf -> smf.getFullPath().equals(item.getAbsolutePath()))) {
                 updateRootDirectoryTreeCache();
             }
@@ -332,8 +348,10 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         // if this item is a dir, it will appear as a value in the watcher map
         List<Path> dirs = watcherMap.get(key);
+        List<Path> dirsCopy = new ArrayList<>(dirs); // DEBUG
         if (dirs.removeIf(d -> d.equals(item.getAbsolutePath()))) { // TODO: All paths need to be removed?
             if (dirs.isEmpty()) {
+                log.info("1 watcherMap.remove: " + dirs); // DEBUG
                 key.reset();
                 key.cancel();
                 watcherMap.remove(key);
@@ -341,14 +359,26 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         }
 
         // TODO: Improve lookup time by making watch keys part of root directory tree cache.
-        for (List<Path> subdirs : watcherMap.values()) {
+        Set<WatchKey> keysToRemove = new HashSet<>();
+        for (WatchKey k : watcherMap.keySet()) {
+            List<Path> subdirs = watcherMap.get(k);
+            List<Path> subdirsCopy = new ArrayList<>(subdirs); // DEBUG
             if (subdirs.removeIf(d -> d.startsWith(item.getAbsolutePath()))) { // TODO: All paths need to be removed?
                 if (subdirs.isEmpty()) {
-                    key.reset();
-                    key.cancel();
-                    watcherMap.remove(key);
+                    log.info("2 watcherMap.remove: " + subdirsCopy); // DEBUG
+                    k.reset();
+                    k.cancel();
+                    keysToRemove.add(k);
                 }
             }
+        }
+        for (WatchKey keyToRemove : keysToRemove) {
+            watcherMap.remove(keyToRemove);
+        }
+
+        // DEBUG
+        for (WatchKey k : watcherMap.keySet()) {
+            log.info("watcherMap left: " + watcherMap.get(k)); // DEBUG
         }
     }
 }

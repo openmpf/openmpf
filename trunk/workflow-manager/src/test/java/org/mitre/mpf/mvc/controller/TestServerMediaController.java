@@ -35,11 +35,7 @@ import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
-import org.mitre.mpf.wfm.service.FileWatcherService;
-import org.mitre.mpf.wfm.service.FileWatcherServiceImpl;
-import org.mitre.mpf.wfm.service.S3StorageBackend;
-import org.mitre.mpf.wfm.service.ServerMediaService;
-import org.mitre.mpf.wfm.service.ServerMediaServiceImpl;
+import org.mitre.mpf.wfm.service.*;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -51,11 +47,10 @@ import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 public class TestServerMediaController {
@@ -87,13 +82,16 @@ public class TestServerMediaController {
     private File mediaBase;
 
     @Rule
-    public TemporaryFolder _tempFolder = new TemporaryFolder();
+    public TemporaryFolder _rootTempFolder = new TemporaryFolder();
+
+    @Rule
+    public TemporaryFolder _extTempFolder = new TemporaryFolder();
 
     @Before
     public void init() throws InterruptedException {
         MockitoAnnotations.initMocks(this);
 
-        mediaBase = _tempFolder.getRoot();
+        mediaBase = _rootTempFolder.getRoot();
 
         when(_mockProperties.getServerMediaTreeRoot())
                 .thenReturn(mediaBase.getAbsolutePath());
@@ -121,7 +119,7 @@ public class TestServerMediaController {
 
     @Test
     public void getAllDirectoriesNested() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
@@ -134,7 +132,7 @@ public class TestServerMediaController {
 
     @Test
     public void getAllDirectoriesAfterDeletion() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
@@ -153,7 +151,7 @@ public class TestServerMediaController {
 
     @Test
     public void getAllDirectoriesAfterEvents() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
@@ -181,9 +179,9 @@ public class TestServerMediaController {
 
     @Test
     public void getAllFilesRootFolder() throws IOException, InterruptedException {
-        File file = _tempFolder.newFile(_testFileName1);
-        _tempFolder.newFile(_testFileName2);
-        _tempFolder.newFile(_testFileName3);
+        File file = _rootTempFolder.newFile(_testFileName1);
+        _rootTempFolder.newFile(_testFileName2);
+        _rootTempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
         Thread.sleep(100);
@@ -197,7 +195,7 @@ public class TestServerMediaController {
 
     @Test
     public void getAllFilesNestedFolderAfterCreation() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
@@ -228,9 +226,9 @@ public class TestServerMediaController {
 
     @Test
     public void getAllFilesAfterDeletion() throws IOException, InterruptedException {
-        File file = _tempFolder.newFile(_testFileName1);
-        _tempFolder.newFile(_testFileName2);
-        _tempFolder.newFile(_testFileName3);
+        File file = _rootTempFolder.newFile(_testFileName1);
+        _rootTempFolder.newFile(_testFileName2);
+        _rootTempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
         Thread.sleep(100);
@@ -252,7 +250,7 @@ public class TestServerMediaController {
 
     @Test
     public void getFilesFromDeletedDirectory() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
 
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
@@ -296,9 +294,9 @@ public class TestServerMediaController {
 
     @Test
     public void getFilesSorted() throws IOException, InterruptedException {
-        File file = _tempFolder.newFile(_testFileName1);
-        _tempFolder.newFile(_testFileName2);
-        _tempFolder.newFile(_testFileName3);
+        File file = _rootTempFolder.newFile(_testFileName1);
+        _rootTempFolder.newFile(_testFileName2);
+        _rootTempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
         Thread.sleep(100);
@@ -314,9 +312,9 @@ public class TestServerMediaController {
 
     @Test
     public void getFilesFiltered() throws IOException, InterruptedException {
-        File file = _tempFolder.newFile(_testFileName1);
-        _tempFolder.newFile(_testFileName2);
-        _tempFolder.newFile(_testFileName3);
+        File file = _rootTempFolder.newFile(_testFileName1);
+        _rootTempFolder.newFile(_testFileName2);
+        _rootTempFolder.newFile(_testFileName3);
 
         Assert.assertTrue(file.exists());
         Thread.sleep(800);
@@ -345,7 +343,7 @@ public class TestServerMediaController {
 
     @Test
     public void getFilesFilteredDeletedDirectory() throws IOException, InterruptedException {
-        File subFolder = _tempFolder.newFolder("nested-folder");
+        File subFolder = _rootTempFolder.newFolder("nested-folder");
         Thread.sleep(100);
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
@@ -375,5 +373,68 @@ public class TestServerMediaController {
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 subFolder.getAbsolutePath(), 1 , 0, 10, "");
         assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
+    }
+
+    // @Test
+    public void createAndRecreateSymlink() throws IOException, InterruptedException {
+        createAndRemoveSymlink();
+
+        // try to create the same symlink again to make sure everything was properly cleaned up the last time
+        createAndRemoveSymlink();
+    }
+
+    @Test
+    public void createAndRemoveSymlink() throws IOException, InterruptedException {
+        for (int i = 0; i < 2; i++) {
+
+            System.out.println("PASS: " + i); // DEBUG
+
+            File extTestFile = _extTempFolder.newFile("test-text.txt");
+
+            // create symlink
+
+            Path target = _extTempFolder.getRoot().toPath();
+            Path link = _rootTempFolder.getRoot().toPath().resolve("link");
+
+            Files.createSymbolicLink(link, target);
+            assertTrue(Files.isSymbolicLink(link));
+            Thread.sleep(1000);
+
+            ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+            assertEquals(0, mediaListing.getData().size());
+
+            mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
+            assertEquals(1, mediaListing.getData().size());
+            assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+
+            // remove file in symlink dir
+
+            System.out.println("DELETE 1"); // DEBUG
+            assertTrue(extTestFile.delete());
+            Thread.sleep(1000);
+            System.out.println("DELETE 2"); // DEBUG
+
+            mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
+
+            System.out.println("CHECK 1"); // DEBUG
+            Thread.sleep(1000);
+            System.out.println("CHECK 2"); // DEBUG
+
+            assertEquals(0, mediaListing.getData().size());
+
+            // remove symlink
+
+            assertTrue(link.toFile().delete());
+            Thread.sleep(1000);
+
+            mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+            assertEquals(0, mediaListing.getData().size());
+
+            ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
+                    link.toFile().getAbsolutePath());
+            assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
+
+            Thread.sleep(10000); // DEBUG
+        }
     }
 }

@@ -68,7 +68,7 @@ public class DirectoryTreeNode {
         this.nodes.add(node);
     }
 
-    public DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
+    public DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes) {
 
         List<Path> dirs = new ArrayList<>();
         Path folder = Paths.get(node.getFullPath());
@@ -78,6 +78,7 @@ public class DirectoryTreeNode {
                 dirs.add(entry);
             }
         } catch (IOException e) {
+            e.printStackTrace(); // DEBUG
             log.error("Error detecting directories: " + e.getMessage());
             return node;
         }
@@ -112,7 +113,7 @@ public class DirectoryTreeNode {
                     List<DirectoryTreeNode> seenNodesCopy = new ArrayList<>(seenNodes);
                     seenNodesCopy.add(realChildNode);
 
-                    node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy, uploadDir)); // use absolute path
+                    node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy)); // use absolute path
                 }
             }
             if (node.nodes.isEmpty()) {
@@ -130,7 +131,7 @@ public class DirectoryTreeNode {
     public static DirectoryTreeNode find(DirectoryTreeNode node, String fullPath) {
         if (node.getFullPath().equals(fullPath)) return node;
         if (node.nodes != null) {
-            DirectoryTreeNode found = null;
+            DirectoryTreeNode found;
             for (DirectoryTreeNode child : node.nodes) {
                 if ((found = find(child, fullPath)) != null)
                     return found;

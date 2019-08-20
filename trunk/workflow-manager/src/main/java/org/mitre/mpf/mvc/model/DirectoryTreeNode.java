@@ -78,8 +78,7 @@ public class DirectoryTreeNode {
                 dirs.add(entry);
             }
         } catch (IOException e) {
-            e.printStackTrace(); // DEBUG
-            log.error("Error detecting directories: " + e.getMessage());
+            log.warn("Directory does not exist: " + e.getMessage());
             return node;
         }
 

@@ -26,10 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
@@ -127,7 +124,6 @@ public class TestServerMediaController {
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
-
     }
 
     @Test
@@ -330,15 +326,15 @@ public class TestServerMediaController {
     public void getFilesFilteredInvalidDirectory() {
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 "/tmp", 1 , 0, 10, "");
-        assertSame(mediaListingResult.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertSame(HttpStatus.BAD_REQUEST, mediaListingResult.getStatusCode());
 
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 "/lskjdflksjf", 1 , 0, 10, "");
-        assertSame(mediaListingResult.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertSame(HttpStatus.BAD_REQUEST, mediaListingResult.getStatusCode());
 
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 _mockProperties.getServerMediaTreeRoot() + "/slfkjasdlksdf", 1 , 0, 10, "");
-        assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
     }
 
     @Test
@@ -372,69 +368,245 @@ public class TestServerMediaController {
 
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 subFolder.getAbsolutePath(), 1 , 0, 10, "");
-        assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
     }
 
-    // @Test
-    public void createAndRecreateSymlink() throws IOException, InterruptedException {
-        createAndRemoveSymlink();
 
-        // try to create the same symlink again to make sure everything was properly cleaned up the last time
-        createAndRemoveSymlink();
+    private void createAndRemoveSymlink() throws IOException, InterruptedException {
+        File extTestFile = _extTempFolder.newFile("test-text.txt");
+
+        // create symlink
+
+        Path target = _extTempFolder.getRoot().toPath();
+        Path link = _rootTempFolder.getRoot().toPath().resolve("link");
+
+        Files.createSymbolicLink(link, target);
+        assertTrue(Files.isSymbolicLink(link));
+        Thread.sleep(1000);
+
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+
+        // remove file in symlink dir
+
+        assertTrue(extTestFile.delete());
+        Thread.sleep(1000);
+
+        mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        // remove symlink
+
+        assertTrue(link.toFile().delete());
+        Thread.sleep(1000);
+
+        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
+                link.toFile().getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
     }
 
     @Test
-    public void createAndRemoveSymlink() throws IOException, InterruptedException {
-        for (int i = 0; i < 2; i++) {
+    public void recreateSymlink() throws IOException, InterruptedException {
+        // root
+        // + link --> ext
+        // ext
+        // + text-text.txt
+        createAndRemoveSymlink(); // pass 0
+        createAndRemoveSymlink(); // pass 1
+    }
 
-            System.out.println("PASS: " + i); // DEBUG
 
-            File extTestFile = _extTempFolder.newFile("test-text.txt");
+    private void createAndRemoveTwinSymlinks(String linkASubPath, String linkBSubPath) throws IOException, InterruptedException {
+        File extTestFile = _extTempFolder.newFile("test-text.txt");
 
-            // create symlink
+        // create symlinks
 
-            Path target = _extTempFolder.getRoot().toPath();
-            Path link = _rootTempFolder.getRoot().toPath().resolve("link");
+        Path target = _extTempFolder.getRoot().toPath();
+        Path linkA = _rootTempFolder.getRoot().toPath().resolve(linkASubPath);
+        Path linkB = _rootTempFolder.getRoot().toPath().resolve(linkBSubPath);
 
-            Files.createSymbolicLink(link, target);
-            assertTrue(Files.isSymbolicLink(link));
-            Thread.sleep(1000);
+        Files.createDirectories(linkA.getParent());
+        Files.createSymbolicLink(linkA, target);
+        assertTrue(Files.isSymbolicLink(linkA));
 
-            ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-            assertEquals(0, mediaListing.getData().size());
+        Files.createDirectories(linkB.getParent());
+        Files.createSymbolicLink(linkB, target);
+        assertTrue(Files.isSymbolicLink(linkB));
 
-            mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
-            assertEquals(1, mediaListing.getData().size());
-            assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+        Thread.sleep(1000);
 
-            // remove file in symlink dir
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
 
-            System.out.println("DELETE 1"); // DEBUG
-            assertTrue(extTestFile.delete());
-            Thread.sleep(1000);
-            System.out.println("DELETE 2"); // DEBUG
+        mediaListing = _controller.getAllFiles(_mockRequest, linkA.toFile().getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
 
-            mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
+        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
 
-            System.out.println("CHECK 1"); // DEBUG
-            Thread.sleep(1000);
-            System.out.println("CHECK 2"); // DEBUG
+        // remove symlink A
 
-            assertEquals(0, mediaListing.getData().size());
+        assertTrue(linkA.toFile().delete());
+        Thread.sleep(1000);
 
-            // remove symlink
+        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
 
-            assertTrue(link.toFile().delete());
-            Thread.sleep(1000);
+        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
+                linkA.toFile().getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
 
-            mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-            assertEquals(0, mediaListing.getData().size());
+        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
 
-            ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
-                    link.toFile().getAbsolutePath());
-            assertSame(mediaListingResult.getStatusCode(), HttpStatus.NOT_FOUND);
+        // remove file in symlink dir
 
-            Thread.sleep(10000); // DEBUG
-        }
+        assertTrue(extTestFile.delete());
+        Thread.sleep(1000);
+
+        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        // remove symlink B
+
+        assertTrue(linkB.toFile().delete());
+        Thread.sleep(1000);
+
+        mediaListingResult = _controller.getAllFiles(_mockRequest,
+                linkB.toFile().getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+    }
+
+    @Test
+    public void recreateTwinSymlinks() throws IOException, InterruptedException {
+        // root
+        // + linkA --> ext
+        // + linkB --> ext
+        // ext
+        // + text-text.txt
+        createAndRemoveTwinSymlinks("linkA", "linkB"); // pass 0
+        createAndRemoveTwinSymlinks("linkA", "linkB"); // pass 1
+    }
+
+    @Test
+    public void recreateTwinNestedSymlinks() throws IOException, InterruptedException {
+        // root
+        // + linkA --> ext
+        // + nested
+        //   + linkB --> ext
+        // ext
+        // + text-text.txt
+        createAndRemoveTwinSymlinks("linkA", "nested/linkB"); // pass 0
+
+        // root
+        // + nested
+        //   + linkA --> ext
+        //   + linkB --> ext
+        // ext
+        // + text-text.txt
+        createAndRemoveTwinSymlinks("nested/linkA", "nested/linkB"); // pass 1
+    }
+
+
+    private void createAndRemoveSymlinkChain() throws IOException, InterruptedException {
+        File rootTestFile = _rootTempFolder.newFile("test-text.txt");
+
+        File nestedADir = _rootTempFolder.newFolder("nestedA");
+        File nestedATestFile = _rootTempFolder.newFile("nestedA/test-text.txt");
+
+        File nestedBDir = _rootTempFolder.newFolder("nestedB");
+        File nestedBTestFile = _rootTempFolder.newFile("nestedB/test-text.txt");
+
+        // create symlinks
+
+        Path linkA = _rootTempFolder.getRoot().toPath().resolve("nestedA/linkA");
+
+        Files.createDirectories(linkA.getParent());
+        Files.createSymbolicLink(linkA, rootTestFile.toPath().getParent());
+        assertTrue(Files.isSymbolicLink(linkA));
+
+        Path linkB = _rootTempFolder.getRoot().toPath().resolve("nestedB/linkB");
+
+        Files.createDirectories(linkB.getParent());
+        Files.createSymbolicLink(linkB, linkA.getParent());
+        assertTrue(Files.isSymbolicLink(linkB));
+
+        Thread.sleep(1000);
+
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+
+        mediaListing = _controller.getAllFiles(_mockRequest, nestedADir.getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+
+        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+
+        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
+                linkA.toFile().getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+
+        mediaListingResult = _controller.getAllFiles(_mockRequest,
+                linkB.toFile().getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+
+        // remove file in symlink dir
+
+        assertTrue(nestedATestFile.delete());
+        Thread.sleep(1000);
+
+        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+
+        mediaListing = _controller.getAllFiles(_mockRequest, nestedADir.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
+        assertEquals(1, mediaListing.getData().size());
+
+        // remove symlink A
+
+        assertTrue(linkA.toFile().delete());
+        Thread.sleep(1000);
+
+        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
+        assertEquals(0, mediaListing.getData().size());
+
+        mediaListingResult = _controller.getAllFiles(_mockRequest,
+                nestedADir.getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+
+        // remove symlink B
+
+        assertTrue(linkB.toFile().delete());
+        Thread.sleep(1000);
+
+        mediaListingResult = _controller.getAllFiles(_mockRequest,
+                nestedBDir.getAbsolutePath());
+        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+    }
+
+    @Test
+    public void createSymlinkChain() throws IOException, InterruptedException {
+        // root
+        // + text-text.txt
+        // + nestedA
+        //   + text-test.txt
+        //   + linkA --> root
+        // + nestedB
+        //   + text-test.txt
+        //   + linkB --> nestedA
+        createAndRemoveSymlinkChain(); // pass 0
+        createAndRemoveSymlinkChain(); // pass 1
     }
 }

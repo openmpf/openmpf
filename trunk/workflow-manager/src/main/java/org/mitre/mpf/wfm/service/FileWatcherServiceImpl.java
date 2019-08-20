@@ -147,6 +147,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             log.debug("File watcher registered for directory: " + dir);
             if (watcherMap.containsKey(key)) {
                 watcherMap.get(key).add(dir);
+                log.info("watcherMap.put: " + watcherMap.get(key)); // DEBUG
             } else {
                 List<Path> dirs = new ArrayList<>();
                 dirs.add(dir);
@@ -162,6 +163,11 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         } catch (IOException e) {
             log.error("Failed to register file watcher: " + dir);
             throw new UncheckedIOException(e);
+        }
+
+        // DEBUG
+        for (WatchKey k : watcherMap.keySet()) {
+            log.info("watcherMap left: " + watcherMap.get(k)); // DEBUG
         }
 
         return true;
@@ -253,7 +259,9 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         log.info("addFilesToCacheNoRecurse: " + mediaFiles.stream().map(ServerMediaFile::getFullPath).collect(Collectors.joining(", "))); // DEBUG
 
         if (item.isDirectory()) {
-            fileCache.put(item.toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
+            if (isValidDirectory(item)) {
+                fileCache.put(item.toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
+            }
         } else {
             fileCache.put(item.getParentFile().toPath().toAbsolutePath(), new ServerMediaListing(currentFiles));
         }
@@ -346,6 +354,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             }
         }
 
+        /*
         // if this item is a dir, it will appear as a value in the watcher map
         List<Path> dirs = watcherMap.get(key);
         List<Path> dirsCopy = new ArrayList<>(dirs); // DEBUG
@@ -357,6 +366,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
                 watcherMap.remove(key);
             }
         }
+        */
 
         // TODO: Improve lookup time by making watch keys part of root directory tree cache.
         Set<WatchKey> keysToRemove = new HashSet<>();

@@ -383,7 +383,7 @@ public class TestServerMediaController {
 
 
     private void createAndRemoveSymlink() throws IOException, InterruptedException {
-        File extTestFile = _extTempFolder.newFile("test-text.txt");
+        File extTestFile = _extTempFolder.newFile(_testFileName1);
 
         // create symlink
 
@@ -428,7 +428,7 @@ public class TestServerMediaController {
 
 
     private void createAndRemoveTwinSymlinks(String linkASubPath, String linkBSubPath) throws IOException, InterruptedException {
-        File extTestFile = _extTempFolder.newFile("test-text.txt");
+        File extTestFile = _extTempFolder.newFile(_testFileName1);
 
         // create symlinks
 
@@ -515,13 +515,13 @@ public class TestServerMediaController {
 
 
     private void createAndRemoveSymlinkCycle() throws IOException, InterruptedException {
-        File rootTestFile = _rootTempFolder.newFile("test-text.txt");
+        File rootTestFile = _rootTempFolder.newFile(_testFileName1);
 
         File nestedADir = _rootTempFolder.newFolder("nestedA");
-        File nestedATestFile = _rootTempFolder.newFile("nestedA/test-text.txt");
+        File nestedATestFile = _rootTempFolder.newFile("nestedA/" + _testFileName1);
 
         File nestedBDir = _rootTempFolder.newFolder("nestedB");
-        File nestedBTestFile = _rootTempFolder.newFile("nestedB/test-text.txt");
+        File nestedBTestFile = _rootTempFolder.newFile("nestedB/" + _testFileName1);
 
         // create symlinks
 

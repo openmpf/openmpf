@@ -67,8 +67,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -146,7 +144,7 @@ public class ServerMediaController {
         }
 
         log.debug("All files requested in: " + fullPath);
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, true);
         return ResponseEntity.ok(new ServerMediaListing(mediaFiles));
     }
 
@@ -176,11 +174,11 @@ public class ServerMediaController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath);
+        List<ServerMediaFile> mediaFiles = serverMediaService.getFiles(fullPath, false);
 
         // handle sort
         Collections.sort(mediaFiles, (new SortAlphabeticalCaseInsensitive()). // make 'A' come before 'B'
-                thenComparing(new SortAlphabeticalCaseSensitive()));         // make 'A' come before 'a'
+                thenComparing(new SortAlphabeticalCaseSensitive()));          // make 'A' come before 'a'
 
         // handle search
         if (search != null && search.length() > 0) {

@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,9 +55,21 @@ public class ServerMediaServiceImpl implements ServerMediaService {
         return fileCacheService.getRootDirectoryTreeCache();
     }
 
-    public List<ServerMediaFile> getFiles(String dirPathName) {
+    public List<ServerMediaFile> getFiles(String dirPath, boolean recurse) {
+        DirectoryTreeNode node = getAllDirectories();
+        node = DirectoryTreeNode.find(node, dirPath);
+        return getFiles(node, recurse);
+    }
+
+    private List<ServerMediaFile> getFiles(DirectoryTreeNode node, boolean recurse) {
         List<ServerMediaFile> mediaFiles = new ArrayList<>();
-        Path dirPath = Paths.get(dirPathName).toAbsolutePath();
+
+        if (node == null) {
+            return mediaFiles;
+        }
+
+        Path dirPath = new File(node.getFullPath()).toPath();
+
         ServerMediaListing cachedFileNames = fileCacheService.getFileListByPath(dirPath);
         if (cachedFileNames != null) {
             log.debug("Using cached file listing: " + dirPath);
@@ -65,7 +77,14 @@ public class ServerMediaServiceImpl implements ServerMediaService {
         } else {
             log.error("Media file cache not found");
         }
+
+        // recurse
+        if (recurse && node.getNodes() != null) {
+            for (DirectoryTreeNode subnode : node.getNodes()) {
+                mediaFiles.addAll(getFiles(subnode, recurse));
+            }
+        }
+
         return mediaFiles;
     }
-
 }

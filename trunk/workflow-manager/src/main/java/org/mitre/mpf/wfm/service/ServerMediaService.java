@@ -38,5 +38,5 @@ public interface ServerMediaService {
 
 	public DirectoryTreeNode getAllDirectories();
 
-	public List<ServerMediaFile> getFiles(String dirPath);
+	public List<ServerMediaFile> getFiles(String dirPath, boolean recurse);
 }

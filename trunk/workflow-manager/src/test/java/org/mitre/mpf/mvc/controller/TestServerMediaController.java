@@ -26,9 +26,13 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
+import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
@@ -46,6 +50,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
@@ -75,6 +80,7 @@ public class TestServerMediaController {
     private static final String _testFileName1 = "test-video.mp4";
     private static final String _testFileName2 = "test-document.pdf";
     private static final String _testFileName3 = "test-image.png";
+    private static final String _testFileName4 = "test-text.txt";
     private static final int SLEEP_TIME_MILLISEC = 100;
     private ServerMediaService serverMediaService;
     private File mediaBase;
@@ -96,14 +102,13 @@ public class TestServerMediaController {
         when(_mockProperties.getRemoteMediaDirectory())
                 .thenReturn(mediaBase);
 
-
         FileWatcherService fileCacheService = new FileWatcherServiceImpl(_mockProperties, _mockIoUtils);
         serverMediaService = new ServerMediaServiceImpl(fileCacheService);
         _controller = new ServerMediaController(_mockProperties, serverMediaService, _mockJobRequestDao,
                 _mockJsonUtils, _mockS3StorageBackend);
         fileCacheService.launchWatcher(mediaBase.getAbsolutePath());
-        // wait for cache to load
-        Thread.sleep(SLEEP_TIME_MILLISEC);
+
+        Thread.sleep(SLEEP_TIME_MILLISEC); // wait for cache to load
     }
 
     // get-all-directories
@@ -111,17 +116,15 @@ public class TestServerMediaController {
     @Test
     public void getAllDirectoriesJustRoot() {
         DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
-
         assertEquals(rootNode.getFullPath(), _mockProperties.getServerMediaTreeRoot());
     }
 
     @Test
     public void getAllDirectoriesNested() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
@@ -130,45 +133,41 @@ public class TestServerMediaController {
     @Test
     public void getAllDirectoriesAfterDeletion() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
 
         Assert.assertTrue(subFolder.delete());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         Assert.assertNull(rootNode.getNodes());
     }
 
     @Test
     public void getAllDirectoriesAfterEvents() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
 
         File file = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file.createNewFile());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode newTree = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode newTree = _controller.getAllDirectories(_mockRequest).getBody();
         Assert.assertEquals(rootNode, newTree);
 
         Assert.assertTrue(file.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        newTree = _controller.getAllDirectories(_mockRequest).getBody();
 
+        newTree = _controller.getAllDirectories(_mockRequest).getBody();
         Assert.assertEquals(rootNode, newTree);
     }
 
@@ -182,97 +181,93 @@ public class TestServerMediaController {
 
         Assert.assertTrue(file.exists());
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
 
-        assertEquals(3, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
-        assertEquals(_testFileName2, mediaListing.getData().get(1).getName());
-        assertEquals(_testFileName3, mediaListing.getData().get(2).getName());
+        List<ServerMediaFile> mediaList = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody().getData();
+        assertEquals(3, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
+        assertEquals(_testFileName2, mediaList.get(1).getName());
+        assertEquals(_testFileName3, mediaList.get(2).getName());
     }
 
     @Test
-    public void getAllFilesNestedFolderAfterCreation() throws IOException, InterruptedException {
+    public void getAllFilesAfterCreationAndDeletion() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertNotNull(rootNode.getNodes());
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
 
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
-        Assert.assertEquals(0, mediaListing.getData().size());
+        List<ServerMediaFile> mediaList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody().getData();
+        Assert.assertEquals(0, mediaList.size());
 
-        File file1 = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
+        File file1 = new File(mediaBase.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file1.createNewFile());
         File file2 = new File(subFolder.getAbsolutePath() + "/" + _testFileName2);
         Assert.assertTrue(file2.createNewFile());
         File file3 = new File(subFolder.getAbsolutePath() + "/" + _testFileName3);
         Assert.assertTrue(file3.createNewFile());
-
+        File file4 = new File(subFolder.getAbsolutePath() + "/" + _testFileName4);
+        Assert.assertTrue(file4.createNewFile());
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
 
-        assertEquals(3, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
-        assertEquals(_testFileName2, mediaListing.getData().get(1).getName());
-        assertEquals(_testFileName3, mediaListing.getData().get(2).getName());
-    }
+        mediaList = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody().getData();
+        assertEquals(4, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
+        assertEquals(_testFileName2, mediaList.get(1).getName());
+        assertEquals(_testFileName3, mediaList.get(2).getName());
+        assertEquals(_testFileName4, mediaList.get(3).getName());
 
-    @Test
-    public void getAllFilesAfterDeletion() throws IOException, InterruptedException {
-        File file = _rootTempFolder.newFile(_testFileName1);
-        _rootTempFolder.newFile(_testFileName2);
-        _rootTempFolder.newFile(_testFileName3);
+        mediaList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody().getData();
+        assertEquals(3, mediaList.size());
+        assertEquals(_testFileName2, mediaList.get(0).getName());
+        assertEquals(_testFileName3, mediaList.get(1).getName());
+        assertEquals(_testFileName4, mediaList.get(2).getName());
 
-        Assert.assertTrue(file.exists());
+        assertTrue(file3.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
 
-        assertEquals(3, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
-        assertEquals(_testFileName2, mediaListing.getData().get(1).getName());
-        assertEquals(_testFileName3, mediaListing.getData().get(2).getName());
+        mediaList = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody().getData();
+        assertEquals(3, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
+        assertEquals(_testFileName2, mediaList.get(1).getName());
+        assertEquals(_testFileName4, mediaList.get(2).getName());
 
-        Assert.assertTrue(file.delete());
-        Thread.sleep(SLEEP_TIME_MILLISEC);
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-
-        assertEquals(2, mediaListing.getData().size());
-        assertEquals(_testFileName2, mediaListing.getData().get(0).getName());
-        assertEquals(_testFileName3, mediaListing.getData().get(1).getName());
+        mediaList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody().getData();
+        assertEquals(2, mediaList.size());
+        assertEquals(_testFileName2, mediaList.get(0).getName());
+        assertEquals(_testFileName4, mediaList.get(1).getName());
     }
 
     @Test
     public void getFilesFromDeletedDirectory() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
 
         File file = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file.createNewFile());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
+
+        List<ServerMediaFile> mediaList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody().getData();
+        assertEquals(1, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
 
         Assert.assertTrue(file.delete());
         Assert.assertTrue(subFolder.delete());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
+
         rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         Assert.assertNull(rootNode.getNodes());
 
-        ServerMediaListing fileList = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
-        Assert.assertNull(fileList);
+        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, subFolder.getAbsolutePath()).getBody();
+        Assert.assertNull(mediaListing);
     }
 
     @Test
@@ -294,17 +289,17 @@ public class TestServerMediaController {
         File file = _rootTempFolder.newFile(_testFileName1);
         _rootTempFolder.newFile(_testFileName2);
         _rootTempFolder.newFile(_testFileName3);
-
         Assert.assertTrue(file.exists());
         Thread.sleep(SLEEP_TIME_MILLISEC);
+
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 mediaBase.getAbsolutePath(), 1 , 0, 10, "");
 
-        ServerMediaListing mediaListing = mediaListingResult.getBody();
-        assertEquals(3, mediaListing.getData().size());
-        assertEquals(_testFileName2, mediaListing.getData().get(0).getName());
-        assertEquals(_testFileName3, mediaListing.getData().get(1).getName());
-        assertEquals(_testFileName1, mediaListing.getData().get(2).getName());
+        List<ServerMediaFile> mediaList = mediaListingResult.getBody().getData();
+        assertEquals(3, mediaList.size());
+        assertEquals(_testFileName2, mediaList.get(0).getName());
+        assertEquals(_testFileName3, mediaList.get(1).getName());
+        assertEquals(_testFileName1, mediaList.get(2).getName());
     }
 
     @Test
@@ -312,15 +307,15 @@ public class TestServerMediaController {
         File file = _rootTempFolder.newFile(_testFileName1);
         _rootTempFolder.newFile(_testFileName2);
         _rootTempFolder.newFile(_testFileName3);
-
         Assert.assertTrue(file.exists());
         Thread.sleep(SLEEP_TIME_MILLISEC);
+
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 mediaBase.getAbsolutePath(), 1 , 0, 10, "mp4");
 
-        ServerMediaListing mediaListing = mediaListingResult.getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
+        List<ServerMediaFile> mediaList  = mediaListingResult.getBody().getData();
+        assertEquals(1, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
     }
 
     @Test
@@ -342,8 +337,8 @@ public class TestServerMediaController {
     public void getFilesFilteredDeletedDirectory() throws IOException, InterruptedException {
         File subFolder = _rootTempFolder.newFolder("nested-folder");
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        DirectoryTreeNode rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertEquals(1, rootNode.getNodes().size());
         DirectoryTreeNode subNode = rootNode.getNodes().get(0);
         assertEquals(subNode.getFullPath(), subFolder.getAbsolutePath());
@@ -351,25 +346,39 @@ public class TestServerMediaController {
         File file = new File(subFolder.getAbsolutePath() + "/" + _testFileName1);
         Assert.assertTrue(file.createNewFile());
         Assert.assertTrue(file.exists());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
+
         ResponseEntity<ServerMediaFilteredListing> mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 subFolder.getAbsolutePath(), 1 , 0, 10, "");
-        ServerMediaListing mediaListing = mediaListingResult.getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(_testFileName1, mediaListing.getData().get(0).getName());
+        List<ServerMediaFile> mediaList = mediaListingResult.getBody().getData();
+        assertEquals(1, mediaList.size());
+        assertEquals(_testFileName1, mediaList.get(0).getName());
 
         Assert.assertTrue(file.delete());
         Assert.assertTrue(subFolder.delete());
-
         Thread.sleep(SLEEP_TIME_MILLISEC);
-        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
 
+        rootNode = _controller.getAllDirectories(_mockRequest).getBody();
         assertNull(rootNode.getNodes());
 
         mediaListingResult = _controller.getAllFilesFiltered(_mockRequest,
                 subFolder.getAbsolutePath(), 1 , 0, 10, "");
         assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+    }
+
+    // symlinks
+
+    // get files in the specified directory; don't recurse into subdirs
+    private List<ServerMediaFile> getFilesNoRecurse(String path) {
+        return _controller.getAllFilesFiltered(_mockRequest, path, 1 , 0, 10, "").getBody().getData();
+    }
+
+    private int getNumFilesNoRecurse(String path) {
+        return getFilesNoRecurse(path).size();
+    }
+
+    private HttpStatus getFilesNoRecurseStatusCode(String path) {
+        return _controller.getAllFilesFiltered(_mockRequest, path, 1 , 0, 10, "").getStatusCode();
     }
 
 
@@ -385,32 +394,26 @@ public class TestServerMediaController {
         assertTrue(Files.isSymbolicLink(link));
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
 
-        mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+        List<ServerMediaFile> mediaList = getFilesNoRecurse(link.toFile().getAbsolutePath());
+        assertEquals(1, mediaList.size());
+        assertEquals(extTestFile.getName(), mediaList.get(0).getName());
 
         // remove file in symlink dir
 
         assertTrue(extTestFile.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, link.toFile().getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(link.toFile().getAbsolutePath()));
 
         // remove symlink
 
         assertTrue(link.toFile().delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
-
-        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
-                link.toFile().getAbsolutePath());
-        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+        assertEquals(0, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertSame(HttpStatus.NOT_FOUND, getFilesNoRecurseStatusCode(link.toFile().getAbsolutePath()));
     }
 
     @Test
@@ -443,49 +446,41 @@ public class TestServerMediaController {
 
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
 
-        mediaListing = _controller.getAllFiles(_mockRequest, linkA.toFile().getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+        List<ServerMediaFile> mediaList = getFilesNoRecurse(linkA.toFile().getAbsolutePath());
+        assertEquals(1, mediaList.size());
+        assertEquals(extTestFile.getName(), mediaList.get(0).getName());
 
-        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+        mediaList = getFilesNoRecurse(linkB.toFile().getAbsolutePath());
+        assertEquals(1, mediaList.size());
+        assertEquals(extTestFile.getName(), mediaList.get(0).getName());
 
         // remove symlink A
 
         assertTrue(linkA.toFile().delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertSame(HttpStatus.NOT_FOUND, getFilesNoRecurseStatusCode(linkA.toFile().getAbsolutePath()));
 
-        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
-                linkA.toFile().getAbsolutePath());
-        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-        assertEquals(extTestFile.getName(), mediaListing.getData().get(0).getName());
+        mediaList = getFilesNoRecurse(linkB.toFile().getAbsolutePath());
+        assertEquals(1, mediaList.size());
+        assertEquals(extTestFile.getName(), mediaList.get(0).getName());
 
         // remove file in symlink dir
 
         assertTrue(extTestFile.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(linkB.toFile().getAbsolutePath()));
 
         // remove symlink B
 
         assertTrue(linkB.toFile().delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListingResult = _controller.getAllFiles(_mockRequest,
-                linkB.toFile().getAbsolutePath());
-        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+        assertSame(HttpStatus.NOT_FOUND, getFilesNoRecurseStatusCode(linkB.toFile().getAbsolutePath()));
     }
 
     @Test
@@ -544,67 +539,46 @@ public class TestServerMediaController {
 
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        ServerMediaListing mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
+        assertEquals(1, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertEquals(1, getNumFilesNoRecurse(nestedADir.getAbsolutePath()));
+        assertEquals(1, getNumFilesNoRecurse(nestedBDir.getAbsolutePath()));
 
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedADir.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, linkA.toFile().getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size()); // symlink omitted from cache because it points to existing dir in media base
-
-        mediaListing = _controller.getAllFiles(_mockRequest, linkB.toFile().getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size()); // symlink omitted from cache because it points to existing dir in media base
+        // symlinks omitted from cache because they point to existing dirs in media base tree
+        assertEquals(0, getNumFilesNoRecurse(linkA.toFile().getAbsolutePath()));
+        assertEquals(0, getNumFilesNoRecurse(linkB.toFile().getAbsolutePath()));
 
         // remove file in symlink A dir
 
         assertTrue(nestedATestFile.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedADir.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
+        assertEquals(1, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertEquals(0, getNumFilesNoRecurse(nestedADir.getAbsolutePath()));
+        assertEquals(1, getNumFilesNoRecurse(nestedBDir.getAbsolutePath()));
 
         // remove symlink A
 
         assertTrue(linkA.toFile().delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedADir.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(1, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertEquals(0, getNumFilesNoRecurse(nestedADir.getAbsolutePath()));
 
         // remove symlink B
 
         assertTrue(linkB.toFile().delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
+        assertEquals(1, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertEquals(1, getNumFilesNoRecurse(nestedBDir.getAbsolutePath()));
 
         // remove file in symlink B dir
 
         assertTrue(nestedBTestFile.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(1, mediaListing.getData().size());
-
-        mediaListing = _controller.getAllFiles(_mockRequest, nestedBDir.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(1, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
+        assertEquals(0, getNumFilesNoRecurse(nestedBDir.getAbsolutePath()));
 
         // remove nested dirs
 
@@ -612,21 +586,15 @@ public class TestServerMediaController {
         nestedBDir.delete();
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        ResponseEntity<ServerMediaListing> mediaListingResult = _controller.getAllFiles(_mockRequest,
-                nestedADir.getAbsolutePath());
-        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
-
-        mediaListingResult = _controller.getAllFiles(_mockRequest,
-                nestedBDir.getAbsolutePath());
-        assertSame(HttpStatus.NOT_FOUND, mediaListingResult.getStatusCode());
+        assertSame(HttpStatus.NOT_FOUND, getFilesNoRecurseStatusCode(nestedADir.getAbsolutePath()));
+        assertSame(HttpStatus.NOT_FOUND, getFilesNoRecurseStatusCode(nestedBDir.getAbsolutePath()));
 
         // remove file in root dir
 
         assertTrue(rootTestFile.delete());
         Thread.sleep(SLEEP_TIME_MILLISEC);
 
-        mediaListing = _controller.getAllFiles(_mockRequest, mediaBase.getAbsolutePath()).getBody();
-        assertEquals(0, mediaListing.getData().size());
+        assertEquals(0, getNumFilesNoRecurse(mediaBase.getAbsolutePath()));
     }
 
     @Test

@@ -519,7 +519,7 @@ public class TestServerMediaController {
     }
 
 
-    private void createAndRemoveSymlinkChain() throws IOException, InterruptedException {
+    private void createAndRemoveSymlinkCycle() throws IOException, InterruptedException {
         File rootTestFile = _rootTempFolder.newFile("test-text.txt");
 
         File nestedADir = _rootTempFolder.newFolder("nestedA");
@@ -630,7 +630,7 @@ public class TestServerMediaController {
     }
 
     @Test
-    public void createSymlinkChain() throws IOException, InterruptedException {
+    public void recreateSymlinkCycle() throws IOException, InterruptedException {
         // root
         // + text-text.txt
         // + nestedA
@@ -639,7 +639,10 @@ public class TestServerMediaController {
         // + nestedB
         //   + text-test.txt
         //   + linkB --> nestedA
-        createAndRemoveSymlinkChain(); // pass 0
-        createAndRemoveSymlinkChain(); // pass 1
+
+        // cycle: root/nestedB/linkB --> root/nestedA/[linkA] --> root/[nestedB/linkB]
+
+        createAndRemoveSymlinkCycle(); // pass 0
+        createAndRemoveSymlinkCycle(); // pass 1
     }
 }

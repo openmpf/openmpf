@@ -29,13 +29,11 @@ package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -45,10 +43,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 
@@ -60,16 +55,19 @@ public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
 
-
     private final PropertiesUtil _propertiesUtil;
+
+    private final WorkflowPropertyService _workflowPropertyService;
 
     private final PipelineService _pipelineService;
 
     @Inject
     PipelineController(
             PropertiesUtil propertiesUtil,
+            WorkflowPropertyService workflowPropertyService,
             PipelineService pipelineService) {
         _propertiesUtil = propertiesUtil;
+        _workflowPropertyService = workflowPropertyService;
         _pipelineService = pipelineService;
     }
 
@@ -223,7 +221,9 @@ public class PipelineController {
 
     private Algorithm getAlgoWithDefaultValuesSet(Algorithm algorithm) {
         var propsWithDefaultSet = new ArrayList<Algorithm.Property>();
-        for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
+        var propertiesAdded = new HashSet<String>();
+
+        for (var property : algorithm.getProvidesCollection().getProperties()) {
             if (property.getDefaultValue() != null) {
                 propsWithDefaultSet.add(property);
             }
@@ -233,6 +233,11 @@ public class PipelineController {
                         _propertiesUtil.lookup(property.getPropertiesKey()), property.getPropertiesKey());
                 propsWithDefaultSet.add(propWithDefault);
             }
+            propertiesAdded.add(property.getName());
+        }
+
+        if (algorithm.getActionType() == ActionType.DETECTION) {
+            addWorkflowProperties(propertiesAdded, propsWithDefaultSet);
         }
 
         return new Algorithm(
@@ -240,5 +245,22 @@ public class PipelineController {
                 algorithm.getRequiresCollection(),
                 new Algorithm.Provides(algorithm.getProvidesCollection().getStates(), propsWithDefaultSet),
                 algorithm.getSupportsBatchProcessing(), algorithm.getSupportsStreamProcessing());
+    }
+
+
+    private void addWorkflowProperties(Collection<String> propertiesAlreadyAdded,
+                                       Collection<Algorithm.Property> propsWithDefaultSet) {
+
+        for (var workflowProperty : _workflowPropertyService.getProperties()) {
+            if (!propertiesAlreadyAdded.contains(workflowProperty.getName())) {
+                var workflowPropVal = _workflowPropertyService.getPropertyValue(workflowProperty.getName());
+                if (workflowPropVal != null) {
+                    propsWithDefaultSet.add(
+                            new Algorithm.Property(workflowProperty.getName(), workflowProperty.getDescription(),
+                                                   workflowProperty.getType(), workflowPropVal,
+                                                   workflowProperty.getPropertiesKey()));
+                }
+            }
+        }
     }
 }

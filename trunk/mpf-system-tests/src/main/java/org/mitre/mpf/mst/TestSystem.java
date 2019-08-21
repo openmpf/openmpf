@@ -44,7 +44,6 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
@@ -116,7 +115,6 @@ public abstract class TestSystem {
     protected JobRequestService jobRequestService;
 
     @Autowired
-    @Qualifier(StreamingJobRequestServiceImpl.REF)
     protected StreamingJobRequestService streamingJobRequestService;
 
     @Autowired

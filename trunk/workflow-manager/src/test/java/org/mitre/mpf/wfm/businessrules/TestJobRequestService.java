@@ -66,7 +66,7 @@ public class TestJobRequestService {
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil
-            = new AggregateJobPropertiesUtil(_mockPropertiesUtil, null, null);
+            = new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class));
 
     private final PipelineService _mockPipelineService = mock(PipelineService.class);
 
@@ -294,9 +294,7 @@ public class TestJobRequestService {
                 .thenReturn(markupDir);
 
 
-
         _jobRequestService.resubmit(321, -1);
-
 
 
         InOrder jobStatusBroadcastOrder = inOrder(_mockJobStatusBroadcaster);

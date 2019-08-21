@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.pipeline.PipelineServiceImpl;
 import org.mitre.mpf.wfm.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -76,12 +77,13 @@ public class TestPipelineController {
 
         var springValidator = new LocalValidatorFactoryBean();
         springValidator.afterPropertiesSet();
-        var pipelineValidator = new PipelineValidator(springValidator);
+        var pipelineValidator = new PipelineValidator(springValidator, mock(WorkflowPropertyService.class));
 
         var pipelineService = new PipelineServiceImpl(
                 mockPropertiesUtil, objectMapper, pipelineValidator, null);
 
-        var pipelineController = new PipelineController(mockPropertiesUtil, pipelineService);
+        var pipelineController = new PipelineController(mockPropertiesUtil, mock(WorkflowPropertyService.class),
+                                                        pipelineService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(pipelineController).build();
 

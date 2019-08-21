@@ -66,6 +66,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -74,6 +75,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
@@ -252,8 +254,7 @@ public class MarkupController {
             return;
         }
 
-        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
-                .getCombinedProperties(mediaMarkupResult);
+        Function<String, String> combinedProperties = getProperties(mediaMarkupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
@@ -276,5 +277,26 @@ public class MarkupController {
             IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
                                              urlConnection.getContentLength());
         }
+    }
+
+    private Function<String, String> getProperties(MarkupResult markupResult) {
+        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+                .map(JobRequest::getJob)
+                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
+                .orElse(null);
+
+        if (job == null) {
+            return x -> null;
+        }
+
+        var media = job.getMedia()
+                .stream()
+                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .findAny()
+                .orElse(null);
+
+        var action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
+
+        return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }
 }

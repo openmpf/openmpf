@@ -39,7 +39,6 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Predicate;
@@ -121,7 +120,7 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     private void writeToDisk(Map<String, ?> items) {
-        try (OutputStream outputStream = _pipelineComponentsToDefinitions.get(items).getOutputStream()) {
+        try (var outputStream = _pipelineComponentsToDefinitions.get(items).getOutputStream()) {
             _objectMapper.writeValue(outputStream, items.values());
         }
         catch (IOException e) {
@@ -154,19 +153,19 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     private JobPipelineComponents getPipelineComponents(String pipelineName) {
-        Pipeline pipeline = getPipeline(fixName(pipelineName));
+        var pipeline = getPipeline(fixName(pipelineName));
 
-        List<Task> tasks = pipeline.getTasks()
+        var tasks = pipeline.getTasks()
                 .stream()
                 .map(this::getTask)
                 .collect(toList());
 
-        List<Action> actions = tasks.stream()
+        var actions = tasks.stream()
                 .flatMap(t -> t.getActions().stream())
                 .map(this::getAction)
                 .collect(toList());
 
-        List<Algorithm> algorithms = actions.stream()
+        var algorithms = actions.stream()
                 .map(action -> getAlgorithm(action.getAlgorithm()))
                 .collect(toList());
 

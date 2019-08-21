@@ -45,10 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamSource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.WritableResource;
+import org.springframework.core.io.*;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -774,5 +771,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 
+    public Resource getWorkflowPropertiesFile() {
+        return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
+    }
 }
 

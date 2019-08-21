@@ -236,7 +236,7 @@
                                             <strong>{{currentAction.viewProperties.length}}</strong> default parameters
                                         </span>
                                         <div class="pp-algorithm-panel">
-                                            <div ng-repeat="prop in currentAction.viewProperties">
+                                            <div ng-repeat="prop in currentAction.viewProperties | orderBy: 'name'">
                                                 <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
                                             </div>
                                         </div>

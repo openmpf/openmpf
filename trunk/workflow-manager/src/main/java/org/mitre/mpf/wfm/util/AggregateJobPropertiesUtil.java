@@ -26,69 +26,74 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.wfm.data.access.JobRequestDao;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
 
 
 @Component
 public class AggregateJobPropertiesUtil {
 
+    public static final ImmutableSet<String> TRANSFORM_PROPERTIES = ImmutableSet.of(
+            MpfConstants.ROTATION_PROPERTY,
+            MpfConstants.HORIZONTAL_FLIP_PROPERTY,
+            MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY,
+            MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY,
+            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY,
+            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY,
+            MpfConstants.SEARCH_REGION_ENABLE_DETECTION_PROPERTY,
+            MpfConstants.AUTO_ROTATE_PROPERTY,
+            MpfConstants.AUTO_FLIP_PROPERTY);
+
+
     private final PropertiesUtil _propertiesUtil;
 
-    private final JobRequestDao _jobRequestDao;
-
-    private final JsonUtils _jsonUtils;
+    private final WorkflowPropertyService _workflowPropertyService;
 
     @Inject
     public AggregateJobPropertiesUtil(
             PropertiesUtil propertiesUtil,
-            JobRequestDao jobRequestDao,
-            JsonUtils jsonUtils) {
+            WorkflowPropertyService workflowPropertyService) {
         _propertiesUtil = propertiesUtil;
-        _jobRequestDao = jobRequestDao;
-        _jsonUtils = jsonUtils;
+        _workflowPropertyService = workflowPropertyService;
     }
 
 
-    private enum PropertyLevel { NONE, SYSTEM, ACTION, JOB, ALGORITHM, MEDIA }; // in order of precedence
+
+    // in order of precedence
+    private enum PropertyLevel { NONE, SYSTEM, WORKFLOW, ALGORITHM, ACTION, JOB, OVERRIDDEN_ALGORITHM, MEDIA }
+
 
     private static class PropertyInfo {
-        private String name;
+        private final String _name;
         public String getName() {
-            return name;
+            return _name;
         }
 
-        private String value;
-        public String getValue() {
-            return value;
+        private final String _value;
+        public final String getValue() {
+            return _value;
         }
 
-        private PropertyLevel level;
+        private final PropertyLevel _level;
         public PropertyLevel getLevel() {
-            return level;
+            return _level;
         }
 
         public double getNumericValue() {
-            return Double.parseDouble(value);
+            return Double.parseDouble(_value);
         }
 
         public boolean isLessThanOrEqualTo(double compare) {
@@ -96,114 +101,319 @@ public class AggregateJobPropertiesUtil {
         }
 
         public PropertyInfo(String name, String value, PropertyLevel level) {
-            this.name = name;
-            this.value = value;
-            this.level = level;
+            _name = name;
+            _value = value;
+            _level = level;
+        }
+
+        public static PropertyInfo missing(String propertyName) {
+            return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
         }
     }
 
-
-
-    /** Return the value of the named property, checking for that property in each of the categories of property collections,
-     * using the priority scheme:
-     * action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-     * where the algorithm properties are restricted to the algorithm defined in the Action currently being processed.
+    /**
+     * Return the value of the named property, checking for that property in each of the categories of property
+     * collections, using the priority scheme (highest priority to lowest priority):
+     * media > overridden algorithm > job > action > default algorithm > workflow
+     *
      * @param propertyName property name to check for
      * @param action Action currently being processed
-     * @param media Media currently being processed
-     * @param job Job currently being processed
+     * @param mediaSpecificProperties Media specific properties for media currently being processed
+     * @param mediaType Type of media currently being processed
+     * @param pipeline Pipeline currently being processed
+     * @param overriddenAlgorithmProperties Overridden algorithm properties for the job  currently being processed
+     * @param jobProperties Job properties for job currently being processed
+     * @param systemPropertiesSnapshot System properties snapshot for job currently being processed
      * @return property info after checking for that property within the prioritized categories of property containers
      */
-    private static PropertyInfo calculateValue(String propertyName,
-                                               Action action,
-                                               Media media,
-                                               BatchJob job) {
+    private PropertyInfo getPropertyInfo(
+            String propertyName,
+            Map<String, String> mediaSpecificProperties,
+            MediaType mediaType,
+            Action action,
+            JobPipelineComponents pipeline,
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
+            Map<String, String> jobProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
 
-        Map<String, String> mediaProperties = media.getMediaSpecificProperties();
-        if (mediaProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, mediaProperties.get(propertyName), PropertyLevel.MEDIA);
+        var mediaPropVal = mediaSpecificProperties.get(propertyName);
+        if (mediaPropVal != null) {
+            return new PropertyInfo(propertyName, mediaPropVal, PropertyLevel.MEDIA);
         }
 
-        ImmutableMap<String, String> algoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-        if (algoProps != null) {
-            String algoPropVal = algoProps.get(propertyName);
-            if (algoPropVal != null) {
-                return new PropertyInfo(propertyName, algoPropVal, PropertyLevel.ALGORITHM);
+        //TODO: Add comment explaining if we decide to keep this behavior
+        boolean isTransformProperty = TRANSFORM_PROPERTIES.contains(propertyName);
+        if (isTransformProperty && containsTransformProperty(mediaSpecificProperties)) {
+            return PropertyInfo.missing(propertyName);
+        }
+
+        if (action != null) {
+            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.getAlgorithm());
+            if (algoProperties != null) {
+                var propVal = algoProperties.get(propertyName);
+                if (propVal != null) {
+                    return new PropertyInfo(propertyName, propVal, PropertyLevel.OVERRIDDEN_ALGORITHM);
+                }
+
+                if (isTransformProperty && containsTransformProperty(algoProperties)) {
+                    return PropertyInfo.missing(propertyName);
+                }
+            }
+        }
+
+        var jobPropVal = jobProperties.get(propertyName);
+        if (jobPropVal != null) {
+            return new PropertyInfo(propertyName, jobPropVal, PropertyLevel.JOB);
+        }
+
+        if (isTransformProperty && containsTransformProperty(jobProperties)) {
+            return PropertyInfo.missing(propertyName);
+        }
+
+        if (action != null) {
+            var actionPropVal = action.getPropertyValue(propertyName);
+            if (actionPropVal != null) {
+                return new PropertyInfo(propertyName, actionPropVal, PropertyLevel.ACTION);
+            }
+            if (isTransformProperty && containsTransformProperty(action::getPropertyValue)) {
+                return PropertyInfo.missing(propertyName);
             }
 
+            var algorithm = pipeline.getAlgorithm(action.getAlgorithm());
+
+            var algoProperty = algorithm.getProperty(propertyName);
+            if (algoProperty != null) {
+                if (algoProperty.getDefaultValue() != null) {
+                    return new PropertyInfo(propertyName, algoProperty.getDefaultValue(), PropertyLevel.ALGORITHM);
+                }
+
+                if (systemPropertiesSnapshot != null) {
+                    var snapshotValue = systemPropertiesSnapshot.lookup(algoProperty.getPropertiesKey());
+                    if (snapshotValue != null) {
+                        return new PropertyInfo(propertyName, snapshotValue, PropertyLevel.ALGORITHM);
+                    }
+                }
+
+                var propertiesUtilValue = _propertiesUtil.lookup(algoProperty.getPropertiesKey());
+                if (propertiesUtilValue != null) {
+                    return new PropertyInfo(propertyName, propertiesUtilValue, PropertyLevel.ALGORITHM);
+                }
+            }
+            if (isTransformProperty && containsTransformProperty(algorithm::getProperty)) {
+                return PropertyInfo.missing(propertyName);
+            }
         }
 
-        Map<String, String> jobProperties = job.getJobProperties();
-        if (jobProperties.containsKey(propertyName)) {
-            return new PropertyInfo(propertyName, jobProperties.get(propertyName), PropertyLevel.JOB);
+        if (mediaType != null) {
+            var workflowPropVal =  _workflowPropertyService.getPropertyValue(propertyName, mediaType,
+                                                                             systemPropertiesSnapshot);
+            if (workflowPropVal != null) {
+                return new PropertyInfo(propertyName, workflowPropVal, PropertyLevel.WORKFLOW);
+            }
+        }
+        return PropertyInfo.missing(propertyName);
+    }
+
+
+    public String getValue(String propertyName, BatchJob job, Media media,
+                           Action action) {
+        return getPropertyInfo(
+                propertyName,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
+                action,
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot()
+        ).getValue();
+    }
+
+
+    public Map<String, String> getPropertyMap(StreamingJob job, Action action) {
+        var allKeys = new HashSet<String>();
+
+        job.getPipelineComponents().getAlgorithm(action.getAlgorithm())
+                .getProvidesCollection()
+                .getProperties()
+                .forEach(p -> allKeys.add(p.getName()));
+
+        action.getProperties()
+                .forEach(p -> allKeys.add(p.getName()));
+
+        allKeys.addAll(job.getJobProperties().keySet());
+
+        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
+        if (overriddenAlgoProps != null) {
+            allKeys.addAll(overriddenAlgoProps.keySet());
         }
 
-        String actionPropertyValue = action.getPropertyValue(propertyName);
-        if (actionPropertyValue != null) {
-            return new PropertyInfo(propertyName, actionPropertyValue, PropertyLevel.ACTION);
+        allKeys.addAll(job.getStream().getMediaProperties().keySet());
+
+        return allKeys.stream()
+                .map(pn -> getPropertyInfo(pn, job.getStream().getMediaProperties(), MediaType.VIDEO,
+                                           action, job.getPipelineComponents(), job.getOverriddenAlgorithmProperties(),
+                                           job.getJobProperties(), null))
+                .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
+                .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
+    }
+
+
+    public Map<String, String> getPropertyMap(BatchJob job, Media media, Action action) {
+
+        var allKeys = new HashSet<>(media.getMediaSpecificProperties().keySet());
+
+        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
+        if (overriddenAlgoProps != null) {
+            allKeys.addAll(overriddenAlgoProps.keySet());
         }
 
-        return new PropertyInfo(propertyName, null, PropertyLevel.NONE);
+        allKeys.addAll(job.getJobProperties().keySet());
+
+        action.getProperties().forEach(p -> allKeys.add(p.getName()));
+
+        job.getPipelineComponents()
+                .getAlgorithm(action.getAlgorithm())
+                .getProvidesCollection()
+                .getProperties()
+                .forEach(p -> allKeys.add(p.getName()));
+
+        _workflowPropertyService.getProperties(media.getMediaType())
+                .forEach(p -> allKeys.add(p.getName()));
+
+
+        return allKeys.stream()
+                .map(pn -> getPropertyInfo(
+                        pn, media.getMediaSpecificProperties(), media.getMediaType(), action,
+                        job.getPipelineComponents(), job.getOverriddenAlgorithmProperties(), job.getJobProperties(),
+                        job.getSystemPropertiesSnapshot()))
+                .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
+                .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
     }
 
 
 
-    public Map<String, String> getCombinedJobProperties(Action action,
-                                                        StreamingJob job) {
-        var algoName = action.getAlgorithm();
-        var algorithm = job.getPipelineComponents().getAlgorithm(algoName);
+    private static boolean containsTransformProperty(Map<String, String> items) {
+        return containsTransformProperty(items::get);
+    }
 
-        var combined = new HashMap<String, String>();
-        for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
-            String defaultValue = property.getDefaultValue();
-            if (defaultValue != null) {
-                combined.put(property.getName(), defaultValue);
+
+    private static boolean containsTransformProperty(Function<String, ?> propertyLookupFn) {
+        return TRANSFORM_PROPERTIES.stream()
+                .anyMatch(tp -> propertyLookupFn.apply(tp) != null);
+    }
+
+
+    public Function<String, String> getCombinedProperties(
+            Action action,
+            JobPipelineComponents pipeline,
+            Media media,
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgoProps,
+            SystemPropertiesSnapshot propertiesSnapshot) {
+        return propertyName -> getPropertyInfo(
+                propertyName,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
+                action,
+                pipeline,
+                overriddenAlgoProps,
+                jobProperties,
+                propertiesSnapshot
+        ).getValue();
+    }
+
+
+    public Function<String, String> getCombinedProperties(BatchJob job, Media media,
+                                                          Action action) {
+        return propName -> getValue(propName, job, media, action);
+    }
+
+
+
+    public Function<String, String> getCombinedProperties(BatchJob job, Media media) {
+        return propName -> getPropertyInfo(
+                propName,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
+                null,
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot()
+        ).getValue();
+    }
+
+
+
+    public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
+        Media matchingMedia = null;
+        for (var media : job.getMedia()) {
+            try {
+                if (mediaUri.equals(new URI(media.getUri()))) {
+                    matchingMedia = media;
+                    break;
+                }
             }
-            else {
-                combined.put(property.getName(), _propertiesUtil.lookup(property.getPropertiesKey()));
+            catch (URISyntaxException ignored) {
+                // Continue searching for matching media since a job could have a combination of good and bad media.
             }
         }
 
-        for (Action.Property property : action.getProperties()) {
-            combined.put(property.getName(), property.getValue());
-        }
+        Map<String, String> mediaProperties = matchingMedia == null
+                ? Map.of()
+                : matchingMedia.getMediaSpecificProperties();
 
-        combined.putAll(job.getJobProperties());
-        Map<String, String> algoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-        if (algoProps != null) {
-            combined.putAll(algoProps);
-        }
-        combined.putAll(job.getStream().getMediaProperties());
-        return combined;
+        MediaType mediaType = matchingMedia == null
+                ? null
+                : matchingMedia.getMediaType();
+
+        return propName -> getPropertyInfo(
+                propName,
+                mediaProperties,
+                mediaType,
+                null,
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot()
+        ).getValue();
     }
 
 
 
 
-    public static String calculateFrameInterval(Action action, BatchJob job,
-                                                Media media,
-                                                int systemFrameInterval, int systemFrameRateCap, double mediaFPS) {
+    public String calculateFrameInterval(Action action, BatchJob job, Media media, int systemFrameInterval,
+                                         int systemFrameRateCap, double mediaFPS) {
 
-        PropertyInfo frameIntervalPropInfo = AggregateJobPropertiesUtil.calculateValue(
+        PropertyInfo frameIntervalPropInfo = getPropertyInfo(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
                 action,
-                media,
-                job);
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot());
 
-        PropertyInfo frameRateCapPropInfo = AggregateJobPropertiesUtil.calculateValue(
+        PropertyInfo frameRateCapPropInfo = getPropertyInfo(
                 MpfConstants.FRAME_RATE_CAP_PROPERTY,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
                 action,
-                media,
-                job);
+                job.getPipelineComponents(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot());
 
         if (frameIntervalPropInfo.getLevel() == PropertyLevel.NONE) {
             frameIntervalPropInfo = new PropertyInfo(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-                    Integer.toString(systemFrameInterval), PropertyLevel.SYSTEM);
+                                                     Integer.toString(systemFrameInterval), PropertyLevel.SYSTEM);
         }
 
         if (frameRateCapPropInfo.getLevel() == PropertyLevel.NONE) {
             frameRateCapPropInfo = new PropertyInfo(MpfConstants.FRAME_RATE_CAP_PROPERTY,
-                    Integer.toString(systemFrameRateCap), PropertyLevel.SYSTEM);
+                                                    Integer.toString(systemFrameRateCap), PropertyLevel.SYSTEM);
         }
 
         PropertyInfo propInfoToUse;
@@ -231,182 +441,5 @@ public class AggregateJobPropertiesUtil {
 
         int calcFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / frameRateCapPropInfo.getNumericValue()));
         return Integer.toString(calcFrameInterval);
-    }
-
-
-
-
-    // Priority:
-    // media props > overridden algorithm props > job props > action props > default algo props >
-    // snapshot props > system props
-    public String calculateValue(String propertyName, BatchJob job, Media media,
-                                 Action action) {
-        return calculateValue(
-                propertyName,
-                media.getMediaSpecificProperties(),
-                action,
-                job.getPipelineComponents(),
-                job.getOverriddenAlgorithmProperties(),
-                job.getJobProperties(),
-                job.getSystemPropertiesSnapshot());
-    }
-
-
-    public Function<String, String> getCombinedProperties(
-            Action action,
-            JobPipelineComponents pipeline,
-            Media media,
-            Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> overriddenAlgoProps,
-            SystemPropertiesSnapshot propertiesSnapshot) {
-        return propertyName -> calculateValue(
-                propertyName,
-                media.getMediaSpecificProperties(),
-                action,
-                pipeline,
-                overriddenAlgoProps,
-                jobProperties,
-                propertiesSnapshot);
-    }
-
-
-    private String calculateValue(
-            String propertyName,
-            Map<String, String> mediaProperties,
-            Action action,
-            JobPipelineComponents pipeline,
-            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            Map<String, String> jobProperties,
-            SystemPropertiesSnapshot systemPropertiesSnapshot) {
-        String mediaPropVal = mediaProperties.get(propertyName);
-        if (mediaPropVal != null) {
-            return mediaPropVal;
-        }
-
-        if (action != null) {
-            Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.getAlgorithm());
-            if (algoProperties != null) {
-                String propVal = algoProperties.get(propertyName);
-                if (propVal != null) {
-                    return propVal;
-                }
-            }
-        }
-
-        String jobPropVal = jobProperties.get(propertyName);
-        if (jobPropVal != null) {
-            return jobPropVal;
-        }
-
-        if (action == null) {
-            return null;
-        }
-
-        String actionPropVal = action.getPropertyValue(propertyName);
-        if (actionPropVal != null) {
-            return actionPropVal;
-        }
-
-        Algorithm algorithm = pipeline.getAlgorithm(action.getAlgorithm());
-
-        Algorithm.Property property = algorithm.getProperty(propertyName);
-        if (property != null) {
-            if (property.getDefaultValue() != null) {
-                return property.getDefaultValue();
-            }
-            String snapshotValue = systemPropertiesSnapshot.lookup(property.getPropertiesKey());
-            if (snapshotValue != null) {
-                return snapshotValue;
-            }
-            return _propertiesUtil.lookup(property.getPropertiesKey());
-        }
-
-        return null;
-    }
-
-
-    public Function<String, String> getCombinedProperties(BatchJob job, long mediaId, int taskIndex,
-                                                          int actionIndex) {
-        return getCombinedProperties(job, job.getMedia(mediaId),
-                                     job.getPipelineComponents().getAction(taskIndex, actionIndex));
-
-    }
-
-    // Priority:
-    // media props > overridden algorithm props > job props > action props > default algo props >
-    // snapshot props > system props
-    public Function<String, String> getCombinedProperties(BatchJob job, Media media,
-                                                          Action action) {
-        return propName -> calculateValue(propName, job, media, action);
-    }
-
-
-
-    public Function<String, String> getCombinedProperties(BatchJob job, Media media) {
-        return propName -> calculateValue(
-                propName,
-                media.getMediaSpecificProperties(),
-                null,
-                job.getPipelineComponents(),
-                job.getOverriddenAlgorithmProperties(),
-                job.getJobProperties(),
-                job.getSystemPropertiesSnapshot());
-    }
-
-
-
-    public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
-        var mediaProperties = Map.<String, String>of();
-        for (Media media : job.getMedia()) {
-            try {
-                if (mediaUri.equals(new URI(media.getUri()))) {
-                    mediaProperties = media.getMediaSpecificProperties();
-                    break;
-                }
-            }
-            catch (URISyntaxException ignored) {
-                // Continue searching for matching media since a job could have a combination of good and bad media.
-            }
-        }
-        final var finalMediaProps = mediaProperties;
-        return propName -> calculateValue(
-                propName,
-                finalMediaProps,
-                null,
-                job.getPipelineComponents(),
-                job.getOverriddenAlgorithmProperties(),
-                job.getJobProperties(),
-                job.getSystemPropertiesSnapshot());
-    }
-
-
-
-
-    public Function<String, String> getCombinedProperties(MarkupResult markup) {
-        BatchJob job = Optional.ofNullable(_jobRequestDao.findById(markup.getJobId()))
-                .map(JobRequest::getJob)
-                .map(bytes -> _jsonUtils.deserialize(bytes, BatchJob.class))
-                .orElse(null);
-
-        if (job == null) {
-            return x -> null;
-        }
-
-        Map<String, String> mediaProps = job.getMedia()
-                .stream()
-                .filter(m -> URI.create(m.getUri()).equals(URI.create(markup.getSourceUri())))
-                .findAny()
-                .map(Media::getMediaSpecificProperties)
-                .orElseGet(ImmutableMap::of);
-
-        Action action = job.getPipelineComponents().getAction(markup.getTaskIndex(), markup.getActionIndex());
-        return propName -> calculateValue(
-                propName,
-                mediaProps,
-                action,
-                job.getPipelineComponents(),
-                job.getOverriddenAlgorithmProperties(),
-                job.getJobProperties(),
-                job.getSystemPropertiesSnapshot());
     }
 }

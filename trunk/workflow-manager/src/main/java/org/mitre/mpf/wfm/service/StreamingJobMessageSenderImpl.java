@@ -95,7 +95,7 @@ public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender 
         Map<String, String> environmentVariables = streamingService.getEnvironmentVariables().stream()
                 .collect(toMap(EnvironmentVariableModel::getName, EnvironmentVariableModel::getValue));
 
-        Map<String, String> jobProperties = _aggregateJobPropertiesUtil.getCombinedJobProperties(action, job);
+        Map<String, String> jobProperties = _aggregateJobPropertiesUtil.getPropertyMap(job, action);
 
         return new LaunchStreamingJobMessage(
                 job.getId(),

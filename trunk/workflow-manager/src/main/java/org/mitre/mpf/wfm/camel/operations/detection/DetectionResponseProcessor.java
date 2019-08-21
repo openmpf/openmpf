@@ -153,7 +153,7 @@ public class DetectionResponseProcessor
 
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {
-        String confidenceThresholdProperty = aggregateJobPropertiesUtil.calculateValue(
+        String confidenceThresholdProperty = aggregateJobPropertiesUtil.getValue(
                 MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action);
 
         try {

@@ -73,7 +73,7 @@ public class TestStreamingJobMessageSender {
     public void init() {
         MockitoAnnotations.initMocks(this);
         AggregateJobPropertiesUtil aggregateJobPropertiesUtil
-                = new AggregateJobPropertiesUtil(_mockProperties, null, null);
+                = new AggregateJobPropertiesUtil(_mockProperties, null);
         _messageSender = new StreamingJobMessageSenderImpl(_mockProperties, aggregateJobPropertiesUtil,
                                                            _mockMasterNode, _mockServiceManager);
     }

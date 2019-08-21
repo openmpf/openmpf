@@ -42,6 +42,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -158,8 +159,11 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public boolean canStore(MarkupResult markupResult) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
+        Action action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(),
+                                                              markupResult.getActionIndex());
+        Media media = job.getMedia(markupResult.getMediaId());
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -168,8 +172,11 @@ public class S3StorageBackend implements StorageBackend {
     public void store(MarkupResult markupResult) throws StorageException, IOException {
         _localStorageBackend.store(markupResult);
         BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
+        Media media = job.getMedia(markupResult.getMediaId());
+        Action action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(),
+                                                              markupResult.getActionIndex());
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
         URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);

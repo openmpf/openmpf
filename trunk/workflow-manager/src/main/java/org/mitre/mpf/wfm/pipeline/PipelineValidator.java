@@ -28,12 +28,10 @@
 package org.mitre.mpf.wfm.pipeline;
 
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.*;
 import java.util.function.Predicate;
@@ -43,19 +41,19 @@ import static java.util.stream.Collectors.*;
 @Service
 public class PipelineValidator {
 
-    private static final Logger log = LoggerFactory.getLogger(PipelineValidator.class);
-
-
     private final Validator _validator;
 
+    private final WorkflowPropertyService _workflowPropertyService;
+
     @Inject
-    public PipelineValidator(Validator validator) {
+    public PipelineValidator(Validator validator, WorkflowPropertyService workflowPropertyService) {
         _validator = validator;
+        _workflowPropertyService = workflowPropertyService;
     }
 
 
     public <T extends PipelineComponent> void validateOnAdd(T newPipelineComponent, Map<String, T> existingItems) {
-        Set<ConstraintViolation<PipelineComponent>> violations = _validator.validate(newPipelineComponent);
+        var violations = _validator.<PipelineComponent>validate(newPipelineComponent);
         if (!violations.isEmpty()) {
             throw new PipelineValidationException(newPipelineComponent, violations);
         }
@@ -92,7 +90,7 @@ public class PipelineValidator {
                                Algorithm::getSupportsStreamProcessing, "stream");
     }
 
-    private static void verifyPipelineRunnable(
+    private void verifyPipelineRunnable(
             String pipelineName,
             Map<String, Pipeline> pipelines,
             Map<String, Task> tasks,
@@ -101,7 +99,7 @@ public class PipelineValidator {
             Predicate<Algorithm> supportsPred,
             String processingType) {
 
-        Pipeline pipeline = pipelines.get(pipelineName);
+        var pipeline = pipelines.get(pipelineName);
         if (pipeline == null) {
             throw new InvalidPipelineException("No pipeline named: " + pipelineName);
         }
@@ -109,13 +107,13 @@ public class PipelineValidator {
 
         verifyAlgorithmsSupportProcessingType(pipeline, tasks, actions, algorithms, supportsPred, processingType);
 
-        List<Task> currentPipelineTasks = pipeline.getTasks()
+        var currentPipelineTasks = pipeline.getTasks()
                 .stream()
                 .map(tasks::get)
                 .collect(toList());
         validateStates(pipeline, currentPipelineTasks, actions, algorithms);
 
-        List<Action> currentPipelineActions = currentPipelineTasks
+        var currentPipelineActions = currentPipelineTasks
                 .stream()
                 .flatMap(t -> t.getActions().stream())
                 .map(actions::get)
@@ -135,12 +133,12 @@ public class PipelineValidator {
             Map<String, Task> tasks,
             Map<String, Action> actions,
             Map<String, Algorithm> algorithms) {
-        Set<String> missingTasks = new HashSet<>();
-        Set<String> missingActions = new HashSet<>();
-        Set<String> missingAlgorithms = new HashSet<>();
+        var missingTasks = new HashSet<String>();
+        var missingActions = new HashSet<String>();
+        var missingAlgorithms = new HashSet<String>();
 
         for (String taskName : pipeline.getTasks()) {
-            Task task = tasks.get(taskName);
+            var task = tasks.get(taskName);
             if (task == null) {
                 missingTasks.add(taskName);
                 continue;
@@ -153,7 +151,7 @@ public class PipelineValidator {
                     continue;
                 }
 
-                Algorithm algorithm = algorithms.get(action.getAlgorithm());
+                var algorithm = algorithms.get(action.getAlgorithm());
                 if (algorithm == null) {
                     missingAlgorithms.add(action.getAlgorithm());
                 }
@@ -164,7 +162,7 @@ public class PipelineValidator {
             return;
         }
 
-        StringBuilder errorMsgBuilder = new StringBuilder("Cannot run pipeline ")
+        var errorMsgBuilder = new StringBuilder("Cannot run pipeline ")
                 .append(pipeline.getName())
                 .append(" due to the following issues: ");
 
@@ -212,7 +210,7 @@ public class PipelineValidator {
 
     private static void validateStates(
             Pipeline pipeline,
-            List<Task> tasks,
+            Collection<Task> tasks,
             Map<String, Action> actions,
             Map<String, Algorithm> algorithms) {
 
@@ -220,11 +218,11 @@ public class PipelineValidator {
             return;
         }
 
-        Iterator<Task> tasksIter1 = tasks.iterator();
-        Iterator<Task> tasksIter2 = tasks.iterator();
+        var tasksIter1 = tasks.iterator();
+        var tasksIter2 = tasks.iterator();
         tasksIter2.next();
         while (tasksIter2.hasNext()) {
-            Task task1 = tasksIter1.next();
+            var task1 = tasksIter1.next();
             Set<String> providedStates = task1.getActions()
                     .stream()
                     .map(actions::get)
@@ -232,7 +230,7 @@ public class PipelineValidator {
                     .flatMap(algo -> algo.getProvidesCollection().getStates().stream())
                     .collect(toSet());
 
-            Task task2 = tasksIter2.next();
+            var task2 = tasksIter2.next();
             Set<String> requiredStates = task2.getActions()
                     .stream()
                     .map(actions::get)
@@ -249,57 +247,62 @@ public class PipelineValidator {
     }
 
 
-    private static void validateActionPropertyTypes(
+    private void validateActionPropertyTypes(
             Iterable<Action> actions,
             Map<String, Algorithm> algorithms) {
 
-        for (Action action : actions) {
-            Algorithm algorithm = algorithms.get(action.getAlgorithm());
+        for (var action : actions) {
+            var algorithm = algorithms.get(action.getAlgorithm());
 
-            for (Action.Property actionProperty : action.getProperties()) {
-                Algorithm.Property algoProperty = algorithm.getProperty(actionProperty.getName());
-                if (algoProperty == null) {
-                    throw new InvalidPipelineException(String.format(
-                            "The \"%s\" property from the \"%s\" action does not exist in \"%s\" algorithm.",
-                            actionProperty.getName(), action.getName(), algorithm.getName()));
+            for (var actionProperty : action.getProperties()) {
+                var algoProperty = algorithm.getProperty(actionProperty.getName());
+                if (algoProperty != null) {
+                    validateValueType(action, actionProperty, algoProperty.getType());
+                    continue;
                 }
 
-                if (!isValidValueForType(actionProperty.getValue(), algoProperty.getType())) {
-                    throw new InvalidPipelineException(String.format(
-                        "The \"%s\" property from the \"%s\" action has a value of \"%s\", which is not a valid \"%s\".",
-                        actionProperty.getName(), action.getName(), actionProperty.getValue(),
-                        algoProperty.getType()));
+                var workflowProperty = _workflowPropertyService.getProperty(actionProperty.getName());
+                if (workflowProperty != null) {
+                    validateValueType(action, actionProperty, workflowProperty.getType());
+                    continue;
                 }
+
+                throw new InvalidPipelineException(String.format(
+                        "The \"%s\" property from the \"%s\" action does not exist in \"%s\" algorithm and is not the name of workflow property.",
+                        actionProperty.getName(), action.getName(), algorithm.getName()));
             }
         }
     }
 
-    private static boolean isValidValueForType(String value, ValueType type) {
+
+    private static void validateValueType(Action action, Action.Property property, ValueType type) {
         try {
+            String value = property.getValue();
             switch (type) {
                 case BOOLEAN:
-                    Boolean.valueOf(value);
+                    Boolean.parseBoolean(value);
                     break;
                 case DOUBLE:
-                    Double.valueOf(value);
+                    Double.parseDouble(value);
                     break;
                 case FLOAT:
-                    Float.valueOf(value);
+                    Float.parseFloat(value);
                     break;
                 case INT:
-                    Integer.valueOf(value);
+                    Integer.parseInt(value);
                     break;
                 case LONG:
-                    Long.valueOf(value);
+                    Long.parseLong(value);
                     break;
                 case STRING:
                     break;
             }
 
-            return true;
         }
         catch (NumberFormatException ex) {
-            return false;
+            throw new InvalidPipelineException(String.format(
+                "The \"%s\" property from the \"%s\" action has a value of \"%s\", which is not a valid \"%s\".",
+                property.getName(), action.getName(), property.getValue(), type), ex);
         }
     }
 
@@ -309,7 +312,7 @@ public class PipelineValidator {
             Map<String, Action> actions,
             Map<String, Algorithm> algorithms) {
 
-        for (Task task : currentPipelineTasks) {
+        for (var task : currentPipelineTasks) {
             Set<ActionType> actionTypes = task.getActions()
                     .stream()
                     .map(actions::get)
@@ -333,9 +336,9 @@ public class PipelineValidator {
 
 
     private static void verifyNothingFollowMultiActionTask(Pipeline pipeline, Iterable<Task> tasks) {
-        Iterator<Task> taskIter = tasks.iterator();
+        var taskIter = tasks.iterator();
         while (taskIter.hasNext()) {
-            Task task = taskIter.next();
+            var task = taskIter.next();
             if (task.getActions().size() > 1 && taskIter.hasNext()) {
                 throw new InvalidPipelineException(String.format(
                         "%s: No tasks may follow the multi-detection task of %s.",
@@ -352,7 +355,7 @@ public class PipelineValidator {
             Map<String, Algorithm> algorithms) {
 
         for (int i = 0; i < currentPipelineTasks.size(); i++) {
-            Task task = currentPipelineTasks.get(i);
+            var task = currentPipelineTasks.get(i);
             boolean taskHasMarkup = task.getActions()
                     .stream()
                     .map(actions::get)

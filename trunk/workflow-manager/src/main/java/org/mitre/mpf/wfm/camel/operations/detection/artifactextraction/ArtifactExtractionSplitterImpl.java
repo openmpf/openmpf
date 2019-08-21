@@ -32,14 +32,15 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -199,8 +200,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media,
                                                          int stageIndex, int actionIndex) {
+        Action action = job.getPipelineComponents().getAction(stageIndex, actionIndex);
         Function<String, String> combinedProperties
-                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
 
         ArtifactExtractionPolicy defaultPolicy = _propertiesUtil.getArtifactExtractionPolicy();

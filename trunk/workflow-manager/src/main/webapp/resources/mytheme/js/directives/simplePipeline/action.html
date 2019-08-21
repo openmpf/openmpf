@@ -76,7 +76,7 @@
                     + <span class="pp-popover-param-value">{{actionObj.properties.length}}</span>
                     modified parameters:
                 <ul class="pp-popover-param-list pp-action">
-                    <li ng-repeat="prop in actionObj.properties">
+                    <li ng-repeat="prop in actionObj.properties | orderBy: 'name'">
                         <span class="pp-popover-param-name">{{prop.name}}</span>
                         <span class="pp-popover-param-value">{{prop.value}}</span>
                     </li>
@@ -92,7 +92,7 @@
                     default parameters:
                 </span>
                 <ul class="pp-popover-param-list pp-algorithm">
-                    <li ng-repeat="prop in actionObj._alg.providesCollection.properties">
+                    <li ng-repeat="prop in actionObj._alg.providesCollection.properties | orderBy: 'name'">
                         <span class="pp-popover-param-name">{{prop.name}}</span>
                         <span class="pp-popover-param-value">{{prop.defaultValue}}</span>
                     </li>

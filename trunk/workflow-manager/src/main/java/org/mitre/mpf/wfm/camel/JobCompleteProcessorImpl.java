@@ -366,7 +366,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                           BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
-        String exemplarsOnlyProp = aggregateJobPropertiesUtil.calculateValue(
+        String exemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
                 MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, job, media, action);
         boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
 

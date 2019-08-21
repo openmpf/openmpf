@@ -75,6 +75,9 @@ public class TestDetectionSplitter {
     @Autowired
     private StageSplitter detectionStageSplitter;
 
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
     private static final MutableInt SEQUENCE = new MutableInt();
 
     public int nextId() {
@@ -293,22 +296,8 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getPipelineComponents().getTask(0));
-        Assert.assertEquals(1, responseList.size());
-        Message message = responseList.get(0);
-        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
-
-        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (!propertyName.equals(prop.getPropertyName())) {
-                if (shouldOverride) {
-                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
-                } else {
-                    Assert.assertEquals(jobProperties.get(prop.getPropertyName()), prop.getPropertyValue());
-                }
-            }
-        }
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverride,
+                                            jobProperties, testJob);
     }
 
     private void testJobPropertiesResettingActionProperties(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
@@ -326,27 +315,16 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties, jobProperties, Collections.emptyMap(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        List<Message> responseList = detectionStageSplitter.performSplit(
-                testJob, testJob.getPipelineComponents().getTask(0));
-        Assert.assertEquals(1, responseList.size());
-        Message message = responseList.get(0);
-        Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
-        DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (!propertyName.equals(prop.getPropertyName())) {
-                if (shouldOverride) {
-                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
-                } else {
-                    Assert.assertEquals(actionProperties.get(prop.getPropertyName()), prop.getPropertyValue());
-                }
-            }
-        }
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverride, actionProperties, testJob);
     }
 
-    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(
+            String propertyName, String propertyValue, boolean shouldOverrideTransformProps) {
+
         HashMap<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
+
         Map<String, String> actionProperties = new HashMap<>();
         actionProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
         actionProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
@@ -356,26 +334,65 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+
+
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties, Collections.emptyMap(), mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
+
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverrideTransformProps,
+                                            actionProperties, testJob);
+    }
+
+    private void assertProtobufHasExpectedProperties(
+            String propertyName, String propertyValue, boolean shouldOverrideTransformProps,
+            Map<String, String> expectedProperties, BatchJob testJob) {
+
         List<Message> responseList = detectionStageSplitter.performSplit(
                 testJob, testJob.getPipelineComponents().getTask(0));
+
         Assert.assertEquals(1, responseList.size());
         Message message = responseList.get(0);
         Assert.assertTrue(message.getBody() instanceof DetectionProtobuf.DetectionRequest);
 
         DetectionProtobuf.DetectionRequest request = (DetectionProtobuf.DetectionRequest) message.getBody();
-        for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty prop : request.getAlgorithmPropertyList()) {
-            if (!propertyName.equals(prop.getPropertyName())) {
-                if (shouldOverride) {
-                    Assert.fail("Property " + prop.getPropertyName() + " should be cleared.");
-                } else {
-                    Assert.assertEquals(actionProperties.get(prop.getPropertyName()), prop.getPropertyValue());
+
+        AlgorithmPropertyProtocolBuffer.AlgorithmProperty matchingProtoProp = request.getAlgorithmPropertyList()
+                .stream()
+                .filter(p -> p.getPropertyName().equals(propertyName))
+                .findAny()
+                .orElse(null);
+        Assert.assertNotNull("Expected there to be a protobuf property named " + propertyName,
+                             matchingProtoProp);
+        Assert.assertEquals(String.format("Expected the protobuf property %s to be %s", propertyName, propertyValue),
+                            propertyValue, matchingProtoProp.getPropertyValue());
+
+        if (shouldOverrideTransformProps) {
+            for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp : request.getAlgorithmPropertyList()) {
+                if (!propertyName.equals(protoProp.getPropertyName())) {
+                    Assert.assertFalse(
+                            AggregateJobPropertiesUtil.TRANSFORM_PROPERTIES.contains(protoProp.getPropertyName()));
                 }
             }
         }
+        else {
+            for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
+                AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
+                        .stream()
+                        .filter(p -> p.getPropertyName().equals(propertyName))
+                        .findAny()
+                        .orElse(null);
+
+                Assert.assertNotNull(
+                        "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
+                        protoProp);
+                Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
+                                                  actionPropEntry.getKey(), actionPropEntry.getValue()),
+                                    propertyValue, protoProp.getPropertyValue());
+            }
+        }
     }
+
 
     private BatchJob createSimpleJobForTest(
             Map<String, String> actionProperties,
@@ -547,7 +564,7 @@ public class TestDetectionSplitter {
 
         BatchJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
 
-        String calcFrameInterval = AggregateJobPropertiesUtil.calculateFrameInterval(
+        String calcFrameInterval = aggregateJobPropertiesUtil.calculateFrameInterval(
                 testJob.getPipelineComponents().getAction(0, 0),
                 testJob,
                 testJob.getMedia().stream().findFirst().get(),

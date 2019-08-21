@@ -100,7 +100,6 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
 //    }
 
     private static final Logger log = LoggerFactory.getLogger(StreamingJobRequestServiceImpl.class);
-    public static final String REF = "streamingJobRequestBoImpl";
 
     @Autowired
     private PipelineService pipelineService;

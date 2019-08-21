@@ -32,6 +32,8 @@ import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
+import org.mitre.mpf.wfm.util.WorkflowProperty;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.Collection;
@@ -41,10 +43,14 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestPipelineValidator {
 
     private PipelineValidator _pipelineValidator;
+
+    private WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
 
 
     private final Map<String, Pipeline> _pipelines = new HashMap<>();
@@ -56,7 +62,7 @@ public class TestPipelineValidator {
     public void init() {
         var springValidator = new LocalValidatorFactoryBean();
         springValidator.afterPropertiesSet();
-        _pipelineValidator = new PipelineValidator(springValidator);
+        _pipelineValidator = new PipelineValidator(springValidator, _mockWorkflowPropertyService);
     }
 
 
@@ -115,6 +121,47 @@ public class TestPipelineValidator {
         addComponent(TestDescriptorFactory.getReferencedAlgorithm());
 
         verifyBatchPipelineRunnable(descriptor.getPipelines().get(0).getName());
+    }
+
+
+    @Test
+    public void canValidatePipelineReferencingWorkflowProperties() {
+        var algorithm = new Algorithm("ALGO", "descr", ActionType.DETECTION,
+                                      new Algorithm.Requires(List.of()),
+                                      new Algorithm.Provides(List.of(), List.of()),
+                                      true, true);
+        _algorithms.put(algorithm.getName(), algorithm);
+
+        var workflowPropName = "WORKFLOW_PROP_NAME";
+        var action = new Action("ACTION", "descr", algorithm.getName(),
+                                List.of(new Action.Property(workflowPropName, "WORKFLOW_PROP_VAL")));
+        _actions.put(action.getName(), action);
+
+        var task = new Task("TASK", "descr", List.of(action.getName()));
+        _tasks.put(task.getName(), task);
+
+        var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
+        _pipelines.put(pipeline.getName(), pipeline);
+
+        when(_mockWorkflowPropertyService.getProperty(workflowPropName))
+                .thenReturn(new WorkflowProperty(workflowPropName, "descr", ValueType.DOUBLE,
+                                                 "default", null, List.of()));
+
+        try {
+            verifyBatchPipelineRunnable(pipeline.getName());
+            fail("Expected InvalidPipelineException");
+        }
+        catch (InvalidPipelineException e) {
+            assertEquals(
+                    "The \"WORKFLOW_PROP_NAME\" property from the \"ACTION\" action has a value of \"WORKFLOW_PROP_VAL\", which is not a valid \"DOUBLE\".",
+                    e.getMessage());
+        }
+
+
+        var correctedAction = new Action(action.getName(), action.getDescription(), action.getAlgorithm(),
+                                         List.of(new Action.Property(workflowPropName, "2.997e8")));
+        _actions.put(correctedAction.getName(), correctedAction);
+        verifyBatchPipelineRunnable(pipeline.getName());
     }
 
 
@@ -335,7 +382,7 @@ public class TestPipelineValidator {
         }
         catch (InvalidPipelineException e) {
             assertEquals(
-                    "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm.",
+                    "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of workflow property.",
                     e.getMessage());
         }
     }

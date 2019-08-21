@@ -215,11 +215,10 @@ public class Algorithm implements PipelineComponent {
 
 
     @ValidAlgoPropValue
-    public static class Property implements PipelineComponent {
+    public static class Property {
 
         private final String _name;
         @NotBlank
-        @Override
         public String getName() {
             return _name;
         }

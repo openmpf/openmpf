@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -120,7 +121,7 @@ public class TestRemoteMediaProcessor {
 
         _remoteMediaProcessor = new RemoteMediaProcessor(
                 _mockInProgressJobs, null, _mockPropertiesUtil,
-                new AggregateJobPropertiesUtil(_mockPropertiesUtil, null, null));
+                new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)));
     }
 
 

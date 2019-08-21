@@ -84,7 +84,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         File mediaRoot = propertiesUtil.getRemoteMediaDirectory();
         rootDirectoryTreeCache = new DirectoryTreeNode(mediaRoot);
 
-        List<DirectoryTreeNode> seenNodes = new ArrayList<>();
+        Set<DirectoryTreeNode> seenNodes = new HashSet<>();
         seenNodes.add(rootDirectoryTreeCache);
 
         rootDirectoryTreeCache.fillDirectoryTree(rootDirectoryTreeCache, seenNodes);
@@ -186,9 +186,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
         // Initialize caches
         walkAndRegisterDirectories(cacheFolder, watcher);
 
-        // Load existing files on startup since we won't see their creation event
-        //buildInitialCache(propertiesUtil.getServerMediaTreeRoot());
-
         log.info("File watcher task started");
         fileEventLoop(watcher);
     }
@@ -277,10 +274,6 @@ public class FileWatcherServiceImpl implements FileWatcherService {
             realPath = path.toRealPath();
         } catch (IOException e) {
             log.error("Error determining real path: " + e.getMessage());
-            return false;
-        }
-
-        if (realPath == null) {
             return false;
         }
 

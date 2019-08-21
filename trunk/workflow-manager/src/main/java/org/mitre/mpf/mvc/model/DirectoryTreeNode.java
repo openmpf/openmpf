@@ -35,9 +35,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class DirectoryTreeNode {
     private static final Logger log = LoggerFactory.getLogger(DirectoryTreeNode.class);
@@ -88,7 +86,7 @@ public class DirectoryTreeNode {
         this.nodes.add(node);
     }
 
-    public DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes) {
+    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, Set<DirectoryTreeNode> seenNodes) {
 
         List<Path> dirs = new ArrayList<>();
         Path folder = Paths.get(node.getFullPath());
@@ -129,7 +127,7 @@ public class DirectoryTreeNode {
 
                     // only keep track of the nodes we've seen in this branch of the file tree;
                     // it's okay for two separate branches to have the same symbolic links as long as there are no cycles
-                    List<DirectoryTreeNode> seenNodesCopy = new ArrayList<>(seenNodes);
+                    Set<DirectoryTreeNode> seenNodesCopy = new HashSet<>(seenNodes);
                     seenNodesCopy.add(realChildNode);
 
                     node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy)); // use absolute path

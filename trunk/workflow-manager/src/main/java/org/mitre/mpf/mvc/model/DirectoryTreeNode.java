@@ -31,17 +31,21 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 public class DirectoryTreeNode {
     private static final Logger log = LoggerFactory.getLogger(DirectoryTreeNode.class);
+    private static DirectoryStream.Filter<Path> directoryFilter = entry -> (Files.isDirectory(entry));
+
     private String text = null; //file or dir text/path;
     private String fullPath = null;
     private List<DirectoryTreeNode> nodes = null;
-    private static DirectoryStream.Filter<Path> directoryFilter = entry -> (Files.isDirectory(entry));
 
     public DirectoryTreeNode(File f) {
         this.text = f.getName();
@@ -59,6 +63,22 @@ public class DirectoryTreeNode {
     public String getFullPath() {
         return this.fullPath;
     }
+
+    /* TODO
+    private WatchKey watchKey = null;
+
+    public WatchKey init (WatchService watcher) throws IOException {
+        watchKey = Paths.get(fullPath).register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+        return watchKey;
+    }
+
+    public void close() {
+        if (watchKey != null) {
+            watchKey.reset();
+            watchKey.cancel();
+        }
+    }
+    */
 
     public List<DirectoryTreeNode> getNodes() {
         return this.nodes;

@@ -143,7 +143,7 @@ public class FileWatcherServiceImpl implements FileWatcherService {
 
         WatchKey key;
         try {
-            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE); // TODO: realpath()
+            key = dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
             log.debug("File watcher registered for directory: " + dir);
             if (watcherMap.containsKey(key)) {
                 watcherMap.get(key).add(dir);

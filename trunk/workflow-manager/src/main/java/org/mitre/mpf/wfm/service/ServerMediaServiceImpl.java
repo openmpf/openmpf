@@ -75,7 +75,7 @@ public class ServerMediaServiceImpl implements ServerMediaService {
             log.debug("Using cached file listing: " + dirPath);
             mediaFiles.addAll(cachedFileNames.getData());
         } else {
-            log.error("Media file cache not found");
+            log.warn("Media file cache not found for: " + dirPath);
         }
 
         // recurse

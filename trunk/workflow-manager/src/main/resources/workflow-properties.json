@@ -38,7 +38,7 @@
         "name": "CONFIDENCE_THRESHOLD",
         "description": "The minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
         "type": "DOUBLE",
-        "defaultValue": "-2",
+        "propertiesKey": "detection.confidence.threshold",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {

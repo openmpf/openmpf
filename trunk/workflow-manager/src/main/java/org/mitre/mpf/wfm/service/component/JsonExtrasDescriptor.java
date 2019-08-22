@@ -34,6 +34,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Null;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 public class JsonExtrasDescriptor {
@@ -55,7 +56,7 @@ public class JsonExtrasDescriptor {
     @Null
     public String streamLibrary;
 
-    @Null
+    @Size(max = 0)
     public List<JsonComponentDescriptor.EnvironmentVariable> environmentVariables;
 
     @Null

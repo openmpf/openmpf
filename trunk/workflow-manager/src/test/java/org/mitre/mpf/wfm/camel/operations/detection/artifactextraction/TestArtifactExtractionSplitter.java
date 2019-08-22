@@ -433,8 +433,10 @@ public class TestArtifactExtractionSplitter {
     }
 
     //////////////////////////////////////////////////////////
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void throwsExceptionWhenTopConfidenceCountTooLarge() {
+    /// Test that setting the top confidence count to a value larger than the number of
+    /// detections does not throw an exception, and extracts all detections.
+    @Test(expected = Test.None.class)
+    public void TopConfidenceCountTooLarge() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
             -1, false, false, false, 12);
 
@@ -448,7 +450,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 detectionFramesAndConfidences,
-                Arrays.asList(5, 10));
+                Arrays.asList(5, 9, 10, 14));
 
     }
 

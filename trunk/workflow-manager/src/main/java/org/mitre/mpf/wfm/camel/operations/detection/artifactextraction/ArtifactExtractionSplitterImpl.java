@@ -253,7 +253,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 Comparator.comparing(Detection::getConfidence)
                 .reversed()
                 .thenComparing(Detection::getMediaOffsetFrame));
-            for (int i = 0; i < systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(); i++) {
+            int numDetectionsToExtract = systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount();
+            if (detectionsCopy.size() < numDetectionsToExtract) {
+                LOG.warn("Artifact Extraction Policy Top Confidence Count exceeds the number of detections. Extracting only {} detections.", detectionsCopy.size());
+                numDetectionsToExtract = detectionsCopy.size();
+            }
+            for (int i = 0; i < numDetectionsToExtract; i++) {
                 LOG.debug("Extracting frame #{} with confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
                          detectionsCopy.get(i).getConfidence());
                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex,

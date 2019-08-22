@@ -129,7 +129,9 @@ public class JobRequestBoImpl implements JobRequestBo {
      * @return
      */
     @Override
-    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media, Map<String, Map<String, String>> algorithmProperties, Map<String, String> jobProperties, boolean buildOutput, int priority) {
+    public JsonJobRequest createRequest(String externalId, String pipelineName, List<JsonMediaInputObject> media,
+                                        Map<String, Map<String, String>> algorithmProperties,
+                                        Map<String, String> jobProperties, boolean buildOutput, int priority) {
 
         JsonJobRequest jsonJobRequest = new JsonJobRequest(TextUtils.trim(externalId), buildOutput, pipelineService.createJsonPipeline(pipelineName), priority);
         if (media != null) {

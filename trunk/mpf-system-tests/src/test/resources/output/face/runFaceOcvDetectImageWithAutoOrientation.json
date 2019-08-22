@@ -43,7 +43,8 @@
       "mediaMetadata": {
         "EXIF_ORIENTATION": "5",
         "HORIZONTAL_FLIP": "TRUE",
-        "ROTATION": "90"
+        "ROTATION": "90",
+        "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},
       "markupResult": null,

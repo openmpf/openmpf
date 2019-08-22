@@ -24,28 +24,25 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.interop.util;
 
-package org.mitre.mpf.wfm.util;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.apache.commons.lang3.StringUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import org.mitre.mpf.interop.util.InstantJsonModule;
-import org.mitre.mpf.interop.util.TrimKeysModule;
-import org.mitre.mpf.interop.util.TrimValuesModule;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import java.io.IOException;
 
-@Configuration
-public class ObjectMapperFactory {
+public final class TrimValuesModule extends SimpleModule {
 
-    @Bean
-    public static ObjectMapper customObjectMapper() {
-        return Jackson2ObjectMapperBuilder.json()
-                .modules(new InstantJsonModule(),
-                         new Jdk8Module(),
-                         new TrimKeysModule(),
-                         new TrimValuesModule())
-                .build();
+    public TrimValuesModule() {
+        addDeserializer(String.class, new StdScalarDeserializer<String>(String.class) {
+            @Override
+            public String deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+                return StringUtils.trimToEmpty(parser.getValueAsString());
+            }
+        });
     }
+
 }

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.util;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
+import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
@@ -114,7 +115,8 @@ public class PropertiesUtil {
         artifactsDirectory = createOrFail(share, "artifacts", permissions);
         markupDirectory = createOrFail(share, "markup", permissions);
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
-        remoteMediaCacheDirectory = createOrFail(share, "remote-media", permissions);
+        remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
+        temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -134,7 +136,8 @@ public class PropertiesUtil {
         log.debug("Artifacts Directory = {}", artifactsDirectory);
         log.debug("Markup Directory = {}", markupDirectory);
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
-        log.debug("Remote Media Cache Directory = {}", remoteMediaCacheDirectory);
+        log.debug("Remote Media Directory = {}", remoteMediaDirectory);
+        log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 
@@ -161,6 +164,17 @@ public class PropertiesUtil {
         }
 
         return child.toAbsolutePath().toFile();
+    }
+
+    private static File createOrClear(Path parent, String subdirectory, Set<PosixFilePermission> permissions)
+            throws IOException, WfmProcessingException {
+        Path child = parent.resolve(subdirectory);
+        if ( Files.exists(child) ) {
+            MoreFiles.deleteDirectoryContents(child);
+            return child.toAbsolutePath().toFile();
+        } else {
+            return createOrFail(parent, subdirectory, permissions);
+        }
     }
 
     public String lookup(String propertyName) {
@@ -344,8 +358,11 @@ public class PropertiesUtil {
         return path;
     }
 
-    private File remoteMediaCacheDirectory;
-    public File getRemoteMediaCacheDirectory() { return remoteMediaCacheDirectory; }
+    private File remoteMediaDirectory;
+    public File getRemoteMediaDirectory() { return remoteMediaDirectory; }
+
+    private File temporaryMediaDirectory;
+    public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File markupDirectory;
     public File getMarkupDirectory() { return markupDirectory; }

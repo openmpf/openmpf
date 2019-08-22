@@ -47,6 +47,8 @@ using activemq::core::ActiveMQConnectionFactory;
 using activemq::core::policies::DefaultPrefetchPolicy;
 using activemq::core::PrefetchPolicy;
 
+
+
 //-----------------------------------------------------------------------------
 MPFMessenger::MPFMessenger(const log4cxx::LoggerPtr &logger) :
     initialized(false),
@@ -83,22 +85,27 @@ void MPFMessenger::Startup(
         // This call will generate a runtime error if it fails
         ActiveMQCPP::initializeLibrary();
 
-
         // Create an ActiveMQ ConnectionFactory
         connection_factory_ =
                 new ActiveMQConnectionFactory(broker_uri);
 
-        // Set prefetch policy to 1
-        PrefetchPolicy *policy = new DefaultPrefetchPolicy();
-        policy->setQueuePrefetch(1);
-        policy->setTopicPrefetch(1);
-        connection_factory_->setPrefetchPolicy(policy);
-        connection_factory_->setCloseTimeout(1);
+        // Check whether a prefetch policy has been set on the broker
+        // URI. Explicitly set it to 0 if it was not set on the URI,
+        // or if it is set to 0. This second condition works around a
+        // bug in ActiveMQ.
+        bool hasPrefetch = broker_uri.find("jms.prefetchPolicy.all") != std::string::npos;
+        bool hasPrefetchSetToZero = broker_uri.find("jms.prefetchPolicy.all=0") != std::string::npos;
+        if (!hasPrefetch || hasPrefetchSetToZero) {
+            PrefetchPolicy *policy = new DefaultPrefetchPolicy();
+            policy->setQueuePrefetch(0);
+            policy->setTopicPrefetch(0);
+            connection_factory_->setPrefetchPolicy(policy);
+        }
+
         connection_factory_->setOptimizeAcknowledge(true);
 
         // Create an ActiveMQ Connection
         connection_ = connection_factory_->createConnection();
-        connection_->start();
 
         // Create an ActiveMQ session
         session_ = connection_->createSession(Session::SESSION_TRANSACTED);
@@ -108,6 +115,7 @@ void MPFMessenger::Startup(
 
         // Create an ActiveMQ MessageConsumer for requests
         request_consumer_ = session_->createConsumer(request_destination_);
+        connection_->start();
     } catch (InvalidDestinationException& e) {
         LOG4CXX_ERROR(main_logger_, "InvalidDestinationException in MPFMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
         throw;

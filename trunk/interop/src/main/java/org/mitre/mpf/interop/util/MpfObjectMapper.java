@@ -36,21 +36,29 @@ public class MpfObjectMapper extends ObjectMapper {
 
     public MpfObjectMapper() {
         registerInstantModule();
+        registerStripWhitespaceModules();
     }
 
     public MpfObjectMapper(JsonFactory jsonFactory) {
         super(jsonFactory);
         registerInstantModule();
+        registerStripWhitespaceModules();
     }
 
     public MpfObjectMapper(JsonFactory jsonFactory, DefaultSerializerProvider serializerProvider,
                            DefaultDeserializationContext deserializationContext) {
         super(jsonFactory, serializerProvider, deserializationContext);
         registerInstantModule();
+        registerStripWhitespaceModules();
     }
 
     private void registerInstantModule() {
         registerModule(new InstantJsonModule());
+    }
+
+    private void registerStripWhitespaceModules() {
+        registerModule(new TrimKeysModule());
+        registerModule(new TrimValuesModule());
     }
 
 }

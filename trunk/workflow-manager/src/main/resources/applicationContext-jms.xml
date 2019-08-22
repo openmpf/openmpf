@@ -42,7 +42,7 @@
         <property name="concurrentConsumers" value="2" />
         <property name="transacted" value="false" />
         <property name="deliveryPersistent" value="false" />
-        <property name="maxConcurrentConsumers" value="30" />
+        <property name="maxConcurrentConsumers" value="60" />
         <property name="cacheLevelName" value="CACHE_CONSUMER" />
         <property name="preserveMessageQos" value="true"/>
         <property name="transactionTimeout" value="600"/><!-- in seconds -->
@@ -59,37 +59,6 @@
     </bean>
 
     <bean id="broker" class="org.apache.activemq.ActiveMQConnectionFactory">
-        <property name="brokerURL" value="#{systemEnvironment['ACTIVE_MQ_BROKER_URI']}" />
-    </bean>
-
-    <!-- Output Object JMS Configuration -->
-
-    <bean id="output" class="org.apache.activemq.camel.component.ActiveMQComponent">
-        <property name="configuration" ref="outputConfig" />
-    </bean>
-
-    <bean id="outputConfig" class="org.apache.camel.component.jms.JmsConfiguration">
-        <property name="connectionFactory" ref="outputProxyFactory"/>
-        <property name="concurrentConsumers" value="2" />
-        <property name="transacted" value="false" />
-        <property name="deliveryPersistent" value="false" />
-        <property name="maxConcurrentConsumers" value="30" />
-        <property name="cacheLevelName" value="CACHE_CONSUMER" />
-        <property name="preserveMessageQos" value="true"/>
-        <property name="transactionTimeout" value="600"/><!-- in seconds -->
-    </bean>
-
-    <bean id="outputProxyFactory" class="org.springframework.jms.connection.TransactionAwareConnectionFactoryProxy">
-        <property name="targetConnectionFactory" ref="outputFactory"/>
-        <property name="synchedLocalTransactionAllowed" value="true" />
-    </bean>
-
-    <bean id="outputFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
-        <property name="connectionFactory" ref="outputBroker" />
-        <property name="idleTimeout" value="0" />
-    </bean>
-
-    <bean id="outputBroker" class="org.apache.activemq.ActiveMQConnectionFactory">
         <property name="brokerURL" value="#{systemEnvironment['ACTIVE_MQ_BROKER_URI']}" />
     </bean>
 </beans>

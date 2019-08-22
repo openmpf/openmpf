@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import org.mitre.mpf.nms.xml.EnvironmentVariable;
@@ -254,9 +253,16 @@ public class AddComponentServiceImpl implements AddComponentService {
                         "Unable to register %s because there is an existing managed component with the same name.",
                         descriptor.componentName));
             }
-            JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
-            if (existingDescriptor.deepEquals(descriptor)) {
-                return false;
+
+            try {
+                JsonComponentDescriptor existingDescriptor = loadDescriptor(existingComponent.getJsonDescriptorPath());
+                if (existingDescriptor.deepEquals(descriptor)) {
+                    return false;
+                }
+            }
+            catch (FailedToParseDescriptorException e) {
+                _log.warn("Failed to parse existing descriptor for the \"{}\" component. It will be replaced with the newly received descriptor.",
+                          descriptor.componentName);
             }
             _removeComponentService.removeComponent(descriptor.componentName);
         }
@@ -306,11 +312,8 @@ public class AddComponentServiceImpl implements AddComponentService {
             }
             throw new FailedToParseDescriptorException(ex);
         }
-        catch (JsonMappingException ex) {
-            throw new FailedToParseDescriptorException(ex);
-        }
         catch (IOException ex) {
-            throw new IllegalStateException("Failed to load json descriptor ", ex);
+            throw new FailedToParseDescriptorException(ex);
         }
     }
 

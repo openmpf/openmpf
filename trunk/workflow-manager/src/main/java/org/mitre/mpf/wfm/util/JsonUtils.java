@@ -61,7 +61,7 @@ public class JsonUtils {
      * Single instance of the ObjectMapper which converts between Java objects and binary JSON. Binary JSON is expected
      * to be significantly more compact than text-based JSON.
      */
-    private final ObjectMapper smileObjectMapper;
+    private ObjectMapper smileObjectMapper;
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient

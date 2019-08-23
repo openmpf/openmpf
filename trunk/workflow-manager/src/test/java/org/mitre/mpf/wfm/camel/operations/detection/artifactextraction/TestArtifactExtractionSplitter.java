@@ -53,7 +53,6 @@ import static org.mockito.Mockito.*;
 public class TestArtifactExtractionSplitter {
 
     private final JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
-
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
@@ -68,6 +67,10 @@ public class TestArtifactExtractionSplitter {
 
     ////////////////////////////////////////////////////////
     @Test
+    @Before
+    public void init() {
+        _jsonUtils.init();
+    }
     public void canGetFirstFrame() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(-1, true, false, false, 0),

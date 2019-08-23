@@ -29,8 +29,9 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -90,8 +91,6 @@ public abstract class TestSystem {
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
 
-    protected static int testCtr = 0;
-
     // is this running on Jenkins and/or is output checking desired?
     protected static boolean jenkins = false;
     static {
@@ -129,10 +128,13 @@ public abstract class TestSystem {
 
 
     @Rule
-    public TestName testName = new TestName();
-
-    @Rule
     public MpfErrorCollector errorCollector = new MpfErrorCollector();
+
+    @ClassRule
+    public static TestInfoLoggerClassRule testInfoLoggerClassRule = new TestInfoLoggerClassRule();
+    @Rule
+    public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
+
 
 
     private OutputChecker outputChecker = new OutputChecker(errorCollector);
@@ -294,8 +296,6 @@ public abstract class TestSystem {
     }
 
     protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} {}()", testCtr, testName.getMethodName());
         List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
             mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
@@ -312,7 +312,6 @@ public abstract class TestSystem {
 
             outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
         }
-        log.info("Finished test {}()", testName.getMethodName());
     }
 
 

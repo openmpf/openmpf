@@ -30,7 +30,10 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.nms.AddressParser;
@@ -88,7 +91,7 @@ public class TestStreamingJobStartStop {
 
         @Bean
         @Primary
-        public StreamingJobRequestService streamingJobRequestBo() {
+        public StreamingJobRequestService streamingJobRequestService() {
             return _mockStreamingJobRequestService;
         }
     }
@@ -107,6 +110,12 @@ public class TestStreamingJobStartStop {
 
     @Autowired
     private PipelineService _pipelineService;
+
+    @ClassRule
+    public static TestInfoLoggerClassRule testInfoLoggerClassRule = new TestInfoLoggerClassRule();
+    @Rule
+    public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
+
 
 
     @Test(timeout = 5 * 60_000)

@@ -129,16 +129,12 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 10*MINUTES)
     public void runMotionTracking1() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runMotionTracking1()", testCtr);
-
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/motion/five-second-marathon-clip.mkv"),
                 ioUtils.findFile("/samples/person/video_02.mp4"));
 
         long jobId = runPipelineOnMedia("MOG MOTION DETECTION (WITH TRACKING) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        log.info("Finished test runMotionTracking1()");
     }
 
     @Test(timeout = 5*MINUTES)
@@ -149,18 +145,13 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 4*MINUTES, expected = InvalidPipelineObjectWfmProcessingException.class)
     public void testBadPipeline() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} testBadPipeline()", testCtr);
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
         long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                 propertiesUtil.getJmsPriority());
-        log.error("Finished test testBadPipeline()"); // exception should have been thrown
     }
 
     @Test(timeout = 8*MINUTES)
     public void testEmptyMarkupRequest() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} testEmptyMarkupRequest()", testCtr);
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
@@ -175,25 +166,19 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                     DigestUtils.sha256Hex(FileUtils.readFileToByteArray(new File(URI.create(mediaOutputObject.getPath())))),
                     DigestUtils.sha256Hex(FileUtils.readFileToByteArray(new File(URI.create(mediaOutputObject.getMarkupResult().getPath())))));
         }
-        log.info("Finished test testEmptyMarkupRequest()");
     }
 
     @Test(timeout = 5*MINUTES)
     public void testNonUri() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} testNonUri()", testCtr);
         List<JobCreationMediaData> media = new LinkedList<>();
         media.add(new JobCreationMediaData("/not/a/file.txt"));
         long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
-        log.info("Finished test testNonUri()");
     }
 
     @Ignore // TODO: fix me!
     @Test(timeout = 4*MINUTES)
     public void testTiffImageMarkup() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} testTiffImageMarkup()", testCtr);
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
         long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
@@ -207,7 +192,6 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                     DigestUtils.sha256Hex(FileUtils.readFileToByteArray(new File(URI.create(mediaOutputObject.getMarkupResult().getPath())))));
             Assert.assertEquals(mediaOutputObject.getMarkupResult().getStatus(), MarkupStatus.COMPLETE.toString());
         }
-        log.info("Finished test testTiffImageMarkup()");
     }
 
 // This test can also be verified manually (and visually) by running the comparable default pipeline with markup, and a comparable
@@ -215,9 +199,6 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 // and 14 with the custom pipeline
     @Test(timeout = 20*MINUTES)
     public void runFaceOcvCustomDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvCustomDetectVideo()", testCtr);
-
         // set property MIN_FACE_SIZE=100 on the custom action "TEST X OCV FACE MIN FACE SIZE 100" to run the custom pipeline standard nightly test.
         // Note that this statement can be left as is when the default output object is created (i.e. when the default pipeline of
         // "OCV FACE DETECTION PIPELINE" is specified).  It doesn't have to be commented out
@@ -255,7 +236,6 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         while(defIter.hasNext()){
             compareMedia(defIter.next(), custIter.next());
         }
-        log.info("Finished test runFaceOcvCustomDetectVideo()");
     }
 
     /**
@@ -346,8 +326,6 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
         Assert.assertTrue(String.format("The LOW priority job was expected to take longer than the HIGH priority job. (LOW = %d ms, HIGH = %d ms)",
                 lowRunner.elapsed, highRunner.elapsed), lowRunner.elapsed > highRunner.elapsed);
-
-        log.info("Finished test #{}. LOW = {} ms, HIGH = {} ms.", testCtr, lowRunner.elapsed, highRunner.elapsed);
     }
 
     class PriorityRunner implements Runnable {

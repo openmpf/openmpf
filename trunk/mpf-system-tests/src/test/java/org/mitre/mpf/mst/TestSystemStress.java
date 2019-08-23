@@ -53,8 +53,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     //passed at 1min 47sec
     @Test(timeout = 15*MINUTES)
     public void runMotionMogDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runMotionMogDetectVideo()", testCtr);
         List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
@@ -71,28 +69,21 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runMotionMogDetectVideo()");
     }
 
     // passed at 2hr 35min
     @Test(timeout = 170*MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runSpeechSphinxDetectAudio()", testCtr);
-
         // 28MG
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
         long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, 1);
-        log.info("Finished test runSpeechSphinxDetectAudio()");
     }
 
     // has worked in the past at 26 mins
     @Test(timeout = 60*MINUTES)
     public void runFaceOcvDetectImage() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectImage()", testCtr);
         List<JobCreationMediaData> media = new LinkedList<>();
         IOFileFilter fileFilter = FileFilterUtils.and(FileFilterUtils.fileFileFilter(),
                 FileFilterUtils.suffixFileFilter(".jpg"));
@@ -112,14 +103,11 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, i);
-        log.info("Finished test runFaceOcvDetectImage()");
     }
 
     // passed at 1hr 59min
     @Test(timeout = 135*MINUTES)
     public void runFaceOcvDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectVideo()", testCtr);
         List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
@@ -136,15 +124,12 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runFaceOcvDetectVideo()");
     }
 
 
     // passed but at 3hr 51min
     @Test(timeout = 255*MINUTES)
     public void runPersonOcvDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runPersonOcvDetectVideo()", testCtr);
         List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
@@ -159,7 +144,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runPersonOcvDetectVideo()");
     }
 
 
@@ -168,8 +152,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     // This test intentionally runs one file per job
     @Test(timeout = 180*MINUTES)
     public void runFaceOcvDetectImageManyJobs() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectImageManyJobs()", testCtr);
         IOFileFilter fileFilter = FileFilterUtils.and(FileFilterUtils.fileFileFilter(),
                 FileFilterUtils.suffixFileFilter(".jpg"));
 
@@ -201,7 +183,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 files.size(), manyJobsNumFilesProcessed);
         log.info("Successfully ran {} jobs for {} files, one file per job.",
                 manyJobsNumFilesProcessed, files.size());
-        log.info("Finished test runFaceOcvDetectImageManyJobs()");
     }
 
     class JobRunner implements Runnable {

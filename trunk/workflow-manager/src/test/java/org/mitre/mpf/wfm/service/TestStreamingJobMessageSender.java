@@ -26,6 +26,7 @@
 package org.mitre.mpf.wfm.service;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,19 +37,21 @@ import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobImpl;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.service.component.ComponentLanguage;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.WorkflowProperty;
+import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -68,12 +71,15 @@ public class TestStreamingJobMessageSender {
     @Mock
     private StreamingServiceManager _mockServiceManager;
 
+    @Mock
+    private WorkflowPropertyService _mockWorkflowPropertyService;
+
 
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
         AggregateJobPropertiesUtil aggregateJobPropertiesUtil
-                = new AggregateJobPropertiesUtil(_mockProperties, null);
+                = new AggregateJobPropertiesUtil(_mockProperties, _mockWorkflowPropertyService);
         _messageSender = new StreamingJobMessageSenderImpl(_mockProperties, aggregateJobPropertiesUtil,
                                                            _mockMasterNode, _mockServiceManager);
     }
@@ -85,12 +91,22 @@ public class TestStreamingJobMessageSender {
         when(_mockProperties.getStreamingJobStallAlertThreshold())
                 .thenReturn(stallAlertThreshold);
 
-        String activeMqUri = "failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
+        var activeMqUri = "failover://(tcp://localhost.localdomain:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1";
         when(_mockProperties.getAmqUri())
                 .thenReturn(activeMqUri);
 
+        var workflowProp1 = new WorkflowProperty("WORKFLOW_PROP", "descr", ValueType.INT,
+                                                 "1", null, List.of(MediaType.VIDEO));
+        var workflowProp2 = new WorkflowProperty("OVERRIDDEN JOB PROPERTY", "descr", ValueType.STRING,
+                                                 "INVALID", null, List.of(MediaType.VIDEO));
+        when(_mockWorkflowPropertyService.getProperties(MediaType.VIDEO))
+                .thenReturn(ImmutableList.of(workflowProp1, workflowProp2));
+        when(_mockWorkflowPropertyService.getPropertyValue(workflowProp1.getName(), MediaType.VIDEO, null))
+                .thenReturn(workflowProp1.getDefaultValue());
+        when(_mockWorkflowPropertyService.getPropertyValue(workflowProp2.getName(), MediaType.VIDEO, null))
+                .thenReturn(workflowProp2.getDefaultValue());
 
-        List<Algorithm.Property> algoProperties = Arrays.asList(
+        var algoProperties = List.of(
                 new Algorithm.Property("OVERRIDDEN ACTION PROPERTY", "desc", ValueType.STRING,
                                        "Bad Value", null),
                 new Algorithm.Property("ALGO PROPERTY2", "desc", ValueType.STRING,
@@ -101,44 +117,44 @@ public class TestStreamingJobMessageSender {
                                        "Bad Value", null)
         );
 
-        Algorithm algorithm = new Algorithm(
+        var algorithm = new Algorithm(
                 "TEST ALGO",
                 "Algo Description",
                 ActionType.DETECTION,
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), algoProperties),
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), algoProperties),
                 true,
                 true);
 
 
-        List<Action.Property> actionProperties = Arrays.asList(
+        var actionProperties = List.of(
                 new Action.Property("OVERRIDDEN ACTION PROPERTY", "ACTION VAL"),
                 new Action.Property("OVERRIDDEN JOB PROPERTY", "Bad Value")
         );
-        Action action = new Action("ActionName", "Action description", algorithm.getName(),
-                                   actionProperties);
+        var action = new Action("ActionName", "Action description", algorithm.getName(),
+                                actionProperties);
 
-        Task task = new Task("TaskName", "Task description",
-                             Collections.singletonList(action.getName()));
+        var task = new Task("TaskName", "Task description",
+                             List.of(action.getName()));
 
-        Pipeline pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
-                                         Collections.singletonList(task.getName()));
-        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
+        var pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
+                                    List.of(task.getName()));
+        var pipelineComponents = new JobPipelineComponents(
                 pipeline,
-                Collections.singletonList(task),
-                Collections.singletonList(action),
-                Collections.singletonList(algorithm));
+                List.of(task),
+                List.of(action),
+                List.of(algorithm));
 
 
 
-        MediaStreamInfo stream = new MediaStreamInfo(
+        var stream = new MediaStreamInfo(
                 5234,
                 "stream://myStream",
                 543,
                 ImmutableMap.of("OVERRIDDEN STREAM PROPERTY", "Stream Specific Value"));
 
         long jobId = 1234;
-        StreamingJob job = new StreamingJobImpl(
+        var job = new StreamingJobImpl(
                 jobId,
                 "external id",
                 pipelineComponents,
@@ -149,16 +165,16 @@ public class TestStreamingJobMessageSender {
                 "output-dir",
                 null,
                 null,
-                Collections.singletonMap("OVERRIDDEN JOB PROPERTY", "Job Overridden Value"),
-                Collections.emptyMap());
+                Map.of("OVERRIDDEN JOB PROPERTY", "Job Overridden Value"),
+                Map.of());
 
-        ArgumentCaptor<LaunchStreamingJobMessage> msgCaptor = ArgumentCaptor.forClass(LaunchStreamingJobMessage.class);
+        var msgCaptor = ArgumentCaptor.forClass(LaunchStreamingJobMessage.class);
 
-        List<EnvironmentVariableModel> envVars = Arrays.asList(
+        var envVars = List.of(
                 new EnvironmentVariableModel("LD_LIB_PATH", "/opt/mpf", null),
                 new EnvironmentVariableModel("var2", "val2", null));
 
-        StreamingServiceModel streamingServiceModel = new StreamingServiceModel(
+        var streamingServiceModel = new StreamingServiceModel(
                 "MyService", algorithm.getName(), ComponentLanguage.CPP,
                 "my-component/lib/libComponent.so", envVars);
 
@@ -166,7 +182,7 @@ public class TestStreamingJobMessageSender {
                 .thenReturn(Arrays.asList(
                         new StreamingServiceModel(
                                 "Wrong Service", "Wrong Algo", ComponentLanguage.JAVA, "bad-path/lib",
-                                Collections.emptyList()),
+                                List.of()),
                         streamingServiceModel));
 
 
@@ -195,6 +211,7 @@ public class TestStreamingJobMessageSender {
         assertEquals("ACTION VAL", launchMessage.jobProperties.get("OVERRIDDEN ACTION PROPERTY"));
         assertEquals("Job Overridden Value", launchMessage.jobProperties.get("OVERRIDDEN JOB PROPERTY"));
         assertEquals("Stream Specific Value", launchMessage.jobProperties.get("OVERRIDDEN STREAM PROPERTY"));
+        assertEquals("1", launchMessage.jobProperties.get("WORKFLOW_PROP"));
 
 
         assertEquals(activeMqUri, launchMessage.messageBrokerUri);
@@ -212,7 +229,7 @@ public class TestStreamingJobMessageSender {
         long jobId = 1245;
         _messageSender.stopJob(jobId);
 
-        ArgumentCaptor<StopStreamingJobMessage> msgCaptor = ArgumentCaptor.forClass(StopStreamingJobMessage.class);
+        var msgCaptor = ArgumentCaptor.forClass(StopStreamingJobMessage.class);
         verify(_mockMasterNode)
                 .stopStreamingJob(msgCaptor.capture());
 

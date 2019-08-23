@@ -250,6 +250,9 @@ public class AggregateJobPropertiesUtil {
 
         allKeys.addAll(job.getStream().getMediaProperties().keySet());
 
+        _workflowPropertyService.getProperties(MediaType.VIDEO)
+                .forEach(p -> allKeys.add(p.getName()));
+
         return allKeys.stream()
                 .map(pn -> getPropertyInfo(pn, job.getStream().getMediaProperties(), MediaType.VIDEO,
                                            action, job.getPipelineComponents(), job.getOverriddenAlgorithmProperties(),

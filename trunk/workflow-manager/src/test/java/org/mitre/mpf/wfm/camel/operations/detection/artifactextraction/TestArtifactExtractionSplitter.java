@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -65,12 +66,13 @@ public class TestArtifactExtractionSplitter {
             _mockPropertiesUtil,
             _mockAggregateJobPropertiesUtil);
 
-    ////////////////////////////////////////////////////////
-    @Test
     @Before
     public void init() {
         _jsonUtils.init();
     }
+
+    ////////////////////////////////////////////////////////
+    @Test
     public void canGetFirstFrame() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(-1, true, false, false, 0),

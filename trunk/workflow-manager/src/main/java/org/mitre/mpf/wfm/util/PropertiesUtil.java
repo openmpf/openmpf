@@ -258,8 +258,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
     }
 
-    public boolean isOutputObjectsExemplarsOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.exemplars.only");
+    public boolean isOutputObjectsArtifactsAndExemplarsOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
     }
 
     public boolean isOutputObjectsLastStageOnly() {

@@ -232,6 +232,48 @@ public class TestArtifactExtractionSplitter {
 
     /////////////////////////////////////////////////////////
     @Test
+    public void canGetTopConfidenceCount() {
+        SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
+                -1, false, false, false, 2);
+
+        ImmutableMap<Integer, Float> detectionFramesAndConfidences = ImmutableMap.of(
+                5, 0.5f,
+                9, 0.0f,
+                10, 1.0f,
+                14, 0.9f);
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10,
+                detectionFramesAndConfidences,
+                Arrays.asList(10, 14));
+
+
+        detectionFramesAndConfidences = ImmutableMap.of(
+                5, 0.95f,
+                9, 0.0f,
+                10, 1.0f,
+                14, 0.9f);
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10,
+                detectionFramesAndConfidences,
+                Arrays.asList(5, 10));
+
+        extractionProps = createExtractionPropertySnapshot(
+                -1, false, false, false, 5);
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                10,
+                detectionFramesAndConfidences,
+                Arrays.asList(5, 9, 10, 14));
+
+    }
+
+
+    @Test
     public void canGetFirstFrameAndConfidenceCount() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 -1, true, false, false, 2);
@@ -261,7 +303,6 @@ public class TestArtifactExtractionSplitter {
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10));
     }
-
 
     @Test
     public void canGetMiddleFrameAndConfidenceCount() {

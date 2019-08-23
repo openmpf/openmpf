@@ -38,10 +38,13 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -94,6 +97,25 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
                      job.getId());
             return Collections.emptyList();
+        }
+        int numPipelineStages = job.getPipeline().getStages().size();
+        LOG.info("number of pipeline stages = {}", numPipelineStages);
+        LOG.info("track merging context stage number {}", trackMergingContext.getStageIndex());
+        SystemPropertiesSnapshot propsSnapshot = job.getSystemPropertiesSnapshot();
+        // If the user has requested output objects for the last stage
+        // only, then return an empty list if this is not the last
+        // stage. Also return an empty list if this is not the last stage,
+        // but the action type of the last stage is MARKUP.
+        if (propsSnapshot.isOutputObjectLastStageOnly()) {
+            List<TransientStage> stages = new ArrayList<>(job.getPipeline().getStages());
+            int lastStageIndex = numPipelineStages-1;
+            if (stages.get(lastStageIndex).getActionType() == ActionType.MARKUP)
+                lastStageIndex = lastStageIndex - 1;
+            if (job.getCurrentStage() < lastStageIndex) {
+                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline stage {}.",
+                         job.getId(), job.getCurrentStage());
+                return Collections.emptyList();
+            }
         }
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames
@@ -190,7 +212,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
             Detection exemplar = track.getExemplar();
             int exemplarFrame = exemplar.getMediaOffsetFrame();
-            LOG.info("Extracting exemplar frame {}", exemplarFrame);
+            LOG.debug("Extracting exemplar frame {}", exemplarFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
             int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
             while (extractCount > 0) {
@@ -253,12 +275,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 Comparator.comparing(Detection::getConfidence)
                 .reversed()
                 .thenComparing(Detection::getMediaOffsetFrame));
-            int numDetectionsToExtract = systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount();
-            if (detectionsCopy.size() < numDetectionsToExtract) {
-                LOG.warn("Artifact Extraction Policy Top Confidence Count exceeds the number of detections. Extracting only {} detections.", detectionsCopy.size());
-                numDetectionsToExtract = detectionsCopy.size();
-            }
-            for (int i = 0; i < numDetectionsToExtract; i++) {
+            int extractCount = Math.min(systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(),
+                                        detectionsCopy.size());
+            for (int i = 0; i < extractCount; i++) {
                 LOG.debug("Extracting frame #{} with confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
                          detectionsCopy.get(i).getConfidence());
                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex,

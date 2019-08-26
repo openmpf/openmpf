@@ -112,10 +112,15 @@ public class TestStreamingJobStartStop {
     private PipelineService _pipelineService;
 
     @ClassRule
-    public static TestInfoLoggerClassRule testInfoLoggerClassRule = new TestInfoLoggerClassRule();
+    public static TestInfoLoggerClassRule _testInfoLoggerClassRule = new TestInfoLoggerClassRule();
     @Rule
-    public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
+    public TestWatcher _testInfoMethodRule = _testInfoLoggerClassRule.methodRule();
 
+
+    @Test
+    public void init() {
+        reset(_mockStreamingJobRequestService);
+    }
 
 
     @Test(timeout = 5 * 60_000)

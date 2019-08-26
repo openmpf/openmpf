@@ -69,7 +69,7 @@ public class ITWebStreamingReports {
     // Use a public stream from: https://www.wowza.com/demo/rtsp
     private static final String STREAM_URI = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
 
-    private static final String CALLBACK_URI_PREFIX = "http://0.0.0.0:";
+    private static final String CALLBACK_URI_PREFIX = "http://localhost:";
     private static final int CALLBACK_PORT = 20160;
 
     private static final String HEALTH_REPORT_CALLBACK_PATH = "/callback/health-report";

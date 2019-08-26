@@ -183,18 +183,18 @@ public class TestStreamingJobStartStop {
 
         _jobSender.launchJob(streamingJob);
 
-        verify(_mockStreamingJobRequestService, timeout(60_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
                 .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
 
         ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
-        verify(_mockStreamingJobRequestService, timeout(60_000).atLeastOnce())
+        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
                 .handleNewSummaryReport(reportCaptor.capture());
 
         _jobSender.stopJob(jobId);
 
 
-        verify(_mockStreamingJobRequestService, timeout(60_000))
+        verify(_mockStreamingJobRequestService, timeout(120_000))
                 .handleJobStatusChange(eq(jobId),
                                        hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
                                        gt(test_start_time));

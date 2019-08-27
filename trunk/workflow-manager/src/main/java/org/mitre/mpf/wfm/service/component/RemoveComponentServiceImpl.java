@@ -140,7 +140,9 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
 
     private void removeUnmanagedComponent(RegisterComponentModel registerModel) {
-        deleteCustomPipelines(registerModel, true);
+        // Don't recursively remove. Leave custom actions, tasks, and pipelines in place, as well as those defined for
+        // components that depend on this component.
+        deleteCustomPipelines(registerModel, false);
         Path componentDir = getComponentTopLevelDir(registerModel.getJsonDescriptorPath());
 
         try {

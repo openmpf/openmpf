@@ -31,17 +31,19 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 
 public class DirectoryTreeNode {
     private static final Logger log = LoggerFactory.getLogger(DirectoryTreeNode.class);
+    private static DirectoryStream.Filter<Path> directoryFilter = entry -> (Files.isDirectory(entry));
+
     private String text = null; //file or dir text/path;
     private String fullPath = null;
     private List<DirectoryTreeNode> nodes = null;
-    private boolean canUpload = false;
 
     public DirectoryTreeNode(File f) {
         this.text = f.getName();
@@ -60,44 +62,46 @@ public class DirectoryTreeNode {
         return this.fullPath;
     }
 
-    public void setFullPath(String path) {
-        this.fullPath = path;
+    /* TODO
+    private WatchKey watchKey = null;
+
+    public WatchKey init (WatchService watcher) throws IOException {
+        watchKey = Paths.get(fullPath).register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+        return watchKey;
     }
+
+    public void close() {
+        if (watchKey != null) {
+            watchKey.reset();
+            watchKey.cancel();
+        }
+    }
+    */
 
     public List<DirectoryTreeNode> getNodes() {
         return this.nodes;
     }
 
-    public void addNode(DirectoryTreeNode node) {
+    private void addNode(DirectoryTreeNode node) {
         this.nodes.add(node);
     }
 
-    public boolean isCanUpload() {
-        return canUpload;
-    }
+    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, Set<DirectoryTreeNode> seenNodes) {
 
-    public void setCanUpload(boolean canUpload) {
-        this.canUpload = canUpload;
-    }
-
-    public static DirectoryStream.Filter<Path> DirectoryFilter = entry -> (Files.isDirectory(entry));
-
-    public static DirectoryTreeNode fillDirectoryTree(DirectoryTreeNode node, List<DirectoryTreeNode> seenNodes, String uploadDir) {
-
-        List<Path> dirs = new ArrayList<Path>();
+        List<Path> dirs = new ArrayList<>();
         Path folder = Paths.get(node.getFullPath());
 
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, DirectoryFilter)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, directoryFilter)) {
             for (Path entry : stream) {
                 dirs.add(entry);
             }
         } catch (IOException e) {
-            log.error("Error detecting directories: " + e.getMessage());
+            log.warn("Directory does not exist: " + e.getMessage());
             return node;
         }
 
-        if(dirs.size() > 0) {
-            node.nodes = new ArrayList<DirectoryTreeNode>();
+        if (dirs.size() > 0) {
+            node.nodes = new ArrayList<>();
             for (Path child : dirs) {
                 Path realPath = null;
                 try {
@@ -108,21 +112,25 @@ public class DirectoryTreeNode {
                 if (realPath != null) {
                     DirectoryTreeNode realChildNode = new DirectoryTreeNode(realPath.toFile()); // resolve symbolic link to real path
 
-                    if (Files.isSymbolicLink(child)) {
-                        if (seenNodes.contains(realChildNode)) {
-                            log.warn("Omitting duplicate symbolically linked directory in this branch: " + child.toAbsolutePath() + " --> " + realPath);
-                            continue; // prevent symlink loop
+                    if (seenNodes.contains(realChildNode)) {
+                        if (Files.isSymbolicLink(child)) {
+                            log.warn("Omitting duplicate symbolically linked directory: " + child.toAbsolutePath() + " --> " + realPath);
+                        } else {
+                            log.warn("Omitting previously seen directory: " + child.toAbsolutePath() + " --> " + realPath);
                         }
+                        continue;
+                    }
+
+                    if (Files.isSymbolicLink(child)) {
                         log.info("Adding symbolically linked directory: " + child.toAbsolutePath() + " --> " + realPath);
                     }
 
                     // only keep track of the nodes we've seen in this branch of the file tree;
                     // it's okay for two separate branches to have the same symbolic links as long as there are no cycles
-                    List<DirectoryTreeNode> seenNodesCopy = new ArrayList<DirectoryTreeNode>();
-                    seenNodesCopy.addAll(seenNodes);
+                    Set<DirectoryTreeNode> seenNodesCopy = new HashSet<>(seenNodes);
                     seenNodesCopy.add(realChildNode);
 
-                    node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy, uploadDir)); // use absolute path
+                    node.addNode(fillDirectoryTree(new DirectoryTreeNode(child.toFile()), seenNodesCopy)); // use absolute path
                 }
             }
             if (node.nodes.isEmpty()) {
@@ -134,17 +142,13 @@ public class DirectoryTreeNode {
             }
         }
 
-        if (node.getFullPath().startsWith(uploadDir)) {
-            node.canUpload = true;
-        }
-
         return node;
     }
 
-    public static DirectoryTreeNode find(DirectoryTreeNode node,String fullPath) {
+    public static DirectoryTreeNode find(DirectoryTreeNode node, String fullPath) {
         if (node.getFullPath().equals(fullPath)) return node;
         if (node.nodes != null) {
-            DirectoryTreeNode found = null;
+            DirectoryTreeNode found;
             for (DirectoryTreeNode child : node.nodes) {
                 if ((found = find(child, fullPath)) != null)
                     return found;
@@ -155,8 +159,8 @@ public class DirectoryTreeNode {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof  DirectoryTreeNode) {
-            DirectoryTreeNode other = (DirectoryTreeNode)obj;
+        if (obj instanceof DirectoryTreeNode) {
+            DirectoryTreeNode other = (DirectoryTreeNode) obj;
             return fullPath.equals(other.getFullPath());
         }
         return false;

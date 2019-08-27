@@ -172,26 +172,25 @@ AppServices.service('MediaService', function ($http) {
         return promise;
     };
 
-    this.getAllDirectories = function (useUploadRoot, useCache) {
-        var useUploadRoot = useUploadRoot ? useUploadRoot : false;
-        var useCache = (useCache !== undefined) ? useCache : true;
+    this.getAllDirectories = function () {
         var promise = $http({
             url: 'server/get-all-directories',
-            method: 'GET',
-            params: {'useUploadRoot': useUploadRoot, 'useCache': useCache}
+            method: 'GET'
         }).then(function (response) {
             return response.data;
         });
         return promise;
     };
-    this.getAllFiles = function (fullPath, useCache) {
-        var useCache = (useCache !== undefined) ? useCache : true;
+    this.getAllFiles = function (fullPath) {
         var promise = $http({
             url: 'server/get-all-files',
             method: 'GET',
-            params: {'fullPath': fullPath, 'useCache': useCache}
+            params: {'fullPath': fullPath}
         }).then(function (response) {
             return response.data;
+        }).catch(function (reason) {
+            console.log("Error response received from server.");
+            console.log(JSON.stringify(reason));
         });
         return promise;
     };

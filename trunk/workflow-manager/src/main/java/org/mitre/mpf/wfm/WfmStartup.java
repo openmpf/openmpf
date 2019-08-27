@@ -33,8 +33,8 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateStreamingJobRequestDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
+import org.mitre.mpf.wfm.service.FileWatcherService;
 import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.component.StartupComponentRegistrationService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -48,7 +48,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.WebApplicationContext;
 
 import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerInvocationHandler;
@@ -56,7 +55,6 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +85,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 	private StartupComponentRegistrationService startupRegistrationService;
 
 	@Autowired
-	private ServerMediaService serverMediaService;
+	private FileWatcherService fileWatcherService;
 
 	// used to prevent the initialization behaviors from being executed more than once
 	private static boolean applicationRefreshed = false;
@@ -126,7 +124,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 				}
 
 				purgeServerStartupSystemMessages();
-				startFileIndexing(appContext);
+				startFileIndexing();
 				startupRegistrationService.registerUnregisteredComponents();
                 startHealthReporting();
 				applicationRefreshed = true;
@@ -137,14 +135,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 		}
 	}
 
-	private void startFileIndexing(ApplicationContext appContext)  {
-		if (appContext instanceof WebApplicationContext) {
-			WebApplicationContext webContext = (WebApplicationContext) appContext;
-			ServletContext servletContext = webContext.getServletContext();
-			ThreadUtil.runAsync(
-					() -> serverMediaService.getFiles(propertiesUtil.getServerMediaTreeRoot(), servletContext,
-					                                  true, true));
-		}
+	private void startFileIndexing()  {
+		fileWatcherService.launchWatcher(propertiesUtil.getServerMediaTreeRoot());
 	}
 
 

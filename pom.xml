@@ -143,7 +143,7 @@
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <janino.version>2.7.8</janino.version>
         <springfox.swagger.version>2.1.1</springfox.swagger.version>
-        <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in 
+        <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in
         order to maintain cross-compatibility. -->
         <maven.surefire.plugin.version>2.22.1</maven.surefire.plugin.version>
     <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->

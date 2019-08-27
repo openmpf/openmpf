@@ -28,7 +28,6 @@
 package org.mitre.mpf.mvc.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ServerMediaListing {
@@ -40,6 +39,6 @@ public class ServerMediaListing {
     }
 
     public List<ServerMediaFile> getData() {
-        return Collections.unmodifiableList(_data);
+        return _data;
     }
 }

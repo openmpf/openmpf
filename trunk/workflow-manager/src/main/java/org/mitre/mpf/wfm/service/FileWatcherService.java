@@ -27,16 +27,15 @@
 package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
-import org.mitre.mpf.mvc.model.ServerMediaFile;
+import org.mitre.mpf.mvc.model.ServerMediaListing;
 
-import java.util.List;
+import java.nio.file.Path;
 
-public interface ServerMediaService {
+public interface FileWatcherService {
 
-	// NOTE: Since all users have access to the same directory structure, it is optimal to cache directory and
-	// file information at the application level (as opposed to the session level).
+    public void launchWatcher(String nodePath);
 
-	public DirectoryTreeNode getAllDirectories();
+    public ServerMediaListing getFileListByPath(Path path);
 
-	public List<ServerMediaFile> getFiles(String dirPath, boolean recurse);
+    public DirectoryTreeNode getRootDirectoryTreeCache();
 }

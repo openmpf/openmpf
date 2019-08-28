@@ -45,8 +45,8 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
@@ -245,7 +245,7 @@ public class TestStreamingJobStartStop {
         Action action = new Action("Action1", "description", algorithm, Collections.emptyList());
         Task task = new Task("stage1", "description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline(pipelineName, "desc", Collections.singleton(task.getName()));
-        JobPipelineComponents transientPipeline = new JobPipelineComponents(
+        JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(_pipelineService.getAlgorithm(algorithm)));
 
@@ -254,7 +254,7 @@ public class TestStreamingJobStartStop {
         MediaStreamInfo stream = new MediaStreamInfo(124, videoUri.toString(), segmentSize, Collections.emptyMap());
 
         return new StreamingJobImpl(
-                jobId, "ext id", transientPipeline, stream, 1, stallTimeout, false,
+                jobId, "ext id", pipelineElements, stream, 1, stallTimeout, false,
                 "mydir", null, null,
                 Collections.emptyMap(), Collections.emptyMap());
     }

@@ -42,7 +42,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -163,7 +163,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
         jobRequestEntity = initialize(jobRequestEntity,
-                    originalJob.getPipelineComponents().getName(),
+                    originalJob.getPipelineElements().getName(),
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
@@ -196,7 +196,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             String callbackUrl,
             String callbackMethod) {
 
-        JobPipelineComponents pipelineComponents = _pipelineService.getBatchPipelineComponents(pipelineName);
+        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipelineName);
         // Capture the current state of the detection system properties at the time when this job is created.
         // Since the detection system properties may be changed by an administrator, we must ensure that the job
         // uses a consistent set of detection system properties through all stages of the job's pipeline.
@@ -210,7 +210,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
         BatchJobStatusType jobStatus = validateJobRequest(
-                pipelineComponents,
+                pipelineElements,
                 media,
                 jobProperties,
                 overriddenAlgoProps,
@@ -219,7 +219,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         jobRequestEntity.setPriority(priority);
         jobRequestEntity.setStatus(BatchJobStatusType.INITIALIZED);
         jobRequestEntity.setTimeReceived(Instant.now());
-        jobRequestEntity.setPipeline(pipelineComponents.getName());
+        jobRequestEntity.setPipeline(pipelineElements.getName());
         jobRequestEntity.setOutputObjectPath(null);
         jobRequestEntity.setOutputObjectVersion(null);
         jobRequestEntity.setJob(null);
@@ -233,7 +233,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     jobRequestEntity.getId(),
                     externalId,
                     systemPropertiesSnapshot,
-                    pipelineComponents,
+                    pipelineElements,
                     priority,
                     buildOutput,
                     callbackUrl,
@@ -279,7 +279,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
     private BatchJobStatusType validateJobRequest(
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -312,7 +312,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
     private void checkProperties(
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             Iterable<Media> jobMedia,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,

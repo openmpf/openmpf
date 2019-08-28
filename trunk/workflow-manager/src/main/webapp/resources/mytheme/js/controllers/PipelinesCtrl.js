@@ -42,7 +42,7 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
     //use like this: modifiedAlgValuesMap[propertyName] = value
     $scope.modifiedAlgValuesMap = {};
 
-    var getAllPipelineComponents = function() {
+    var getAllPipelineElements = function() {
         $http.get('actions')
             .success(function (actions) {
                 $scope.actions = actions;
@@ -91,7 +91,7 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
                 $scope.modalDescription = "";
                 $scope.modalType = "";
                 //reload model
-                getAllPipelineComponents();
+                getAllPipelineElements();
 
                 $scope.selectedAlgorithm = "";
                 $scope.modifiedAlgValuesMap = {};
@@ -137,7 +137,7 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
                 $scope.modalName = "";
                 $scope.modalDescription = "";
                 //reload model
-                getAllPipelineComponents();
+                getAllPipelineElements();
                 if($scope.modalType === 'task') {
                     $scope.actionsToAdd = [];
                     $scope.showAddTask = false;
@@ -201,5 +201,5 @@ var PipelinesCtrl = function($scope,$http, $timeout, NotificationSvc) {
             });
     };
 
-    getAllPipelineComponents();
+    getAllPipelineElements();
 };

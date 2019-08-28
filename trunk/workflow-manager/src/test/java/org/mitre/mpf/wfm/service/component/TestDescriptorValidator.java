@@ -111,7 +111,7 @@ public class TestDescriptorValidator {
 
 
     @Test
-    public void canValidatePipelineComponent() {
+    public void canValidatePipelineElements() {
         // Just making sure pipeline validation errors are reported, more detailed validation tests for the pipelines
         // are in TestPipelineValidator.
 

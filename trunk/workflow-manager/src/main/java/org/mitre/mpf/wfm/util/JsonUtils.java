@@ -39,7 +39,7 @@ import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -150,17 +150,17 @@ public class JsonUtils {
     }
 
 
-    public JsonPipeline convert(JobPipelineComponents pipelineComponents) {
-        Pipeline pipeline = pipelineComponents.getPipeline();
+    public JsonPipeline convert(JobPipelineElements pipelineElements) {
+        Pipeline pipeline = pipelineElements.getPipeline();
         JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
 
         for (String taskName : pipeline.getTasks()) {
-            Task task = pipelineComponents.getTask(taskName);
-            JsonStage jsonStage = new JsonStage(getActionType(pipelineComponents, task).name(), taskName,
+            Task task = pipelineElements.getTask(taskName);
+            JsonStage jsonStage = new JsonStage(getActionType(pipelineElements, task).name(), taskName,
                                                 task.getDescription());
 
             for (String actionName : task.getActions()) {
-                Action action = pipelineComponents.getAction(actionName);
+                Action action = pipelineElements.getAction(actionName);
                 JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
                 for (Action.Property property : action.getProperties()) {
                     jsonAction.getProperties().put(property.getName(), property.getValue());
@@ -173,7 +173,7 @@ public class JsonUtils {
         return jsonPipeline;
     }
 
-    private static ActionType getActionType(JobPipelineComponents pipeline, Task task) {
+    private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
         Action action = pipeline.getAction(task.getActions().get(0));
         return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
     }

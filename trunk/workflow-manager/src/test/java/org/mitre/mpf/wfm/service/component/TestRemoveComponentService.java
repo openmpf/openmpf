@@ -37,7 +37,7 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mockito.InjectMocks;

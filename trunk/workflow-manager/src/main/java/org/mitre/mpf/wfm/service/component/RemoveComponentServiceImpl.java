@@ -30,7 +30,7 @@ import com.google.common.io.MoreFiles;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.util.PropertiesUtil;

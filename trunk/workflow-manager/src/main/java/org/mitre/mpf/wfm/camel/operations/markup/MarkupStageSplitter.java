@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -81,7 +81,7 @@ public class MarkupStageSplitter implements StageSplitter {
      * Returns the last task in the pipeline containing a detection action. This effectively filters preprocessor
      * detections so that the output is not cluttered with motion detections.
      */
-    private static int findLastDetectionTaskIndex(JobPipelineComponents pipeline) {
+    private static int findLastDetectionTaskIndex(JobPipelineElements pipeline) {
         int taskIndex = -1;
         for(int i = 0; i < pipeline.getTaskCount(); i++) {
             ActionType actionType = pipeline.getAlgorithm(i, 0).getActionType();
@@ -187,13 +187,13 @@ public class MarkupStageSplitter implements StageSplitter {
     public final List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
-        int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getPipelineComponents());
+        int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getPipelineElements());
 
         hibernateMarkupResultDao.deleteByJobId(job.getId());
 
         for(int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             String actionName = task.getActions().get(actionIndex);
-            Action action = job.getPipelineComponents().getAction(actionName);
+            Action action = job.getPipelineElements().getAction(actionName);
             int mediaIndex = -1;
             for (Media media : job.getMedia()) {
                 mediaIndex++;
@@ -204,7 +204,7 @@ public class MarkupStageSplitter implements StageSplitter {
                 } else {
                     List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
                             = createMap(job, media, lastDetectionTaskIndex,
-                                        job.getPipelineComponents().getTask(lastDetectionTaskIndex))
+                                        job.getPipelineElements().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
                     Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
@@ -220,7 +220,7 @@ public class MarkupStageSplitter implements StageSplitter {
                             .addAllMapEntries(boundingBoxMapEntryList)
                             .build();
 
-                    Algorithm algorithm = job.getPipelineComponents().getAlgorithm(action.getAlgorithm());
+                    Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
                     DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
                     message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
                     message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));

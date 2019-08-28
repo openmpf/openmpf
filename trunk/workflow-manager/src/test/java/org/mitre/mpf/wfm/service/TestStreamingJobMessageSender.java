@@ -35,7 +35,7 @@ import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobImpl;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -139,7 +139,7 @@ public class TestStreamingJobMessageSender {
 
         var pipeline = new Pipeline("MyStreamingPipeline", "Pipeline description",
                                     List.of(task.getName()));
-        var pipelineComponents = new JobPipelineComponents(
+        var pipelineElements = new JobPipelineElements(
                 pipeline,
                 List.of(task),
                 List.of(action),
@@ -157,7 +157,7 @@ public class TestStreamingJobMessageSender {
         var job = new StreamingJobImpl(
                 jobId,
                 "external id",
-                pipelineComponents,
+                pipelineElements,
                 stream,
                 5,
                 100,

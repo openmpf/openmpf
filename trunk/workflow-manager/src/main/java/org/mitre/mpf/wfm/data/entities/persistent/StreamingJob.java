@@ -40,7 +40,7 @@ public interface StreamingJob {
 
     public StreamingJobStatus getJobStatus();
 
-    public JobPipelineComponents getPipelineComponents();
+    public JobPipelineElements getPipelineElements();
 
     public Optional<String> getExternalId();
 

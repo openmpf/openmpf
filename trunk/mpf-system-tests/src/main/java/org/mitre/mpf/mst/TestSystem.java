@@ -49,7 +49,7 @@ import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;

@@ -48,7 +48,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 
 	@Autowired
 	private InProgressBatchJobsService inProgressBatchJobs;
-	
+
 	@Autowired
 	private JobProgress jobProgressStore;
 
@@ -65,10 +65,10 @@ public class EndOfStageProcessor extends WfmProcessor {
 				jobId,
 				job.getCurrentTaskIndex() - 1,
 				job.getCurrentTaskIndex(),
-				job.getPipelineComponents().getTaskCount());
+				job.getPipelineElements().getTaskCount());
 
 
-		if(job.getCurrentTaskIndex() >= job.getPipelineComponents().getTaskCount()) {
+		if(job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
 			//notify of completion - use
 			if(!job.isOutputEnabled()) {
 				jobStatusBroadcaster.broadcast(
@@ -80,7 +80,7 @@ public class EndOfStageProcessor extends WfmProcessor {
 			} else {
 				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
 				jobProgressStore.setJobProgress(jobId, 99.0f);
-			}			
+			}
 			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
 			exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
 		}

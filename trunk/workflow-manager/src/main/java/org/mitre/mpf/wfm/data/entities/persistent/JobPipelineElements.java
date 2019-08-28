@@ -42,7 +42,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
  * is deleted and possibly re-created after a job has been submitted, the job will proceed with the pipeline that it
  * was originally created with.
  */
-public class JobPipelineComponents {
+public class JobPipelineElements {
 
     private final Pipeline _pipeline;
     public Pipeline getPipeline() {
@@ -105,7 +105,7 @@ public class JobPipelineComponents {
     }
 
 
-    public JobPipelineComponents(
+    public JobPipelineElements(
             @JsonProperty("pipeline") Pipeline pipeline,
             @JsonProperty("tasks") Iterable<Task> tasks,
             @JsonProperty("actions") Iterable<Action> actions,

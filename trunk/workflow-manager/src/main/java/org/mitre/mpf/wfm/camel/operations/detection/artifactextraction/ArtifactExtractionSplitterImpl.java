@@ -129,7 +129,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             BatchJob job, int stageIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
-        Task task = job.getPipelineComponents().getTask(stageIndex);
+        Task task = job.getPipelineElements().getTask(stageIndex);
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
@@ -200,7 +200,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media,
                                                          int stageIndex, int actionIndex) {
-        Action action = job.getPipelineComponents().getAction(stageIndex, actionIndex);
+        Action action = job.getPipelineElements().getAction(stageIndex, actionIndex);
         Function<String, String> combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);

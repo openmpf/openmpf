@@ -25,70 +25,17 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service.pipeline;
 
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.WfmProcessingException;
 
-import java.util.Collection;
+public class InvalidPipelineException extends WfmProcessingException {
 
-public interface PipelineService {
+    public InvalidPipelineException(String message) {
+        super(message);
+    }
 
-    public JobPipelineComponents getBatchPipelineComponents(String pipelineName);
-
-    public JobPipelineComponents getStreamingPipelineComponents(String pipelineName);
-
-    public Algorithm getAlgorithm(String name);
-
-    public Collection<Algorithm> getAlgorithms();
-
-
-    public Action getAction(String name);
-
-    public Collection<Action> getActions();
-
-
-    public Task getTask(String name);
-
-    public Collection<Task> getTasks();
-
-
-    public Pipeline getPipeline(String name);
-
-    public Collection<Pipeline> getPipelines();
-
-
-    public void save(Algorithm algorithm);
-
-    public void save(Action action);
-
-    public void save(Task task);
-
-    public void save(Pipeline pipeline);
-
-
-    public void verifyBatchPipelineRunnable(String pipelineName);
-
-    public void verifyStreamingPipelineRunnable(String pipelineName);
-
-    public boolean pipelineSupportsBatch(String pipelineName);
-
-    public boolean pipelineSupportsStreaming(String pipelineName);
-
-
-    public void deleteAlgorithm(String algorithmName);
-
-    public void deleteAction(String actionName);
-
-    public void deleteTask(String taskName);
-
-    public void deletePipeline(String pipelineName);
-
-    public JsonPipeline createBatchJsonPipeline(String pipelineName);
-
-    public JsonPipeline createStreamingJsonPipeline(String pipelineName);
+    public InvalidPipelineException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

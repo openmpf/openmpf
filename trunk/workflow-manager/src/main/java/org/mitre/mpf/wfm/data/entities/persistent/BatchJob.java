@@ -43,7 +43,7 @@ public interface BatchJob {
 
     public BatchJobStatusType getStatus();
 
-    public JobPipelineComponents getPipelineComponents();
+    public JobPipelineElements getPipelineElements();
 
     public int getCurrentTaskIndex();
 

@@ -95,9 +95,9 @@ public class TrackMergingProcessor extends WfmProcessor {
 
         BatchJob job = inProgressJobs.getJob(trackMergingContext.getJobId());
 
-        Task task = job.getPipelineComponents().getTask(trackMergingContext.getStageIndex());
+        Task task = job.getPipelineElements().getTask(trackMergingContext.getStageIndex());
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            Action action = job.getPipelineComponents()
+            Action action = job.getPipelineElements()
                     .getAction(trackMergingContext.getStageIndex(), actionIndex);
 
             for (Media media : job.getMedia()) {

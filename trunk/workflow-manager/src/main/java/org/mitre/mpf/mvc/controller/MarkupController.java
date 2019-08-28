@@ -155,7 +155,7 @@ public class MarkupController {
             for (Media med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
-                model.setPipeline(job.getPipelineComponents().getName());
+                model.setPipeline(job.getPipelineElements().getName());
                 model.setSourceUri(med.getUri());
                 model.setSourceFileAvailable(false);
                 if (med.getUri() != null) {
@@ -295,7 +295,7 @@ public class MarkupController {
                 .findAny()
                 .orElse(null);
 
-        var action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
+        var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
 
         return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }

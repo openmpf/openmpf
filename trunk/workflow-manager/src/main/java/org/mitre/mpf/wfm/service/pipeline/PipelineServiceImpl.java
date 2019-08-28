@@ -25,13 +25,13 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service.pipeline;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.WritableResource;
@@ -61,9 +61,9 @@ public class PipelineServiceImpl implements PipelineService {
     private final Map<String, Task> _tasks = new HashMap<>();
     private final Map<String, Pipeline> _pipelines = new HashMap<>();
 
-    // Used by methods that work on any pipeline component type so that they know where to save or load the
-    // pipeline components.
-    private final Map<Map<String, ? extends PipelineComponent>, WritableResource> _pipelineComponentsToDefinitions;
+    // Used by methods that work on any pipeline elements type so that they know where to save or load the
+    // pipeline elements.
+    private final Map<Map<String, ? extends PipelineElement>, WritableResource> _pipelineElementsToDefinitions;
 
     @Inject
     public PipelineServiceImpl(
@@ -75,11 +75,11 @@ public class PipelineServiceImpl implements PipelineService {
         _validator = validator;
         _jsonUtils = jsonUtils;
 
-        _pipelineComponentsToDefinitions = new IdentityHashMap<>(4);
-        _pipelineComponentsToDefinitions.put(_algorithms, propertiesUtil.getAlgorithmDefinitions());
-        _pipelineComponentsToDefinitions.put(_actions, propertiesUtil.getActionDefinitions());
-        _pipelineComponentsToDefinitions.put(_tasks, propertiesUtil.getTaskDefinitions());
-        _pipelineComponentsToDefinitions.put(_pipelines, propertiesUtil.getPipelineDefinitions());
+        _pipelineElementsToDefinitions = new IdentityHashMap<>(4);
+        _pipelineElementsToDefinitions.put(_algorithms, propertiesUtil.getAlgorithmDefinitions());
+        _pipelineElementsToDefinitions.put(_actions, propertiesUtil.getActionDefinitions());
+        _pipelineElementsToDefinitions.put(_tasks, propertiesUtil.getTaskDefinitions());
+        _pipelineElementsToDefinitions.put(_pipelines, propertiesUtil.getPipelineDefinitions());
 
         load(_algorithms, new TypeReference<>() { });
         load(_actions, new TypeReference<>() { });
@@ -89,24 +89,24 @@ public class PipelineServiceImpl implements PipelineService {
 
 
 
-    private <T extends PipelineComponent> void load(
+    private <T extends PipelineElement> void load(
             Map<String, T> loadTarget, TypeReference<List<T>> typeReference) throws IOException {
 
         List<T> loadedList;
-        try (var inputStream = _pipelineComponentsToDefinitions.get(loadTarget).getInputStream()) {
+        try (var inputStream = _pipelineElementsToDefinitions.get(loadTarget).getInputStream()) {
             loadedList = _objectMapper.readValue(inputStream, typeReference);
         }
         loadedList.forEach(item -> add(item, loadTarget));
     }
 
 
-    private <T extends PipelineComponent> void add(T newItem, Map<String, T> existingItems) {
+    private <T extends PipelineElement> void add(T newItem, Map<String, T> existingItems) {
         _validator.validateOnAdd(newItem, existingItems);
         existingItems.put(newItem.getName(), newItem);
     }
 
 
-    private <T extends PipelineComponent> void save(T newItem, Map<String, T> existingItems) {
+    private <T extends PipelineElement> void save(T newItem, Map<String, T> existingItems) {
         add(newItem, existingItems);
         writeToDisk(existingItems);
     }
@@ -120,7 +120,7 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     private void writeToDisk(Map<String, ?> items) {
-        try (var outputStream = _pipelineComponentsToDefinitions.get(items).getOutputStream()) {
+        try (var outputStream = _pipelineElementsToDefinitions.get(items).getOutputStream()) {
             _objectMapper.writeValue(outputStream, items.values());
         }
         catch (IOException e) {
@@ -138,21 +138,21 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     @Override
-    public JobPipelineComponents getBatchPipelineComponents(String pipelineName) {
+    public JobPipelineElements getBatchPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyBatchPipelineRunnable(pipelineName);
-        return getPipelineComponents(pipelineName);
+        return getPipelineElements(pipelineName);
     }
 
     @Override
-    public JobPipelineComponents getStreamingPipelineComponents(String pipelineName) {
+    public JobPipelineElements getStreamingPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyStreamingPipelineRunnable(pipelineName);
-        return getPipelineComponents(pipelineName);
+        return getPipelineElements(pipelineName);
     }
 
 
-    private JobPipelineComponents getPipelineComponents(String pipelineName) {
+    private JobPipelineElements getPipelineElements(String pipelineName) {
         var pipeline = getPipeline(fixName(pipelineName));
 
         var tasks = pipeline.getTasks()
@@ -169,7 +169,7 @@ public class PipelineServiceImpl implements PipelineService {
                 .map(action -> getAlgorithm(action.getAlgorithm()))
                 .collect(toList());
 
-        return new JobPipelineComponents(pipeline, tasks, actions, algorithms);
+        return new JobPipelineElements(pipeline, tasks, actions, algorithms);
     }
 
 
@@ -301,11 +301,11 @@ public class PipelineServiceImpl implements PipelineService {
 
     @Override
     public JsonPipeline createBatchJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(getBatchPipelineComponents(fixName(pipelineName)));
+        return _jsonUtils.convert(getBatchPipelineElements(fixName(pipelineName)));
     }
 
     @Override
     public JsonPipeline createStreamingJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(getStreamingPipelineComponents(fixName(pipelineName)));
+        return _jsonUtils.convert(getStreamingPipelineElements(fixName(pipelineName)));
     }
 }

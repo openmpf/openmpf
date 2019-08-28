@@ -50,9 +50,9 @@ public class StreamingJobImpl implements StreamingJob {
     public void setJobStatus(StreamingJobStatus jobStatus) { _jobStatus = jobStatus; }
 
 
-    private final JobPipelineComponents _pipelineComponents;
+    private final JobPipelineElements _pipelineElements;
     @Override
-    public JobPipelineComponents getPipelineComponents() { return _pipelineComponents; }
+    public JobPipelineElements getPipelineElements() { return _pipelineElements; }
 
 
     private final String _externalId;
@@ -137,7 +137,7 @@ public class StreamingJobImpl implements StreamingJob {
     public StreamingJobImpl(
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
-            @JsonProperty("pipelineComponents") JobPipelineComponents pipelineComponents,
+            @JsonProperty("pipelineElements") JobPipelineElements pipelineElements,
             @JsonProperty("stream") MediaStreamInfo stream,
             @JsonProperty("priority") int priority,
             @JsonProperty("stallTimeout") long stallTimeout,
@@ -150,7 +150,7 @@ public class StreamingJobImpl implements StreamingJob {
                     Map<String, Map<String, String>> overriddenAlgorithmProperties) {
         _id = id;
         _externalId = externalId;
-        _pipelineComponents = pipelineComponents;
+        _pipelineElements = pipelineElements;
         _stream = stream;
         _priority = priority;
         _stallTimeout = stallTimeout;

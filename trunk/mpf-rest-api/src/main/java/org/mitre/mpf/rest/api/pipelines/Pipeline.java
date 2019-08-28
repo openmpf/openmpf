@@ -39,7 +39,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 
-public class Pipeline implements PipelineComponent {
+public class Pipeline implements PipelineElement {
 
     private final String _name;
     @Override

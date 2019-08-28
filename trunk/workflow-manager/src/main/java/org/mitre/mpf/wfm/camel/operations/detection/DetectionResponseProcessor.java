@@ -137,7 +137,7 @@ public class DetectionResponseProcessor
 
         } else {
             // Look for a confidence threshold.  If confidence threshold is defined, only return detections above the threshold.
-            Action action = job.getPipelineComponents().getAction(detectionResponse.getActionName());
+            Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
 
             double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 

@@ -35,7 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

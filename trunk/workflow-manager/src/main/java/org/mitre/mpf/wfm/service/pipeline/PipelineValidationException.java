@@ -25,9 +25,9 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service.pipeline;
 
-import org.mitre.mpf.rest.api.pipelines.PipelineComponent;
+import org.mitre.mpf.rest.api.pipelines.PipelineElement;
 
 import javax.validation.ConstraintViolation;
 import java.util.Collection;
@@ -36,22 +36,22 @@ import static java.util.stream.Collectors.joining;
 
 public class PipelineValidationException extends InvalidPipelineException {
 
-    public PipelineValidationException(PipelineComponent invalidPipelineComponent,
-                                       Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
-        super(createMessage(invalidPipelineComponent, validationErrors));
+    public PipelineValidationException(PipelineElement invalidPipelineElement,
+                                       Collection<ConstraintViolation<PipelineElement>> validationErrors) {
+        super(createMessage(invalidPipelineElement, validationErrors));
     }
 
 
-    private static String createMessage(PipelineComponent invalidPipelineComponent,
-                                        Collection<ConstraintViolation<PipelineComponent>> validationErrors) {
-        String prefix = invalidPipelineComponent.getName() + " has errors in the following fields:\n";
+    private static String createMessage(PipelineElement invalidPipelineElement,
+                                        Collection<ConstraintViolation<PipelineElement>> validationErrors) {
+        String prefix = invalidPipelineElement.getName() + " has errors in the following fields:\n";
         return validationErrors.stream()
                 .map(PipelineValidationException::createFieldMessage)
                 .sorted()
                 .collect(joining("\n", prefix, ""));
     }
 
-    private static String createFieldMessage(ConstraintViolation<PipelineComponent> violation) {
+    private static String createFieldMessage(ConstraintViolation<PipelineElement> violation) {
         return String.format("%s=\"%s\": %s", violation.getPropertyPath(), violation.getInvalidValue(),
                              violation.getMessage());
     }

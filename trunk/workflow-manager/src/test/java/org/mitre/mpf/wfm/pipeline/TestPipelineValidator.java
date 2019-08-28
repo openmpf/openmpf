@@ -32,11 +32,13 @@ import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
+import org.mitre.mpf.wfm.service.pipeline.PipelineValidationException;
+import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.WorkflowProperty;
 import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,7 @@ public class TestPipelineValidator {
 
     private PipelineValidator _pipelineValidator;
 
-    private WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
+    private final WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
 
 
     private final Map<String, Pipeline> _pipelines = new HashMap<>();
@@ -74,41 +76,41 @@ public class TestPipelineValidator {
         _pipelineValidator.verifyStreamingPipelineRunnable(pipelineName, _pipelines, _tasks, _actions, _algorithms);
     }
 
-    private <T extends PipelineComponent> void addComponent(T pipelineComponent, Map<String, T> existing) {
-        _pipelineValidator.validateOnAdd(pipelineComponent, existing);
-        existing.put(pipelineComponent.getName(), pipelineComponent);
+    private <T extends PipelineElement> void addElement(T pipelineElement, Map<String, T> existing) {
+        _pipelineValidator.validateOnAdd(pipelineElement, existing);
+        existing.put(pipelineElement.getName(), pipelineElement);
     }
 
-    private void addComponent(PipelineComponent pipelineComponent) {
-        if (pipelineComponent instanceof Pipeline) {
-            addComponent((Pipeline) pipelineComponent, _pipelines);
+    private void addElement(PipelineElement pipelineElement) {
+        if (pipelineElement instanceof Pipeline) {
+            addElement((Pipeline) pipelineElement, _pipelines);
             return;
         }
-        if (pipelineComponent instanceof Task) {
-            addComponent((Task) pipelineComponent, _tasks);
+        if (pipelineElement instanceof Task) {
+            addElement((Task) pipelineElement, _tasks);
             return;
         }
-        if (pipelineComponent instanceof Action) {
-            addComponent((Action) pipelineComponent, _actions);
+        if (pipelineElement instanceof Action) {
+            addElement((Action) pipelineElement, _actions);
             return;
         }
-        if (pipelineComponent instanceof Algorithm) {
-            addComponent((Algorithm) pipelineComponent, _algorithms);
+        if (pipelineElement instanceof Algorithm) {
+            addElement((Algorithm) pipelineElement, _algorithms);
         }
     }
 
 
-    private void addComponents(Collection<? extends PipelineComponent> pipelineComponents) {
-        for (var component : pipelineComponents) {
-            addComponent(component);
+    private void addElement(Iterable<? extends PipelineElement> pipelineElements) {
+        for (var pipelineElement : pipelineElements) {
+            addElement(pipelineElement);
         }
     }
 
     private void addDescriptorPipelines(JsonComponentDescriptor descriptor) {
-        addComponents(descriptor.getPipelines());
-        addComponents(descriptor.getTasks());
-        addComponents(descriptor.getActions());
-        addComponent(descriptor.getAlgorithm());
+        addElement(descriptor.getPipelines());
+        addElement(descriptor.getTasks());
+        addElement(descriptor.getActions());
+        addElement(descriptor.getAlgorithm());
     }
 
 
@@ -118,7 +120,7 @@ public class TestPipelineValidator {
         var descriptor = TestDescriptorFactory.getWithCustomPipeline();
 
         addDescriptorPipelines(descriptor);
-        addComponent(TestDescriptorFactory.getReferencedAlgorithm());
+        addElement(TestDescriptorFactory.getReferencedAlgorithm());
 
         verifyBatchPipelineRunnable(descriptor.getPipelines().get(0).getName());
     }
@@ -196,7 +198,7 @@ public class TestPipelineValidator {
 
         var pipeline = new Pipeline("TEST PIPELINE", "asdf",
                                     List.of(validTask.getName(), invalidTaskName));
-        addComponents(List.of(algorithm, action, missingAlgoAction, validTask, pipeline));
+        addElement(List.of(algorithm, action, missingAlgoAction, validTask, pipeline));
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -224,7 +226,7 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
-        addComponent(batchAlgo);
+        addElement(batchAlgo);
 
         var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
 
@@ -233,14 +235,14 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 false, true);
-        addComponent(streamAlgo);
+        addElement(streamAlgo);
 
         var streamTaskName = createSingleActionTask("STREAM", streamAlgo.getName());
 
 
         var pipeline = new Pipeline("TEST PIPELINE", "asdf",
                                     List.of(batchTaskName, streamTaskName));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -271,7 +273,7 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
-        addComponent(batchAlgo);
+        addElement(batchAlgo);
 
         var batchTaskName = createSingleActionTask("BATCH", batchAlgo.getName());
 
@@ -281,13 +283,13 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
-        addComponent(bothAlgo);
+        addElement(bothAlgo);
 
         var bothTaskName = createSingleActionTask("BOTH", bothAlgo.getName());
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
                                          List.of(batchTaskName, bothTaskName));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         verifyBatchPipelineRunnable(pipeline.getName());
     }
@@ -300,7 +302,7 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
-        addComponent(bothAlgo);
+        addElement(bothAlgo);
 
         String bothTaskName = createSingleActionTask("BOTH", bothAlgo.getName());
 
@@ -310,14 +312,14 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 false, true);
-        addComponent(streamAlgo);
+        addElement(streamAlgo);
 
         var streamTaskName = createSingleActionTask("STREAM", streamAlgo.getName());
 
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
                                          List.of(streamTaskName, bothTaskName));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         verifyStreamingPipelineRunnable(pipeline.getName());
     }
@@ -330,7 +332,7 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of("STATE_ONE", "STATE_THREE"), List.of()),
                 true, true);
-        addComponent(providesAlgo);
+        addElement(providesAlgo);
         var providesTask = createSingleActionTask("PROVIDES", providesAlgo.getName());
 
         Algorithm requiresAlgo = new Algorithm(
@@ -338,12 +340,12 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of("STATE_ONE", "STATE_TWO")),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
-        addComponent(requiresAlgo);
+        addElement(requiresAlgo);
         var requiresTask = createSingleActionTask("REQUIRES", requiresAlgo.getName());
 
         var pipeline = new Pipeline("INVALID STATES PIPELINE", "Adf",
                                          List.of(providesTask, requiresTask));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -364,17 +366,17 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(property)),
                 true, false);
-        addComponent(algorithm);
+        addElement(algorithm);
 
         var action = new Action("ACTION", "descr", algorithm.getName(),
                                    List.of(new Action.Property("INVALID", "INVALID")));
-        addComponent(action);
+        addElement(action);
 
         var task = new Task("TASK", "descr", List.of(action.getName()));
-        addComponent(task);
+        addElement(task);
 
         var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -397,17 +399,17 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(property)),
                 true, false);
-        addComponent(algorithm);
+        addElement(algorithm);
 
         var action = new Action("ACTION", "descr", algorithm.getName(),
                                    List.of(new Action.Property("MY PROPERTY", "INVALID")));
-        addComponent(action);
+        addElement(action);
 
         var task = new Task("TASK", "descr", List.of(action.getName()));
-        addComponent(task);
+        addElement(task);
 
         var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -427,11 +429,11 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
-        addComponent(detectionAlgo);
+        addElement(detectionAlgo);
 
         var detectionAction = new Action("DETECTION ACTION", "descr", detectionAlgo.getName(),
                                             List.of());
-        addComponent(detectionAction);
+        addElement(detectionAction);
 
 
         var markupAlgo = new Algorithm(
@@ -439,19 +441,19 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
-        addComponent(markupAlgo);
+        addElement(markupAlgo);
 
         var markupAction = new Action("MARKUP ACTION", "descr", markupAlgo.getName(),
                                          List.of());
-        addComponent(markupAction);
+        addElement(markupAction);
 
         var task = new Task("DETECTION AND MARKUP TASK", "descr",
                              List.of(detectionAction.getName(), markupAction.getName()));
-        addComponent(task);
+        addElement(task);
 
         var pipeline = new Pipeline("DETECTION AND MARKUP PIPELINE", "asdf",
                                          List.of(task.getName()));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -466,22 +468,22 @@ public class TestPipelineValidator {
     @Test
     public void throwsWhenMultiActionTaskIsNotFinalTask() {
         var algorithm = TestDescriptorFactory.getReferencedAlgorithm();
-        addComponent(algorithm);
+        addElement(algorithm);
 
         var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
-        addComponent(action);
+        addElement(action);
 
         var multiActionTask = new Task("MULTI ACTION TASK", "descr",
                                        List.of(action.getName(), action.getName()));
-        addComponent(multiActionTask);
+        addElement(multiActionTask);
 
         var singleActionTask = new Task("SINGLE ACTION TASK", "descr",
                                          List.of(action.getName()));
-        addComponent(singleActionTask);
+        addElement(singleActionTask);
 
         var pipeline = new Pipeline("TEST PIPELINE", "descr",
                                     List.of(multiActionTask.getName(), singleActionTask.getName()));
-        addComponent(pipeline);
+        addElement(pipeline);
 
         try {
             verifyBatchPipelineRunnable(pipeline.getName());
@@ -500,7 +502,7 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
-        addComponent(detectionAlgo);
+        addElement(detectionAlgo);
         var detectionTaskName = createSingleActionTask("DETECTION", detectionAlgo.getName());
 
 
@@ -509,18 +511,18 @@ public class TestPipelineValidator {
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, true);
-        addComponent(markupAlgo);
+        addElement(markupAlgo);
         var markupAction = new Action("MARKUP ACTION", "desc", markupAlgo.getName(),
                                          List.of());
-        addComponent(markupAction);
+        addElement(markupAction);
         var markupTask = new Task("MARKUP TASK", "desc",
                                    List.of(markupAction.getName()));
-        addComponent(markupTask);
+        addElement(markupTask);
 
         var pipelineWithTaskAfterMarkup = new Pipeline(
                 "TASK AFTER MARKUP PIPELINE", "descr" ,
                 List.of(detectionTaskName, markupTask.getName(), detectionTaskName));
-        addComponent(pipelineWithTaskAfterMarkup);
+        addElement(pipelineWithTaskAfterMarkup);
 
 
         try {
@@ -536,7 +538,7 @@ public class TestPipelineValidator {
 
         var pipelineWithMarkupFirst = new Pipeline("MARKUP FIRST PIPELINE", "desc",
                                                         List.of(markupTask.getName()));
-        addComponent(pipelineWithMarkupFirst);
+        addElement(pipelineWithMarkupFirst);
 
         try {
             verifyBatchPipelineRunnable(pipelineWithMarkupFirst.getName());
@@ -551,11 +553,11 @@ public class TestPipelineValidator {
 
         var multiMarkupTask = new Task("PARALLEL MULTI MARKUP TASK", "desc",
                                         List.of(markupAction.getName(), markupAction.getName()));
-        addComponent(multiMarkupTask);
+        addElement(multiMarkupTask);
 
         var parallelMultiMarkupPipeline = new Pipeline("PARALLEL MULTI MARKUP PIPELINE", "desc",
                                                           List.of(detectionTaskName, multiMarkupTask.getName()));
-        addComponent(parallelMultiMarkupPipeline);
+        addElement(parallelMultiMarkupPipeline);
 
         try {
             verifyBatchPipelineRunnable(parallelMultiMarkupPipeline.getName());
@@ -570,7 +572,7 @@ public class TestPipelineValidator {
         var sequentialMultiMarkupPipeline = new Pipeline(
                 "SEQUENTIAL MULTI MARKUP TASK PIPELINE", "descr",
                 List.of(markupTask.getName(), markupTask.getName()));
-        addComponent(sequentialMultiMarkupPipeline);
+        addElement(sequentialMultiMarkupPipeline);
 
         try {
             verifyBatchPipelineRunnable(sequentialMultiMarkupPipeline.getName());
@@ -715,10 +717,10 @@ public class TestPipelineValidator {
     }
 
 
-    private void assertValidationErrors(PipelineComponent pipelineComponent, String... messages) {
+    private void assertValidationErrors(PipelineElement pipelineElement, String... messages) {
         assertTrue("No messages passed in to check", messages.length > 0);
         try {
-            _pipelineValidator.validateOnAdd(pipelineComponent, Map.of());
+            _pipelineValidator.validateOnAdd(pipelineElement, Map.of());
             fail("Expected exception");
         }
         catch (PipelineValidationException e) {
@@ -745,10 +747,10 @@ public class TestPipelineValidator {
 
     private String createSingleActionTask(String namePrefix, String algorithmName) {
         var action = new Action(namePrefix + " ACTION", "adf", algorithmName, List.of());
-        addComponent(action);
+        addElement(action);
 
         var task = new Task(namePrefix + " TASK", "asfd", List.of(action.getName()));
-        addComponent(task);
+        addElement(task);
         return task.getName();
     }
 }

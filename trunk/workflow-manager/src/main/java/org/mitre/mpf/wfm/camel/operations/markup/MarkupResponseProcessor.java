@@ -81,7 +81,7 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 
         BatchJob job = inProgressJobs.getJob(jobId);
         Media media = job.getMedia(markupResponse.getMediaId());
-        markupResult.setPipeline(job.getPipelineComponents().getName());
+        markupResult.setPipeline(job.getPipelineElements().getName());
         markupResult.setSourceUri(media.getUri());
 
         storageService.store(markupResult);

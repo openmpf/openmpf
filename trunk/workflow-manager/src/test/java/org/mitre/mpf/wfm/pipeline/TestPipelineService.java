@@ -33,6 +33,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;
+import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
@@ -67,7 +69,7 @@ public class TestPipelineService {
     }
 
     @Test
-    public void canSaveAndLoadPipelineComponents() throws IOException {
+    public void canSaveAndLoadPipelineElements() throws IOException {
         var algo1Properties = List.of(
                 new Algorithm.Property("PROP1", "PROP1 description", ValueType.INT,
                                        "1", null),

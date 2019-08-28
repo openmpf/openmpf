@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.pipeline;
+package org.mitre.mpf.wfm.service.pipeline;
 
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.util.WorkflowPropertyService;
@@ -52,20 +52,19 @@ public class PipelineValidator {
     }
 
 
-    public <T extends PipelineComponent> void validateOnAdd(T newPipelineComponent, Map<String, T> existingItems) {
-        var violations = _validator.<PipelineComponent>validate(newPipelineComponent);
+    public <T extends PipelineElement> void validateOnAdd(T newPipelineElement, Map<String, T> existingItems) {
+        var violations = _validator.<PipelineElement>validate(newPipelineElement);
         if (!violations.isEmpty()) {
-            throw new PipelineValidationException(newPipelineComponent, violations);
+            throw new PipelineValidationException(newPipelineElement, violations);
         }
 
-        T existing = existingItems.get(newPipelineComponent.getName());
-        if (existing != null && !existing.equals(newPipelineComponent)) {
-            String type = newPipelineComponent.getClass().getSimpleName();
+        T existing = existingItems.get(newPipelineElement.getName());
+        if (existing != null && !existing.equals(newPipelineElement)) {
+            String type = newPipelineElement.getClass().getSimpleName();
             throw new InvalidPipelineException(String.format(
                     "Failed to add %s with name \"%s\" because another %s with the same name already exists.",
-                    type, newPipelineComponent.getName(), type));
+                    type, newPipelineElement.getName(), type));
         }
-
     }
 
 

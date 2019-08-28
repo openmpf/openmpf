@@ -159,8 +159,8 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public boolean canStore(MarkupResult markupResult) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Action action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(),
-                                                              markupResult.getActionIndex());
+        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
+                                                            markupResult.getActionIndex());
         Media media = job.getMedia(markupResult.getMediaId());
         Function<String, String> combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
@@ -173,8 +173,8 @@ public class S3StorageBackend implements StorageBackend {
         _localStorageBackend.store(markupResult);
         BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
         Media media = job.getMedia(markupResult.getMediaId());
-        Action action = job.getPipelineComponents().getAction(markupResult.getTaskIndex(),
-                                                              markupResult.getActionIndex());
+        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
+                                                            markupResult.getActionIndex());
         Function<String, String> combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));

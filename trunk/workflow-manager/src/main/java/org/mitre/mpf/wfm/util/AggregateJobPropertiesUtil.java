@@ -131,7 +131,7 @@ public class AggregateJobPropertiesUtil {
             Map<String, String> mediaSpecificProperties,
             MediaType mediaType,
             Action action,
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             Map<String, String> jobProperties,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
@@ -222,7 +222,7 @@ public class AggregateJobPropertiesUtil {
                 media.getMediaSpecificProperties(),
                 media.getMediaType(),
                 action,
-                job.getPipelineComponents(),
+                job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot()
@@ -233,7 +233,7 @@ public class AggregateJobPropertiesUtil {
     public Map<String, String> getPropertyMap(StreamingJob job, Action action) {
         var allKeys = new HashSet<String>();
 
-        job.getPipelineComponents().getAlgorithm(action.getAlgorithm())
+        job.getPipelineElements().getAlgorithm(action.getAlgorithm())
                 .getProvidesCollection()
                 .getProperties()
                 .forEach(p -> allKeys.add(p.getName()));
@@ -255,7 +255,7 @@ public class AggregateJobPropertiesUtil {
 
         return allKeys.stream()
                 .map(pn -> getPropertyInfo(pn, job.getStream().getMediaProperties(), MediaType.VIDEO,
-                                           action, job.getPipelineComponents(), job.getOverriddenAlgorithmProperties(),
+                                           action, job.getPipelineElements(), job.getOverriddenAlgorithmProperties(),
                                            job.getJobProperties(), null))
                 .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
                 .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
@@ -275,7 +275,7 @@ public class AggregateJobPropertiesUtil {
 
         action.getProperties().forEach(p -> allKeys.add(p.getName()));
 
-        job.getPipelineComponents()
+        job.getPipelineElements()
                 .getAlgorithm(action.getAlgorithm())
                 .getProvidesCollection()
                 .getProperties()
@@ -288,7 +288,7 @@ public class AggregateJobPropertiesUtil {
         return allKeys.stream()
                 .map(pn -> getPropertyInfo(
                         pn, media.getMediaSpecificProperties(), media.getMediaType(), action,
-                        job.getPipelineComponents(), job.getOverriddenAlgorithmProperties(), job.getJobProperties(),
+                        job.getPipelineElements(), job.getOverriddenAlgorithmProperties(), job.getJobProperties(),
                         job.getSystemPropertiesSnapshot()))
                 .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
                 .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
@@ -309,7 +309,7 @@ public class AggregateJobPropertiesUtil {
 
     public Function<String, String> getCombinedProperties(
             Action action,
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             Media media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -340,7 +340,7 @@ public class AggregateJobPropertiesUtil {
                 media.getMediaSpecificProperties(),
                 media.getMediaType(),
                 null,
-                job.getPipelineComponents(),
+                job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot()
@@ -376,7 +376,7 @@ public class AggregateJobPropertiesUtil {
                 mediaProperties,
                 mediaType,
                 null,
-                job.getPipelineComponents(),
+                job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot()
@@ -394,7 +394,7 @@ public class AggregateJobPropertiesUtil {
                 media.getMediaSpecificProperties(),
                 media.getMediaType(),
                 action,
-                job.getPipelineComponents(),
+                job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot());
@@ -404,7 +404,7 @@ public class AggregateJobPropertiesUtil {
                 media.getMediaSpecificProperties(),
                 media.getMediaType(),
                 action,
-                job.getPipelineComponents(),
+                job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getSystemPropertiesSnapshot());

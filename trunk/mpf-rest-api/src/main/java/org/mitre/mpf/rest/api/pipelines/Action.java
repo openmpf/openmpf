@@ -37,7 +37,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
 
-public class Action implements PipelineComponent {
+public class Action implements PipelineElement {
 
     private final String _name;
     @Override
@@ -96,12 +96,13 @@ public class Action implements PipelineComponent {
         var other = (Action) obj;
         return Objects.equals(_name, other._name)
                 && Objects.equals(_description, other._description)
+                && Objects.equals(_algorithm, other._algorithm)
                 && Objects.equals(_properties, other._properties);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(_name, _description, _properties);
+        return Objects.hash(_name, _description, _algorithm, _properties);
     }
 
 

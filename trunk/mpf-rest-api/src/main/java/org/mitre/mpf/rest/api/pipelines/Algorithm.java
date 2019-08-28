@@ -42,7 +42,7 @@ import java.util.Objects;
 
 @ScriptAssert(lang = "javascript", script = "_this.getSupportsBatchProcessing() || _this.getSupportsStreamProcessing()",
         message = "must support batch processing, stream processing, or both")
-public class Algorithm implements PipelineComponent {
+public class Algorithm implements PipelineElement {
 
     private final String _name;
     @Override
@@ -133,7 +133,8 @@ public class Algorithm implements PipelineComponent {
 
     @Override
     public int hashCode() {
-        return Objects.hash(_name, _description, _actionType, _requiresCollection, _providesCollection);
+        return Objects.hash(_name, _description, _actionType, _requiresCollection, _providesCollection,
+                            _supportsBatchProcessing, _supportsStreamProcessing);
     }
 
 

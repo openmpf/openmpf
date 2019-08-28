@@ -56,7 +56,7 @@ public class InProgressStreamingJobsService {
     public synchronized StreamingJob addJob(
             long jobId,
             String externalId,
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             MediaStreamInfo stream,
             int priority,
             long stallTimeout,

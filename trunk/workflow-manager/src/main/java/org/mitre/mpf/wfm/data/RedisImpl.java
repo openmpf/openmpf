@@ -101,10 +101,10 @@ public class RedisImpl implements Redis {
     @Override
     public void clearTracks(BatchJob job) {
         Collection<String> trackKeys = new ArrayList<>();
-        int taskCount = job.getPipelineComponents().getPipeline().getTasks().size();
+        int taskCount = job.getPipelineElements().getPipeline().getTasks().size();
         for (Media media : job.getMedia()) {
             for (int taskIndex = 0; taskIndex < taskCount; taskIndex++) {
-                int actionCount = job.getPipelineComponents().getTask(taskIndex).getActions().size();
+                int actionCount = job.getPipelineElements().getTask(taskIndex).getActions().size();
                 for (int actionIndex = 0; actionIndex < actionCount; actionIndex++) {
                     trackKeys.add(createTrackKey(job.getId(), media.getId(), taskIndex, actionIndex));
                 }

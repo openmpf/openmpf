@@ -38,7 +38,7 @@ import javax.validation.Valid;
 import java.util.Collection;
 import java.util.Objects;
 
-public class Task implements PipelineComponent {
+public class Task implements PipelineElement {
 
     private final String _name;
     @Override

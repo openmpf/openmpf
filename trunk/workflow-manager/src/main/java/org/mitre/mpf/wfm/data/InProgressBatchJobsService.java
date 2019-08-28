@@ -73,7 +73,7 @@ public class InProgressBatchJobsService {
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,
-            JobPipelineComponents pipeline,
+            JobPipelineElements pipeline,
             int priority,
             boolean outputEnabled,
             String callbackUrl,

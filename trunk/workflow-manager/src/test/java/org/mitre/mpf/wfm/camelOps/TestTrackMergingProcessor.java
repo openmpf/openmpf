@@ -40,7 +40,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -181,7 +181,7 @@ public class TestTrackMergingProcessor {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
 
-        JobPipelineComponents pipelineComponents = createTestPipeline(mergeProp);
+        JobPipelineElements pipelineElements = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -194,7 +194,7 @@ public class TestTrackMergingProcessor {
                 TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
-                pipelineComponents,
+                pipelineElements,
                 priority,
                 false,
                 null,
@@ -268,7 +268,7 @@ public class TestTrackMergingProcessor {
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        JobPipelineComponents trackMergePipeline = createTestPipeline(mergeProp);
+        JobPipelineElements trackMergePipeline = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -331,7 +331,7 @@ public class TestTrackMergingProcessor {
     }
 
 
-    private static JobPipelineComponents createTestPipeline(Map<String, String> actionPropsMap) {
+    private static JobPipelineElements createTestPipeline(Map<String, String> actionPropsMap) {
         Algorithm algorithm = new Algorithm(
                 "detectionAlgo", "description", ActionType.DETECTION,
                 new Algorithm.Requires(Collections.emptyList()),
@@ -348,7 +348,7 @@ public class TestTrackMergingProcessor {
         Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline("trackMergePipeline", "description",
                                          Collections.singleton(task.getName()));
-        return new JobPipelineComponents(
+        return new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
     }

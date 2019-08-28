@@ -65,9 +65,9 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
                 int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
                 long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
                 BatchJob job = inProgressBatchJobs.getJob(jobId);
-                if (!job.getPipelineComponents().getPipeline().getTasks().isEmpty()) {
+                if (!job.getPipelineElements().getPipeline().getTasks().isEmpty()) {
                     int currentTask = 1 + job.getCurrentTaskIndex();
-                    int totalTasks = job.getPipelineComponents().getTaskCount();
+                    int totalTasks = job.getPipelineElements().getTaskCount();
                     float progressPerStage = 1 / (1f * totalTasks) * 100f;
 
                     float taskProgress = (((float) aggregateCount) / ((float) splitSize));

@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.*;
 import org.mockito.ArgumentCaptor;
@@ -122,7 +122,7 @@ public class TestJobRequestService {
     }
 
 
-    private static JobPipelineComponents createJobPipelineComponents() {
+    private static JobPipelineElements createJobPipelineElements() {
         var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION,
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
@@ -130,7 +130,7 @@ public class TestJobRequestService {
         var action = new Action("TEST ACTION", "descr", algorithm.getName(), List.of());
         var task = new Task("Test Task", "desc", List.of(action.getName()));
         var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.getName()));
-        return new JobPipelineComponents(pipeline, List.of(task), List.of(action), List.of(algorithm));
+        return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
     }
 
 
@@ -140,9 +140,9 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.getJmsPriority())
                 .thenReturn(defaultPriority);
 
-        var pipelineComponents = createJobPipelineComponents();
-        when(_mockPipelineService.getBatchPipelineComponents("TEST PIPELINE"))
-                .thenReturn(pipelineComponents);
+        var pipelineElements = createJobPipelineElements();
+        when(_mockPipelineService.getBatchPipelineElements("TEST PIPELINE"))
+                .thenReturn(pipelineElements);
 
         var mockSystemPropSnapshot = mock(SystemPropertiesSnapshot.class);
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
@@ -194,7 +194,7 @@ public class TestJobRequestService {
         assertEquals(jobCreationRequest.getExternalId(), job.getExternalId().get());
         assertEquals(0, job.getCurrentTaskIndex());
         assertSame(mockSystemPropSnapshot, job.getSystemPropertiesSnapshot());
-        assertSame(pipelineComponents, job.getPipelineComponents());
+        assertSame(pipelineElements, job.getPipelineElements());
         assertEquals(defaultPriority, job.getPriority());
         assertTrue(job.isOutputEnabled());
         assertEquals(jobCreationRequest.getCallbackURL(), job.getCallbackUrl().get());
@@ -222,12 +222,12 @@ public class TestJobRequestService {
 
     @Test
     public void canResubmitJob() throws IOException {
-        var originalJobPipelineComponents = createJobPipelineComponents();
+        var originalJobPipelineElements = createJobPipelineElements();
         var originalJob = new BatchJobImpl(
                 321,
                 "external_id",
                 new SystemPropertiesSnapshot(Map.of("my.property", "5")),
-                originalJobPipelineComponents,
+                originalJobPipelineElements,
                 3,
                 true,
                 "http://callback",
@@ -255,9 +255,9 @@ public class TestJobRequestService {
         when(_mockJobRequestDao.findById(321))
                 .thenReturn(existingJobRequestEntity);
 
-        var newJobPipelineComponents = createJobPipelineComponents();
-        when(_mockPipelineService.getBatchPipelineComponents(originalJobPipelineComponents.getName()))
-                .thenReturn(newJobPipelineComponents);
+        var newJobPipelineElements = createJobPipelineElements();
+        when(_mockPipelineService.getBatchPipelineElements(originalJobPipelineElements.getName()))
+                .thenReturn(newJobPipelineElements);
 
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(new SystemPropertiesSnapshot(Map.of("my.property", "10")));
@@ -315,8 +315,8 @@ public class TestJobRequestService {
         assertEquals(BatchJobStatusType.IN_PROGRESS, newJobRequestEntity.getStatus());
 
         assertEquals(BatchJobStatusType.IN_PROGRESS, newJob.getStatus());
-        assertNotSame(newJob.getPipelineComponents(), originalJob.getPipelineComponents());
-        assertEquals(newJob.getPipelineComponents().getName(), originalJob.getPipelineComponents().getName());
+        assertNotSame(newJob.getPipelineElements(), originalJob.getPipelineElements());
+        assertEquals(newJob.getPipelineElements().getName(), originalJob.getPipelineElements().getName());
         assertEquals("10", newJob.getSystemPropertiesSnapshot().lookup("my.property"));
         assertEquals(0, newJob.getCurrentTaskIndex());
         assertEquals(newJob.getExternalId().get(), originalJob.getExternalId().get());
@@ -356,7 +356,7 @@ public class TestJobRequestService {
         };
 
         _inProgressJobs.addJob(
-                jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineComponents(),
+                jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, true, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"), Map.of(),
                                       null)),

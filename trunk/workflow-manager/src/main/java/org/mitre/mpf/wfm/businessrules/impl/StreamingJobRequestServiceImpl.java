@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.data.InProgressStreamingJobsService;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineComponents;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -51,7 +51,7 @@ import org.mitre.mpf.wfm.exceptions.JobAlreadyCancellingWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidJobIdWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationInvalidOutputObjectDirectoryWfmProcessingException;
 import org.mitre.mpf.wfm.exceptions.JobCancellationOutputObjectDirectoryCleanupWarningWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.util.CallbackUtils;
@@ -136,8 +136,8 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
 
         // Create pipeline before persisting job so any pipeline errors will get reported before the job is
         // persisted.
-        JobPipelineComponents pipeline
-                = pipelineService.getStreamingPipelineComponents(jobCreationRequest.getPipelineName());
+        JobPipelineElements pipeline
+                = pipelineService.getStreamingPipelineElements(jobCreationRequest.getPipelineName());
 
         StreamingJobRequest jobRequestEntity = createJobRequestEntity(jobCreationRequest, pipeline);
 
@@ -178,7 +178,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
 
 
     private StreamingJobRequest createJobRequestEntity(StreamingJobCreationRequest jobCreationRequest,
-                                                       JobPipelineComponents pipeline) {
+                                                       JobPipelineElements pipeline) {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(propertiesUtil::getJmsPriority);
 
@@ -203,7 +203,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
 
     private StreamingJob createJob(StreamingJobCreationRequest jobCreationRequest,
                                    StreamingJobRequest jobRequestEntity,
-                                   JobPipelineComponents pipeline,
+                                   JobPipelineElements pipeline,
                                    boolean enableOutput) {
         var stream = new MediaStreamInfo(
                 IdGenerator.next(),

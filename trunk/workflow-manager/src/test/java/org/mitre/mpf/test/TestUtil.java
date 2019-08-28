@@ -113,7 +113,7 @@ public class TestUtil {
                              Collections.singleton(action.getName()));
         Pipeline pipeline = new Pipeline("dummyPipeline", "dummyDescription",
                                          Collections.singleton(task.getName()));
-        JobPipelineComponents pipelineComponents = new JobPipelineComponents(
+        JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
 
@@ -122,7 +122,7 @@ public class TestUtil {
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                pipelineComponents,
+                pipelineElements,
                 1,
                 false,
                 null,

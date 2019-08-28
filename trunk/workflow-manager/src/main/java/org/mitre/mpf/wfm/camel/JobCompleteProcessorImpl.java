@@ -225,7 +225,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobRequest.getId(),
                 UUID.randomUUID().toString(),
-                jsonUtils.convert(job.getPipelineComponents()),
+                jsonUtils.convert(job.getPipelineElements()),
                 job.getPriority(),
                 propertiesUtil.getSiteId(),
                 job.getExternalId().orElse(null),
@@ -264,10 +264,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
             Set<Integer> suppressedStages = getSuppressedStages(media, job);
 
-            for (int taskIndex = 0; taskIndex < job.getPipelineComponents().getTaskCount(); taskIndex++) {
-                Task task = job.getPipelineComponents().getTask(taskIndex);
+            for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+                Task task = job.getPipelineElements().getTask(taskIndex);
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                    Action action = job.getPipelineComponents().getAction(taskIndex, actionIndex);
+                    Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
@@ -454,10 +454,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return Set.of();
         }
 
-        List<String> taskNames = job.getPipelineComponents().getPipeline().getTasks();
+        List<String> taskNames = job.getPipelineElements().getPipeline().getTasks();
         int lastDetectionStage = 0;
         for (int i = taskNames.size() - 1; i >= 0; i--) {
-            ActionType actionType = job.getPipelineComponents().getAlgorithm(i, 0).getActionType();
+            ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
             if (actionType == ActionType.DETECTION) {
                 lastDetectionStage = i;
                 break;

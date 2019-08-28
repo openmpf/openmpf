@@ -50,9 +50,9 @@ public class BatchJobImpl implements BatchJob {
     public void setStatus(BatchJobStatusType status) { _status = status; }
 
 
-    private final JobPipelineComponents _pipelineComponents;
+    private final JobPipelineElements _pipelineElements;
     @Override
-    public JobPipelineComponents getPipelineComponents() { return _pipelineComponents; }
+    public JobPipelineElements getPipelineElements() { return _pipelineElements; }
 
 
     private int _currentTaskIndex = 0;
@@ -154,7 +154,7 @@ public class BatchJobImpl implements BatchJob {
             long id,
             String externalId,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
-            JobPipelineComponents pipelineComponents,
+            JobPipelineElements pipelineElements,
             int priority,
             boolean outputEnabled,
             String callbackUrl,
@@ -162,7 +162,7 @@ public class BatchJobImpl implements BatchJob {
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
-        this(id, externalId, systemPropertiesSnapshot, pipelineComponents, priority, outputEnabled, callbackUrl,
+        this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, outputEnabled, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), List.of(), List.of());
     }
 
@@ -172,7 +172,7 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("id") long id,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,
-            @JsonProperty("pipelineComponents") JobPipelineComponents pipelineComponents,
+            @JsonProperty("pipelineElements") JobPipelineElements pipelineElements,
             @JsonProperty("priority") int priority,
             @JsonProperty("outputEnabled") boolean outputEnabled,
             @JsonProperty("callbackUrl") String callbackUrl,
@@ -187,7 +187,7 @@ public class BatchJobImpl implements BatchJob {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
-        _pipelineComponents = pipelineComponents;
+        _pipelineElements = pipelineElements;
         _priority = priority;
         _outputEnabled = outputEnabled;
         _callbackUrl = StringUtils.trimToNull(callbackUrl);

@@ -31,6 +31,7 @@ import http.rest.RequestInterceptor;
 import http.rest.RestClientException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.mitre.mpf.interop.util.MpfObjectMapper;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationResponse;
@@ -73,13 +74,16 @@ public class Main {
             }
         };
         
-        //RestClient client = RestClient.builder().requestInterceptor(authorize).build();
-        CustomRestClient client = (CustomRestClient) CustomRestClient.builder().restClientClass(CustomRestClient.class).requestInterceptor(authorize).build();
+        CustomRestClient client = (CustomRestClient) CustomRestClient.builder()
+                .restClientClass(CustomRestClient.class)
+                .requestInterceptor(authorize)
+                .objectMapper(new MpfObjectMapper())
+                .build();
         
 		//getAvailableWorkPipelineNames
         String url = "http://localhost:8080/workflow-manager/rest/pipelines";
-        Map<String, String> params = new HashMap<String, String>();  
-        List<Pipeline> pipelines = client.get(url, params, new TypeReference<List<Pipeline>>() {});
+        Map<String, String> params = new HashMap<>();
+        List<Pipeline> pipelines = client.get(url, params, new TypeReference<>() {});
         System.out.println("availableWorkPipelines size: " + pipelines.size());
         System.out.println(Arrays.toString(pipelines.stream().map(Pipeline::getName).toArray()));
         
@@ -111,19 +115,21 @@ public class Main {
         Thread.sleep(10000);
 		
         //getJobStatus
-        url = "http://localhost:8080/workflow-manager/rest/jobs"; // /status";
-        params = new HashMap<String, String>();
+        url = "http://localhost:8080/workflow-manager/rest/jobs";
+        params = new HashMap<>();
+
         //OPTIONAL
         //params.put("v", "") - no versioning currently implemented         
         //id is now a path var - if not set, all job info will returned
-        url = url + "/" + Long.toString(jobCreationResponse.getJobId());
+        url = url + "/" + jobCreationResponse.getJobId();
         SingleJobInfo jobInfo = client.get(url, params, SingleJobInfo.class);
         System.out.println("jobInfo id: " + jobInfo.getJobId());
 	        
         //getSerializedOutput
         String jobIdToGetOutputStr = Long.toString(jobCreationResponse.getJobId());
         url = "http://localhost:8080/workflow-manager/rest/jobs/" + jobIdToGetOutputStr + "/output/detection";
-        params = new HashMap<String, String>();                
+        params = new HashMap<>();
+
         //REQUIRED  - job id is now a path var and required for this endpoint
         String serializedOutput = client.getAsString(url, params);
         System.out.println("serializedOutput: " + serializedOutput);

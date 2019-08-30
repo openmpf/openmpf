@@ -31,6 +31,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;

@@ -98,7 +98,7 @@
                                     <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
                                     <ui-select-choices
                                             group-by="'algorithm'"
-                                            repeat="action.name as action in actions | filter: $select.search">
+                                            repeat="action.name as action in actions | orderBy: ['algorithm', 'name'] | filter: $select.search">
                                         <div ng-bind-html="action.name | highlight: $select.search"
                                              uib-popover="[{{action.algorithm}}]  {{action.description}}" popover-placement="right"
                                              popover-append-to-body="true" popover-trigger="mouseenter">

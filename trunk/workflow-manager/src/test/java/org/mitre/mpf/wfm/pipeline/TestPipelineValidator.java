@@ -35,8 +35,8 @@ import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidationException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
-import org.mitre.mpf.wfm.util.WorkflowProperty;
-import org.mitre.mpf.wfm.util.WorkflowPropertyService;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.HashMap;

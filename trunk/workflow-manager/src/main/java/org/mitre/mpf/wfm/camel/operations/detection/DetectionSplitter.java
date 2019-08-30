@@ -329,7 +329,7 @@ public class DetectionSplitter implements StageSplitter {
 
     /**
      * Create the segmenting plan using the properties defined for the sub-job.
-     * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the transient job was created (will be used as system property default values)
+     * @param systemPropertiesSnapshot contains detection system properties whose values were in effect when the job was created (will be used as system property default values)
      * @param properties properties defined for the sub-job
      * @return segmenting plan for this sub-job
      */

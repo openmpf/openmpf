@@ -148,7 +148,7 @@ public class TestPipelineService {
             Iterable<Pipeline> expectedPipelines) throws IOException {
 
         // Use separate validator so that when we verify methods are called,
-        // it won't pass from the validation that was performed when the pipeline component was saved.
+        // it won't pass from the validation that was performed when the pipeline element was saved.
         var loaderPipelineValidator = mock(PipelineValidator.class);
 
         var loaderPipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper,

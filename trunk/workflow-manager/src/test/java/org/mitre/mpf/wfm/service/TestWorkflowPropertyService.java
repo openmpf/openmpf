@@ -1,4 +1,4 @@
-package org.mitre.mpf.wfm.util; /******************************************************************************
+/******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
  * This software (or technical data) was produced for the U.S. Government     *
@@ -24,6 +24,7 @@ package org.mitre.mpf.wfm.util; /***********************************************
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.Before;
@@ -33,6 +34,8 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.ValueType;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.PathResource;
 
 import java.io.IOException;

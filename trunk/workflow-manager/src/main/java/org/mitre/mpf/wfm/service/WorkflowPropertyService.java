@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +36,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -55,7 +56,7 @@ public class WorkflowPropertyService {
 
 
     @Inject
-    WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) throws IOException {
+    public WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) throws IOException {
         _propertiesUtil = propertiesUtil;
 
         List<WorkflowProperty> workflowPropertiesList;

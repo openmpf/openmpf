@@ -33,6 +33,8 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;

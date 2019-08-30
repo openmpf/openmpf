@@ -30,10 +30,10 @@ package org.mitre.mpf.mvc.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.WorkflowPropertyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -51,6 +51,10 @@ import static java.util.stream.Collectors.toList;
 @Scope("request")
 @Profile("website")
 @RestController
+@RequestMapping(produces = "application/json")
+// Methods to get single pipeline element don't show up in Swagger because Swagger won't display both
+// /rest/elements and /rest/elements?name={name}. We decided to just show the /rest/elements endpoints since they
+// return the same models as the /rest/elements?name endpoints, except that they are in a list.
 public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);

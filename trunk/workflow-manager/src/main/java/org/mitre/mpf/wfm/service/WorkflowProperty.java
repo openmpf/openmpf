@@ -25,13 +25,14 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.ValueType;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.Collection;
 

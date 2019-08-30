@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.WorkflowPropertyService;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;

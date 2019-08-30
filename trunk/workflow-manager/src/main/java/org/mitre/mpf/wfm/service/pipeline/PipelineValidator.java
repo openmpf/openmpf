@@ -28,7 +28,7 @@
 package org.mitre.mpf.wfm.service.pipeline;
 
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.util.WorkflowPropertyService;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;

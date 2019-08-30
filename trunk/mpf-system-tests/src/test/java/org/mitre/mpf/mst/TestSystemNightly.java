@@ -381,11 +381,11 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 for (int t = 0; t < TIMEOUT_MILLIS; t += WAIT_TIME_MILLIS) {
                     log.info("waitForSomeProgress: {}/{} ms, jobRequestId: {}", t, TIMEOUT_MILLIS, jobRequestId); // DEBUG
                     if (jobRequestId != -1) {
-                        Float progressObj = jobProgress.getJobProgress(jobRequestId);
-                        if (progressObj != null) {
-                            if (progressObj > 0) { // cast
-                                return true;
-                            }
+                        boolean hasProgress = jobProgress.getJobProgress(jobRequestId)
+                                .map(p -> p > 0)
+                                .orElse(false);
+                        if (hasProgress) {
+                            return true;
                         }
                     }
                     Thread.sleep(WAIT_TIME_MILLIS);
@@ -429,9 +429,9 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                     for (PriorityRunner runner : priorityRunners) {
                         float progress = -1f;
                         if (runner.jobRequestId != -1) {
-                            Float progressObj = jobProgress.getJobProgress(runner.jobRequestId);
-                            if (progressObj != null) {
-                                progress = progressObj; // cast
+                            Optional<Float> optProgress = jobProgress.getJobProgress(runner.jobRequestId);
+                            if (optProgress.isPresent()) {
+                                progress = optProgress.get();
                                 totalProgress += progress;
                             }
                         }

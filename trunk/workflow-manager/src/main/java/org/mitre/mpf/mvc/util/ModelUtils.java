@@ -31,7 +31,6 @@ import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -122,22 +121,14 @@ public class ModelUtils {
     }
 
     //this method is created for the same reason as converMarkupResult
-    public static SingleJobInfo convertJobRequest(JobRequest jobRequest,
-            float jobContainerProgress) {
-        BatchJobStatusType jobStatus = jobRequest.getStatus();
-        // some job status' may be terminal
-        boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
-
+    public static SingleJobInfo convertJobRequest(JobRequest jobRequest, float jobContainerProgress) {
         return new SingleJobInfo(jobRequest.getId(), jobRequest.getPipeline(), jobRequest.getPriority(),
                 jobRequest.getStatus().toString(), jobContainerProgress, jobRequest.getTimeReceived(),
-                jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), isTerminal);
+                jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), jobRequest.getStatus().isTerminal());
     }
 
     public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
-            float jobContainerProgress) {
-
-        boolean isTerminal = (streamingJobRequest.getStatus() != null && streamingJobRequest.getStatus().isTerminal());
-
+                                                     float jobContainerProgress) {
         return new StreamingJobInfo(streamingJobRequest.getId(),
                 streamingJobRequest.getPipeline(),
                 streamingJobRequest.getPriority(),
@@ -150,7 +141,7 @@ public class ModelUtils {
                 streamingJobRequest.getStreamUri(),
                 streamingJobRequest.getActivityFrameId(),
                 streamingJobRequest.getActivityTimestamp(),
-                isTerminal);
+                streamingJobRequest.getStatus().isTerminal());
     }
 
 

@@ -257,11 +257,10 @@ public class StreamingJobController {
             }
 
             for (StreamingJobRequest jobRequest : jobRequests) {
-                long id = jobRequest.getId();
-                StreamingJobInfo streamingJobInfo;
+                float jobProgressVal = jobProgress.getJobProgress(jobRequest.getId())
+                        .orElseGet(() -> jobRequest.getStatus().isTerminal() ? 100 : 0.0f);
 
-                float jobProgressVal = jobProgress.getJobProgress(id) != null ? jobProgress.getJobProgress(id) : 0.0f;
-                streamingJobInfo = ModelUtils.convertJobRequest(jobRequest, jobProgressVal);
+                StreamingJobInfo streamingJobInfo = ModelUtils.convertJobRequest(jobRequest, jobProgressVal);
 
                 jobInfoList.add(streamingJobInfo);
             }

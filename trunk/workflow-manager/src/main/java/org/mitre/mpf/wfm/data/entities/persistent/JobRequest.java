@@ -67,7 +67,7 @@ public class JobRequest {
     /** The current status of this batch job. */
     @Column
     @Enumerated(EnumType.STRING)
-    private BatchJobStatusType status;
+    private BatchJobStatusType status = BatchJobStatusType.UNKNOWN;
     public BatchJobStatusType getStatus() { return status; }
     public void setStatus(BatchJobStatusType status) { this.status = status; }
 

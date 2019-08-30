@@ -451,7 +451,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
             }
 
             jobStatusBroadcaster.broadcast(jobId, 100, status.getType(), Instant.ofEpochMilli(timestamp));
-            jobProgressStore.setJobProgress(jobId, 100.0f);
+            jobProgressStore.removeJob(jobId);
 
             log.info("[Streaming Job {}:*:*] Streaming Job complete!", jobId);
         }

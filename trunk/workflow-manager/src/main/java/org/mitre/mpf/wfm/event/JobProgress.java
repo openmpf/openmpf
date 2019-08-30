@@ -26,33 +26,28 @@
 
 package org.mitre.mpf.wfm.event;
 
-import org.javasimon.aop.Monitored;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import javax.inject.Singleton;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@Monitored
+@Singleton
 public class JobProgress {
-	
-	private static final Logger log = LoggerFactory.getLogger(JobProgress.class);
 
-    //trying to make this class thread safe - also added synchronized to some of the public methods - might need to use the keyword more
-	private volatile Map<Long, Float> jobProgressMap = new HashMap<Long, Float>();
-	
-	public synchronized Map<Long, Float> getJobProgressMap() {
-		return jobProgressMap;
-	}
-	
-	//must be non primitive to support a null retrun
-	public synchronized Float getJobProgress(long jobId){
-		return jobProgressMap.get(jobId);
-	}
-	
-	public synchronized void setJobProgress(long jobId, float jobProgress){
-		jobProgressMap.put(jobId, jobProgress);
-	}
+    private final Map<Long, Float> _jobProgressMap = new ConcurrentHashMap<>();
+
+    public Optional<Float> getJobProgress(long jobId){
+        return Optional.ofNullable(_jobProgressMap.get(jobId));
+    }
+
+    public void setJobProgress(long jobId, float jobProgress){
+        _jobProgressMap.put(jobId, jobProgress);
+    }
+
+    public void removeJob(long jobId) {
+        _jobProgressMap.remove(jobId);
+    }
 }

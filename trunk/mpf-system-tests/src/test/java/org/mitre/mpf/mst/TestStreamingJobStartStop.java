@@ -30,6 +30,7 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -117,7 +118,7 @@ public class TestStreamingJobStartStop {
     public TestWatcher _testInfoMethodRule = _testInfoLoggerClassRule.methodRule();
 
 
-    @Test
+    @Before
     public void init() {
         reset(_mockStreamingJobRequestService);
     }

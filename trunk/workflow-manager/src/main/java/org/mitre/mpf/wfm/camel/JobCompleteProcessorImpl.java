@@ -171,7 +171,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
             jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), Instant.now());
-            jobProgressStore.setJobProgress(jobId, 100.0f);
+            jobProgressStore.removeJob(jobId);
             log.info("[Job {}:*:*] Job complete!", jobId);
         }
     }

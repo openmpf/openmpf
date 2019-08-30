@@ -30,7 +30,6 @@ import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
@@ -59,30 +58,26 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
     @Override
     public void onResponse(Exchange newExchange) {
         super.onResponse(newExchange);
-        if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
-            try {
-                int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
-                int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
-                long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
-                BatchJob job = inProgressBatchJobs.getJob(jobId);
-                if (!job.getPipelineElements().getPipeline().getTasks().isEmpty()) {
-                    int currentTask = 1 + job.getCurrentTaskIndex();
-                    int totalTasks = job.getPipelineElements().getTaskCount();
-                    float progressPerStage = 1 / (1f * totalTasks) * 100f;
+        Object suppressBroadcast = newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST);
+        if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
+            return;
+        }
 
-                    float taskProgress = (((float) aggregateCount) / ((float) splitSize));
-                    float jobProgress = (currentTask - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
+        try {
+            int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
+            int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
+            long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
 
-                    JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
+            BatchJob job = inProgressBatchJobs.getJob(jobId);
+            int tasksCompleted = job.getCurrentTaskIndex();
+            int totalTasks = job.getPipelineElements().getTaskCount();
+            float progressInCurrentTask = (float) aggregateCount / splitSize;
+            float jobProgress = (tasksCompleted + progressInCurrentTask) / totalTasks * 100;
 
-                    jobStatusBroadcaster.broadcast(jobId, jobProgress, jobRequest.getStatus());
-
-                    //store the current job progress to prevent progress displaying as zero on manual refreshes
-                    jobProgressStore.setJobProgress(jobId, jobProgress);
-                }
-            } catch (Exception e) {
-                log.error("Error getting necessary information to create a job progress update.");
-            }
+            jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
+            jobProgressStore.setJobProgress(jobId, jobProgress);
+        } catch (Exception e) {
+            log.error("Error getting necessary information to create a job progress update.");
         }
     }
 }

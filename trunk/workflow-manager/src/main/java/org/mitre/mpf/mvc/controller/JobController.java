@@ -432,9 +432,8 @@ public class JobController {
 
 
     private SingleJobInfo convertJob(JobRequest job) {
-        float jobProgressVal = jobProgress.getJobProgress(job.getId()) != null
-                ? jobProgress.getJobProgress(job.getId())
-                : 0.0f;
+        float jobProgressVal = jobProgress.getJobProgress(job.getId())
+                .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
         return ModelUtils.convertJobRequest(job, jobProgressVal);
     }
 
@@ -444,24 +443,17 @@ public class JobController {
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
         try {
-            long newJobId = jobRequestService.resubmit(jobId, jobPriority).getId();
-            //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
-            if (newJobId != -1 && newJobId == jobId) {
-                //make sure to reset the value in the job progress map to handle manual refreshes that will display
-                //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
-                jobProgress.setJobProgress(newJobId, 0.0f);
-                log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
-                return new JobCreationResponse(newJobId);
-            }
+            jobRequestService.resubmit(jobId, jobPriority);
+            //make sure to reset the value in the job progress map to handle manual refreshes that will display
+            //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
+            jobProgress.setJobProgress(jobId, 0);
+            log.debug("Successful resubmission of Job Id: {}", jobId);
+            return new JobCreationResponse(jobId);
         } catch (Exception wpe) {
-            String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
+            String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
-        String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "
-                + "Also consider checking the server logs for more information on this error.";
-        log.error(errorStr);
-        return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 
     private MpfResponse cancelJobInternal(long jobId) {

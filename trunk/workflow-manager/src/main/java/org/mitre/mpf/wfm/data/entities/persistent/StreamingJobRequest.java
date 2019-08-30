@@ -72,7 +72,7 @@ public class StreamingJobRequest {
      **/
     @Column
     @Enumerated(EnumType.STRING)
-    private StreamingJobStatusType status = null;
+    private StreamingJobStatusType status = StreamingJobStatusType.UNKNOWN;
     public StreamingJobStatusType getStatus() { return status; }
     public void setStatus(StreamingJobStatusType status) { this.status = status; }
     public void setStatus(StreamingJobStatusType status, String statusDetail) {

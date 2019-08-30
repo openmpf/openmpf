@@ -30,7 +30,6 @@ import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
@@ -85,16 +84,6 @@ public class DetectionSplitter implements StageSplitter {
     @Qualifier(DefaultMediaSegmenter.REF)
     private MediaSegmenter defaultMediaSegmenter;
 
-    private static final String[] transformProperties = {
-            MpfConstants.ROTATION_PROPERTY,
-            MpfConstants.HORIZONTAL_FLIP_PROPERTY,
-            MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_ENABLE_DETECTION_PROPERTY,
-            MpfConstants.AUTO_ROTATE_PROPERTY,
-            MpfConstants.AUTO_FLIP_PROPERTY};
 
     /**
      * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
@@ -154,90 +143,14 @@ public class DetectionSplitter implements StageSplitter {
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
-                    // starting setting of priorities here:  getting action property defaults
                     String actionName = task.getActions().get(actionIndex);
                     Action action = job.getPipelineElements().getAction(actionName);
-
-                    // TODO: Remove when we determine if keeping clearTransformPropertiesFromMap behavior
-                    // modifiedMap initialized with algorithm specific properties
-//                    Map<String, String> modifiedMap = new HashMap<>(getAlgorithmProperties(
-//                            job.getPipelineComponents().getAlgorithm(action.getAlgorithm()),
-//                            job.getSystemPropertiesSnapshot()));
-
-                    // current modifiedMap properties overridden by action properties
-//                    for (Action.Property actionProperty : action.getProperties()) {
-//                        modifiedMap.put(actionProperty.getName(), actionProperty.getValue());
-//                    }
-
-                    // If the job is overriding properties related to flip, rotation, or ROI, we should reset all related
-                    // action properties to default.  We assume that when the user overrides one rotation/flip/roi
-                    // property for a piece of media, they are specifying all of the rotation/flip/roi properties they want
-                    // applied for this medium.  This logic is applied THREE times
-                    //            -- once for job properties,
-                    //            -- once for algorithm properties
-                    //            -- and once for media properties.
-                    // If the overridden job properties contain any of these values, pipeline properties are reset.
-                    // If algorithm properties contain any of these values, overridden job properties and pipeline properties are reset.
-                    // If media properties are specified, overridden algorithm properties and job properties and pipeline properties are reset.
-
-//                    for (String key : transformProperties) {
-//                        if (job.getJobProperties().containsKey(key)) {
-//                            clearTransformPropertiesFromMap(modifiedMap);
-//                            break;
-//                        }
-//                    }
-
-                    // Note: by this point override of system properties by job properties has already been applied to the job.
-//                    modifiedMap.putAll(job.getJobProperties());
-
-                    // overriding by AlgorithmProperties.  Note that algorithm-properties are of type
-                    // Map<String,Map>, so the transform properties to be overridden are actually in the value section of the Map returned
-                    // by job.getOverriddenAlgorithmProperties().  This is handled here.
-                    // Note that the intent is to override ALL transform properties if ANY single transform properties is overridden
-
-                    // If ANY transform setting is provided at a given level, all transform settings for lower levels are overridden.
-                    // The reason is that transform settings interact oddly with each other sometimes.  In the case where auto-flip is
-                    // turned on, for instance, a region of interest provided without that in mind might be looking in the wrong area
-                    // of a flipped image.
-
-                    // By policy, we say that if any transform settings are defined in a given properties map,
-                    // all applicable transform properties must be defined there
-
-                    // Note: only want to consider the algorithm from algorithm properties that corresponds to the current
-                    // action being processed.  Which algorithm (i.e. action) that is being processed
-                    // is available using action.getAlgorithm().  So, see if our algorithm properties include
-                    // override of the action (i.e. algorithm) that we are currently processing
-                    // Note that this implementation depends on algorithm property keys matching what would be returned by action.getAlgorithm()
-//                    if (job.getOverriddenAlgorithmProperties().containsKey(action.getAlgorithm())) {
-//                        // this job contains the a algorithm property which may override what is in our current action
-//                        Map<String, String> job_alg_m = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-//
-//                        // see if any of these algorithm properties are transform properties.  If so, clear the
-//                        // current set of transform properties from the map to allow for this algorithm properties to
-//                        // override the current settings
-//                        for (String key : transformProperties) {
-//                            if (job_alg_m.keySet().contains(key)) {
-//                                clearTransformPropertiesFromMap(modifiedMap);
-//                                break;
-//                            }
-//                        }
-//                        modifiedMap.putAll(job_alg_m);
-//
-//                    } // end of algorithm name conditional
-
-//                    for (String key : transformProperties) {
-//                        if (media.getMediaSpecificProperties().containsKey(key)) {
-//                            clearTransformPropertiesFromMap(modifiedMap);
-//                            break;
-//                        }
-//                    }
-//
-//                    modifiedMap.putAll(media.getMediaSpecificProperties());
 
                     var combinedProperties = new HashMap<String, String>(
                             aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    // Segmenting plan is only used by the VideoMediaSegmenter, so only create the DetectionContext to include the segmenting plan for jobs with video media.
+                    // Segmenting plan is only used by the VideoMediaSegmenter,
+                    // so only create the DetectionContext to include the segmenting plan for jobs with video media.
                     SegmentingPlan segmentingPlan = null;
                     if (media.getMediaType().equals(MediaType.VIDEO)) {
 
@@ -300,12 +213,6 @@ public class DetectionSplitter implements StageSplitter {
         }
 
         return messages;
-    }
-
-    private static void clearTransformPropertiesFromMap(Map<String, String> modifiedMap) {
-        for (String propertyName : transformProperties) {
-            modifiedMap.remove(propertyName);
-        }
     }
 
 
@@ -425,24 +332,4 @@ public class DetectionSplitter implements StageSplitter {
 
         return isFirst;
     }
-
-
-    private Map<String, String> getAlgorithmProperties(Algorithm algorithm,
-                                                       SystemPropertiesSnapshot systemPropertiesSnapshot) {
-        Map<String, String> properties = new HashMap<>();
-        for (Algorithm.Property property : algorithm.getProvidesCollection().getProperties()) {
-            if (property.getDefaultValue() != null) {
-                properties.put(property.getName(), property.getDefaultValue());
-                continue;
-            }
-            String snapshotValue = systemPropertiesSnapshot.lookup(property.getPropertiesKey());
-            if (snapshotValue != null) {
-                properties.put(property.getName(), snapshotValue);
-                continue;
-            }
-            properties.put(property.getName(), propertiesUtil.lookup(property.getPropertiesKey()));
-        }
-        return properties;
-    }
-
 }

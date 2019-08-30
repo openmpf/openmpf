@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableSet;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -46,18 +45,6 @@ import static java.util.stream.Collectors.toMap;
 
 @Component
 public class AggregateJobPropertiesUtil {
-
-    public static final ImmutableSet<String> TRANSFORM_PROPERTIES = ImmutableSet.of(
-            MpfConstants.ROTATION_PROPERTY,
-            MpfConstants.HORIZONTAL_FLIP_PROPERTY,
-            MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY,
-            MpfConstants.SEARCH_REGION_ENABLE_DETECTION_PROPERTY,
-            MpfConstants.AUTO_ROTATE_PROPERTY,
-            MpfConstants.AUTO_FLIP_PROPERTY);
-
 
     private final PropertiesUtil _propertiesUtil;
 
@@ -142,22 +129,12 @@ public class AggregateJobPropertiesUtil {
             return new PropertyInfo(propertyName, mediaPropVal, PropertyLevel.MEDIA);
         }
 
-        //TODO: Add comment explaining if we decide to keep this behavior
-        boolean isTransformProperty = TRANSFORM_PROPERTIES.contains(propertyName);
-        if (isTransformProperty && containsTransformProperty(mediaSpecificProperties)) {
-            return PropertyInfo.missing(propertyName);
-        }
-
         if (action != null) {
             Map<String, String> algoProperties = overriddenAlgorithmProperties.get(action.getAlgorithm());
             if (algoProperties != null) {
                 var propVal = algoProperties.get(propertyName);
                 if (propVal != null) {
                     return new PropertyInfo(propertyName, propVal, PropertyLevel.OVERRIDDEN_ALGORITHM);
-                }
-
-                if (isTransformProperty && containsTransformProperty(algoProperties)) {
-                    return PropertyInfo.missing(propertyName);
                 }
             }
         }
@@ -167,17 +144,10 @@ public class AggregateJobPropertiesUtil {
             return new PropertyInfo(propertyName, jobPropVal, PropertyLevel.JOB);
         }
 
-        if (isTransformProperty && containsTransformProperty(jobProperties)) {
-            return PropertyInfo.missing(propertyName);
-        }
-
         if (action != null) {
             var actionPropVal = action.getPropertyValue(propertyName);
             if (actionPropVal != null) {
                 return new PropertyInfo(propertyName, actionPropVal, PropertyLevel.ACTION);
-            }
-            if (isTransformProperty && containsTransformProperty(action::getPropertyValue)) {
-                return PropertyInfo.missing(propertyName);
             }
 
             var algorithm = pipeline.getAlgorithm(action.getAlgorithm());
@@ -199,9 +169,6 @@ public class AggregateJobPropertiesUtil {
                 if (propertiesUtilValue != null) {
                     return new PropertyInfo(propertyName, propertiesUtilValue, PropertyLevel.ALGORITHM);
                 }
-            }
-            if (isTransformProperty && containsTransformProperty(algorithm::getProperty)) {
-                return PropertyInfo.missing(propertyName);
             }
         }
 
@@ -295,17 +262,6 @@ public class AggregateJobPropertiesUtil {
                 .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
     }
 
-
-
-    private static boolean containsTransformProperty(Map<String, String> items) {
-        return containsTransformProperty(items::get);
-    }
-
-
-    private static boolean containsTransformProperty(Function<String, ?> propertyLookupFn) {
-        return TRANSFORM_PROPERTIES.stream()
-                .anyMatch(tp -> propertyLookupFn.apply(tp) != null);
-    }
 
 
     public Function<String, String> getCombinedProperties(

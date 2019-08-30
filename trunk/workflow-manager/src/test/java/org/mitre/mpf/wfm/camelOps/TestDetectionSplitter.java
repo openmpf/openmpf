@@ -150,7 +150,7 @@ public class TestDetectionSplitter {
 
 
     @Test
-    public void testJobPropertiesOverride() throws Exception {
+    public void testJobPropertiesOverride() {
         HashMap<String, String> jobProperties = new HashMap<>();
         String propertyName = "TEST";
         String propertyValue = "VALUE";
@@ -221,67 +221,50 @@ public class TestDetectionSplitter {
         Assert.assertTrue(propertyExists);
     }
 
-    /**
-     * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
-     * auto-rotate and auto-flip on the action, and others leave them alone.
-     *
-     * @throws Exception
-     */
     @Test
-    public void testMediaSpecificPropertiesOverrideWithExif() throws Exception {
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.ROTATION_PROPERTY, "90", true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1",true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE",true);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
+    public void testMediaSpecificPropertiesOverrideWithExif() {
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.ROTATION_PROPERTY, "90");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
-    /**
-     * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
-     * auto-rotate and auto-flip on job properties, and others leave them alone.
-     *
-     * @throws Exception
-     */
     @Test
-    public void testMediaSpecificPropertiesOverrideJobProperties() throws Exception {
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.ROTATION_PROPERTY, "90", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE",true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100", false);
+    public void testMediaSpecificPropertiesOverrideJobProperties() {
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.ROTATION_PROPERTY, "90");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
-    /**
-     * Tests to be sure that a media-specific property for rotation, flip, or any ROI property disables
-     * auto-rotate and auto-flip on the action, and others leave them alone.
-     *
-     * @throws Exception
-     */
+
     @Test
-    public void testMediaSpecificPropertiesOverrideAlgorithmProperties() throws Exception {
-        testJobPropertiesResettingActionProperties(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.ROTATION_PROPERTY, "90", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE", true);
-        testJobPropertiesResettingActionProperties(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0", false);
-        testJobPropertiesResettingActionProperties(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100",false);
+    public void testMediaSpecificPropertiesOverrideAlgorithmProperties() {
+        testJobPropertiesResettingActionProperties(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testJobPropertiesResettingActionProperties(MpfConstants.ROTATION_PROPERTY, "90");
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testJobPropertiesResettingActionProperties(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testJobPropertiesResettingActionProperties(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
-    private void testMediaSpecificPropertiesResettingJobProperty(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+    private void testMediaSpecificPropertiesResettingJobProperty(String propertyName, String propertyValue) {
         HashMap<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
         Map<String, String> jobProperties = new HashMap<>();
@@ -296,11 +279,10 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverride,
-                                            jobProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, jobProperties, testJob);
     }
 
-    private void testJobPropertiesResettingActionProperties(String propertyName, String propertyValue, boolean shouldOverride) throws Exception {
+    private void testJobPropertiesResettingActionProperties(String propertyName, String propertyValue) {
         HashMap<String, String> jobProperties = new HashMap<>();
         jobProperties.put(propertyName, propertyValue);
         Map<String, String> actionProperties = new HashMap<>();
@@ -316,11 +298,10 @@ public class TestDetectionSplitter {
                 actionProperties, jobProperties, Collections.emptyMap(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
 
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverride, actionProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, /* shouldOverride, */ actionProperties, testJob);
     }
 
-    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(
-            String propertyName, String propertyValue, boolean shouldOverrideTransformProps) {
+    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(String propertyName, String propertyValue) {
 
         HashMap<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
@@ -340,13 +321,11 @@ public class TestDetectionSplitter {
                 actionProperties, Collections.emptyMap(), mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
 
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, shouldOverrideTransformProps,
-                                            actionProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, actionProperties, testJob);
     }
 
     private void assertProtobufHasExpectedProperties(
-            String propertyName, String propertyValue, boolean shouldOverrideTransformProps,
-            Map<String, String> expectedProperties, BatchJob testJob) {
+            String propertyName, String propertyValue, Map<String, String> expectedProperties, BatchJob testJob) {
 
         List<Message> responseList = detectionStageSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
@@ -367,29 +346,19 @@ public class TestDetectionSplitter {
         Assert.assertEquals(String.format("Expected the protobuf property %s to be %s", propertyName, propertyValue),
                             propertyValue, matchingProtoProp.getPropertyValue());
 
-        if (shouldOverrideTransformProps) {
-            for (AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp : request.getAlgorithmPropertyList()) {
-                if (!propertyName.equals(protoProp.getPropertyName())) {
-                    Assert.assertFalse(
-                            AggregateJobPropertiesUtil.TRANSFORM_PROPERTIES.contains(protoProp.getPropertyName()));
-                }
-            }
-        }
-        else {
-            for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
-                AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
-                        .stream()
-                        .filter(p -> p.getPropertyName().equals(propertyName))
-                        .findAny()
-                        .orElse(null);
+        for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
+            AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
+                    .stream()
+                    .filter(p -> p.getPropertyName().equals(propertyName))
+                    .findAny()
+                    .orElse(null);
 
-                Assert.assertNotNull(
-                        "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
-                        protoProp);
-                Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
-                                                  actionPropEntry.getKey(), actionPropEntry.getValue()),
-                                    propertyValue, protoProp.getPropertyValue());
-            }
+            Assert.assertNotNull(
+                    "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
+                    protoProp);
+            Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
+                                              actionPropEntry.getKey(), actionPropEntry.getValue()),
+                                propertyValue, protoProp.getPropertyValue());
         }
     }
 

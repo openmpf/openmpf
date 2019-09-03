@@ -184,6 +184,19 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
+    /**
+     * Ensures that the S3-related properties are valid.
+     * @param properties Properties to validate
+     * @throws StorageException when an invalid combination of S3 properties are provided.
+     */
+    public static void validateS3Properties(Function<String, String> properties) throws StorageException {
+        // Both will throw if properties are invalid.
+        requiresS3MediaDownload(properties);
+        requiresS3ResultUpload(properties);
+    }
+
+
+
     public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
         boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY));
         if (uploadOnly) {

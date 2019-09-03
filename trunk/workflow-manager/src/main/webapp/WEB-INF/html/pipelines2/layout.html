@@ -151,8 +151,8 @@
                         Save
                     </button>
                     <button ng-if="!pipes2.inEditMode()" ng-click="pipes2.deletePipeline(currentPipeline)"
-                            type="button" class="btn btn-danger">
-                        Delete
+                            type="button" class="btn btn-default" title="Delete Pipeline">
+                        <i class="fa fa-trash"></i>
                     </button>
                     <!--<button ng-if="!pipes2.inEditMode()" class="btn btn-default" id="deletePipelineButton"-->
                             <!--ng-click="pipes2.deletePipeline( currentPipeline )">Delete-->
@@ -191,8 +191,8 @@
                             ng-click="saveActionAndTask( currentAction )" tabindex="4">Save
                     </button>
                     <button ng-if="!actions2.inEditMode()" ng-click="deleteAction()"
-                            type="button" class="btn btn-danger">
-                        Delete
+                            type="button" class="btn btn-default" title="Delete Action">
+                        <i class="fa fa-trash"></i>
                     </button>
 
                     <!--<button ng-if="!actions2.inEditMode()" class="btn btn-default" id="deleteActionButton"-->

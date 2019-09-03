@@ -183,6 +183,67 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+
+    public Map<String, String> getPropertyMap(BatchJob job, Media media, Action action) {
+        return getPropertyMap(
+                action,
+                media.getMediaSpecificProperties(),
+                media.getMediaType(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getPipelineElements(),
+                job.getSystemPropertiesSnapshot());
+    }
+
+
+    public Map<String, String> getPropertyMap(StreamingJob job, Action action) {
+        return getPropertyMap(
+                action,
+                job.getStream().getMediaProperties(),
+                MediaType.VIDEO,
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getPipelineElements(),
+                null);
+    }
+
+    private Map<String, String> getPropertyMap(
+            Action action,
+            Map<String, String> mediaProperties,
+            MediaType mediaType,
+            Map<String, ? extends Map<String, String>> allOverriddenAlgorithmProperties,
+            Map<String, String> jobProperties,
+            JobPipelineElements pipelineElements,
+            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+
+        var allKeys = new HashSet<>(mediaProperties.keySet());
+
+        Map<String, String> overriddenAlgoProps = allOverriddenAlgorithmProperties.get(action.getAlgorithm());
+        if (overriddenAlgoProps != null) {
+            allKeys.addAll(overriddenAlgoProps.keySet());
+        }
+
+        allKeys.addAll(jobProperties.keySet());
+
+        action.getProperties().forEach(p -> allKeys.add(p.getName()));
+
+        pipelineElements.getAlgorithm(action.getAlgorithm())
+                .getProvidesCollection()
+                .getProperties()
+                .forEach(p -> allKeys.add(p.getName()));
+
+        _workflowPropertyService.getProperties(mediaType)
+                .forEach(p -> allKeys.add(p.getName()));
+
+        return allKeys.stream()
+                .map(pn -> getPropertyInfo(pn, mediaProperties, mediaType, action, pipelineElements,
+                                           allOverriddenAlgorithmProperties, jobProperties, systemPropertiesSnapshot))
+                .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
+                .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
+    }
+
+
+
     public String getValue(String propertyName, BatchJob job, Media media,
                            Action action) {
         return getPropertyInfo(
@@ -196,72 +257,6 @@ public class AggregateJobPropertiesUtil {
                 job.getSystemPropertiesSnapshot()
         ).getValue();
     }
-
-
-    public Map<String, String> getPropertyMap(StreamingJob job, Action action) {
-        var allKeys = new HashSet<String>();
-
-        job.getPipelineElements().getAlgorithm(action.getAlgorithm())
-                .getProvidesCollection()
-                .getProperties()
-                .forEach(p -> allKeys.add(p.getName()));
-
-        action.getProperties()
-                .forEach(p -> allKeys.add(p.getName()));
-
-        allKeys.addAll(job.getJobProperties().keySet());
-
-        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-        if (overriddenAlgoProps != null) {
-            allKeys.addAll(overriddenAlgoProps.keySet());
-        }
-
-        allKeys.addAll(job.getStream().getMediaProperties().keySet());
-
-        _workflowPropertyService.getProperties(MediaType.VIDEO)
-                .forEach(p -> allKeys.add(p.getName()));
-
-        return allKeys.stream()
-                .map(pn -> getPropertyInfo(pn, job.getStream().getMediaProperties(), MediaType.VIDEO,
-                                           action, job.getPipelineElements(), job.getOverriddenAlgorithmProperties(),
-                                           job.getJobProperties(), null))
-                .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
-                .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
-    }
-
-
-    public Map<String, String> getPropertyMap(BatchJob job, Media media, Action action) {
-
-        var allKeys = new HashSet<>(media.getMediaSpecificProperties().keySet());
-
-        Map<String, String> overriddenAlgoProps = job.getOverriddenAlgorithmProperties().get(action.getAlgorithm());
-        if (overriddenAlgoProps != null) {
-            allKeys.addAll(overriddenAlgoProps.keySet());
-        }
-
-        allKeys.addAll(job.getJobProperties().keySet());
-
-        action.getProperties().forEach(p -> allKeys.add(p.getName()));
-
-        job.getPipelineElements()
-                .getAlgorithm(action.getAlgorithm())
-                .getProvidesCollection()
-                .getProperties()
-                .forEach(p -> allKeys.add(p.getName()));
-
-        _workflowPropertyService.getProperties(media.getMediaType())
-                .forEach(p -> allKeys.add(p.getName()));
-
-
-        return allKeys.stream()
-                .map(pn -> getPropertyInfo(
-                        pn, media.getMediaSpecificProperties(), media.getMediaType(), action,
-                        job.getPipelineElements(), job.getOverriddenAlgorithmProperties(), job.getJobProperties(),
-                        job.getSystemPropertiesSnapshot()))
-                .filter(pn -> pn.getLevel() != PropertyLevel.NONE)
-                .collect(toMap(PropertyInfo::getName, PropertyInfo::getValue));
-    }
-
 
 
     public Function<String, String> getCombinedProperties(

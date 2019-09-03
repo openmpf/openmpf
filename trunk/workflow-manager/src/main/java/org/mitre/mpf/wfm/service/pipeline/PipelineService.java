@@ -27,7 +27,6 @@
 
 package org.mitre.mpf.wfm.service.pipeline;
 
-import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
@@ -75,10 +74,6 @@ public interface PipelineService {
 
     public void verifyStreamingPipelineRunnable(String pipelineName);
 
-    public boolean pipelineSupportsBatch(String pipelineName);
-
-    public boolean pipelineSupportsStreaming(String pipelineName);
-
 
     public void deleteAlgorithm(String algorithmName);
 
@@ -87,8 +82,4 @@ public interface PipelineService {
     public void deleteTask(String taskName);
 
     public void deletePipeline(String pipelineName);
-
-    public JsonPipeline createBatchJsonPipeline(String pipelineName);
-
-    public JsonPipeline createStreamingJsonPipeline(String pipelineName);
 }

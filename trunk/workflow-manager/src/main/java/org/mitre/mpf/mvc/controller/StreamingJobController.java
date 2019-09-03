@@ -27,7 +27,6 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.*;
-import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
@@ -260,9 +259,20 @@ public class StreamingJobController {
                 float jobProgressVal = jobProgress.getJobProgress(jobRequest.getId())
                         .orElseGet(() -> jobRequest.getStatus().isTerminal() ? 100 : 0.0f);
 
-                StreamingJobInfo streamingJobInfo = ModelUtils.convertJobRequest(jobRequest, jobProgressVal);
-
-                jobInfoList.add(streamingJobInfo);
+                jobInfoList.add(new StreamingJobInfo(
+                        jobRequest.getId(),
+                        jobRequest.getPipeline(),
+                        jobRequest.getPriority(),
+                        jobRequest.getStatus().name(),
+                        jobRequest.getStatusDetail(),
+                        jobProgressVal,
+                        jobRequest.getTimeReceived(),
+                        jobRequest.getTimeCompleted(),
+                        jobRequest.getOutputObjectDirectory(),
+                        jobRequest.getStreamUri(),
+                        jobRequest.getActivityFrameId(),
+                        jobRequest.getActivityTimestamp(),
+                        jobRequest.getStatus().isTerminal()));
             }
         } catch (Exception ex) {
             log.error("Exception in get streaming job status with stack trace: {}", ex.getMessage());

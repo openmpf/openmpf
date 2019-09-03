@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.service.pipeline;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -41,7 +40,6 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
@@ -238,7 +236,6 @@ public class PipelineServiceImpl implements PipelineService {
     }
 
 
-
     @Override
     public void verifyBatchPipelineRunnable(String pipelineName) {
         _validator.verifyBatchPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
@@ -248,31 +245,6 @@ public class PipelineServiceImpl implements PipelineService {
     public void verifyStreamingPipelineRunnable(String pipelineName) {
         _validator.verifyStreamingPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
-
-    @Override
-    public boolean pipelineSupportsBatch(String pipelineName) {
-        return pipelineSupportsProcessingType(fixName(pipelineName), Algorithm::getSupportsBatchProcessing);
-    }
-
-    @Override
-    public boolean pipelineSupportsStreaming(String pipelineName) {
-        return pipelineSupportsProcessingType(fixName(pipelineName), Algorithm::getSupportsStreamProcessing);
-
-    }
-
-    private boolean pipelineSupportsProcessingType(String pipelineName, Predicate<Algorithm> supportsPred) {
-        return _pipelines.get(pipelineName)
-                .getTasks()
-                .stream()
-                .map(this::getTask)
-                .filter(Objects::nonNull)
-                .flatMap(t -> t.getActions().stream())
-                .map(this::getAction)
-                .filter(Objects::nonNull)
-                .map(action -> getAlgorithm(action.getAlgorithm()))
-                .allMatch(supportsPred);
-    }
-
 
 
     @Override
@@ -295,17 +267,5 @@ public class PipelineServiceImpl implements PipelineService {
     @Override
     public void deletePipeline(String pipelineName) {
         delete(pipelineName, _pipelines);
-    }
-
-
-
-    @Override
-    public JsonPipeline createBatchJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(getBatchPipelineElements(fixName(pipelineName)));
-    }
-
-    @Override
-    public JsonPipeline createStreamingJsonPipeline(String pipelineName) {
-        return _jsonUtils.convert(getStreamingPipelineElements(fixName(pipelineName)));
     }
 }

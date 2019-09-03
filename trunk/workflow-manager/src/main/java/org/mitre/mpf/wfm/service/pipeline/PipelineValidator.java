@@ -267,7 +267,8 @@ public class PipelineValidator {
                 }
 
                 throw new InvalidPipelineException(String.format(
-                        "The \"%s\" property from the \"%s\" action does not exist in \"%s\" algorithm and is not the name of workflow property.",
+                        "The \"%s\" property from the \"%s\" action does not exist in \"%s\" algorithm " +
+                                "and is not the name of a workflow property.",
                         actionProperty.getName(), action.getName(), algorithm.getName()));
             }
         }
@@ -326,8 +327,8 @@ public class PipelineValidator {
                         .collect(joining(", "));
 
                 throw new InvalidPipelineException(String.format(
-                    "%s: tasks cannot contain actions which have different ActionTypes, " +
-                            "but it had the following action types: %s.",
+                    "%s: tasks cannot contain actions which have different ActionTypes. " +
+                            "It had the following ActionTypes, but only one type was expected: %s",
                     task.getName(), actionTypeNames));
             }
         }

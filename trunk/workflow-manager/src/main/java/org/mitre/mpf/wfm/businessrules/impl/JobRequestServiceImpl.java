@@ -122,8 +122,6 @@ public class JobRequestServiceImpl implements JobRequestService {
         boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
                 .orElseGet(_propertiesUtil::isOutputObjectsEnabled);
 
-
-
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
                 jobCreationRequest.getPipelineName(),
@@ -328,8 +326,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                             overriddenAlgoProps,
                             systemPropertiesSnapshot);
 
-                    S3StorageBackend.requiresS3MediaDownload(combinedProperties);
-                    S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+                    S3StorageBackend.validateS3Properties(combinedProperties);
                 }
             }
         }

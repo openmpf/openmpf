@@ -55,6 +55,8 @@ import static java.util.stream.Collectors.toList;
 // Methods to get single pipeline element don't show up in Swagger because Swagger won't display both
 // /rest/elements and /rest/elements?name={name}. We decided to just show the /rest/elements endpoints since they
 // return the same models as the /rest/elements?name endpoints, except that they are in a list.
+// Github issue: https://github.com/swagger-api/swagger-ui/issues/2031
+// Appears to fixed in Swagger version 3.
 public class PipelineController {
 
     private static final Logger log = LoggerFactory.getLogger(PipelineController.class);
@@ -113,7 +115,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/pipelines", "/rest/pipelines" },
             method = RequestMethod.DELETE,
-            produces = "application/json",
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes a pipeline.")
@@ -151,7 +152,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/tasks", "/rest/tasks" },
             method = RequestMethod.DELETE,
-            produces = "application/json",
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes a task.")
@@ -190,7 +190,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/actions", "/rest/actions" },
             method = RequestMethod.DELETE,
-            produces = "application/json",
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes an action.")

@@ -384,7 +384,7 @@ public class TestPipelineValidator {
         }
         catch (InvalidPipelineException e) {
             assertEquals(
-                    "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of workflow property.",
+                    "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of a workflow property.",
                     e.getMessage());
         }
     }

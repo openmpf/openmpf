@@ -245,7 +245,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
             var uriScheme = UriScheme.get(new URI(stream.getStreamUri()));
             if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
                 throw new WfmProcessingException(
-                        "The scheme of the provided URI is not supported. Only rtsp, http, and https are supported.");
+                        "The scheme of the provided URI is not supported. Only RTSP, HTTP, and HTTPS are supported.");
             }
         }
         catch (URISyntaxException e) {
@@ -261,10 +261,11 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
      * Marks a streaming job as CANCELLING in both the StreamingJob and in the long-term database.
      * @param jobId     The OpenMPF-assigned identifier for the streaming job. The job must be a streaming job.
      * @param doCleanup if true, delete the streaming job files from disk as part of cancelling the streaming job.
-     * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job has already been cancelled or
-     * if the streaming jobs status is already terminal.
-     * @exception JobCancellationInvalidJobIdWfmProcessingException may be thrown if the
-     * streaming job can't be cancelled due to an error with identification of the streaming job using the specified jobId.
+     * @exception JobAlreadyCancellingWfmProcessingException may be thrown if the streaming job
+     * has already been cancelled or if the streaming jobs status is already terminal.
+     * @exception JobCancellationInvalidJobIdWfmProcessingException may be thrown if the * streaming job
+     * can't be cancelled due to an error with identification of the streaming job using the specified jobId.
+     * @exception WfmProcessingException may be thrown if a warning or error occurs.
      */
     @Override
     public synchronized void cancel(long jobId, boolean doCleanup) throws WfmProcessingException {

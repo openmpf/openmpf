@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
-import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
@@ -434,7 +433,10 @@ public class JobController {
     private SingleJobInfo convertJob(JobRequest job) {
         float jobProgressVal = jobProgress.getJobProgress(job.getId())
                 .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
-        return ModelUtils.convertJobRequest(job, jobProgressVal);
+        return new SingleJobInfo(
+                job.getId(), job.getPipeline(), job.getPriority(), job.getStatus().toString(), jobProgressVal,
+                job.getTimeReceived(), job.getTimeCompleted(), job.getOutputObjectPath(),
+                job.getStatus().isTerminal());
     }
 
 

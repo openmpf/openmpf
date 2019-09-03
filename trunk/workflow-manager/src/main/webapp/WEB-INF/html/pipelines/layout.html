@@ -43,10 +43,10 @@
             <tr ng-repeat="action in actions | orderBy:'name'">
                 <td>{{$index}}</td>
                 <td>{{action.name}}</td>
-                <td>
+                <td class="text-center" style="width:50px">
                     <button ng-click="deleteAction(action.name)"
                             confirm="Are you sure you would like to delete {{action.name}}?"
-                            type="button" class="btn btn-default btn-block btn-xs" title="Delete Action">
+                            type="button" class="btn btn-default btn-xs" title="Delete Action">
                         <i class="fa fa-trash"></i>
                     </button>
                 </td>
@@ -123,10 +123,10 @@
             <tr ng-repeat="task in tasks | orderBy: 'name'">
                 <td>{{$index}}</td>
                 <td>{{task.name}}</td>
-                <td>
+                <td class="text-center" style="width:50px">
                     <button ng-click="deleteTask(task.name)"
                             confirm="Are you sure you would like to delete {{task.name}}?"
-                            type="button" class="btn btn-default btn-block btn-xs" title="Delete Task">
+                            type="button" class="btn btn-default btn-xs" title="Delete Task">
                         <i class="fa fa-trash"></i>
                     </button>
                 </td>
@@ -195,10 +195,10 @@
             <tr ng-repeat="pipeline in pipelines | orderBy: 'name'">
                 <td>{{$index}}</td>
                 <td>{{pipeline.name}}</td>
-                <td>
+                <td class="text-center" style="width:50px">
                     <button ng-click="deletePipeline(pipeline.name)"
                             confirm="Are you sure you would like to delete {{pipeline.name}}?"
-                            type="button" class="btn btn-default btn-block btn-xs" title="Delete Pipeline">
+                            type="button" class="btn btn-default btn-xs" title="Delete Pipeline">
                         <i class="fa fa-trash"></i>
                     </button>
                 </td>

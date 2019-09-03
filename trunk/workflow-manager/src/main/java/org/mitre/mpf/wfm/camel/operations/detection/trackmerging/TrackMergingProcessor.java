@@ -194,8 +194,10 @@ public class TrackMergingProcessor extends WfmProcessor {
             try {
                 minTrackLength = Integer.parseInt(minTrackLengthProperty);
             } catch (NumberFormatException exception) {
-                log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_LENGTH + " value of '{}' " +
-                                 "but encountered an exception. Defaulting to '{}'.", minTrackLengthProperty, minTrackLength, exception);
+                log.warn(String.format(
+                        "Attempted to parse %s value of '%s', but encountered an exception. Defaulting to '%s'.",
+                         MpfConstants.MIN_TRACK_LENGTH, minTrackLengthProperty, minTrackLength),
+                         exception);
             }
         }
 
@@ -203,8 +205,10 @@ public class TrackMergingProcessor extends WfmProcessor {
             try {
                 minTrackOverlap = Double.parseDouble(minTrackOverlapProperty);
             } catch (NumberFormatException exception) {
-                log.warn("Attempted to parse " + MpfConstants.MIN_TRACK_OVERLAP + " value of '{}' " +
-                                 "but encountered an exception. Defaulting to '{}'.", minTrackOverlapProperty, minTrackOverlap, exception);
+                log.warn(String.format(
+                        "Attempted to parse %s value of '%s', but encountered an exception. Defaulting to '%s'.",
+                        MpfConstants.MIN_TRACK_OVERLAP, minTrackOverlapProperty, minTrackOverlap),
+                        exception);
             }
         }
 

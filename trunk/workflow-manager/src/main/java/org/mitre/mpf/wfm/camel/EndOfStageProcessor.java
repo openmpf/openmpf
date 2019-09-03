@@ -43,48 +43,48 @@ import java.time.Instant;
 
 @Component(EndOfStageProcessor.REF)
 public class EndOfStageProcessor extends WfmProcessor {
-	public static final String REF = "endOfStageProcessor";
-	private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
+    public static final String REF = "endOfStageProcessor";
+    private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
 
-	@Autowired
-	private InProgressBatchJobsService inProgressBatchJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressBatchJobs;
 
-	@Autowired
-	private JobProgress jobProgressStore;
+    @Autowired
+    private JobProgress jobProgressStore;
 
-	@Autowired
-	private JobStatusBroadcaster jobStatusBroadcaster;
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
-	@Override
-	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-		inProgressBatchJobs.incrementTask(jobId);
-		BatchJob job = inProgressBatchJobs.getJob(jobId);
+    @Override
+    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        inProgressBatchJobs.incrementTask(jobId);
+        BatchJob job = inProgressBatchJobs.getJob(jobId);
 
-		log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
-				jobId,
-				job.getCurrentTaskIndex() - 1,
-				job.getCurrentTaskIndex(),
-				job.getPipelineElements().getTaskCount());
+        log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
+                 jobId,
+                 job.getCurrentTaskIndex() - 1,
+                 job.getCurrentTaskIndex(),
+                 job.getPipelineElements().getTaskCount());
 
 
-		if(job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
-			//notify of completion - use
-			if(!job.isOutputEnabled()) {
-				jobStatusBroadcaster.broadcast(
-						jobId,
-						100,
-						job.isCancelled() ? BatchJobStatusType.CANCELLED : BatchJobStatusType.COMPLETE,
-						Instant.now());
-				jobProgressStore.setJobProgress(jobId, 100.0f);
-			} else {
-				jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
-				jobProgressStore.setJobProgress(jobId, 99.0f);
-			}
-			log.debug("[Job {}|*|*] All stages have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
-			exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
-		}
+        if(job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
+            //notify of completion - use
+            if(!job.isOutputEnabled()) {
+                jobStatusBroadcaster.broadcast(
+                        jobId,
+                        100,
+                        job.isCancelled() ? BatchJobStatusType.CANCELLED : BatchJobStatusType.COMPLETE,
+                        Instant.now());
+                jobProgressStore.setJobProgress(jobId, 100.0f);
+            } else {
+                jobStatusBroadcaster.broadcast(jobId, 99, BatchJobStatusType.BUILDING_OUTPUT_OBJECT, Instant.now());
+                jobProgressStore.setJobProgress(jobId, 99.0f);
+            }
+            log.debug("[Job {}|*|*] All tasks have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
+            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
+        }
 
-		exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
-	}
+        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+    }
 }

@@ -162,7 +162,7 @@ public class DetectionResponseProcessor
 
         }
         catch (NumberFormatException e) {
-            log.warn("Invalid search threshold specified: value should be numeric. Provided value was: "
+            log.warn("Invalid confidence threshold specified: value should be numeric. Provided value was: "
                              + confidenceThresholdProperty);
             return job.getSystemPropertiesSnapshot().getConfidenceThreshold();
 

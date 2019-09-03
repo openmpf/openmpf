@@ -44,9 +44,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Builds the route that inspects the {@link Media} in a job. Once
- * inspected, metadata fields such as  {@link Media#type} and
- * {@link Media#length} should have meaningful values. If a medium
- * cannot be inspected, its {@link Media#failed} flag should be set.
+ * inspected, metadata fields corresponding to type and length
+ * should have meaningful values. If a medium cannot be inspected,
+ * its failed flag should be set.
  */
 @Component
 @DependsOn(JniLoader.REF)

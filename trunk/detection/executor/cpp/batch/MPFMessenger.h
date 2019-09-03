@@ -57,8 +57,8 @@ struct MPFMessageMetadata {
 
   long request_id;           /* 1   required */
   long media_id;             /* 400 optional */
-  int stage_index;           /* 401 optional */
-  string stage_name;         /* 402 optional */
+  int task_index;            /* 401 optional */
+  string task_name;          /* 402 optional */
   int action_index;          /* 403 optional */
   string action_name;        /* 404 optional */
 };

@@ -36,38 +36,38 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
  */
 public abstract class BaseDetectionStatusProcessor implements Processor {
 
-	protected void process(Exchange exchange, DetectionProtobuf.DetectionError error, boolean isDeserialized) throws Exception {
-		// Copy the headers from the incoming message to the outgoing message.
-		exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
+    protected void process(Exchange exchange, DetectionProtobuf.DetectionError error, boolean isDeserialized) throws Exception {
+        // Copy the headers from the incoming message to the outgoing message.
+        exchange.getOut().getHeaders().putAll(exchange.getIn().getHeaders());
 
-		DetectionProtobuf.DetectionRequest extractionRequest;
-		Object body = exchange.getIn().getBody();
+        DetectionProtobuf.DetectionRequest extractionRequest;
+        Object body = exchange.getIn().getBody();
 
-		if (isDeserialized) {
-			// There is no parseFrom(String) method, so we merge the text with a builder.
-			DetectionProtobuf.DetectionRequest.Builder builder = DetectionProtobuf.DetectionRequest.newBuilder();
-			TextFormat.merge((CharSequence)body, builder);
-			extractionRequest = builder.build();
-		} else {
-			extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom((byte[])body);
-		}
+        if (isDeserialized) {
+            // There is no parseFrom(String) method, so we merge the text with a builder.
+            DetectionProtobuf.DetectionRequest.Builder builder = DetectionProtobuf.DetectionRequest.newBuilder();
+            TextFormat.merge((CharSequence)body, builder);
+            extractionRequest = builder.build();
+        } else {
+            extractionRequest = DetectionProtobuf.DetectionRequest.parseFrom((byte[])body);
+        }
 
-		// Create a simple response based on the request and indicate that the request was cancelled or there was an error.
-		exchange.getOut().setBody(
-			DetectionProtobuf.DetectionResponse.newBuilder()
-				.setActionIndex(extractionRequest.getActionIndex())
-				.setActionName(extractionRequest.getActionName())
-				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
-				.setError(error)
-				.setMediaId(extractionRequest.getMediaId())
-				.setRequestId(extractionRequest.getRequestId())
-				.setStageIndex(extractionRequest.getStageIndex())
-				.setStageName(extractionRequest.getStageName())
+        // Create a simple response based on the request and indicate that the request was cancelled or there was an error.
+        exchange.getOut().setBody(
+                DetectionProtobuf.DetectionResponse.newBuilder()
+                        .setActionIndex(extractionRequest.getActionIndex())
+                        .setActionName(extractionRequest.getActionName())
+                        .setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
+                        .setError(error)
+                        .setMediaId(extractionRequest.getMediaId())
+                        .setRequestId(extractionRequest.getRequestId())
+                        .setTaskIndex(extractionRequest.getTaskIndex())
+                        .setTaskName(extractionRequest.getTaskName())
 
-				// Build the response...
-				.build()
+                        // Build the response...
+                        .build()
 
-				// ...then convert it to a byte array.
-				.toByteArray());
-	}
+                        // ...then convert it to a byte array.
+                        .toByteArray());
+    }
 }

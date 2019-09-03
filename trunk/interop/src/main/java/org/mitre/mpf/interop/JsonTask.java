@@ -34,47 +34,47 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonTypeName("Stage")
-public class JsonStage {
+@JsonTypeName("Task")
+public class JsonTask {
 
 	@JsonProperty("actionType")
-	@JsonPropertyDescription("The type of operation performed in this stage (e.g., DETECTION, MARKUP, etc.).")
+	@JsonPropertyDescription("The type of operation performed in this tasks (e.g., DETECTION, MARKUP, etc.).")
 	private String actionType;
 	public String getActionType() { return actionType; }
 
 	@JsonProperty("name")
-	@JsonPropertyDescription("The name associated with this stage.")
+	@JsonPropertyDescription("The name associated with this task.")
 	private String name;
 	public String getName() { return name; }
 
 	@JsonProperty("description")
-	@JsonPropertyDescription("The description indicating the purpose of this stage.")
+	@JsonPropertyDescription("The description indicating the purpose of this task.")
 	private String description;
 	public String getDescription() { return description; }
 
 	@JsonProperty("actions")
-	@JsonPropertyDescription("The collection of actions which are executed in parallel during this stage.")
+	@JsonPropertyDescription("The collection of actions which are executed in parallel during this task.")
 	private List<JsonAction> actions;
 	public List<JsonAction> getActions() { return actions; }
 
-	public JsonStage(String actionType, String name, String description) {
+	public JsonTask(String actionType, String name, String description) {
 		this.actionType = actionType;
 		this.name = name;
 		this.description = description;
 		this.actions = new ArrayList<JsonAction>();
 	}
 
-    public JsonStage(){}
+    public JsonTask(){}
 
 	@JsonCreator
-	public static JsonStage factory(@JsonProperty("actionType") String actionType,
-	                                @JsonProperty("name") String name,
-	                                @JsonProperty("description") String description,
-	                                @JsonProperty("actions") List<JsonAction> actions) {
-		JsonStage jsonStage = new JsonStage(actionType, name, description);
+	public static JsonTask factory(@JsonProperty("actionType") String actionType,
+	                               @JsonProperty("name") String name,
+	                               @JsonProperty("description") String description,
+	                               @JsonProperty("actions") List<JsonAction> actions) {
+		JsonTask jsonTask = new JsonTask(actionType, name, description);
 		if(actions != null) {
-			jsonStage.actions.addAll(actions);
+			jsonTask.actions.addAll(actions);
 		}
-		return jsonStage;
+		return jsonTask;
 	}
 }

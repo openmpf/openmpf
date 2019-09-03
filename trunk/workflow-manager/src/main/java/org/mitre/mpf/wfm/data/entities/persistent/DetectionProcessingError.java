@@ -40,8 +40,8 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
     private final long _mediaId;
     public long getMediaId() { return _mediaId; }
 
-    private final int _stageIndex;
-    public int getStageIndex() { return _stageIndex; }
+    private final int _taskIndex;
+    public int getTaskIndex() { return _taskIndex; }
 
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
@@ -59,14 +59,14 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
     public DetectionProcessingError(
             @JsonProperty("jobId") long jobId,
             @JsonProperty("mediaId") long mediaId,
-            @JsonProperty("stageIndex") int stageIndex,
+            @JsonProperty("taskIndex") int taskIndex,
             @JsonProperty("actionIndex") int actionIndex,
             @JsonProperty("startOffset") int startOffset,
             @JsonProperty("endOffset") int endOffset,
             @JsonProperty("error") String error) {
         _jobId = jobId;
         _mediaId = mediaId;
-        _stageIndex = stageIndex;
+        _taskIndex = taskIndex;
         _actionIndex = actionIndex;
         _startOffset = startOffset;
         _endOffset = endOffset;
@@ -75,7 +75,7 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
 
     @Override
     public int hashCode() {
-        return Objects.hash(_jobId, _mediaId, _stageIndex, _actionIndex, _startOffset, _endOffset, _error);
+        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startOffset, _endOffset, _error);
     }
 
     @Override
@@ -86,15 +86,15 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
     @Override
     public String toString() {
         return String.format(
-                "%s#<jobId=%d, mediaId=%d, stageIndex=%d, actionIndex=%d, startOffset=%d, endOffset=%d, error='%s'>",
-                getClass().getSimpleName(), _jobId, _mediaId, _stageIndex, _actionIndex, _startOffset, _endOffset,
+                "%s#<jobId=%d, mediaId=%d, taskIndex=%d, actionIndex=%d, startOffset=%d, endOffset=%d, error='%s'>",
+                getClass().getSimpleName(), _jobId, _mediaId, _taskIndex, _actionIndex, _startOffset, _endOffset,
                 _error);
     }
 
     private static final Comparator<DetectionProcessingError> COMPARATOR = Comparator.nullsFirst(
             Comparator.comparingLong(DetectionProcessingError::getJobId)
             .thenComparingLong(DetectionProcessingError::getMediaId)
-            .thenComparingInt(DetectionProcessingError::getStageIndex)
+            .thenComparingInt(DetectionProcessingError::getTaskIndex)
             .thenComparingInt(DetectionProcessingError::getActionIndex)
             .thenComparingInt(DetectionProcessingError::getStartOffset)
             .thenComparingInt(DetectionProcessingError::getEndOffset)

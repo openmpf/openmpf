@@ -88,7 +88,7 @@ public class MPFDetectionBuffer {
 
             return new MPFMessageMetadata(dataUri, dataType,
                     detectionRequest.getMediaId(),
-                    detectionRequest.getStageName(), detectionRequest.getStageIndex(),
+                    detectionRequest.getTaskName(), detectionRequest.getTaskIndex(),
                     detectionRequest.getActionName(), detectionRequest.getActionIndex(),
                     algorithmProperties, mediaProperties, requestId,
                     correlationId, breadcrumbId, splitSize, jobId, jobName);
@@ -208,8 +208,8 @@ public class MPFDetectionBuffer {
         // TODO: share the same dataType enum between both the DetectionRequest and DetectionResponse protobuf
         detectionResponse.setDataType(translateMPFDetectionDataType(msgMetadata.getDataType()));
 
-        detectionResponse.setStageName(msgMetadata.getStageName());
-        detectionResponse.setStageIndex(msgMetadata.getStageIndex());
+        detectionResponse.setTaskName(msgMetadata.getTaskName());
+        detectionResponse.setTaskIndex(msgMetadata.getTaskIndex());
         detectionResponse.setActionName(msgMetadata.getActionName());
         detectionResponse.setActionIndex(msgMetadata.getActionIndex());
         detectionResponse.setError(translateMPFDetectionError(msgError));

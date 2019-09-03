@@ -66,7 +66,7 @@ public class TestRedis {
 
     private static ImmutableSortedSet<Track> _currentTracks;
 
-    private static Track _differentStageTrack;
+    private static Track _differentTaskTrack;
 
     private static Track _differentJobTrack;
 
@@ -100,7 +100,7 @@ public class TestRedis {
                 Map.of());
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
-        _differentStageTrack = new Track(
+        _differentTaskTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 1,
@@ -155,7 +155,7 @@ public class TestRedis {
             _redis.addTrack(track);
         }
         _redis.addTrack(_differentJobTrack);
-        _redis.addTrack(_differentStageTrack);
+        _redis.addTrack(_differentTaskTrack);
     }
 
 
@@ -166,8 +166,8 @@ public class TestRedis {
 
         assertEquals(_currentTracks, retrievedTracks);
 
-        SortedSet<Track> retrievedOtherStageTracks = _redis.getTracks(TEST_JOB_ID, TEST_MEDIA_ID, 1, 0);
-        assertEquals(Collections.singleton(_differentStageTrack), retrievedOtherStageTracks);
+        SortedSet<Track> retrievedOtherTaskTracks = _redis.getTracks(TEST_JOB_ID, TEST_MEDIA_ID, 1, 0);
+        assertEquals(Collections.singleton(_differentTaskTrack), retrievedOtherTaskTracks);
 
         assertTrue(_redis.getTracks(1, TEST_MEDIA_ID, 0, 0).isEmpty());
 
@@ -232,7 +232,7 @@ public class TestRedis {
         assertEquals(1, keys.size());
         SortedSet<Track> otherJobTracks = _redis.getTracks(_differentJobTrack.getJobId(),
                                                            _differentJobTrack.getMediaId(),
-                                                           _differentJobTrack.getStageIndex(),
+                                                           _differentJobTrack.getTaskIndex(),
                                                            _differentJobTrack.getActionIndex());
         assertEquals(Collections.singleton(_differentJobTrack), otherJobTracks);
 
@@ -240,14 +240,14 @@ public class TestRedis {
         for (Track track : _currentTracks) {
             assertNotInRedis(track);
         }
-        assertNotInRedis(_differentStageTrack);
+        assertNotInRedis(_differentTaskTrack);
     }
 
 
     private void assertNotInRedis(Track track) {
         SortedSet<Track> tracks = _redis.getTracks(track.getJobId(),
                                                    track.getMediaId(),
-                                                   track.getStageIndex(),
+                                                   track.getTaskIndex(),
                                                    track.getActionIndex());
         assertFalse(tracks.contains(track));
     }

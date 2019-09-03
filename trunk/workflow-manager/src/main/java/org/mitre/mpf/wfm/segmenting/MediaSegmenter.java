@@ -67,8 +67,8 @@ public interface MediaSegmenter {
         DetectionProtobuf.DetectionRequest.Builder requestBuilder = DetectionProtobuf.DetectionRequest.newBuilder()
                 .setRequestId(0)
                 .setMediaId(media.getId())
-                .setStageIndex(context.getStageIndex())
-                .setStageName(context.getStageName())
+                .setTaskIndex(context.getTaskIndex())
+                .setTaskName(context.getTaskName())
                 .setActionIndex(context.getActionIndex())
                 .setActionName(context.getActionName())
                 .setDataUri(media.getLocalPath().toString())
@@ -85,7 +85,7 @@ public interface MediaSegmenter {
 
 
     static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
-        if (context.isFirstDetectionStage()) {
+        if (context.isFirstDetectionTask()) {
             return context.getAlgorithmProperties().stream()
                     .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
                     .filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))

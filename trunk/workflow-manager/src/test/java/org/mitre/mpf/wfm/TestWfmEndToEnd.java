@@ -232,7 +232,7 @@ public class TestWfmEndToEnd {
 
 	private static DetectionProtobuf.DetectionResponse createUnsolicitedResponse(long id) {
 		return DetectionProtobuf.DetectionResponse.newBuilder()
-				.setStageIndex(0)
+				.setTaskIndex(0)
 				.setActionIndex(0)
 				.setDataType(DetectionProtobuf.DetectionResponse.DataType.IMAGE)
 				.setError(DetectionProtobuf.DetectionError.BAD_FRAME_SIZE)

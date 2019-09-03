@@ -262,7 +262,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
 
-            Set<Integer> suppressedStages = getSuppressedStages(media, job);
+            Set<Integer> suppressedTasks = getSuppressedTasks(media, job);
 
             for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
                 Task task = job.getPipelineElements().getTask(taskIndex);
@@ -296,7 +296,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         // Always include detection actions in the output object, even if they do not generate any results.
                         addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey, mediaOutputObject);
                     }
-                    else if (suppressedStages.contains(taskIndex)) {
+                    else if (suppressedTasks.contains(taskIndex)) {
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
                                             mediaOutputObject);
                     }
@@ -351,10 +351,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private static List<DetectionProcessingError> getDetectionProcessingErrors(
-            BatchJob job, long mediaId, int stageIndex, int actionIndex) {
+            BatchJob job, long mediaId, int taskIndex, int actionIndex) {
         return job.getDetectionProcessingErrors()
                 .stream()
-                .filter(d -> d.getMediaId() == mediaId && d.getStageIndex() == stageIndex
+                .filter(d -> d.getMediaId() == mediaId && d.getTaskIndex() == taskIndex
                         && d.getActionIndex() == actionIndex)
                 .collect(toList());
     }
@@ -431,9 +431,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static boolean isOutputLastStageOnly(Media media, BatchJob job) {
+    private static boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
-        // OUTPUT_LAST_STAGE_ONLY to a single stage.
+        // OUTPUT_LAST_STAGE_ONLY to a single task.
         String mediaProperty = media.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
         if (mediaProperty != null) {
             return Boolean.parseBoolean(mediaProperty);
@@ -449,21 +449,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static Set<Integer> getSuppressedStages(Media media, BatchJob job) {
-        if (!isOutputLastStageOnly(media, job)) {
+    private static Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
+        if (!isOutputLastTaskOnly(media, job)) {
             return Set.of();
         }
 
         List<String> taskNames = job.getPipelineElements().getPipeline().getTasks();
-        int lastDetectionStage = 0;
+        int lastDetectionTask = 0;
         for (int i = taskNames.size() - 1; i >= 0; i--) {
             ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
             if (actionType == ActionType.DETECTION) {
-                lastDetectionStage = i;
+                lastDetectionTask = i;
                 break;
             }
         }
-        return IntStream.range(0, lastDetectionStage)
+        return IntStream.range(0, lastDetectionTask)
                 .boxed()
                 .collect(toSet());
     }

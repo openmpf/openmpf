@@ -50,7 +50,7 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	@Override
 	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
 
-		if (context.isFirstDetectionStage()) {
+		if (context.isFirstDetectionTask()) {
 			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
 		}
 		else if (MediaSegmenter.feedForwardIsEnabled(context)) {

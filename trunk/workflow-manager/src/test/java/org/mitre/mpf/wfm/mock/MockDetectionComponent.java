@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.mock;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.junit.Assert;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.Metrics;
@@ -75,8 +74,8 @@ public class MockDetectionComponent implements Processor {
 								.setNodeId("MOCK DETECTION COMPONENT")
 								.setProcessingTime(1000))
 				.setRequestId(extractionRequest.getRequestId())
-				.setStageIndex(extractionRequest.getStageIndex())
-				.setStageName(extractionRequest.getStageName());
+				.setTaskIndex(extractionRequest.getTaskIndex())
+				.setTaskName(extractionRequest.getTaskName());
 
 		if (extractionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.AUDIO) {
 			response.setStartIndex(extractionRequest.getAudioRequest().getStartTime())

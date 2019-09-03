@@ -39,8 +39,8 @@ public class MPFMessageMetadata {
     private String dataUri;
 	private final MPFDataType dataType;
 	private long mediaId;
-	private String stageName;
-	private int stageIndex;
+	private String taskName;
+	private int taskIndex;
 	private String actionName;
 	private int actionIndex;
 	private Map<String, String> algorithmProperties;
@@ -64,12 +64,12 @@ public class MPFMessageMetadata {
 		return mediaId;
 	}
 
-	public String getStageName() {
-		return stageName;
+	public String getTaskName() {
+		return taskName;
 	}
 
-	public int getStageIndex() {
-		return stageIndex;
+	public int getTaskIndex() {
+		return taskIndex;
 	}
 
 	public String getActionName() {
@@ -121,8 +121,8 @@ public class MPFMessageMetadata {
         String dataUri,
         MPFDataType dataType,
         long mediaId,
-        String stageName,
-        int stageIndex,
+        String taskName,
+        int taskIndex,
         String actionName,
         int actionIndex,
         Map<String, String> algorithmProperties,
@@ -140,8 +140,8 @@ public class MPFMessageMetadata {
 
         this.mediaId = mediaId;
 
-        this.stageName = stageName;
-        this.stageIndex = stageIndex;
+        this.taskName = taskName;
+        this.taskIndex = taskIndex;
 
         this.actionName = actionName;
         this.actionIndex = actionIndex;

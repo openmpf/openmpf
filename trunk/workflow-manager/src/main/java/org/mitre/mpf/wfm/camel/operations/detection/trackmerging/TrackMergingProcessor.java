@@ -95,10 +95,10 @@ public class TrackMergingProcessor extends WfmProcessor {
 
         BatchJob job = inProgressJobs.getJob(trackMergingContext.getJobId());
 
-        Task task = job.getPipelineElements().getTask(trackMergingContext.getStageIndex());
+        Task task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             Action action = job.getPipelineElements()
-                    .getAction(trackMergingContext.getStageIndex(), actionIndex);
+                    .getAction(trackMergingContext.getTaskIndex(), actionIndex);
 
             for (Media media : job.getMedia()) {
 
@@ -117,7 +117,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 }
 
                 SortedSet<Track> tracks = inProgressJobs.getTracks(
-                        trackMergingContext.getJobId(), media.getId(), trackMergingContext.getStageIndex(),
+                        trackMergingContext.getJobId(), media.getId(), trackMergingContext.getTaskIndex(),
                         actionIndex);
 
                 if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
@@ -129,7 +129,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
 
                     log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
-                              trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
+                              trackMergingContext.getJobId(), trackMergingContext.getTaskIndex(), actionIndex,
                               initialSize, tracks.size(), media.getId());
                 }
 
@@ -141,12 +141,12 @@ public class TrackMergingProcessor extends WfmProcessor {
                             .collect(toCollection(TreeSet::new));
 
                     log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
-                              trackMergingContext.getJobId(), trackMergingContext.getStageIndex(), actionIndex,
+                              trackMergingContext.getJobId(), trackMergingContext.getTaskIndex(), actionIndex,
                               initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 
                 inProgressJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
-                                         trackMergingContext.getStageIndex(), actionIndex, tracks);
+                                         trackMergingContext.getTaskIndex(), actionIndex, tracks);
             }
         }
 
@@ -272,7 +272,7 @@ public class TrackMergingProcessor extends WfmProcessor {
         Track merged = new Track(
                 track1.getJobId(),
                 track1.getMediaId(),
-                track1.getStageIndex(),
+                track1.getTaskIndex(),
                 track1.getActionIndex(),
                 track1.getStartOffsetFrameInclusive(),
                 track2.getEndOffsetFrameInclusive(),

@@ -114,8 +114,8 @@ public class DetectionSplitter implements StageSplitter {
     public final List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
-        // Is this the first detection stage in the pipeline?
-        boolean isFirstDetectionStage = isFirstDetectionOperation(job);
+        // Is this the first detection task in the pipeline?
+        boolean isFirstDetectionTask = isFirstDetectionTask(job);
 
         for (Media media : job.getMedia()) {
             try {
@@ -128,11 +128,11 @@ public class DetectionSplitter implements StageSplitter {
                     continue;
                 }
 
-                // If this is the first detection stage in the pipeline, we should segment the entire media for detection.
-                // If this is not the first detection stage, we should build segments based off of the previous stage's
+                // If this is the first detection task in the pipeline, we should segment the entire media for detection.
+                // If this is not the first detection task, we should build segments based off of the previous tasks's
                 // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
                 SortedSet<Track> previousTracks;
-                if (isFirstDetectionStage) {
+                if (isFirstDetectionTask) {
                     previousTracks = Collections.emptySortedSet();
                 }
                 else {
@@ -179,7 +179,7 @@ public class DetectionSplitter implements StageSplitter {
                             task.getName(),
                             actionIndex,
                             action.getName(),
-                            isFirstDetectionStage,
+                            isFirstDetectionTask,
                             algorithmProperties,
                             previousTracks,
                             segmentingPlan);
@@ -316,15 +316,16 @@ public class DetectionSplitter implements StageSplitter {
     }
 
     /**
-     * Returns {@literal true} iff the current stage of this job is the first detection stage in the job.
+     * Returns {@literal true} iff the current task of this job is the first detection task in the job.
      */
-    private static boolean isFirstDetectionOperation(BatchJob job) {
+    private static boolean isFirstDetectionTask(BatchJob job) {
         boolean isFirst = false;
         for (int i = 0; i < job.getPipelineElements().getTaskCount(); i++) {
             ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
-            // This is a detection stage.
+            // This is a detection task.
             if (actionType == ActionType.DETECTION) {
-                // If this is the first detection stage, it must be true that the current stage's index is at most the current job stage's index.
+                // If this is the first detection task, it must be true that the current task's index is at most the
+                // current job task's index.
                 isFirst = i >= job.getCurrentTaskIndex();
                 break;
             }

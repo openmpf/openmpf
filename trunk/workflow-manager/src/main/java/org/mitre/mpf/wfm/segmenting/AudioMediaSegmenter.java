@@ -46,61 +46,61 @@ import java.util.Map;
 
 @Component(AudioMediaSegmenter.REF)
 public class AudioMediaSegmenter implements MediaSegmenter {
-	private static final Logger log = LoggerFactory.getLogger(AudioMediaSegmenter.class);
-	public static final String REF = "audioMediaSegmenter";
+    private static final Logger log = LoggerFactory.getLogger(AudioMediaSegmenter.class);
+    public static final String REF = "audioMediaSegmenter";
 
 
-	@Override
-	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
-		log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", context.getJobId(),
-		         context.getStageIndex(), context.getActionIndex(), media.getId());
+    @Override
+    public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
+        log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", context.getJobId(),
+                 context.getTaskIndex(), context.getActionIndex(), media.getId());
 
-		if (!context.isFirstDetectionStage() && MediaSegmenter.feedForwardIsEnabled(context)) {
-			return createFeedForwardMessages(media, context);
-		}
+        if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
+            return createFeedForwardMessages(media, context);
+        }
 
-		return Collections.singletonList(
-				createProtobufMessage(media, context,
-				                      AudioRequest.newBuilder().setStartTime(0).setStopTime(-1).build()));
-	}
+        return Collections.singletonList(
+                createProtobufMessage(media, context,
+                                      AudioRequest.newBuilder().setStartTime(0).setStopTime(-1).build()));
+    }
 
 
-	private static Message createProtobufMessage(Media media, DetectionContext context,
-	                                             AudioRequest audioRequest) {
-		DetectionProtobuf.DetectionRequest request = MediaSegmenter
-				.initializeRequest(media, context)
-				.setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
-				.setAudioRequest(audioRequest)
-				.build();
+    private static Message createProtobufMessage(Media media, DetectionContext context,
+                                                 AudioRequest audioRequest) {
+        DetectionProtobuf.DetectionRequest request = MediaSegmenter
+                .initializeRequest(media, context)
+                .setDataType(DetectionProtobuf.DetectionRequest.DataType.AUDIO)
+                .setAudioRequest(audioRequest)
+                .build();
 
-		Message message = new DefaultMessage();
-		message.setBody(request);
-		return message;
-	}
+        Message message = new DefaultMessage();
+        message.setBody(request);
+        return message;
+    }
 
-	private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-		List<Message> messages = new ArrayList<>();
-		for (Track track : context.getPreviousTracks()) {
+    private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+        List<Message> messages = new ArrayList<>();
+        for (Track track : context.getPreviousTracks()) {
 
-			AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
-					.setStartTime(track.getStartOffsetTimeInclusive())
-					.setStopTime(track.getEndOffsetTimeInclusive());
+            AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
+                    .setStartTime(track.getStartOffsetTimeInclusive())
+                    .setStopTime(track.getEndOffsetTimeInclusive());
 
-			Detection exemplar = track.getExemplar();
+            Detection exemplar = track.getExemplar();
 
-			AudioTrack.Builder audioTrackBuilder = audioRequest.getFeedForwardTrackBuilder()
-					.setConfidence(exemplar.getConfidence())
-					.setStartTime(track.getStartOffsetTimeInclusive())
-					.setStopTime(track.getEndOffsetTimeInclusive());
+            AudioTrack.Builder audioTrackBuilder = audioRequest.getFeedForwardTrackBuilder()
+                    .setConfidence(exemplar.getConfidence())
+                    .setStartTime(track.getStartOffsetTimeInclusive())
+                    .setStopTime(track.getEndOffsetTimeInclusive());
 
-			for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
-				audioTrackBuilder.addDetectionPropertiesBuilder()
-						.setKey(entry.getKey())
-						.setValue(entry.getValue());
-			}
+            for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
+                audioTrackBuilder.addDetectionPropertiesBuilder()
+                        .setKey(entry.getKey())
+                        .setValue(entry.getValue());
+            }
 
-			messages.add(createProtobufMessage(media, context, audioRequest.build()));
-		}
-		return messages;
-	}
+            messages.add(createProtobufMessage(media, context, audioRequest.build()));
+        }
+        return messages;
+    }
 }

@@ -30,20 +30,21 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TrackMergingContext {
-	private long jobId;
-	public long getJobId() { return jobId; }
+    private final long _jobId;
+    public long getJobId() { return _jobId; }
 
-	private int stageIndex;
-	public int getStageIndex() { return stageIndex; }
+    private final int _taskIndex;
+    public int getTaskIndex() { return _taskIndex; }
 
-	@JsonCreator
-	public TrackMergingContext(@JsonProperty("jobId") long jobId, @JsonProperty("stageIndex") int stageIndex) {
-		this.jobId = jobId;
-		this.stageIndex = stageIndex;
-	}
+    @JsonCreator
+    public TrackMergingContext(@JsonProperty("jobId") long jobId,
+                               @JsonProperty("taskIndex") int taskIndex) {
+        _jobId = jobId;
+        _taskIndex = taskIndex;
+    }
 
-	@Override
-	public String toString(){
-		return String.valueOf(jobId) + ":" + String.valueOf(stageIndex);
-	}
+    @Override
+    public String toString(){
+        return _jobId + ":" + _taskIndex;
+    }
 }

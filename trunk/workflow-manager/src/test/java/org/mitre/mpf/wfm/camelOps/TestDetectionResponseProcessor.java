@@ -113,8 +113,8 @@ public class TestDetectionResponseProcessor {
             .setMediaId(testMediaId)
             .setStartIndex(0)
             .setStopIndex(10)
-            .setStageName("theWorld")
-            .setStageIndex(1)
+            .setTaskName("theWorld")
+            .setTaskIndex(1)
             .setActionName("howLikeAnAngel")
             .setActionIndex(1)
             .setRequestId(123456)
@@ -130,7 +130,7 @@ public class TestDetectionResponseProcessor {
         TrackMergingContext processorResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
 
         Assert.assertTrue(processorResponse.getJobId() == testJobId);
-        Assert.assertTrue(processorResponse.getStageIndex() == 1);
+        Assert.assertTrue(processorResponse.getTaskIndex() == 1);
 
         Assert.assertTrue(responseBody != null);
     }
@@ -144,7 +144,7 @@ public class TestDetectionResponseProcessor {
                 .setMediaId(testMediaId)
                 .setStartIndex(0)
                 .setStopIndex(10)
-                .setStageIndex(1)
+                .setTaskIndex(1)
                 .setActionIndex(1)
                 .setRequestId(123456)
                 .build();

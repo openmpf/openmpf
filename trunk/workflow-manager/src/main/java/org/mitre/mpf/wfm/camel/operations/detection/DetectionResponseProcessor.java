@@ -75,7 +75,7 @@ public class DetectionResponseProcessor
 
     @Override
     public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
-        String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getStageIndex(), detectionResponse.getActionIndex());
+        String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
         BatchJob job = inProgressJobs.getJob(jobId);
         Float fps = null;
         Media media = job.getMedia()
@@ -91,12 +91,12 @@ public class DetectionResponseProcessor
             }
         }
 
-        log.debug("[{}] Response received for Media #{} [{}-{}]. Stage: '{}'. Action: '{}'.",
+        log.debug("[{}] Response received for Media #{} [{}-{}]. Task: '{}'. Action: '{}'.",
                   logLabel,
                   detectionResponse.getMediaId(),
                   detectionResponse.getStartIndex(),
                   detectionResponse.getStopIndex(),
-                  detectionResponse.getStageName(),
+                  detectionResponse.getTaskName(),
                   detectionResponse.getActionName());
 
         if (detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
@@ -119,7 +119,7 @@ public class DetectionResponseProcessor
             inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
                     jobId,
                     detectionResponse.getMediaId(),
-                    detectionResponse.getStageIndex(),
+                    detectionResponse.getTaskIndex(),
                     detectionResponse.getActionIndex(),
                     detectionResponse.getStartIndex(),
                     detectionResponse.getStopIndex(),
@@ -132,7 +132,8 @@ public class DetectionResponseProcessor
                 && detectionResponse.getGenericResponsesCount() == 0  ) {
 
             // The detector did not find any tracks in the medium between the given range. This isn't an error, but it is worth logging.
-            log.debug("[{}] No tracks were found in Media #{} [{}, {}].", logLabel, detectionResponse.getMediaId(), detectionResponse.getStageIndex(), detectionResponse.getStopIndex());
+            log.debug("[{}] No tracks were found in Media #{} [{}, {}].", logLabel, detectionResponse.getMediaId(),
+                      detectionResponse.getTaskIndex(), detectionResponse.getStopIndex());
 
 
         } else {
@@ -148,7 +149,7 @@ public class DetectionResponseProcessor
             processGenericResponses(jobId, detectionResponse, confidenceThreshold);
         }
 
-        return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getStageIndex()));
+        return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
 
 
@@ -192,7 +193,7 @@ public class DetectionResponseProcessor
                     Track track = new Track(
                             jobId,
                             detectionResponse.getMediaId(),
-                            detectionResponse.getStageIndex(),
+                            detectionResponse.getTaskIndex(),
                             detectionResponse.getActionIndex(),
                             objectTrack.getStartFrame(),
                             objectTrack.getStopFrame(),
@@ -229,7 +230,7 @@ public class DetectionResponseProcessor
                     Track track = new Track(
                             jobId,
                             detectionResponse.getMediaId(),
-                            detectionResponse.getStageIndex(),
+                            detectionResponse.getTaskIndex(),
                             detectionResponse.getActionIndex(),
                             0,
                             0,
@@ -256,7 +257,7 @@ public class DetectionResponseProcessor
                     Track track = new Track(
                             jobId,
                             detectionResponse.getMediaId(),
-                            detectionResponse.getStageIndex(),
+                            detectionResponse.getTaskIndex(),
                             detectionResponse.getActionIndex(),
                             0,
                             1,
@@ -293,7 +294,7 @@ public class DetectionResponseProcessor
                     Track track1 = new Track(
                             jobId,
                             detectionResponse.getMediaId(),
-                            detectionResponse.getStageIndex(),
+                            detectionResponse.getTaskIndex(),
                             detectionResponse.getActionIndex(),
                             0,
                             0,

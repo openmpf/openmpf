@@ -161,10 +161,10 @@ public class TestTrackMergingProcessor {
      */
     private void generateAndRunMerge(String filePath, String mediaType, String samplingInterval, String mergeTracks,
                                      String minGap, String minTrackSize, int expectedTracks) {
-        final int stageIndex = 0;
+        final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
@@ -250,7 +250,7 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue("A response body must be set.", responseBody != null);
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
+        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
         Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
         Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
         inProgressJobs.clearJob(TEST_JOB_ID);
@@ -259,10 +259,10 @@ public class TestTrackMergingProcessor {
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingNoTracks() {
         final long mediaId = 123456;
-        final int stageIndex = 0;
+        final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
@@ -300,7 +300,7 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue("A response body must be set.", responseBody != null);
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
+        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
         Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
         Assert.assertEquals(0, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
         inProgressJobs.clearJob(TEST_JOB_ID);

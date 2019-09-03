@@ -54,9 +54,9 @@ public class ArtifactExtractionRequest {
     private final long _jobId;
     public long getJobId() { return _jobId; }
 
-    /** The stage index in the pipeline. This information is necessary to map an artifact back to a track. */
-    private final int _stageIndex;
-    public int getStageIndex() { return _stageIndex; }
+    /** The task index in the pipeline. This information is necessary to map an artifact back to a track. */
+    private final int _taskIndex;
+    public int getTaskIndex() { return _taskIndex; }
 
     /** A mapping of actionIndexes to frame numbers which should be extracted for that action. */
     private final ImmutableMap<Integer, ImmutableSet<Integer>> _actionToFrameNumbers;
@@ -77,13 +77,13 @@ public class ArtifactExtractionRequest {
             @JsonProperty("mediaId") long mediaId,
             @JsonProperty("path") String path,
             @JsonProperty("mediaType") MediaType mediaType,
-            @JsonProperty("stageIndex") int stageIndex,
+            @JsonProperty("taskIndex") int taskIndex,
             @JsonProperty("actionToFrameNumbers") Map<Integer, Set<Integer>> actionToFrameNumbers) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;
         _mediaType = mediaType;
-        _stageIndex = stageIndex;
+        _taskIndex = taskIndex;
 
         _actionToFrameNumbers = actionToFrameNumbers.entrySet()
                 .stream()

@@ -32,7 +32,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.interop.JsonTask;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -156,8 +156,8 @@ public class JsonUtils {
 
         for (String taskName : pipeline.getTasks()) {
             Task task = pipelineElements.getTask(taskName);
-            JsonStage jsonStage = new JsonStage(getActionType(pipelineElements, task).name(), taskName,
-                                                task.getDescription());
+            JsonTask jsonTask = new JsonTask(getActionType(pipelineElements, task).name(), taskName,
+                                               task.getDescription());
 
             for (String actionName : task.getActions()) {
                 Action action = pipelineElements.getAction(actionName);
@@ -165,10 +165,10 @@ public class JsonUtils {
                 for (Action.Property property : action.getProperties()) {
                     jsonAction.getProperties().put(property.getName(), property.getValue());
                 }
-                jsonStage.getActions().add(jsonAction);
+                jsonTask.getActions().add(jsonAction);
             }
 
-            jsonPipeline.getStages().add(jsonStage);
+            jsonPipeline.getTasks().add(jsonTask);
         }
         return jsonPipeline;
     }

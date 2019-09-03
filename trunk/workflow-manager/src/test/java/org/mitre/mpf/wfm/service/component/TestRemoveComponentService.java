@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -127,7 +128,7 @@ public class TestRemoveComponentService {
         Action otherAction = new Action("other action", "description", "foo",
                                     Collections.emptyList());
         when(_mockPipelineService.getActions())
-                .thenReturn(Arrays.asList(componentAction, componentAction2, otherAction));
+                .thenReturn(ImmutableList.of(componentAction, componentAction2, otherAction));
 
         rcm.getActions().add(componentAction.getName());
         rcm.getActions().add(componentAction2.getName());
@@ -137,8 +138,9 @@ public class TestRemoveComponentService {
         Task otherTask = new Task("task1-name", "description",
                                   Collections.singleton(componentAction.getName()));
         when(_mockPipelineService.getTasks())
-                .thenReturn(Arrays.asList(componentTask, otherTask, new Task("asdf", "description",
-                                                                             Collections.emptyList())));
+                .thenReturn(ImmutableList.of(
+                        componentTask, otherTask,
+                        new Task("asdf", "description", Collections.emptyList())));
         rcm.getTasks().add(componentTask.getName());
 
         Pipeline componentPipeline = new Pipeline("component pipeline", "description",
@@ -146,8 +148,9 @@ public class TestRemoveComponentService {
         Pipeline otherPipeline = new Pipeline("pipeline1-name", "description",
                                               Collections.singleton(otherTask.getName()));
         when(_mockPipelineService.getPipelines())
-                .thenReturn(Arrays.asList(componentPipeline, otherPipeline,
-                                          new Pipeline("sdaf", "description", Collections.emptyList())));
+                .thenReturn(ImmutableList.of(
+                        componentPipeline, otherPipeline,
+                        new Pipeline("sdaf", "description", Collections.emptyList())));
         rcm.getPipelines().add(componentPipeline.getName());
 
         // Act

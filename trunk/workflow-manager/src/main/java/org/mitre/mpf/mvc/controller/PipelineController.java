@@ -91,7 +91,7 @@ public class PipelineController {
     @RequestMapping(value = {  "/pipelines", "/rest/pipelines" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available pipelines.")
     public List<Pipeline> getPipelines() {
-        return List.copyOf(_pipelineService.getPipelines());
+        return _pipelineService.getPipelines();
     }
 
 
@@ -128,7 +128,7 @@ public class PipelineController {
     @RequestMapping(value = { "/tasks", "/rest/tasks" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available tasks.")
     public List<Task> getTasks() {
-        return List.copyOf(_pipelineService.getTasks());
+        return _pipelineService.getTasks();
     }
 
 
@@ -166,7 +166,7 @@ public class PipelineController {
     @RequestMapping(value = { "/actions", "/rest/actions" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available actions.")
     public List<Action> getActions() {
-        return List.copyOf(_pipelineService.getActions());
+        return _pipelineService.getActions();
     }
 
 

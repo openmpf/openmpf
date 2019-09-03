@@ -112,7 +112,7 @@ public class PipelineServiceImpl implements PipelineService {
     private void delete(String name, Map<String, ?> items) {
         boolean existed = items.remove(fixName(name)) != null;
         if (existed) {
-            writeToDisk(_algorithms);
+            writeToDisk(items);
         }
     }
 

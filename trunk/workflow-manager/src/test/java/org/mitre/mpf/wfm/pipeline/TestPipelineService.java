@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -69,7 +70,7 @@ public class TestPipelineService {
     }
 
     @Test
-    public void canSaveAndLoadPipelineElements() throws IOException {
+    public void canSaveLoadAndDeletePipelineElements() throws IOException {
         var algo1Properties = List.of(
                 new Algorithm.Property("PROP1", "PROP1 description", ValueType.INT,
                                        "1", null),
@@ -139,13 +140,24 @@ public class TestPipelineService {
                 List.of(task1, task2),
                 List.of(pipeline1, pipeline2));
 
+
+        _pipelineService.deleteAlgorithm(algo1.getName());
+        _pipelineService.deleteAction(action1.getName());
+        _pipelineService.deleteTask(task1.getName());
+        _pipelineService.deletePipeline(pipeline1.getName());
+        _pipelineService.deletePipeline("DOES NOT EXIST");
+        verifyLoaded(
+                List.of(algo2),
+                List.of(action2),
+                List.of(task2),
+                List.of(pipeline2));
     }
 
     private void verifyLoaded(
-            Iterable<Algorithm> expectedAlgorithms,
-            Iterable<Action> expectedActions,
-            Iterable<Task> expectedTasks,
-            Iterable<Pipeline> expectedPipelines) throws IOException {
+            Collection<Algorithm> expectedAlgorithms,
+            Collection<Action> expectedActions,
+            Collection<Task> expectedTasks,
+            Collection<Pipeline> expectedPipelines) throws IOException {
 
         // Use separate validator so that when we verify methods are called,
         // it won't pass from the validation that was performed when the pipeline element was saved.
@@ -154,6 +166,7 @@ public class TestPipelineService {
         var loaderPipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper,
                                                                         loaderPipelineValidator, null);
 
+        assertEquals(expectedAlgorithms.size(), loaderPipelineService.getAlgorithms().size());
         for (var expectedAlgo : expectedAlgorithms) {
             var loadedAlgo = loaderPipelineService.getAlgorithm(expectedAlgo.getName());
             assertNotSame("Deserialized version should be a different object.", expectedAlgo, loadedAlgo);
@@ -163,6 +176,7 @@ public class TestPipelineService {
                     .validateOnAdd(eq(loadedAlgo), notNull());
         }
 
+        assertEquals(expectedActions.size(), loaderPipelineService.getActions().size());
         for (var expectedAction : expectedActions) {
             var loadedAction = loaderPipelineService.getAction(expectedAction.getName());
             assertNotSame("Deserialized version should be a different object.", expectedAction, loadedAction);
@@ -172,6 +186,7 @@ public class TestPipelineService {
                     .validateOnAdd(eq(loadedAction), notNull());
         }
 
+        assertEquals(expectedTasks.size(), loaderPipelineService.getTasks().size());
         for (var expectedTask : expectedTasks) {
             var loadedTask = loaderPipelineService.getTask(expectedTask.getName());
             assertNotSame("Deserialized version should be a different object.", expectedTask, loadedTask);
@@ -182,6 +197,7 @@ public class TestPipelineService {
         }
 
 
+        assertEquals(expectedPipelines.size(), loaderPipelineService.getPipelines().size());
         for (var expectedPipeline : expectedPipelines) {
             var loadedPipeline = loaderPipelineService.getPipeline(expectedPipeline.getName());
             assertNotSame("Deserialized version should be a different object.",

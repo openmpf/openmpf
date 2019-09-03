@@ -166,36 +166,30 @@ public class TestUtil {
     }
 
 
-    public static void initPipelineDataFiles(PropertiesUtil mockPropertiesUtil, TemporaryFolder temporaryFolder) throws IOException {
+    public static void initPipelineDataFiles(PropertiesUtil mockPropertiesUtil, TemporaryFolder temporaryFolder)
+            throws IOException {
         Path rootTempDir = temporaryFolder.getRoot().toPath();
 
         Path algorithmsPath = rootTempDir.resolve("Algorithms.json");
         when(mockPropertiesUtil.getAlgorithmDefinitions())
                 .thenReturn(new PathResource(algorithmsPath));
-        copyTemplate("Algorithms.json", algorithmsPath);
+        Files.writeString(algorithmsPath, "[]");
 
         Path actionsPath = rootTempDir.resolve("Actions.json");
         when(mockPropertiesUtil.getActionDefinitions())
                 .thenReturn(new PathResource(actionsPath));
-        copyTemplate("Actions.json", actionsPath);
+        Files.writeString(actionsPath, "[]");
 
         Path tasksPath = rootTempDir.resolve("Tasks.json");
         when(mockPropertiesUtil.getTaskDefinitions())
                 .thenReturn(new PathResource(tasksPath));
-        copyTemplate("Tasks.json", tasksPath);
+        Files.writeString(tasksPath, "[]");
 
         Path pipelinesPath = rootTempDir.resolve("Pipelines.json");
         when(mockPropertiesUtil.getPipelineDefinitions())
                 .thenReturn(new PathResource(pipelinesPath));
-        copyTemplate("Pipelines.json", pipelinesPath);
+        Files.writeString(pipelinesPath, "[]");
     }
-
-
-    private static void copyTemplate(String templateFileName, Path dest) throws IOException {
-        Path source = Paths.get(TestUtil.findFile("/templates/" + templateFileName));
-        Files.copy(source, dest);
-    }
-
 }
 
 

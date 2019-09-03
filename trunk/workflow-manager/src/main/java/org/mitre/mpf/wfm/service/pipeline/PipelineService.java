@@ -27,13 +27,12 @@
 
 package org.mitre.mpf.wfm.service.pipeline;
 
+import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
-
-import java.util.Collection;
 
 public interface PipelineService {
 
@@ -43,22 +42,22 @@ public interface PipelineService {
 
     public Algorithm getAlgorithm(String name);
 
-    public Collection<Algorithm> getAlgorithms();
+    public ImmutableList<Algorithm> getAlgorithms();
 
 
     public Action getAction(String name);
 
-    public Collection<Action> getActions();
+    public ImmutableList<Action> getActions();
 
 
     public Task getTask(String name);
 
-    public Collection<Task> getTasks();
+    public ImmutableList<Task> getTasks();
 
 
     public Pipeline getPipeline(String name);
 
-    public Collection<Pipeline> getPipelines();
+    public ImmutableList<Pipeline> getPipelines();
 
 
     public void save(Algorithm algorithm);

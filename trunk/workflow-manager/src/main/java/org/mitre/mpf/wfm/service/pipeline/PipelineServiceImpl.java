@@ -29,9 +29,9 @@ package org.mitre.mpf.wfm.service.pipeline;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Service;
@@ -51,8 +51,6 @@ public class PipelineServiceImpl implements PipelineService {
 
     private final PipelineValidator _validator;
 
-    private final JsonUtils _jsonUtils;
-
 
     private final Map<String, Algorithm> _algorithms = new HashMap<>();
     private final Map<String, Action> _actions = new HashMap<>();
@@ -67,11 +65,9 @@ public class PipelineServiceImpl implements PipelineService {
     public PipelineServiceImpl(
             PropertiesUtil propertiesUtil,
             ObjectMapper objectMapper,
-            PipelineValidator validator,
-            JsonUtils jsonUtils) throws IOException {
+            PipelineValidator validator) throws IOException {
         _objectMapper = objectMapper;
         _validator = validator;
-        _jsonUtils = jsonUtils;
 
         _pipelineElementsToDefinitions = new IdentityHashMap<>(4);
         _pipelineElementsToDefinitions.put(_algorithms, propertiesUtil.getAlgorithmDefinitions());
@@ -136,14 +132,14 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     @Override
-    public JobPipelineElements getBatchPipelineElements(String pipelineName) {
+    public synchronized JobPipelineElements getBatchPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyBatchPipelineRunnable(pipelineName);
         return getPipelineElements(pipelineName);
     }
 
     @Override
-    public JobPipelineElements getStreamingPipelineElements(String pipelineName) {
+    public synchronized JobPipelineElements getStreamingPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
         verifyStreamingPipelineRunnable(pipelineName);
         return getPipelineElements(pipelineName);
@@ -172,100 +168,100 @@ public class PipelineServiceImpl implements PipelineService {
 
 
     @Override
-    public Algorithm getAlgorithm(String name) {
+    public synchronized Algorithm getAlgorithm(String name) {
         return _algorithms.get(fixName(name));
     }
 
     @Override
-    public Collection<Algorithm> getAlgorithms() {
-        return Collections.unmodifiableCollection(_algorithms.values());
+    public synchronized ImmutableList<Algorithm> getAlgorithms() {
+        return ImmutableList.copyOf(_algorithms.values());
     }
 
     @Override
-    public Action getAction(String name) {
+    public synchronized Action getAction(String name) {
         return _actions.get(fixName(name));
     }
 
     @Override
-    public Collection<Action> getActions() {
-        return Collections.unmodifiableCollection(_actions.values());
+    public synchronized ImmutableList<Action> getActions() {
+        return ImmutableList.copyOf(_actions.values());
     }
 
     @Override
-    public Task getTask(String name) {
+    public synchronized Task getTask(String name) {
         return _tasks.get(fixName(name));
     }
 
     @Override
-    public Collection<Task> getTasks() {
-        return Collections.unmodifiableCollection(_tasks.values());
+    public synchronized ImmutableList<Task> getTasks() {
+        return ImmutableList.copyOf(_tasks.values());
     }
 
     @Override
-    public Pipeline getPipeline(String name) {
+    public synchronized Pipeline getPipeline(String name) {
         return _pipelines.get(fixName(name));
     }
 
     @Override
-    public Collection<Pipeline> getPipelines() {
-        return Collections.unmodifiableCollection(_pipelines.values());
+    public synchronized ImmutableList<Pipeline> getPipelines() {
+        return ImmutableList.copyOf(_pipelines.values());
     }
 
 
     @Override
-    public void save(Algorithm algorithm) {
+    public synchronized void save(Algorithm algorithm) {
         save(algorithm, _algorithms);
     }
 
 
     @Override
-    public void save(Action action) {
+    public synchronized void save(Action action) {
         save(action, _actions);
     }
 
 
     @Override
-    public void save(Task task) {
+    public synchronized void save(Task task) {
         save(task, _tasks);
     }
 
 
     @Override
-    public void save(Pipeline pipeline) {
+    public synchronized void save(Pipeline pipeline) {
         save(pipeline, _pipelines);
     }
 
 
     @Override
-    public void verifyBatchPipelineRunnable(String pipelineName) {
+    public synchronized void verifyBatchPipelineRunnable(String pipelineName) {
         _validator.verifyBatchPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
 
     @Override
-    public void verifyStreamingPipelineRunnable(String pipelineName) {
+    public synchronized void verifyStreamingPipelineRunnable(String pipelineName) {
         _validator.verifyStreamingPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
 
 
     @Override
-    public void deleteAlgorithm(String algorithmName) {
+    public synchronized void deleteAlgorithm(String algorithmName) {
         delete(algorithmName, _algorithms);
     }
 
     @Override
-    public void deleteAction(String actionName) {
+    public synchronized void deleteAction(String actionName) {
         delete(actionName, _actions);
     }
 
 
     @Override
-    public void deleteTask(String taskName) {
+    public synchronized void deleteTask(String taskName) {
         delete(taskName, _tasks);
     }
 
 
     @Override
-    public void deletePipeline(String pipelineName) {
+    public synchronized void deletePipeline(String pipelineName) {
         delete(pipelineName, _pipelines);
     }
 }

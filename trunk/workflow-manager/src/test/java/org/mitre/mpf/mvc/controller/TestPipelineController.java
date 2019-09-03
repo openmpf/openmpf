@@ -79,8 +79,7 @@ public class TestPipelineController {
         springValidator.afterPropertiesSet();
         var pipelineValidator = new PipelineValidator(springValidator, mock(WorkflowPropertyService.class));
 
-        var pipelineService = new PipelineServiceImpl(
-                mockPropertiesUtil, objectMapper, pipelineValidator, null);
+        var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, objectMapper, pipelineValidator);
 
         var pipelineController = new PipelineController(mockPropertiesUtil, mock(WorkflowPropertyService.class),
                                                         pipelineService);

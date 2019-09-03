@@ -65,8 +65,7 @@ public class TestPipelineService {
     public void init() throws IOException {
         TestUtil.initPipelineDataFiles(_mockPropertiesUtil, _tempFolder);
 
-        _pipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper, _mockPipelineValidator,
-                                                   null);
+        _pipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper, _mockPipelineValidator);
     }
 
     @Test
@@ -164,7 +163,7 @@ public class TestPipelineService {
         var loaderPipelineValidator = mock(PipelineValidator.class);
 
         var loaderPipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper,
-                                                                        loaderPipelineValidator, null);
+                                                            loaderPipelineValidator);
 
         assertEquals(expectedAlgorithms.size(), loaderPipelineService.getAlgorithms().size());
         for (var expectedAlgo : expectedAlgorithms) {

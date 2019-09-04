@@ -26,10 +26,8 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
-import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Query;
-import org.javasimon.SimonManager;
-import org.javasimon.Split;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -41,77 +39,61 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository(HibernateJobRequestDaoImpl.REF)
+@Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements JobRequestDao {
-	private static final Logger log = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
 
-	public static final String REF = "hibernateJobRequestDaoImpl";
-	public HibernateJobRequestDaoImpl() { this.clazz = JobRequest.class; }
+    public HibernateJobRequestDaoImpl() { this.clazz = JobRequest.class; }
 
-	@Override
-	public void cancelJobsInNonTerminalState() {
-		Query query = getCurrentSession().
-				createQuery("UPDATE JobRequest set status = :newStatus where status in (:nonTerminalStatuses)");
-		query.setParameter("newStatus", BatchJobStatusType.CANCELLED_BY_SHUTDOWN);
-		query.setParameterList("nonTerminalStatuses", BatchJobStatusType.getNonTerminalStatuses());
-		int updatedRows = query.executeUpdate();
-		if(updatedRows >= 0) {
-			log.warn("{} jobs were in a non-terminal state and have been marked as {}", updatedRows, BatchJobStatusType.CANCELLED_BY_SHUTDOWN);
-		}
-	}
-
-	@Override
-	public List<JobRequest> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
-							  String sortOrderDirection) {
-		Validate.notNull(clazz);
-
-		if ( searchTerm.equals("") ) {
-			Split split = SimonManager.getStopwatch(profilerName + ".findByPage(int,int,Empty,String,String)").start();
-			try {
-				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" order by " + sortColumn + " " + sortOrderDirection)
-						.setFirstResult(offset)
-						.setMaxResults(pageSize)
-						.list();
-			} finally {
-				split.stop();
-			}
-		} else {
-			Split split = SimonManager.getStopwatch(profilerName +
-					".findByPage(int,int,String,String,String)").start();
-			try {
-				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" where pipeline like concat('%', :searchTerm, '%')" +
-						" or status like concat('%', :searchTerm, '%')" +
-						" or time_received like concat('%', :searchTerm, '%')" +
-						" or time_completed like concat('%', :searchTerm, '%')" +
-						" order by " + sortColumn + " " + sortOrderDirection)
-						.setParameter("searchTerm", searchTerm)
-						.setFirstResult(offset)
-						.setMaxResults(pageSize)
-						.list();
-			} finally {
-				split.stop();
-			}
-		}
-	}
+    @Override
+    public void cancelJobsInNonTerminalState() {
+        Query query = getCurrentSession().
+                createQuery("UPDATE JobRequest set status = :newStatus where status in (:nonTerminalStatuses)");
+        query.setParameter("newStatus", BatchJobStatusType.CANCELLED_BY_SHUTDOWN);
+        query.setParameterList("nonTerminalStatuses", BatchJobStatusType.getNonTerminalStatuses());
+        int updatedRows = query.executeUpdate();
+        if(updatedRows >= 0) {
+            LOG.warn("{} jobs were in a non-terminal state and have been marked as {}",
+                     updatedRows, BatchJobStatusType.CANCELLED_BY_SHUTDOWN);
+        }
+    }
 
 
-	@Override
-	public long countFiltered(String searchTerm) {
-		Validate.notNull(clazz);
-		Split split = SimonManager.getStopwatch(profilerName+".countFiltered(String)").start();
-		try {
-			return (long) getCurrentSession()
-					.createQuery("select count(*) from " + clazz.getName() +
-							" where pipeline like concat('%', :searchTerm, '%')" +
-							" or status like concat('%', :searchTerm, '%')" +
-							" or time_received like concat('%', :searchTerm, '%')" +
-							" or time_completed like concat('%', :searchTerm, '%')")
-					.setParameter("searchTerm", searchTerm).list().get(0);
-		} finally {
-			split.stop();
-		}
-	}
+    @Override
+    public List<JobRequest> findByPage(int pageSize, int offset, String searchTerm, String sortColumn,
+                                       String sortOrderDirection) {
+        var orderByClause = String.format("order by %s %s", sortColumn, sortOrderDirection);
+        Query query;
+        if (StringUtils.isBlank(searchTerm)) {
+            query = getCurrentSession().createQuery("from JobRequest " + orderByClause);
+        }
+        else {
+            query = createSearchQuery(searchTerm, "", orderByClause);
+        }
+        return (List<JobRequest>) query.setFirstResult(offset)
+                .setMaxResults(pageSize)
+                .list();
+    }
+
+
+    @Override
+    public long countFiltered(String searchTerm) {
+        return (long) createSearchQuery(searchTerm, "select count(*)", "")
+                .list()
+                .get(0);
+    }
+
+
+    private Query createSearchQuery(String searchTerm, String selectClause, String orderByClause) {
+        return getCurrentSession().createQuery(
+                selectClause
+                        + " from JobRequest"
+                        + " where pipeline like :searchTerm"
+                        + " or status like :searchTerm"
+                        + " or timeReceived like :searchTerm"
+                        + " or timeCompleted like :searchTerm "
+                        + orderByClause)
+                .setString("searchTerm", '%' + searchTerm + '%');
+    }
 }

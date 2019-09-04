@@ -34,7 +34,7 @@ public interface JobRequestDao extends JpaDao<JobRequest> {
 
     public void cancelJobsInNonTerminalState();
 
-    public List<JobRequest> findByPage(final int pageSize, final int offset, String searchTerm, String sortColumn,
+    public List<JobRequest> findByPage(int pageSize, int offset, String searchTerm, String sortColumn,
                                        String sortOrderDirection);
 
     public long countFiltered(String searchTerm);

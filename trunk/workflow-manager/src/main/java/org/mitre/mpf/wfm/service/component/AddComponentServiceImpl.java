@@ -261,8 +261,8 @@ public class AddComponentServiceImpl implements AddComponentService {
                 }
             }
             catch (FailedToParseDescriptorException e) {
-                _log.warn("Failed to parse existing descriptor for the \"{}\" component. It will be replaced with the newly received descriptor.",
-                          descriptor.getComponentName());
+                _log.warn(String.format("Failed to parse existing descriptor for the \"%s\" component. It will be replaced with the newly received descriptor.",
+                        descriptor.getComponentName()), e);
             }
             _removeComponentService.removeComponent(descriptor.getComponentName());
         }

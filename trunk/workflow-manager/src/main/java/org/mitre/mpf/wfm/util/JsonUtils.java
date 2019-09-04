@@ -40,8 +40,6 @@ import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -50,12 +48,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-@Component(JsonUtils.REF)
+@Component
 @Scope("singleton") // We only ever want 1 and only 1 instance of this class.
 @Monitored
 public class JsonUtils {
-    private static final Logger log = LoggerFactory.getLogger(JsonUtils.class);
-    public static final String REF = "jsonUtils";
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and binary JSON. Binary JSON is expected

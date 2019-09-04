@@ -560,10 +560,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("component.upload.dir.name");
     }
 
-    public File getComponentDependencyFinderScript() {
-        return new File(mpfPropertiesConfig.getString("mpf.component.dependency.finder.script"));
-    }
-
     public Path getPluginDeploymentPath() {
         return Paths.get(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }

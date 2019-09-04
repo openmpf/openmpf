@@ -42,8 +42,8 @@ message MarkupRequest {
     repeated BoundingBoxMapEntry map_entries             = 7; // The collection of bounding boxes which must be written.
     repeated MarkupRequestMetadataEntry metadata_entries = 8; // The collection of arbitrary key-value pairs.
 
-    required int32 task_index         = 501; // The index of the stage which produced this request.
-    required int32 action_index       = 502; // The index of the action within the stage which produced this request.
+    required int32 task_index         = 501; // The index of the task which produced this request.
+    required int32 action_index       = 502; // The index of the action within the task which produced this request.
 }
 
 message BoundingBoxMapEntry {
@@ -82,6 +82,6 @@ message MarkupResponse {
 
     repeated MarkupRequestMetadataEntry metadata_entries = 10; // A collection of String key-value pairs to which arbitrary metadata elements may be added.
 
-    required int32 task_index         = 501; // The index of the stage which produced this request.
-    required int32 action_index       = 502; // The index of the action within the stage which produced this request.
+    required int32 task_index         = 501; // The index of the task which produced this request.
+    required int32 action_index       = 502; // The index of the action within the task which produced this request.
 }

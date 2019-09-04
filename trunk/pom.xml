@@ -256,26 +256,6 @@
                             </resources>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>copy-component-dependency-finder</id>
-                        <!-- Want this to run before verify phase so system tests have access
-                             to the dependency finder script. -->
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${env.MPF_HOME}/bin</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/bin/mpf-component-dependency-finder</directory>
-                                    <includes>
-                                        <include>component_dependency_finder.py</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>

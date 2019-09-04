@@ -31,34 +31,27 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.DefaultDeserializationContext;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 public class MpfObjectMapper extends ObjectMapper {
 
     public MpfObjectMapper() {
-        registerInstantModule();
-        registerStripWhitespaceModules();
+        init();
     }
 
     public MpfObjectMapper(JsonFactory jsonFactory) {
         super(jsonFactory);
-        registerInstantModule();
-        registerStripWhitespaceModules();
+        init();
     }
 
     public MpfObjectMapper(JsonFactory jsonFactory, DefaultSerializerProvider serializerProvider,
                            DefaultDeserializationContext deserializationContext) {
         super(jsonFactory, serializerProvider, deserializationContext);
-        registerInstantModule();
-        registerStripWhitespaceModules();
+        init();
     }
 
-    private void registerInstantModule() {
-        registerModule(new InstantJsonModule());
-    }
 
-    private void registerStripWhitespaceModules() {
-        registerModule(new TrimKeysModule());
-        registerModule(new TrimValuesModule());
+    private void init() {
+        registerModules(new InstantJsonModule(), new Jdk8Module(), new TrimKeysModule(), new TrimValuesModule());
     }
-
 }

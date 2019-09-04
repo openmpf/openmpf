@@ -61,7 +61,7 @@ public class Track implements Comparable<Track> {
     private final int _taskIndex;
     public int getTaskIndex() { return _taskIndex; }
 
-    /** The zero-based action index in the stage of the pipeline which produced this track. */
+    /** The zero-based action index in the task of the pipeline which produced this track. */
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
 
@@ -110,7 +110,7 @@ public class Track implements Comparable<Track> {
      * @param jobId The job with which this track is associated.
      * @param mediaId The medium with which this track is associated.
      * @param taskIndex The task of the pipeline containing the action with which this track is associated.
-     * @param actionIndex The index of the action in the stage of the pipeline which created this track.
+     * @param actionIndex The index of the action in the task of the pipeline which created this track.
      * @param startOffsetFrameInclusive The zero-based index where the track begins in the medium.
      *                                      Frame number is relevant for image and video files.
      * @param endOffsetFrameInclusive The zero-based and inclusive stop index where the track ends in the medium.

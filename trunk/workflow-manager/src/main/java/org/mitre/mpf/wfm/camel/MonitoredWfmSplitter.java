@@ -33,6 +33,10 @@ import org.javasimon.aop.Monitored;
 import java.util.List;
 
 @Monitored
-public interface WfmSplitterInterface {
-	List<Message> split(Exchange exchange) throws Exception;
+/**
+ * This interface is necessary because {@link Monitored} doesn't work properly with classes that have final methods
+ * and {@link WfmSplitter#split(Exchange)} is final.
+ */
+public interface MonitoredWfmSplitter {
+    List<Message> split(Exchange exchange);
 }

@@ -30,18 +30,16 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.camel.operations.markup.MarkupStageSplitter;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionTaskSplitter;
+import org.mitre.mpf.wfm.camel.operations.markup.MarkupSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,18 +47,16 @@ import java.util.List;
  * call the correct operation-specific splitter. If an unrecognized operation is associated with the stage, this
  * splitter will return an empty split so that the job will continue without hanging or throwing an exception.
  */
-@Component(DefaultStageSplitter.REF)
-public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
-    private static final Logger log = LoggerFactory.getLogger(DefaultStageSplitter.class);
-    public static final String REF = "defaultStageSplitter";
+@Component(DefaultTaskSplitter.REF)
+public class DefaultTaskSplitter extends WfmSplitter {
+    private static final Logger log = LoggerFactory.getLogger(DefaultTaskSplitter.class);
+    public static final String REF = "defaultTaskSplitter";
 
     @Autowired
-    @Qualifier(DetectionSplitter.REF)
-    private StageSplitter detectionStageSplitter;
+    private DetectionTaskSplitter detectionSplitter;
 
     @Autowired
-    @Qualifier(MarkupStageSplitter.REF)
-    private StageSplitter markupStageSplitter;
+    private MarkupSplitter markupSplitter;
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
@@ -70,16 +66,7 @@ public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
 
 
     @Override
-    public List<Message> performSplit(BatchJob job, Task task) {
-        log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. No work will be performed in this stage.",
-                 job.getId(), job.getCurrentTaskIndex(), job.getCurrentTaskIndex(),
-                 task.getName());
-        return new ArrayList<>();
-    }
-
-
-    @Override
-    public final List<Message> wfmSplit(Exchange exchange) {
+    public List<Message> wfmSplit(Exchange exchange) {
         BatchJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
         Task task = job.getPipelineElements().getTask(job.getCurrentTaskIndex());
         ActionType actionType = job.getPipelineElements()
@@ -93,20 +80,25 @@ public class DefaultStageSplitter extends WfmSplitter implements StageSplitter {
                  actionType,
                  actionType.name());
 
-        if(job.isCancelled()) {
-            // Check if this job has been cancelled prior to performing the split. If it has been, do not produce any work units.
+        if (job.isCancelled()) {
+            // Check if this job has been cancelled prior to performing the split.
+            // If it has been, do not produce any work units.
             log.warn("[Job {}|{}|*] This job has been cancelled. No work will be performed in this stage.",
                      job.getId(), job.getCurrentTaskIndex());
-            return new ArrayList<>(0);
-        } else {
-            switch (actionType) {
-                case DETECTION:
-                    return detectionStageSplitter.performSplit(job, task);
-                case MARKUP:
-                    return markupStageSplitter.performSplit(job, task);
-                default:
-                    return performSplit(job, task);
-            }
+            return List.of();
+        }
+
+        switch (actionType) {
+            case DETECTION:
+                return detectionSplitter.performSplit(job, task);
+            case MARKUP:
+                return markupSplitter.performSplit(job, task);
+            default:
+                log.warn("[Job {}|{}|*] Stage {} calls an unsupported operation '{}'. " +
+                                 "No work will be performed in this stage.",
+                         job.getId(), job.getCurrentTaskIndex(), job.getCurrentTaskIndex(),
+                         task.getName());
+                return List.of();
         }
     }
 }

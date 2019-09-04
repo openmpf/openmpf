@@ -28,7 +28,10 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.*;
+import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
+import org.mitre.mpf.wfm.camel.JobCompletePredicate;
+import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
+import org.mitre.mpf.wfm.camel.JobStatusCalculator;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
@@ -56,6 +59,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 		this.routeId = routeId;
 	}
 
+
 	@Override
 	public void configure() {
 		log.debug("Configuring route '{}'.", routeId);
@@ -68,7 +72,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 					.setHeader(MpfHeaders.JOB_STATUS).method(JobStatusCalculator.class)
                     .process(JobCompleteProcessorImpl.REF)
 				.otherwise()
-					.split().method(DefaultStageSplitter.REF, "split")
+					.split().method(DefaultTaskSplitter.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.
 						.choice()

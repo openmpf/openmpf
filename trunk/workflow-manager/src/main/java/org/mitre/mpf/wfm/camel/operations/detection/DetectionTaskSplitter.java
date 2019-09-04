@@ -28,12 +28,12 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 
 import org.apache.camel.Message;
 import org.apache.commons.lang3.StringUtils;
+import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
-import org.mitre.mpf.wfm.camel.StageSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -51,13 +51,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-// DetectionSplitter will take in Job and Stage(Action), breaking them into managable work units for the Components
+// DetectionSplitter will take in Job and Task, breaking them into manageable work units for the Components
 
-@Component(DetectionSplitter.REF)
-public class DetectionSplitter implements StageSplitter {
+@Component
+@Monitored
+public class DetectionTaskSplitter {
 
-    private static final Logger log = LoggerFactory.getLogger(DetectionSplitter.class);
-    public static final String REF = "detectionStageSplitter";
+    private static final Logger log = LoggerFactory.getLogger(DetectionTaskSplitter.class);
 
     @Autowired
     private PropertiesUtil propertiesUtil;
@@ -85,33 +85,8 @@ public class DetectionSplitter implements StageSplitter {
     private MediaSegmenter defaultMediaSegmenter;
 
 
-    /**
-     * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
-     * If the input is null or empty, an empty collection is returned.
-     */
-    private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
-    convertPropertiesMapToAlgorithmPropertiesList(Map<String, String> propertyMessages) {
 
-        if (propertyMessages == null || propertyMessages.isEmpty()) {
-            return new ArrayList<>(0);
-        }
-        else {
-            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
-                    = new ArrayList<>(propertyMessages.size());
-            for (Map.Entry<String, String> entry : propertyMessages.entrySet()) {
-                algorithmProperties.add(AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
-                                                .setPropertyName(entry.getKey())
-                                                .setPropertyValue(entry.getValue())
-                                                .build());
-            }
-            return algorithmProperties;
-        }
-    }
-
-    // property priorities are assigned in this method.  The property priorities are defined as:
-    // action-property defaults (lowest) -> action-properties -> job-properties -> algorithm-properties -> media-properties (highest)
-    @Override
-    public final List<Message> performSplit(BatchJob job, Task task) {
+    public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
         // Is this the first detection task in the pipeline?
@@ -121,7 +96,7 @@ public class DetectionSplitter implements StageSplitter {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
-                    log.debug("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
+                    log.warn("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
                             job.getId(),
                             job.getCurrentTaskIndex(),
                             media.getId());
@@ -215,6 +190,29 @@ public class DetectionSplitter implements StageSplitter {
         return messages;
     }
 
+
+    /**
+     * Translates a collection of properties into a collection of AlgorithmProperty ProtoBuf messages.
+     * If the input is null or empty, an empty collection is returned.
+     */
+    private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
+    convertPropertiesMapToAlgorithmPropertiesList(Map<String, String> propertyMessages) {
+
+        if (propertyMessages == null || propertyMessages.isEmpty()) {
+            return new ArrayList<>(0);
+        }
+        else {
+            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
+                    = new ArrayList<>(propertyMessages.size());
+            for (Map.Entry<String, String> entry : propertyMessages.entrySet()) {
+                algorithmProperties.add(AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
+                                                .setPropertyName(entry.getKey())
+                                                .setPropertyValue(entry.getValue())
+                                                .build());
+            }
+            return algorithmProperties;
+        }
+    }
 
     private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
         MediaSegmenter segmenter = getSegmenter(media.getMediaType());

@@ -36,13 +36,8 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.StageSplitter;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionSplitter;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionTaskSplitter;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -50,7 +45,6 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -63,7 +57,7 @@ import static java.util.stream.Collectors.toList;
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
-public class TestDetectionSplitter {
+public class TestDetectionTaskSplitter {
 
     @Autowired
     private IoUtils ioUtils;
@@ -71,9 +65,8 @@ public class TestDetectionSplitter {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Qualifier(DetectionSplitter.REF)
     @Autowired
-    private StageSplitter detectionStageSplitter;
+    private DetectionTaskSplitter detectionSplitter;
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
@@ -144,7 +137,7 @@ public class TestDetectionSplitter {
                 Collections.emptyMap(),
                 Collections.emptyMap());
 
-        List<Message> responseList = detectionStageSplitter.performSplit(testJob, task);
+        List<Message> responseList = detectionSplitter.performSplit(testJob, task);
         Assert.assertTrue(responseList.isEmpty());
     }
 
@@ -163,7 +156,7 @@ public class TestDetectionSplitter {
         actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
                                                       "/samples/new_face_video.avi", "video/avi");
-        List<Message> responseList = detectionStageSplitter.performSplit(
+        List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -200,7 +193,7 @@ public class TestDetectionSplitter {
         BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/new_face_video.avi", "video/avi");
-        List<Message> responseList = detectionStageSplitter.performSplit(
+        List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
         Assert.assertEquals(12, responseList.size());
@@ -327,7 +320,7 @@ public class TestDetectionSplitter {
     private void assertProtobufHasExpectedProperties(
             String propertyName, String propertyValue, Map<String, String> expectedProperties, BatchJob testJob) {
 
-        List<Message> responseList = detectionStageSplitter.performSplit(
+        List<Message> responseList = detectionSplitter.performSplit(
                 testJob, testJob.getPipelineElements().getTask(0));
 
         Assert.assertEquals(1, responseList.size());

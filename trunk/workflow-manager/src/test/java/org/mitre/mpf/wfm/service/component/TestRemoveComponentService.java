@@ -135,7 +135,7 @@ public class TestRemoveComponentService {
 
         Task componentTask = new Task("component task", "description",
                                       Collections.singleton(otherAction.getName()));
-        Task otherTask = new Task("task1-name", "description",
+        Task otherTask = new Task("other task", "description",
                                   Collections.singleton(componentAction.getName()));
         when(_mockPipelineService.getTasks())
                 .thenReturn(ImmutableList.of(
@@ -145,7 +145,7 @@ public class TestRemoveComponentService {
 
         Pipeline componentPipeline = new Pipeline("component pipeline", "description",
                                                   Collections.singleton(otherTask.getName()));
-        Pipeline otherPipeline = new Pipeline("pipeline1-name", "description",
+        Pipeline otherPipeline = new Pipeline("other pipeline", "description",
                                               Collections.singleton(otherTask.getName()));
         when(_mockPipelineService.getPipelines())
                 .thenReturn(ImmutableList.of(

@@ -36,9 +36,9 @@ public class TestInfoLoggerClassRule extends TestWatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestInfoLoggerClassRule.class);
 
-    private int _testCount;
+    private static int _testCount;
 
-    private int _numStarted;
+    private static int _numStarted;
 
 
     @Override

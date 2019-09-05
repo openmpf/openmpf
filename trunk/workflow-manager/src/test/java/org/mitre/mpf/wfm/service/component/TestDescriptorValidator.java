@@ -54,7 +54,7 @@ public class TestDescriptorValidator {
 
 
     @Test
-    public void doesNotThrowExceptionWhenDescriptorNoViolations() throws InvalidComponentDescriptorException {
+    public void doesNotThrowExceptionWhenDescriptorHasNoViolations() throws InvalidComponentDescriptorException {
         var mockSpringValidator = mock(Validator.class);
         when(mockSpringValidator.validate(notNull()))
                 .thenReturn(Collections.emptySet());

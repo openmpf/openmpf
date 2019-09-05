@@ -215,51 +215,52 @@ public class TestDetectionTaskSplitter {
     }
 
     @Test
-    public void testMediaSpecificPropertiesOverrideWithExif() {
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.ROTATION_PROPERTY, "90");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
-        testMediaSpecificPropertiesOverrideWithFrameTransforms(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
+    public void testMediaSpecificPropertiesOverrideActionProperties() {
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.ROTATION_PROPERTY, "90");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testMediaSpecificPropertyOverridesActionProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
     @Test
     public void testMediaSpecificPropertiesOverrideJobProperties() {
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.ROTATION_PROPERTY, "90");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
-        testMediaSpecificPropertiesResettingJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.ROTATION_PROPERTY, "90");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testMediaSpecifcPropertyOverridesJobProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
 
     @Test
-    public void testMediaSpecificPropertiesOverrideAlgorithmProperties() {
-        testJobPropertiesResettingActionProperties(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
-        testJobPropertiesResettingActionProperties(MpfConstants.ROTATION_PROPERTY, "90");
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
-        testJobPropertiesResettingActionProperties(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
-        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
-        testJobPropertiesResettingActionProperties(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
-        testJobPropertiesResettingActionProperties(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
-        testJobPropertiesResettingActionProperties(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
+    public void testJobPropertiesOverrideActionProperties() {
+        testJobPropertyOverridesActionProperty(MpfConstants.HORIZONTAL_FLIP_PROPERTY, "TRUE");
+        testJobPropertyOverridesActionProperty(MpfConstants.ROTATION_PROPERTY, "90");
+        testJobPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_X_DETECTION_PROPERTY, "-1");
+        testJobPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "-1");
+        testJobPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "-1");
+        testJobPropertyOverridesActionProperty(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "-1");
+        testJobPropertyOverridesActionProperty(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
+        testJobPropertyOverridesActionProperty(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
+        testJobPropertyOverridesActionProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "0");
+        testJobPropertyOverridesActionProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "100");
     }
 
-    private void testMediaSpecificPropertiesResettingJobProperty(String propertyName, String propertyValue) {
-        HashMap<String, String> mediaProperties = new HashMap<>();
+    private void testMediaSpecifcPropertyOverridesJobProperty(String propertyName, String propertyValue) {
+        Map<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
+
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
         jobProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
@@ -269,15 +270,20 @@ public class TestDetectionTaskSplitter {
         jobProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         jobProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+
+        Map<String, String> expectedProperties = new HashMap<>(jobProperties);
+        expectedProperties.putAll(mediaProperties);
+
         BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, jobProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
-    private void testJobPropertiesResettingActionProperties(String propertyName, String propertyValue) {
-        HashMap<String, String> jobProperties = new HashMap<>();
+    private void testJobPropertyOverridesActionProperty(String propertyName, String propertyValue) {
+        Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put(propertyName, propertyValue);
+
         Map<String, String> actionProperties = new HashMap<>();
         actionProperties.put(MpfConstants.AUTO_ROTATE_PROPERTY, "TRUE");
         actionProperties.put(MpfConstants.AUTO_FLIP_PROPERTY, "TRUE");
@@ -287,16 +293,19 @@ public class TestDetectionTaskSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_TOP_LEFT_Y_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
+
+        Map<String, String> expectedProperties = new HashMap<>(actionProperties);
+        expectedProperties.putAll(jobProperties);
+
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties, jobProperties, Collections.emptyMap(),
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
 
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, /* shouldOverride, */ actionProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
-    private void testMediaSpecificPropertiesOverrideWithFrameTransforms(String propertyName, String propertyValue) {
-
-        HashMap<String, String> mediaProperties = new HashMap<>();
+    private void testMediaSpecificPropertyOverridesActionProperty(String propertyName, String propertyValue) {
+        Map<String, String> mediaProperties = new HashMap<>();
         mediaProperties.put(propertyName, propertyValue);
 
         Map<String, String> actionProperties = new HashMap<>();
@@ -309,12 +318,14 @@ public class TestDetectionTaskSplitter {
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION_PROPERTY, "20");
         actionProperties.put(MpfConstants.SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION_PROPERTY, "20");
 
+        Map<String, String> expectedProperties = new HashMap<>(actionProperties);
+        expectedProperties.putAll(mediaProperties);
 
         BatchJob testJob = createSimpleJobForTest(
                 actionProperties, Collections.emptyMap(), mediaProperties,
                 "/samples/meds-aa-S001-01-exif-rotation.jpg", "image/jpeg");
 
-        assertProtobufHasExpectedProperties(propertyName, propertyValue, actionProperties, testJob);
+        assertProtobufHasExpectedProperties(propertyName, propertyValue, expectedProperties, testJob);
     }
 
     private void assertProtobufHasExpectedProperties(
@@ -342,16 +353,17 @@ public class TestDetectionTaskSplitter {
         for (Map.Entry<String, String> actionPropEntry : expectedProperties.entrySet()) {
             AlgorithmPropertyProtocolBuffer.AlgorithmProperty protoProp = request.getAlgorithmPropertyList()
                     .stream()
-                    .filter(p -> p.getPropertyName().equals(propertyName))
+                    .filter(p -> p.getPropertyName().equals(actionPropEntry.getKey()))
                     .findAny()
                     .orElse(null);
 
             Assert.assertNotNull(
                     "Expected there to be a protobuf property named " + actionPropEntry.getKey(),
                     protoProp);
+
             Assert.assertEquals(String.format("Expected the protobuf property %s to be %s",
                                               actionPropEntry.getKey(), actionPropEntry.getValue()),
-                                propertyValue, protoProp.getPropertyValue());
+                                actionPropEntry.getValue(), protoProp.getPropertyValue());
         }
     }
 
@@ -381,7 +393,7 @@ public class TestDetectionTaskSplitter {
         Action action = new Action("detectionAction", "detectionDescription",
                                    algorithm.getName(), actionPropList);
 
-        Task task = new Task("stageName", "stageDescr", Collections.singletonList(action.getName()));
+        Task task = new Task("taskName", "taskDescr", Collections.singletonList(action.getName()));
 
         Pipeline pipeline = new Pipeline("testPipe", "testDescr",
                                          Collections.singletonList(task.getName()));
@@ -404,7 +416,6 @@ public class TestDetectionTaskSplitter {
             Map<String, String> mediaProperties,
             String mediaUri,
             String mediaType) {
-        final int testStage = 0;
         final int testPriority = 4;
         final boolean testOutputEnabled = true;
 

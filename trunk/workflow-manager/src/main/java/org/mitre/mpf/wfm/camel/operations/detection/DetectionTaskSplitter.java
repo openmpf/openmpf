@@ -42,7 +42,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.segmenting.*;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,9 +57,6 @@ import java.util.*;
 public class DetectionTaskSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(DetectionTaskSplitter.class);
-
-    @Autowired
-    private PropertiesUtil propertiesUtil;
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;

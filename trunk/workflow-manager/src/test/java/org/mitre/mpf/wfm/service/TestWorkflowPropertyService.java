@@ -32,6 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.ValueType;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -69,7 +70,7 @@ public class TestWorkflowPropertyService {
     }
 
 
-    // Not initialized in init() so test have a chance to populate workflowPropertiesFile
+    // Not initialized in init() so tests have a chance to populate workflowPropertiesFile
     private WorkflowPropertyService getWorkflowPropertyService() throws IOException {
         return new WorkflowPropertyService(_mockPropertiesUtil, ObjectMapperFactory.customObjectMapper());
     }
@@ -171,7 +172,7 @@ public class TestWorkflowPropertyService {
 
 
     @Test
-    public void canValueOfPropertyWithDefaultValue() throws IOException {
+    public void canGetValueOfPropertyWithDefaultValue() throws IOException {
         var propertyService = getServiceWithValidProperties();
 
         assertEquals("5", propertyService.getPropertyValue("PROP1"));
@@ -207,60 +208,53 @@ public class TestWorkflowPropertyService {
 
 
     @Test
-    public void throwsWhenPropertyNameMissing() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("", "descr1", "INT", "5", null, "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("There is a workflow property that is missing a name.", e.getMessage());
-        }
-
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson(null, "descr1", "INT", "5", null, "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("There is a workflow property that is missing a name.", e.getMessage());
-        }
+    public void throwsWhenPropertyNameIsEmpty() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("", "descr1", "INT", "5", null, "VIDEO")
+                ));
+        assertEquals("There is a workflow property that is missing a name.", ex.getMessage());
     }
 
 
     @Test
-    public void throwsWhenDuplicateNames() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", "INT", "5", null, "VIDEO"),
-                    propertyJson("PROP1", "descr1", "INT", "5", null, "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch(IllegalStateException e) {
-            assertEquals("There are multiple workflow properties named: PROP1", e.getMessage());
-        }
+    public void throwsWhenPropertyNameIsNull() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson(null, "descr1", "INT", "5", null, "VIDEO")
+                ));
+        assertEquals("There is a workflow property that is missing a name.", ex.getMessage());
     }
 
 
     @Test
-    public void throwsWhenMissingType() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", null, "5", null, "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("The type is not set for the workflow property named: PROP1", e.getMessage());
-        }
+    public void throwsWhenDuplicateNames() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", "INT", "5", null, "VIDEO"),
+                        propertyJson("PROP1", "descr1", "INT", "5", null, "VIDEO")
+                ));
+
+        assertEquals("There are multiple workflow properties named: PROP1", ex.getMessage());
+    }
+
+
+    @Test
+    public void throwsWhenMissingType() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", null, "5", null, "VIDEO")
+                ));
+        assertEquals("The type is not set for the workflow property named: PROP1", ex.getMessage());
     }
 
 
     @Test(expected = JsonMappingException.class)
-    public void throwsWhenInvalidType() throws IOException {
+    public void throwsWhenInvalidPropertyType() throws IOException {
         getServiceWithPropertyJson(
                 propertyJson("PROP1", "descr1", "INVALID", "5", null, "VIDEO")
         );
@@ -268,59 +262,51 @@ public class TestWorkflowPropertyService {
 
 
     @Test
-    public void throwsWhenDefaultValueAndPropertiesKeyBothSet() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", "INT", "5", "my.property", "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("The \"PROP1\" workflow property has both defaultValue and propertiesKey set, but only one or the other may be set.", e.getMessage());
-        }
+    public void throwsWhenDefaultValueAndPropertiesKeyBothSet() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", "INT", "5", "my.property", "VIDEO")
+                ));
+        assertEquals("The \"PROP1\" workflow property has both defaultValue and propertiesKey set, but only one or the other may be set.",
+                     ex.getMessage());
     }
 
 
     @Test
-    public void throwsWhenDefaultValueAndPropertiesKeyBothNotSet() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", "INT", null, null, "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("Neither defaultValue nor propertiesKey was set for the \"PROP1\" workflow property, but one or the other must be set.", e.getMessage());
-        }
+    public void throwsWhenDefaultValueAndPropertiesKeyBothNotSet() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", "INT", null, null, "VIDEO")
+                ));
+        assertEquals("Neither defaultValue nor propertiesKey was set for the \"PROP1\" workflow property, but one or the other must be set.",
+                     ex.getMessage());
     }
 
 
 
     @Test
-    public void throwsWhenNoSystemPropertyMatchesPropertiesKey() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", "INT", null, "missing.property", "VIDEO")
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("The \"PROP1\" workflow property has a propertiesKey of \"missing.property\", but that property does not exist.", e.getMessage());
-        }
+    public void throwsWhenNoSystemPropertyMatchesPropertiesKey() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", "INT", null, "missing.property", "VIDEO")
+                ));
+        assertEquals("The \"PROP1\" workflow property has a propertiesKey of \"missing.property\", but that property does not exist.",
+                     ex.getMessage());
     }
 
 
     @Test
-    public void throwsWhenNoMediaTypes() throws IOException {
-        try {
-            getServiceWithPropertyJson(
-                    propertyJson("PROP1", "descr1", "INT", "5", null)
-            );
-            fail("Expected exception");
-        }
-        catch (IllegalStateException e) {
-            assertEquals("The \"PROP1\" workflow property's mediaTypes field may not be empty.", e.getMessage());
-        }
+    public void throwsWhenNoMediaTypes() {
+        var ex = TestUtil.assertThrows(
+                IllegalStateException.class,
+                () -> getServiceWithPropertyJson(
+                        propertyJson("PROP1", "descr1", "INT", "5", null)
+                ));
+        assertEquals("The \"PROP1\" workflow property's mediaTypes field may not be empty.",
+                     ex.getMessage());
     }
 
 

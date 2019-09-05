@@ -30,11 +30,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatchers;
 import org.springframework.core.io.PathResource;
@@ -44,9 +39,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -64,11 +57,6 @@ public class TestUtil {
     }
 
 
-    public static String eqIgnoreCase(String expected) {
-        return ArgumentMatchers.argThat(s -> s.equalsIgnoreCase(expected));
-    }
-
-
     public static <T, C extends Collection<T>> C collectionContaining(Predicate<T> matchPredicate) {
         return ArgumentMatchers.argThat(c -> c.stream().anyMatch(matchPredicate));
     }
@@ -81,56 +69,6 @@ public class TestUtil {
         return ArgumentMatchers.argThat(m -> !m.isEmpty());
     }
 
-    public static <T> T referenceEquals(T obj)  {
-        return ArgumentMatchers.argThat(arg -> arg == obj);
-    }
-
-
-    public static BatchJob setupJob(
-            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
-            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
-        return setupJob(jobId, systemPropertiesSnapshot, inProgressJobs, ioUtils, Collections.emptyMap(),
-                        Collections.emptyMap());
-    }
-
-    public static BatchJob setupJob(
-            long jobId, SystemPropertiesSnapshot systemPropertiesSnapshot,
-            InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
-            Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties) {
-
-        URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        Media media = new MediaImpl(
-                234234, mediaUri.toString(), UriScheme.FILE, Paths.get(mediaUri), Collections.emptyMap(), null);
-
-        Algorithm algorithm = new Algorithm(
-                "dummyAlgo", "dummyDescription", ActionType.DETECTION,
-                new Algorithm.Requires(Collections.emptyList()),
-                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
-                true, true);
-        Action action = new Action("dummyAction", "dummyDescription", algorithm.getName(),
-                                   Collections.emptyList());
-        Task task = new Task("dummyTask", "dummyDescription",
-                             Collections.singleton(action.getName()));
-        Pipeline pipeline = new Pipeline("dummyPipeline", "dummyDescription",
-                                         Collections.singleton(task.getName()));
-        JobPipelineElements pipelineElements = new JobPipelineElements(
-                pipeline, Collections.singleton(task), Collections.singleton(action),
-                Collections.singleton(algorithm));
-
-
-        return inProgressJobs.addJob(
-                jobId,
-                "234234",
-                systemPropertiesSnapshot,
-                pipelineElements,
-                1,
-                false,
-                null,
-                null,
-                Collections.singletonList(media),
-                jobProperties,
-                algorithmProperties);
-    }
 
 
     public static boolean almostEqual(double x, double y, double epsilon) {
@@ -151,6 +89,28 @@ public class TestUtil {
             throw new IllegalArgumentException(e);
         }
     }
+
+    public interface ThrowingRunnable {
+        public void run() throws Exception;
+    }
+
+    public static <TEx extends Exception> TEx assertThrows(Class<TEx> expectedExceptionType,
+                                                           ThrowingRunnable runnable) {
+        try {
+            runnable.run();
+        }
+        catch (Exception ex) {
+            if (expectedExceptionType.isInstance(ex)) {
+                return (TEx) ex;
+            }
+            throw new AssertionError(String.format(
+                    "Expected an instance of %s to be thrown, but an instance of %s was thrown instead.",
+                    expectedExceptionType.getName(), ex.getClass().getName()), ex);
+        }
+        throw new AssertionError(String.format("Expected an instance of %s to be thrown, but nothing was thrown.",
+                                               expectedExceptionType.getName()));
+    }
+
 
     public static Exchange createTestExchange() {
         return createTestExchange(new DefaultMessage(), new DefaultMessage());

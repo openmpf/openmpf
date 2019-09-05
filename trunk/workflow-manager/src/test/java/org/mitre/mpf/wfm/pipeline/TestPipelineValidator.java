@@ -30,13 +30,14 @@ package org.mitre.mpf.wfm.pipeline;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidationException;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
-import org.mitre.mpf.wfm.service.WorkflowProperty;
-import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.HashMap;
@@ -149,15 +150,12 @@ public class TestPipelineValidator {
                 .thenReturn(new WorkflowProperty(workflowPropName, "descr", ValueType.DOUBLE,
                                                  "default", null, List.of()));
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected InvalidPipelineException");
-        }
-        catch (InvalidPipelineException e) {
-            assertEquals(
-                    "The \"WORKFLOW_PROP_NAME\" property from the \"ACTION\" action has a value of \"WORKFLOW_PROP_VAL\", which is not a valid \"DOUBLE\".",
-                    e.getMessage());
-        }
+
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertEquals(
+                "The \"WORKFLOW_PROP_NAME\" property from the \"ACTION\" action has a value of \"WORKFLOW_PROP_VAL\", which is not a valid \"DOUBLE\".",
+                ex.getMessage());
 
 
         var correctedAction = new Action(action.getName(), action.getDescription(), action.getAlgorithm(),
@@ -170,13 +168,9 @@ public class TestPipelineValidator {
     @Test
     public void throwsExceptionWhenPipelineIsMissing() {
         var pipelineName = "TEST PIPELINE";
-        try {
-            verifyBatchPipelineRunnable(pipelineName);
-            fail("Expected InvalidPipelineException");
-        }
-        catch (InvalidPipelineException e) {
-            assertTrue(e.getMessage().contains(pipelineName));
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipelineName));
+        assertTrue(ex.getMessage().contains(pipelineName));
     }
 
 
@@ -200,22 +194,20 @@ public class TestPipelineValidator {
                                     List.of(validTask.getName(), invalidTaskName));
         addElement(List.of(algorithm, action, missingAlgoAction, validTask, pipeline));
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected and exception");
-        }
-        catch (InvalidPipelineException e) {
-            String errorMsg = e.getMessage();
 
-            assertTrue(errorMsg.contains(invalidAlgorithmName));
-            assertTrue(errorMsg.contains(invalidActionName));
-            assertTrue(errorMsg.contains(invalidTaskName));
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
 
-            assertFalse(errorMsg.contains(algorithm.getName()));
-            assertFalse(errorMsg.contains(action.getName()));
-            assertFalse(errorMsg.contains(missingAlgoAction.getName()));
-            assertFalse(errorMsg.contains(validTask.getName()));
-        }
+        var errorMsg = ex.getMessage();
+
+        assertTrue(errorMsg.contains(invalidAlgorithmName));
+        assertTrue(errorMsg.contains(invalidActionName));
+        assertTrue(errorMsg.contains(invalidTaskName));
+
+        assertFalse(errorMsg.contains(algorithm.getName()));
+        assertFalse(errorMsg.contains(action.getName()));
+        assertFalse(errorMsg.contains(missingAlgoAction.getName()));
+        assertFalse(errorMsg.contains(validTask.getName()));
     }
 
 
@@ -244,22 +236,18 @@ public class TestPipelineValidator {
                                     List.of(batchTaskName, streamTaskName));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            String errorMsg = e.getMessage();
+
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                           () -> verifyBatchPipelineRunnable(pipeline.getName()));
+            var errorMsg = ex.getMessage();
             assertTrue(errorMsg.contains("support batch processing"));
             assertTrue(errorMsg.contains("STREAM ALGO"));
         }
-
-        try {
-            verifyStreamingPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            String errorMsg = e.getMessage();
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyStreamingPipelineRunnable(pipeline.getName()));
+            var errorMsg = ex.getMessage();
             assertTrue(errorMsg.contains("support stream processing"));
             assertTrue(errorMsg.contains("BATCH ALGO"));
         }
@@ -267,7 +255,7 @@ public class TestPipelineValidator {
 
 
     @Test
-    public void canHandleWhenOneAlgoSupportBatchAndOtherSupportsBoth() {
+    public void canHandleWhenOneAlgoSupportsBatchAndOtherSupportsBoth() {
         var batchAlgo = new Algorithm(
                 "BATCH ALGO", "descr", ActionType.DETECTION,
                 new Algorithm.Requires(List.of()),
@@ -347,13 +335,9 @@ public class TestPipelineValidator {
                                          List.of(providesTask, requiresTask));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            assertTrue(e.getMessage().contains("The states for \"" + requiresTask + "\" are not satisfied"));
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertTrue(ex.getMessage().contains("The states for \"" + requiresTask + "\" are not satisfied"));
     }
 
     @Test
@@ -378,15 +362,11 @@ public class TestPipelineValidator {
         var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            assertEquals(
-                    "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of a workflow property.",
-                    e.getMessage());
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                              () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertEquals(
+                "The \"INVALID\" property from the \"ACTION\" action does not exist in \"ALGO\" algorithm and is not the name of a workflow property.",
+                ex.getMessage());
     }
 
     @Test
@@ -411,15 +391,12 @@ public class TestPipelineValidator {
         var pipeline = new Pipeline("PIPELINE", "descr", List.of(task.getName()));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            assertEquals(
-                    "The \"MY PROPERTY\" property from the \"ACTION\" action has a value of \"INVALID\", which is not a valid \"INT\".",
-                    e.getMessage());
-        }
+
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertEquals(
+                "The \"MY PROPERTY\" property from the \"ACTION\" action has a value of \"INVALID\", which is not a valid \"INT\".",
+                ex.getMessage());
     }
 
     @Test
@@ -455,13 +432,9 @@ public class TestPipelineValidator {
                                          List.of(task.getName()));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            assertTrue(e.getMessage().contains("tasks cannot contain actions which have different ActionTypes"));
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertTrue(ex.getMessage().contains("tasks cannot contain actions which have different ActionTypes"));
     }
 
 
@@ -485,18 +458,15 @@ public class TestPipelineValidator {
                                     List.of(multiActionTask.getName(), singleActionTask.getName()));
         addElement(pipeline);
 
-        try {
-            verifyBatchPipelineRunnable(pipeline.getName());
-        }
-        catch (InvalidPipelineException e) {
-            assertEquals("TEST PIPELINE: No tasks may follow the multi-detection task of MULTI ACTION TASK.",
-                         e.getMessage());
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> verifyBatchPipelineRunnable(pipeline.getName()));
+        assertEquals("TEST PIPELINE: No tasks may follow the multi-detection task of MULTI ACTION TASK.",
+                     ex.getMessage());
     }
 
 
     @Test
-    public void throwsWhenMarkupTaskInvalid() {
+    public void throwsWhenMarkupPipelineIsInvalid() {
         var detectionAlgo = new Algorithm(
                 "DETECTION ALGO", "descr", ActionType.DETECTION,
                 new Algorithm.Requires(List.of()),
@@ -525,13 +495,11 @@ public class TestPipelineValidator {
         addElement(pipelineWithTaskAfterMarkup);
 
 
-        try {
-            verifyBatchPipelineRunnable(pipelineWithTaskAfterMarkup.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                           () -> verifyBatchPipelineRunnable(pipelineWithTaskAfterMarkup.getName()));
             assertEquals("TASK AFTER MARKUP PIPELINE: No tasks may follow a markup task of MARKUP TASK.",
-                         e.getMessage());
+                         ex.getMessage());
         }
 
 
@@ -540,14 +508,12 @@ public class TestPipelineValidator {
                                                         List.of(markupTask.getName()));
         addElement(pipelineWithMarkupFirst);
 
-        try {
-            verifyBatchPipelineRunnable(pipelineWithMarkupFirst.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                           () -> verifyBatchPipelineRunnable(pipelineWithMarkupFirst.getName()));
             assertEquals(
                     "MARKUP FIRST PIPELINE: A markup task may not be the first task in a pipeline.",
-                    e.getMessage());
+                    ex.getMessage());
         }
 
 
@@ -559,13 +525,11 @@ public class TestPipelineValidator {
                                                           List.of(detectionTaskName, multiMarkupTask.getName()));
         addElement(parallelMultiMarkupPipeline);
 
-        try {
-            verifyBatchPipelineRunnable(parallelMultiMarkupPipeline.getName());
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                           () -> verifyBatchPipelineRunnable(parallelMultiMarkupPipeline.getName()));
             assertEquals("PARALLEL MULTI MARKUP TASK: A markup task may only contain one action.",
-                         e.getMessage());
+                         ex.getMessage());
         }
 
 
@@ -574,13 +538,12 @@ public class TestPipelineValidator {
                 List.of(markupTask.getName(), markupTask.getName()));
         addElement(sequentialMultiMarkupPipeline);
 
-        try {
-            verifyBatchPipelineRunnable(sequentialMultiMarkupPipeline.getName());
-        }
-        catch (InvalidPipelineException e) {
+        {
+            var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                           () -> verifyBatchPipelineRunnable(sequentialMultiMarkupPipeline.getName()));
             assertEquals(
                     "SEQUENTIAL MULTI MARKUP TASK PIPELINE: No tasks may follow a markup task of MARKUP TASK.",
-                    e.getMessage());
+                    ex.getMessage());
         }
 
     }
@@ -590,13 +553,9 @@ public class TestPipelineValidator {
     public void throwsWhenTryingToAddDifferentPipelineWithSameName() {
         var p1 = new Pipeline("pipeline", "description", List.of("task1"));
         var p2 = new Pipeline("pipeline", "different description", List.of("task1"));
-        try {
-            _pipelineValidator.validateOnAdd(p2, Map.of(p1.getName(), p1));
-            fail("Expected exception");
-        }
-        catch (InvalidPipelineException e) {
-            assertTrue(e.getMessage().contains("same name already exists"));
-        }
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
+                                       () -> _pipelineValidator.validateOnAdd(p2, Map.of(p1.getName(), p1)));
+        assertTrue(ex.getMessage().contains("same name already exists"));
     }
 
 
@@ -719,24 +678,20 @@ public class TestPipelineValidator {
 
     private void assertValidationErrors(PipelineElement pipelineElement, String... messages) {
         assertTrue("No messages passed in to check", messages.length > 0);
-        try {
-            _pipelineValidator.validateOnAdd(pipelineElement, Map.of());
-            fail("Expected exception");
+        var ex = TestUtil.assertThrows(PipelineValidationException.class,
+                                       () -> _pipelineValidator.validateOnAdd(pipelineElement, Map.of()));
+        var errorMessage = ex.getMessage();
+        for (String expectedMsg : messages) {
+            assertThat(errorMessage, containsString(expectedMsg));
         }
-        catch (PipelineValidationException e) {
-            var errorMessage = e.getMessage();
-            for (String expectedMsg : messages) {
-                assertThat(errorMessage, containsString(expectedMsg));
-            }
 
-            var lineCount = errorMessage
-                    .chars()
-                    .filter(ch -> ch == '\n')
-                    .count();
+        var lineCount = errorMessage
+                .chars()
+                .filter(ch -> ch == '\n')
+                .count();
 
-            assertEquals("Did not contain the expected number of error messages.",
-                         lineCount, messages.length);
-        }
+        assertEquals("Did not contain the expected number of error messages.",
+                     lineCount, messages.length);
     }
 
 

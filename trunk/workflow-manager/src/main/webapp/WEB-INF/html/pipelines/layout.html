@@ -64,7 +64,7 @@
         <div>
             <label>Select an Algorithm:</label>
             <select id="selectAlgorithm" ng-model="selectedAlgorithm"
-                    ng-options="algorithm.name for algorithm in algorithms"
+                    ng-options="algorithm.name for algorithm in algorithms | orderBy: 'name'"
                     ng-change="resetModifiedAlgoProps();">
                 <option value="">-- choose algorithm --</option>
             </select>
@@ -140,7 +140,7 @@
     <label>Create A New Task</label>
     <div id="taskCreationOpts">
         <label>Select an Action:</label>
-        <select ng-model="selectedAction" ng-options="action.name for action in actions">
+        <select ng-model="selectedAction" ng-options="action.name for action in actions | orderBy: 'name'">
             <option value="">-- choose action --</option>
         </select>
     </div>
@@ -213,7 +213,7 @@
     <div id="pipelineCreationOpts">
         <div>
             <label>Select a Task:</label>
-            <select id="selectTask" ng-model="selectedTask" ng-options="task.name for task in tasks">
+            <select id="selectTask" ng-model="selectedTask" ng-options="task.name for task in tasks | orderBy: 'name'">
                 <option value="">-- choose task --</option>
             </select>
         </div>

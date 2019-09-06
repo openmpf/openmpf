@@ -64,6 +64,13 @@
                         .then(function (algo) {
                             actionDetails.algorithm = algo;
                             return actionDetails;
+                        })
+                        .catch(function () {
+                            actionDetails.algorithm = {
+                                name: actionDetails.algorithm,
+                                missing: true
+                            };
+                            return actionDetails;
                         });
                 };
 

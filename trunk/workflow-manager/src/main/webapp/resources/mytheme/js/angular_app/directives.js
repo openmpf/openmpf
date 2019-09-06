@@ -364,11 +364,10 @@ AppDirectives.directive('uiSelectOpened', function() {
         link: function (scope, element, attrs, uiSelect) {
             uiSelect.open = true;
             uiSelect.active = true;
-            uiSelect.skipFocusser = false;
-            uiSelect.close = function (skipFocusser) {
-                if (!uiSelect.open) return;
-                // if (uiSelect.ngModel && uiSelect.ngModel.$setTouched) uiSelect.ngModel.$setTouched();
-            }
+            uiSelect.close = function() { return false; };
+
+            // Prior to adding this the first item in the select list would always be highlighted.
+            uiSelect.isActive = function () { return false; };
         }
     };
 });

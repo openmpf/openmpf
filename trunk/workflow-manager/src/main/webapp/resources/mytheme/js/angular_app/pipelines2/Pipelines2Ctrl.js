@@ -615,13 +615,19 @@
             /** sets up the viewProperties array for ease of generating the view */
             $scope.setViewProperties = function()  {
                 $scope.currentAction.viewProperties = [];
-                angular.copy($scope.currentAction.algorithm.providesCollection.properties,
-                    $scope.currentAction.viewProperties);
-                var index;
-                _.each( $scope.currentAction.properties, function( prop )  {
-                    index = _.findIndex($scope.currentAction.viewProperties, { "name": prop.name });
-                    $scope.currentAction.viewProperties[index].value = prop.value;
-                });
+                if ($scope.currentAction.algorithm.missing) {
+                    angular.copy($scope.currentAction.properties,
+                                 $scope.currentAction.viewProperties);
+                }
+                else {
+                    angular.copy($scope.currentAction.algorithm.providesCollection.properties,
+                                 $scope.currentAction.viewProperties);
+
+                    _.each($scope.currentAction.properties, function( prop )  {
+                        var index = _.findIndex($scope.currentAction.viewProperties, { "name": prop.name });
+                        $scope.currentAction.viewProperties[index].value = prop.value;
+                    });
+                }
             };
 
 

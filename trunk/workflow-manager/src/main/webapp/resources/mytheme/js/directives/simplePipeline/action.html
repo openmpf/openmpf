@@ -46,18 +46,27 @@
     <div ng-if="!showPopover" class="pipelineActionContent">
         <span ng-if="taskObj.missing" class="text-danger">
             {{taskObj.name}}
-            <small> (Task Missing!) </small>
+            <span class="label label-danger">
+                Task Missing!
+            </span>
         </span>
         <span ng-if="actionObj" ng-class="{'text-danger': actionObj.missing}">
             {{actionObj.name}}
-            <small ng-if="actionObj.missing"> (Action Missing!) </small>
+            <span ng-if="actionObj.missing" class="label label-danger">
+                Action Missing!
+            </span>
         </span>
         <ng-transclude/>
     </div>
     <div ng-if="showPopover" class="pipelineActionContent"
          uib-popover-template="'algorithm.popover.html'" popover-class="pp-action"
          popover-placement="auto bottom" popover-trigger="click">
-            {{actionObj.name}}
+
+        {{actionObj.name}}
+        <span ng-if="actionObj.algorithm.missing" class="label label-danger">
+            Algorithm Missing!
+        </span>
+
         <a ng-if="canEdit()&&!inParallelTask()" href ng-click="removeTaskFromPipeline( $event )">
             <div class="pp-remove-task glyphicon glyphicon-minus-sign"></div>
         </a>
@@ -72,7 +81,7 @@
         <p class="pp-popover-description">{{actionObj.description}}</p>
         <p ng-if="actionObj.properties>0" >
             <div>
-                <span class="pp-algorithm-decoration">{{actionObj.algorithmRef}}</span>
+                <span class="pp-algorithm-decoration">{{actionObj.algorithm.name}}</span>
                     + <span class="pp-popover-param-value">{{actionObj.properties.length}}</span>
                     modified parameters:
                 <ul class="pp-popover-param-list pp-action">
@@ -84,7 +93,7 @@
             </div>
             <br/>
             <div>
-                <span class="pp-algorithm-decoration">{{actionObj.algorithmRef}}</span>
+                <span class="pp-algorithm-decoration">{{actionObj.algorithm.name}}</span>
                 <span class="pp-popover-show-all-params-toggle pp-algorithm"
                       ng-click="toggleShowAllProperties2()">
                     + <span class="pp-popover-param-value">

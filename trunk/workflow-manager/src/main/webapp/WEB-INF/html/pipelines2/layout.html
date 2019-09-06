@@ -61,8 +61,9 @@
                                         <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
                                         <ui-select-choices repeat="pipeline.name as pipeline in pipelines | filter: $select.search">
                                         <div ng-bind-html="pipeline.name | highlight: $select.search"
-                                              uib-popover="{{pipeline.description}}" popover-placement="right"
-                                              popover-append-to-body="true" popover-trigger="mouseenter">
+                                             uib-popover="{{pipeline.description}}" popover-placement="right"
+                                             popover-append-to-body="true" popover-trigger="mouseenter"
+                                             ng-class="{active: currentPipeline.name == pipeline.name}">
                                         </div>
                                         </ui-select-choices>
                                     </ui-select>
@@ -101,7 +102,8 @@
                                             repeat="action.name as action in actions | orderBy: ['algorithm', 'name'] | filter: $select.search">
                                         <div ng-bind-html="action.name | highlight: $select.search"
                                              uib-popover="[{{action.algorithm}}]  {{action.description}}" popover-placement="right"
-                                             popover-append-to-body="true" popover-trigger="mouseenter">
+                                             popover-append-to-body="true" popover-trigger="mouseenter"
+                                             ng-class="{active: currentAction.name == action.name}">
                                         </div>
                                         <!--<div>-->
                                             <!--<span ng-bind-html="''+action.algorithmRef | highlight: $select.search"></span>-->
@@ -206,6 +208,24 @@
                               ng-model-options="{ updateOn: 'blur' }" tabindex="2"
                               placeholder="Action description (required)"/>
                 </div>
+                <div class="row" ng-class="{'text-danger': currentAction.algorithm.missing}">
+                    <div class="col-sm-2 text-right pp-name">
+                        Algorithm:
+                    </div>
+                    <div class="col-sm-10" style="padding-left: 0">
+                        <span class="pp-name">
+                            {{currentAction.algorithm.name}}
+                        </span>
+
+                        <span ng-if="currentAction.algorithm.description">
+                            ({{currentAction.algorithm.description}})
+                        </span>
+
+                        <span ng-if="currentAction.algorithm.missing" class="label label-danger">
+                            Algorithm Missing!
+                        </span>
+                    </div>
+                </div>
                 <div class="col-lg-2">
                     <!--placeholder-->
                 </div>
@@ -227,12 +247,8 @@
                                             </span>
                                     </div>
                                     <div ng-if="currentAction.viewProperties.length>0" class="action-all-properties pp-algorithm">
-                                        <span class="pp-algorithm-decoration">{{currentAction.algorithm.actionType}}</span>
-                                        <span class="pp-algorithm-decoration">{{currentAction.algorithmRef}}</span>
                                         <span ng-if="!actions2.inEditMode()" class="pp-algorithm">
                                             <strong>{{currentAction.properties.length}}</strong> parameters overriding
-                                        </span>
-                                        <span ng-if="!actions2.inEditMode()">
                                             <strong>{{currentAction.viewProperties.length}}</strong> default parameters
                                         </span>
                                         <div class="pp-algorithm-panel">
@@ -240,11 +256,6 @@
                                                 <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div ng-if="currentAction.viewProperties.length<=0"
-                                         class="action-all-properties pp-algorithm">
-                                        <span class="pp-algorithm-decoration">{{currentAction.algorithmRef}}</span>
-                                        has no parameters
                                     </div>
                                 </fieldset>
                             </div>

@@ -27,7 +27,7 @@
 package org.mitre.mpf.rest.api.util;
 
 
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -50,14 +50,14 @@ public @interface ValidAlgoPropValue {
 
 
     public static class Validator
-            implements ConstraintValidator<ValidAlgoPropValue, Algorithm.Property> {
+            implements ConstraintValidator<ValidAlgoPropValue, AlgorithmProperty> {
 
         @Override
         public void initialize(ValidAlgoPropValue constraintAnnotation) {
         }
 
         @Override
-        public boolean isValid(Algorithm.Property property, ConstraintValidatorContext ctx) {
+        public boolean isValid(AlgorithmProperty property, ConstraintValidatorContext ctx) {
             boolean bothProvided = property.getDefaultValue() != null && property.getPropertiesKey() != null;
             boolean neitherProvided = property.getDefaultValue() == null && property.getPropertiesKey() == null;
             if (bothProvided || neitherProvided) {

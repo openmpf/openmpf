@@ -24,52 +24,53 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.routes;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.*;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.rest.api.pipelines;
 
-@Component
-public class StageResponseAggregationRoute extends RouteBuilder {
-	private static final Logger log = LoggerFactory.getLogger(StageResponseAggregationRoute.class);
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
 
-	public static final String ENTRY_POINT = MpfEndpoints.STAGE_RESULTS_AGGREGATOR;
-	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
-	public static final String ROUTE_ID = "Stage Response Aggregation Route";
+import javax.validation.constraints.NotNull;
+import java.util.Objects;
 
-	@Autowired
-	@Qualifier(BroadcastEnabledStringCountBasedWfmAggregator.REF)
-	private WfmAggregator<String> aggregator;
+public class ActionProperty {
 
-	private final String entryPoint, exitPoint, routeId;
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
+    }
 
-	public StageResponseAggregationRoute() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
-	}
+    private final String _value;
+    @NotNull
+    public String getValue() {
+        return _value;
+    }
 
-	public StageResponseAggregationRoute(String entryPoint, String exitPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
-		this.routeId = routeId;
-	}
 
-	@Override
-	public void configure() {
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
-			.completionPredicate(new SplitCompletedPredicate())
-			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.process(EndOfStageProcessor.REF)
-			.to(exitPoint);
-	}
+    public ActionProperty(
+            @JsonProperty("name") String name,
+            @JsonProperty("value") String value) {
+        _name = Utils.trimAndUpper(name);
+        _value = Utils.trim(value);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof ActionProperty)) {
+            return false;
+        }
+        var property = (ActionProperty) obj;
+        return Objects.equals(_name, property._name)
+                && Objects.equals(_value, property._value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_name, _value);
+    }
 }

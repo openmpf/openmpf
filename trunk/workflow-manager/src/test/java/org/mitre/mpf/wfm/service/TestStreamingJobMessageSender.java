@@ -105,13 +105,13 @@ public class TestStreamingJobMessageSender {
                 .thenReturn(workflowProp2.getDefaultValue());
 
         var algoProperties = List.of(
-                new Algorithm.Property("OVERRIDDEN ACTION PROPERTY", "desc", ValueType.STRING,
+                new AlgorithmProperty("OVERRIDDEN ACTION PROPERTY", "desc", ValueType.STRING,
                                        "Bad Value", null),
-                new Algorithm.Property("ALGO PROPERTY2", "desc", ValueType.STRING,
+                new AlgorithmProperty("ALGO PROPERTY2", "desc", ValueType.STRING,
                                        "Algo Value2", null),
-                new Algorithm.Property("OVERRIDDEN JOB PROPERTY", "desc", ValueType.STRING,
+                new AlgorithmProperty("OVERRIDDEN JOB PROPERTY", "desc", ValueType.STRING,
                                        "Bad Value", null),
-                new Algorithm.Property("OVERRIDDEN STREAM PROPERTY", "desc", ValueType.STRING,
+                new AlgorithmProperty("OVERRIDDEN STREAM PROPERTY", "desc", ValueType.STRING,
                                        "Bad Value", null)
         );
 
@@ -126,8 +126,8 @@ public class TestStreamingJobMessageSender {
 
 
         var actionProperties = List.of(
-                new Action.Property("OVERRIDDEN ACTION PROPERTY", "ACTION VAL"),
-                new Action.Property("OVERRIDDEN JOB PROPERTY", "Bad Value")
+                new ActionProperty("OVERRIDDEN ACTION PROPERTY", "ACTION VAL"),
+                new ActionProperty("OVERRIDDEN JOB PROPERTY", "Bad Value")
         );
         var action = new Action("ActionName", "Action description", algorithm.getName(),
                                 actionProperties);

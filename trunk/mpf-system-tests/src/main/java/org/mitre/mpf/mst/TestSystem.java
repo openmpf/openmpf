@@ -40,6 +40,7 @@ import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.JobCreationStreamData;
 import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmStartup;
@@ -172,9 +173,9 @@ public abstract class TestSystem {
             return;
         }
 
-        List<Action.Property> propertyList = propertySettings.entrySet()
+        List<ActionProperty> propertyList = propertySettings.entrySet()
                 .stream()
-                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
         Action action = new Action(actionName, actionName, algorithmName, propertyList);
         pipelineService.save(action);

@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,11 +37,12 @@ import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -51,10 +54,11 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @ContextConfiguration(classes = PipelineController.class)
@@ -65,30 +69,40 @@ public class TestPipelineController {
 
     private MockMvc mockMvc;
 
+    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
+
 
     @Before
     public void setup() throws WfmProcessingException, IOException {
         var mockPropertiesUtil = mock(PropertiesUtil.class);
         TestUtil.initPipelineDataFiles(mockPropertiesUtil, _tempFolder);
 
-        var objectMapper = ObjectMapperFactory.customObjectMapper();
+        var mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
+        when(mockWorkflowPropertyService.getProperties())
+                .thenReturn(ImmutableList.of(
+                        new WorkflowProperty("TEST_WF_PROPERTY", "WF PROP DESCR",
+                                             ValueType.INT, "5", null,
+                                             List.of(org.mitre.mpf.wfm.enums.MediaType.VIDEO))));
+        when(mockWorkflowPropertyService.getPropertyValue("TEST_WF_PROPERTY"))
+                .thenReturn("5");
 
         var springValidator = new LocalValidatorFactoryBean();
         springValidator.afterPropertiesSet();
-        var pipelineValidator = new PipelineValidator(springValidator, mock(WorkflowPropertyService.class));
+        var pipelineValidator = new PipelineValidator(springValidator, mockWorkflowPropertyService);
 
-        var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, objectMapper, pipelineValidator);
+        var pipelineService = new PipelineServiceImpl(mockPropertiesUtil, _objectMapper, pipelineValidator);
 
-        var pipelineController = new PipelineController(mockPropertiesUtil, mock(WorkflowPropertyService.class),
+        var pipelineController = new PipelineController(mockPropertiesUtil, mockWorkflowPropertyService,
                                                         pipelineService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(pipelineController).build();
 
 
-        var testAlgoProp = new Algorithm.Property(
-                "TESTPROP", "Test property", ValueType.BOOLEAN, "TRUE", null);
+        var testAlgoProp = new AlgorithmProperty(
+                "TEST_ALGO_PROP", "Test algo property", ValueType.BOOLEAN, "TRUE", null);
 
         var algorithm1 = new Algorithm(
                 "TEST_DETECTION_ALG", "Test algorithm for detection.", ActionType.DETECTION,
@@ -126,26 +140,73 @@ public class TestPipelineController {
         pipelineService.save(new Task("TEST_MARKUP_TASK1", "Test task for markup.",
                                       List.of("TEST_MARKUP_ACTION1")));
 
+
         pipelineService.save(new Pipeline("TEST_PIPELINE", "Test pipeline",
                                           List.of("TEST_DETECTION_TASK1")));
     }
 
 
+    @Test
+    public void testGetAlgorithms() throws Exception {
+        mockMvc.perform(get("/algorithms"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isNotEmpty());
+    }
+
 
     @Test
-    public void testGetActions() throws Exception{
+    public void testGetAlgorithm() throws Exception {
+        var mvcResult = mockMvc.perform(get("/algorithms?name=TEST_DETECTION_ALG"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("TEST_DETECTION_ALG"))
+                .andExpect(jsonPath("$.description").value("Test algorithm for detection."))
+                .andExpect(jsonPath("$.actionType").value("DETECTION"))
+                .andReturn();
+
+        var algorithm = _objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), Algorithm.class);
+
+        var properties = algorithm.getProvidesCollection().getProperties();
+        assertEquals(2, properties.size());
+        
+
+        var algoProp = properties.stream()
+                .filter(p -> p.getName().equals("TEST_ALGO_PROP"))
+                .findAny()
+                .orElse(null);
+        assertNotNull(algoProp);
+        assertEquals("Test algo property", algoProp.getDescription());
+        assertEquals("TRUE", algoProp.getDefaultValue());
+        assertEquals(ValueType.BOOLEAN, algoProp.getType());
+        assertNull(algoProp.getPropertiesKey());
+
+
+        var wfProp = properties.stream()
+                .filter(p -> p.getName().equals("TEST_WF_PROPERTY"))
+                .findAny()
+                .orElse(null);
+        assertNotNull(wfProp);
+        assertEquals("WF PROP DESCR", wfProp.getDescription());
+        assertEquals("5", wfProp.getDefaultValue());
+        assertEquals(ValueType.INT, wfProp.getType());
+        assertNull(wfProp.getPropertiesKey());
+    }
+
+
+    @Test
+    public void testGetActions() throws Exception {
         mockMvc.perform(get("/actions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isNotEmpty());
-
     }
+
     @Test
-    public void testAddAction() throws Exception{
+    public void testAddAction() throws Exception {
         var actionName = "TEST_ADD_ACTION";
 
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
-                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": [{ \"name\": \"TESTPROP\", \"value\": \"FALSE\" }] }"))
+                "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": [{ \"name\": \"TEST_ALGO_PROP\", \"value\": \"FALSE\" }] }"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/actions?name=" + actionName))
@@ -153,7 +214,7 @@ public class TestPipelineController {
                 .andExpect(jsonPath("$.name").value(actionName))
                 .andExpect(jsonPath("$.description").value("This is a test action"))
                 .andExpect(jsonPath("$.algorithm").value("TEST_DETECTION_ALG"))
-                .andExpect(jsonPath("$.properties[0].name").value("TESTPROP"))
+                .andExpect(jsonPath("$.properties[0].name").value("TEST_ALGO_PROP"))
                 .andExpect(jsonPath("$.properties[0].value").value("FALSE"));
 
         mockMvc.perform(delete("/actions?name=" + actionName))
@@ -164,12 +225,13 @@ public class TestPipelineController {
     }
 
     @Test
-    public void testAddActionErrors() throws Exception{
+    public void testAddActionErrors() throws Exception {
         var actionName = "TEST_ADD_ACTION_ERROR";
 
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": \"Stuff\"}"))
-                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
+                .andExpect(content().string("Invalid properties value: Stuff."));
 
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": []}"))
@@ -201,7 +263,7 @@ public class TestPipelineController {
 
 
     @Test
-    public void testGetTasks() throws Exception{
+    public void testGetTasks() throws Exception {
         mockMvc.perform(get("/tasks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -209,7 +271,7 @@ public class TestPipelineController {
     }
 
     @Test
-    public void testAddTask() throws Exception{
+    public void testAddTask() throws Exception {
         var taskName = "TEST_ADD_TASK";
 
         mockMvc.perform(get("/tasks").contentType(MediaType.APPLICATION_JSON))
@@ -270,7 +332,7 @@ public class TestPipelineController {
 
 
     @Test
-    public void testAddTaskMultipleActions() throws Exception{
+    public void testAddTaskMultipleActions() throws Exception {
         var taskName = "TEST_MULTIPLE_ACTIONS_GOOD_TASK";
 
         mockMvc.perform(get("/tasks").contentType(MediaType.APPLICATION_JSON))
@@ -297,7 +359,7 @@ public class TestPipelineController {
 
 
     @Test
-    public void testGetPipelines() throws Exception{
+    public void testGetPipelines() throws Exception {
         mockMvc.perform(get("/pipelines"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -305,7 +367,7 @@ public class TestPipelineController {
     }
 
     @Test
-    public void testAddPipelines() throws Exception{
+    public void testAddPipelines() throws Exception {
         var pipelineName = "TEST_ADD_PIPELINE";
 
         mockMvc.perform(get("/pipelines").contentType(MediaType.APPLICATION_JSON))
@@ -330,7 +392,7 @@ public class TestPipelineController {
     }
 
     @Test
-    public void testAddPipelinesErrors() throws Exception{
+    public void testAddPipelinesErrors() throws Exception {
         var pipelineName = "TEST_ADD_PIPELINES_ERROR";
 
         mockMvc.perform(post("/pipelines").contentType(MediaType.APPLICATION_JSON).content(
@@ -381,7 +443,7 @@ public class TestPipelineController {
 
 
     @Test
-    public void testAddPipelinesTaskOrder() throws Exception{
+    public void testAddPipelinesTaskOrder() throws Exception {
         var pipelineName = "TEST_GOOD_TASK_ORDER_PIPELINE";
 
         mockMvc.perform(get("/pipelines").contentType(MediaType.APPLICATION_JSON))

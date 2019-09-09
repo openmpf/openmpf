@@ -223,7 +223,7 @@ public class PipelineController {
 
 
     private Algorithm getAlgoWithDefaultValuesSet(Algorithm algorithm) {
-        var propsWithDefaultSet = new ArrayList<Algorithm.Property>();
+        var propsWithDefaultSet = new ArrayList<AlgorithmProperty>();
         var propertiesAdded = new HashSet<String>();
 
         for (var property : algorithm.getProvidesCollection().getProperties()) {
@@ -231,7 +231,7 @@ public class PipelineController {
                 propsWithDefaultSet.add(property);
             }
             else {
-                var propWithDefault = new Algorithm.Property(
+                var propWithDefault = new AlgorithmProperty(
                         property.getName(), property.getDescription(), property.getType(),
                         _propertiesUtil.lookup(property.getPropertiesKey()), property.getPropertiesKey());
                 propsWithDefaultSet.add(propWithDefault);
@@ -252,16 +252,16 @@ public class PipelineController {
 
 
     private void addWorkflowProperties(Collection<String> propertiesAlreadyAdded,
-                                       Collection<Algorithm.Property> propsWithDefaultSet) {
+                                       Collection<AlgorithmProperty> propsWithDefaultSet) {
 
         for (var workflowProperty : _workflowPropertyService.getProperties()) {
             if (!propertiesAlreadyAdded.contains(workflowProperty.getName())) {
                 var workflowPropVal = _workflowPropertyService.getPropertyValue(workflowProperty.getName());
                 if (workflowPropVal != null) {
                     propsWithDefaultSet.add(
-                            new Algorithm.Property(workflowProperty.getName(), workflowProperty.getDescription(),
-                                                   workflowProperty.getType(), workflowPropVal,
-                                                   workflowProperty.getPropertiesKey()));
+                            new AlgorithmProperty(workflowProperty.getName(), workflowProperty.getDescription(),
+                                                  workflowProperty.getType(), workflowPropVal,
+                                                  workflowProperty.getPropertiesKey()));
                 }
             }
         }

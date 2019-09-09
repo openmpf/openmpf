@@ -275,7 +275,7 @@ public class PipelineValidator {
     }
 
 
-    private static void validateValueType(Action action, Action.Property property, ValueType type) {
+    private static void validateValueType(Action action, ActionProperty property, ValueType type) {
         try {
             String value = property.getValue();
             switch (type) {

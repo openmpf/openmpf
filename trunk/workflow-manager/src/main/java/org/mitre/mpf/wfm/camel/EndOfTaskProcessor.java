@@ -41,10 +41,10 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
-@Component(EndOfStageProcessor.REF)
-public class EndOfStageProcessor extends WfmProcessor {
-    public static final String REF = "endOfStageProcessor";
-    private static final Logger log = LoggerFactory.getLogger(EndOfStageProcessor.class);
+@Component(EndOfTaskProcessor.REF)
+public class EndOfTaskProcessor extends WfmProcessor {
+    public static final String REF = "endOfTaskProcessor";
+    private static final Logger log = LoggerFactory.getLogger(EndOfTaskProcessor.class);
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;

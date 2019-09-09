@@ -137,7 +137,7 @@ public class TestPipelineValidator {
 
         var workflowPropName = "WORKFLOW_PROP_NAME";
         var action = new Action("ACTION", "descr", algorithm.getName(),
-                                List.of(new Action.Property(workflowPropName, "WORKFLOW_PROP_VAL")));
+                                List.of(new ActionProperty(workflowPropName, "WORKFLOW_PROP_VAL")));
         _actions.put(action.getName(), action);
 
         var task = new Task("TASK", "descr", List.of(action.getName()));
@@ -159,7 +159,7 @@ public class TestPipelineValidator {
 
 
         var correctedAction = new Action(action.getName(), action.getDescription(), action.getAlgorithm(),
-                                         List.of(new Action.Property(workflowPropName, "2.997e8")));
+                                         List.of(new ActionProperty(workflowPropName, "2.997e8")));
         _actions.put(correctedAction.getName(), correctedAction);
         verifyBatchPipelineRunnable(pipeline.getName());
     }
@@ -342,8 +342,8 @@ public class TestPipelineValidator {
 
     @Test
     public void throwsWhenActionReferencesNonExistentAlgoProp() {
-        var property = new Algorithm.Property("MY PROPERTY", "descr", ValueType.INT,
-                                              "1", null);
+        var property = new AlgorithmProperty("MY PROPERTY", "descr", ValueType.INT,
+                                             "1", null);
 
         var algorithm = new Algorithm(
                 "ALGO", "descr", ActionType.DETECTION,
@@ -353,7 +353,7 @@ public class TestPipelineValidator {
         addElement(algorithm);
 
         var action = new Action("ACTION", "descr", algorithm.getName(),
-                                   List.of(new Action.Property("INVALID", "INVALID")));
+                                   List.of(new ActionProperty("INVALID", "INVALID")));
         addElement(action);
 
         var task = new Task("TASK", "descr", List.of(action.getName()));
@@ -371,7 +371,7 @@ public class TestPipelineValidator {
 
     @Test
     public void throwsWhenActionHasInvalidPropertyValue() {
-        var property = new Algorithm.Property("MY PROPERTY", "asdf", ValueType.INT,
+        var property = new AlgorithmProperty("MY PROPERTY", "asdf", ValueType.INT,
                                               "1", null);
 
         var algorithm = new Algorithm(
@@ -382,7 +382,7 @@ public class TestPipelineValidator {
         addElement(algorithm);
 
         var action = new Action("ACTION", "descr", algorithm.getName(),
-                                   List.of(new Action.Property("MY PROPERTY", "INVALID")));
+                                   List.of(new ActionProperty("MY PROPERTY", "INVALID")));
         addElement(action);
 
         var task = new Task("TASK", "descr", List.of(action.getName()));
@@ -609,9 +609,9 @@ public class TestPipelineValidator {
 
     @Test
     public void canValidateAction() {
-        var property1 = new Action.Property("PROP1", "Value1");
-        var property2 = new Action.Property("", "");
-        var property3 = new Action.Property("PROP1", null);
+        var property1 = new ActionProperty("PROP1", "Value1");
+        var property2 = new ActionProperty("", "");
+        var property3 = new ActionProperty("PROP1", null);
 
 
         var action = new Action(null, null, "", List.of(property1, property2, property3));
@@ -642,10 +642,10 @@ public class TestPipelineValidator {
                 createViolationMessage("requiresCollection", null, "may not be null"),
                 "must support batch processing, stream processing, or both");
 
-        var property1 = new Algorithm.Property(
+        var property1 = new AlgorithmProperty(
                 "PROP1", "descr", ValueType.STRING, "default", null);
 
-        var property2 = new Algorithm.Property(
+        var property2 = new AlgorithmProperty(
                 "", null, null, "default", "property.key");
 
         algorithm = new Algorithm(

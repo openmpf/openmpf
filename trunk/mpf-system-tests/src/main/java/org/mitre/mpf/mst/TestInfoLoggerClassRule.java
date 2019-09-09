@@ -32,38 +32,46 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class TestInfoLoggerClassRule extends TestWatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestInfoLoggerClassRule.class);
 
-    private static int _testCount;
-
     private static int _numStarted;
+
+    private static final Map<Class<?>, Integer> _testCounts = new HashMap<>();
+    private static final Map<Class<?>, Integer> _numStartedPerClass = new HashMap<>();
 
 
     @Override
     protected void starting(Description description) {
         // description.testCount() will always be 1 in the method rule, so we need to get the count with a class rule.
-        _testCount += description.testCount();
-        LOG.info("=== Discovered {} additional tests in {} ===", description.testCount(), description.getClassName());
+        _testCounts.put(description.getTestClass(), description.testCount());
+        _numStartedPerClass.put(description.getTestClass(), 0);
     }
 
 
     public TestWatcher methodRule() {
         return new TestWatcher() {
             protected void starting(Description description) {
+                int numStartedThisClass = _numStartedPerClass.merge(description.getTestClass(), 1, Integer::sum);
                 _numStarted++;
-                LOG.info("=== Starting test #{} of {}: {} ===", _numStarted, _testCount, description.getDisplayName());
+
+                LOG.info("\n=== Starting test #{}: {} (test #{} of {} in {}) ===",
+                         _numStarted, description.getDisplayName(), numStartedThisClass,
+                         _testCounts.get(description.getTestClass()), description.getTestClass().getName());
             }
 
             @Override
             protected void succeeded(Description description) {
-                LOG.info("=== {} succeeded ===", description.getDisplayName());
+                LOG.info("\n=== {} succeeded ===", description.getDisplayName());
             }
 
             @Override
             protected void failed(Throwable e, Description description) {
-                LOG.error("=== {} failed: {} ===", description.getDisplayName(), e.getMessage());
+                LOG.error("\n=== {} failed: {} ===", description.getDisplayName(), e.getMessage());
             }
         };
     }

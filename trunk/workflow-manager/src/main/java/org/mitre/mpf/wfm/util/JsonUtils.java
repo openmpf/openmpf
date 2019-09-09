@@ -34,10 +34,7 @@ import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
 import org.mitre.mpf.interop.JsonTask;
 import org.mitre.mpf.interop.util.InstantJsonModule;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.springframework.context.annotation.Scope;
@@ -158,7 +155,7 @@ public class JsonUtils {
             for (String actionName : task.getActions()) {
                 Action action = pipelineElements.getAction(actionName);
                 JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
-                for (Action.Property property : action.getProperties()) {
+                for (ActionProperty property : action.getProperties()) {
                     jsonAction.getProperties().put(property.getName(), property.getValue());
                 }
                 jsonTask.getActions().add(jsonAction);

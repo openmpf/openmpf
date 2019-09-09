@@ -409,7 +409,7 @@ public class TestS3StorageBackend {
                                       true, true);
         var action = new Action(
                 "TEST_ACTION", "description", algorithm.getName(),
-                List.of(new Action.Property(MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY_PROPERTY,
                                                               "<ACCESS_KEY>")));
         var task = new Task("TEST_TASK", "description", List.of(action.getName()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",

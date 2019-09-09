@@ -71,9 +71,9 @@ public class TestPipelineService {
     @Test
     public void canSaveLoadAndDeletePipelineElements() throws IOException {
         var algo1Properties = List.of(
-                new Algorithm.Property("PROP1", "PROP1 description", ValueType.INT,
+                new AlgorithmProperty("PROP1", "PROP1 description", ValueType.INT,
                                        "1", null),
-                new Algorithm.Property("PROP2", "PROP2 description", ValueType.STRING,
+                new AlgorithmProperty("PROP2", "PROP2 description", ValueType.STRING,
                                        null, "prop2.value"));
         var algo1 = new Algorithm(
                 "ALGO1", "algo1 description", ActionType.DETECTION,
@@ -97,8 +97,8 @@ public class TestPipelineService {
                 .validateOnAdd(eq(algo2), notNull());
 
         var action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
-                                    List.of(new Action.Property("PROP1", "PROP1Val"),
-                                            new Action.Property("Prop2", "Prop2Val")));
+                                    List.of(new ActionProperty("PROP1", "PROP1Val"),
+                                            new ActionProperty("Prop2", "Prop2Val")));
         _pipelineService.save(action1);
         verify(_mockPipelineValidator)
                 .validateOnAdd(eq(action1), notNull());

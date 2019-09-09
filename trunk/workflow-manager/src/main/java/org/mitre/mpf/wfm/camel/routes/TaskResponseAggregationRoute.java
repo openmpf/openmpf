@@ -28,63 +28,48 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
-import org.mitre.mpf.wfm.camel.JobCompletePredicate;
-import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.camel.JobStatusCalculator;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledStringCountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.EndOfTaskProcessor;
+import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-/**
- * This builds the routes which replace the MPF Action Router.
- */
 @Component
-public class JobRouterRouteBuilder extends RouteBuilder {
-	private static final Logger log = LoggerFactory.getLogger(JobRouterRouteBuilder.class);
+public class TaskResponseAggregationRoute extends RouteBuilder {
 
-	public static final String ENTRY_POINT = "direct:jobRouter";
-	public static final String ROUTE_ID = "Job Router Route";
+    public static final String ENTRY_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
+    public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
+    public static final String ROUTE_ID = "Stage Response Aggregation Route";
 
-	private final String entryPoint, routeId;
+    @Autowired
+    @Qualifier(BroadcastEnabledStringCountBasedWfmAggregator.REF)
+    private WfmAggregator<String> aggregator;
 
-	public JobRouterRouteBuilder() {
-		this(ENTRY_POINT, ROUTE_ID);
-	}
+    private final String entryPoint, exitPoint, routeId;
 
-	public JobRouterRouteBuilder(String entryPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.routeId = routeId;
-	}
+    public TaskResponseAggregationRoute() {
+        this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
+    }
 
+    public TaskResponseAggregationRoute(String entryPoint, String exitPoint, String routeId) {
+        this.entryPoint = entryPoint;
+        this.exitPoint = exitPoint;
+        this.routeId = routeId;
+    }
 
-	@Override
-	public void configure() {
-		log.debug("Configuring route '{}'.", routeId);
-
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.choice()
-				.when(method(JobCompletePredicate.class))
-					.setHeader(MpfHeaders.JOB_STATUS).method(JobStatusCalculator.class)
-                    .process(JobCompleteProcessorImpl.REF)
-				.otherwise()
-					.split().method(DefaultTaskSplitter.REF, "split")
-						.parallelProcessing() // Create work units and process them in any order.
-						.streaming() // Aggregate responses in any order.
-						.choice()
-							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(MpfEndpoints.TASK_RESULTS_AGGREGATOR)
-							.otherwise()
-								.marshal().protobuf()
-								.recipientList(header(MpfHeaders.RECIPIENT_QUEUE))
-				.endChoice()
-					.endChoice() // For unknown reasons, the split() DSL is ended by 'endChoice'.
-				.end()
-			.endChoice();
-	}
+    @Override
+    public void configure() {
+        from(entryPoint)
+            .routeId(routeId)
+            .setExchangePattern(ExchangePattern.InOnly)
+            .aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
+            .completionPredicate(new SplitCompletedPredicate())
+            .removeHeader(MpfHeaders.SPLIT_COMPLETED)
+            .process(EndOfTaskProcessor.REF)
+            .to(exitPoint);
+    }
 }

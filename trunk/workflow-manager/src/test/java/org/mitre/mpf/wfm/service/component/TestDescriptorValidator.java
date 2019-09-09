@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.validation.Validator;
@@ -118,7 +119,7 @@ public class TestDescriptorValidator {
         var validAction = new Action("valid action", "descr", "algo",
                                      List.of());
         var invalidAction = new Action("invalid action", "", "",
-                                       List.of(new Action.Property(null, null)));
+                                       List.of(new ActionProperty(null, null)));
 
         var descriptor = new JsonComponentDescriptor(
                 "componentName", "componentVersion", "1.0",

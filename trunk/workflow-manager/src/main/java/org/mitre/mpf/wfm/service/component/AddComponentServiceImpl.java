@@ -33,16 +33,13 @@ import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
 import org.mitre.mpf.wfm.service.StreamingServiceModel;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -304,7 +301,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
         catch (UnrecognizedPropertyException ex) {
             if (ex.getPropertyName().equals("value")
-                    && ex.getReferringClass().equals(Algorithm.Property.class)) {
+                    && ex.getReferringClass().equals(AlgorithmProperty.class)) {
                 throw new FailedToParseDescriptorException(
                         "algorithm.providesCollection.properties.value has been renamed to defaultValue. " +
                                 "The JSON descriptor must be updated in order to register the component.",

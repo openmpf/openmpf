@@ -338,10 +338,10 @@ public class TestTrackMergingProcessor {
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
 
-        List<Action.Property> actionProps = actionPropsMap
+        List<ActionProperty> actionProps = actionPropsMap
                 .entrySet()
                 .stream()
-                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
 
         Action action = new Action("detectionAction", "description", algorithm.getName(), actionProps);

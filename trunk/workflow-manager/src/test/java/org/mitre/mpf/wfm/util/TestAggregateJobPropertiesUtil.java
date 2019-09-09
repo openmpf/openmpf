@@ -50,6 +50,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+// There are also integration tests in TestDetectionTaskSplitter that test AggregateJobPropertiesUtil.
 public class TestAggregateJobPropertiesUtil {
 
     @Test
@@ -86,28 +87,28 @@ public class TestAggregateJobPropertiesUtil {
         );
 
         var actionPropertyList = List.of(
-                new Action.Property(overriddenUpToMedia.getKey(), "WRONG"),
-                new Action.Property(overriddenUpToOverriddenAlgo.getKey(), "WRONG"),
-                new Action.Property(overriddenUpToJob.getKey(), "WRONG"),
-                new Action.Property(overriddenUpToAction.getKey(), overriddenUpToAction.getValue())
+                new ActionProperty(overriddenUpToMedia.getKey(), "WRONG"),
+                new ActionProperty(overriddenUpToOverriddenAlgo.getKey(), "WRONG"),
+                new ActionProperty(overriddenUpToJob.getKey(), "WRONG"),
+                new ActionProperty(overriddenUpToAction.getKey(), overriddenUpToAction.getValue())
         );
 
 
         var algoPropertyList = List.of(
-                new Algorithm.Property(overriddenUpToMedia.getKey(), "descr",
-                                       ValueType.STRING, "WRONG", null),
-                new Algorithm.Property(overriddenUpToOverriddenAlgo.getKey(), "descr",
-                                       ValueType.STRING, "WRONG", null),
-                new Algorithm.Property(overriddenUpToJob.getKey(), "descr",
-                                       ValueType.STRING, "WRONG", null),
-                new Algorithm.Property(overriddenUpToAction.getKey(), "descr",
-                                       ValueType.STRING, "WRONG", null),
-                new Algorithm.Property(overriddenUpToAlgo.getKey(), "descr",
-                                       ValueType.STRING, overriddenUpToAlgo.getValue(), null),
-                new Algorithm.Property(algoPropertyFromSnapshot.getKey(), "descr",
-                                       ValueType.STRING, null, "algo.snapshot.property"),
-                new Algorithm.Property(algoPropertyFromPropUtil.getKey(), "descr",
-                                       ValueType.STRING, null, "algo.prop.util.property")
+                new AlgorithmProperty(overriddenUpToMedia.getKey(), "descr",
+                                      ValueType.STRING, "WRONG", null),
+                new AlgorithmProperty(overriddenUpToOverriddenAlgo.getKey(), "descr",
+                                      ValueType.STRING, "WRONG", null),
+                new AlgorithmProperty(overriddenUpToJob.getKey(), "descr",
+                                      ValueType.STRING, "WRONG", null),
+                new AlgorithmProperty(overriddenUpToAction.getKey(), "descr",
+                                      ValueType.STRING, "WRONG", null),
+                new AlgorithmProperty(overriddenUpToAlgo.getKey(), "descr",
+                                      ValueType.STRING, overriddenUpToAlgo.getValue(), null),
+                new AlgorithmProperty(algoPropertyFromSnapshot.getKey(), "descr",
+                                      ValueType.STRING, null, "algo.snapshot.property"),
+                new AlgorithmProperty(algoPropertyFromPropUtil.getKey(), "descr",
+                                      ValueType.STRING, null, "algo.prop.util.property")
         );
 
         var workflowProperties = List.of(

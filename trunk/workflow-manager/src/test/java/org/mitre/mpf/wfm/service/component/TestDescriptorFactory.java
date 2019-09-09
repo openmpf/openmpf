@@ -58,14 +58,14 @@ public class TestDescriptorFactory {
 
         Algorithm.Requires requiresCollection = new Algorithm.Requires(Arrays.asList("r-state1", "r-state2"));
 
-        Algorithm.Property property1 = new Algorithm.Property(
+        AlgorithmProperty property1 = new AlgorithmProperty(
                 ALGO_PROP_NAMES.get(0),
                 "test property1 description",
                 ValueType.INT,
                 "100",
                 null);
 
-        Algorithm.Property property2 = new Algorithm.Property(
+        AlgorithmProperty property2 = new AlgorithmProperty(
                 ALGO_PROP_NAMES.get(1),
                 "test property2 description",
                 ValueType.STRING,
@@ -91,8 +91,8 @@ public class TestDescriptorFactory {
         List<Pipeline> pipelines = new ArrayList<>();
         if (withCustomPipeline) {
 
-            Action.Property actionProp1 = new Action.Property(ACTION1_PROP_NAMES.get(0), ACTION1_PROP_VALUES.get(0));
-            Action.Property actionProp2 = new Action.Property(ACTION1_PROP_NAMES.get(1), ACTION1_PROP_VALUES.get(1));
+            ActionProperty actionProp1 = new ActionProperty(ACTION1_PROP_NAMES.get(0), ACTION1_PROP_VALUES.get(0));
+            ActionProperty actionProp2 = new ActionProperty(ACTION1_PROP_NAMES.get(1), ACTION1_PROP_VALUES.get(1));
 
             Action action1 = new Action(
                     ACTION_NAMES.get(0),
@@ -155,12 +155,12 @@ public class TestDescriptorFactory {
 
     public static Algorithm getReferencedAlgorithm() {
 
-        List<Algorithm.Property> propertyList = ACTION1_PROP_NAMES
+        List<AlgorithmProperty> propertyList = ACTION1_PROP_NAMES
                 .stream()
-                .map(n -> new Algorithm.Property(n, "1", ValueType.STRING, "default_Value", null))
+                .map(n -> new AlgorithmProperty(n, "1", ValueType.STRING, "default_Value", null))
                 .collect(toCollection(ArrayList::new));
 
-        propertyList.add(new Algorithm.Property("foo", "2", ValueType.INT, "0", null));
+        propertyList.add(new AlgorithmProperty("foo", "2", ValueType.INT, "0", null));
 
         return new Algorithm(
                 REFERENCED_ALGO_NAME, "description", ActionType.DETECTION,

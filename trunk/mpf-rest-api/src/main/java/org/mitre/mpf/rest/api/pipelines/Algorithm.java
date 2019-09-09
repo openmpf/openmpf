@@ -33,7 +33,6 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
-import org.mitre.mpf.rest.api.util.ValidAlgoPropValue;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -104,7 +103,7 @@ public class Algorithm implements PipelineElement {
     }
 
 
-    public Algorithm.Property getProperty(String name) {
+    public AlgorithmProperty getProperty(String name) {
         return _providesCollection.getProperties()
                 .stream()
                 .filter(p -> p.getName().equalsIgnoreCase(name))
@@ -179,16 +178,16 @@ public class Algorithm implements PipelineElement {
             return _states;
         }
 
-        private final ImmutableList<Property> _properties;
+        private final ImmutableList<AlgorithmProperty> _properties;
         @NotNull @Valid
-        public ImmutableList<Property> getProperties() {
+        public ImmutableList<AlgorithmProperty> getProperties() {
             return _properties;
         }
 
 
         public Provides(
                 @JsonProperty("states") Collection<String> states,
-                @JsonProperty("properties") Collection<Property> properties) {
+                @JsonProperty("properties") Collection<AlgorithmProperty> properties) {
             _states = Utils.trimAndUpper(states, ImmutableList.toImmutableList());
             _properties = ImmutableList.copyOf(properties);
         }
@@ -210,78 +209,6 @@ public class Algorithm implements PipelineElement {
         @Override
         public int hashCode() {
             return Objects.hash(_states, _properties);
-        }
-    }
-
-
-
-    @ValidAlgoPropValue
-    public static class Property {
-
-        private final String _name;
-        @NotBlank
-        public String getName() {
-            return _name;
-        }
-
-        private final String _description;
-        @NotBlank
-        public String getDescription() {
-            return _description;
-        }
-
-        private final ValueType _type;
-        @NotNull
-        public ValueType getType() {
-            return _type;
-        }
-
-        // option A
-        private final String _defaultValue;
-        public String getDefaultValue() {
-            return _defaultValue;
-        }
-
-        // option B
-        private final String _propertiesKey;
-        public String getPropertiesKey() {
-            return _propertiesKey;
-        }
-
-
-        public Property(
-                @JsonProperty("name") String name,
-                @JsonProperty("description") String description,
-                @JsonProperty("type") ValueType type,
-                @JsonProperty("defaultValue") String defaultValue,
-                @JsonProperty("propertiesKey") String propertiesKey) {
-            _name = Utils.trimAndUpper(name);
-            _description = Utils.trim(description);
-            _type = type;
-            _defaultValue = Utils.trim(defaultValue);
-            _propertiesKey = Utils.trim(propertiesKey);
-        }
-
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (!(obj instanceof Property)) {
-                return false;
-            }
-            var other = (Property) obj;
-            return Objects.equals(_name, other._name)
-                    && Objects.equals(_description, other._description)
-                    && _type == other._type
-                    && Objects.equals(_defaultValue, other._defaultValue)
-                    && Objects.equals(_propertiesKey, other._propertiesKey);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(_name, _description, _type, _defaultValue, _propertiesKey);
         }
     }
 }

@@ -109,10 +109,10 @@ public class TestDetectionTaskSplitter {
                 true);
         Action action = new Action(
                 "detectionAction", "detectionDescription", algorithm.getName(),
-                Arrays.asList(new Action.Property(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1"),
-                              new Action.Property(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1"),
-                              new Action.Property(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10"),
-                              new Action.Property(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25")));
+                Arrays.asList(new ActionProperty(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1"),
+                              new ActionProperty(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1"),
+                              new ActionProperty(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10"),
+                              new ActionProperty(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25")));
 
 
         Task task = new Task("taskName", "task description",
@@ -386,9 +386,9 @@ public class TestDetectionTaskSplitter {
                 true,
                 true);
 
-        List<Action.Property> actionPropList = actionProperties.entrySet()
+        List<ActionProperty> actionPropList = actionProperties.entrySet()
                 .stream()
-                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
         Action action = new Action("detectionAction", "detectionDescription",
                                    algorithm.getName(), actionPropList);
@@ -469,9 +469,9 @@ public class TestDetectionTaskSplitter {
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
 
-        List<Action.Property> actionPropertyList = actionProperties.entrySet()
+        List<ActionProperty> actionPropertyList = actionProperties.entrySet()
                 .stream()
-                .map(e -> new Action.Property(e.getKey(), e.getValue()))
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
                 .collect(toList());
 
         Action action = new Action("FACECV", "dummyDescriptionFACECV", algorithm.getName(),

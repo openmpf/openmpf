@@ -227,6 +227,19 @@
 
             /** save current pipeline to server */
             pipes2.savePipeline = function( pipeline ) {
+                if (!pipeline.name) {
+                    showErrorModal('A name must be provided for the pipeline.');
+                    return;
+                }
+                if (!pipeline.description) {
+                    showErrorModal('A description must be provided for the pipeline.');
+                    return;
+                }
+                if (pipeline.taskRefs.length === 0) {
+                    showErrorModal('The pipeline must contain at least one task.');
+                    return;
+                }
+
                 pipeline.name = pipes2.renderAsCustomName( $scope.currentPipeline.name );
                 Pipelines2Service.save( pipeline )
                     .$promise
@@ -507,13 +520,28 @@
             };
 
 
+            var showErrorModal = function (errorMsg) {
+                $confirm({
+                    title: 'Error',
+                    text: errorMsg
+                });
+            };
+
             /** saves the action and task to the server */
             $scope.saveActionAndTask = function( action ) {
+                if (!action.name) {
+                    showErrorModal('A name must be provided for the action.');
+                    return;
+                }
+                if (!action.description) {
+                    showErrorModal('A description must be provided for the action.');
+                    return;
+                }
                 action.name = actions2.renderAsCustomName( action.name );
-                saveAction( action )
-                    .then( function() {
+                saveAction(action)
+                    .then(function() {
                         saveTaskFromAction( action );
-                    })
+                    });
             };
 
 

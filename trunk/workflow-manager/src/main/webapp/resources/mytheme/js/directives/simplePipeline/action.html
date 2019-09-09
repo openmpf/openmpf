@@ -62,7 +62,9 @@
          uib-popover-template="'algorithm.popover.html'" popover-class="pp-action"
          popover-placement="auto bottom" popover-trigger="click">
 
-        {{actionObj.name}}
+        <span ng-class="{'text-danger': actionObj.algorithm.missing}">
+            {{actionObj.name}}
+        </span>
         <span ng-if="actionObj.algorithm.missing" class="label label-danger">
             Algorithm Missing!
         </span>

@@ -48,7 +48,7 @@ public class TestControllerExceptionHandler {
     private HttpServletRequest _mockRequest;
 
     @SuppressWarnings("ThrowableInstanceNeverThrown")
-    private IllegalStateException _testException = new IllegalStateException("Something really bad happened");
+    private final IllegalStateException _testException = new IllegalStateException("This is a test exception");
 
 
     @Before
@@ -105,6 +105,7 @@ public class TestControllerExceptionHandler {
         assertTrue(response instanceof ModelAndView);
         ModelAndView mav = (ModelAndView) response;
         assertEquals("error", mav.getViewName());
+        assertEquals(_testException.getMessage(), mav.getModel().get("exceptionMessage"));
     }
 
 
@@ -118,8 +119,7 @@ public class TestControllerExceptionHandler {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, respEntity.getStatusCode());
         assertTrue(respModel.isUncaughtError());
-        assertNotEquals("Showing the exception message in the response is a security issue. If you need return a message to a user catch the exception closer to the issue. ",
-                _testException.getMessage(), respModel.getMessage());
+        assertEquals(_testException.getMessage(), respModel.getMessage());
     }
 
     private void setAcceptHeader(String headerValue) {

@@ -26,10 +26,12 @@
 
 package org.mitre.mpf.mvc;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.InvalidMimeTypeException;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -53,13 +55,22 @@ public class ControllerUncaughtExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Object handle(HttpServletRequest request, Exception exception){
         log.error(String.format("Request for %s raised an uncaught exception", request.getRequestURL()), exception);
+        var errorMessage = StringUtils.isBlank(exception.getMessage())
+                ? "An unknown error has occurred. Check the Workflow Manager log for details."
+                : exception.getMessage();
 
         boolean isExpectingHtml = !hasAjaxHeader(request) && !jsonIsFirstMatchingMimeType(request);
         return isExpectingHtml
-                ? new ModelAndView("error")
-                : createErrorModel();
+                ? new ModelAndView("error", "exceptionMessage", errorMessage)
+                : createErrorModel(errorMessage, getStatus(exception));
     }
 
+    private static HttpStatus getStatus(Exception exception) {
+        if (exception instanceof HttpMessageNotReadableException) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
 
     private static boolean hasAjaxHeader(HttpServletRequest request) {
         String requestedWithHeaderVal = request.getHeader("X-Requested-With");
@@ -88,20 +99,25 @@ public class ControllerUncaughtExceptionHandler {
     }
 
 
-    private static ResponseEntity<ErrorModel> createErrorModel() {
-        return new ResponseEntity<>(new ErrorModel(), HttpStatus.INTERNAL_SERVER_ERROR);
+    private static ResponseEntity<ErrorModel> createErrorModel(String errorMessage, HttpStatus status) {
+        return new ResponseEntity<>(new ErrorModel(errorMessage), status);
     }
 
 
 
     public static class ErrorModel {
+        private final String _message;
+
+        public ErrorModel(String message) {
+            _message = message;
+        }
 
         public boolean isUncaughtError() {
             return true;
         }
 
         public String getMessage() {
-            return "An unknown error has occurred. Check the Workflow Manager log for details.";
+            return _message;
         }
     }
 }

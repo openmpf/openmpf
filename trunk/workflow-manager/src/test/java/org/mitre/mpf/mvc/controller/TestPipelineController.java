@@ -230,8 +230,7 @@ public class TestPipelineController {
 
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": \"Stuff\"}"))
-                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()))
-                .andExpect(content().string("Invalid properties value: Stuff."));
+                .andExpect(status().is(HttpStatus.BAD_REQUEST.value()));
 
         mockMvc.perform(post("/actions").contentType(MediaType.APPLICATION_JSON).content(
                 "{\"name\": \"" + actionName + "\", \"description\": \"This is a test action\", \"algorithm\": \"TEST_DETECTION_ALG\",\"properties\": []}"))

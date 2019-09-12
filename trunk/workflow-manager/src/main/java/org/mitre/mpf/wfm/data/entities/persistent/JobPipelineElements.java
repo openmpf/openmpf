@@ -31,11 +31,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
-import org.mitre.mpf.rest.api.pipelines.Pipeline;
-import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.*;
+
+import java.util.Collection;
+import java.util.function.Function;
 
 /**
  * Holds a reference to the complete pipeline that a job is currently processing. This is so that if a pipeline
@@ -107,13 +106,14 @@ public class JobPipelineElements {
 
     public JobPipelineElements(
             @JsonProperty("pipeline") Pipeline pipeline,
-            @JsonProperty("tasks") Iterable<Task> tasks,
-            @JsonProperty("actions") Iterable<Action> actions,
-            @JsonProperty("algorithms") Iterable<Algorithm> algorithms) {
+            @JsonProperty("tasks") Collection<Task> tasks,
+            @JsonProperty("actions") Collection<Action> actions,
+            @JsonProperty("algorithms") Collection<Algorithm> algorithms) {
         _pipeline = pipeline;
-        _tasks = Maps.uniqueIndex(tasks, Task::getName);
-        _actions = Maps.uniqueIndex(actions, Action::getName);
-        _algorithms = Maps.uniqueIndex(algorithms, Algorithm::getName);
+
+        _tasks = indexByName(tasks);
+        _actions = indexByName(actions);
+        _algorithms = indexByName(algorithms);
 
         for (String taskName : pipeline.getTasks()) {
             Task task = _tasks.get(taskName);
@@ -138,5 +138,13 @@ public class JobPipelineElements {
                 }
             }
         }
+    }
+
+    private static <T extends PipelineElement> ImmutableMap<String, T> indexByName(Collection<T> items) {
+        return items
+                .stream()
+                .collect(ImmutableMap.toImmutableMap(
+                        PipelineElement::getName, Function.identity(),
+                        (e1, e2) -> e1));
     }
 }

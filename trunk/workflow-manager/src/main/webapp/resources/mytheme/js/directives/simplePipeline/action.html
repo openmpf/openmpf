@@ -46,16 +46,19 @@
     <div ng-if="!showPopover" class="pipelineActionContent">
         <span ng-if="taskObj.missing" class="text-danger">
             {{taskObj.name}}
-            <span class="label label-danger">
+            <span class="label label-danger" style="margin-right: .25em">
                 Task Missing!
             </span>
         </span>
         <span ng-if="actionObj" ng-class="{'text-danger': actionObj.missing}">
             {{actionObj.name}}
-            <span ng-if="actionObj.missing" class="label label-danger">
+            <span ng-if="actionObj.missing" class="label label-danger" style="margin-right: .25em">
                 Action Missing!
             </span>
         </span>
+        <a ng-if="canEdit() && !inParallelTask() && (actionObj || taskObj)" href ng-click="removeTaskFromPipeline( $event )">
+            <span class="pp-remove-task glyphicon glyphicon-minus-sign"></span>
+        </a>
         <ng-transclude/>
     </div>
     <div ng-if="showPopover" class="pipelineActionContent"
@@ -65,12 +68,12 @@
         <span ng-class="{'text-danger': actionObj.algorithm.missing}">
             {{actionObj.name}}
         </span>
-        <span ng-if="actionObj.algorithm.missing" class="label label-danger">
+        <span ng-if="actionObj.algorithm.missing" class="label label-danger" style="margin-right: .25em">
             Algorithm Missing!
         </span>
 
         <a ng-if="canEdit()&&!inParallelTask()" href ng-click="removeTaskFromPipeline( $event )">
-            <div class="pp-remove-task glyphicon glyphicon-minus-sign"></div>
+            <span class="pp-remove-task glyphicon glyphicon-minus-sign"></span>
         </a>
         <ng-transclude/>
     </div>

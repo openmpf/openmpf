@@ -146,17 +146,13 @@
                            ng-model-options="{ updateOn: 'blur' }"
                            tabindex="1" placeholder="Pipeline name (required)" required/>
                     &nbsp;
-                    <button ng-if="pipes2.inEditMode()" class="btn btn-default" id="savePipelineButton"
-                            tabindex="3">
-                        Save
-                    </button>
+                    <input ng-if="pipes2.inEditMode()" type="submit" value="Save" class="btn btn-default"
+                           id="savePipelineButton" tabindex="3" />
+
                     <button ng-if="!pipes2.inEditMode()" ng-click="pipes2.deletePipeline(currentPipeline)"
                             type="button" class="btn btn-default" title="Delete Pipeline">
                         <i class="fa fa-trash"></i>
                     </button>
-                    <!--<button ng-if="!pipes2.inEditMode()" class="btn btn-default" id="deletePipelineButton"-->
-                            <!--ng-click="pipes2.deletePipeline( currentPipeline )">Delete-->
-                    <!--</button>-->
                 </div>
                 <div class="form-group pp-description-group">
                     <label class="control-label col-sm-1" for="pipeline-description"></label>

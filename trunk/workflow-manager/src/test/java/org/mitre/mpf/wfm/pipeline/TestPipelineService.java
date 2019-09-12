@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -44,6 +45,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.mitre.mpf.test.TestUtil.nonEmptyMap;
 import static org.mockito.Mockito.*;
 
 public class TestPipelineService {
@@ -57,6 +59,12 @@ public class TestPipelineService {
     private PipelineServiceImpl _pipelineService;
 
 
+    private List<Algorithm> _algorithms;
+    private List<Action> _actions;
+    private List<Task> _tasks;
+    private List<Pipeline> _pipelines;
+
+
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
 
@@ -66,25 +74,20 @@ public class TestPipelineService {
         TestUtil.initPipelineDataFiles(_mockPropertiesUtil, _tempFolder);
 
         _pipelineService = new PipelineServiceImpl(_mockPropertiesUtil, _objectMapper, _mockPipelineValidator);
+        initPipelineElements();
     }
 
-    @Test
-    public void canSaveLoadAndDeletePipelineElements() throws IOException {
+    private void initPipelineElements() {
         var algo1Properties = List.of(
                 new AlgorithmProperty("PROP1", "PROP1 description", ValueType.INT,
-                                       "1", null),
+                                      "1", null),
                 new AlgorithmProperty("PROP2", "PROP2 description", ValueType.STRING,
-                                       null, "prop2.value"));
+                                      null, "prop2.value"));
         var algo1 = new Algorithm(
                 "ALGO1", "algo1 description", ActionType.DETECTION,
                 new Algorithm.Requires(List.of("STATE1", "STATE2")),
                 new Algorithm.Provides(List.of("STATE3", "STATE3"), algo1Properties),
                 true, true);
-
-        _pipelineService.save(algo1);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(algo1), notNull());
-
 
         var algo2 = new Algorithm(
                 "ALGO2", "algo2 description", ActionType.DETECTION,
@@ -92,64 +95,88 @@ public class TestPipelineService {
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
 
-        _pipelineService.save(algo2);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(algo2), notNull());
+        _algorithms = List.of(algo1, algo2);
+
 
         var action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
-                                    List.of(new ActionProperty("PROP1", "PROP1Val"),
-                                            new ActionProperty("Prop2", "Prop2Val")));
-        _pipelineService.save(action1);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(action1), notNull());
+                                 List.of(new ActionProperty("PROP1", "PROP1Val"),
+                                         new ActionProperty("Prop2", "Prop2Val")));
 
-        var action2 = new Action("ACTION2", "Action 2 description", "SOME ALGO",
-                                    List.of());
-        _pipelineService.save(action2);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(action2), notNull());
+        var action2 = new Action("ACTION2", "Action 2 description", algo2.getName(), List.of());
+
+        var action3 = new Action("ACTION3", "Action 3 - missing algo", "SOME ALGO",
+                                 List.of());
+        _actions = List.of(action1, action2, action3);
+
 
         var task1 = new Task("TASK1", "Task1 description",
-                             List.of(action1.getName(), action2.getName()));
-        _pipelineService.save(task1);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(task1), notNull());
+                             List.of(action1.getName()));
 
-        var task2 = new Task("TASK2", "Task2 description", List.of("SOME ACTION"));
-        _pipelineService.save(task2);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(task2), notNull());
+        var task2 = new Task("TASK2", "Task2",
+                             List.of(action2.getName()));
+
+        var task3 = new Task("TASK3", "Task3 description - missing action and missing algorithm",
+                             List.of("SOME ACTION", action3.getName()));
+
+        _tasks = List.of(task1, task2, task3);
 
 
         var pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
-                                     List.of(task2.getName(), task1.getName()));
-        _pipelineService.save(pipeline1);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(pipeline1), notNull());
+                                     List.of(task1.getName(), task2.getName()));
 
-        var pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 description",
+        var pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 - missing task",
                                      List.of("SOME TASK"));
-        _pipelineService.save(pipeline2);
-        verify(_mockPipelineValidator)
-                .validateOnAdd(eq(pipeline2), notNull());
 
-        verifyLoaded(
-                List.of(algo1, algo2),
-                List.of(action1, action2),
-                List.of(task1, task2),
-                List.of(pipeline1, pipeline2));
+        var pipeline3 = new Pipeline("PIPELINE3", "Pipeline 3 - task missing action",
+                                     List.of(task1.getName(), task3.getName()));
 
 
-        _pipelineService.deleteAlgorithm(algo1.getName());
-        _pipelineService.deleteAction(action1.getName());
-        _pipelineService.deleteTask(task1.getName());
-        _pipelineService.deletePipeline(pipeline1.getName());
+        _pipelines = List.of(pipeline1, pipeline2, pipeline3);
+    }
+
+
+    @Test
+    public void canSaveLoadAndDeletePipelineElements() throws IOException {
+
+        for (var algorithm : _algorithms) {
+            _pipelineService.save(algorithm);
+            verify(_mockPipelineValidator)
+                    .validateOnAdd(eq(algorithm), notNull());
+        }
+
+        for (var action : _actions) {
+            _pipelineService.save(action);
+            verify(_mockPipelineValidator)
+                    .validateOnAdd(eq(action), notNull());
+        }
+
+        for (var task : _tasks) {
+            _pipelineService.save(task);
+            verify(_mockPipelineValidator)
+                    .validateOnAdd(eq(task), notNull());
+        }
+
+        for (var pipeline : _pipelines) {
+            _pipelineService.save(pipeline);
+            verify(_mockPipelineValidator)
+                    .validateOnAdd(eq(pipeline), notNull());
+        }
+
+
+        verifyLoaded(_algorithms, _actions, _tasks, _pipelines);
+
+
+        _pipelineService.deleteAlgorithm(_algorithms.get(0).getName());
+        _pipelineService.deleteAction(_actions.get(0).getName());
+        _pipelineService.deleteTask(_tasks.get(0).getName());
+        _pipelineService.deletePipeline(_pipelines.get(0).getName());
         _pipelineService.deletePipeline("DOES NOT EXIST");
+
         verifyLoaded(
-                List.of(algo2),
-                List.of(action2),
-                List.of(task2),
-                List.of(pipeline2));
+                _algorithms.subList(1, 2),
+                _actions.subList(1, 3),
+                _tasks.subList(1, 3),
+                _pipelines.subList(1, 3));
     }
 
     private void verifyLoaded(
@@ -206,5 +233,79 @@ public class TestPipelineService {
             verify(loaderPipelineValidator)
                     .validateOnAdd(eq(loadedPipeline), notNull());
         }
+    }
+
+
+    @Test
+    public void canGetJobPipelineElements() {
+        saveAllPipelineElements();
+
+        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(_pipelines.get(0).getName());
+
+        verify(_mockPipelineValidator)
+                .verifyBatchPipelineRunnable(eq(_pipelines.get(0).getName()),
+                                             nonEmptyMap(), nonEmptyMap(), nonEmptyMap(), nonEmptyMap());
+
+        assertEquals(_pipelines.get(0), pipelineElements.getPipeline());
+
+        assertEquals(2, pipelineElements.getTaskCount());
+        assertEquals(2, pipelineElements.getTasks().size());
+        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
+        assertEquals(_tasks.get(1), pipelineElements.getTask(_tasks.get(1).getName()));
+
+        assertEquals(2, pipelineElements.getActions().size());
+        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
+        assertEquals(_actions.get(1), pipelineElements.getAction(_actions.get(1).getName()));
+        assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
+        assertEquals(_actions.get(1), pipelineElements.getAction(1, 0));
+
+
+        assertEquals(2, pipelineElements.getAlgorithms().size());
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
+        assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(_algorithms.get(1).getName()));
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
+        assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(1, 0));
+    }
+
+
+
+    @Test
+    public void canGetJobPipelineElementsWithDuplicates() {
+        saveAllPipelineElements();
+
+        var pipeline = new Pipeline("with dups", "descr",
+                                    List.of(_tasks.get(0).getName(), _tasks.get(0).getName()));
+        _pipelineService.save(pipeline);
+
+        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipeline.getName());
+
+        verify(_mockPipelineValidator)
+                .verifyBatchPipelineRunnable(eq(pipeline.getName()),
+                                             nonEmptyMap(), nonEmptyMap(), nonEmptyMap(), nonEmptyMap());
+
+        assertEquals(pipeline, pipelineElements.getPipeline());
+
+        assertEquals(2, pipelineElements.getTaskCount());
+        assertEquals(1, pipelineElements.getTasks().size());
+        assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
+
+        assertEquals(1, pipelineElements.getActions().size());
+        assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
+        assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
+        assertEquals(_actions.get(0), pipelineElements.getAction(1, 0));
+
+
+        assertEquals(1, pipelineElements.getAlgorithms().size());
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
+        assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(1, 0));
+    }
+
+
+    private void saveAllPipelineElements() {
+        _algorithms.forEach(_pipelineService::save);
+        _actions.forEach(_pipelineService::save);
+        _tasks.forEach(_pipelineService::save);
+        _pipelines.forEach(_pipelineService::save);
     }
 }

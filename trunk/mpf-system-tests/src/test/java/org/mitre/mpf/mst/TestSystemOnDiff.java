@@ -110,6 +110,47 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
+    public void runArtifactExtractionLastStageOnlyTest() {
+        String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
+
+        String actionName = actionTaskName + " ACTION";
+        addAction(actionName, "FACECV",
+                  ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
+
+        String taskName = actionTaskName + " TASK";
+        addTask(taskName, actionName);
+
+        String pipelineName = "MOG FEED FULL FRAME TO OCVFACE PIPELINE";
+        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+        Map<String, String> jobProperties;
+        jobProperties.put("mpf.output.objects.last.stage.only", "true");
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
+
+        long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("MOTION");
+
+        assertNotNull("Output object did not contain expected detection type: " + detectionType,
+                      actionOutputObjects);
+
+        List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
+                .flatMap(outputObj -> outputObj.getTracks().stream())
+                .flatMap(track -> track.getDetections().stream())
+                .collect(toList());
+
+        assertFalse(detections.isEmpty());
+        for (JsonDetectionOutputObject detection : detections) {
+            assertTrue("Found artifact extraction in first stage of pipeline",
+                       detection.getArtifactExtractionStatus().toUpperCase() == "NOT_ATTEMPTED");
+        }
+
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImage() throws Exception {
         runSystemTest("OCV FACE DETECTION PIPELINE", "output/face/runFaceOcvDetectImage.json",
                       "/samples/face/meds-aa-S001-01.jpg",

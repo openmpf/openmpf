@@ -31,6 +31,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
@@ -203,7 +204,7 @@ public class AdminComponentRegistrationController {
                           "will be replaced. If there is an existing managed component with the same name, " +
                           "registration will fail with a 409 - Conflict response.",
                   produces = "application/json",
-                  response = ResponseMessage.Message.class)
+                  response = MessageModel.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
             @ApiResponse(code = 201, message = "Successfully registered new component."),

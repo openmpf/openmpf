@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 
 import java.nio.file.Path;
@@ -134,7 +135,7 @@ public class MediaImpl implements Media {
             Map<String, String> mediaSpecificProperties,
             String errorMessage) {
         _id = id;
-        _uri = uri;
+        _uri = IoUtils.normalizeUri(uri);
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);

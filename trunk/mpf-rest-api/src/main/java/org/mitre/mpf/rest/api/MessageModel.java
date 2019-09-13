@@ -24,19 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.rest.api;
 
+public class MessageModel {
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+    private final String _message;
 
-public class ResponseMessage extends ResponseEntity<MessageModel> {
-
-    public ResponseMessage(String message, HttpStatus httpStatus) {
-        super(new MessageModel(message), httpStatus);
+    public MessageModel(String message) {
+        _message = message;
     }
 
-    public static ResponseMessage ok(String message) {
-        return new ResponseMessage(message, HttpStatus.OK);
+    public String getMessage() {
+        return _message;
     }
 }

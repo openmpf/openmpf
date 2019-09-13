@@ -270,7 +270,7 @@ public class TestPipelineService {
 
 
     @Test
-    public void canGetJobPipelineElementsWithDuplicates() {
+    public void canGetJobPipelineElementsWithDuplicateTasks() {
         saveAllPipelineElements();
 
         var pipeline = new Pipeline("with dups", "descr",

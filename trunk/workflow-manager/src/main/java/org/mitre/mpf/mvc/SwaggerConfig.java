@@ -26,20 +26,14 @@
 
 package org.mitre.mpf.mvc;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.builders.ResponseMessageBuilder;
 import springfox.documentation.schema.AlternateTypeRules;
 import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.ResponseMessage;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.UiConfiguration;
@@ -56,8 +50,6 @@ public class SwaggerConfig {
 
     @Bean
     public Docket api(){
-        var globalResponses = getGlobalResponseMessages();
-
         return new Docket(DocumentationType.SWAGGER_2)
             .select()
             // only show APIs which has the @ApiOperation annotation
@@ -71,10 +63,6 @@ public class SwaggerConfig {
             // opt out of auto-generated response code and their default message 
             .useDefaultResponseMessages(false)
             .alternateTypeRules(AlternateTypeRules.newRule(Instant.class, String.class))
-            .globalResponseMessage(RequestMethod.GET, globalResponses.get(RequestMethod.GET))
-            .globalResponseMessage(RequestMethod.DELETE, globalResponses.get(RequestMethod.DELETE))
-            .globalResponseMessage(RequestMethod.POST, globalResponses.get(RequestMethod.POST))
-            .globalResponseMessage(RequestMethod.PUT, globalResponses.get(RequestMethod.PUT))
             .apiInfo(apiInfo());
     }
 
@@ -94,30 +82,5 @@ public class SwaggerConfig {
     @Bean
     UiConfiguration uiConfig() {
         return new UiConfiguration( null );  // disable validation of resulting Swagger JSON at http://online.swagger.io/validator
-    }
-
-    private static ListMultimap<RequestMethod, ResponseMessage> getGlobalResponseMessages() {
-
-        var unauthorized = new ResponseMessageBuilder()
-                .code(HttpStatus.UNAUTHORIZED.value())
-                .message("Unauthorized")
-                .build();
-
-
-        var badRequest = new ResponseMessageBuilder()
-                .code(HttpStatus.BAD_REQUEST.value())
-                .message("Invalid request")
-                .build();
-
-        var builder = ImmutableListMultimap.<RequestMethod, ResponseMessage>builder();
-
-        builder.put(RequestMethod.GET, unauthorized);
-        builder.put(RequestMethod.DELETE, unauthorized);
-
-        builder.putAll(RequestMethod.POST, unauthorized, badRequest);
-        builder.putAll(RequestMethod.PUT, unauthorized, badRequest);
-
-
-        return builder.build();
     }
 }

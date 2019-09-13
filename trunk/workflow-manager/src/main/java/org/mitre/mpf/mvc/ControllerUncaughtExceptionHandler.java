@@ -27,6 +27,7 @@
 package org.mitre.mpf.mvc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.MessageModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -99,26 +100,8 @@ public class ControllerUncaughtExceptionHandler {
     }
 
 
-    private static ResponseEntity<ErrorModel> createErrorModel(String errorMessage, HttpStatus status) {
-        return new ResponseEntity<>(new ErrorModel(errorMessage), status);
-    }
-
-
-
-    public static class ErrorModel {
-        private final String _message;
-
-        public ErrorModel(String message) {
-            _message = message;
-        }
-
-        public boolean isUncaughtError() {
-            return true;
-        }
-
-        public String getMessage() {
-            return _message;
-        }
+    private static ResponseEntity<MessageModel> createErrorModel(String errorMessage, HttpStatus status) {
+        return new ResponseEntity<>(new MessageModel(errorMessage), status);
     }
 }
 

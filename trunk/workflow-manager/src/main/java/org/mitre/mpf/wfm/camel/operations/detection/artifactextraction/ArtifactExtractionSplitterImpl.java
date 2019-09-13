@@ -99,8 +99,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             return Collections.emptyList();
         }
         int numPipelineStages = job.getPipeline().getStages().size();
-        LOG.info("number of pipeline stages = {}", numPipelineStages);
-        LOG.info("track merging context stage number {}", trackMergingContext.getStageIndex());
+        LOG.debug("number of pipeline stages = {}", numPipelineStages);
+        LOG.debug("track merging context stage number {}", trackMergingContext.getStageIndex());
         SystemPropertiesSnapshot propsSnapshot = job.getSystemPropertiesSnapshot();
         // If the user has requested output objects for the last stage
         // only, then return an empty list if this is not the last

@@ -102,6 +102,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         assertFalse(detections.isEmpty());
         for (JsonDetectionOutputObject detection : detections) {
+            log.info("artifact extraction status = {}", detection.getArtifactExtractionStatus().toUpperCase());
             assertTrue("Found artifact extraction in first stage of pipeline",
                        detection.getArtifactExtractionStatus().toUpperCase() == "NOT_ATTEMPTED");
         }

@@ -595,6 +595,7 @@
                             title: 'Success',
                             text: '"' + taskObj.name + '" was successfully saved.'});
                         initTasksList();
+                        initPipelinesList($scope.currentPipeline);
                     })
                     .catch( function( error ) {
                         // todo: P038: should display actual error to user, but need the server to return the error in JSON format;
@@ -636,6 +637,7 @@
                     })
                     .then(function () {
                         initActionsList();
+                        initPipelinesList($scope.currentPipeline);
                     });
             };
 

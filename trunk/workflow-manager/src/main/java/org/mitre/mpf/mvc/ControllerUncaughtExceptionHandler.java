@@ -27,11 +27,10 @@
 package org.mitre.mpf.mvc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.rest.api.MessageModel;
+import org.mitre.mpf.rest.api.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.InvalidMimeTypeException;
 import org.springframework.util.MimeType;
@@ -100,8 +99,8 @@ public class ControllerUncaughtExceptionHandler {
     }
 
 
-    private static ResponseEntity<MessageModel> createErrorModel(String errorMessage, HttpStatus status) {
-        return new ResponseEntity<>(new MessageModel(errorMessage), status);
+    private static ResponseMessage createErrorModel(String errorMessage, HttpStatus status) {
+        return new ResponseMessage(errorMessage, status);
     }
 }
 

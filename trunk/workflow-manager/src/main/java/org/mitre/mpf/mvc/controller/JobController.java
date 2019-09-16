@@ -118,10 +118,9 @@ public class JobController {
                     " Note that the batch jobs and streaming jobs share a range of valid job ids. OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " Also, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = JobCreationResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Bad request") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity<JobCreationResponse> createJobRest(
@@ -233,10 +232,9 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Gets a SingleJobInfo model for the job with the id provided as a path variable.",
             produces = "application/json", response = SingleJobInfo.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
         JobRequest jobRequest = jobRequestDao.findById(jobId);
@@ -274,7 +272,6 @@ public class JobController {
             produces = "application/json", response = JsonOutputObject.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials"),
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
@@ -327,10 +324,9 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}/resubmit", method = RequestMethod.POST)
     @ApiOperation(value = "Resubmits the job with the provided job id. If the job priority parameter is not set the default value will be used.",
             produces = "application/json", response = JobCreationResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful resubmission request"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
@@ -362,10 +358,9 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}/cancel", method = RequestMethod.POST)
     @ApiOperation(value = "Cancels the job with the supplied job id.",
             produces = "application/json", response = MpfResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful cancellation attempt"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {

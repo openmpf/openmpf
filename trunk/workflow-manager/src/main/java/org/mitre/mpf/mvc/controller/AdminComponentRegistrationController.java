@@ -27,10 +27,7 @@
 package org.mitre.mpf.mvc.controller;
 
 import com.google.common.collect.ImmutableSet;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
@@ -208,9 +205,9 @@ public class AdminComponentRegistrationController {
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
             @ApiResponse(code = 201, message = "Successfully registered new component."),
-            @ApiResponse(code = 400, message = "The descriptor was invalid."),
-            @ApiResponse(code = 401, message = "Invalid credentials."),
-            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.")
+            @ApiResponse(code = 400, message = "The descriptor was invalid.", response = MessageModel.class),
+            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.",
+                         response = MessageModel.class)
     })
     @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
                     method = RequestMethod.POST)

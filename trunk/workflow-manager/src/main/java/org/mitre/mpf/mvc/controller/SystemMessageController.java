@@ -77,9 +77,7 @@ public class SystemMessageController {
     @ApiOperation(value="Retrieves all system messages.",
             notes="Returns a JSON array of all System Messages.",
             produces = MediaType.APPLICATION_JSON_VALUE, response=SystemMessage.class, responseContainer="List" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
     @ResponseBody
     public List<SystemMessage> getAllSystemMessagesRest() { return getAllSystemMessages(); }
 
@@ -87,9 +85,7 @@ public class SystemMessageController {
     @ApiOperation(value="Retrieves all system messages of the given type.",
             notes="Returns a JSON array of System Messages matching typeFilter.",
             produces = MediaType.APPLICATION_JSON_VALUE, response=SystemMessage.class, responseContainer="List" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
     @ResponseBody
     public List<SystemMessage>  getFilteredSystemMessagesRest(
             @ApiParam(value = "The message type to find", allowableValues = "all,admin,login", required = true) @PathVariable("typeFilter") String typeFilter ) {
@@ -168,9 +164,7 @@ public class SystemMessageController {
     @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.POST )
     @ApiOperation(value="Adds a system message.",
             produces = "application/json", response = MpfResponse.class )
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successfully added"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 201, message = "Successfully added"))
     @ApiImplicitParams({    // need to use this instead of ApiParam because it causes the rendering of the Swagger page to be wrong for the type of parameter
             @ApiImplicitParam(name = "msg", value = "The message", required = true, dataType = "string", paramType = "body"),
             @ApiImplicitParam(name = "msgType", value = "The message type refers to the audience it is intended for (defaults to 'all')", allowableValues = "all,admin,login", required = false, dataType = "string", paramType = "query"),
@@ -239,9 +233,7 @@ public class SystemMessageController {
     @ApiOperation(value="Deletes a system message identified by id.",
             notes="By design, if you delete a non-existent id, the response code is still 200 since the server no longer has (and may never have had) a message with that id.",
             produces = "application/json", response = MpfResponse.class )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully deleted"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successfully deleted"))
     @ResponseBody
     public ResponseEntity<MpfResponse> deleteSystemMessageRest( @PathVariable("id") long id,
                                HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )

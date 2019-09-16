@@ -74,9 +74,7 @@ public class AdminStatisticsController {
     @RequestMapping(value = "/rest/jobs/stats", method = RequestMethod.GET)
     @ApiOperation(value = "Compiles the AllJobsStatisticsModel using all of the submitted jobs.",
             produces = "application/json", response = AllJobsStatisticsModel.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+    @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
     @ResponseBody
     public AllJobsStatisticsModel getAllJobsStatsRest() {
         log.debug("[/rest/jobs/stats]");

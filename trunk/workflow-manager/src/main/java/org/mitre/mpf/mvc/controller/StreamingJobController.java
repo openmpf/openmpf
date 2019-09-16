@@ -93,10 +93,9 @@ public class StreamingJobController {
                     " Note that the batch jobs and streaming jobs share a range of valid job ids.  OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " Also, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = StreamingJobCreationResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 201, message = "Streaming Job created"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Bad request")})
     @ResponseBody
     public ResponseEntity<StreamingJobCreationResponse> createStreamingJobRest(
             @ApiParam(required = true, value = "StreamingJobCreationRequest") @RequestBody
@@ -118,10 +117,9 @@ public class StreamingJobController {
     @RequestMapping(value = "/rest/streaming/jobs/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Gets a StreamingJobInfo model for the streaming job with the id provided as a path variable.",
             produces = "application/json", response = StreamingJobInfo.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<StreamingJobInfo> getStreamingJobStatusRest(@ApiParam(required = true, value = "Streaming Job Id") @PathVariable("id") long jobId) {
         List<StreamingJobInfo> streamingJobInfoModels = getStreamingJobStatusInternal(jobId);
@@ -176,10 +174,9 @@ public class StreamingJobController {
     @RequestMapping(value = "/rest/streaming/jobs/{id}/cancel", method = RequestMethod.POST)
     @ApiOperation(value = "Cancels the streaming job with the supplied job id. If doCleanup is true, then the HTTP Response to this request may be delayed while OpenMPF processes the cleanup.",
             produces = "application/json", response = StreamingJobCancelResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful streaming job cancellation attempt"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id")})
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<StreamingJobCancelResponse> cancelStreamingJobRest(@ApiParam(required = true, value = "Streaming Job id") @PathVariable("id") long jobId,

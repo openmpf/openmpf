@@ -93,7 +93,6 @@ public class PipelineController {
 
     @RequestMapping(value = {  "/pipelines", "/rest/pipelines" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available pipelines.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public List<Pipeline> getPipelines() {
         return _pipelineService.getPipelines();
     }
@@ -103,9 +102,7 @@ public class PipelineController {
             method = RequestMethod.GET,
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
-    @ApiResponses({
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class),
-            @ApiResponse(code = 404, message = "Not found")})
+    @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Pipeline> getPipeline(String name) {
         return Optional.ofNullable(_pipelineService.getPipeline(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
@@ -115,9 +112,7 @@ public class PipelineController {
 
     @RequestMapping(value = { "/pipelines", "/rest/pipelines" }, method = RequestMethod.POST)
     @ApiOperation("Adds a new pipeline.")
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class),
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class)})
+    @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Pipeline pipeline) {
         _pipelineService.save(pipeline);
     }
@@ -128,7 +123,6 @@ public class PipelineController {
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes a pipeline.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public void deletePipeline(String name) {
         _pipelineService.deletePipeline(name);
     }
@@ -138,7 +132,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/tasks", "/rest/tasks" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available tasks.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public List<Task> getTasks() {
         return _pipelineService.getTasks();
     }
@@ -148,9 +141,7 @@ public class PipelineController {
             method = RequestMethod.GET,
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
-    @ApiResponses({
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class),
-            @ApiResponse(code = 404, message = "Not found")})
+    @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Task> getTask(String name) {
         return Optional.ofNullable(_pipelineService.getTask(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
@@ -160,9 +151,7 @@ public class PipelineController {
 
     @RequestMapping(value = { "/tasks", "/rest/tasks" }, method = RequestMethod.POST)
     @ApiOperation("Adds a new task.")
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class),
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class)})
+    @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Task task) {
         _pipelineService.save(task);
     }
@@ -173,7 +162,6 @@ public class PipelineController {
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes a task.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public void deleteTask(String name) {
         _pipelineService.deleteTask(name);
     }
@@ -184,7 +172,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/actions", "/rest/actions" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available actions.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public List<Action> getActions() {
         return _pipelineService.getActions();
     }
@@ -194,9 +181,7 @@ public class PipelineController {
             method = RequestMethod.GET,
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
-    @ApiResponses({
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class),
-            @ApiResponse(code = 404, message = "Not found")})
+    @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Action> getAction(String name) {
         return Optional.ofNullable(_pipelineService.getAction(name))
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
@@ -206,9 +191,7 @@ public class PipelineController {
 
     @RequestMapping(value = { "/actions", "/rest/actions" }, method = RequestMethod.POST)
     @ApiOperation("Adds a new action.")
-    @ApiResponses({
-            @ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class),
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class)})
+    @ApiResponses(@ApiResponse(code = 400, message = "Invalid request", response = MessageModel.class))
     public void add(@RequestBody Action action) {
         _pipelineService.save(action);
     }
@@ -219,7 +202,6 @@ public class PipelineController {
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
     @ApiOperation("Deletes an action.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public void deleteAction(String name) {
         _pipelineService.deleteAction(name);
     }
@@ -229,7 +211,6 @@ public class PipelineController {
 
     @RequestMapping(value = { "/algorithms", "/rest/algorithms" }, method = RequestMethod.GET)
     @ApiOperation("Retrieves list of available algorithms.")
-    @ApiResponses(@ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class))
     public List<Algorithm> getAlgorithms() {
         return _pipelineService.getAlgorithms()
                 .stream()
@@ -242,9 +223,7 @@ public class PipelineController {
             method = RequestMethod.GET,
             // Uses query string parameter instead of path variable to support names with special characters.
             params = "name")
-    @ApiResponses({
-            @ApiResponse(code = 401, message = "Unauthorized", response = MessageModel.class),
-            @ApiResponse(code = 404, message = "Not found")})
+    @ApiResponses(@ApiResponse(code = 404, message = "Not found"))
     public ResponseEntity<Algorithm> getAlgorithm(String name) {
         return Optional.ofNullable(_pipelineService.getAlgorithm(name))
                 .map(this::getAlgoWithDefaultValuesSet)

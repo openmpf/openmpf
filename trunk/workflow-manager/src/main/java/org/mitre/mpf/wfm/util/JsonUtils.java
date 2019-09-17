@@ -28,57 +28,50 @@ package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonAction;
 import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
+import org.mitre.mpf.interop.JsonTask;
 import org.mitre.mpf.interop.util.InstantJsonModule;
-import org.mitre.mpf.interop.util.TrimKeysModule;
-import org.mitre.mpf.interop.util.TrimValuesModule;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-@Component(JsonUtils.REF)
+@Component
 @Scope("singleton") // We only ever want 1 and only 1 instance of this class.
 @Monitored
 public class JsonUtils {
-    private static final Logger log = LoggerFactory.getLogger(JsonUtils.class);
-    public static final String REF = "jsonUtils";
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and binary JSON. Binary JSON is expected
      * to be significantly more compact than text-based JSON.
      */
-    private ObjectMapper smileObjectMapper;
+    private final ObjectMapper _smileObjectMapper;
 
     /**
      * Single instance of the ObjectMapper which converts between Java objects and text-based JSON. While less efficient
      * in terms of space, text-based JSON remains user-readable.
      */
-    private ObjectMapper jsonObjectMapper;
+    private final ObjectMapper _jsonObjectMapper;
+
 
     @Inject
     public JsonUtils(ObjectMapper jsonObjectMapper) {
-        this.jsonObjectMapper = jsonObjectMapper;
+        _smileObjectMapper = new ObjectMapper(new SmileFactory());
+        _smileObjectMapper.registerModule(new InstantJsonModule());
+        _smileObjectMapper.registerModule(new Jdk8Module());
+
+        _jsonObjectMapper = jsonObjectMapper;
     }
 
-    @PostConstruct
-    public void init() {
-        smileObjectMapper = new ObjectMapper(new SmileFactory());
-        smileObjectMapper.registerModule(new InstantJsonModule());
-    }
 
     /** Parses the provided smile binary JSON object as an instance of the specified type or throws an exception if this conversion cannot be performed. */
     public <T> T deserialize(byte[] json, Class<T> targetClass) throws WfmProcessingException {
@@ -86,7 +79,7 @@ public class JsonUtils {
         assert targetClass != null : "The targetClass parameter must not be null.";
 
         try {
-            return smileObjectMapper.readValue(json, targetClass);
+            return _smileObjectMapper.readValue(json, targetClass);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s': %s", targetClass.getSimpleName(), ioe.getMessage()), ioe);
         }
@@ -98,7 +91,7 @@ public class JsonUtils {
         assert targetClass != null : "The targetClass parameter must not be null.";
 
         try {
-            return jsonObjectMapper.readValue(json, targetClass);
+            return _jsonObjectMapper.readValue(json, targetClass);
         } catch (IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to deserialize instance of '%s': %s", targetClass.getSimpleName(), ioe.getMessage()), ioe);
         }
@@ -107,7 +100,7 @@ public class JsonUtils {
     /** Serializes the specified object to a smile binary JSON or throws an exception if the serialization cannot be performed. */
     public byte[] serialize(Object object) throws WfmProcessingException {
         try {
-            return smileObjectMapper.writeValueAsBytes(object);
+            return _smileObjectMapper.writeValueAsBytes(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()), ioe);
         }
@@ -116,7 +109,7 @@ public class JsonUtils {
     /** Serializes the specified object to a smile binary JSON or throws an exception if the serialization cannot be performed. */
     public byte[] serializeAsText(Object object) throws WfmProcessingException {
         try {
-            return jsonObjectMapper.writeValueAsBytes(object);
+            return _jsonObjectMapper.writeValueAsBytes(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()), ioe);
         }
@@ -125,7 +118,7 @@ public class JsonUtils {
     /** Serializes the specified object to a file using text-based JSON or throws an exception if the serialization cannot be performed. */
     public void serialize(Object object, File targetFile) throws WfmProcessingException {
         try {
-            jsonObjectMapper.writeValue(targetFile, object);
+            _jsonObjectMapper.writeValue(targetFile, object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s' to '%s': %s", object, targetFile, ioe.getMessage()), ioe);
         }
@@ -134,7 +127,7 @@ public class JsonUtils {
     /** Serializes the specified object to an output stream using text-based JSON or throws an exception if the serialization cannot be performed. */
     public void serialize(Object object, OutputStream outputStream) throws WfmProcessingException {
         try {
-            jsonObjectMapper.writeValue(outputStream, object);
+            _jsonObjectMapper.writeValue(outputStream, object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s' to output stream: %s", object, ioe.getMessage()), ioe);
         }
@@ -143,29 +136,39 @@ public class JsonUtils {
     /** Serializes the specified object to a text JSON or throws an exception if the serialization cannot be performed. */
     public String serializeAsTextString(Object object) throws WfmProcessingException {
         try {
-            return jsonObjectMapper.writeValueAsString(object);
+            return _jsonObjectMapper.writeValueAsString(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()) ,ioe);
         }
     }
 
-    public JsonPipeline convert(TransientPipeline transientPipeline) {
-        if(transientPipeline == null) {
-            return null;
-        } else {
-            JsonPipeline jsonPipeline = new JsonPipeline(transientPipeline.getName(), transientPipeline.getDescription());
 
-            for(TransientStage transientStage : transientPipeline.getStages()) {
-                JsonStage jsonStage = new JsonStage(transientStage.getActionType().name(), transientStage.getName(), transientStage.getDescription());
-                for(TransientAction transientAction : transientStage.getActions()) {
-                    JsonAction jsonAction = new JsonAction(transientAction.getAlgorithm(), transientAction.getName(), transientAction.getDescription());
-                    jsonAction.getProperties().putAll(transientAction.getProperties());
-                    jsonStage.getActions().add(jsonAction);
+    public JsonPipeline convert(JobPipelineElements pipelineElements) {
+        Pipeline pipeline = pipelineElements.getPipeline();
+        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
+
+        for (String taskName : pipeline.getTasks()) {
+            Task task = pipelineElements.getTask(taskName);
+            JsonTask jsonTask = new JsonTask(getActionType(pipelineElements, task).name(), taskName,
+                                               task.getDescription());
+
+            for (String actionName : task.getActions()) {
+                Action action = pipelineElements.getAction(actionName);
+                JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
+                for (ActionProperty property : action.getProperties()) {
+                    jsonAction.getProperties().put(property.getName(), property.getValue());
                 }
-
-                jsonPipeline.getStages().add(jsonStage);
+                jsonTask.getActions().add(jsonAction);
             }
-            return jsonPipeline;
+
+            jsonPipeline.getTasks().add(jsonTask);
         }
+        return jsonPipeline;
     }
+
+    private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
+        Action action = pipeline.getAction(task.getActions().get(0));
+        return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
+    }
+
 }

@@ -72,6 +72,9 @@
     </profiles>
 
     <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
       <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
       <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
@@ -96,7 +99,6 @@
         <log4j.version>2.9.1</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <rpm.maven.plugin.version>2.1.4</rpm.maven.plugin.version>
-        <jackson.mapper.asl.version>1.9.13</jackson.mapper.asl.version>
         <!-- updated jackson version to 2.9.2 to better support JSON serialization of Java8 time -->
         <jackson.version>2.9.2</jackson.version>
 
@@ -213,24 +215,21 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>rpm-maven-plugin</artifactId>
+                    <version>${rpm.maven.plugin.version}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <group>Application</group>
                     </configuration>
                 </plugin>
-        <plugin>
-                  <groupId>org.codehaus.mojo</groupId>
-                  <artifactId>rpm-maven-plugin</artifactId>
-                  <version>${rpm.maven.plugin.version}</version>
-          <configuration>
-          <group>Application</group>
-          </configuration>
-        </plugin>
-        <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-assembly-plugin</artifactId>
-                  <version>2.6</version>
-        </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

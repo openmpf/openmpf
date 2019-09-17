@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.data.access;
 
-public interface StreamingJobRequestDao {
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
+
+public interface StreamingJobRequestDao extends JpaDao<StreamingJobRequest> {
 	void cancelJobsInNonTerminalState();
 }

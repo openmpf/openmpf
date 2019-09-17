@@ -28,6 +28,7 @@ package org.mitre.mpf.mvc;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.MessageModel;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
@@ -37,7 +38,8 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class TestControllerExceptionHandler {
@@ -48,7 +50,7 @@ public class TestControllerExceptionHandler {
     private HttpServletRequest _mockRequest;
 
     @SuppressWarnings("ThrowableInstanceNeverThrown")
-    private IllegalStateException _testException = new IllegalStateException("Something really bad happened");
+    private final IllegalStateException _testException = new IllegalStateException("This is a test exception");
 
 
     @Before
@@ -105,6 +107,7 @@ public class TestControllerExceptionHandler {
         assertTrue(response instanceof ModelAndView);
         ModelAndView mav = (ModelAndView) response;
         assertEquals("error", mav.getViewName());
+        assertEquals(_testException.getMessage(), mav.getModel().get("exceptionMessage"));
     }
 
 
@@ -112,14 +115,11 @@ public class TestControllerExceptionHandler {
         Object response = _handler.handle(_mockRequest, _testException);
         assertTrue(response instanceof ResponseEntity);
         ResponseEntity<?> respEntity = (ResponseEntity<?>)  response;
-        assertTrue(respEntity.getBody() instanceof ControllerUncaughtExceptionHandler.ErrorModel);
-        ControllerUncaughtExceptionHandler.ErrorModel respModel =
-                (ControllerUncaughtExceptionHandler.ErrorModel) respEntity.getBody();
+        assertTrue(respEntity.getBody() instanceof MessageModel);
+        MessageModel respModel = (MessageModel) respEntity.getBody();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, respEntity.getStatusCode());
-        assertTrue(respModel.isUncaughtError());
-        assertNotEquals("Showing the exception message in the response is a security issue. If you need return a message to a user catch the exception closer to the issue. ",
-                _testException.getMessage(), respModel.getMessage());
+        assertEquals(_testException.getMessage(), respModel.getMessage());
     }
 
     private void setAcceptHeader(String headerValue) {

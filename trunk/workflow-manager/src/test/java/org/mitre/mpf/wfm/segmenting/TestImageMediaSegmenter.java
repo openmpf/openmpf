@@ -32,8 +32,8 @@ import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 import java.net.URI;
@@ -50,7 +50,7 @@ public class TestImageMediaSegmenter {
 
 	@Test
 	public void canCreateFirstStageMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
 				0, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
@@ -69,7 +69,7 @@ public class TestImageMediaSegmenter {
 
 	@Test
 	public void canCreateNonFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -89,7 +89,7 @@ public class TestImageMediaSegmenter {
 
 	@Test
 	public void canCreateFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -119,7 +119,7 @@ public class TestImageMediaSegmenter {
 
 	@Test
 	public void noMessagesCreatedWhenNoTracks() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		DetectionContext feedForwardContext = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
@@ -131,17 +131,17 @@ public class TestImageMediaSegmenter {
 
 
 
-	private static List<DetectionRequest> runSegmenter(TransientMedia media, DetectionContext context) {
+	private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
 		MediaSegmenter segmenter = new ImageMediaSegmenter();
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}
 
 
-	private static TransientMedia createTestMedia() {
+	private static Media createTestMedia() {
 		URI uri = URI.create("file:///example.jpg");
-		TransientMediaImpl media = new TransientMediaImpl(1, uri.toString(), UriScheme.get(uri),
-		                                                  Paths.get(uri), Collections.emptyMap(), null);
+		MediaImpl media = new MediaImpl(1, uri.toString(), UriScheme.get(uri),
+                                        Paths.get(uri), Collections.emptyMap(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

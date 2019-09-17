@@ -31,6 +31,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
+import org.mitre.mpf.wfm.data.access.JpaDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ import java.util.List;
 
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
-public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
+public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
 
 	/**
 	 * <p>The type of elements managed by this dao.</p>
@@ -190,7 +191,6 @@ public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
 		}
 	}
 
-	@Override
 	public final Session getCurrentSession() {
 		Split split = SimonManager.getStopwatch(profilerName+".getCurrentSession()").start();
 		try {
@@ -200,7 +200,6 @@ public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
 		}
 	}
 
-	@Override
 	public SessionFactory getSessionFactory() {
 		Split split = SimonManager.getStopwatch(profilerName+".getSessionFactory()").start();
 		try {
@@ -210,7 +209,6 @@ public abstract class AbstractHibernateDao<T> implements HibernateDao<T> {
 		}
 	}
 
-	@Override
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		this.sessionFactory = sessionFactory;
 	}

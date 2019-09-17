@@ -27,10 +27,8 @@
 package org.mitre.mpf.mvc.controller;
 
 import com.google.common.collect.ImmutableSet;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
+import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
@@ -57,8 +55,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-
-import static java.util.stream.Collectors.toList;
 
 // swagger includes
 
@@ -205,20 +201,20 @@ public class AdminComponentRegistrationController {
                           "will be replaced. If there is an existing managed component with the same name, " +
                           "registration will fail with a 409 - Conflict response.",
                   produces = "application/json",
-                  response = ResponseMessage.Message.class)
+                  response = MessageModel.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
             @ApiResponse(code = 201, message = "Successfully registered new component."),
-            @ApiResponse(code = 400, message = "The descriptor was invalid."),
-            @ApiResponse(code = 401, message = "Invalid credentials."),
-            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.")
+            @ApiResponse(code = 400, message = "The descriptor was invalid.", response = MessageModel.class),
+            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.",
+                         response = MessageModel.class)
     })
     @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
                     method = RequestMethod.POST)
     @ResponseBody
     public ResponseMessage registerUnmanagedComponent(@RequestBody JsonComponentDescriptor descriptor) {
         return withWriteLock(() -> {
-            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
+            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.getComponentName()).isPresent();
             try {
                 boolean reRegistered = _addComponentService.registerUnmanagedComponent(descriptor);
                 if (alreadyRegistered) {
@@ -232,7 +228,7 @@ public class AdminComponentRegistrationController {
                 }
             }
             catch (ComponentRegistrationException e) {
-                return handleAddComponentExceptions(descriptor.componentName, e);
+                return handleAddComponentExceptions(descriptor.getComponentName(), e);
             }
         });
     }
@@ -331,12 +327,10 @@ public class AdminComponentRegistrationController {
     public ResponseMessage unregisterViaFileRest(
             /*@ApiParam(required = true, value = "The path to the JSON component descriptor file")*/
             @RequestParam String filePath,
-            @RequestParam(required = false, defaultValue = "true") boolean deletePackage,
-            @RequestParam(required = false, defaultValue = "true") boolean recursive
-    ) {
+            @RequestParam(required = false, defaultValue = "true") boolean deletePackage) {
         return withWriteLock(() -> {
             log.info("Entered {}", "[rest/component/unregisterViaFile]");
-                _removeComponentService.unregisterViaFile(filePath, deletePackage, recursive);
+                _removeComponentService.unregisterViaFile(filePath, deletePackage);
                 return ResponseMessage.ok("Component successfully unregistered");
         });
     }
@@ -391,29 +385,6 @@ public class AdminComponentRegistrationController {
         });
     }
 
-
-    @RequestMapping(value = {"/components/{componentPackageFileName:.+}/reRegisterOrder",
-            "/rest/components/{componentPackageFileName:.+}/reRegisterOrder"},
-            method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseEntity<?> getReRegisterOrderRest(
-            @PathVariable("componentPackageFileName") String componentPackageFileName) {
-
-        return withReadLock(() -> {
-            try {
-                List<String> registrationOrder = _reRegisterService.getReRegistrationOrder(componentPackageFileName)
-                        .stream()
-                        .map(p -> p.getFileName().toString())
-                        .collect(toList());
-                return ResponseEntity.ok(registrationOrder);
-            }
-            catch (IllegalStateException e) {
-                log.error("Error while trying to get component re-registration order.", e);
-                return new ResponseMessage("Error while trying to get component re-registration order. Check the Workflow Manager logs for details.",
-                                           HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        });
-    }
 
 
     private static <T> T withReadLock(Supplier<T> supplier) {

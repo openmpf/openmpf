@@ -27,12 +27,11 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mockito.InjectMocks;
@@ -73,7 +72,7 @@ public class TestJobStatusCalculator {
 
 
     private Exchange createExchange(long jobId, BatchJobStatusType initialStatus) {
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getStatus())
                 .thenReturn(initialStatus);
         when(job.getId())
@@ -83,9 +82,9 @@ public class TestJobStatusCalculator {
                 .thenReturn(job);
 
 
-        Message inMessage = new DefaultMessage();
+        var inMessage = new DefaultMessage();
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
-        Exchange exchange = mock(Exchange.class);
+        var exchange = mock(Exchange.class);
         when(exchange.getIn())
                 .thenReturn(inMessage);
         return exchange;
@@ -94,7 +93,7 @@ public class TestJobStatusCalculator {
 
     private void verifyStateTransition(BatchJobStatusType from, BatchJobStatusType to) {
         long jobId = 112235;
-        Exchange exchange = createExchange(jobId, from);
+        var exchange = createExchange(jobId, from);
         BatchJobStatusType finalState = jobStatusCalculator.calculateStatus(exchange);
         assertEquals(to, finalState);
 

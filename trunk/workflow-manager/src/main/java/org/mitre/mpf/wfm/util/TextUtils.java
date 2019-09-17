@@ -30,8 +30,8 @@ import com.google.common.base.Joiner;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collector;
 
 /** Utility methods for cleaning user input. */
 public class TextUtils {
@@ -53,9 +53,23 @@ public class TextUtils {
 	}
 
 	/** Null-safe trim operation that returns the trimmed, uppercase input or {@literal null} if 1) the input is null, or 2) no characters remain after trimming. */
-	public static String trimAndUpper(String input) {
+	public static String trimToNullAndUpper(String input) {
 		return StringUtils.upperCase(StringUtils.trimToNull(input));
 	}
+
+	public static String trimAndUpper(String input) {
+		return input != null
+				? input.toUpperCase().trim()
+				: null;
+	}
+
+	public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
+        return strings.stream()
+		        .filter(Objects::nonNull)
+				.map(TextUtils::trimAndUpper)
+				.collect(collector);
+	}
+
 
 	/** Null-safe trim operation that returns the trimmed, lowercase input or {@literal null} if 1) the input is null, or 2) no characters remain after trimming. */
 	public static String trimAndLower(String input) {

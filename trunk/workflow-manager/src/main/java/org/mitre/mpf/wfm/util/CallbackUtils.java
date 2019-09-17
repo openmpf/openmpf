@@ -39,7 +39,7 @@ import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
+import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,7 +101,7 @@ public class CallbackUtils {
     }
 
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
-    public void sendHealthReportCallback(String callbackUri, List<TransientStreamingJob> jobs) {
+    public void sendHealthReportCallback(String callbackUri, List<StreamingJob> jobs) {
 
         List<JsonHealthReportCollection.JsonHealthReport> reports = jobs
                 .stream()
@@ -112,7 +112,7 @@ public class CallbackUtils {
                 .collect(toList());
 
         List<Long> jobIds = jobs.stream()
-                .map(TransientStreamingJob::getId)
+                .map(StreamingJob::getId)
                 .collect(toList());
         try {
             JsonHealthReportCollection jsonBody = new JsonHealthReportCollection(Instant.now(), reports);

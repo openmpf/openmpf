@@ -31,6 +31,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.*;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JniLoader;
@@ -42,10 +43,10 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds the route that inspects the {@link org.mitre.mpf.wfm.data.entities.transients.TransientMedia} in a job. Once
- * inspected, metadata fields such as  {@link org.mitre.mpf.wfm.data.entities.transients.TransientMedia#type} and
- * {@link org.mitre.mpf.wfm.data.entities.transients.TransientMedia#length} should have meaningful values. If a medium
- * cannot be inspected, its {@link org.mitre.mpf.wfm.data.entities.transients.TransientMedia#failed} flag should be set.
+ * Builds the route that inspects the {@link Media} in a job. Once
+ * inspected, metadata fields corresponding to type and length
+ * should have meaningful values. If a medium cannot be inspected,
+ * its failed flag should be set.
  */
 @Component
 @DependsOn(JniLoader.REF)

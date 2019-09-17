@@ -26,156 +26,125 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.service.NodeManagerService;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-
-import static java.util.stream.Collectors.toSet;
 
 @Named
 public class ComponentReRegisterServiceImpl implements ComponentReRegisterService {
 
-	private final Path _componentUploadDir;
+    private final ComponentStateService _componentStateService;
 
-	private final ComponentStateService _componentStateService;
+    private final NodeManagerService _nodeManagerService;
 
-	private final ComponentDependencyFinder _componentDependencyFinder;
+    private final AddComponentService _addComponentService;
 
-	private final NodeManagerService _nodeManagerService;
-
-	private final AddComponentService _addComponentService;
-
-	private final RemoveComponentService _removeComponentService;
+    private final RemoveComponentService _removeComponentService;
 
 
-	@Inject
-	public ComponentReRegisterServiceImpl(
-			PropertiesUtil propertiesUtil,
-			ComponentStateService componentStateService,
-			ComponentDependencyFinder componentDependencyFinder,
-			NodeManagerService nodeManagerService,
-			AddComponentService addComponentService,
-			RemoveComponentService removeComponentService) {
-		_componentUploadDir = propertiesUtil.getUploadedComponentsDirectory().toPath();
-		_componentStateService = componentStateService;
-		_componentDependencyFinder = componentDependencyFinder;
-		_nodeManagerService = nodeManagerService;
-		_addComponentService = addComponentService;
-		_removeComponentService = removeComponentService;
-	}
+    @Inject
+    public ComponentReRegisterServiceImpl(
+            ComponentStateService componentStateService,
+            NodeManagerService nodeManagerService,
+            AddComponentService addComponentService,
+            RemoveComponentService removeComponentService) {
+        _componentStateService = componentStateService;
+        _nodeManagerService = nodeManagerService;
+        _addComponentService = addComponentService;
+        _removeComponentService = removeComponentService;
+    }
 
 
-	@Override
-	public List<Path> getReRegistrationOrder(String componentPackage) {
-		Path targetComponentPath = _componentUploadDir.resolve(componentPackage).toAbsolutePath();
 
-		Set<Path> registeredComponents = _componentStateService.get().stream()
-				.filter(rcm -> rcm.getComponentState() == ComponentState.REGISTERED)
-				.map(rcm -> Optional.ofNullable(rcm.getFullUploadedFilePath())
-						.orElse(rcm.getJsonDescriptorPath()))
-				.map(Paths::get)
-				.collect(toSet());
+    @Override
+    public RegisterComponentModel reRegisterComponent(String componentPackage) throws ComponentRegistrationException {
+        RegisterComponentModel existingComponent = _componentStateService.getByPackageFile(componentPackage)
+                .orElse(null);
+        if (existingComponent == null) {
+            return _addComponentService.registerComponent(componentPackage);
+        }
 
-		return registeredComponents.contains(targetComponentPath)
-				? _componentDependencyFinder.getReRegistrationOrder(targetComponentPath, registeredComponents)
-				: Collections.singletonList(targetComponentPath);
-	}
+        int existingServiceCount = Optional.ofNullable(existingComponent.getServiceName())
+                .map(sn -> _nodeManagerService.getServiceModels().get(sn))
+                .map(ServiceModel::getServiceCount)
+                .orElse(0);
 
+        Map<String, Integer> hostServiceCounts = Optional.ofNullable(existingComponent.getServiceName())
+                .map(this::getHostServiceCounts)
+                .orElse(Collections.emptyMap());
 
-	@Override
-	public RegisterComponentModel reRegisterComponent(String componentPackage) throws ComponentRegistrationException {
-		RegisterComponentModel existingComponent = _componentStateService.getByPackageFile(componentPackage)
-				.orElse(null);
-		if (existingComponent == null) {
-			return _addComponentService.registerComponent(componentPackage);
-		}
+        _removeComponentService.unregisterRetainPackage(componentPackage);
+        RegisterComponentModel addedComponent = _addComponentService.registerComponent(componentPackage);
+        if (addedComponent.getServiceName() != null) {
+            updateServiceCount(addedComponent.getServiceName(), existingServiceCount);
+            addServicesToNodes(addedComponent.getServiceName(), hostServiceCounts);
+        }
 
-		int existingServiceCount = Optional.ofNullable(existingComponent.getServiceName())
-				.map(sn -> _nodeManagerService.getServiceModels().get(sn))
-				.filter(Objects::nonNull)
-				.map(ServiceModel::getServiceCount)
-				.orElse(0);
-
-		Map<String, Integer> hostServiceCounts = Optional.ofNullable(existingComponent.getServiceName())
-				.map(this::getHostServiceCounts)
-				.orElse(Collections.emptyMap());
-
-		_removeComponentService.unregisterRetainPackage(componentPackage);
-		RegisterComponentModel addedComponent = _addComponentService.registerComponent(componentPackage);
-		if (addedComponent.getServiceName() != null) {
-			updateServiceCount(addedComponent.getServiceName(), existingServiceCount);
-			addServicesToNodes(addedComponent.getServiceName(), hostServiceCounts);
-		}
-
-		return addedComponent;
-	}
+        return addedComponent;
+    }
 
 
-	private Map<String, Integer> getHostServiceCounts(String serviceName) {
-		List<NodeManagerModel> nodes = _nodeManagerService.getNodeManagerModels();
-		Map<String, Integer> hostServiceCounts = new HashMap<>();
-		for (NodeManagerModel node : nodes) {
-			node.getServices().stream()
-					.filter(sm -> sm.getServiceName().equals(serviceName))
-					.findAny()
-					.map(ServiceModel::getServiceCount)
-					.filter(count -> count > 0)
-					.ifPresent(count -> hostServiceCounts.put(node.getHost(), count));
-		}
-		return hostServiceCounts;
-	}
+    private Map<String, Integer> getHostServiceCounts(String serviceName) {
+        List<NodeManagerModel> nodes = _nodeManagerService.getNodeManagerModels();
+        Map<String, Integer> hostServiceCounts = new HashMap<>();
+        for (NodeManagerModel node : nodes) {
+            node.getServices().stream()
+                    .filter(sm -> sm.getServiceName().equals(serviceName))
+                    .findAny()
+                    .map(ServiceModel::getServiceCount)
+                    .filter(count -> count > 0)
+                    .ifPresent(count -> hostServiceCounts.put(node.getHost(), count));
+        }
+        return hostServiceCounts;
+    }
 
 
-	private void addServicesToNodes(String serviceName, Map<String, Integer> hostServiceCounts) {
-		boolean noServicesToAdd = hostServiceCounts.values().stream()
-				.noneMatch(i -> i > 0);
-		if (noServicesToAdd) {
-			return;
-		}
+    private void addServicesToNodes(String serviceName, Map<String, Integer> hostServiceCounts) {
+        boolean noServicesToAdd = hostServiceCounts.values().stream()
+                .noneMatch(i -> i > 0);
+        if (noServicesToAdd) {
+            return;
+        }
 
-		List<NodeManagerModel> nodes = _nodeManagerService.getNodeManagerModels();
+        List<NodeManagerModel> nodes = _nodeManagerService.getNodeManagerModels();
 
-		for (Map.Entry<String, Integer> entry : hostServiceCounts.entrySet()) {
-			int serviceCount = entry.getValue();
-			if (serviceCount > 0) {
-				ServiceModel serviceModel = _nodeManagerService.getServiceModels().get(serviceName);
-				serviceModel.setServiceCount(entry.getValue());
-				nodes.stream()
-						.filter(nm -> nm.getHost().equals(entry.getKey()))
-						.findAny()
-						.ifPresent(nm -> nm.getServices().add(serviceModel));
-			}
-		}
-		try {
-			_nodeManagerService.saveAndReloadNodeManagerConfig(nodes);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+        for (Map.Entry<String, Integer> entry : hostServiceCounts.entrySet()) {
+            int serviceCount = entry.getValue();
+            if (serviceCount > 0) {
+                ServiceModel serviceModel = _nodeManagerService.getServiceModels().get(serviceName);
+                serviceModel.setServiceCount(entry.getValue());
+                nodes.stream()
+                        .filter(nm -> nm.getHost().equals(entry.getKey()))
+                        .findAny()
+                        .ifPresent(nm -> nm.getServices().add(serviceModel));
+            }
+        }
+        try {
+            _nodeManagerService.saveAndReloadNodeManagerConfig(nodes);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
 
-	private void updateServiceCount(String serviceName, int numServices) {
-		if (numServices < 1) {
-			return;
-		}
+    private void updateServiceCount(String serviceName, int numServices) {
+        if (numServices < 1) {
+            return;
+        }
 
-		Map<String, ServiceModel> serviceModels = _nodeManagerService.getServiceModels();
-		ServiceModel service = serviceModels.get(serviceName);
-		if (service.getServiceCount() < numServices) {
-			service.setServiceCount(numServices);
-			_nodeManagerService.setServiceModels(serviceModels);
-		}
-	}
+        Map<String, ServiceModel> serviceModels = _nodeManagerService.getServiceModels();
+        ServiceModel service = serviceModels.get(serviceName);
+        if (service.getServiceCount() < numServices) {
+            service.setServiceCount(numServices);
+            _nodeManagerService.setServiceModels(serviceModels);
+        }
+    }
 }

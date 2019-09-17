@@ -30,26 +30,13 @@ package org.mitre.mpf.rest.api;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-public class ResponseMessage extends ResponseEntity<ResponseMessage.Message> {
+public class ResponseMessage extends ResponseEntity<MessageModel> {
 
     public ResponseMessage(String message, HttpStatus httpStatus) {
-        super(new Message(message), httpStatus);
+        super(new MessageModel(message), httpStatus);
     }
 
     public static ResponseMessage ok(String message) {
         return new ResponseMessage(message, HttpStatus.OK);
-    }
-
-
-    public static class Message {
-        private final String _message;
-
-        public Message(String message) {
-            _message = message;
-        }
-
-        public String getMessage() {
-            return _message;
-        }
     }
 }

@@ -48,7 +48,7 @@ import java.util.UUID;
  *     <li>Splits which do not produce any messages will have an EMPTY_SPLIT header value set to TRUE.</li>
  * </ul>
  */
-public abstract class WfmSplitter implements WfmSplitterInterface {
+public abstract class WfmSplitter implements MonitoredWfmSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(WfmSplitter.class);
 
@@ -62,7 +62,7 @@ public abstract class WfmSplitter implements WfmSplitterInterface {
      * @return A collection of work units to be performed.
      * @throws Exception
      */
-    protected abstract List<Message> wfmSplit(Exchange exchange) throws Exception;
+    protected abstract List<Message> wfmSplit(Exchange exchange);
 
     protected abstract String getSplitterName();
 

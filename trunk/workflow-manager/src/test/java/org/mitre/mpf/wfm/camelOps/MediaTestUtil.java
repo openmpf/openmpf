@@ -29,11 +29,10 @@ package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 
 import static org.mitre.mpf.test.TestUtil.nonBlank;
@@ -43,23 +42,23 @@ import static org.mockito.Mockito.*;
 public class MediaTestUtil {
 
 
-    public static Exchange setupExchange(long jobId, TransientMediaImpl media,
+    public static Exchange setupExchange(long jobId, MediaImpl media,
                                          InProgressBatchJobsService mockInProgressJobs) {
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getMedia(media.getId()))
                 .thenReturn(media);
-        when(job.getOverriddenJobProperties())
+        when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of());
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 
-        Message inMessage = new DefaultMessage();
+        var inMessage = new DefaultMessage();
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
         inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
 
-        Message outMessage = new DefaultMessage();
+        var outMessage = new DefaultMessage();
 
-        Exchange exchange = mock(Exchange.class);
+        var exchange = mock(Exchange.class);
         when(exchange.getIn())
                 .thenReturn(inMessage);
         when(exchange.getOut())

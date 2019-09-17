@@ -26,9 +26,9 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.*;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.h2.util.StringUtils;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.nms.ServiceDescriptor;
@@ -93,8 +93,7 @@ public class NodeController {
 	@RequestMapping(value = "/rest/nodes/info", method = RequestMethod.GET)
 	@ApiOperation(value = "Retrieves information about the currently configured node managers and "
 			+ "the statuses of the services within each configured node manager.", produces = "application/json", response = DeployedNodeManagerModel.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	@ResponseBody
 	public DeployedNodeManagerModel getNodeManagerInfoRest() {
 		return getNodeManagerInfo();
@@ -114,8 +113,7 @@ public class NodeController {
 	@RequestMapping(value = "/rest/nodes/hosts", method = RequestMethod.GET)
 	@ApiOperation(value = "Returns a collection of key-value pairs <String, Boolean> containing a hostname and its node configuration status. "
 			+ "If the configuration status is 'true' that hostname is configured to run a node manager.", notes = "The response is a set of JSON key-value pairs, where the key is the hostname and the value is the configuration status.", produces = "application/json")
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	@ResponseBody
 	public Map<String, Boolean> getNodeManagerHostsRest() {
 		return getNodeManagerHosts();
@@ -220,8 +218,7 @@ public class NodeController {
 	// EXTERNAL
 	@RequestMapping(value = "/rest/nodes/config", method = RequestMethod.GET)
 	@ApiOperation(value = "Retrieves the configuration information of all NodeManagers, including all services configured to run on each NodeManager", produces = "application/json", response = NodeManagerModel.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	@ResponseBody
 	public List<NodeManagerModel> getNodeManagerConfigRest() {
 		return getNodeManagerConfig();
@@ -241,8 +238,7 @@ public class NodeController {
 	@RequestMapping(value = "/rest/nodes/config", method = RequestMethod.POST)
 	@ApiOperation(value = "Save the NodeManager configuration using a JSON array of NodeManagerModel "
 			+ "objects.", notes = "Each node manager in the cluster will be notified of the change(s) and attempt to conform to those changes.", produces = "application/json")
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Config saved"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 201, message = "Config saved"))
 	public ResponseEntity<MpfResponse> saveNodeManagerConfigRest(
 			@ApiParam(required = true, value = "all NodeManagerModel objects as a JSON array specifying all the configurations for all the nodes in the cluster") @RequestBody List<NodeManagerModel> nodeManagerModels,
 			HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
@@ -311,8 +307,7 @@ public class NodeController {
 	// EXTERNAL
 	@RequestMapping(value = "/rest/nodes/services", method = RequestMethod.GET)
 	@ApiOperation(value = "Retrieves services that are currently available for deployment to a node.", notes = "In the response, the key is the serviceName and the value is a ServiceModel object.", produces = "application/json", response = ServiceModel.class, responseContainer = "Set")
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	@ResponseBody
 	public Map<String, ServiceModel> getNodeManagerServicePaletteRest()
 			throws JsonGenerationException, JsonMappingException, IOException {
@@ -334,8 +329,7 @@ public class NodeController {
 	@RequestMapping(value = "/rest/nodes/services/{serviceName:.+}/start", method = RequestMethod.POST)
 	@ApiOperation(value = "Starts the service named serviceName", notes = "This method returns a NodeServiceStatusChangeResult and a HTTP 200 status code on successful request.", 
 	produces = "application/json", response = MpfResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	public ResponseEntity<MpfResponse> startServiceRest(
 			@ApiParam(required = true, value = "The fully qualified name of the service to be shutdown, (e.g., localhost.localdomain:markup:1)") @PathVariable("serviceName") String serviceName,
 			HttpServletRequest httpServletRequest) {
@@ -358,8 +352,7 @@ public class NodeController {
 	@RequestMapping(value = "/rest/nodes/services/{serviceName:.+}/stop", method = RequestMethod.POST)
 	@ApiOperation(value = "Shuts down the service named serviceName", notes = "This method returns a NodeServiceStatusChangeResult and a HTTP 200 status code on successful request.", 
 	produces = "application/json", response = MpfResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	public ResponseEntity<MpfResponse> stopServiceRest(
 			@ApiParam(required = true, value = "The fully qualified name of the service to be shutdown, (e.g., localhost.localdomain:markup:1)") @PathVariable("serviceName") String serviceName,
 			HttpServletRequest httpServletRequest) {

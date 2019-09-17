@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ import java.util.List;
 
 @Repository(HibernateMarkupResultDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)
-public class HibernateMarkupResultDaoImpl extends AbstractHibernateDao<MarkupResult> implements HibernateMarkupResultDao {
+public class HibernateMarkupResultDaoImpl extends AbstractHibernateDao<MarkupResult> implements MarkupResultDao {
 	private static final Logger log = LoggerFactory.getLogger(HibernateMarkupResultDaoImpl.class);
 	public static final String REF = "hibernateMarkupResultDaoImpl";
 	public HibernateMarkupResultDaoImpl() {

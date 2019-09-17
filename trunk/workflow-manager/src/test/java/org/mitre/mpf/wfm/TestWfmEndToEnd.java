@@ -33,21 +33,20 @@ import org.apache.camel.ExchangePattern;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.service.MpfService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,11 +75,10 @@ public class TestWfmEndToEnd {
 	private IoUtils ioUtils;
 
 	@Autowired
-	@Qualifier(JobRequestBoImpl.REF)
-	private JobRequestBo jobRequestBo;
+	private JobRequestService jobRequestService;
 
 	@Autowired
-	private MpfService mpfService;
+	private JobRequestDao jobRequestDao;
 
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
@@ -122,10 +120,10 @@ public class TestWfmEndToEnd {
 		}
 	}
 
-	private static List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
-		List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
+	private static List<JobCreationMediaData> toMediaObjectList(URI... uris) {
+		List<JobCreationMediaData> media = new ArrayList<>(uris.length);
 		for (URI uri : uris) {
-			media.add(new JsonMediaInputObject(uri.toString()));
+			media.add(new JobCreationMediaData(uri.toString()));
 		}
 		return media;
 	}
@@ -149,11 +147,18 @@ public class TestWfmEndToEnd {
 	}
 
 
-	private long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media,
+	private long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media,
 	                                Map<String, String> jobProperties, boolean buildOutput, int priority) {
-		JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media,
-				Collections.emptyMap(), jobProperties, buildOutput, priority);
-		long jobRequestId = mpfService.submitJob(jsonJobRequest);
+
+		var jobRequest = new JobCreationRequest();
+		jobRequest.setExternalId(UUID.randomUUID().toString());
+		jobRequest.setPipelineName(pipelineName);
+		jobRequest.setMedia(media);
+		jobRequest.setJobProperties(jobProperties);
+		jobRequest.setBuildOutput(buildOutput);
+		jobRequest.setPriority(priority);
+
+		long jobRequestId = jobRequestService.run(jobRequest).getId();
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}
@@ -163,11 +168,12 @@ public class TestWfmEndToEnd {
 	public void testResubmission() throws Exception {
 		testCtr++;
 		log.info("Beginning test #{} testResubmission()", testCtr);
-		List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/meds/aa/S001-01-t10_01.jpg"));
+		List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/meds/aa/S001-01-t10_01.jpg"));
 
-		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(), true, 5);
+		long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media,
+		                                Collections.emptyMap(), true, 5);
 
-		JobRequest jobRequest = mpfService.getJobRequest(jobId);
+		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
@@ -186,10 +192,10 @@ public class TestWfmEndToEnd {
 		// Ensure that there is at least some pause between jobs so that the start and stop times can be meaningfully
 		// compared to ensure that results are not erroneously being duplicated.
 		Thread.sleep(2000);
-		mpfService.resubmitJob(jobId);
+		jobRequestService.resubmit(jobId, 5);
 		Assert.assertTrue(waitFor(jobId));
 
-		jobRequest = mpfService.getJobRequest(jobId);
+		jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
 		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
@@ -226,7 +232,7 @@ public class TestWfmEndToEnd {
 
 	private static DetectionProtobuf.DetectionResponse createUnsolicitedResponse(long id) {
 		return DetectionProtobuf.DetectionResponse.newBuilder()
-				.setStageIndex(0)
+				.setTaskIndex(0)
 				.setActionIndex(0)
 				.setDataType(DetectionProtobuf.DetectionResponse.DataType.IMAGE)
 				.setError(DetectionProtobuf.DetectionError.BAD_FRAME_SIZE)

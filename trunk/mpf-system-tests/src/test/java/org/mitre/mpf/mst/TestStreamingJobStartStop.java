@@ -30,18 +30,24 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.nms.AddressParser;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.NodeTypes;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
@@ -66,8 +72,8 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.AdditionalMatchers.*;
-import static org.mockito.Matchers.eq;
+import static org.mockito.AdditionalMatchers.geq;
+import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Mockito.*;
 
 
@@ -76,232 +82,248 @@ import static org.mockito.Mockito.*;
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 public class TestStreamingJobStartStop {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestStreamingJobStartStop.class);
 
-	private static final StreamingJobRequestBo _mockStreamingJobRequestBo = mock(StreamingJobRequestBo.class);
+    private static final StreamingJobRequestService _mockStreamingJobRequestService
+            = mock(StreamingJobRequestService.class);
 
-	@Configuration
-	public static class TestConfig {
+    @Configuration
+    public static class TestConfig {
 
-		@Bean
-		@Primary
-		public StreamingJobRequestBo streamingJobRequestBo() {
-			return _mockStreamingJobRequestBo;
-		}
-	}
+        @Bean
+        @Primary
+        public StreamingJobRequestService streamingJobRequestService() {
+            return _mockStreamingJobRequestService;
+        }
+    }
 
-	@Autowired
-	private StreamingJobMessageSender _jobSender;
+    @Autowired
+    private StreamingJobMessageSender _jobSender;
 
-	@Autowired
-	private MasterNode _masterNode;
+    @Autowired
+    private MasterNode _masterNode;
 
-	@Autowired
-	private ObjectMapper _objectMapper;
+    @Autowired
+    private ObjectMapper _objectMapper;
 
-	@Autowired
-	protected IoUtils _ioUtils;
+    @Autowired
+    private IoUtils _ioUtils;
 
+    @Autowired
+    private PipelineService _pipelineService;
 
-	@Test(timeout = 5 * 60_000)
-	public void testJobStartStop() throws InterruptedException {
-		long jobId = 43231;
-		long test_start_time = System.currentTimeMillis();
-
-		waitForCorrectNodes();
-
-		TransientStreamingJob streamingJob = createJob(
-				jobId,
-				"SUBSENSE",
-				"SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE",
-				"/samples/face/new_face_video.avi",
-				10,
-				1);
-
-		_jobSender.launchJob(streamingJob);
-
-		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
-				.handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
-
-		_jobSender.stopJob(jobId);
+    @ClassRule
+    public static TestInfoLoggerClassRule _testInfoLoggerClassRule = new TestInfoLoggerClassRule();
+    @Rule
+    public TestWatcher _testInfoMethodRule = _testInfoLoggerClassRule.methodRule();
 
 
-		verify(_mockStreamingJobRequestBo, timeout(30_000))
-				.handleJobStatusChange(eq(jobId),
-				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
-				                       gt(test_start_time));
-
-		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
-
-		verify(_mockStreamingJobRequestBo, timeout(30_000).atLeastOnce())
-				.handleNewSummaryReport(reportCaptor.capture());
-
-		JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
-		assertEquals(jobId, summaryReport.getJobId());
-
-		boolean hasNonEmptyDetection = summaryReport.getTypes()
-				.values()
-				.stream()
-				.flatMap(Collection::stream)
-				.flatMap(t -> t.getDetections().stream())
-				.anyMatch(d -> d.getHeight() > 0 && d.getWidth() > 0);
-
-		assertTrue(hasNonEmptyDetection);
-	}
+    @Before
+    public void init() {
+        reset(_mockStreamingJobRequestService);
+    }
 
 
-	@Test(timeout = 5 * 60_000)
-	public void testDarknetStreaming() throws InterruptedException, IOException {
-		long jobId = 43234;
-		int segmentSize = 10;
-		long test_start_time = System.currentTimeMillis();
+    @Test(timeout = 5 * 60_000)
+    public void testJobStartStop() throws InterruptedException {
+        long jobId = 43231;
+        long test_start_time = System.currentTimeMillis();
 
-		waitForCorrectNodes();
+        waitForCorrectNodes();
 
-		TransientStreamingJob streamingJob = createJob(
-				jobId,
-				"DARKNET",
-				"TINY YOLO OBJECT DETECTION PIPELINE",
-				"/samples/face/video_01.mp4",
-				segmentSize,
-				0);
+        StreamingJob streamingJob = createJob(
+                jobId,
+                "SUBSENSE",
+                "SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE",
+                "/samples/face/new_face_video.avi",
+                10,
+                1);
 
-		_jobSender.launchJob(streamingJob);
+        _jobSender.launchJob(streamingJob);
 
-		verify(_mockStreamingJobRequestBo, timeout(60_000).atLeastOnce())
-				.handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
+        verify(_mockStreamingJobRequestService, timeout(30_000).atLeastOnce())
+                .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
-
-		ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
-		verify(_mockStreamingJobRequestBo, timeout(60_000).atLeastOnce())
-				.handleNewSummaryReport(reportCaptor.capture());
-
-		_jobSender.stopJob(jobId);
+        _jobSender.stopJob(jobId);
 
 
-		verify(_mockStreamingJobRequestBo, timeout(60_000))
-				.handleJobStatusChange(eq(jobId),
-				                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
-				                       gt(test_start_time));
+        verify(_mockStreamingJobRequestService, timeout(30_000))
+                .handleJobStatusChange(eq(jobId),
+                                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
+                                       gt(test_start_time));
+
+        ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
+
+        verify(_mockStreamingJobRequestService, timeout(30_000).atLeastOnce())
+                .handleNewSummaryReport(reportCaptor.capture());
+
+        JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
+        assertEquals(jobId, summaryReport.getJobId());
+
+        boolean hasNonEmptyDetection = summaryReport.getTypes()
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .flatMap(t -> t.getDetections().stream())
+                .anyMatch(d -> d.getHeight() > 0 && d.getWidth() > 0);
+
+        assertTrue(hasNonEmptyDetection);
+    }
 
 
-		JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
-		assertEquals(jobId, summaryReport.getJobId());
+    @Test(timeout = 5 * 60_000)
+    public void testDarknetStreaming() throws InterruptedException, IOException {
+        long jobId = 43234;
+        int segmentSize = 10;
+        long test_start_time = System.currentTimeMillis();
 
-		List<JsonStreamingTrackOutputObject> actualTracks = summaryReport.getTypes()
-				.values()
-				.stream()
-				.flatMap(Collection::stream)
-				.collect(toList());
+        waitForCorrectNodes();
 
-		assertTrue(actualTracks.stream()
-				.map(t -> t.getTrackProperties().get("CLASSIFICATION"))
-				.anyMatch("person"::equalsIgnoreCase));
+        StreamingJob streamingJob = createJob(
+                jobId,
+                "DARKNET",
+                "TINY YOLO OBJECT DETECTION PIPELINE",
+                "/samples/face/video_01.mp4",
+                segmentSize,
+                0);
 
+        _jobSender.launchJob(streamingJob);
 
-		URL expectedOutputPath = getClass().getClassLoader()
-				.getResource("output/object/runDarknetDetectVideo.json");
-		JsonOutputObject expectedOutputJson = _objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
-
-		boolean allExpectedTracksFound = expectedOutputJson.getMedia()
-				.stream()
-				.flatMap(m -> m.getTypes().values().stream())
-				.flatMap(Collection::stream)
-				.flatMap(a -> a.getTracks().stream())
-				.filter(t -> t.getStopOffsetFrame() < segmentSize)
-				.allMatch(t -> containsMatchingTrack(t, actualTracks));
-		assertTrue(allExpectedTracksFound);
-	}
+        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
+                .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
 
 
-	private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
-		return argThat(status -> Stream.of(statuses)
-				.anyMatch(t -> status.getType() == t));
-	}
+        ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
+        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
+                .handleNewSummaryReport(reportCaptor.capture());
 
-	private TransientStreamingJob createJob(long jobId, String algorithm, String pipelineName,
-	                                               String mediaPath, int segmentSize, int stallTimeout) {
-
-		TransientStage stage1 = new TransientStage(
-				"stage1",
-				"description",
-				ActionType.DETECTION,
-				Collections.singletonList(new TransientAction("Action1", "description", algorithm, Collections.emptyMap())));
-
-		TransientPipeline pipeline = new TransientPipeline(pipelineName, "desc",
-		                                                   Collections.singletonList(stage1));
-		URI videoUri = _ioUtils.findFile(mediaPath);
-		TransientStream stream = new TransientStream(124, videoUri.toString(), segmentSize, Collections.emptyMap());
-
-		return new TransientStreamingJobImpl(
-				jobId, "ext id", pipeline, stream, 1, stallTimeout, false, "mydir",
-				null, null, Collections.emptyMap(), Collections.emptyMap());
-	}
+        _jobSender.stopJob(jobId);
 
 
-	private static boolean containsMatchingTrack(JsonTrackOutputObject expectedTrack,
-	                                             Collection<JsonStreamingTrackOutputObject> actualTracks) {
-		return actualTracks.stream()
-				.anyMatch(actual -> tracksMatch(expectedTrack, actual));
-	}
-
-	private static boolean tracksMatch(JsonTrackOutputObject expectedTrack,
-	                                   JsonStreamingTrackOutputObject actualTrack) {
-		return actualTrack.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
-				&& actualTrack.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
-				&& Math.abs(actualTrack.getConfidence() - expectedTrack.getConfidence()) < 0.01
-				&& actualTrack.getTrackProperties().equals(expectedTrack.getTrackProperties())
-				&& exemplarsMatch(expectedTrack, actualTrack);
-	}
-
-	private static boolean exemplarsMatch(JsonTrackOutputObject expectedTrack,
-	                                      JsonStreamingTrackOutputObject actualTrack) {
-		JsonDetectionOutputObject expectedExemplar = expectedTrack.getExemplar();
-		JsonStreamingDetectionOutputObject actualExemplar = actualTrack.getExemplar();
-
-		return expectedExemplar.getX() == actualExemplar.getX()
-				&& expectedExemplar.getY() == actualExemplar.getY()
-				&& expectedExemplar.getWidth() == actualExemplar.getWidth()
-				&& expectedExemplar.getHeight() == actualExemplar.getHeight()
-				&& Math.abs(expectedExemplar.getConfidence() - actualExemplar.getConfidence()) < 0.01
-				&& expectedExemplar.getOffsetFrame() == actualExemplar.getOffsetFrame()
-				&& expectedExemplar.getDetectionProperties().equals(actualExemplar.getDetectionProperties());
-	}
+        verify(_mockStreamingJobRequestService, timeout(120_000))
+                .handleJobStatusChange(eq(jobId),
+                                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
+                                       gt(test_start_time));
 
 
-	private void waitForCorrectNodes() throws InterruptedException {
-		while (!hasCorrectNodes()) {
-			Thread.sleep(1000);
-		}
-	}
+        JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
+        assertEquals(jobId, summaryReport.getJobId());
 
-	// Sometimes when the test starts there are 2 master nodes.
-	// This makes sure there is only one master node and only one child node.
-	private boolean hasCorrectNodes() {
-		List<Address> currentNodes = _masterNode.getCurrentNodeManagerHosts();
-		Map<NodeTypes, Long> nodeTypeCounts = currentNodes
-				.stream()
-				.map(AddressParser::parse)
-				.collect(groupingBy(Pair::getRight, counting()));
+        List<JsonStreamingTrackOutputObject> actualTracks = summaryReport.getTypes()
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(toList());
 
-		long masterNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.MasterNode, 0L);
-		long childNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.NodeManager, 0L);
-		if (masterNodeCount == 1 && childNodeCount == 1) {
-			return true;
-		}
+        assertTrue(actualTracks.stream()
+                           .map(t -> t.getTrackProperties().get("CLASSIFICATION"))
+                           .anyMatch("person"::equalsIgnoreCase));
 
-		String currentNodeList = currentNodes.stream()
-				.map(Object::toString)
-				.collect(joining("\n"));
 
-		LOG.warn("Current Nodes:\n{}", currentNodeList);
+        URL expectedOutputPath = getClass().getClassLoader()
+                .getResource("output/object/runDarknetDetectVideo.json");
+        JsonOutputObject expectedOutputJson = _objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
 
-		if (masterNodeCount != 1) {
-			LOG.warn("Incorrect number of master nodes. Expected 1 but there were {}.", masterNodeCount);
-		}
-		if (childNodeCount != 1) {
-			LOG.warn("Incorrect number of child nodes. Expected 1 but there were {}.", childNodeCount);
-		}
-		return false;
-	}
+        boolean allExpectedTracksFound = expectedOutputJson.getMedia()
+                .stream()
+                .flatMap(m -> m.getTypes().values().stream())
+                .flatMap(Collection::stream)
+                .flatMap(a -> a.getTracks().stream())
+                .filter(t -> t.getStopOffsetFrame() < segmentSize)
+                .allMatch(t -> containsMatchingTrack(t, actualTracks));
+        assertTrue(allExpectedTracksFound);
+    }
+
+
+    private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
+        return argThat(status -> Stream.of(statuses)
+                        .anyMatch(t -> status.getType() == t));
+            }
+
+
+    private StreamingJob createJob(long jobId, String algorithm, String pipelineName,
+                                            String mediaPath, int segmentSize, int stallTimeout) {
+        Action action = new Action("Action1", "description", algorithm, Collections.emptyList());
+        Task task = new Task("Task1", "description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline(pipelineName, "desc", Collections.singleton(task.getName()));
+        JobPipelineElements pipelineElements = new JobPipelineElements(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(_pipelineService.getAlgorithm(algorithm)));
+
+
+        URI videoUri = _ioUtils.findFile(mediaPath);
+        MediaStreamInfo stream = new MediaStreamInfo(124, videoUri.toString(), segmentSize, Collections.emptyMap());
+
+        return new StreamingJobImpl(
+                jobId, "ext id", pipelineElements, stream, 1, stallTimeout, false,
+                "mydir", null, null,
+                Collections.emptyMap(), Collections.emptyMap());
+    }
+
+
+    private static boolean containsMatchingTrack(JsonTrackOutputObject expectedTrack,
+                                                 Collection<JsonStreamingTrackOutputObject> actualTracks) {
+        return actualTracks.stream()
+                .anyMatch(actual -> tracksMatch(expectedTrack, actual));
+    }
+
+    private static boolean tracksMatch(JsonTrackOutputObject expectedTrack,
+                                       JsonStreamingTrackOutputObject actualTrack) {
+        return actualTrack.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
+                && actualTrack.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
+                && Math.abs(actualTrack.getConfidence() - expectedTrack.getConfidence()) < 0.01
+                && actualTrack.getTrackProperties().equals(expectedTrack.getTrackProperties())
+                && exemplarsMatch(expectedTrack, actualTrack);
+    }
+
+    private static boolean exemplarsMatch(JsonTrackOutputObject expectedTrack,
+                                          JsonStreamingTrackOutputObject actualTrack) {
+        JsonDetectionOutputObject expectedExemplar = expectedTrack.getExemplar();
+        JsonStreamingDetectionOutputObject actualExemplar = actualTrack.getExemplar();
+
+        return expectedExemplar.getX() == actualExemplar.getX()
+                && expectedExemplar.getY() == actualExemplar.getY()
+                && expectedExemplar.getWidth() == actualExemplar.getWidth()
+                && expectedExemplar.getHeight() == actualExemplar.getHeight()
+                && Math.abs(expectedExemplar.getConfidence() - actualExemplar.getConfidence()) < 0.01
+                && expectedExemplar.getOffsetFrame() == actualExemplar.getOffsetFrame()
+                && expectedExemplar.getDetectionProperties().equals(actualExemplar.getDetectionProperties());
+    }
+
+
+    private void waitForCorrectNodes() throws InterruptedException {
+        while (!hasCorrectNodes()) {
+            Thread.sleep(1000);
+        }
+    }
+
+    // Sometimes when the test starts there are 2 master nodes.
+    // This makes sure there is only one master node and only one child node.
+    private boolean hasCorrectNodes() {
+        List<Address> currentNodes = _masterNode.getCurrentNodeManagerHosts();
+        Map<NodeTypes, Long> nodeTypeCounts = currentNodes
+                .stream()
+                .map(AddressParser::parse)
+                .collect(groupingBy(Pair::getRight, counting()));
+
+        long masterNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.MasterNode, 0L);
+        long childNodeCount = nodeTypeCounts.getOrDefault(NodeTypes.NodeManager, 0L);
+        if (masterNodeCount == 1 && childNodeCount == 1) {
+            return true;
+        }
+
+        String currentNodeList = currentNodes.stream()
+                .map(Object::toString)
+                .collect(joining("\n"));
+
+        LOG.warn("Current Nodes:\n{}", currentNodeList);
+
+        if (masterNodeCount != 1) {
+            LOG.warn("Incorrect number of master nodes. Expected 1 but there were {}.", masterNodeCount);
+        }
+        if (childNodeCount != 1) {
+            LOG.warn("Incorrect number of child nodes. Expected 1 but there were {}.", childNodeCount);
+        }
+        return false;
+    }
 }

@@ -31,8 +31,8 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.slf4j.Logger;
@@ -58,30 +58,31 @@ public class RemoteMediaSplitter extends WfmSplitter {
 	@Override
 	public List<Message> wfmSplit(Exchange exchange) {
 	    long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-		TransientJob transientJob = inProgressJobs.getJob(jobId);
-		log.debug("Message received. Job ID: {}. Media Count: {}.", transientJob.getId(), transientJob.getMedia().size());
+		BatchJob job = inProgressJobs.getJob(jobId);
+		log.debug("Message received. Job ID: {}. Media Count: {}.", job.getId(), job.getMedia().size());
 
 		// Initialize a collection of work units produced by the splitter.
 		List<Message> messages = new ArrayList<Message>();
 
-		if(!transientJob.isCancelled()) {
+		if(!job.isCancelled()) {
 			// If the job has not been cancelled, iterate through the collection of media associated with the job. If the
 			// media's original URI looks like an HTTP or HTTPS URL, create a work unit for that URI.
-			for (TransientMedia transientMedia : transientJob.getMedia()) {
+			for (Media media : job.getMedia()) {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
-				if (!transientMedia.isFailed() && transientMedia.getUriScheme() != UriScheme.FILE && transientMedia.getUriScheme() != UriScheme.UNDEFINED) {
-					messages.add(createMessage(jobId, transientMedia));
+				if (!media.isFailed() && media.getUriScheme() != UriScheme.FILE && media.getUriScheme() != UriScheme.UNDEFINED) {
+					messages.add(createMessage(jobId, media));
 				}
 			}
 		} else {
-			log.warn("[Job {}|*|*] Remote media inspection will not be performed because this job has been cancelled.", transientJob.getId());
+			log.warn("[Job {}|*|*] Remote media inspection will not be performed because this job has been cancelled.",
+			         job.getId());
 		}
 
 		return messages;
 	}
 
-	private static Message createMessage(long jobId, TransientMedia sourceMessage) {
+	private static Message createMessage(long jobId, Media sourceMessage) {
         Message message = new DefaultMessage();
         message.setHeader(MpfHeaders.MEDIA_ID, sourceMessage.getId());
         message.setHeader(MpfHeaders.JOB_ID, jobId);

@@ -31,7 +31,7 @@ import io.swagger.annotations.*;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
-import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.service.SystemMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +62,7 @@ public class SystemMessageController {
     private static final Logger log = LoggerFactory.getLogger(SystemMessageController.class);
 
     @Autowired
-    private MpfService mpfService;
+    private SystemMessageService systemMessageService;
 
     /* *************** REST endpoints and implementations **************** */
     /* used http://websystique.com/springmvc/spring-mvc-4-restful-web-services-crud-example-resttemplate/ as CRUD example */
@@ -70,16 +70,14 @@ public class SystemMessageController {
     @RequestMapping(value = {"/system-message"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
     @ResponseBody
     public List<SystemMessage> getAllSystemMessages() {
-        return mpfService.getSystemMessagesByType( "all" );
+        return systemMessageService.getSystemMessagesByType( "all" );
     }
 
     @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE )
     @ApiOperation(value="Retrieves all system messages.",
             notes="Returns a JSON array of all System Messages.",
             produces = MediaType.APPLICATION_JSON_VALUE, response=SystemMessage.class, responseContainer="List" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
     @ResponseBody
     public List<SystemMessage> getAllSystemMessagesRest() { return getAllSystemMessages(); }
 
@@ -87,13 +85,11 @@ public class SystemMessageController {
     @ApiOperation(value="Retrieves all system messages of the given type.",
             notes="Returns a JSON array of System Messages matching typeFilter.",
             produces = MediaType.APPLICATION_JSON_VALUE, response=SystemMessage.class, responseContainer="List" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
     @ResponseBody
     public List<SystemMessage>  getFilteredSystemMessagesRest(
             @ApiParam(value = "The message type to find", allowableValues = "all,admin,login", required = true) @PathVariable("typeFilter") String typeFilter ) {
-        return mpfService.getSystemMessagesByType( typeFilter );
+        return systemMessageService.getSystemMessagesByType( typeFilter );
     }
 
 
@@ -113,13 +109,13 @@ public class SystemMessageController {
                 String logmsg = null;
                 validAuth = true;
                 if ( op.equals( "POST" ) && systemMessage != null ) {
-                    mpfService.addSystemMessage(systemMessage);
+                    systemMessageService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
                 }
                 else if ( op.equals( "PUT" ) && systemMessage != null ) {
-                    mpfService.addSystemMessage(systemMessage);
+                    systemMessageService.addSystemMessage(systemMessage);
                     logmsg = "Successfully added the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.CREATED;
@@ -131,7 +127,7 @@ public class SystemMessageController {
 //                    httpStatus = HttpStatus.CREATED;
 //                }
                 else if ( op.equals( "DELETE" ) && id > 0 ) {
-                    systemMessage = mpfService.deleteSystemMessage( id );
+                    systemMessage = systemMessageService.deleteSystemMessage( id );
                     logmsg = "Successfully deleted the system message.";
                     mpfResponse = new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, logmsg);
                     httpStatus = HttpStatus.OK;
@@ -168,9 +164,7 @@ public class SystemMessageController {
     @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.POST )
     @ApiOperation(value="Adds a system message.",
             produces = "application/json", response = MpfResponse.class )
-    @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successfully added"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 201, message = "Successfully added"))
     @ApiImplicitParams({    // need to use this instead of ApiParam because it causes the rendering of the Swagger page to be wrong for the type of parameter
             @ApiImplicitParam(name = "msg", value = "The message", required = true, dataType = "string", paramType = "body"),
             @ApiImplicitParam(name = "msgType", value = "The message type refers to the audience it is intended for (defaults to 'all')", allowableValues = "all,admin,login", required = false, dataType = "string", paramType = "query"),
@@ -239,9 +233,7 @@ public class SystemMessageController {
     @ApiOperation(value="Deletes a system message identified by id.",
             notes="By design, if you delete a non-existent id, the response code is still 200 since the server no longer has (and may never have had) a message with that id.",
             produces = "application/json", response = MpfResponse.class )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully deleted"),
-            @ApiResponse(code = 401, message = "Bad credentials") })
+    @ApiResponses(@ApiResponse(code = 200, message = "Successfully deleted"))
     @ResponseBody
     public ResponseEntity<MpfResponse> deleteSystemMessageRest( @PathVariable("id") long id,
                                HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )

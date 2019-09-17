@@ -38,17 +38,14 @@ import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamSource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.WritableResource;
+import org.springframework.core.io.*;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -277,13 +274,13 @@ public class PropertiesUtil {
         return new File(artifactsDirectory, String.valueOf(jobId));
     }
 
-    public File createArtifactDirectory(long jobId, long mediaId, int stageIndex) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d", jobId, mediaId, stageIndex)).normalize().toAbsolutePath();
+    public File createArtifactDirectory(long jobId, long mediaId, int taskIndex) throws IOException {
+        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d", jobId, mediaId, taskIndex)).normalize().toAbsolutePath();
         Files.createDirectories(path);
         return path.toFile();
     }
-    public Path createArtifactFile(long jobId, long mediaId, int stageIndex, String name) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, stageIndex, name)).normalize().toAbsolutePath();
+    public Path createArtifactFile(long jobId, long mediaId, int taskIndex, String name) throws IOException {
+        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, taskIndex, name)).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path;
     }
@@ -314,11 +311,16 @@ public class PropertiesUtil {
      * @return directory that was created under the output objects directory for storage of files from this job
      * @throws IOException
      */
-    public File createOutputObjectsDirectory(long jobId) throws IOException {
-        String fileName = String.format("%d", jobId);
-        Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
-        Files.createDirectories(path);
-        return path.toFile();
+    public File createOutputObjectsDirectory(long jobId) {
+        try {
+            String fileName = String.format("%d", jobId);
+            Path path = Paths.get(outputObjectsDirectory.toURI()).resolve(fileName).normalize().toAbsolutePath();
+            Files.createDirectories(path);
+            return path.toFile();
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** Create the output object file in the specified streaming job output objects directory
@@ -558,10 +560,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("component.upload.dir.name");
     }
 
-    public File getComponentDependencyFinderScript() {
-        return new File(mpfPropertiesConfig.getString("mpf.component.dependency.finder.script"));
-    }
-
     public Path getPluginDeploymentPath() {
         return Paths.get(mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
@@ -769,5 +767,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 
+    public Resource getWorkflowPropertiesFile() {
+        return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
+    }
 }
 

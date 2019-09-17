@@ -48,6 +48,12 @@
             <li action arrow-in action-obj="action"
                 op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
         </div>
+
+        <div ng-if="task.missing">
+            <li action arrow-in task-obj="task" no-popover
+                op-obj="opObj" index-in-sequence="{{indexInSequence}}"></li>
+        </div>
+
         <!--<button ng-click="logTask()">~task</button>-->
 
     </div>

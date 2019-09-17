@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.interop.util.TrimKeysModule;
 import org.mitre.mpf.interop.util.TrimValuesModule;
@@ -42,8 +43,9 @@ public class ObjectMapperFactory {
     public static ObjectMapper customObjectMapper() {
         return Jackson2ObjectMapperBuilder.json()
                 .modules(new InstantJsonModule(),
-                        new TrimKeysModule(),
-                        new TrimValuesModule())
+                         new Jdk8Module(),
+                         new TrimKeysModule(),
+                         new TrimValuesModule())
                 .build();
     }
 }

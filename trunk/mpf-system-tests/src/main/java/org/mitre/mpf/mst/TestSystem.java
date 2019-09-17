@@ -29,22 +29,28 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.interop.*;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationStreamData;
+import org.mitre.mpf.rest.api.StreamingJobCreationRequest;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmStartup;
-import org.mitre.mpf.wfm.businessrules.JobRequestBo;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
-import org.mitre.mpf.wfm.businessrules.impl.JobRequestBoImpl;
-import org.mitre.mpf.wfm.businessrules.impl.StreamingJobRequestBoImpl;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.pipeline.xml.*;
-import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -76,6 +82,7 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -84,8 +91,6 @@ public abstract class TestSystem {
 
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-
-    protected static int testCtr = 0;
 
     // is this running on Jenkins and/or is output checking desired?
     protected static boolean jenkins = false;
@@ -107,15 +112,10 @@ public abstract class TestSystem {
     protected PropertiesUtil propertiesUtil;
 
     @Autowired
-    @Qualifier(JobRequestBoImpl.REF)
-    protected JobRequestBo jobRequestBo;
+    protected JobRequestService jobRequestService;
 
     @Autowired
-    @Qualifier(StreamingJobRequestBoImpl.REF)
-    protected StreamingJobRequestBo streamingJobRequestBo;
-
-    @Autowired
-    protected MpfService mpfService;
+    protected StreamingJobRequestService streamingJobRequestService;
 
     @Autowired
     protected PipelineService pipelineService;
@@ -129,10 +129,13 @@ public abstract class TestSystem {
 
 
     @Rule
-    public TestName testName = new TestName();
-
-    @Rule
     public MpfErrorCollector errorCollector = new MpfErrorCollector();
+
+    @ClassRule
+    public static TestInfoLoggerClassRule testInfoLoggerClassRule = new TestInfoLoggerClassRule();
+    @Rule
+    public TestWatcher testInfoMethodRule = testInfoLoggerClassRule.methodRule();
+
 
 
     private OutputChecker outputChecker = new OutputChecker(errorCollector);
@@ -166,34 +169,36 @@ public abstract class TestSystem {
 
 
     protected void addAction(String actionName, String algorithmName, Map<String, String> propertySettings) {
-        if (!pipelineService.getActionNames().contains(actionName.toUpperCase())) {
-            ActionDefinition actionDef = new ActionDefinition(actionName, algorithmName, actionName);
-            for (Map.Entry<String, String> entry : propertySettings.entrySet()) {
-                actionDef.getProperties().add(new PropertyDefinitionRef(entry.getKey(), entry.getValue()));
-            }
-            pipelineService.saveAction(actionDef);
+        if (pipelineService.getAction(actionName) != null) {
+            return;
         }
+
+        List<ActionProperty> propertyList = propertySettings.entrySet()
+                .stream()
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
+                .collect(toList());
+        Action action = new Action(actionName, actionName, algorithmName, propertyList);
+        pipelineService.save(action);
     }
 
 
     protected void addTask(String taskName, String... actions) {
-        if (!pipelineService.getTaskNames().contains(taskName.toUpperCase())) {
-            TaskDefinition taskDef = new TaskDefinition(taskName, taskName);
-            for (String actionName : actions) {
-                taskDef.getActions().add(new ActionDefinitionRef(actionName));
-            }
-            pipelineService.saveTask(taskDef);
+        if (pipelineService.getTask(taskName) != null) {
+            return;
         }
+
+        Task task = new Task(taskName, taskName, Arrays.asList(actions));
+        pipelineService.save(task);
     }
 
+
     protected void addPipeline(String pipelineName, String... tasks) {
-        if (!pipelineService.getPipelineNames().contains(pipelineName.toUpperCase())) {
-            PipelineDefinition pipelineDef = new PipelineDefinition(pipelineName, pipelineName);
-            for (String taskName : tasks) {
-                pipelineDef.getTaskRefs().add(new TaskDefinitionRef(taskName));
-            }
-            pipelineService.savePipeline(pipelineDef);
+        if (pipelineService.getPipeline(pipelineName) != null) {
+            return;
         }
+
+        Pipeline pipeline = new Pipeline(pipelineName, pipelineName, Arrays.asList(tasks));
+        pipelineService.save(pipeline);
     }
 
     /*
@@ -211,48 +216,65 @@ public abstract class TestSystem {
                                         actualOutput.getMedia().size(), numInputMedia), actualOutput.getMedia().size() == numInputMedia);
     }
 
-    protected List<JsonMediaInputObject> toMediaObjectList(URI... uris) {
-        List<JsonMediaInputObject> media = new ArrayList<>(uris.length);
+    protected List<JobCreationMediaData> toMediaObjectList(URI... uris) {
+        List<JobCreationMediaData> media = new ArrayList<>(uris.length);
         for (URI uri : uris) {
-            media.add(new JsonMediaInputObject(uri.toString()));
+            media.add(new JobCreationMediaData(uri.toString()));
         }
         return media;
     }
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media) {
+    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media) {
         return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
                                   propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
                                       Map<String, String> jobProperties,
-                                      List<JsonMediaInputObject> media) {
+                                      List<JobCreationMediaData> media) {
         return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
     }
 
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, boolean buildOutput,
+    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media, boolean buildOutput,
                                       int priority) {
         return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
     }
 
 
-    protected long runPipelineOnMedia(String pipelineName, List<JsonMediaInputObject> media, Map<String, String> jobProperties, boolean buildOutput, int priority) {
-        JsonJobRequest jsonJobRequest = jobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, media, Collections.emptyMap(), jobProperties,
-                                                                   buildOutput, priority);
-        long jobRequestId = mpfService.submitJob(jsonJobRequest);
+    protected long runPipelineOnMedia(
+            String pipelineName,
+            List<JobCreationMediaData> media,
+            Map<String, String> jobProperties,
+            boolean buildOutput,
+            int priority) {
+
+        var jobRequest = new JobCreationRequest();
+        jobRequest.setExternalId(UUID.randomUUID().toString());
+        jobRequest.setPipelineName(pipelineName);
+        jobRequest.setMedia(media);
+        jobRequest.setJobProperties(jobProperties);
+        jobRequest.setBuildOutput(buildOutput);
+        jobRequest.setPriority(priority);
+
+        long jobRequestId = jobRequestService.run(jobRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
 
-    protected long runPipelineOnStream(String pipelineName, JsonStreamingInputObject stream, Map<String, String> jobProperties, boolean buildOutput, int priority,
-                                       long stallTimeout) throws Exception {
-        JsonStreamingJobRequest jsonStreamingJobRequest = streamingJobRequestBo.createRequest(UUID.randomUUID().toString(), pipelineName, stream,
-                                                                                              Collections.emptyMap(), jobProperties,
-                                                                                              buildOutput, priority,
-                                                                                              stallTimeout,
-                                                                                              null,null);
-        long jobRequestId = mpfService.submitJob(jsonStreamingJobRequest);
+    protected long runPipelineOnStream(
+            String pipelineName, JobCreationStreamData stream, Map<String, String> jobProperties,
+            boolean buildOutput, int priority, long stallTimeout) {
+        var jobCreationRequest = new StreamingJobCreationRequest();
+        jobCreationRequest.setExternalId(UUID.randomUUID().toString());
+        jobCreationRequest.setPipelineName(pipelineName);
+        jobCreationRequest.setJobProperties(jobProperties);
+        jobCreationRequest.setEnableOutputToDisk(buildOutput);
+        jobCreationRequest.setPriority(priority);
+        jobCreationRequest.setStallTimeout(stallTimeout);
+        jobCreationRequest.setStream(stream);
+
+        long jobRequestId = streamingJobRequestService.run(jobCreationRequest).getId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
@@ -275,11 +297,9 @@ public abstract class TestSystem {
     }
 
     protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} {}()", testCtr, testName.getMethodName());
-        List<JsonMediaInputObject> mediaPaths = new LinkedList<>();
+        List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
-            mediaPaths.add(new JsonMediaInputObject(ioUtils.findFile(filePath).toString()));
+            mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
         }
 
         long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
@@ -293,7 +313,6 @@ public abstract class TestSystem {
 
             outputChecker.compareJsonOutputObjects(expectedOutputJson, actualOutputJson, pipelineName);
         }
-        log.info("Finished test {}()", testName.getMethodName());
     }
 
 

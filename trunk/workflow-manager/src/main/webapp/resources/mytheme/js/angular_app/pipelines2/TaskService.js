@@ -56,7 +56,7 @@
         ['$q', '$resource', 'ActionService', 'orderByFilter',
             function ($q, $resource, ActionService, orderByFilter ) {
 
-                var taskResource = $resource('pipeline-tasks/:name');
+                var taskResource = $resource('tasks');
 
                 var getAction = function (actionName) {
                     return ActionService.get(actionName)
@@ -64,6 +64,14 @@
                         .then(function (actionDetail) {
                             actionDetail._alg = actionDetail.algorithm;
                             return actionDetail;
+                        })
+                        .catch(function (error) {
+                            if (error.status === 404) {
+                                return {
+                                    name: actionName,
+                                    missing: true
+                                };
+                            }
                         });
                 };
 
@@ -71,11 +79,7 @@
                     return taskResource.get( {name: taskName} )
                         .$promise
                         .then(function (taskDetail) {
-
-                            var actionPromises = taskDetail.actions
-                                .map(function (a) {
-                                    return getAction(a.name);
-                                });
+                            var actionPromises = taskDetail.actions.map(getAction);
 
                             return $q.all(actionPromises)
                                 .then(function (actions) {
@@ -104,7 +108,7 @@
                         //console.log("taskName="+JSON.stringify(taskName));
                         return taskResource.delete({name: taskName});
                     }
-                }
+                };
             }]);
 
 })();

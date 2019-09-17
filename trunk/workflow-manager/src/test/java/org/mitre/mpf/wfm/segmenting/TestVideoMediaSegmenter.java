@@ -34,8 +34,8 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
 
 import java.net.URI;
@@ -54,7 +54,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateFirstStageMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 		DetectionContext context = createTestDetectionContext(
 				0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 
@@ -78,7 +78,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateNonFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -102,7 +102,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateFeedForwardMessages() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -149,7 +149,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateFeedForwardMessagesWithTopConfidenceCount() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		Set<Track> tracks = createTestTracks();
 
@@ -198,7 +198,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void noMessagesCreatedWhenNoTracks() {
-		TransientMedia media = createTestMedia();
+		Media media = createTestMedia();
 
 		DetectionContext context = createTestDetectionContext(1, Collections.emptyMap(), Collections.emptySet());
 		assertTrue(runSegmenter(media, context).isEmpty());
@@ -233,16 +233,16 @@ public class TestVideoMediaSegmenter {
 
 
 
-	private static List<DetectionRequest> runSegmenter(TransientMedia media, DetectionContext context) {
+	private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
 		MediaSegmenter segmenter = new VideoMediaSegmenter();
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}
 
 
-	private static TransientMedia createTestMedia() {
+	private static Media createTestMedia() {
 		URI mediaUri = URI.create("file:///example.avi");
-		TransientMediaImpl media = new TransientMediaImpl(
+		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
 				null);
 		media.setLength(50);

@@ -28,12 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 
-import java.nio.file.Path;
-import java.util.List;
-
 public interface ComponentReRegisterService {
-
-	public List<Path> getReRegistrationOrder(String componentPackage);
 
 	public RegisterComponentModel reRegisterComponent(String componentPackage) throws ComponentRegistrationException;
 }

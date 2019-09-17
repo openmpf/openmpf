@@ -97,7 +97,7 @@ public class LocalStorageBackend implements StorageBackend {
         Path inputMediaPath = Paths.get(request.getPath());
         Path artifactFile = _propertiesUtil.createArtifactFile(request.getJobId(),
                                                                request.getMediaId(),
-                                                               request.getStageIndex(),
+                                                               request.getTaskIndex(),
                                                                inputMediaPath.getFileName().toString());
         Files.copy(inputMediaPath, artifactFile, StandardCopyOption.REPLACE_EXISTING);
         return artifactFile.toUri();
@@ -108,7 +108,7 @@ public class LocalStorageBackend implements StorageBackend {
     public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
         URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(),
                                                                          request.getMediaId(),
-                                                                         request.getStageIndex()).toURI();
+                                                                         request.getTaskIndex()).toURI();
         FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
                                                            artifactsDirectory);
         frameExtractor.getFrames().addAll(request.getFrameNumbers());

@@ -32,10 +32,15 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -88,7 +93,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     public List<Message> wfmSplit(Exchange exchange) {
         TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
                                                                          TrackMergingContext.class);
-        TransientJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
         if (job.isCancelled()) {
             LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
@@ -97,19 +102,19 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         }
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames
-                = getFrameNumbersGroupedByMediaAndAction(job, trackMergingContext.getStageIndex());
+                = getFrameNumbersGroupedByMediaAndAction(job, trackMergingContext.getTaskIndex());
 
         List<Message> messages = new ArrayList<>(mediaAndActionToFrames.size());
         for (long mediaId : mediaAndActionToFrames.rowKeySet()) {
             Map<Integer, Set<Integer>> actionToFrameNumbers = mediaAndActionToFrames.row(mediaId);
 
-            TransientMedia media = job.getMedia(mediaId);
+            Media media = job.getMedia(mediaId);
             ArtifactExtractionRequest request = new ArtifactExtractionRequest(
                     job.getId(),
                     mediaId,
                     media.getLocalPath().toString(),
                     media.getMediaType(),
-                    trackMergingContext.getStageIndex(),
+                    trackMergingContext.getTaskIndex(),
                     actionToFrameNumbers);
 
             Message message = new DefaultMessage();
@@ -121,27 +126,27 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private Table<Long, Integer, Set<Integer>> getFrameNumbersGroupedByMediaAndAction(
-            TransientJob job, int stageIndex) {
+            BatchJob job, int taskIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
-        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
+        Task task = job.getPipelineElements().getTask(taskIndex);
 
-        for (int actionIndex = 0; actionIndex < stage.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
 
-            for (TransientMedia media : job.getMedia()) {
+            for (Media media : job.getMedia()) {
                 if (media.isFailed()
                         || (media.getMediaType() != MediaType.IMAGE
                             && media.getMediaType() != MediaType.VIDEO)) {
                     continue;
                 }
 
-                ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, stageIndex, actionIndex);
+                ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, taskIndex, actionIndex);
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
                     continue;
                 }
 
                 Collection<Track> tracks
-                        = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), stageIndex, actionIndex);
+                        = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), taskIndex, actionIndex);
                 processTracks(mediaAndActionToFrames, tracks, media, actionIndex, extractionPolicy);
             }
         }
@@ -153,7 +158,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     private static void processTracks(
             Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
             Iterable<Track> tracks,
-            TransientMedia media,
+            Media media,
             int actionIndex,
             ArtifactExtractionPolicy policy) {
 
@@ -193,10 +198,11 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     }
 
 
-    private ArtifactExtractionPolicy getExtractionPolicy(TransientJob job, TransientMedia media,
-                                                         int stageIndex, int actionIndex) {
+    private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media,
+                                                         int taskIndex, int actionIndex) {
+        Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
         Function<String, String> combinedProperties
-                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
 
         ArtifactExtractionPolicy defaultPolicy = _propertiesUtil.getArtifactExtractionPolicy();

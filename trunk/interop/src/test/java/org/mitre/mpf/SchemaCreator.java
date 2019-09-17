@@ -42,12 +42,11 @@ public class SchemaCreator {
                 JsonCallbackBody.class,
                 // JsonDetectionOutputObject.class,
                 // JsonDetectionProcessingError.class,
-                JsonJobRequest.class,
                 // JsonMarkupOutputObject.class,
                 // JsonMediaOutputObject.class,
                 JsonOutputObject.class,
                 // JsonPipeline.class,
-                // JsonStage.class,
+                // JsonTask.class,
                 // JsonTrackOutputObject.class
                 JsonSegmentSummaryReport.class,
                 JsonHealthReportCollection.class

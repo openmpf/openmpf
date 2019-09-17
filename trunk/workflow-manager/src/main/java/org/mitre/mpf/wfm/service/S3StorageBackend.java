@@ -42,11 +42,12 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -105,9 +106,9 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
-        TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
+        Media media = job.getMedia(request.getMediaId());
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -115,9 +116,9 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException {
         URI localUri = _localStorageBackend.storeImageArtifact(request);
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
-        TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
+        Media media = job.getMedia(request.getMediaId());
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return putInS3IfAbsent(Paths.get(localUri), combinedProperties);
     }
 
@@ -125,9 +126,9 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
-        TransientJob job = _inProgressJobs.getJob(request.getJobId());
-        TransientMedia media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = AggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        BatchJob job = _inProgressJobs.getJob(request.getJobId());
+        Media media = job.getMedia(request.getMediaId());
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
         Map<Integer, URI> localResults = _localStorageBackend.storeVideoArtifacts(request);
         Map<Integer, URI> remoteResults = new HashMap<>();
@@ -157,9 +158,12 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(MarkupResult markupResult) throws StorageException {
-        TransientJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
+        BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
+        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
+                                                            markupResult.getActionIndex());
+        Media media = job.getMedia(markupResult.getMediaId());
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -167,14 +171,30 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public void store(MarkupResult markupResult) throws StorageException, IOException {
         _localStorageBackend.store(markupResult);
-        TransientJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                job, markupResult.getMediaId(), markupResult.getTaskIndex(), markupResult.getActionIndex());
+        BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
+        Media media = job.getMedia(markupResult.getMediaId());
+        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
+                                                            markupResult.getActionIndex());
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
         URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
         markupResult.setMarkupUri(uploadedUri.toString());
     }
+
+
+    /**
+     * Ensures that the S3-related properties are valid.
+     * @param properties Properties to validate
+     * @throws StorageException when an invalid combination of S3 properties are provided.
+     */
+    public static void validateS3Properties(Function<String, String> properties) throws StorageException {
+        // Both will throw if properties are invalid.
+        requiresS3MediaDownload(properties);
+        requiresS3ResultUpload(properties);
+    }
+
 
 
     public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
@@ -241,7 +261,7 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    public void downloadFromS3(TransientMedia media, Function<String, String> combinedProperties)
+    public void downloadFromS3(Media media, Function<String, String> combinedProperties)
             throws StorageException {
         try {
             AmazonS3 s3Client = getS3DownloadClient(media.getUri(), combinedProperties);

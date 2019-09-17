@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +52,7 @@ public class JobStatusCalculator {
      * @throws WfmProcessingException
      */
     public BatchJobStatusType calculateStatus(Exchange exchange) throws WfmProcessingException {
-        TransientJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
+        BatchJob job = inProgressJobs.getJob(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class));
         BatchJobStatusType initialStatus = job.getStatus();
         BatchJobStatusType newStatus = nextStatus(initialStatus);
         inProgressJobs.setJobStatus(job.getId(), newStatus);

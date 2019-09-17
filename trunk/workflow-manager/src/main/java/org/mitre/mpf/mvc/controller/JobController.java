@@ -29,23 +29,17 @@ package org.mitre.mpf.mvc.controller;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
-import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.businessrules.JobRequestService;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
-import org.mitre.mpf.wfm.pipeline.xml.ActionDefinition;
-import org.mitre.mpf.wfm.service.MpfService;
-import org.mitre.mpf.wfm.service.PipelineService;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -67,11 +61,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 
@@ -88,8 +79,11 @@ public class JobController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    @Autowired //will grab the impl
-    private MpfService mpfService;
+    @Autowired
+    private JobRequestService jobRequestService;
+
+    @Autowired
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private SessionModel sessionModel;
@@ -98,16 +92,10 @@ public class JobController {
     private JobProgress jobProgress;
 
     @Autowired
-    private PipelineService pipelineService;
-
-    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
     private S3StorageBackend s3StorageBackend;
-
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     /*
      *	POST /jobs
@@ -130,13 +118,15 @@ public class JobController {
                     " Note that the batch jobs and streaming jobs share a range of valid job ids. OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " Also, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = JobCreationResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),
-            @ApiResponse(code = 400, message = "Bad request"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Bad request") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public ResponseEntity<JobCreationResponse> createJobRest(@ApiParam(required = true, value = "JobCreationRequest") @RequestBody JobCreationRequest jobCreationRequest) {
+    public ResponseEntity<JobCreationResponse> createJobRest(
+            @ApiParam(required = true, value = "JobCreationRequest") @RequestBody
+                    JobCreationRequest jobCreationRequest) {
+
         JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
         if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
@@ -163,11 +153,12 @@ public class JobController {
     public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
         if (useSession) {
             return sessionModel.getSessionJobs().stream()
-                    .map(id -> convertJob(mpfService.getJobRequest(id)))
+                    .map(id -> convertJob(jobRequestDao.findById(id)))
                     .collect(toList());
         }
         else {
-            return mpfService.getAllJobRequests().stream()
+            return jobRequestDao.findAll()
+                    .stream()
                     .map(this::convertJob)
                     .collect(toList());
         }
@@ -202,11 +193,12 @@ public class JobController {
         String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
         //handle paging
-        List<SingleJobInfo> jobInfoModels = mpfService.getPagedJobRequests(length, start, search, sortColumn,
-                sortOrderDirection).stream()
+        List<SingleJobInfo> jobInfoModels = jobRequestDao
+                .findByPage(length, start, search, sortColumn, sortOrderDirection)
+                .stream()
                 .map(this::convertJob)
                 .collect(toList());
-        int recordsTotal = mpfService.getJobRequestCount().intValue();
+        int recordsTotal = (int) jobRequestDao.countAll();
 
         JobPageListModel model = new JobPageListModel();
         // Total records, before filtering (i.e. the total number of records in the database)
@@ -214,7 +206,7 @@ public class JobController {
         // Total records, after filtering (i.e. the total number of records after filtering has been applied -
         // not just the number of records being returned for this page of data).
         model.setRecordsFiltered( search.equals("") ? recordsTotal :
-                mpfService.getJobRequestCountFiltered(search).intValue() );
+                                          (int)jobRequestDao.countFiltered(search));
 
         //convert for output
         for (int i = 0; i < jobInfoModels.size(); i++) {
@@ -240,13 +232,12 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Gets a SingleJobInfo model for the job with the id provided as a path variable.",
             produces = "application/json", response = SingleJobInfo.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
             return ResponseEntity.badRequest().body(null);
@@ -263,7 +254,7 @@ public class JobController {
             return null;
         }
 
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
             return null;
@@ -281,12 +272,11 @@ public class JobController {
             produces = "application/json", response = JsonOutputObject.class)
     @ApiResponses({
             @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials"),
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             return ResponseEntity.notFound().build();
         }
@@ -296,11 +286,11 @@ public class JobController {
                 return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
             }
 
-            JsonJobRequest jsonJobRequest = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+            var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
             InputStreamResource inputStreamResource;
-            if (S3StorageBackend.requiresS3ResultUpload(jsonJobRequest.getJobProperties()::get)) {
+            if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
                 S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                               jsonJobRequest.getJobProperties()::get);
+                                                               job.getJobProperties()::get);
                 inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
             }
             else {
@@ -334,10 +324,9 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}/resubmit", method = RequestMethod.POST)
     @ApiOperation(value = "Resubmits the job with the provided job id. If the job priority parameter is not set the default value will be used.",
             produces = "application/json", response = JobCreationResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful resubmission request"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
@@ -369,10 +358,9 @@ public class JobController {
     @RequestMapping(value = "/rest/jobs/{id}/cancel", method = RequestMethod.POST)
     @ApiOperation(value = "Cancels the job with the supplied job id.",
             produces = "application/json", response = MpfResponse.class)
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(code = 200, message = "Successful cancellation attempt"),
-            @ApiResponse(code = 400, message = "Invalid id"),
-            @ApiResponse(code = 401, message = "Bad credentials")})
+            @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
@@ -408,60 +396,7 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            if (!pipelineService.pipelineSupportsBatch(jobCreationRequest.getPipelineName())) {
-                return createJobCreationErrorResponse(jobCreationRequest.getExternalId(),
-                                                      "Requested pipeline doesn't support batch jobs");
-            }
-            checkProperties(jobCreationRequest);
-
-            boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
-                    .orElseGet(propertiesUtil::isOutputObjectsEnabled);
-
-            int priority = Optional.ofNullable(jobCreationRequest.getPriority())
-                    .orElseGet(propertiesUtil::getJmsPriority);
-
-            List<JsonMediaInputObject> media = new ArrayList<>();
-            // Iterate over all media in the batch job creation request.  If for any media, the media protocol check fails, then
-            // that media will be ignored from the batch job
-            for (JobCreationMediaData mediaRequest : jobCreationRequest.getMedia()) {
-                JsonMediaInputObject medium
-                        = new JsonMediaInputObject(IoUtils.normalizeUri(mediaRequest.getMediaUri()));
-                if (mediaRequest.getProperties() != null) {
-                    for (Map.Entry<String, String> property : mediaRequest.getProperties().entrySet()) {
-                        medium.getProperties()
-                            .put(property.getKey().toUpperCase(), property.getValue());
-                    }
-                }
-                media.add(medium);
-            }
-
-            JsonJobRequest jsonJobRequest;
-            if (StringUtils.isEmpty(jobCreationRequest.getCallbackURL())) {
-                jsonJobRequest = mpfService.createJob(
-                        media,
-                        jobCreationRequest.getAlgorithmProperties(),
-                        jobCreationRequest.getJobProperties(),
-                        jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(),  //TODO: what do we do with this from the UI?
-                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority); // Use the priority value if it is provided, otherwise use the default value from the properties file.);
-
-            }
-            else {
-                jsonJobRequest = mpfService.createJob(
-                        media,
-                        jobCreationRequest.getAlgorithmProperties(),
-                        jobCreationRequest.getJobProperties(),
-                        jobCreationRequest.getPipelineName(),
-                        jobCreationRequest.getExternalId(), //TODO: what do we do with this from the UI?
-                        buildOutput,  // Use the buildOutput value if it is provided, otherwise use the default value from the properties file.,
-                        priority,     // Use the priority value if it is provided, otherwise use the default value from the properties file.
-                        jobCreationRequest.getCallbackURL(),
-                        jobCreationRequest.getCallbackMethod());
-            }
-
-            long jobId = mpfService.submitJob(jsonJobRequest);
-            log.debug("Successful creation of batch JobId: {}", jobId);
+            long jobId = jobRequestService.run(jobCreationRequest).getId();
 
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
@@ -469,20 +404,14 @@ public class JobController {
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(jobId);
         }
-        catch (WfmProcessingException ex) {
+        catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
             log.error(err, ex);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
         }
-        catch (Exception ex) { //exception handling - can't throw exception - currently an html page will be returned
-            String err = createErrorString(jobCreationRequest, null);
-            log.error(err, ex);
-            // the job request did not parse successfully, construct the job creation response describing the error that occurred.
-            return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
-        }
     }
 
-    private String createErrorString(JobCreationRequest jobCreationRequest, String message) {
+    private static String createErrorString(JobCreationRequest jobCreationRequest, String message) {
         StringBuilder errBuilder = new StringBuilder("Failure creating job");
         if (jobCreationRequest.getExternalId() != null) {
             errBuilder.append(String.format(" with external id '%s'", jobCreationRequest.getExternalId()));
@@ -497,10 +426,12 @@ public class JobController {
 
 
     private SingleJobInfo convertJob(JobRequest job) {
-        float jobProgressVal = jobProgress.getJobProgress(job.getId()) != null
-                ? jobProgress.getJobProgress(job.getId())
-                : 0.0f;
-        return ModelUtils.convertJobRequest(job, jobProgressVal);
+        float jobProgressVal = jobProgress.getJobProgress(job.getId())
+                .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
+        return new SingleJobInfo(
+                job.getId(), job.getPipeline(), job.getPriority(), job.getStatus().toString(), jobProgressVal,
+                job.getTimeReceived(), job.getTimeCompleted(), job.getOutputObjectPath(),
+                job.getStatus().isTerminal());
     }
 
 
@@ -509,60 +440,35 @@ public class JobController {
         //if there is a priority param passed then use it, if not, use the default
         int jobPriority = (jobPriorityParam != null) ? jobPriorityParam : propertiesUtil.getJmsPriority();
         try {
-            long newJobId = mpfService.resubmitJob(jobId, jobPriority);
-            //newJobId should be equal to jobId if there are no issues and -1 if there is a problem
-            if (newJobId != -1 && newJobId == jobId) {
-                //make sure to reset the value in the job progress map to handle manual refreshes that will display
-                //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
-                jobProgress.setJobProgress(newJobId, 0.0f);
-                log.debug("Successful resubmission of Job Id: {} as new JobId: {}", jobId, newJobId);
-                return new JobCreationResponse(newJobId);
-            }
-        } catch (WfmProcessingException wpe) {
-            String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. " + wpe.getMessage();
+            jobRequestService.resubmit(jobId, jobPriority);
+            //make sure to reset the value in the job progress map to handle manual refreshes that will display
+            //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
+            jobProgress.setJobProgress(jobId, 0);
+            log.debug("Successful resubmission of Job Id: {}", jobId);
+            return new JobCreationResponse(jobId);
+        } catch (Exception wpe) {
+            String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);
             return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
         }
-        String errorStr = "Failed to resubmit the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a resubmit request. "
-                + "Also consider checking the server logs for more information on this error.";
-        log.error(errorStr);
-        return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
     }
 
     private MpfResponse cancelJobInternal(long jobId) {
         log.debug("Attempting to cancel job with id: {}.", jobId);
-        if (mpfService.cancel(jobId)) {
-            log.debug("Successful cancellation of job with id: {}");
+        boolean wasCancelled;
+        try {
+            wasCancelled = jobRequestService.cancel(jobId);
+        } catch ( WfmProcessingException wpe ) {
+            log.error("Failed to cancel Batch Job #{} due to an exception.", jobId, wpe);
+            wasCancelled = false;
+        }
+        if (wasCancelled) {
+            log.debug("Successful cancellation of job with id: {}", jobId);
             return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
         String errorStr = "Failed to cancel the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);
-    }
-
-
-    private void checkProperties(JobCreationRequest jobCreationRequest) {
-        try {
-            List<ActionDefinition> actions = pipelineService.getPipeline(jobCreationRequest.getPipelineName())
-                    .getTaskRefs()
-                    .stream()
-                    .map(pipelineService::getTask)
-                    .flatMap(t -> t.getActions().stream())
-                    .map(pipelineService::getAction)
-                    .collect(toList());
-
-            for (JobCreationMediaData media : jobCreationRequest.getMedia()) {
-                for (ActionDefinition action : actions) {
-                    Function<String, String> combinedProperties
-                            = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
-                    S3StorageBackend.requiresS3MediaDownload(combinedProperties);
-                    S3StorageBackend.requiresS3ResultUpload(combinedProperties);
-                }
-            }
-        }
-        catch (StorageException e) {
-            throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
-        }
     }
 }

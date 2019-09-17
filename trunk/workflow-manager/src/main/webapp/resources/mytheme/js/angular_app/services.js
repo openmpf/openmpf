@@ -119,11 +119,6 @@ AppServices.factory('Components',
                     params: {
 	                    packageFileName: '@packageFileName'
                     }
-                },
-                getReRegisterOrder: {
-                    method: 'GET',
-	                url: 'components/:packageFileName/reRegisterOrder',
-                    isArray: true
                 }
             });
 

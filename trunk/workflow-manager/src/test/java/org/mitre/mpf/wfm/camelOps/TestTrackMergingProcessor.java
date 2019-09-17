@@ -35,12 +35,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -55,6 +59,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
@@ -156,10 +161,10 @@ public class TestTrackMergingProcessor {
      */
     private void generateAndRunMerge(String filePath, String mediaType, String samplingInterval, String mergeTracks,
                                      String minGap, String minTrackSize, int expectedTracks) {
-        final int stageIndex = 0;
+        final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
@@ -175,28 +180,21 @@ public class TestTrackMergingProcessor {
         if (minTrackSize != null) {
             mergeProp.put(MpfConstants.MIN_TRACK_LENGTH, minTrackSize);
         }
-        TransientAction detectionAction = new TransientAction("detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
 
-        TransientStage trackMergeStageDet = new TransientStage(
-                "trackMergeDetection", "trackMergeDescription", ActionType.DETECTION,
-                Collections.singletonList(detectionAction));
-
-        TransientPipeline trackMergePipeline = new TransientPipeline(
-                "trackMergePipeline", "trackMergeDescription",
-                Collections.singletonList(trackMergeStageDet));
+        JobPipelineElements pipelineElements = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        TransientMedia media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
+        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,
                 "999999",
                 systemPropertiesSnapshot,
-                trackMergePipeline,
+                pipelineElements,
                 priority,
                 false,
                 null,
@@ -252,7 +250,7 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue("A response body must be set.", responseBody != null);
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
+        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
         Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
         Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
         inProgressJobs.clearJob(TEST_JOB_ID);
@@ -261,30 +259,21 @@ public class TestTrackMergingProcessor {
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingNoTracks() {
         final long mediaId = 123456;
-        final int stageIndex = 0;
+        final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, stageIndex);
+        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
         exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         mergeProp.put(MpfConstants.MERGE_TRACKS_PROPERTY, "TRUE");
-        TransientAction detectionAction = new TransientAction(
-                "detectionAction", "detectionDescription", "detectionAlgo", mergeProp);
-
-        TransientStage trackMergeStageDet = new TransientStage(
-                "trackMergeDetection",
-                "trackMergeDescription", ActionType.DETECTION, Collections.singletonList(detectionAction));
-
-        TransientPipeline trackMergePipeline = new TransientPipeline(
-                "trackMergePipeline", "trackMergeDescription",
-                Collections.singletonList(trackMergeStageDet));
+        JobPipelineElements trackMergePipeline = createTestPipeline(mergeProp);
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        TransientMedia media = new TransientMediaImpl(
+        Media media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
 
@@ -311,7 +300,7 @@ public class TestTrackMergingProcessor {
         Assert.assertTrue("A response body must be set.", responseBody != null);
         Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
         TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getStageIndex() == stageIndex);
+        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
         Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
         Assert.assertEquals(0, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
         inProgressJobs.clearJob(TEST_JOB_ID);
@@ -339,5 +328,28 @@ public class TestTrackMergingProcessor {
         assertEquals("track2_only_val", mergedProps.get("track2_only_prop"));
         assertEquals("same_value_val", mergedProps.get("same_value_prop"));
         assertEquals("diff_value_val1; diff_value_val2", mergedProps.get("diff_value_prop"));
+    }
+
+
+    private static JobPipelineElements createTestPipeline(Map<String, String> actionPropsMap) {
+        Algorithm algorithm = new Algorithm(
+                "detectionAlgo", "description", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                true, true);
+
+        List<ActionProperty> actionProps = actionPropsMap
+                .entrySet()
+                .stream()
+                .map(e -> new ActionProperty(e.getKey(), e.getValue()))
+                .collect(toList());
+
+        Action action = new Action("detectionAction", "description", algorithm.getName(), actionProps);
+        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline("trackMergePipeline", "description",
+                                         Collections.singleton(task.getName()));
+        return new JobPipelineElements(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(algorithm));
     }
 }

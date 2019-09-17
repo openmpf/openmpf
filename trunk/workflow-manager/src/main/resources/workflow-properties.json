@@ -1,0 +1,156 @@
+[
+    {
+        "name": "FEED_FORWARD_TYPE",
+        "description": "Applies to images and videos. The type of feed-forward behavior. Controls how this algorithm will make use of the tracks generated in the previous pipeline stage. If this algorithm is used in the first pipeline stage then this property has no effect. Instead, the default segmenting behavior is used, where tracks from the previous stage are used to generate segments based on the TARGET_SEGMENT_LENGTH and MIN_SEGMENT_LENGTH properties. Can be set to “NONE”, “FRAME”, or “SUPERSET_REGION”. If set to “NONE”, the default segmenting behavior is used. If set to “FRAME” or “SUPERSET_REGION”, then the segment length properties are ignored and instead this algorithm will process one segment per track generated in the previous stage. If set to “FRAME”, then this algorithm will ignore the regions associated with previous detections and instead process the entire frame associated with each of those detections. If set to “SUPERSET_REGION”, then this algorithm will generate a superset region for each of the previous tracks – a bounding box of constant size and position that encloses all of the track’s detection regions. This algorithm will only process the data within the superset region.",
+        "type": "STRING",
+        "defaultValue": "NONE",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "FEED_FORWARD_TOP_CONFIDENCE_COUNT",
+        "description": "Only applies if FEED_FORWARD_TYPE is set to a value other than “NONE”. If set to a value <= 0, then for each track generated in the previous pipeline stage, this algorithm will process the frame associated with each detection in that track, ignoring frames that don’t have detections. If FEED_FORWARD_TYPE is set to “FRAME”, then the entire frame is processed. If FEED_FORWARD_TYPE is set to “SUPERSET_REGION”, then only the superset region for those frames is processed. If this property is set to “1” then only the exemplar frame for each of the previous tracks is processed. If this property is set to a value > 1, say 5, then each of the detections in the previous track are sorted by confidence and this algorithm will only process the frames associated with the top 5 detections with the highest confidence. For detections with the same confidence values, it will select those with a lower frame index. If the track contains less than 5 detections, then all of the available detections are used. In practice, setting this property to a value > 1 has no effect on image and audio jobs because each track only contains one detection.",
+        "type": "INT",
+        "defaultValue": "0",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "USE_KEY_FRAMES",
+        "description": "When true the component will only look at key frames (I-frames) from the input video. Can be used in conjunction with FRAME_INTERVAL. For example, when USE_KEY_FRAMES is true, and FRAME_INTERVAL is set to \"2\", then every other key frame will be processed.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "FRAME_INTERVAL",
+        "description": "Controls whether the component performs detection on every frame in the video segment, or skips some frames at a regular interval. Must be set to a value >= 0. If set to 0 or 1, a frame interval of 1 will be used, meaning that detection is performed on every frame. If set to N > 1, every N-1 frames will be skipped. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.sampling.interval",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "FRAME_RATE_CAP",
+        "description": "The threshold on the maximum number of frames to process in the video segment within one second of the native video time. If set to a value > 0, then an internal frame interval value is calculated as max(1, floor(mediaNativeFPS / FRAME_RATE_CAP)) and the FRAME_INTERVAL property is not used. To disable, set to a value <= 0. When disabled, the FRAME_INTERVAL property is used, if valid. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.frame.rate.cap",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "CONFIDENCE_THRESHOLD",
+        "description": "The minimum confidence score which must be met or exceeded. Detections below this threshold are silently discarded.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.confidence.threshold",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "MIN_GAP_BETWEEN_SEGMENTS",
+        "description": "In the context of videos, the minimum number of frames between segments which are not adjacent. Value must be greater than or equal to 1. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.segment.minimum.gap",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "TARGET_SEGMENT_LENGTH",
+        "description": "In the context of videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.segment.target.length",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_SEGMENT_LENGTH",
+        "description": "In the context of videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.segment.minimum.length",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MERGE_TRACKS",
+        "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries. Default value is defined by the OpenMPF properties file.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.video.track.merging.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_GAP_BETWEEN_TRACKS",
+        "description": "In the context of videos, similar tracks with less than this number of frames between them will be merged into a single track. If MERGE_TRACKS is false, this has no effect. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.video.track.min.gap",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_TRACK_LENGTH",
+        "description": "In the context of videos, defines the minimum track length in frames. Tracks shorter than this minimum length will be silently discarded. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.video.track.min.length",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_OVERLAP",
+        "description": "In the context of videos, the minimum overlap between detection bounding boxes for adjacent tracks to be considered continuous. Value is expected to be between 0 and 1. Default value is defined by the OpenMPF properties file.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.video.track.overlap.threshold",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "SEARCH_REGION_ENABLE_DETECTION",
+        "description": "Enable cropping.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_TOP_LEFT_X_DETECTION",
+        "description": "X coordinate for top left corner of cropped frame. If this string contains the % sign, then its numeric value will be interpreted as a percentage of the width of the frame, and its value will be capped between 0% and 100%, inclusive. If this string does not contain the % sign, then it will be interpreted as a pixel position. If negative, the top left X position will be set to 0.",
+        "type": "STRING",
+        "defaultValue": "-1",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
+        "description": "Y coordinate for top left corner of cropped frame. If this string contains the % sign, then its numeric value will be interpreted as a percentage of the height of the frame, and its value will be capped between 0% and 100%, inclusive. If this string does not contain the % sign, then it will be interpreted as a pixel position. If negative, the top left Y position will be set to 0.",
+        "type": "STRING",
+        "defaultValue": "-1",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
+        "description": "X coordinate for bottom right corner of cropped frame. If this string contains the % sign, then its numeric value will be interpreted as a percentage of the width of the frame, and its value will be capped between 0% and 100%, inclusive. If this string does not contain the % sign, then it will be interpreted as a pixel position. If zero or negative, the bottom right X position will be set to the width of the frame.",
+        "type": "STRING",
+        "defaultValue": "-1",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
+        "description": "Y coordinate for bottom right corner of cropped frame. If this string contains the % sign, then its numeric value will be interpreted as a percentage of the height of the frame, and its value will be capped between 0% and 100%, inclusive. If this string does not contain the % sign, then it will be interpreted as a pixel position. If zero or negative, the bottom right Y position will be set to the height of the frame.",
+        "type": "STRING",
+        "defaultValue": "-1",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION",
+        "description": "Specifies the number of degrees in the clockwise direction that the media will be rotated. Only 90, 180 and 270 degrees are supported.",
+        "type": "INT",
+        "defaultValue": "0",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "HORIZONTAL_FLIP",
+        "description": "Specifies whether or not the original media is flipped. Rotation occurs before flipping.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "AUTO_ROTATE",
+        "description": "Specifies whether not to rotate media based on EXIF data or video metadata.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "AUTO_FLIP",
+        "description": "Specifies whether or not to flip media based on EXIF data.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    }
+]

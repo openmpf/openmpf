@@ -54,8 +54,8 @@ bool MPFDetectionBuffer::UnpackRequest(const unsigned char *const request_conten
 void MPFDetectionBuffer::GetMessageMetadata(MPFMessageMetadata* msg_metadata) {
     msg_metadata->request_id   = detection_request.request_id();
     msg_metadata->media_id     = detection_request.media_id();
-    msg_metadata->stage_index  = detection_request.stage_index();
-    msg_metadata->stage_name   = detection_request.stage_name();
+    msg_metadata->task_index   = detection_request.task_index();
+    msg_metadata->task_name    = detection_request.task_name();
     msg_metadata->action_index = detection_request.action_index();
     msg_metadata->action_name  = detection_request.action_name();
 }
@@ -184,8 +184,8 @@ void MPFDetectionBuffer::PackCommonFields(
     detection_response.set_request_id(msg_metadata->request_id);
     detection_response.set_data_type(translateMPFDetectionDataType(data_type));
     detection_response.set_media_id(msg_metadata->media_id);
-    detection_response.set_stage_index(msg_metadata->stage_index);
-    detection_response.set_stage_name(msg_metadata->stage_name);
+    detection_response.set_task_index(msg_metadata->task_index);
+    detection_response.set_task_name(msg_metadata->task_name);
     detection_response.set_action_index(msg_metadata->action_index);
     detection_response.set_action_name(msg_metadata->action_name);
     detection_response.set_error(translateMPFDetectionError(error));

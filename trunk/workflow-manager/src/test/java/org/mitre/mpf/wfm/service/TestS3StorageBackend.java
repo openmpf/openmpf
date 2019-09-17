@@ -34,14 +34,14 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -67,13 +67,11 @@ public class TestS3StorageBackend {
 
     private final LocalStorageBackend _mockLocalStorageBackend = mock(LocalStorageBackend.class);
 
-    private final PipelineService _mockPipelineService = mock(PipelineService.class);
-
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
             _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPipelineService, null, null));
+            new AggregateJobPropertiesUtil(_mockPropertiesUtil, null));
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -272,7 +270,7 @@ public class TestS3StorageBackend {
     private void verifyThrowsExceptionWhenDownloading(String uri) {
         Map<String, String> s3Properties = getS3Properties();
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(uri);
         try {
@@ -331,7 +329,7 @@ public class TestS3StorageBackend {
         URI remoteUri = _s3StorageBackend.storeImageArtifact(request);
         assertEquals(EXPECTED_URI, remoteUri);
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 
@@ -364,12 +362,12 @@ public class TestS3StorageBackend {
         long jobId = 1243;
         long mediaId = 432;
 
-        TransientMedia media = mock(TransientMedia.class);
+        var media = mock(Media.class);
 
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getMedia(mediaId))
                 .thenReturn(media);
-        when(job.getOverriddenJobProperties())
+        when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of(
                         MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>",
                         MpfConstants.S3_SECRET_KEY_PROPERTY, ""
@@ -385,7 +383,7 @@ public class TestS3StorageBackend {
                 .thenReturn(job);
 
 
-        ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
+        var request = mock(ArtifactExtractionRequest.class);
         when(request.getJobId())
                 .thenReturn(jobId);
         when(request.getMediaId())
@@ -401,11 +399,24 @@ public class TestS3StorageBackend {
         long mediaId = 421;
         Path filePath = getTestFileCopy();
 
-        MarkupResult markupResult = mock(MarkupResult.class);
-        TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
-        TransientMedia media = mock(TransientMedia.class);
-        TransientStage stage = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        TransientAction action = mock(TransientAction.class);
+        var markupResult = mock(MarkupResult.class);
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+        var media = mock(Media.class);
+
+        var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+                                      new Algorithm.Requires(List.of()),
+                                      new Algorithm.Provides(List.of(), List.of()),
+                                      true, true);
+        var action = new Action(
+                "TEST_ACTION", "description", algorithm.getName(),
+                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                                                              "<ACCESS_KEY>")));
+        var task = new Task("TEST_TASK", "description", List.of(action.getName()));
+        var pipeline = new Pipeline("TEST_PIPELINE", "description",
+                                    List.of(task.getName()));
+        var pipelineElements = new JobPipelineElements(
+                pipeline, List.of(task), List.of(action),
+                List.of(algorithm));
 
         when(markupResult.getJobId())
                 .thenReturn(jobId);
@@ -417,26 +428,20 @@ public class TestS3StorageBackend {
         when(job.getMedia(mediaId))
                 .thenReturn(media);
 
-        when(job.getPipeline().getStages().get(0))
-                .thenReturn(stage);
-
-        when(stage.getActions().get(0))
-                .thenReturn(action);
-
-        when(action.getAlgorithm())
-                .thenReturn("TEST_ALGO");
+        when(job.getPipelineElements())
+                .thenReturn(pipelineElements);
 
 
         when(media.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET));
 
-        when(action.getProperties())
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>"));
+        var overriddenAlgoProps
+                = ImmutableMap.of("TEST_ALGO",
+                                  ImmutableMap.of(MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"));
+        when(job.getOverriddenAlgorithmProperties())
+                .thenReturn(overriddenAlgoProps);
 
-        when(job.getOverriddenAlgorithmProperties().row("TEST_ALGO"))
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"));
-
-        when(job.getOverriddenJobProperties())
+        when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of());
 
         when(_mockInProgressJobs.getJob(jobId))
@@ -451,7 +456,7 @@ public class TestS3StorageBackend {
                 .setMarkupUri(EXPECTED_URI.toString());
 
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 
@@ -469,7 +474,7 @@ public class TestS3StorageBackend {
         URI remoteUri = _s3StorageBackend.store(outputObject);
         assertEquals(EXPECTED_URI, remoteUri);
         assertFalse(Files.exists(filePath));
-        assertEquals(Collections.singletonList(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 
@@ -584,7 +589,7 @@ public class TestS3StorageBackend {
         Map<String, String> s3Properties = getS3Properties();
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(EXPECTED_URI.toString());
         when(media.getLocalPath())
@@ -611,7 +616,7 @@ public class TestS3StorageBackend {
 
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
         when(media.getLocalPath())
@@ -635,7 +640,7 @@ public class TestS3StorageBackend {
                 .thenReturn(2);
 
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(EXPECTED_URI.toString());
         when(media.getLocalPath())
@@ -661,7 +666,7 @@ public class TestS3StorageBackend {
     public void throwsStorageExceptionWhenRemoteFileMissing() throws IOException {
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getUri())
                 .thenReturn(S3_HOST + "BAD_BUCKET/12/34/1234567");
         when(media.getLocalPath())

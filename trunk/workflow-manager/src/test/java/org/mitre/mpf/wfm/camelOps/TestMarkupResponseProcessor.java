@@ -34,11 +34,11 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -141,17 +141,17 @@ public class TestMarkupResponseProcessor {
                 .setOutputFileUri("output.txt")
                 .build();
 
-
-        TransientPipeline dummyPipeline = new TransientPipeline(
-                "TEST_MARKUP_PIPELINE", "testMarkupPipelineDescription", Collections.emptyList());
+        JobPipelineElements dummyPipeline = mock(JobPipelineElements.class);
+        when(dummyPipeline.getName())
+                .thenReturn("TEST_MARKUP_PIPELINE");
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
-        TransientMedia media = new TransientMediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                                      Paths.get(mediaUri), Collections.emptyMap(), null);
-        TransientJob job = mock(TransientJob.class);
+        Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
+                                    Paths.get(mediaUri), Collections.emptyMap(), null);
+        var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
-        when(job.getPipeline())
+        when(job.getPipelineElements())
                 .thenReturn(dummyPipeline);
         when(job.getMedia(mediaId))
                 .thenReturn(media);

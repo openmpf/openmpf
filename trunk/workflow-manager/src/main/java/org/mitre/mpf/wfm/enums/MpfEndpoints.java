@@ -28,9 +28,6 @@ package org.mitre.mpf.wfm.enums;
 
 public class MpfEndpoints {
 
-    // TODO need to add the queue for accepting summary reports
-    // TODO need to add the queue for accepting new track alerts.
-
     public static final String
             ARTIFACT_EXTRACTION_WORK_QUEUE = "jms:MPF.ARTIFACT_EXTRACTION_WORK_QUEUE",
             MEDIA_INSPECTION_ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION",
@@ -48,11 +45,15 @@ public class MpfEndpoints {
             COMPLETED_MARKUP = "jms:MPF.COMPLETED_MARKUP",
 
             JOB_REQUESTS = "jms:MPF.JOB_REQUESTS",
-            STAGE_RESULTS_AGGREGATOR = "direct:jobRouterStageAggregator",
+            TASK_RESULTS_AGGREGATOR = "direct:jobRouterTaskAggregator",
 
             UNSOLICITED_MESSAGES = "jms:MPF.UNSOLICITED_MESSAGES",
 
             DEAD_LETTER_QUEUE = "activemq:ActiveMQ.DLQ",
             DLQ_PROCESSED_MESSAGES = "jms:MPF.DLQ_PROCESSED_MESSAGES",
             DLQ_INVALID_MESSAGES = "jms:MPF.DLQ_INVALID_MESSAGES";
+
+
+    private MpfEndpoints() {
+    }
 }

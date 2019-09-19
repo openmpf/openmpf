@@ -28,7 +28,6 @@ package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
 import org.apache.commons.io.FileUtils;
-import org.mitre.mpf.mvc.MpfServiceException;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -78,12 +77,12 @@ public class MediaController {
 	public String getWebMaxFileUploadCnt() {
 		return Integer.toString(propertiesUtil.getWebMaxFileUploadCnt());
 	}
-	
+
 	@RequestMapping(value = "/saveURL", method = RequestMethod.POST)
 	@ResponseBody
 	public Map<String, String> saveMedia(HttpServletRequest request, @RequestParam(value="urls", required=true) String[] urls,
 										 @RequestParam(value="desiredpath", required=true) String desiredpath,
-										 HttpServletResponse response) throws WfmProcessingException, MpfServiceException {
+										 HttpServletResponse response) throws WfmProcessingException {
 		log.debug("URL Upload to Directory:"+desiredpath+" urls:"+urls.length);
 
 		String err = "Illegal or missing desiredpath";
@@ -124,7 +123,7 @@ public class MediaController {
 			String localName = null;
 			try {
 				URL url = uri.toURL(); //caught by MalformedURLException
-				//will throw an IOException,which is already caught 
+				//will throw an IOException,which is already caught
 				HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 				connection.setRequestMethod("HEAD");
 				connection.connect();
@@ -135,7 +134,7 @@ public class MediaController {
 					String err2 = "The filename does not exist when uploading from the url '" + url + "'";
 					log.error(err2);
 					urlResultMap.put(enteredURL, err2);
-					continue;					
+					continue;
 				}
 
 				if (!ioUtils.isApprovedFile(url)) {
@@ -174,7 +173,7 @@ public class MediaController {
 					newFile.delete();
 				}
 			} catch (Exception failure) { //catch the remaining exceptions
-				//this is most likely a failed connection 
+				//this is most likely a failed connection
 				log.error("Exception thrown while saving media from the url {}.", enteredURL, failure);
 				urlResultMap.put(enteredURL, "Error while saving media from this url. Please view the server logs for more information.");
 			}
@@ -188,7 +187,7 @@ public class MediaController {
 	/// Dropzone uploads one file at a time
 	//@CrossOrigin
 	@RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
-	public ResponseEntity saveMediaFileUpload(MultipartHttpServletRequest request, HttpServletResponse response) throws WfmProcessingException, MpfServiceException {
+	public ResponseEntity saveMediaFileUpload(MultipartHttpServletRequest request, HttpServletResponse response) throws WfmProcessingException {
 		log.debug("[saveMediaFileUpload]");
 		File newFile = null;
 		String desiredPathParam = request.getParameter("desiredpath");
@@ -214,12 +213,12 @@ public class MediaController {
 				String contentType = ioUtils.getMimeType(bytes);
 
 				log.debug("[saveMediaFileUpload] File:" + filename + "  ContentType:" + contentType + " Size:" + bytes.length);
-				
+
 				if (filename.isEmpty()) {
 					String err = "The filename is empty during upload of the MultipartFile.";
 					log.error(err);
 					return new ResponseEntity<>("{\"error\":\"" + err + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
-				}		
+				}
 
 				//return error if the file has an invalid content type
 				if(!ioUtils.isApprovedContentType(contentType)){

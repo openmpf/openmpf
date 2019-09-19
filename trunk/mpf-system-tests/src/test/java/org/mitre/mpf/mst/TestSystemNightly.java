@@ -37,10 +37,11 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.exceptions.InvalidPipelineObjectWfmProcessingException;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +144,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 "/samples/motion/STRUCK_Test_720p.mp4");
     }
 
-    @Test(timeout = 4*MINUTES, expected = InvalidPipelineObjectWfmProcessingException.class)
+    @Test(timeout = 4*MINUTES, expected = InvalidPipelineException.class)
     public void testBadPipeline() throws Exception {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
         long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
@@ -168,7 +169,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         }
     }
 
-    @Test(timeout = 5*MINUTES)
+    @Test(timeout = 5*MINUTES, expected = WfmProcessingException.class)
     public void testNonUri() throws Exception {
         List<JobCreationMediaData> media = new LinkedList<>();
         media.add(new JobCreationMediaData("/not/a/file.txt"));

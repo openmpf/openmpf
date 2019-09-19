@@ -41,11 +41,10 @@ import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -331,7 +330,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             }
         }
         catch (StorageException e) {
-            throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
+            throw new WfmProcessingException("Property validation failed due to: " + e, e);
         }
     }
 

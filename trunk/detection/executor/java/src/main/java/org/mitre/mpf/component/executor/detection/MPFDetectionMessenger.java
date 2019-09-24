@@ -72,8 +72,8 @@ public class MPFDetectionMessenger {
                           " jobId = " + msgMetadata.getJobId() +
                           " dataUri = " + msgMetadata.getDataUri() +
                           " mediaId = " + msgMetadata.getMediaId() +
-                          " stageName = " + msgMetadata.getStageName() +
-                          " stageIndex = " + msgMetadata.getStageIndex() +
+                          " taskName = " + msgMetadata.getTaskName() +
+                          " taskIndex = " + msgMetadata.getTaskIndex() +
                           " actionName = " + msgMetadata.getActionName() +
                           " actionIndex = " + msgMetadata.getActionIndex() +
                           " dataType = " + msgMetadata.getDataType() +
@@ -229,8 +229,8 @@ public class MPFDetectionMessenger {
 		detectionResponseBuilder.setRequestId(msgMetadata.getRequestId());
 
 		detectionResponseBuilder.setMediaId(msgMetadata.getMediaId());
-		detectionResponseBuilder.setStageName(msgMetadata.getStageName());
-		detectionResponseBuilder.setStageIndex(msgMetadata.getStageIndex());
+		detectionResponseBuilder.setTaskName(msgMetadata.getTaskName());
+		detectionResponseBuilder.setTaskIndex(msgMetadata.getTaskIndex());
 		detectionResponseBuilder.setActionName(msgMetadata.getActionName());
 		detectionResponseBuilder.setActionIndex(msgMetadata.getActionIndex());
 
@@ -275,8 +275,8 @@ public class MPFDetectionMessenger {
 		detectionResponseBuilder.setRequestId(msgMetadata.getRequestId());
 		detectionResponseBuilder.setError(DetectionProtobuf.DetectionError.UNSUPPORTED_DATA_TYPE);
 		detectionResponseBuilder.setMediaId(msgMetadata.getMediaId());
-		detectionResponseBuilder.setStageName(msgMetadata.getStageName());
-		detectionResponseBuilder.setStageIndex(msgMetadata.getStageIndex());
+		detectionResponseBuilder.setTaskName(msgMetadata.getTaskName());
+		detectionResponseBuilder.setTaskIndex(msgMetadata.getTaskIndex());
 		detectionResponseBuilder.setActionName(msgMetadata.getActionName());
 		detectionResponseBuilder.setActionIndex(msgMetadata.getActionIndex());
 	}

@@ -35,7 +35,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -63,13 +66,13 @@ public class TestRedis {
 
     private static ImmutableSortedSet<Track> _currentTracks;
 
-    private static Track _differentStageTrack;
+    private static Track _differentTaskTrack;
 
     private static Track _differentJobTrack;
 
     @BeforeClass
     public static void initClass() {
-        Track t1 = new Track(
+        var t1 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -82,7 +85,7 @@ public class TestRedis {
                 0.5f,
                 createDetections(),
                 ImmutableSortedMap.of("a", "b", "c", "d"));
-        Track t2 = new Track(
+        var t2 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -94,10 +97,10 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Collections.emptyMap());
+                Map.of());
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
-        _differentStageTrack = new Track(
+        _differentTaskTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 1,
@@ -123,18 +126,18 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Collections.emptyMap());
+                Map.of());
     }
 
 
     private static List<Detection> createDetections() {
-        Detection detection1 = new Detection(1, 2, 3, 4, 0,5, 6,
-                                            Collections.emptyMap());
+        var detection1 = new Detection(1, 2, 3, 4, 0,5, 6,
+                                       Map.of());
 
-        Detection detection2 = new Detection(7, 8, 9, 10, 11, 12, 13,
-                                             ImmutableSortedMap.of("prop1", "val1", "prop2", "val2"));
+        var detection2 = new Detection(7, 8, 9, 10, 11, 12, 13,
+                                       ImmutableSortedMap.of("prop1", "val1", "prop2", "val2"));
 
-        return Arrays.asList(detection1, detection2);
+        return List.of(detection1, detection2);
     }
 
 
@@ -152,7 +155,7 @@ public class TestRedis {
             _redis.addTrack(track);
         }
         _redis.addTrack(_differentJobTrack);
-        _redis.addTrack(_differentStageTrack);
+        _redis.addTrack(_differentTaskTrack);
     }
 
 
@@ -163,13 +166,13 @@ public class TestRedis {
 
         assertEquals(_currentTracks, retrievedTracks);
 
-        SortedSet<Track> retrievedOtherStageTracks = _redis.getTracks(TEST_JOB_ID, TEST_MEDIA_ID, 1, 0);
-        assertEquals(Collections.singleton(_differentStageTrack), retrievedOtherStageTracks);
+        SortedSet<Track> retrievedOtherTaskTracks = _redis.getTracks(TEST_JOB_ID, TEST_MEDIA_ID, 1, 0);
+        assertEquals(Collections.singleton(_differentTaskTrack), retrievedOtherTaskTracks);
 
         assertTrue(_redis.getTracks(1, TEST_MEDIA_ID, 0, 0).isEmpty());
 
 
-        Track replacementTrack = new Track(
+        var replacementTrack = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
                 0,
@@ -206,26 +209,21 @@ public class TestRedis {
     public void canClearTracks() {
         addAllTestTracksToRedis();
 
-        TransientMedia media = mock(TransientMedia.class);
+        var media = mock(Media.class);
         when(media.getId())
                 .thenReturn(TEST_MEDIA_ID);
 
-        TransientStage stage1 = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        when(stage1.getActions().size())
-                .thenReturn(1);
-
-        TransientStage stage2 = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        when(stage2.getActions().size())
-                .thenReturn(1);
-
-
-        TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);
-        when(job.getPipeline().getStages())
-                .thenReturn(ImmutableList.of(stage1, stage2));
         when(job.getMedia())
                 .thenAnswer(invocation -> ImmutableList.of(media));
+        when(job.getPipelineElements().getPipeline().getTasks().size())
+                .thenReturn(2);
+        when(job.getPipelineElements().getTask(0).getActions().size())
+                .thenReturn(1);
+        when(job.getPipelineElements().getTask(1).getActions().size())
+                .thenReturn(1);
 
 
         _redis.clearTracks(job);
@@ -234,7 +232,7 @@ public class TestRedis {
         assertEquals(1, keys.size());
         SortedSet<Track> otherJobTracks = _redis.getTracks(_differentJobTrack.getJobId(),
                                                            _differentJobTrack.getMediaId(),
-                                                           _differentJobTrack.getStageIndex(),
+                                                           _differentJobTrack.getTaskIndex(),
                                                            _differentJobTrack.getActionIndex());
         assertEquals(Collections.singleton(_differentJobTrack), otherJobTracks);
 
@@ -242,14 +240,14 @@ public class TestRedis {
         for (Track track : _currentTracks) {
             assertNotInRedis(track);
         }
-        assertNotInRedis(_differentStageTrack);
+        assertNotInRedis(_differentTaskTrack);
     }
 
 
     private void assertNotInRedis(Track track) {
         SortedSet<Track> tracks = _redis.getTracks(track.getJobId(),
                                                    track.getMediaId(),
-                                                   track.getStageIndex(),
+                                                   track.getTaskIndex(),
                                                    track.getActionIndex());
         assertFalse(tracks.contains(track));
     }

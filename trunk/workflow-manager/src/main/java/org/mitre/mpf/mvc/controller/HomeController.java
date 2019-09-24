@@ -100,9 +100,7 @@ public class HomeController
 	@ApiOperation(value="Returns metadata about the Workflow Manager, such as version and build number",
 	notes="Note that some of this information is set only during official builds; if you get a '0' or 'unknown', that indicates that this was not an official build.",
 	produces="application/json", response=InfoModel.class )
-	@ApiResponses(value = {
-			@ApiResponse(code = 200, message = "Successful response"),
-			@ApiResponse(code = 401, message = "Bad credentials") })
+	@ApiResponses(@ApiResponse(code = 200, message = "Successful response"))
 	@ResponseBody
 	public InfoModel getInfoRest() {
 		return modelUtils.getInfoModel();

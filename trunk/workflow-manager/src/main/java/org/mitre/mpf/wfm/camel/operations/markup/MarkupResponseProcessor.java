@@ -33,9 +33,9 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.service.StorageService;
@@ -49,50 +49,50 @@ import java.util.Map;
 
 @Component(MarkupResponseProcessor.REF)
 public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResponse> {
-	public static final String REF = "markupResponseProcessor";
-	private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
+    public static final String REF = "markupResponseProcessor";
+    private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
-	public MarkupResponseProcessor() {
-		super(Markup.MarkupResponse.class);
-	}
+    public MarkupResponseProcessor() {
+        super(Markup.MarkupResponse.class);
+    }
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
-	@Autowired
-	@Qualifier(HibernateMarkupResultDaoImpl.REF)
-	private MarkupResultDao markupResultDao;
+    @Autowired
+    @Qualifier(HibernateMarkupResultDaoImpl.REF)
+    private MarkupResultDao markupResultDao;
 
-	@Autowired
-	private StorageService storageService;
+    @Autowired
+    private StorageService storageService;
 
-	@Override
-	public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
-		log.debug("[Job {}:{}:{}] Received response for Media {} (Index = {}). Error? {}", jobId, markupResponse.getTaskIndex(), markupResponse.getActionIndex(), markupResponse.getMediaId(), markupResponse.getMediaIndex(), markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
-		MarkupResult markupResult = new MarkupResult();
-		markupResult.setTaskIndex(markupResponse.getTaskIndex());
-		markupResult.setActionIndex(markupResponse.getActionIndex());
-		markupResult.setMediaId(markupResponse.getMediaId());
-		markupResult.setMediaIndex(markupResponse.getMediaIndex());
-		markupResult.setJobId(jobId);
-		markupResult.setMarkupStatus(markupResponse.getHasError() ? MarkupStatus.FAILED : MarkupStatus.COMPLETE);
-		markupResult.setMarkupUri(markupResponse.getOutputFileUri());
-		markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
+    @Override
+    public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
+        log.debug("[Job {}:{}:{}] Received response for Media {} (Index = {}). Error? {}", jobId, markupResponse.getTaskIndex(), markupResponse.getActionIndex(), markupResponse.getMediaId(), markupResponse.getMediaIndex(), markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
+        MarkupResult markupResult = new MarkupResult();
+        markupResult.setTaskIndex(markupResponse.getTaskIndex());
+        markupResult.setActionIndex(markupResponse.getActionIndex());
+        markupResult.setMediaId(markupResponse.getMediaId());
+        markupResult.setMediaIndex(markupResponse.getMediaIndex());
+        markupResult.setJobId(jobId);
+        markupResult.setMarkupStatus(markupResponse.getHasError() ? MarkupStatus.FAILED : MarkupStatus.COMPLETE);
+        markupResult.setMarkupUri(markupResponse.getOutputFileUri());
+        markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
 
-		TransientJob transientJob = inProgressJobs.getJob(jobId);
-		TransientMedia transientMedia = transientJob.getMedia(markupResponse.getMediaId());
-		markupResult.setPipeline(transientJob.getPipeline().getName());
-		markupResult.setSourceUri(transientMedia.getUri());
+        BatchJob job = inProgressJobs.getJob(jobId);
+        Media media = job.getMedia(markupResponse.getMediaId());
+        markupResult.setPipeline(job.getPipelineElements().getName());
+        markupResult.setSourceUri(media.getUri());
 
-		storageService.store(markupResult);
-		markupResultDao.persist(markupResult);
+        storageService.store(markupResult);
+        markupResultDao.persist(markupResult);
 
-		if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
-			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-		}
-		if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
-			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
-		}
-		return null;
-	}
+        if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
+            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+        }
+        if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
+            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
+        }
+        return null;
+    }
 }

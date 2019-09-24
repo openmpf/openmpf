@@ -33,13 +33,16 @@ import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.interop.JsonMediaInputObject;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URI;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -50,17 +53,15 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     //passed at 1min 47sec
     @Test(timeout = 15*MINUTES)
     public void runMotionMogDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runMotionMogDetectVideo()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
+        List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
         // mediaPaths.add(ioUtils.findFile("/samples/face/new_face_video.avi").toString());
 
         // for testing on Jenkins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
         // rejects
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString());  // 1.25G
 
@@ -68,29 +69,22 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runMotionMogDetectVideo()");
     }
 
     // passed at 2hr 35min
     @Test(timeout = 170*MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runSpeechSphinxDetectAudio()", testCtr);
-
         // 28MG
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
         long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, 1);
-        log.info("Finished test runSpeechSphinxDetectAudio()");
     }
 
     // has worked in the past at 26 mins
     @Test(timeout = 60*MINUTES)
     public void runFaceOcvDetectImage() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectImage()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
+        List<JobCreationMediaData> media = new LinkedList<>();
         IOFileFilter fileFilter = FileFilterUtils.and(FileFilterUtils.fileFileFilter(),
                 FileFilterUtils.suffixFileFilter(".jpg"));
 
@@ -102,30 +96,27 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         Collection<File> files = FileUtils.listFiles(new File("/mpfdata/datasets/mugshots_10000"), fileFilter, null);
         int i = 0;
         for (File file : files) {
-            media.add(new JsonMediaInputObject(file.getAbsoluteFile().toPath().toUri().toString()));
+            media.add(new JobCreationMediaData(file.getAbsoluteFile().toPath().toUri().toString()));
             i++;
         }
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, i);
-        log.info("Finished test runFaceOcvDetectImage()");
     }
 
     // passed at 1hr 59min
     @Test(timeout = 135*MINUTES)
     public void runFaceOcvDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectVideo()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
+        List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
         // mediaPaths.add(ioUtils.findFile("/samples/face/new_face_video.avi").toString());
 
         // for testing on Jenkins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/4kSampleFiles/News_H264.mp4").toString())); // 42MG, 10 secs
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/4kSampleFiles/News_H264.mp4").toString())); // 42MG, 10 secs
         // rejects:
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString();  // 1.25G, times out at 5 hours
 
@@ -133,30 +124,26 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runFaceOcvDetectVideo()");
     }
 
 
     // passed but at 3hr 51min
     @Test(timeout = 255*MINUTES)
     public void runPersonOcvDetectVideo() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runPersonOcvDetectVideo()", testCtr);
-        List<JsonMediaInputObject> media = new LinkedList<>();
+        List<JobCreationMediaData> media = new LinkedList<>();
 
         // for testing on local VM only
         // mediaPaths.add(ioUtils.findFile("/samples/person/video_02.mp4").toString());
 
         // for testing on Jenkins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JsonMediaInputObject(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
+        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
 
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
-        log.info("Finished test runPersonOcvDetectVideo()");
     }
 
 
@@ -165,8 +152,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     // This test intentionally runs one file per job
     @Test(timeout = 180*MINUTES)
     public void runFaceOcvDetectImageManyJobs() throws Exception {
-        testCtr++;
-        log.info("Beginning test #{} runFaceOcvDetectImageManyJobs()", testCtr);
         IOFileFilter fileFilter = FileFilterUtils.and(FileFilterUtils.fileFileFilter(),
                 FileFilterUtils.suffixFileFilter(".jpg"));
 
@@ -198,7 +183,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 files.size(), manyJobsNumFilesProcessed);
         log.info("Successfully ran {} jobs for {} files, one file per job.",
                 manyJobsNumFilesProcessed, files.size());
-        log.info("Finished test runFaceOcvDetectImageManyJobs()");
     }
 
     class JobRunner implements Runnable {
@@ -212,8 +196,8 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         public void run() {
             try {
                 while (!fQueue.isEmpty()) {
-                    List<JsonMediaInputObject> media = new LinkedList<>();
-                    media.add(new JsonMediaInputObject(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
+                    List<JobCreationMediaData> media = new LinkedList<>();
+                    media.add(new JobCreationMediaData(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
                     runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                             propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
                     manyJobsNumFilesProcessed++;

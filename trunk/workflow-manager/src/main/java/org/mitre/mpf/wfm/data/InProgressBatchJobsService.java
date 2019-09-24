@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -58,39 +59,39 @@ public class InProgressBatchJobsService {
 
     private final Redis _redis;
 
-    private final Map<Long, TransientJobImpl> _jobs = new HashMap<>();
+    private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
 
     @Inject
-    InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
+    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
     }
 
 
-    public TransientJob addJob(
+    public BatchJob addJob(
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,
-            TransientPipeline pipeline,
+            JobPipelineElements pipeline,
             int priority,
             boolean outputEnabled,
             String callbackUrl,
             String callbackMethod,
-            Collection<TransientMedia> transientMedia,
+            Collection<Media> media,
             Map<String, String> jobProperties,
-            Map<String, Map<String, String>> algorithmProperties) {
+            Map<String, ? extends Map<String, String>> algorithmProperties) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
         }
 
         LOG.info("Initializing batch job {} which will run the \"{}\" pipeline", jobId, pipeline.getName());
-        List<TransientMediaImpl> mediaImpls = transientMedia.stream()
-                .map(TransientMediaImpl::toTransientMediaImpl)
+        List<MediaImpl> mediaImpls = media.stream()
+                .map(MediaImpl::toMediaImpl)
                 .collect(ImmutableList.toImmutableList());
 
-        TransientJobImpl job = new TransientJobImpl(
+        var job = new BatchJobImpl(
                 jobId,
                 externalId,
                 propertiesSnapshot,
@@ -107,14 +108,13 @@ public class InProgressBatchJobsService {
     }
 
 
-
-    public synchronized TransientJob getJob(long jobId) {
+    public synchronized BatchJob getJob(long jobId) {
         return getJobImpl(jobId);
     }
 
 
-    private TransientJobImpl getJobImpl(long jobId) {
-        TransientJobImpl job = _jobs.get(jobId);
+    private BatchJobImpl getJobImpl(long jobId) {
+        BatchJobImpl job = _jobs.get(jobId);
         if (job != null) {
             return job;
         }
@@ -124,10 +124,10 @@ public class InProgressBatchJobsService {
 
     public synchronized void clearJob(long jobId) {
         LOG.info("Clearing all job information for job: {}", jobId);
-        TransientJobImpl job = getJobImpl(jobId);
+        BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
-        for (TransientMedia media : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
                     Files.deleteIfExists(media.getLocalPath());
@@ -180,7 +180,7 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
-        LOG.info("Adding detection processing error for job {}'s media {} with message: ",
+        LOG.info("Adding detection processing error for job {}'s media {} with message: {}",
                  error.getJobId(), error.getMediaId(), error.getError());
         getJobImpl(error.getJobId()).addDetectionProcessingError(error);
     }
@@ -193,12 +193,12 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void incrementStage(long jobId) {
-        TransientJobImpl job = getJobImpl(jobId);
-        int currentStage = job.getCurrentStage();
-        int nextStage = currentStage + 1;
-        LOG.info("Changing job {}'s current stage from {} to {}", jobId, currentStage, nextStage);
-        job.setCurrentStage(nextStage);
+    public synchronized void incrementTask(long jobId) {
+        var job = getJobImpl(jobId);
+        int currentTask = job.getCurrentTaskIndex();
+        int nextTask = currentTask + 1;
+        LOG.info("Changing job {}'s current task index from {} to {}", jobId, currentTask, nextTask);
+        job.setCurrentTaskIndex(nextTask);
     }
 
 
@@ -211,7 +211,7 @@ public class InProgressBatchJobsService {
     private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
 
-    public synchronized TransientMedia initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
+    public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -238,12 +238,12 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            return new TransientMediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                                          errorMessage);
+            return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
+                                 errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
-            return new TransientMediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                                          mediaSpecificProperties, e.getMessage());
+            return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
+                                 mediaSpecificProperties, e.getMessage());
         }
     }
 
@@ -262,7 +262,7 @@ public class InProgressBatchJobsService {
             long jobId, long mediaId, String sha256, String mimeType, int length,
             Map<String, String> metadata) {
         LOG.info("Adding media inspections results to job {}'s media {}.", jobId, mediaId);
-        TransientMediaImpl media = getMediaImpl(jobId, mediaId);
+        MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
         media.setType(mimeType);
         media.setLength(length);
@@ -272,7 +272,7 @@ public class InProgressBatchJobsService {
 
     public synchronized void addMediaError(long jobId, long mediaId, String message) {
         LOG.info("Adding the following error message to job {}'s media {}: {}", jobId, mediaId, message);
-        TransientMediaImpl media = getMediaImpl(jobId, mediaId);
+        MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setFailed(true);
         media.setMessage(message);
     }
@@ -283,8 +283,8 @@ public class InProgressBatchJobsService {
     }
 
 
-    private TransientMediaImpl getMediaImpl(long jobId, long mediaId) {
-        TransientMediaImpl media = getJobImpl(jobId).getMedia(mediaId);
+    private MediaImpl getMediaImpl(long jobId, long mediaId) {
+        MediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));
         }

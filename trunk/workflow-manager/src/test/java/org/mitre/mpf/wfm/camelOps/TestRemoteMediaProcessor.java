@@ -36,12 +36,14 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -53,7 +55,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,158 +63,157 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 public class TestRemoteMediaProcessor {
-	private static final Logger log = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
-	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-	private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
+    private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
+    private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+    private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
 
-	@InjectMocks
-	private RemoteMediaProcessor remoteMediaProcessor;
+    private RemoteMediaProcessor _remoteMediaProcessor;
 
-	@InjectMocks
-	private RemoteMediaSplitter remoteMediaSplitter;
+    @InjectMocks
+    private RemoteMediaSplitter _remoteMediaSplitter;
 
-	@Mock
-	private InProgressBatchJobsService mockInProgressJobs;
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
 
-	@Mock
-	private PropertiesUtil mockPropertiesUtil;
+    @Mock
+    private PropertiesUtil _mockPropertiesUtil;
 
-	@Rule
-	public TemporaryFolder tempFolder = new TemporaryFolder();
-
-
-	private static final AtomicInteger SEQUENCE = new AtomicInteger();
-	private static int next() {
-		return SEQUENCE.incrementAndGet();
-	}
-
-	@BeforeClass
-	public static void initClass() {
-		setHttpProxies();
-	}
-
-	private static void setHttpProxies() {
-		// When running the tests through Maven, the system properties set in the "JAVA_OPTS" environment variable
-		// appear to be ignored.
-		for (String protocol : new String[] { "http", "https" }) {
-			boolean proxyAlreadySet = System.getProperty(protocol + ".proxyHost") != null;
-			if (proxyAlreadySet) {
-				continue;
-			}
-			String envHttpProxy = System.getenv(protocol + "_proxy");
-			if (envHttpProxy != null) {
-				URI proxyUri = URI.create(envHttpProxy);
-				System.setProperty(protocol + ".proxyHost", proxyUri.getHost());
-				System.setProperty(protocol + ".proxyPort", String.valueOf(proxyUri.getPort()));
-			}
-
-			String noProxyHosts = System.getenv("no_proxy");
-			if (noProxyHosts != null) {
-				System.setProperty(protocol + ".nonProxyHosts", noProxyHosts);
-			}
-		}
-	}
-
-	@Before
-	public void init() {
-		MockitoAnnotations.initMocks(this);
-		when(mockPropertiesUtil.getRemoteMediaDownloadRetries())
-				.thenReturn(3);
-
-		when(mockPropertiesUtil.getRemoteMediaDownloadSleep())
-				.thenReturn(200);
-	}
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
 
 
-	@Test(timeout = 5 * MINUTES)
-	public void testValidRetrieveRequest() throws Exception {
-		log.info("Starting valid image retrieval request.");
-		long jobId = next();
-		long mediaId = next();
+    @BeforeClass
+    public static void initClass() {
+        setHttpProxies();
+    }
 
-		TransientMediaImpl transientMedia = new TransientMediaImpl(
-				mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), tempFolder.newFile().toPath(),
-				Collections.emptyMap(), null);
+    private static void setHttpProxies() {
+        // When running the tests through Maven, the system properties set in the "JAVA_OPTS" environment variable
+        // appear to be ignored.
+        for (String protocol : new String[] { "http", "https" }) {
+            boolean proxyAlreadySet = System.getProperty(protocol + ".proxyHost") != null;
+            if (proxyAlreadySet) {
+                continue;
+            }
+            String envHttpProxy = System.getenv(protocol + "_proxy");
+            if (envHttpProxy != null) {
+                URI proxyUri = URI.create(envHttpProxy);
+                System.setProperty(protocol + ".proxyHost", proxyUri.getHost());
+                System.setProperty(protocol + ".proxyPort", String.valueOf(proxyUri.getPort()));
+            }
 
-		Exchange exchange = setupExchange(jobId, transientMedia);
-		remoteMediaProcessor.process(exchange);
+            String noProxyHosts = System.getenv("no_proxy");
+            if (noProxyHosts != null) {
+                String javaPropertyFormattedNoProxy = noProxyHosts.replace(',', '|');
+                System.setProperty(protocol + ".nonProxyHosts", javaPropertyFormattedNoProxy);
+            }
+        }
+    }
 
-		assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-		assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+    @Before
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+        when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
+                .thenReturn(3);
 
-		Assert.assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-						Boolean.toString(transientMedia.isFailed()),
-						                transientMedia.getMessage()),
-		                   transientMedia.isFailed());
-		log.info("Remote valid image retrieval request passed.");
-	}
+        when(_mockPropertiesUtil.getRemoteMediaDownloadSleep())
+                .thenReturn(200);
 
-
-	@Test(timeout = 5 * MINUTES)
-	public void testInvalidRetrieveRequest() throws Exception {
-		log.info("Starting invalid image retrieval request.");
-		long jobId = next();
-		long mediaId = next();
-
-		TransientMediaImpl transientMedia = new TransientMediaImpl(
-				mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
-				tempFolder.newFile().toPath(), Collections.emptyMap(), null);
-
-		Exchange exchange = setupExchange(jobId, transientMedia);
-		remoteMediaProcessor.process(exchange);
-
-		assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-		assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
-		assertTrue(transientMedia.isFailed());
-
-        verify(mockInProgressJobs)
-		        .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-        verify(mockInProgressJobs)
-		        .addMediaError(eq(jobId), eq(mediaId), nonBlank());
-
-		log.info("Remote invalid image retrieval request passed.");
-	}
+        _remoteMediaProcessor = new RemoteMediaProcessor(
+                _mockInProgressJobs, null, _mockPropertiesUtil,
+                new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)));
+    }
 
 
+    @Test(timeout = 5 * MINUTES)
+    public void testValidRetrieveRequest() throws Exception {
+        LOG.info("Starting valid image retrieval request.");
+        long jobId = 123;
+        long mediaId = 456;
 
-	@Test(timeout = 5 * MINUTES)
-	public void testSplitRequest() throws Exception {
-        long mediaId1 = next();
-        long mediaId2 = next();
-		ImmutableCollection<TransientMediaImpl> media = ImmutableList.of(
-				new TransientMediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
-				                   Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
-				new TransientMediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
-				                   tempFolder.newFile().toPath(), Collections.emptyMap(), null));
+        MediaImpl media = new MediaImpl(
+                mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
+                Collections.emptyMap(), null);
 
-		TransientJob job = mock(TransientJob.class);
-		when(job.isCancelled())
-				.thenReturn(false);
-		when(job.getMedia())
+        Exchange exchange = setupExchange(jobId, media);
+        _remoteMediaProcessor.process(exchange);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+
+        Assert.assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                        Boolean.toString(media.isFailed()),
+                                        media.getMessage()),
+                           media.isFailed());
+        LOG.info("Remote valid image retrieval request passed.");
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testInvalidRetrieveRequest() throws Exception {
+        LOG.info("Starting invalid image retrieval request.");
+        long jobId = 789;
+        long mediaId = 321;
+
+        MediaImpl media = new MediaImpl(
+                mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
+                _tempFolder.newFile().toPath(), Collections.emptyMap(), null);
+
+        Exchange exchange = setupExchange(jobId, media);
+        _remoteMediaProcessor.process(exchange);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        assertTrue(media.isFailed());
+
+        verify(_mockInProgressJobs)
+                .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+        verify(_mockInProgressJobs)
+                .addMediaError(eq(jobId), eq(mediaId), nonBlank());
+
+        LOG.info("Remote invalid image retrieval request passed.");
+    }
+
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testSplitRequest() throws Exception {
+        long mediaId1 = 634;
+        long mediaId2 = 458;
+        ImmutableCollection<MediaImpl> media = ImmutableList.of(
+                new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
+                              Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
+                new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
+                              _tempFolder.newFile().toPath(), Collections.emptyMap(), null));
+
+        var job = mock(BatchJob.class);
+        when(job.isCancelled())
+                .thenReturn(false);
+        when(job.getMedia())
                 .thenAnswer(i -> media);
 
-		long jobId = next();
-		when(mockInProgressJobs.getJob(jobId))
-				.thenReturn(job);
+        long jobId = 4353;
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
 
-		Message inMessage = new DefaultMessage();
-		inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
+        var inMessage = new DefaultMessage();
+        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
 
-		Exchange exchange = mock(Exchange.class);
-		when(exchange.getIn())
-				.thenReturn(inMessage);
+        var exchange = mock(Exchange.class);
+        when(exchange.getIn())
+                .thenReturn(inMessage);
 
-		List<Message> messages = remoteMediaSplitter.split(exchange);
+        List<Message> messages = _remoteMediaSplitter.split(exchange);
 
-		int targetMessageCount = 1;
-		assertEquals(String.format("The splitter must return %d message. Actual: %d.",
-		                           targetMessageCount,
-		                           messages.size()), targetMessageCount, messages.size());
-		assertEquals(mediaId2, (long) messages.get(0).getHeader(MpfHeaders.MEDIA_ID, Long.class));
-	}
+        int targetMessageCount = 1;
+        assertEquals(String.format("The splitter must return %d message. Actual: %d.",
+                                   targetMessageCount,
+                                   messages.size()), targetMessageCount, messages.size());
+        assertEquals(mediaId2, (long) messages.get(0).getHeader(MpfHeaders.MEDIA_ID, Long.class));
+    }
 
 
-	private Exchange setupExchange(long jobId, TransientMediaImpl media) {
-		return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
-	}
+    private Exchange setupExchange(long jobId, MediaImpl media) {
+        return MediaTestUtil.setupExchange(jobId, media, _mockInProgressJobs);
+    }
 }

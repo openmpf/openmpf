@@ -118,7 +118,20 @@ var templateUrlPath = 'resources/js/directives';
                 },
                 link: function( scope, element, attrs ) {
                     scope.arrowIn = attrs.hasOwnProperty('arrowIn');
-                    scope.showPopover = !attrs.hasOwnProperty('noPopover');
+                    if (attrs.hasOwnProperty('noPopover')) {
+                        scope.showPopover = false;
+                    }
+                    else if (scope.actionObj && scope.actionObj.missing) {
+                        scope.showPopover = false;
+                    }
+                    else if (scope.taskObj && scope.taskObj.missing) {
+                        scope.showPopover = false;
+                    }
+                    else {
+                        scope.showPopover = true;
+                    }
+
+
                     // arrowOut without a condition is equivalent to arrowOut="true"
                     scope.arrowOut = attrs.hasOwnProperty('arrowOut');
                     if (scope.arrowOut && attrs.arrowOut !== "") {

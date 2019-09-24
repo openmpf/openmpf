@@ -66,4 +66,6 @@ public interface JpaDao<T> {
     void update(T entity);
 
 	public List<T> findByIds(Collection<Long> ids);
+
+	public long countAll();
 }

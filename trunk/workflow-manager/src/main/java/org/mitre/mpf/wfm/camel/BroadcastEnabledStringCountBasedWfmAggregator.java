@@ -28,64 +28,56 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDaoImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component(BroadcastEnabledStringCountBasedWfmAggregator.REF)
 public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBasedWfmAggregator {
-	private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
-	public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
+    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
+    public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
 
-	@Autowired
-	private InProgressBatchJobsService inProgressBatchJobs;
+    @Autowired
+    private InProgressBatchJobsService inProgressBatchJobs;
 
-	@Autowired
-	@Qualifier(HibernateJobRequestDaoImpl.REF)
-	private HibernateJobRequestDao hibernateJobRequestDao;
+    @Autowired
+    private JobRequestDao hibernateJobRequestDao;
 
-	@Autowired
-	private JobProgress jobProgressStore;
+    @Autowired
+    private JobProgress jobProgressStore;
 
-	@Autowired
-	private JobStatusBroadcaster jobStatusBroadcaster;
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
-	@Override
-	public void onResponse(Exchange newExchange) {
-		super.onResponse(newExchange);
-		if(!Boolean.TRUE.equals(newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST))) {
-			try {
-				int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
-				int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
-				long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
-				TransientJob job = inProgressBatchJobs.getJob(jobId);
-				if (!job.getPipeline().getStages().isEmpty()) {
-					int currentStage = 1 + job.getCurrentStage();
-					int totalStages = job.getPipeline().getStages().size();
-					float progressPerStage = 1 / (1f * totalStages) * 100f;
+    @Override
+    public void onResponse(Exchange newExchange) {
+        super.onResponse(newExchange);
+        Object suppressBroadcast = newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST);
+        if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
+            return;
+        }
 
-					float taskProgress = (((float) aggregateCount) / ((float) splitSize));
-					float jobProgress = (currentStage - 1) * (progressPerStage) + (progressPerStage) * taskProgress;
+        try {
+            int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
+            int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
+            long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
 
-					JobRequest jobRequest = hibernateJobRequestDao.findById(jobId); // TODO: Does this have a significant impact on the speed of this method?
+            BatchJob job = inProgressBatchJobs.getJob(jobId);
+            int tasksCompleted = job.getCurrentTaskIndex();
+            int totalTasks = job.getPipelineElements().getTaskCount();
+            float progressInCurrentTask = (float) aggregateCount / splitSize;
+            float jobProgress = (tasksCompleted + progressInCurrentTask) / totalTasks * 100;
 
-					jobStatusBroadcaster.broadcast(jobId, jobProgress, jobRequest.getStatus());
-
-					//store the current job progress to prevent progress displaying as zero on manual refreshes
-					jobProgressStore.setJobProgress(jobId, jobProgress);
-				}
-			} catch (Exception e) {
-				log.error("Error getting necessary information to create a job progress update.");
-			}
-		}
-	}
+            jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
+            jobProgressStore.setJobProgress(jobId, jobProgress);
+        } catch (Exception e) {
+            log.error("Error getting necessary information to create a job progress update.");
+        }
+    }
 }

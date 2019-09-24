@@ -53,7 +53,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
 
 	/** The default exit point for this route. */
-	public static final String EXIT_POINT = MpfEndpoints.STAGE_RESULTS_AGGREGATOR;
+	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
 
 	/** The default id route. */
 	public static final String ROUTE_ID = "Detection Response Route";

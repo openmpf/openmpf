@@ -32,17 +32,18 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonJobRequest;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.access.MarkupResultDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.service.MpfService;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -65,6 +66,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -73,6 +75,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
@@ -82,8 +85,11 @@ import java.util.function.Function;
 public class MarkupController {
     private static final Logger log = LoggerFactory.getLogger(MarkupController.class);
 
-    @Autowired //will grab the impl
-    private MpfService mpfService;
+    @Autowired
+    private MarkupResultDao markupResultDao;
+
+    @Autowired
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -97,7 +103,7 @@ public class MarkupController {
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         //all MarkupResult objects
         List<MarkupResultModel> markupResultModels = new ArrayList<MarkupResultModel>();
-        for (MarkupResult markupResult : mpfService.getAllMarkupResults()) {
+        for (MarkupResult markupResult : markupResultDao.findAll()) {
             if (jobId != null) {
                 if (markupResult.getJobId() == jobId) {
                     markupResultModels.add(ModelUtils.converMarkupResult(markupResult));
@@ -131,7 +137,7 @@ public class MarkupController {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
         //all MarkupResult objects
-        List<MarkupResult> markupResults = mpfService.getMarkupResultsForJob(jobId);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
         Collections.reverse(markupResults);
 
         //convert markup objects
@@ -142,23 +148,21 @@ public class MarkupController {
         }
 
         //add job media that may exist without markup
-        JobRequest jobRequest = mpfService.getJobRequest(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest != null) {
-            JsonJobRequest req = jsonUtils.deserialize(jobRequest.getInputObject(), JsonJobRequest.class);
+            BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-            List<JsonMediaInputObject> media_list = req.getMedia();
-            for (int i = 0; i < media_list.size(); i++) {
-                JsonMediaInputObject med = media_list.get(i);
+            for (Media med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
-                model.setPipeline(req.getPipeline().getName());
-                model.setSourceUri(med.getMediaUri());
+                model.setPipeline(job.getPipelineElements().getName());
+                model.setSourceUri(med.getUri());
                 model.setSourceFileAvailable(false);
-                if (med.getMediaUri() != null) {
-                    Path path = IoUtils.toLocalPath(med.getMediaUri()).orElse(null);
+                if (med.getUri() != null) {
+                    Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
                     if (path == null || Files.exists(path)) {
                         String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                                .queryParam("sourceUri", med.getMediaUri())
+                                .queryParam("sourceUri", med.getUri())
                                 .queryParam("jobId", jobId)
                                 .toUriString();
                         model.setSourceDownloadUrl(downloadUrl);
@@ -172,9 +176,9 @@ public class MarkupController {
                 //add to the list
                 boolean found = false;
                 for (MarkupResultConvertedModel existing : markupResultModels) {
-                    if(existing.getSourceUri().equals(model.getSourceUri())) found = true;
+                    if (existing.getSourceUri().equals(model.getSourceUri())) found = true;
                 }
-                if(!found) markupResultModels.add(model);
+                if (!found) markupResultModels.add(model);
             }
         }
 
@@ -212,7 +216,7 @@ public class MarkupController {
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
     public void serve(HttpServletResponse response, @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
-        MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
+        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult != null) {
             //only on image!
             if (!StringUtils.endsWithIgnoreCase(mediaMarkupResult.getMarkupUri(), "avi")) {
@@ -230,7 +234,7 @@ public class MarkupController {
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
     public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
-        MarkupResult mediaMarkupResult = mpfService.getMarkupResult(id);
+        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult == null) {
             log.debug("server download file failed for markup id = " +id);
             response.setStatus(404);
@@ -250,8 +254,7 @@ public class MarkupController {
             return;
         }
 
-        Function<String, String> combinedProperties = aggregateJobPropertiesUtil
-                .getCombinedPropertiesAfterJobCompletion(mediaMarkupResult);
+        Function<String, String> combinedProperties = getProperties(mediaMarkupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
@@ -274,5 +277,26 @@ public class MarkupController {
             IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
                                              urlConnection.getContentLength());
         }
+    }
+
+    private Function<String, String> getProperties(MarkupResult markupResult) {
+        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+                .map(JobRequest::getJob)
+                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
+                .orElse(null);
+
+        if (job == null) {
+            return x -> null;
+        }
+
+        var media = job.getMedia()
+                .stream()
+                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .findAny()
+                .orElse(null);
+
+        var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
+
+        return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }
 }

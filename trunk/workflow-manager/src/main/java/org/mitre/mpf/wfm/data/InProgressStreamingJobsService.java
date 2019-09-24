@@ -29,11 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStream;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJob;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStreamingJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,14 +50,14 @@ public class InProgressStreamingJobsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(InProgressStreamingJobsService.class);
 
-    private final Map<Long, TransientStreamingJobImpl> _jobs = new HashMap<>();
+    private final Map<Long, StreamingJobImpl> _jobs = new HashMap<>();
 
 
-    public synchronized TransientStreamingJob addJob(
+    public synchronized StreamingJob addJob(
             long jobId,
             String externalId,
-            TransientPipeline pipeline,
-            TransientStream stream,
+            JobPipelineElements pipeline,
+            MediaStreamInfo stream,
             int priority,
             long stallTimeout,
             boolean outputEnabled,
@@ -75,9 +71,10 @@ public class InProgressStreamingJobsService {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
         }
 
-        LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId, pipeline.getName());
+        LOG.info("Initializing streaming job {} which will run the \"{}\" pipeline", jobId,
+                 pipeline.getName());
 
-        TransientStreamingJobImpl job = new TransientStreamingJobImpl(
+        StreamingJobImpl job = new StreamingJobImpl(
                 jobId,
                 externalId,
                 pipeline,
@@ -95,13 +92,13 @@ public class InProgressStreamingJobsService {
     }
 
 
-    public synchronized TransientStreamingJob getJob(long jobId) {
+    public synchronized StreamingJob getJob(long jobId) {
         return getJobImpl(jobId);
     }
 
 
-    private TransientStreamingJobImpl getJobImpl(long jobId) {
-        TransientStreamingJobImpl job = _jobs.get(jobId);
+    private StreamingJobImpl getJobImpl(long jobId) {
+        StreamingJobImpl job = _jobs.get(jobId);
         if (job != null) {
             return job;
         }
@@ -109,7 +106,7 @@ public class InProgressStreamingJobsService {
     }
 
 
-    public synchronized List<TransientStreamingJob> getActiveJobs() {
+    public synchronized List<StreamingJob> getActiveJobs() {
         return _jobs.values()
                 .stream()
                 .filter(j -> !j.getJobStatus().isTerminal())
@@ -117,7 +114,7 @@ public class InProgressStreamingJobsService {
     }
 
 
-    public synchronized Map<String, List<TransientStreamingJob>> getJobsGroupedByHealthReportUri() {
+    public synchronized Map<String, List<StreamingJob>> getJobsGroupedByHealthReportUri() {
         //noinspection OptionalGetWithoutIsPresent - False positive because .isPresent() checked in call to .filter().
         return _jobs.values()
                 .stream()
@@ -134,7 +131,7 @@ public class InProgressStreamingJobsService {
 
     public synchronized void cancelJob(long jobId, boolean doCleanup) {
         LOG.info("Marking job {} as cancelled.", jobId);
-        TransientStreamingJobImpl job = getJobImpl(jobId);
+        StreamingJobImpl job = getJobImpl(jobId);
         job.setCancelled(true);
         job.setJobStatus(new StreamingJobStatus(StreamingJobStatusType.CANCELLING));
         job.setCleanupEnabled(doCleanup);
@@ -153,7 +150,7 @@ public class InProgressStreamingJobsService {
     public synchronized void setLastJobActivity(long jobId, long frameId, Instant time) {
         LOG.info("Setting last activity of job {} to frame {} at time {}",
                  jobId, frameId, TimeUtils.toIsoString(time));
-        TransientStreamingJobImpl job = getJobImpl(jobId);
+        StreamingJobImpl job = getJobImpl(jobId);
         job.setLastActivityFrame(frameId);
         job.setLastActivityTime(time);
     }

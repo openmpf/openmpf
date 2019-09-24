@@ -35,14 +35,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -111,8 +113,8 @@ public class TestDetectionResponseProcessor {
             .setMediaId(testMediaId)
             .setStartIndex(0)
             .setStopIndex(10)
-            .setStageName("theWorld")
-            .setStageIndex(1)
+            .setTaskName("theWorld")
+            .setTaskIndex(1)
             .setActionName("howLikeAnAngel")
             .setActionIndex(1)
             .setRequestId(123456)
@@ -128,7 +130,7 @@ public class TestDetectionResponseProcessor {
         TrackMergingContext processorResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
 
         Assert.assertTrue(processorResponse.getJobId() == testJobId);
-        Assert.assertTrue(processorResponse.getStageIndex() == 1);
+        Assert.assertTrue(processorResponse.getTaskIndex() == 1);
 
         Assert.assertTrue(responseBody != null);
     }
@@ -142,7 +144,7 @@ public class TestDetectionResponseProcessor {
                 .setMediaId(testMediaId)
                 .setStartIndex(0)
                 .setStopIndex(10)
-                .setStageIndex(1)
+                .setTaskIndex(1)
                 .setActionIndex(1)
                 .setRequestId(123456)
                 .build();
@@ -151,22 +153,25 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
         exchange.getIn().setBody(detectionResponse);
 
-        TransientAction detectionAction = new TransientAction(
-                "detectionAction", "detectionDescription", "detectionAlgo",
-                Collections.emptyMap());
-        TransientStage detectionStageDet = new TransientStage(
-                "detectionDetection", "detectionDescription", ActionType.DETECTION,
-                Collections.singletonList(detectionAction));
-
-        TransientPipeline detectionPipeline = new TransientPipeline(
-                "detectionPipeline", "detectionDescription",
-                Collections.singletonList(detectionStageDet));
+        Algorithm algorithm = new Algorithm(
+                "detectionAlgo", "description", ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
+                true, true);
+        Action action = new Action("detectionAction", "description", algorithm.getName(),
+                                   Collections.emptyList());
+        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline("detectionPipeline", "description",
+                                         Collections.singleton(task.getName()));
+        JobPipelineElements pipelineElements = new JobPipelineElements(
+                pipeline, Collections.singleton(task), Collections.singleton(action),
+                Collections.singleton(algorithm));
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
-        TransientMediaImpl media = new TransientMediaImpl(
+        MediaImpl media = new MediaImpl(
                 234234, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Collections.emptyMap(), null);
         media.addMetadata("DURATION", "3004");
@@ -176,7 +181,7 @@ public class TestDetectionResponseProcessor {
                 jobId,
                 "234234",
                 systemPropertiesSnapshot,
-                detectionPipeline,
+                pipelineElements,
                 1,
                 false,
                 null,

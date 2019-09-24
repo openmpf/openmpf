@@ -56,13 +56,20 @@
         ['$resource', 'AlgorithmService', 'orderByFilter',
             function ( $resource, AlgorithmService, orderByFilter ) {
 
-                var actionResource = $resource('pipeline-actions/:name');
+                var actionResource = $resource('actions');
 
                 var setActionsAlgo = function (actionDetails) {
-                    return AlgorithmService.get(actionDetails.algorithmRef)
+                    return AlgorithmService.get(actionDetails.algorithm)
                         .$promise
                         .then(function (algo) {
                             actionDetails.algorithm = algo;
+                            return actionDetails;
+                        })
+                        .catch(function () {
+                            actionDetails.algorithm = {
+                                name: actionDetails.algorithm,
+                                missing: true
+                            };
                             return actionDetails;
                         });
                 };

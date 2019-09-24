@@ -42,7 +42,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MarkupResponseRouteBuilder.class);
 
 	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_MARKUP;
-	public static final String EXIT_POINT = MpfEndpoints.STAGE_RESULTS_AGGREGATOR;
+	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
 	public static final String ROUTE_ID = "Markup Response Route";
 
 	private final String entryPoint, exitPoint, routeId;

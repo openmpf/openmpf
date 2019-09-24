@@ -27,11 +27,10 @@
 package org.mitre.mpf.mvc.util;
 
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.rest.api.*;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.rest.api.InfoModel;
+import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
+import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -119,38 +118,6 @@ public class ModelUtils {
         return new MarkupResultConvertedModel(markupResult.getId(), markupResult.getJobId(),markupResult.getPipeline(),
                 markupResult.getMarkupUri(),markupUriContentType,markupImgUrl,markupDownloadUrl,markupFileAvailable,
                 markupResult.getSourceUri(),sourceUriContentType,sourceImgUrl,sourceDownloadUrl,sourceFileAvailable);
-    }
-
-    //this method is created for the same reason as converMarkupResult
-    public static SingleJobInfo convertJobRequest(JobRequest jobRequest,
-            float jobContainerProgress) {
-        BatchJobStatusType jobStatus = jobRequest.getStatus();
-        // some job status' may be terminal
-        boolean isTerminal = (jobStatus != null && jobStatus.isTerminal());
-
-        return new SingleJobInfo(jobRequest.getId(), jobRequest.getPipeline(), jobRequest.getPriority(),
-                jobRequest.getStatus().toString(), jobContainerProgress, jobRequest.getTimeReceived(),
-                jobRequest.getTimeCompleted(), jobRequest.getOutputObjectPath(), isTerminal);
-    }
-
-    public static StreamingJobInfo convertJobRequest(StreamingJobRequest streamingJobRequest,
-            float jobContainerProgress) {
-
-        boolean isTerminal = (streamingJobRequest.getStatus() != null && streamingJobRequest.getStatus().isTerminal());
-
-        return new StreamingJobInfo(streamingJobRequest.getId(),
-                streamingJobRequest.getPipeline(),
-                streamingJobRequest.getPriority(),
-                streamingJobRequest.getStatus().name(),
-                streamingJobRequest.getStatusDetail(),
-                jobContainerProgress,
-                streamingJobRequest.getTimeReceived(),
-                streamingJobRequest.getTimeCompleted(),
-                streamingJobRequest.getOutputObjectDirectory(),
-                streamingJobRequest.getStreamUri(),
-                streamingJobRequest.getActivityFrameId(),
-                streamingJobRequest.getActivityTimestamp(),
-                isTerminal);
     }
 
 

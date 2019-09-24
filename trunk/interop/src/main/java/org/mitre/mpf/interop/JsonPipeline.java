@@ -47,26 +47,26 @@ public class JsonPipeline {
 	private String description;
 	public String getDescription() { return description; }
 
-	@JsonProperty("stages")
-	@JsonPropertyDescription("The ordered listing of stages performed by this pipeline.")
-	private List<JsonStage> stages;
-	public List<JsonStage> getStages() { return stages; }
+	@JsonProperty("tasks")
+	@JsonPropertyDescription("The ordered listing of tasks performed by this pipeline.")
+	private List<JsonTask> tasks;
+	public List<JsonTask> getTasks() { return tasks; }
 
     public JsonPipeline(){}
 
 	public JsonPipeline(String name, String description) {
 		this.name = name;
 		this.description = description;
-		this.stages = new ArrayList<JsonStage>();
+		this.tasks = new ArrayList<JsonTask>();
 	}
 
 	@JsonCreator
 	public static JsonPipeline factory(@JsonProperty("name") String name,
 	                                   @JsonProperty("description") String description,
-	                                   @JsonProperty("stages") List<JsonStage> stages) {
+	                                   @JsonProperty("tasks") List<JsonTask> tasks) {
 		JsonPipeline jsonPipeline = new JsonPipeline(name, description);
-		if(stages != null) {
-			jsonPipeline.stages.addAll(stages);
+		if(tasks != null) {
+			jsonPipeline.tasks.addAll(tasks);
 		}
 		return jsonPipeline;
 	}

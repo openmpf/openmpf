@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-/* globals angular, _ */
+/* globals angular, _, console */
 
 /**
  *
@@ -58,15 +58,24 @@
         '$q', '$resource', 'ActionService', 'TaskService',
         function ($q, $resource, ActionService, TaskService) {
 
-            var pipelineResource = $resource('pipelines/:name');
+            var pipelineResource = $resource('pipelines');
 
             var getPipeline = function (pipelineName) {
                 return pipelineResource.get({name: pipelineName})
                     .$promise
                     .then(function (pipelineDetail) {
 
-                        var taskPromises = pipelineDetail.taskRefs.map(function (t) {
-                            return TaskService.get(t.name);
+                        var taskPromises = pipelineDetail.tasks.map(function (taskName) {
+                            return TaskService.get(taskName)
+                                .catch(function (error) {
+                                    if (error.status === 404) {
+                                        return {
+                                            name: taskName,
+                                            missing: true,
+                                            actions: []
+                                        };
+                                    }
+                                });
                         });
 
                         return $q.all(taskPromises).then(function (tasks) {
@@ -105,7 +114,7 @@
                     var pack = {
                         name: pipeline.name,
                         description: pipeline.description,
-                        tasksToAdd: _.pluck(pipeline.taskRefs, "name")
+                        tasks: _.pluck(pipeline.taskRefs, "name")
                     };
                     return pipelineResource.save(pack, function () {
                         // console.log("saved pack")
@@ -218,6 +227,19 @@
 
             /** save current pipeline to server */
             pipes2.savePipeline = function( pipeline ) {
+                if (!pipeline.name) {
+                    showErrorModal('A name must be provided for the pipeline.');
+                    return;
+                }
+                if (!pipeline.description) {
+                    showErrorModal('A description must be provided for the pipeline.');
+                    return;
+                }
+                if (pipeline.taskRefs.length === 0) {
+                    showErrorModal('The pipeline must contain at least one task.');
+                    return;
+                }
+
                 pipeline.name = pipes2.renderAsCustomName( $scope.currentPipeline.name );
                 Pipelines2Service.save( pipeline )
                     .$promise
@@ -232,7 +254,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the pipeline.  Most likely, this is because the name is invalid, or no tasks are defined.'});
+                            text: 'An error occurred when saving the pipeline: ' + error.data.message});
                         console.log("***Error from Pipelines2Service.save() :");
                         console.log(error);
                     });
@@ -460,13 +482,9 @@
              *  if it does not have a value, it's relying on the defaultValue
              */
             var getChangedActionProperties = function ( action ) {
-                var ret = {};
-                _.each( action.viewProperties, function( prop )  {
-                    if ( prop.value!==undefined && prop.value!=="" ) {
-                        ret[prop.name] = prop.value;
-                    }
+                return action.viewProperties.filter(function (prop) {
+                    return prop.value !== undefined && prop.value !== "";
                 });
-                return ret;
             };
 
 
@@ -502,13 +520,28 @@
             };
 
 
+            var showErrorModal = function (errorMsg) {
+                $confirm({
+                    title: 'Error',
+                    text: errorMsg
+                });
+            };
+
             /** saves the action and task to the server */
             $scope.saveActionAndTask = function( action ) {
+                if (!action.name) {
+                    showErrorModal('A name must be provided for the action.');
+                    return;
+                }
+                if (!action.description) {
+                    showErrorModal('A description must be provided for the action.');
+                    return;
+                }
                 action.name = actions2.renderAsCustomName( action.name );
-                saveAction( action )
-                    .then( function() {
+                saveAction(action)
+                    .then(function() {
                         saveTaskFromAction( action );
-                    })
+                    });
             };
 
 
@@ -517,10 +550,10 @@
 
                 action.name = actions2.renderAsCustomName( action.name );
                 var actionObj = {
-                    algorithmName: action.algorithmRef,
-                    actionName: action.name,
-                    actionDescription: action.description,
-                    properties: JSON.stringify( getChangedActionProperties( action ) )
+                    name: action.name,
+                    description: action.description,
+                    algorithm: action.algorithmRef,
+                    properties: getChangedActionProperties( action )
                 };
 
                 var opPromise = ActionService.save( actionObj )
@@ -537,7 +570,7 @@
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the action.  Most likely, this is because the name is invalid, or a parameter is missing.'});
+                            text: 'An error occurred when saving the action: ' + error.data.message});
                         console.log("***Error from ActionService.save() :");
                         console.log(error);
                     });
@@ -551,7 +584,7 @@
                 var taskObj = {
                     name: tasks2.renderAsCustomName( actionName ),
                     description: action.description,
-                    actionsToAdd: [ actionName ]
+                    actions: [ actionName ]
                 };
                 // console.log("taskObj="+JSON.stringify(taskObj));
 
@@ -562,13 +595,14 @@
                             title: 'Success',
                             text: '"' + taskObj.name + '" was successfully saved.'});
                         initTasksList();
+                        initPipelinesList($scope.currentPipeline);
                     })
                     .catch( function( error ) {
                         // todo: P038: should display actual error to user, but need the server to return the error in JSON format;
                         //  currently, it only returns a string
                         $confirm({
                             title: 'Error',
-                            text: 'An error occurred when saving the task. Most likely, this is because the name is invalid.'});
+                            text: 'An error occurred when saving the task: ' + error.data.message});
                         console.log("***Error from TaskService.save() :");
                         console.log(error);
                     });
@@ -577,33 +611,53 @@
 
             /** deletes the action from the server */
             $scope.deleteAction = function() {
-                // todo:  should check to make sure this action can be deleted
-                //          by verifying it is not being used in a task, and then
-                //          the confirm message below can be changed
-                $confirm({text: 'Are you sure you want to delete ' + $scope.currentAction.name
-                            + '?  There may be tasks that are still using it.'})
-                    .then(
-                        function() {    // alert("You clicked OK");
-                            ActionService.delete( $scope.currentAction.name )
-                                .$promise
-                                .then( function() {
-                                    initActionsList();
-                                });
+                var actionName = $scope.currentAction.name;
+                var actionPrefix = 'CUSTOM ';
+                var actionSuffix = ' ACTION';
+
+                var confirmMessage = 'Are you sure you want to delete ' + actionName;
+
+                var taskName;
+                if (actionName.startsWith(actionPrefix) && actionName.endsWith(actionSuffix)) {
+                    var nameMiddle = actionName.substring(
+                        actionPrefix.length, actionName.length - actionSuffix.length);
+                    taskName = 'CUSTOM ' + nameMiddle + ' TASK';
+                    confirmMessage += ' and ' + taskName + '? There may be other tasks or pipelines still using them.';
+                }
+                else {
+                    confirmMessage += '? There may be other tasks that are still using it.';
+                    taskName = null;
+                }
+                $confirm({text: confirmMessage})
+                    .then(function() {
+                        if (taskName) {
+                            TaskService.delete(taskName);
                         }
-                    );
+                        return ActionService.delete(actionName).$promise;
+                    })
+                    .then(function () {
+                        initActionsList();
+                        initPipelinesList($scope.currentPipeline);
+                    });
             };
 
 
             /** sets up the viewProperties array for ease of generating the view */
             $scope.setViewProperties = function()  {
                 $scope.currentAction.viewProperties = [];
-                angular.copy($scope.currentAction.algorithm.providesCollection.algorithmProperties,
-                    $scope.currentAction.viewProperties);
-                var index;
-                _.each( $scope.currentAction.properties, function( prop )  {
-                    index = _.findIndex($scope.currentAction.viewProperties, { "name": prop.name });
-                    $scope.currentAction.viewProperties[index].value = prop.value;
-                });
+                if ($scope.currentAction.algorithm.missing) {
+                    angular.copy($scope.currentAction.properties,
+                                 $scope.currentAction.viewProperties);
+                }
+                else {
+                    angular.copy($scope.currentAction.algorithm.providesCollection.properties,
+                                 $scope.currentAction.viewProperties);
+
+                    _.each($scope.currentAction.properties, function( prop )  {
+                        var index = _.findIndex($scope.currentAction.viewProperties, { "name": prop.name });
+                        $scope.currentAction.viewProperties[index].value = prop.value;
+                    });
+                }
             };
 
 

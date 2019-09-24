@@ -92,85 +92,10 @@ function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
     };
 
 
-    $scope.reRegisterClicked = function (component) {
-        var originalState = component.componentState;
+    $scope.reRegister = function (component) {
         component.componentState = statesEnum.RE_REGISTERING;
-        Components.getReRegisterOrder(component.packageFileName)
-            .$promise
-            .then(function (componentRegistrationOrder) {
-                if (componentRegistrationOrder.length === 1) {
-                    reRegisterComponents(componentRegistrationOrder);
-                }
-                else {
-                    confirmReRegistration(component, componentRegistrationOrder, originalState);
-                }
-            })
-            .catch(function (errorResponse) {
-                NotificationSvc.error(errorResponse.data.message);
-                component.componentState = originalState;
-                // Save for when we allow re-registration with errors.
-                // confirmReRegistration(component, null, originalState);
-            });
-    };
-
-    var confirmReRegistration = function (targetComponent, registrationOrder, originalState) {
-        var confirmClickedString = 'confirm clicked';
-        $uibModal.open({
-            templateUrl: 'reRegisterModal.html',
-            windowTopClass: 'component-registration-modal',
-            controller: [
-                '$scope',
-                function ($scope) {
-                    $scope.targetComponent = targetComponent;
-                    $scope.registrationOrder = registrationOrder;
-
-                    $scope.isNotTargetComponent = function (value) {
-                        return value !== targetComponent.packageFileName;
-                    };
-
-                    $scope.onReRegisterAllClick = function () {
-                        reRegisterComponents(registrationOrder);
-                        $scope.$close(confirmClickedString);
-                    };
-                    $scope.onReRegOnlyTargetClick = function () {
-                        reRegisterComponents([targetComponent.packageFileName]);
-                        $scope.$close(confirmClickedString);
-                    };
-
-                    $scope.$on('modal.closing', function (evt, description) {
-                        if (description !== confirmClickedString) {
-                            targetComponent.componentState = originalState;
-                        }
-                    });
-                }]
-        });
-    };
-
-
-    var reRegisterComponents = function (componentReRegOrder) {
-        var componentIndex = _.indexBy($scope.components, 'packageFileName');
-
-        componentReRegOrder.forEach(function (packageName) {
-            componentIndex[packageName].componentState = statesEnum.RE_REGISTERING;
-        });
-
-        var promise;
-        componentReRegOrder.forEach(function (packageName) {
-            var component = componentIndex[packageName];
-            if (promise) {
-                promise = promise.then(function () {
-                    return createReRegPromise(component);
-                });
-            }
-            else {
-                promise = createReRegPromise(component);
-            }
-        });
-    };
-
-    var createReRegPromise = function (component) {
-        return component.$reRegister()
-            .then(function () {
+        component.$reRegister()
+            .then(function() {
                 NotificationSvc.info('The ' + component.componentName + ' component has been re-registered');
             })
             .catch(function (errorResponse) {
@@ -192,7 +117,6 @@ function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
             $scope.components.splice(index, 1);
         }
     };
-
 
 
     $scope.canUploadPackage = function (file, done) {

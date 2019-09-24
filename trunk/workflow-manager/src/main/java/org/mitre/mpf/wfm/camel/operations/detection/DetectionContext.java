@@ -34,58 +34,59 @@ import java.util.List;
 import java.util.Set;
 
 public class DetectionContext {
-	private final SegmentingPlan segmentingPlan;
-	public SegmentingPlan getSegmentingPlan() { return segmentingPlan; }
+    private final SegmentingPlan segmentingPlan;
+    public SegmentingPlan getSegmentingPlan() { return segmentingPlan; }
 
-	private final long jobId;
-	public long getJobId() { return jobId; }
+    private final long jobId;
+    public long getJobId() { return jobId; }
 
-	private final int stageIndex;
-	public int getStageIndex() { return stageIndex; }
+    private final int taskIndex;
+    public int getTaskIndex() { return taskIndex; }
 
-	private final String stageName;
-	public String getStageName() { return stageName; }
+    private final String taskName;
+    public String getTaskName() { return taskName; }
 
-	private final int actionIndex;
-	public int getActionIndex() { return actionIndex; }
+    private final int actionIndex;
+    public int getActionIndex() { return actionIndex; }
 
-	private final String actionName;
-	public String getActionName() { return actionName; }
+    private final String actionName;
+    public String getActionName() { return actionName; }
 
-	private final boolean isFirstDetectionStage;
-	public boolean isFirstDetectionStage() { return isFirstDetectionStage; }
+    private final boolean isFirstDetectionTask;
+    public boolean isFirstDetectionTask() { return isFirstDetectionTask; }
 
-	private final List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
-	public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() {
-		return algorithmProperties;
-	}
+    private final List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties;
+    public List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgorithmProperties() {
+        return algorithmProperties;
+    }
 
-	private final Set<Track> previousTracks;
-	public Set<Track> getPreviousTracks() { return previousTracks; }
+    private final Set<Track> previousTracks;
+    public Set<Track> getPreviousTracks() { return previousTracks; }
 
     public DetectionContext(
-			long jobId,
-			int stageIndex,
-			String stageName,
-			int actionIndex,
-			String actionName,
-			boolean isFirstDetectionStage,
-			List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
-			Set<Track> previousTracks,
-			SegmentingPlan segmentingPlan) {
-		this.jobId = jobId;
-		this.stageIndex = stageIndex;
-		this.stageName = stageName;
-		this.actionIndex = actionIndex;
-		this.actionName = actionName;
-		this.isFirstDetectionStage = isFirstDetectionStage;
-		this.algorithmProperties = algorithmProperties;
-		this.previousTracks = previousTracks;
-		this.segmentingPlan = segmentingPlan;
-	}
+            long jobId,
+            int taskIndex,
+            String taskName,
+            int actionIndex,
+            String actionName,
+            boolean isFirstDetectionTask,
+            List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties,
+            Set<Track> previousTracks,
+            SegmentingPlan segmentingPlan) {
+        this.jobId = jobId;
+        this.taskIndex = taskIndex;
+        this.taskName = taskName;
+        this.actionIndex = actionIndex;
+        this.actionName = actionName;
+        this.isFirstDetectionTask = isFirstDetectionTask;
+        this.algorithmProperties = algorithmProperties;
+        this.previousTracks = previousTracks;
+        this.segmentingPlan = segmentingPlan;
+    }
 
-	public String toString() {
-	    return "DetectionContext: jobId: " + jobId + ", stageIndex: " + stageIndex + ", stageName: " + stageName +
-            ", actionIndex: " + actionIndex + ", actionName: " + actionName + ", algorithmProperties: " + algorithmProperties;
+    @Override
+    public String toString() {
+        return "DetectionContext: jobId: " + jobId + ", taskIndex: " + taskIndex + ", taskName: " + taskName +
+                ", actionIndex: " + actionIndex + ", actionName: " + actionName + ", algorithmProperties: " + algorithmProperties;
     }
 }

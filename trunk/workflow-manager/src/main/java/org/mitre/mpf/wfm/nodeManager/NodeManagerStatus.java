@@ -36,7 +36,7 @@ import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
 import org.mitre.mpf.nms.xml.NodeManager;
-import org.mitre.mpf.wfm.businessrules.StreamingJobRequestBo;
+import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.NodeManagerService;
@@ -69,7 +69,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     private MasterNode masterNode;
 
     @Autowired
-    private StreamingJobRequestBo streamingJobRequestBo;
+    private StreamingJobRequestService streamingJobRequestService;
 
     @Autowired
     private NodeManagerService nodeManagerService;
@@ -392,7 +392,7 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
             default:
                 status = new StreamingJobStatus(StreamingJobStatusType.ERROR, message.reason.detail);
         }
-        streamingJobRequestBo.handleJobStatusChange(message.jobId, status, System.currentTimeMillis());
+        streamingJobRequestService.handleJobStatusChange(message.jobId, status, System.currentTimeMillis());
     }
 
 

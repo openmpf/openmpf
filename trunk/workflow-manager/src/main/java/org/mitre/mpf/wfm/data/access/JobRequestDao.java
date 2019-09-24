@@ -26,6 +26,16 @@
 
 package org.mitre.mpf.wfm.data.access;
 
-public interface JobRequestDao {
-	void cancelJobsInNonTerminalState();
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+
+import java.util.List;
+
+public interface JobRequestDao extends JpaDao<JobRequest> {
+
+    public void cancelJobsInNonTerminalState();
+
+    public List<JobRequest> findByPage(int pageSize, int offset, String searchTerm, String sortColumn,
+                                       String sortOrderDirection);
+
+    public long countFiltered(String searchTerm);
 }

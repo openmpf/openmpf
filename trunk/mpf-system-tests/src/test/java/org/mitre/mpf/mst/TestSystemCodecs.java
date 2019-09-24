@@ -28,8 +28,8 @@ package org.mitre.mpf.mst;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.mitre.mpf.interop.JsonMediaInputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.rest.api.JobCreationMediaData;
 
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +37,7 @@ import java.util.List;
 public class TestSystemCodecs extends TestSystemWithDefaultConfig {
 
     private void runTest(String pipelineName, String testMediaPath) {
-        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile(testMediaPath));
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(testMediaPath));
 
         long jobId = runPipelineOnMedia(pipelineName, media);
         JsonOutputObject outputObject = getJobOutputObject(jobId);

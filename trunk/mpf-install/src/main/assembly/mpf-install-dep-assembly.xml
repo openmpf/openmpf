@@ -54,7 +54,6 @@
       <includes>
       	<include>amq_detection_component</include>
         <include>streaming_component_executor</include>
-        <include>component_dependency_finder.py</include>
       </includes>
       <outputDirectory>bin</outputDirectory>
       <fileMode>755</fileMode>

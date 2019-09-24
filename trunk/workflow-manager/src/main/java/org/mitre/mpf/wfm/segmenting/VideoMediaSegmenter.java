@@ -33,7 +33,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,152 +43,152 @@ import java.util.*;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
-	private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
-	public static final String REF = "videoMediaSegmenter";
+    private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
+    public static final String REF = "videoMediaSegmenter";
 
 
-	@Override
-	public List<Message> createDetectionRequestMessages(
-			TransientMedia media, DetectionContext context) {
-		if (context.isFirstDetectionStage()) {
-			return createTimePairMessages(
-					media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
-		}
-		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
-			return createFeedForwardMessages(media, context);
-		}
-		else {
-			List<TimePair> trackTimePairs = MediaSegmenter.createTimePairsForTracks(context.getPreviousTracks());
-			return createTimePairMessages(media, context, trackTimePairs);
-		}
-	}
+    @Override
+    public List<Message> createDetectionRequestMessages(
+            Media media, DetectionContext context) {
+        if (context.isFirstDetectionTask()) {
+            return createTimePairMessages(
+                    media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
+        }
+        else if (MediaSegmenter.feedForwardIsEnabled(context)) {
+            return createFeedForwardMessages(media, context);
+        }
+        else {
+            List<TimePair> trackTimePairs = MediaSegmenter.createTimePairsForTracks(context.getPreviousTracks());
+            return createTimePairMessages(media, context, trackTimePairs);
+        }
+    }
 
 
-	private static List<Message> createTimePairMessages(
-			TransientMedia media, DetectionContext context, Collection<TimePair> trackTimePairs) {
+    private static List<Message> createTimePairMessages(
+            Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
 
-		List<TimePair> segments = MediaSegmenter.createSegments(
-				trackTimePairs,
-				context.getSegmentingPlan().getTargetSegmentLength(),
-				context.getSegmentingPlan().getMinSegmentLength(),
-				context.getSegmentingPlan().getMinGapBetweenSegments());
+        List<TimePair> segments = MediaSegmenter.createSegments(
+                trackTimePairs,
+                context.getSegmentingPlan().getTargetSegmentLength(),
+                context.getSegmentingPlan().getMinSegmentLength(),
+                context.getSegmentingPlan().getMinGapBetweenSegments());
 
-		List<Message> messages = new ArrayList<>(segments.size());
-		for(TimePair segment : segments) {
-			assert segment.getStartInclusive() >= 0
-					: String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
-			assert segment.getEndInclusive() >= 0
-					: String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
-			log.debug("Creating segment [{}, {}] for {}.",
-			          segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
+        List<Message> messages = new ArrayList<>(segments.size());
+        for(TimePair segment : segments) {
+            assert segment.getStartInclusive() >= 0
+                    : String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
+            assert segment.getEndInclusive() >= 0
+                    : String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
+            log.debug("Creating segment [{}, {}] for {}.",
+                      segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
 
-			VideoRequest videoRequest = VideoRequest.newBuilder()
-						.setStartFrame(segment.getStartInclusive())
-						.setStopFrame(segment.getEndInclusive())
-						.build();
+            VideoRequest videoRequest = VideoRequest.newBuilder()
+                    .setStartFrame(segment.getStartInclusive())
+                    .setStopFrame(segment.getEndInclusive())
+                    .build();
 
-			messages.add(createProtobufMessage(media, context, videoRequest));
-		}
-		return messages;
-	}
-
-
-	private static Message createProtobufMessage(
-			TransientMedia media,
-			DetectionContext context,
-			VideoRequest videoRequest) {
-
-		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
-				.setDataType(DetectionProtobuf.DetectionRequest.DataType.VIDEO)
-				.setVideoRequest(videoRequest)
-				.build();
-
-		Message message = new DefaultMessage();
-		message.setBody(detectionRequest);
-		return message;
-	}
+            messages.add(createProtobufMessage(media, context, videoRequest));
+        }
+        return messages;
+    }
 
 
-	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
-		int topConfidenceCount = getTopConfidenceCount(context);
+    private static Message createProtobufMessage(
+            Media media,
+            DetectionContext context,
+            VideoRequest videoRequest) {
 
-		List<Message> messages = new ArrayList<>();
-		for (Track track : context.getPreviousTracks()) {
-			if (track.getDetections().isEmpty()) {
-				log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
-				continue;
-			}
+        DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
+                .setDataType(DetectionProtobuf.DetectionRequest.DataType.VIDEO)
+                .setVideoRequest(videoRequest)
+                .build();
 
-			VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
-			messages.add(createProtobufMessage(media, context, videoRequest));
-		}
-
-		return messages;
-	}
+        Message message = new DefaultMessage();
+        message.setBody(detectionRequest);
+        return message;
+    }
 
 
-	private static VideoRequest createFeedForwardVideoRequest(Track track, int topConfidenceCount) {
+    private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+        int topConfidenceCount = getTopConfidenceCount(context);
 
-		Collection<Detection> topDetections = getTopConfidenceDetections(track.getDetections(), topConfidenceCount);
-		IntSummaryStatistics frameSummaryStats = topDetections.stream()
-				.mapToInt(Detection::getMediaOffsetFrame)
-				.summaryStatistics();
+        List<Message> messages = new ArrayList<>();
+        for (Track track : context.getPreviousTracks()) {
+            if (track.getDetections().isEmpty()) {
+                log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
+                continue;
+            }
 
-		DetectionProtobuf.VideoTrack.Builder videoTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
-				.setStartFrame(frameSummaryStats.getMin())
-				.setStopFrame(frameSummaryStats.getMax())
-				.setConfidence(track.getExemplar().getConfidence());
+            VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
+            messages.add(createProtobufMessage(media, context, videoRequest));
+        }
 
-		for (Detection detection : topDetections) {
-			videoTrackBuilder.addFrameLocationsBuilder()
-					.setFrame(detection.getMediaOffsetFrame())
-					.setImageLocation(MediaSegmenter.createImageLocation(detection));
-		}
-
-		return VideoRequest.newBuilder()
-				.setStartFrame(frameSummaryStats.getMin())
-				.setStopFrame(frameSummaryStats.getMax())
-				.setFeedForwardTrack(videoTrackBuilder)
-				.build();
-	}
+        return messages;
+    }
 
 
+    private static VideoRequest createFeedForwardVideoRequest(Track track, int topConfidenceCount) {
 
-	private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
-	                                                               int topConfidenceCount) {
-		if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
-			return allDetections;
-		}
+        Collection<Detection> topDetections = getTopConfidenceDetections(track.getDetections(), topConfidenceCount);
+        IntSummaryStatistics frameSummaryStats = topDetections.stream()
+                .mapToInt(Detection::getMediaOffsetFrame)
+                .summaryStatistics();
 
-		Comparator<Detection> confidenceComparator = Comparator
-				.comparingDouble(Detection::getConfidence)
-				.thenComparing(Comparator.naturalOrder());
+        DetectionProtobuf.VideoTrack.Builder videoTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
+                .setStartFrame(frameSummaryStats.getMin())
+                .setStopFrame(frameSummaryStats.getMax())
+                .setConfidence(track.getExemplar().getConfidence());
 
-		PriorityQueue<Detection> topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
+        for (Detection detection : topDetections) {
+            videoTrackBuilder.addFrameLocationsBuilder()
+                    .setFrame(detection.getMediaOffsetFrame())
+                    .setImageLocation(MediaSegmenter.createImageLocation(detection));
+        }
 
-		Iterator<Detection> allDetectionsIter = allDetections.iterator();
-		for (int i = 0; i < topConfidenceCount; i++) {
-			topDetections.add(allDetectionsIter.next());
-		}
-
-		while (allDetectionsIter.hasNext()) {
-			Detection detection = allDetectionsIter.next();
-			// Check if current detection is less than the minimum top detection so far
-			if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
-				topDetections.poll();
-				topDetections.add(detection);
-			}
-		}
-		return topDetections;
-	}
+        return VideoRequest.newBuilder()
+                .setStartFrame(frameSummaryStats.getMin())
+                .setStopFrame(frameSummaryStats.getMax())
+                .setFeedForwardTrack(videoTrackBuilder)
+                .build();
+    }
 
 
-	private static int getTopConfidenceCount(DetectionContext context) {
-		return context.getAlgorithmProperties()
-				.stream()
-				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
-				.mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
-				.findAny()
-				.orElse(0);
-	}
+
+    private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
+                                                                    int topConfidenceCount) {
+        if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
+            return allDetections;
+        }
+
+        Comparator<Detection> confidenceComparator = Comparator
+                .comparingDouble(Detection::getConfidence)
+                .thenComparing(Comparator.naturalOrder());
+
+        PriorityQueue<Detection> topDetections = new PriorityQueue<>(topConfidenceCount, confidenceComparator);
+
+        Iterator<Detection> allDetectionsIter = allDetections.iterator();
+        for (int i = 0; i < topConfidenceCount; i++) {
+            topDetections.add(allDetectionsIter.next());
+        }
+
+        while (allDetectionsIter.hasNext()) {
+            Detection detection = allDetectionsIter.next();
+            // Check if current detection is less than the minimum top detection so far
+            if (confidenceComparator.compare(detection, topDetections.peek()) > 0) {
+                topDetections.poll();
+                topDetections.add(detection);
+            }
+        }
+        return topDetections;
+    }
+
+
+    private static int getTopConfidenceCount(DetectionContext context) {
+        return context.getAlgorithmProperties()
+                .stream()
+                .filter(ap -> ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TOP_CONFIDENCE_COUNT))
+                .mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
+                .findAny()
+                .orElse(0);
+    }
 }

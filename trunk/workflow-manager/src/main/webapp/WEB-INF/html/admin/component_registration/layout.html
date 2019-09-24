@@ -25,7 +25,10 @@
 -->
 <div class="page-header text-center">
     <h3>Component Upload and Registration</h3>
-    <page-info>To upload a component click within the dropzone to open a file browser, or drag and drop a component .tar.gz package onto the dropzone area. Once uploaded, the registration process will automatically begin. Once registered, use the Nodes page to deploy component services.</page-info>
+    <page-info>To upload a component click within the dropzone to open a file browser, or drag and drop a component
+        .tar.gz package onto the dropzone area. Once uploaded, the registration process will automatically begin. Once
+        registered, use the Nodes page to deploy component services.
+    </page-info>
 </div>
 
 <div class="row">
@@ -59,106 +62,67 @@
 
             <h4> Current Components </h4>
 
-    <table class="table table-bordered table-hover">
-        <thead>
-        <tr>
-            <th>Component name</th>
-            <th>Package name</th>
-            <th>Date uploaded</th>
-            <th>Date registered</th>
-            <th>Managed</th>
-            <th>Status</th>
-            <th class="text-center" colspan="3"> Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr ng-repeat="component in components | orderBy:getSortKey">
-            <td>{{component.componentName}}</td>
-            <td>{{component.packageFileName}}</td>
-            <td>{{component.dateUploaded | date:'short'}}</td>
-            <td>{{component.dateRegistered | date:'short'}}</td>
-            <td>
-                <span ng-if="component.managed">Yes</span>
-                <span ng-if="!component.managed">No</span>
-            </td>
-            <td>{{stateToText(component.componentState)}}</td>
-            <td>
-                <button ng-if="component.managed"
-                        ng-disabled="!canRegister(component)"
-                        ng-click="registerComponent(component)"
-                        type="button"
-                        class="btn btn-success btn-block btn-xs">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>Component name</th>
+                    <th>Package name</th>
+                    <th>Date uploaded</th>
+                    <th>Date registered</th>
+                    <th>Managed</th>
+                    <th>Status</th>
+                    <th class="text-center" colspan="3"> Actions </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="component in components | orderBy:getSortKey">
+                    <td>{{component.componentName}}</td>
+                    <td>{{component.packageFileName}}</td>
+                    <td>{{component.dateUploaded | date:'short'}}</td>
+                    <td>{{component.dateRegistered | date:'short'}}</td>
+                    <td>
+                        <span ng-if="component.managed">Yes</span>
+                        <span ng-if="!component.managed">No</span>
+                    </td>
+                    <td>{{stateToText(component.componentState)}}</td>
+                    <td>
+                        <button ng-if="component.managed"
+                                ng-disabled="!canRegister(component)"
+                                ng-click="registerComponent(component)"
+                                type="button"
+                                class="btn btn-success btn-block btn-xs">
 
-                    <i ng-if="isRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                            <i ng-if="isRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                    <span ng-if="!isRegistering(component)"> Register </span>
-                </button>
-            </td>
-            <td>
-                <button ng-disabled="!canRemove(component)"
-                        ng-click="removeComponent(component)"
-                        type="button"
-                        class="btn btn-danger btn-block btn-xs">
+                            <span ng-if="!isRegistering(component)"> Register </span>
+                        </button>
+                    </td>
+                    <td>
+                        <button ng-disabled="!canRemove(component)"
+                                ng-click="removeComponent(component)"
+                                type="button"
+                                class="btn btn-danger btn-block btn-xs">
 
-                    <i ng-if="isRemoving(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                            <i ng-if="isRemoving(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                    <span ng-if="!isRemoving(component)"> Remove </span>
-                </button>
-            </td>
-            <td>
-                <button ng-if="component.managed"
-                        ng-disabled="!canRemove(component)"
-                        ng-click="reRegisterClicked(component)"
-                        type="button" class="btn btn-warning btn-block btn-xs">
+                            <span ng-if="!isRemoving(component)"> Remove </span>
+                        </button>
+                    </td>
+                    <td>
+                        <button ng-if="component.managed"
+                                ng-disabled="!canRemove(component)"
+                                ng-click="reRegister(component)"
+                                type="button" class="btn btn-warning btn-block btn-xs">
 
-                    <i ng-if="isReRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                            <i ng-if="isReRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                    <span ng-if="!isReRegistering(component)"> Re-register </span>
-                </button>
-            </td>
+                            <span ng-if="!isReRegistering(component)"> Re-register </span>
+                        </button>
+                    </td>
 
-        </tr>
-        </tbody>
-    </table>
-
-    <script type="text/ng-template" id="reRegisterModal.html">
-        <div class="modal-header">
-            <h3 class="modal-title"> Confirm Component Re-Registration </h3>
-        </div>
-        <div class="modal-body">
-
-            <div ng-if="registrationOrder">
-                In order to re-register {{targetComponent.packageFileName}}, the following components should also be
-                re-registered:
-                <ul>
-                    <li ng-repeat="componentPackage in registrationOrder | filter:isNotTargetComponent">
-                        {{componentPackage}}
-                    </li>
-                </ul>
-            </div>
-
-            <div ng-if="!registrationOrder" class="text-danger">
-                Unable to determine which components depend on {{targetComponent.packageFileName}}.
-            </div>
-
-            <div class="text-danger">
-                If you only re-register {{targetComponent.packageFileName}} some existing pipelines may be removed.
-            </div>
-
-        </div>
-        <div class="modal-footer">
-            <button ng-if="registrationOrder" ng-click="onReRegisterAllClick()" class="btn btn-success" type="button">
-                Re-register Everything Listed Above
-            </button>
-            <button ng-click="onReRegOnlyTargetClick()" class="btn btn-danger" type="button">
-                Only Re-register {{targetComponent.packageFileName}}
-            </button>
-            <button class="btn btn-default" type="button" ng-click="$dismiss()">
-                Cancel
-            </button>
-        </div>
-    </script>
-</mpf-admin-only>
-
+                </tr>
+                </tbody>
+            </table>
+        </mpf-admin-only>
+    </div>
 </div>
-

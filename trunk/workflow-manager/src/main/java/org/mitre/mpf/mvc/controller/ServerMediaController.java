@@ -30,12 +30,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import org.apache.commons.io.FileUtils;
-import org.mitre.mpf.interop.JsonJobRequest;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
 import org.mitre.mpf.mvc.model.ServerMediaListing;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateJobRequestDao;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
@@ -84,10 +84,13 @@ public class ServerMediaController {
     private PropertiesUtil propertiesUtil;
 
     @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
+    @Autowired
     private ServerMediaService serverMediaService;
 
     @Autowired
-    private HibernateJobRequestDao jobRequestDao;
+    private JobRequestDao jobRequestDao;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -96,18 +99,16 @@ public class ServerMediaController {
     private S3StorageBackend s3StorageBackend;
 
 
-    public class SortAlphabeticalCaseInsensitive implements Comparator<Object> {
-        public int compare(Object o1, Object o2) {
-            ServerMediaFile s1 = (ServerMediaFile)o1;
-            ServerMediaFile s2 = (ServerMediaFile)o2;
+    private static class SortAlphabeticalCaseInsensitive implements Comparator<ServerMediaFile> {
+        @Override
+        public int compare(ServerMediaFile s1, ServerMediaFile s2) {
             return s1.getName().toLowerCase().compareTo(s2.getName().toLowerCase());
         }
     }
 
-    public class SortAlphabeticalCaseSensitive implements Comparator<Object> {
-        public int compare(Object o1, Object o2) {
-            ServerMediaFile s1 = (ServerMediaFile)o1;
-            ServerMediaFile s2 = (ServerMediaFile)o2;
+    private static class SortAlphabeticalCaseSensitive implements Comparator<ServerMediaFile> {
+        @Override
+        public int compare(ServerMediaFile s1, ServerMediaFile s2) {
             return s1.getName().compareTo(s2.getName());
         }
     }
@@ -220,16 +221,16 @@ public class ServerMediaController {
             IoUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
         }
 
-        JobRequest job = jobRequestDao.findById(jobId);
-        if (job == null) {
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        if (jobRequest == null) {
             response.setStatus(404);
             response.flushBuffer();
             return;
         }
 
-        JsonJobRequest jsonJob = jsonUtils.deserialize(job.getInputObject(), JsonJobRequest.class);
+        var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         Function<String, String> combinedProperties
-                = AggregateJobPropertiesUtil.getCombinedProperties(jsonJob, sourceUri);
+                = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {

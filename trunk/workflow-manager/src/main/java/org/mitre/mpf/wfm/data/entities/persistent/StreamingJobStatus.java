@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
@@ -40,6 +43,7 @@ public class StreamingJobStatus {
     private final StreamingJobStatusType _type;
     public StreamingJobStatusType getType() { return _type; }
 
+    @JsonIgnore
     public boolean isTerminal() {
         return _type.isTerminal();
     }
@@ -49,7 +53,10 @@ public class StreamingJobStatus {
         this(type, null);
     }
 
-    public StreamingJobStatus(StreamingJobStatusType type, String detail) {
+    @JsonCreator
+    public StreamingJobStatus(
+            @JsonProperty("type") StreamingJobStatusType type,
+            @JsonProperty("detail") String detail) {
         _type = type;
         _detail = detail;
     }

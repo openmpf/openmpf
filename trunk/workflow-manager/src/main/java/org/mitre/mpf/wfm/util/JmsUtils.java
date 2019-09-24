@@ -31,11 +31,11 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.wfm.enums.ActionType;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.service.PipelineService;
-import org.mitre.mpf.wfm.pipeline.xml.AlgorithmDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,69 +46,80 @@ import java.util.List;
 
 @Component
 public class JmsUtils {
-	private static final Logger log = LoggerFactory.getLogger(JmsUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JmsUtils.class);
 
-	private String createCancellationRouteName(long jobId, String... params) {
-		// The brackets are used to avoid collisions between "CANCEL 1" and "CANCEL 100" when there are no params provided. This
-		// disambiguation is necessary because the destroyCancellationRoutes method destroys any route with a name like
-		// CANCEL [1] without concerning itself with the remainder of the route name.
-		return String.format("CANCEL [%d]", jobId) + ((params == null || params.length == 0) ? "" : " " + StringUtils.join(params, " "));
-	}
+    @Autowired
+    private InProgressBatchJobsService _inProgressBatchJobs;
 
-	@Autowired
-	private PipelineService pipelineService;
+    @Autowired
+    private CamelContext _camelContext;
 
-	@Autowired
-	private CamelContext camelContext;
 
-	public void cancel(final long jobId) throws Exception {
-		camelContext.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				for(final AlgorithmDefinition algorithmDefinition : pipelineService.getAlgorithms()) {
-					String routeName = createCancellationRouteName(jobId, algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), "REQUEST");
-					String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d", algorithmDefinition.getActionType().name(), algorithmDefinition.getName(), jobId);
-					log.debug("Creating route {} with URI {}.", routeName);
-					from(routeUri)
-						.routeId(routeName)
-						.setExchangePattern(ExchangePattern.InOnly)
-						.log(LoggingLevel.DEBUG, "Cancelling a message for ${headers.JobId}...")
-						.to(cancellationEndpointForActionType(algorithmDefinition.getActionType()));
-				}
-			}
-		});
-	}
+    public void cancel(final long jobId) throws Exception {
+        _camelContext.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() {
+                BatchJob job = _inProgressBatchJobs.getJob(jobId);
 
-	/**
-	 * When a job completes, any cancellation routes associated with the Job should also be stopped and deleted.
-	 * @param jobId
-	 * @throws Exception
+                for (Algorithm algorithm : job.getPipelineElements().getAlgorithms()) {
+                    String routeName = createCancellationRouteName(jobId, algorithm.getActionType().name(),
+                                                                   algorithm.getName(), "REQUEST");
+                    String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d",
+                                                    algorithm.getActionType().name(), algorithm.getName(), jobId);
+                    LOG.debug("Creating route {} with URI {}.", routeName, routeUri);
+                    from(routeUri)
+                            .routeId(routeName)
+                            .setExchangePattern(ExchangePattern.InOnly)
+                            .log(LoggingLevel.DEBUG, "Cancelling a message for ${headers.JobId}...")
+                            .to(cancellationEndpointForActionType(algorithm.getActionType()));
+                }
+            }
+        });
+    }
+
+    /**
+     * When a job completes, any cancellation routes associated with the Job should also be stopped and deleted.
+     * @param jobId
+     * @throws Exception
      */
-	public synchronized void destroyCancellationRoutes(final long jobId) throws Exception {
-		camelContext.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				List<Route> routes = new ArrayList<>(camelContext.getRoutes());
+    public synchronized void destroyCancellationRoutes(final long jobId) throws Exception {
+        _camelContext.addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                List<Route> routes = new ArrayList<>(_camelContext.getRoutes());
 
-				for(Route route : routes) {
-					if(route.getId().startsWith(createCancellationRouteName(jobId))) {
-						log.debug("Destroying Route: {}", route.getId());
-						camelContext.stopRoute(route.getId());
-						camelContext.removeRoute(route.getId());
-					}
-				}
-			}
-		});
-	}
+                for(Route route : routes) {
+                    if(route.getId().startsWith(createCancellationRouteName(jobId))) {
+                        LOG.debug("Destroying Route: {}", route.getId());
+                        _camelContext.stopRoute(route.getId());
+                        _camelContext.removeRoute(route.getId());
+                    }
+                }
+            }
+        });
+    }
 
-	private String cancellationEndpointForActionType(ActionType actionType) {
-		switch (actionType) {
-			case DETECTION:
-				return MpfEndpoints.CANCELLED_DETECTIONS;
-			case MARKUP:
-				return MpfEndpoints.CANCELLED_MARKUPS;
-			default:
-				return null;
-		}
-	}
+    private static String cancellationEndpointForActionType(ActionType actionType) {
+        switch (actionType) {
+            case DETECTION:
+                return MpfEndpoints.CANCELLED_DETECTIONS;
+            case MARKUP:
+                return MpfEndpoints.CANCELLED_MARKUPS;
+            default:
+                return null;
+        }
+    }
+
+
+
+    private static String createCancellationRouteName(long jobId, String... params) {
+        // The brackets are used to avoid collisions between "CANCEL 1" and "CANCEL 100" when there are no params
+        // provided. This disambiguation is necessary because the destroyCancellationRoutes method destroys any route
+        // with a name like CANCEL [1] without concerning itself with the remainder of the route name.
+        var prefix = String.format("CANCEL [%s]", jobId);
+        if (params == null || params.length == 0) {
+            return prefix;
+        }
+        return prefix + ' ' + String.join(" ", params);
+    }
 }

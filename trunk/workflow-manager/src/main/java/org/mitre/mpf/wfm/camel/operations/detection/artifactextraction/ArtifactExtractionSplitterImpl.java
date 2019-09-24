@@ -32,19 +32,23 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.ActionType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -70,10 +74,10 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     @Inject
     ArtifactExtractionSplitterImpl(
-            JsonUtils jsonUtils,
-            InProgressBatchJobsService inProgressBatchJobs,
-            PropertiesUtil propertiesUtil,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        JsonUtils jsonUtils,
+        InProgressBatchJobsService inProgressBatchJobs,
+        PropertiesUtil propertiesUtil,
+        AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _propertiesUtil = propertiesUtil;
@@ -91,48 +95,29 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     public List<Message> wfmSplit(Exchange exchange) {
         TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
                                                                          TrackMergingContext.class);
-        TransientJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
         if (job.isCancelled()) {
             LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
                      job.getId());
             return Collections.emptyList();
         }
-        int numPipelineStages = job.getPipeline().getStages().size();
-        LOG.debug("number of pipeline stages = {}", numPipelineStages);
-        LOG.debug("track merging context stage number {}", trackMergingContext.getStageIndex());
-        SystemPropertiesSnapshot propsSnapshot = job.getSystemPropertiesSnapshot();
-        // If the user has requested output objects for the last stage
-        // only, then return an empty list if this is not the last
-        // stage. Also return an empty list if this is not the last stage,
-        // but the action type of the last stage is MARKUP.
-        if (propsSnapshot.isOutputObjectLastStageOnly()) {
-            List<TransientStage> stages = new ArrayList<>(job.getPipeline().getStages());
-            int lastStageIndex = numPipelineStages-1;
-            if (stages.get(lastStageIndex).getActionType() == ActionType.MARKUP)
-                lastStageIndex = lastStageIndex - 1;
-            if (job.getCurrentStage() < lastStageIndex) {
-                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline stage {}.",
-                         job.getId(), job.getCurrentStage());
-                return Collections.emptyList();
-            }
-        }
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames
-                = getFrameNumbersGroupedByMediaAndAction(job, trackMergingContext.getStageIndex());
+                = getFrameNumbersGroupedByMediaAndAction(job, trackMergingContext.getTaskIndex());
 
         List<Message> messages = new ArrayList<>(mediaAndActionToFrames.size());
         for (long mediaId : mediaAndActionToFrames.rowKeySet()) {
             Map<Integer, Set<Integer>> actionToFrameNumbers = mediaAndActionToFrames.row(mediaId);
 
-            TransientMedia media = job.getMedia(mediaId);
+            Media media = job.getMedia(mediaId);
             ArtifactExtractionRequest request = new ArtifactExtractionRequest(
-                    job.getId(),
-                    mediaId,
-                    media.getLocalPath().toString(),
-                    media.getMediaType(),
-                    trackMergingContext.getStageIndex(),
-                    actionToFrameNumbers);
+                job.getId(),
+                mediaId,
+                media.getLocalPath().toString(),
+                media.getMediaType(),
+                trackMergingContext.getTaskIndex(),
+                actionToFrameNumbers);
 
             Message message = new DefaultMessage();
             message.setBody(_jsonUtils.serialize(request));
@@ -143,29 +128,48 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private Table<Long, Integer, Set<Integer>> getFrameNumbersGroupedByMediaAndAction(
-            TransientJob job, int stageIndex) {
+        BatchJob job, int taskIndex) {
 
         Table<Long, Integer, Set<Integer>> mediaAndActionToFrames = HashBasedTable.create();
-        TransientStage stage = job.getPipeline().getStages().get(stageIndex);
 
-        for (int actionIndex = 0; actionIndex < stage.getActions().size(); actionIndex++) {
+        JobPipelineElements pipelineElements = job.getPipelineElements();
+        Task task = pipelineElements.getTask(taskIndex);
+        int numPipelineTasks = pipelineElements.getTaskCount();
+        // If the user has requested output objects for the last task only, and this is
+        // not the last task, then skip extraction for this media. Also return an empty
+        // list if this is the second to last task, but the action type of the last task
+        // is MARKUP.
+        int lastTaskIndex = numPipelineTasks-1;
+        ActionType finalActionType = pipelineElements.getAlgorithm(lastTaskIndex, 0).getActionType();
+        if (finalActionType == ActionType.MARKUP) {
+            lastTaskIndex = lastTaskIndex - 1;
+        }
+        boolean notLastTask = (taskIndex < lastTaskIndex);
 
-            for (TransientMedia media : job.getMedia()) {
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+
+            for (Media media : job.getMedia()) {
                 if (media.isFailed()
-                        || (media.getMediaType() != MediaType.IMAGE
-                            && media.getMediaType() != MediaType.VIDEO)) {
+                    || (media.getMediaType() != MediaType.IMAGE
+                        && media.getMediaType() != MediaType.VIDEO)) {
                     continue;
                 }
 
-                ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, stageIndex, actionIndex);
+                ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, taskIndex, actionIndex);
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
                     continue;
                 }
 
+                boolean lastTaskOnly = Boolean.parseBoolean(
+                    _aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
+                if (lastTaskOnly && notLastTask) {
+                    LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}.", job.getId(), task.getName(), media.getId());
+                    continue;
+                }
+
                 Collection<Track> tracks
-                        = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), stageIndex, actionIndex);
-                processTracks(mediaAndActionToFrames, tracks, media, actionIndex, extractionPolicy,
-                              job.getSystemPropertiesSnapshot());
+                        = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), taskIndex, actionIndex);
+                processTracks(mediaAndActionToFrames, tracks, job, media, taskIndex, actionIndex, extractionPolicy);
             }
         }
 
@@ -174,12 +178,13 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private void processTracks(
-            Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
-            Iterable<Track> tracks,
-            TransientMedia media,
-            int actionIndex,
-            ArtifactExtractionPolicy policy,
-            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+        Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+        Collection<Track> tracks,
+        BatchJob job,
+        Media media,
+        int taskIndex,
+        int actionIndex,
+        ArtifactExtractionPolicy policy) {
 
         for (Track track : tracks) {
             switch (policy) {
@@ -194,60 +199,67 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     }
                     // fall through
                 case ALL_TYPES:
-                    processExtractionsInTrack(mediaAndActionToFrames, track, media,
-                                              actionIndex, policy, systemPropertiesSnapshot);
+                    processExtractionsInTrack(mediaAndActionToFrames, track, job, media, taskIndex, actionIndex);
             }
         }
     }
 
 
     private void processExtractionsInTrack(
-            Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
-            Track track,
-            TransientMedia media,
-            int actionIndex,
-            ArtifactExtractionPolicy policy,
-            SystemPropertiesSnapshot systemPropertiesSnapshot) {
+        Table<Long, Integer, Set<Integer>> mediaAndActionToFrames,
+        Track track,
+        BatchJob job,
+        Media media,
+        int taskIndex,
+        int actionIndex) {
 
-        if (systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus() >= 0) {
+        Action thisAction = job.getPipelineElements().getAction(taskIndex, actionIndex);
+        int exemplarPlusExtractCount = Integer.parseInt(_aggregateJobPropertiesUtil
+                                                        .getValue("ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
+                                                                  job, media, thisAction));
+        if (exemplarPlusExtractCount >= 0) {
             Detection exemplar = track.getExemplar();
             int exemplarFrame = exemplar.getMediaOffsetFrame();
             LOG.debug("Extracting exemplar frame {}", exemplarFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
-            int extractCount = systemPropertiesSnapshot.getArtifactExtractionPolicyExemplarFramePlus();
-            while (extractCount > 0) {
-                // before frame: only extract if the frame lies within this track and is not less
-                // than 0.
-                int beforeIndex = exemplarFrame - extractCount;
+            while (exemplarPlusExtractCount > 0) {
+                // before frame: only extract if the frame lies within this track and is
+                // not less than 0.
+                int beforeIndex = exemplarFrame - exemplarPlusExtractCount;
                 if ((beforeIndex >= 0) && (beforeIndex >= track.getStartOffsetFrameInclusive())) {
                     LOG.debug("Extracting before-frame {}", beforeIndex);
                     addFrame(mediaAndActionToFrames, media.getId(), actionIndex, beforeIndex);
                 }
-                // after frame: only extract if the frame lies within this track and is not greater than the
-                // last frame in the media.
-                int afterIndex = exemplarFrame + extractCount;
+                // after frame: only extract if the frame lies within this track and is
+                // not greater than the last frame in the media.
+                int afterIndex = exemplarFrame + exemplarPlusExtractCount;
                 if ((afterIndex <= (media.getLength() - 1)) && (afterIndex <= track.getEndOffsetFrameInclusive())) {
                     LOG.debug("Extracting after-frame {}", afterIndex);
                     addFrame(mediaAndActionToFrames, media.getId(), actionIndex, afterIndex);
                 }
-                extractCount--;
+                exemplarPlusExtractCount--;
             }
         }
 
         int firstDetectionFrame = track.getDetections().first().getMediaOffsetFrame();
         int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
-
-        if (systemPropertiesSnapshot.isArtifactExtractionPolicyFirstFrame()) {
+        if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
+                                 .getValue("ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
+                                          job, media, thisAction))) {
             LOG.debug("Extracting first frame {}", firstDetectionFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, firstDetectionFrame);
         }
 
-        if (systemPropertiesSnapshot.isArtifactExtractionPolicyLastFrame()) {
+        if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
+                                 .getValue("ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
+                                          job, media, thisAction))) {
             LOG.debug("Extracting last frame {}", lastDetectionFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, lastDetectionFrame);
         }
 
-        if (systemPropertiesSnapshot.isArtifactExtractionPolicyMiddleFrame()) {
+        if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
+                                 .getValue("ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
+                                          job, media, thisAction))) {
             // The goal here is to find the detection in the track that is closest to the "middle"
             // frame. The middle frame is the frame that is equally distant from the start and stop
             // frames, but that frame does not necessarily contain a detection in this track, so we
@@ -266,7 +278,10 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, middleFrame);
         }
 
-        if (systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount() > 0) {
+        int topConfidenceExtractCount = Integer.parseInt(_aggregateJobPropertiesUtil
+                                                         .getValue("ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+                                                                  job, media, thisAction));
+        if (topConfidenceExtractCount > 0) {
             List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
             // Sort the detections by confidence, then by frame number, if two detections have equal
             // confidence. The sort by confidence is reversed so that the N highest confidence
@@ -275,11 +290,10 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 Comparator.comparing(Detection::getConfidence)
                 .reversed()
                 .thenComparing(Detection::getMediaOffsetFrame));
-            int extractCount = Math.min(systemPropertiesSnapshot.getArtifactExtractionPolicyTopConfidenceCount(),
-                                        detectionsCopy.size());
+            int extractCount = Math.min(topConfidenceExtractCount, detectionsCopy.size());
             for (int i = 0; i < extractCount; i++) {
                 LOG.debug("Extracting frame #{} with confidence = {}", detectionsCopy.get(i).getMediaOffsetFrame(),
-                         detectionsCopy.get(i).getConfidence());
+                          detectionsCopy.get(i).getConfidence());
                 addFrame(mediaAndActionToFrames, media.getId(), actionIndex,
                          detectionsCopy.get(i).getMediaOffsetFrame());
             }
@@ -297,22 +311,19 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     }
 
 
-    private ArtifactExtractionPolicy getExtractionPolicy(TransientJob job, TransientMedia media,
-                                                         int stageIndex, int actionIndex) {
+    private ArtifactExtractionPolicy getExtractionPolicy(BatchJob job, Media media,
+                                                         int taskIndex, int actionIndex) {
+        Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
         Function<String, String> combinedProperties
-                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media.getId(), stageIndex, actionIndex);
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         String extractionPolicyString = combinedProperties.apply(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY);
 
-        ArtifactExtractionPolicy defaultPolicy = job.getSystemPropertiesSnapshot().getDefaultArtifactExtractionPolicy();
+        ArtifactExtractionPolicy defaultPolicy = _propertiesUtil.getArtifactExtractionPolicy();
         return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);
     }
 
 
-    private boolean isNonVisualObjectType(String type) {
-        for ( String propType : _propertiesUtil.getArtifactExtractionNonvisualTypesList() ) {
-            if (StringUtils.equalsIgnoreCase(type, propType)) return true;
-        }
-        return false;
+    private static boolean isNonVisualObjectType(String type) {
+        return StringUtils.equalsIgnoreCase(type, "MOTION") || StringUtils.equalsIgnoreCase(type, "SPEECH");
     }
-
 }

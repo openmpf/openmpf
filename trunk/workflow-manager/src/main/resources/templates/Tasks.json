@@ -1,0 +1,9 @@
+[
+    {
+        "name": "OCV GENERIC MARKUP TASK",
+        "description": "Performs object markup in images and videos.",
+        "actions": [
+            "OCV GENERIC MARKUP ACTION"
+        ]
+    }
+]

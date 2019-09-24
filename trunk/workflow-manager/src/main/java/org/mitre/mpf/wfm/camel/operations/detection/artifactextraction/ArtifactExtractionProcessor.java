@@ -149,9 +149,9 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
     private void handleException(ArtifactExtractionRequest request, IOException e) {
         LOG.warn("[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract the artifacts from Media #{} due to an " +
-                         "exception. All detections (including exemplars) produced in this stage " +
+                         "exception. All detections (including exemplars) produced in this task " +
                          "for this medium will NOT have an associated artifact.",
-                 request.getJobId(), request.getStageIndex(), request.getMediaId(), e);
+                 request.getJobId(), request.getTaskIndex(), request.getMediaId(), e);
         processDetections(request, d -> d.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED));
     }
 
@@ -161,14 +161,14 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             int actionIndex = entry.getKey();
             Set<Integer> artifactFrames = entry.getValue();
             Set<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
-                                                               request.getStageIndex(), actionIndex);
+                                                               request.getTaskIndex(), actionIndex);
 
             tracks.stream()
                     .flatMap(t -> t.getDetections().stream())
                     .filter(d -> artifactFrames.contains(d.getMediaOffsetFrame()))
                     .forEach(detectionHandler);
 
-            _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getStageIndex(),
+            _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(),
                                            actionIndex, tracks);
 
             SortedSet<Integer> missingFrames = tracks.stream()

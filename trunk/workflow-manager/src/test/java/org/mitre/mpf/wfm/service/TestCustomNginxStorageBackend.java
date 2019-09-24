@@ -42,9 +42,9 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.transients.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.TransientJob;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -130,11 +130,11 @@ public class TestCustomNginxStorageBackend {
 
 
     private void setStorageUri(String uri) throws StorageException {
-        SystemPropertiesSnapshot propertiesSnapshot = mock(SystemPropertiesSnapshot.class);
+        var propertiesSnapshot = mock(SystemPropertiesSnapshot.class);
         when(propertiesSnapshot.getNginxStorageServiceUri())
                 .thenReturn(Optional.of(URI.create(uri)));
 
-        TransientJob job = mock(TransientJob.class);
+        var job = mock(BatchJob.class);
         when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
 

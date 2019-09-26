@@ -1,515 +1,485 @@
 {
-  "jobId": 15,
-  "objectId": "8711bd3a-e391-4a64-9bf2-7e03783d7f00",
-  "pipeline": {
-    "name": "TEST MULTIPLE FACE DETECTION PIPELINE",
-    "description": "TEST MULTIPLE FACE DETECTION PIPELINE",
-    "stages": [
-      {
-        "actionType": "DETECTION",
-        "name": "TEST MULTIPLE FACE DETECTION TASK",
-        "description": "TEST MULTIPLE FACE DETECTION TASK",
-        "actions": [
-          {
-            "algorithm": "FACECV",
-            "name": "OCV FACE DETECTION ACTION",
-            "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": {}
-          },
-          {
-            "algorithm": "DLIB",
-            "name": "DLIB FACE DETECTION ACTION",
-            "description": "Executes the dlib face detection algorithm using the default parameters.",
-            "properties": {}
-          },
-          {
-            "algorithm": "PERSONCV",
-            "name": "OCV PERSON DETECTION ACTION",
-            "description": "Executes the OpenCV person detection algorithm using the default parameters.",
-            "properties": {}
-          }
-        ]
-      }
-    ]
-  },
-  "priority": 4,
-  "siteId": "mpf1",
-  "externalJobId": "3350febb-5f82-4c8d-97a0-dc676aafb475",
-  "timeStart": "2017-06-15T22:44:12.0-05:00",
-  "timeStop": "2017-06-15T22:44:18.0-05:00",
-  "status": "COMPLETE",
-  "algorithmProperties": {},
-  "jobProperties": {},
-  "media": [
-    {
-      "mediaId": 13,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/homewood-bank-robbery.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "NO TRACKS": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "tracks": []
-          },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": []
-          }
-        ],
-        "PERSON": [
-          {
-            "source": "+#OCV PERSON DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "a35cd26aed6a828cc7edae9b974a8833016a5096cdd9827a808bbcf7193c4e22",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 118,
-                  "y": 35,
-                  "width": 77,
-                  "height": 133,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/13/0/homewood-bank-robbery.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 118,
-                    "y": 35,
-                    "width": 77,
-                    "height": 133,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/13/0/homewood-bank-robbery.jpg",
-                    "offset": 0
-                  }
+    "algorithmProperties": {},
+    "externalJobId": "f39dda0a-9c80-4edb-a3bb-f8e69368af5a",
+    "jobErrors": [],
+    "jobId": 44,
+    "jobProperties": {},
+    "jobWarnings": [],
+    "media": [
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 41,
+            "mediaMetadata": {
+                "MIME_TYPE": "image/jpeg"
+            },
+            "mediaProperties": {},
+            "message": null,
+            "mimeType": "image/jpeg",
+            "output": {
+                "NO TRACKS": [
+                    {
+                        "source": "+#DLIB FACE DETECTION ACTION"
+                    },
+                    {
+                        "source": "+#OCV FACE DETECTION ACTION"
+                    }
                 ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
+                "PERSON": [
+                    {
+                        "source": "+#OCV PERSON DETECTION ACTION",
+                        "tracks": [
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/41/0/homewood-bank-robbery.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 133,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 77,
+                                        "x": 118,
+                                        "y": 35
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/41/0/homewood-bank-robbery.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 133,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 77,
+                                    "x": 118,
+                                    "y": 35
+                                },
+                                "id": "1d54a3c5adbac24cedc53d6f3cfd02e575fa7f2550795e681935651211a76d39",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "path": "file:///opt/mpf/share/samples/person/homewood-bank-robbery.jpg",
+            "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
+            "status": "COMPLETE"
+        },
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 40,
+            "mediaMetadata": {
+                "MIME_TYPE": "image/jpeg"
+            },
+            "mediaProperties": {},
+            "message": null,
+            "mimeType": "image/jpeg",
+            "output": {
+                "FACE": [
+                    {
+                        "source": "+#DLIB FACE DETECTION ACTION",
+                        "tracks": [
+                            {
+                                "confidence": 1.737665,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": 1.737665,
+                                        "detectionProperties": {},
+                                        "height": 38,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 38,
+                                        "x": 166,
+                                        "y": 46
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": 1.737665,
+                                    "detectionProperties": {},
+                                    "height": 38,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 38,
+                                    "x": 166,
+                                    "y": 46
+                                },
+                                "id": "7644c3d4334b3393c964b42a9f078891c691ac677164d54265eab2dd4553afb4",
+                                "source": "+#DLIB FACE DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "FACE"
+                            },
+                            {
+                                "confidence": 2.3243635,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": 2.3243635,
+                                        "detectionProperties": {},
+                                        "height": 38,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 38,
+                                        "x": 402,
+                                        "y": 42
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": 2.3243635,
+                                    "detectionProperties": {},
+                                    "height": 38,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 38,
+                                    "x": 402,
+                                    "y": 42
+                                },
+                                "id": "c1f821dc4529c1da394c4a79320fe39816da2dac8f3850cbeb02c8249051a6fe",
+                                "source": "+#DLIB FACE DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "FACE"
+                            }
+                        ]
+                    },
+                    {
+                        "source": "+#OCV FACE DETECTION ACTION",
+                        "tracks": [
+                            {
+                                "confidence": 13.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": 13.0,
+                                        "detectionProperties": {},
+                                        "height": 50,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 50,
+                                        "x": 397,
+                                        "y": 35
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": 13.0,
+                                    "detectionProperties": {},
+                                    "height": 50,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 50,
+                                    "x": 397,
+                                    "y": 35
+                                },
+                                "id": "1e8ef072c679177e681c09095fd0ac0c9a1fc677721be6d0e6ccf38254a32009",
+                                "source": "+#OCV FACE DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "FACE"
+                            }
+                        ]
+                    }
+                ],
+                "PERSON": [
+                    {
+                        "source": "+#OCV PERSON DETECTION ACTION",
+                        "tracks": [
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 259,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 124,
+                                        "x": 0,
+                                        "y": 36
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 259,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 124,
+                                    "x": 0,
+                                    "y": 36
+                                },
+                                "id": "b20f30ac5e7a095c133f2eff1154387072e91265488fcc24a309d0a436ad51a5",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            },
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 387,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 194,
+                                        "x": 97,
+                                        "y": 32
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 387,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 194,
+                                    "x": 97,
+                                    "y": 32
+                                },
+                                "id": "d83ce1dd76ba24ce4e1ad2acb1901846516982b73be8a7b80ad51f5c3866c281",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            },
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 219,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 109,
+                                        "x": 191,
+                                        "y": 50
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 219,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 109,
+                                    "x": 191,
+                                    "y": 50
+                                },
+                                "id": "0ebc80df1ee60f204baec56ffb2d3a85fda0310460564a615e13162c48cafb12",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            },
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 146,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 73,
+                                        "x": 253,
+                                        "y": 2
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 146,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 73,
+                                    "x": 253,
+                                    "y": 2
+                                },
+                                "id": "55b03da110bcfa8e2a44fa625add5f244296395b4a3a24601af194777c802684",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            },
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 178,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 89,
+                                        "x": 291,
+                                        "y": 21
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 178,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 89,
+                                    "x": 291,
+                                    "y": 21
+                                },
+                                "id": "ce521e76ad125397924cac11a910325718f110f4f77817d82808b0b064d2beb7",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            },
+                            {
+                                "confidence": -1.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                        "confidence": -1.0,
+                                        "detectionProperties": {},
+                                        "height": 247,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 67,
+                                        "x": 573,
+                                        "y": 44
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg",
+                                    "confidence": -1.0,
+                                    "detectionProperties": {},
+                                    "height": 247,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 67,
+                                    "x": 573,
+                                    "y": 44
+                                },
+                                "id": "f05815b00a2f89187f441148b79220a80a8d26fddd49d06330bf62cf28d66562",
+                                "source": "+#OCV PERSON DETECTION ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {},
+                                "type": "PERSON"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "path": "file:///opt/mpf/share/samples/person/race.jpg",
+            "sha256": "49b0b640884f797cae8dc32d80110869fba24730245773a9e7ae0810b6cd6a45",
+            "status": "COMPLETE"
+        }
+    ],
+    "objectId": "3b45987a-4ed3-4703-8329-0a466fe45791",
+    "pipeline": {
+        "description": "TEST MULTIPLE FACE DETECTION PIPELINE",
+        "name": "TEST MULTIPLE FACE DETECTION PIPELINE",
+        "stages": [
+            {
+                "actionType": "DETECTION",
+                "actions": [
+                    {
+                        "algorithm": "FACECV",
+                        "description": "Executes the OpenCV face detection algorithm using the default parameters.",
+                        "name": "OCV FACE DETECTION ACTION",
+                        "properties": {}
+                    },
+                    {
+                        "algorithm": "DLIB",
+                        "description": "Executes the dlib face detection algorithm using the default parameters.",
+                        "name": "DLIB FACE DETECTION ACTION",
+                        "properties": {}
+                    },
+                    {
+                        "algorithm": "PERSONCV",
+                        "description": "Executes the OpenCV person detection algorithm using the default parameters.",
+                        "name": "OCV PERSON DETECTION ACTION",
+                        "properties": {}
+                    }
+                ],
+                "description": "TEST MULTIPLE FACE DETECTION TASK",
+                "name": "TEST MULTIPLE FACE DETECTION TASK"
+            }
         ]
-      },
-      "detectionProcessingErrors": {}
     },
-    {
-      "mediaId": 12,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/race.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "49b0b640884f797cae8dc32d80110869fba24730245773a9e7ae0810b6cd6a45",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "FACE": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "7644c3d4334b3393c964b42a9f078891c691ac677164d54265eab2dd4553afb4",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": 1.7312917,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "exemplar": {
-                  "x": 166,
-                  "y": 46,
-                  "width": 38,
-                  "height": 38,
-                  "confidence": 1.7312917,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 166,
-                    "y": 46,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 1.7312917,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "c1f821dc4529c1da394c4a79320fe39816da2dac8f3850cbeb02c8249051a6fe",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": 2.330695,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "exemplar": {
-                  "x": 402,
-                  "y": 42,
-                  "width": 38,
-                  "height": 38,
-                  "confidence": 2.330695,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 402,
-                    "y": 42,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 2.330695,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "2c348011b9513ba57260043d6adae0eeca6ccd2fe2d02deeabd51f5b56248a6d",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": 14.0,
-                "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
-                "exemplar": {
-                  "x": 396,
-                  "y": 35,
-                  "width": 50,
-                  "height": 50,
-                  "confidence": 14.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 396,
-                    "y": 35,
-                    "width": 50,
-                    "height": 50,
-                    "confidence": 14.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
-        ],
-        "PERSON": [
-          {
-            "source": "+#OCV PERSON DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "9a14cb74d6dba2f4988c9d95abbea323f54243d816c6fc8d9714db6023bc4287",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 0,
-                  "y": 38,
-                  "width": 123,
-                  "height": 256,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 38,
-                    "width": 123,
-                    "height": 256,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "d83ce1dd76ba24ce4e1ad2acb1901846516982b73be8a7b80ad51f5c3866c281",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 97,
-                  "y": 32,
-                  "width": 194,
-                  "height": 387,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 97,
-                    "y": 32,
-                    "width": 194,
-                    "height": 387,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "0ebc80df1ee60f204baec56ffb2d3a85fda0310460564a615e13162c48cafb12",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 191,
-                  "y": 50,
-                  "width": 109,
-                  "height": 219,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 191,
-                    "y": 50,
-                    "width": 109,
-                    "height": 219,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "c4bb78737f038fa9da698aa5cb3f2ec10d7ae92df77ad35f4e158c0e77a6ed5f",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 253,
-                  "y": 2,
-                  "width": 73,
-                  "height": 146,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 253,
-                    "y": 2,
-                    "width": 73,
-                    "height": 146,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "bc05f36e6f93a2ec8c54a8e37f2b7e048b2ab4737c83a5f4bb5524b48e55fff8",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 290,
-                  "y": 20,
-                  "width": 89,
-                  "height": 178,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 290,
-                    "y": 20,
-                    "width": 89,
-                    "height": 178,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              },
-              {
-                "id": "a57e5c7bc86c3ba97cb1f802aab45540a261dce714e80fe78e42cc723f7c8a51",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "confidence": -1.0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "exemplar": {
-                  "x": 572,
-                  "y": 38,
-                  "width": 68,
-                  "height": 252,
-                  "confidence": -1.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 572,
-                    "y": 38,
-                    "width": 68,
-                    "height": 252,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/15/12/0/race.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
-    }
-  ]
+    "priority": 4,
+    "siteId": "mpf1",
+    "status": "COMPLETE",
+    "timeStart": "2019-09-25T16:50:35Z",
+    "timeStop": "2019-09-25T16:50:36Z"
 }

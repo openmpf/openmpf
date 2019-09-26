@@ -1,113 +1,111 @@
 {
-  "jobId": 9,
-  "objectId": "8444d5ef-7eb7-44c3-9944-92efc4b42ab3",
-  "pipeline": {
-    "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
-    "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
-    "stages": [
-      {
-        "actionType": "DETECTION",
-        "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) TASK",
+    "algorithmProperties": {},
+    "externalJobId": "35bfafd7-5a6f-42b8-8925-bb71a129f22a",
+    "jobErrors": [],
+    "jobId": 21,
+    "jobProperties": {},
+    "jobWarnings": [],
+    "media": [
+        {
+            "detectionProcessingErrors": {},
+            "length": 1,
+            "markupResult": null,
+            "mediaId": 14,
+            "mediaMetadata": {
+                "EXIF_ORIENTATION": "5",
+                "HORIZONTAL_FLIP": "TRUE",
+                "MIME_TYPE": "image/jpeg",
+                "ROTATION": "90"
+            },
+            "mediaProperties": {},
+            "message": null,
+            "mimeType": "image/jpeg",
+            "output": {
+                "FACE": [
+                    {
+                        "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
+                        "tracks": [
+                            {
+                                "confidence": 60.0,
+                                "detections": [
+                                    {
+                                        "artifactExtractionStatus": "COMPLETED",
+                                        "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg",
+                                        "confidence": 60.0,
+                                        "detectionProperties": {
+                                            "HORIZONTAL_FLIP": "true",
+                                            "ROTATION": "90.000000"
+                                        },
+                                        "height": 286,
+                                        "offsetFrame": 0,
+                                        "offsetTime": 0,
+                                        "width": 286,
+                                        "x": 211,
+                                        "y": 368
+                                    }
+                                ],
+                                "exemplar": {
+                                    "artifactExtractionStatus": "COMPLETED",
+                                    "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg",
+                                    "confidence": 60.0,
+                                    "detectionProperties": {
+                                        "HORIZONTAL_FLIP": "true",
+                                        "ROTATION": "90.000000"
+                                    },
+                                    "height": 286,
+                                    "offsetFrame": 0,
+                                    "offsetTime": 0,
+                                    "width": 286,
+                                    "x": 211,
+                                    "y": 368
+                                },
+                                "id": "98a104a91f1a82c6a99a791be4e73d3b23d0b87be03cac52e7f36614ee65113d",
+                                "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
+                                "startOffsetFrame": 0,
+                                "startOffsetTime": 0,
+                                "stopOffsetFrame": 1,
+                                "stopOffsetTime": 0,
+                                "trackProperties": {
+                                    "HORIZONTAL_FLIP": "true",
+                                    "ROTATION": "90.000000"
+                                },
+                                "type": "FACE"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "path": "file:///opt/mpf/share/samples/face/meds-aa-S001-01-exif-rotation.jpg",
+            "sha256": "c466433bd70e9b3d2b80081f39bfe910424ff23ced17241fa217d7b226d3a8ad",
+            "status": "COMPLETE"
+        }
+    ],
+    "objectId": "6188d8d7-3640-44e6-b4b8-587113622d0e",
+    "pipeline": {
         "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
-        "actions": [
-          {
-            "algorithm": "FACECV",
-            "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
-            "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
-            "properties": {
-              "AUTO_ROTATE": "true",
-              "AUTO_FLIP": "true"
-            }
-          }
-        ]
-      }
-    ]
-  },
-  "priority": 4,
-  "siteId": "mpf1",
-  "externalJobId": "e7a13303-029b-481f-baeb-fc01aff69e13",
-  "timeStart": "2017-06-15T22:42:01.0-05:00",
-  "timeStop": "2017-06-15T22:42:08.0-05:00",
-  "status": "COMPLETE",
-  "algorithmProperties": {},
-  "jobProperties": {},
-  "media": [
-    {
-      "mediaId": 3,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01-exif-rotation.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "c466433bd70e9b3d2b80081f39bfe910424ff23ced17241fa217d7b226d3a8ad",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "EXIF_ORIENTATION": "5",
-        "HORIZONTAL_FLIP": "TRUE",
-        "ROTATION": "90",
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "FACE": [
-          {
-            "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
-            "tracks": [
-              {
-                "id": "c71f5d2b9b54969f22d54a607612a224ea4095f0f845f97b27c5a0ea55f3b31f",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
-                "confidence": 60.0,
-                "trackProperties": {
-                  "HORIZONTAL_FLIP": "true",
-                  "ROTATION": "90.000000"
-                },
-                "exemplar": {
-                  "x": 212,
-                  "y": 366,
-                  "width": 283,
-                  "height": 283,
-                  "confidence": 60.0,
-                  "detectionProperties": {
-                    "HORIZONTAL_FLIP": "true",
-                    "ROTATION": "90.000000"
-                  },
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/9/3/0/meds-aa-S001-01-exif-rotation.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 212,
-                    "y": 366,
-                    "width": 283,
-                    "height": 283,
-                    "confidence": 60.0,
-                    "detectionProperties": {
-                      "HORIZONTAL_FLIP": "true",
-                      "ROTATION": "90.000000"
-                    },
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/9/3/0/meds-aa-S001-01-exif-rotation.jpg",
-                    "offset": 0
-                  }
+        "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
+        "stages": [
+            {
+                "actionType": "DETECTION",
+                "actions": [
+                    {
+                        "algorithm": "FACECV",
+                        "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
+                        "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
+                        "properties": {
+                            "AUTO_FLIP": "true",
+                            "AUTO_ROTATE": "true"
+                        }
+                    }
                 ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
+                "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
+                "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) TASK"
+            }
         ]
-      },
-      "detectionProcessingErrors": {}
-    }
-  ]
+    },
+    "priority": 4,
+    "siteId": "mpf1",
+    "status": "COMPLETE",
+    "timeStart": "2019-09-25T16:40:42Z",
+    "timeStop": "2019-09-25T16:40:43Z"
 }

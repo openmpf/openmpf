@@ -375,7 +375,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         if (exemplarsOnly) {
             // This property requires that the exemplar AND all extracted frames be
             // available in the output object. Otherwise, the user might never know that
-            // there were other arifacts extracted.
+            // there were other artifacts extracted.
             detections = track.getDetections().stream()
                          .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
                          .map(d -> createDetectionOutputObject(d))
@@ -439,25 +439,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static boolean isOutputLastTaskOnly(Media media, BatchJob job) {
+    private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_STAGE_ONLY to a single task.
-        String mediaProperty = media.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
+        String mediaProperty = aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media);
         if (mediaProperty != null) {
             return Boolean.parseBoolean(mediaProperty);
         }
 
-        String jobProperty = job.getJobProperties()
-                             .get(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
-        if (jobProperty != null) {
-            return Boolean.parseBoolean(jobProperty);
-        }
-
-        return job.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
+        return job.getSystemPropertiesSnapshot().isOutputObjectLastTaskOnly();
     }
 
 
-    private static Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
+    private Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
         if (!isOutputLastTaskOnly(media, job)) {
             return Set.of();
         }

@@ -160,8 +160,11 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     continue;
                 }
 
-                boolean lastTaskOnly = Boolean.parseBoolean(
-                    _aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
+                String lastTaskOnlyProp = _aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media);
+                boolean lastTaskOnly = false;
+                if (lastTaskOnlyProp != null) {
+                    lastTaskOnly = Boolean.parseBoolean(lastTaskOnlyProp);
+                }
                 if (lastTaskOnly && notLastTask) {
                     LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}.", job.getId(), task.getName(), media.getId());
                     continue;
@@ -169,6 +172,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
                 Collection<Track> tracks
                         = _inProgressBatchJobs.getTracks(job.getId(), media.getId(), taskIndex, actionIndex);
+                LOG.info("Action {} has {} tracks", actionIndex, tracks.size());
                 processTracks(mediaAndActionToFrames, tracks, job, media, taskIndex, actionIndex, extractionPolicy);
             }
         }
@@ -213,10 +217,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         int taskIndex,
         int actionIndex) {
 
+        LOG.debug("Processing extractions for task {} and action {}", taskIndex, actionIndex);
         Action thisAction = job.getPipelineElements().getAction(taskIndex, actionIndex);
         int exemplarPlusExtractCount = Integer.parseInt(_aggregateJobPropertiesUtil
                                                         .getValue("ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
                                                                   job, media, thisAction));
+        LOG.debug("exemplarPlusExtractCount = {}", exemplarPlusExtractCount);
         if (exemplarPlusExtractCount >= 0) {
             Detection exemplar = track.getExemplar();
             int exemplarFrame = exemplar.getMediaOffsetFrame();

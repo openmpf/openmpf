@@ -127,12 +127,12 @@ public class SystemPropertiesSnapshot {
         }
     }
 
-    public boolean isOutputObjectExemplarOnly() {
-        return Boolean.parseBoolean(_properties.get("mpf.output.objects.exemplars.only"));
+    public boolean isOutputObjectArtifactsAndExemplarsOnly() {
+        return Boolean.parseBoolean(_properties.get("mpf.output.objects.artifacts.and.exemplars.only"));
     }
 
-    public boolean isOutputObjectLastStageOnly() {
-        return Boolean.parseBoolean(_properties.get("mpf.output.objects.last.stage.only"));
+    public boolean isOutputObjectLastTaskOnly() {
+        return Boolean.parseBoolean(_properties.get("mpf.output.objects.last.task.only"));
     }
 
     public int getArtifactExtractionPolicyExemplarFramePlus() {

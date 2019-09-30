@@ -70,18 +70,46 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
+    public void runArtifactExtractionArtifactsAndExemplarsOnlyTest() {
+        Map<String, String> jobProperties;
+        jobProperties.put("mpf.output.objects.artifacts.and.exemplars.only", "true");
+        jobProperties.put("detection.artifact.extraction.policy.exemplar.frame.plus", "1");
+        jobProperties.put("detection.artifact.extraction.policy.first.frame", "true");
+        List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
+
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", jobProperties, media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+
+        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+
+        List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
+                                             .flatmap(outputObj -> outputObj.getTracks().stream())
+                                             .collect(toList());
+
+        // Check that the only detections in the output object are ones that have been extracted
+        List<JsonDetectionOutputObject> unextractedDetections = tracks.stream()
+                                                    .flatmap(track -> track.getDetections().stream())
+                                                    .filter(d -> d.getArtifactExtractionStatus().toUpperCase() != "COMPLETED")
+                                                    .collect(toList());
+        assertTrue(unextractedDetections.isEmpty());
+
+        List<int> expectedExtractions = Arrays.asList(0, 32, 33, 34, 65, 66, 67);
+        List<int> actualExtractions = tracks.stream()
+                                      .flatMap(track -> track.getDetections().stream())
+                                      .map(d -> d.getOffsetFrame().stream())
+                                      .collect(toList());
+        assertEquals(expectedExtractions, actualExtractions);
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionLastStageOnlyTest() {
-        String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
 
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "FACECV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED FULL FRAME TO OCVFACE PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+        String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         Map<String, String> jobProperties;
         jobProperties.put("mpf.output.objects.last.stage.only", "true");
         List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
@@ -91,65 +119,31 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("MOTION");
+        SortedSet<JsonActionOutputObject> motionActionOutput = outputMedia.getTypes().get("TRACKS_SUPPRESSED");
 
-        assertNotNull("Output object did not contain expected detection type: " + detectionType,
-                      actionOutputObjects);
+        assertNotNull("Output object did not contain TRACKS_SUPPRESSED action type", motionActionOutput);
+        assertEquals("Tracks suppressed for task other than MOTION", motionActionOutput.getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
 
-        List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
-                .flatMap(outputObj -> outputObj.getTracks().stream())
-                .flatMap(track -> track.getDetections().stream())
-                .collect(toList());
+        SortedSet<JsonActionOutputObject> faceActionOutput = outputMedia.getTypes().get("FACE");
+        assertNotNull("Output object did not contain FACE action type", faceActionOutput);
 
-        assertFalse(detections.isEmpty());
-        for (JsonDetectionOutputObject detection : detections) {
-            log.info("artifact extraction status = {}", detection.getArtifactExtractionStatus().toUpperCase());
-            assertTrue("Found artifact extraction in first stage of pipeline",
-                       detection.getArtifactExtractionStatus().toUpperCase() == "NOT_ATTEMPTED");
-        }
+        // The only detections that should have been extracted are the exemplars
+        SortedSet<JsonTrackOutputObject> tracks = faceActionOutput.getTracks();
+        List<int> exemplarFrames = tracks.stream()
+                                   .flatMap(track -> track.getExemplar().stream())
+                                   .flatMap(d -> d.getOffsetFrame().stream())
+                                   .collect(toList());
+
+        assertFalse(exemplarFrames.isEmpty());
+        List<int> extractionFrames = tracks.stream()
+                                     .flatMap(track -> track.getDetections().stream())
+                                     .filter(d -> d.getArtifactExtractionStatus().toUpperCase() == "COMPLETED")
+                                     .collect(toList());
+        assertFalse(extractionFrames.isEmpty());
+
+        assertEquals(exemplarFrames, extractionFrames);
 
     }
-
-
-    // @Test(timeout = 5 * MINUTES)
-    // public void runArtifactExtractionLastStageOnlyTest() {
-    //     String actionTaskName = "TEST OCV FACE WITH FEED FORWARD FULL FRAME";
-
-    //     String actionName = actionTaskName + " ACTION";
-    //     addAction(actionName, "FACECV",
-    //               ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
-
-    //     String taskName = actionTaskName + " TASK";
-    //     addTask(taskName, actionName);
-
-    //     String pipelineName = "MOG FEED FULL FRAME TO OCVFACE PIPELINE";
-    //     addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-    //     Map<String, String> jobProperties;
-    //     jobProperties.put("mpf.output.objects.last.stage.only", "true");
-    //     List<JsonMediaInputObject> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
-
-    //     long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
-    //     JsonOutputObject outputObject = getJobOutputObject(jobId);
-    //     assertEquals(1, outputObject.getMedia().size());
-
-    //     JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-    //     SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("MOTION");
-
-    //     assertNotNull("Output object did not contain expected detection type: " + detectionType,
-    //                   actionOutputObjects);
-
-    //     List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
-    //             .flatMap(outputObj -> outputObj.getTracks().stream())
-    //             .flatMap(track -> track.getDetections().stream())
-    //             .collect(toList());
-
-    //     assertFalse(detections.isEmpty());
-    //     for (JsonDetectionOutputObject detection : detections) {
-    //         assertTrue("Found artifact extraction in first stage of pipeline",
-    //                    detection.getArtifactExtractionStatus().toUpperCase() == "NOT_ATTEMPTED");
-    //     }
-
-    // }
 
 
     @Test(timeout = 5 * MINUTES)

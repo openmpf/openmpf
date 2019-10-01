@@ -1,218 +1,218 @@
 {
-    "algorithmProperties": {},
-    "externalJobId": "a8b44831-adda-4716-8fa7-e58fdf93c343",
-    "jobErrors": [],
-    "jobId": 20,
-    "jobProperties": {},
-    "jobWarnings": [],
-    "media": [
-        {
-            "detectionProcessingErrors": {},
-            "length": 1,
-            "markupResult": null,
-            "mediaId": 11,
-            "mediaMetadata": {
-                "MIME_TYPE": "image/jpeg"
-            },
-            "mediaProperties": {},
-            "message": null,
-            "mimeType": "image/jpeg",
-            "output": {
-                "FACE": [
-                    {
-                        "source": "+#OCV FACE DETECTION ACTION",
-                        "tracks": [
-                            {
-                                "confidence": 57.0,
-                                "detections": [
-                                    {
-                                        "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///opt/mpf/share/artifacts/20/11/0/meds-aa-S001-01.jpg",
-                                        "confidence": 57.0,
-                                        "detectionProperties": {},
-                                        "height": 285,
-                                        "offsetFrame": 0,
-                                        "offsetTime": 0,
-                                        "width": 285,
-                                        "x": 83,
-                                        "y": 209
-                                    }
-                                ],
-                                "exemplar": {
-                                    "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///opt/mpf/share/artifacts/20/11/0/meds-aa-S001-01.jpg",
-                                    "confidence": 57.0,
-                                    "detectionProperties": {},
-                                    "height": 285,
-                                    "offsetFrame": 0,
-                                    "offsetTime": 0,
-                                    "width": 285,
-                                    "x": 83,
-                                    "y": 209
-                                },
-                                "id": "afba8b4afeb29c2d0b8453f3c1795920dd06d94c18596390a1067d706cfdb453",
-                                "source": "+#OCV FACE DETECTION ACTION",
-                                "startOffsetFrame": 0,
-                                "startOffsetTime": 0,
-                                "stopOffsetFrame": 1,
-                                "stopOffsetTime": 0,
-                                "trackProperties": {},
-                                "type": "FACE"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "path": "file:///opt/mpf/share/samples/face/meds-aa-S001-01.jpg",
-            "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
-            "status": "COMPLETE"
-        },
-        {
-            "detectionProcessingErrors": {},
-            "length": 1,
-            "markupResult": null,
-            "mediaId": 12,
-            "mediaMetadata": {
-                "MIME_TYPE": "image/jpeg"
-            },
-            "mediaProperties": {},
-            "message": null,
-            "mimeType": "image/jpeg",
-            "output": {
-                "FACE": [
-                    {
-                        "source": "+#OCV FACE DETECTION ACTION",
-                        "tracks": [
-                            {
-                                "confidence": 74.0,
-                                "detections": [
-                                    {
-                                        "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///opt/mpf/share/artifacts/20/12/0/meds-aa-S029-01.jpg",
-                                        "confidence": 74.0,
-                                        "detectionProperties": {},
-                                        "height": 234,
-                                        "offsetFrame": 0,
-                                        "offsetTime": 0,
-                                        "width": 234,
-                                        "x": 82,
-                                        "y": 132
-                                    }
-                                ],
-                                "exemplar": {
-                                    "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///opt/mpf/share/artifacts/20/12/0/meds-aa-S029-01.jpg",
-                                    "confidence": 74.0,
-                                    "detectionProperties": {},
-                                    "height": 234,
-                                    "offsetFrame": 0,
-                                    "offsetTime": 0,
-                                    "width": 234,
-                                    "x": 82,
-                                    "y": 132
-                                },
-                                "id": "5e2e782e336b39a54f6bd68ea5ee64cdec2ae651fb53454635cdfac2c1eea7b4",
-                                "source": "+#OCV FACE DETECTION ACTION",
-                                "startOffsetFrame": 0,
-                                "startOffsetTime": 0,
-                                "stopOffsetFrame": 1,
-                                "stopOffsetTime": 0,
-                                "trackProperties": {},
-                                "type": "FACE"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "path": "file:///opt/mpf/share/samples/face/meds-aa-S029-01.jpg",
-            "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
-            "status": "COMPLETE"
-        },
-        {
-            "detectionProcessingErrors": {},
-            "length": 1,
-            "markupResult": null,
-            "mediaId": 13,
-            "mediaMetadata": {
-                "MIME_TYPE": "image/jpeg"
-            },
-            "mediaProperties": {},
-            "message": null,
-            "mimeType": "image/jpeg",
-            "output": {
-                "FACE": [
-                    {
-                        "source": "+#OCV FACE DETECTION ACTION",
-                        "tracks": [
-                            {
-                                "confidence": 62.0,
-                                "detections": [
-                                    {
-                                        "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///opt/mpf/share/artifacts/20/13/0/meds-af-S419-01.jpg",
-                                        "confidence": 62.0,
-                                        "detectionProperties": {},
-                                        "height": 300,
-                                        "offsetFrame": 0,
-                                        "offsetTime": 0,
-                                        "width": 300,
-                                        "x": 91,
-                                        "y": 165
-                                    }
-                                ],
-                                "exemplar": {
-                                    "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///opt/mpf/share/artifacts/20/13/0/meds-af-S419-01.jpg",
-                                    "confidence": 62.0,
-                                    "detectionProperties": {},
-                                    "height": 300,
-                                    "offsetFrame": 0,
-                                    "offsetTime": 0,
-                                    "width": 300,
-                                    "x": 91,
-                                    "y": 165
-                                },
-                                "id": "1f3d1be6aaafbfdd3b659514bf7f18b971bb078986888d6922c6a776f5d31e7c",
-                                "source": "+#OCV FACE DETECTION ACTION",
-                                "startOffsetFrame": 0,
-                                "startOffsetTime": 0,
-                                "stopOffsetFrame": 1,
-                                "stopOffsetTime": 0,
-                                "trackProperties": {},
-                                "type": "FACE"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "path": "file:///opt/mpf/share/samples/face/meds-af-S419-01.jpg",
-            "sha256": "39323774cdeabffad373cad1dcb9f4e59f8dbc7f946f245ce2c4055f422333e4",
-            "status": "COMPLETE"
-        }
-    ],
-    "objectId": "eccdf7ae-f24c-496f-97fd-ad653f05703e",
-    "pipeline": {
+  "jobId": 20,
+  "jobErrors": [],
+  "jobWarnings": [],
+  "objectId": "eccdf7ae-f24c-496f-97fd-ad653f05703e",
+  "pipeline": {
+    "name": "OCV FACE DETECTION PIPELINE",
+    "description": "Performs OpenCV face detection.",
+    "stages": [
+      {
+        "actionType": "DETECTION",
+        "name": "OCV FACE DETECTION TASK",
         "description": "Performs OpenCV face detection.",
-        "name": "OCV FACE DETECTION PIPELINE",
-        "stages": [
-            {
-                "actionType": "DETECTION",
-                "actions": [
-                    {
-                        "algorithm": "FACECV",
-                        "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-                        "name": "OCV FACE DETECTION ACTION",
-                        "properties": {}
-                    }
-                ],
-                "description": "Performs OpenCV face detection.",
-                "name": "OCV FACE DETECTION TASK"
-            }
+        "actions": [
+          {
+            "algorithm": "FACECV",
+            "name": "OCV FACE DETECTION ACTION",
+            "description": "Executes the OpenCV face detection algorithm using the default parameters.",
+            "properties": {}
+          }
         ]
+      }
+    ]
+  },
+  "priority": 4,
+  "siteId": "mpf1",
+  "externalJobId": "a8b44831-adda-4716-8fa7-e58fdf93c343",
+  "timeStart": "2019-09-25T16:40:41Z",
+  "timeStop": "2019-09-25T16:40:42Z",
+  "status": "COMPLETE",
+  "algorithmProperties": {},
+  "jobProperties": {},
+  "media": [
+    {
+      "mediaId": 11,
+      "path": "file:///opt/mpf/share/samples/face/meds-aa-S001-01.jpg",
+      "detectionProcessingErrors": {},
+      "mimeType": "image/jpeg",
+      "length": 1,
+      "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "MIME_TYPE": "image/jpeg"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "FACE": [
+          {
+            "source": "+#OCV FACE DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "afba8b4afeb29c2d0b8453f3c1795920dd06d94c18596390a1067d706cfdb453",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 1,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "FACE",
+                "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 57,
+                "trackProperties": {},
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 83,
+                  "y": 209,
+                  "width": 285,
+                  "height": 285,
+                  "confidence": 57,
+                  "detectionProperties": {},
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///opt/mpf/share/artifacts/20/11/0/meds-aa-S001-01.jpg"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 83,
+                    "y": 209,
+                    "width": 285,
+                    "height": 285,
+                    "confidence": 57,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/20/11/0/meds-aa-S001-01.jpg"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     },
-    "priority": 4,
-    "siteId": "mpf1",
-    "status": "COMPLETE",
-    "timeStart": "2019-09-25T16:40:41Z",
-    "timeStop": "2019-09-25T16:40:42Z"
+    {
+      "mediaId": 12,
+      "path": "file:///opt/mpf/share/samples/face/meds-aa-S029-01.jpg",
+      "detectionProcessingErrors": {},
+      "mimeType": "image/jpeg",
+      "length": 1,
+      "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "MIME_TYPE": "image/jpeg"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "FACE": [
+          {
+            "source": "+#OCV FACE DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "5e2e782e336b39a54f6bd68ea5ee64cdec2ae651fb53454635cdfac2c1eea7b4",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 1,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "FACE",
+                "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 74,
+                "trackProperties": {},
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 82,
+                  "y": 132,
+                  "width": 234,
+                  "height": 234,
+                  "confidence": 74,
+                  "detectionProperties": {},
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///opt/mpf/share/artifacts/20/12/0/meds-aa-S029-01.jpg"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 82,
+                    "y": 132,
+                    "width": 234,
+                    "height": 234,
+                    "confidence": 74,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/20/12/0/meds-aa-S029-01.jpg"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "mediaId": 13,
+      "path": "file:///opt/mpf/share/samples/face/meds-af-S419-01.jpg",
+      "detectionProcessingErrors": {},
+      "mimeType": "image/jpeg",
+      "length": 1,
+      "sha256": "39323774cdeabffad373cad1dcb9f4e59f8dbc7f946f245ce2c4055f422333e4",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "MIME_TYPE": "image/jpeg"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "FACE": [
+          {
+            "source": "+#OCV FACE DETECTION ACTION",
+            "tracks": [
+              {
+                "id": "1f3d1be6aaafbfdd3b659514bf7f18b971bb078986888d6922c6a776f5d31e7c",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 1,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "FACE",
+                "source": "+#OCV FACE DETECTION ACTION",
+                "confidence": 62,
+                "trackProperties": {},
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 91,
+                  "y": 165,
+                  "width": 300,
+                  "height": 300,
+                  "confidence": 62,
+                  "detectionProperties": {},
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///opt/mpf/share/artifacts/20/13/0/meds-af-S419-01.jpg"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 91,
+                    "y": 165,
+                    "width": 300,
+                    "height": 300,
+                    "confidence": 62,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/20/13/0/meds-af-S419-01.jpg"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

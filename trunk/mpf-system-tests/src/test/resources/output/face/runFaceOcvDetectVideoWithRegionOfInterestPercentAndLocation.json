@@ -1,213 +1,213 @@
 {
-    "algorithmProperties": {},
-    "externalJobId": "b8c88dd0-f563-4e7e-b907-575ba605972a",
-    "jobErrors": [],
-    "jobId": 26,
-    "jobProperties": {},
-    "jobWarnings": [],
-    "media": [
-        {
-            "detectionProcessingErrors": {},
-            "length": 511,
-            "markupResult": null,
-            "mediaId": 21,
-            "mediaMetadata": {
-                "DURATION": "17007",
-                "FPS": "29.97",
-                "FRAME_COUNT": "511",
-                "MIME_TYPE": "video/x-msvideo"
-            },
-            "mediaProperties": {},
-            "message": null,
-            "mimeType": "video/x-msvideo",
-            "output": {
-                "FACE": [
-                    {
-                        "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
-                        "tracks": [
-                            {
-                                "confidence": 44.0,
-                                "detections": [
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 13.0,
-                                        "detectionProperties": {},
-                                        "height": 184,
-                                        "offsetFrame": 242,
-                                        "offsetTime": 8075,
-                                        "width": 184,
-                                        "x": 317,
-                                        "y": 96
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 22.0,
-                                        "detectionProperties": {},
-                                        "height": 189,
-                                        "offsetFrame": 243,
-                                        "offsetTime": 8108,
-                                        "width": 189,
-                                        "x": 318,
-                                        "y": 97
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 16.0,
-                                        "detectionProperties": {},
-                                        "height": 181,
-                                        "offsetFrame": 244,
-                                        "offsetTime": 8141,
-                                        "width": 181,
-                                        "x": 318,
-                                        "y": 108
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 15.0,
-                                        "detectionProperties": {},
-                                        "height": 181,
-                                        "offsetFrame": 245,
-                                        "offsetTime": 8175,
-                                        "width": 181,
-                                        "x": 316,
-                                        "y": 108
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 26.0,
-                                        "detectionProperties": {},
-                                        "height": 193,
-                                        "offsetFrame": 246,
-                                        "offsetTime": 8208,
-                                        "width": 193,
-                                        "x": 330,
-                                        "y": 107
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "COMPLETED",
-                                        "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png",
-                                        "confidence": 44.0,
-                                        "detectionProperties": {},
-                                        "height": 192,
-                                        "offsetFrame": 247,
-                                        "offsetTime": 8242,
-                                        "width": 192,
-                                        "x": 332,
-                                        "y": 106
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 33.0,
-                                        "detectionProperties": {},
-                                        "height": 196,
-                                        "offsetFrame": 248,
-                                        "offsetTime": 8275,
-                                        "width": 196,
-                                        "x": 328,
-                                        "y": 110
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 35.0,
-                                        "detectionProperties": {},
-                                        "height": 183,
-                                        "offsetFrame": 249,
-                                        "offsetTime": 8308,
-                                        "width": 183,
-                                        "x": 331,
-                                        "y": 124
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 27.0,
-                                        "detectionProperties": {},
-                                        "height": 169,
-                                        "offsetFrame": 250,
-                                        "offsetTime": 8342,
-                                        "width": 169,
-                                        "x": 324,
-                                        "y": 134
-                                    },
-                                    {
-                                        "artifactExtractionStatus": "NOT_ATTEMPTED",
-                                        "artifactPath": null,
-                                        "confidence": 0.0,
-                                        "detectionProperties": {},
-                                        "height": 169,
-                                        "offsetFrame": 251,
-                                        "offsetTime": 8375,
-                                        "width": 169,
-                                        "x": 310,
-                                        "y": 135
-                                    }
-                                ],
-                                "exemplar": {
-                                    "artifactExtractionStatus": "COMPLETED",
-                                    "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png",
-                                    "confidence": 44.0,
-                                    "detectionProperties": {},
-                                    "height": 192,
-                                    "offsetFrame": 247,
-                                    "offsetTime": 8242,
-                                    "width": 192,
-                                    "x": 332,
-                                    "y": 106
-                                },
-                                "id": "31872d04dd7f008b067d4e265d269ff8e2e1dd533a43b3c76e282c9842831766",
-                                "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
-                                "startOffsetFrame": 242,
-                                "startOffsetTime": 8075,
-                                "stopOffsetFrame": 251,
-                                "stopOffsetTime": 8375,
-                                "trackProperties": {},
-                                "type": "FACE"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "path": "file:///opt/mpf/share/samples/face/new_face_video.avi",
-            "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
-            "status": "COMPLETE"
-        }
-    ],
-    "objectId": "c433751f-b602-491d-8ccd-1afdd232961c",
-    "pipeline": {
-        "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
-        "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
-        "stages": [
-            {
-                "actionType": "DETECTION",
-                "actions": [
-                    {
-                        "algorithm": "FACECV",
-                        "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
-                        "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
-                        "properties": {
-                            "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION": "90%",
-                            "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION": "90%",
-                            "SEARCH_REGION_ENABLE_DETECTION": "true",
-                            "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310",
-                            "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50"
-                        }
-                    }
-                ],
-                "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK",
-                "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK"
+  "jobId": 26,
+  "jobErrors": [],
+  "jobWarnings": [],
+  "objectId": "c433751f-b602-491d-8ccd-1afdd232961c",
+  "pipeline": {
+    "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
+    "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
+    "stages": [
+      {
+        "actionType": "DETECTION",
+        "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK",
+        "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK",
+        "actions": [
+          {
+            "algorithm": "FACECV",
+            "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+            "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+            "properties": {
+              "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION": "90%",
+              "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310",
+              "SEARCH_REGION_ENABLE_DETECTION": "true",
+              "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION": "90%",
+              "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50"
             }
+          }
         ]
-    },
-    "priority": 4,
-    "siteId": "mpf1",
-    "status": "COMPLETE",
-    "timeStart": "2019-09-25T16:41:59Z",
-    "timeStop": "2019-09-25T16:42:05Z"
+      }
+    ]
+  },
+  "priority": 4,
+  "siteId": "mpf1",
+  "externalJobId": "b8c88dd0-f563-4e7e-b907-575ba605972a",
+  "timeStart": "2019-09-25T16:41:59Z",
+  "timeStop": "2019-09-25T16:42:05Z",
+  "status": "COMPLETE",
+  "algorithmProperties": {},
+  "jobProperties": {},
+  "media": [
+    {
+      "mediaId": 21,
+      "path": "file:///opt/mpf/share/samples/face/new_face_video.avi",
+      "detectionProcessingErrors": {},
+      "mimeType": "video/x-msvideo",
+      "length": 511,
+      "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
+      "message": null,
+      "status": "COMPLETE",
+      "mediaMetadata": {
+        "DURATION": "17007",
+        "FPS": "29.97",
+        "FRAME_COUNT": "511",
+        "MIME_TYPE": "video/x-msvideo"
+      },
+      "mediaProperties": {},
+      "markupResult": null,
+      "output": {
+        "FACE": [
+          {
+            "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+            "tracks": [
+              {
+                "id": "31872d04dd7f008b067d4e265d269ff8e2e1dd533a43b3c76e282c9842831766",
+                "startOffsetFrame": 242,
+                "stopOffsetFrame": 251,
+                "startOffsetTime": 8075,
+                "stopOffsetTime": 8375,
+                "type": "FACE",
+                "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+                "confidence": 44,
+                "trackProperties": {},
+                "exemplar": {
+                  "offsetFrame": 247,
+                  "offsetTime": 8242,
+                  "x": 332,
+                  "y": 106,
+                  "width": 192,
+                  "height": 192,
+                  "confidence": 44,
+                  "detectionProperties": {},
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 242,
+                    "offsetTime": 8075,
+                    "x": 317,
+                    "y": 96,
+                    "width": 184,
+                    "height": 184,
+                    "confidence": 13,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 243,
+                    "offsetTime": 8108,
+                    "x": 318,
+                    "y": 97,
+                    "width": 189,
+                    "height": 189,
+                    "confidence": 22,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 244,
+                    "offsetTime": 8141,
+                    "x": 318,
+                    "y": 108,
+                    "width": 181,
+                    "height": 181,
+                    "confidence": 16,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 245,
+                    "offsetTime": 8175,
+                    "x": 316,
+                    "y": 108,
+                    "width": 181,
+                    "height": 181,
+                    "confidence": 15,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 246,
+                    "offsetTime": 8208,
+                    "x": 330,
+                    "y": 107,
+                    "width": 193,
+                    "height": 193,
+                    "confidence": 26,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 247,
+                    "offsetTime": 8242,
+                    "x": 332,
+                    "y": 106,
+                    "width": 192,
+                    "height": 192,
+                    "confidence": 44,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png"
+                  },
+                  {
+                    "offsetFrame": 248,
+                    "offsetTime": 8275,
+                    "x": 328,
+                    "y": 110,
+                    "width": 196,
+                    "height": 196,
+                    "confidence": 33,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 249,
+                    "offsetTime": 8308,
+                    "x": 331,
+                    "y": 124,
+                    "width": 183,
+                    "height": 183,
+                    "confidence": 35,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 250,
+                    "offsetTime": 8342,
+                    "x": 324,
+                    "y": 134,
+                    "width": 169,
+                    "height": 169,
+                    "confidence": 27,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 251,
+                    "offsetTime": 8375,
+                    "x": 310,
+                    "y": 135,
+                    "width": 169,
+                    "height": 169,
+                    "confidence": 0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

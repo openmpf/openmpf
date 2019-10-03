@@ -50,8 +50,7 @@ public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements 
                 .list();
         if (users.size() > 0) {
             return users.get(0);
-        } else {
-            return null;
         }
+        return null;
     }
 }

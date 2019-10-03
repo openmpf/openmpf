@@ -45,12 +45,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -268,8 +270,6 @@ public class PropertiesUtil {
     }
 
     private File artifactsDirectory;
-    public File getArtifactsDirectory() { return artifactsDirectory; }
-
     public File getJobArtifactsDirectory(long jobId) {
         return new File(artifactsDirectory, String.valueOf(jobId));
     }
@@ -367,12 +367,9 @@ public class PropertiesUtil {
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File markupDirectory;
-    public File getMarkupDirectory() { return markupDirectory; }
-
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
     }
-
 
     public Path createMarkupPath(long jobId, long mediaId, String extension) {
         try {
@@ -398,42 +395,6 @@ public class PropertiesUtil {
 
     public int getSamplingInterval() {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
-    }
-
-    public int getFrameRateCap() {
-        return mpfPropertiesConfig.getInt("detection.frame.rate.cap");
-    }
-
-    public double getConfidenceThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.confidence.threshold");
-    }
-
-    public int getMinAllowableSegmentGap() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.gap");
-    }
-
-    public int getTargetSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.target.length");
-    }
-
-    public int getMinSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.length");
-    }
-
-    public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
-    }
-
-    public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
-    }
-
-    public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
-    }
-
-    public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //
@@ -575,10 +536,6 @@ public class PropertiesUtil {
             }
             throw e;
         }
-    }
-
-    public String getThisMpfNodeHostName() {
-        return System.getenv(EnvVar.THIS_MPF_NODE);
     }
 
     public Set<String> getCoreMpfNodes() {
@@ -749,10 +706,6 @@ public class PropertiesUtil {
             log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
             Files.createDirectories(resourceDir);
         }
-    }
-
-    public URI getNginxStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
     }
 
     public int getNginxStorageUploadThreadCount() {

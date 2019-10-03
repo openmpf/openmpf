@@ -45,22 +45,26 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service("mpfUserDetailsService")
 public class MpfUserDetailsService implements UserDetailsService, ApplicationListener<ContextRefreshedEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(MpfUserDetailsService.class);
-    private static final boolean enabled = true;
-    private static final String mpfUser = "mpf";
-    // TODO encrypt these passwords
-    private static final String mpfPwd = "mpf123";
-    private static final String adminUser = "admin";
-    private static final String adminPwd = "mpfadm";
-    private static final UserRole userRole[] = { UserRole.ROLE_USER };
-    private static final Set userRoleSet = new HashSet(Arrays.asList(userRole));
-    private static final UserRole userAdminRole[] = { UserRole.ROLE_USER, UserRole.ROLE_ADMIN };
-    private static final Set userAdminRoleSet = new HashSet(Arrays.asList(userAdminRole));
+
+    private boolean initialized = false;
+
+    //private static final String mpfUser = "mpf";
+    //private static final String mpfPwd = "mpf123";
+    //private static final String adminUser = "admin";
+    //private static final String adminPwd = "mpfadm";
+    //private static final UserRole userRole[] = { UserRole.ROLE_USER };
+    //private static final Set userRoleSet = new HashSet(Arrays.asList(userRole));
+    //private static final UserRole userAdminRole[] = { UserRole.ROLE_USER, UserRole.ROLE_ADMIN };
+    //private static final Set userAdminRoleSet = new HashSet(Arrays.asList(userAdminRole));
 
     @Autowired
     @Qualifier(HibernateUserDaoImpl.REF)
@@ -72,6 +76,13 @@ public class MpfUserDetailsService implements UserDetailsService, ApplicationLis
     @Transactional
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        if (!initialized) {
+            // TODO: Add users specified in config file.
+
+            initialized = true;
+        }
+
+        /*
         log.debug("Checking whether user table is populated");
         org.mitre.mpf.wfm.data.entities.persistent.User user = userDao.findByUserName(mpfUser);
         if (user == null) {  // this will only be true once
@@ -92,6 +103,7 @@ public class MpfUserDetailsService implements UserDetailsService, ApplicationLis
             
             log.debug("Successfully persisted users {} & {}", mpfUser, adminUser);
         }
+        */
     }
 
     @Transactional
@@ -100,7 +112,7 @@ public class MpfUserDetailsService implements UserDetailsService, ApplicationLis
             throws UsernameNotFoundException {
         log.debug("Loading user={}", username);
         org.mitre.mpf.wfm.data.entities.persistent.User user = userDao.findByUserName(username);
-        List<GrantedAuthority> authorities = null;
+        List<GrantedAuthority> authorities;
         if (user != null) {
             authorities = buildUserAuthority(user.getUserRoles());
         } else {
@@ -110,26 +122,22 @@ public class MpfUserDetailsService implements UserDetailsService, ApplicationLis
         return buildUserForAuthentication(user, authorities);
     }
 
-    // Converts User user to
-    // org.springframework.security.core.userdetails.User
+    // Converts User user to org.springframework.security.core.userdetails.User
     private User buildUserForAuthentication(org.mitre.mpf.wfm.data.entities.persistent.User user,
                                             List<GrantedAuthority> authorities) {
         log.debug("Converting o.m.m.w.entity.entity.user.User to org.springframework.security.core.userdetails.User for user={}", user);
-        User usr = new User(user.getUsername(), user.getPassword(), enabled, true, true, true, authorities);
+        User usr = new User(user.getUsername(), user.getPassword(), true, true, true, true, authorities);
         return new MpfUserDetails(usr);
     }
 
     private List<GrantedAuthority> buildUserAuthority(Set<UserRole> userRoles) {
-        Set<GrantedAuthority> setAuths = new HashSet<GrantedAuthority>();
+        Set<GrantedAuthority> setAuths = new HashSet<>();
 
         log.debug("Building user authorities for {}", userRoles);
         // Build user's authorities
         for (UserRole userRole : userRoles) {
-            // note: added toString() to match constructor
             setAuths.add(new SimpleGrantedAuthority(userRole.toString()));
         }
-        List<GrantedAuthority> result = new ArrayList<GrantedAuthority>(setAuths);
-
-        return result;
+        return new ArrayList<>(setAuths);
     }
 }

@@ -1,6 +1,8 @@
 {
-  "jobId": 19,
-  "objectId": "64db1427-5c45-45bc-817b-b51a5ab362b3",
+  "jobId": 56,
+  "jobErrors": [],
+  "jobWarnings": [],
+  "objectId": "38dad170-926f-4343-9c2f-ac791d2a4947",
   "pipeline": {
     "name": "TEST OALPR TEXT DETECTION PIPELINE",
     "description": "TEST OALPR TEXT DETECTION PIPELINE",
@@ -22,16 +24,17 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "0f75b3ad-a904-424d-a115-9511c37309f7",
-  "timeStart": "2017-06-15T22:45:36.0-05:00",
-  "timeStop": "2017-06-15T22:46:20.0-05:00",
+  "externalJobId": "b9e5dd8b-611d-4278-97a9-4ff5e06a9f74",
+  "timeStart": "2019-09-25T16:55:03Z",
+  "timeStop": "2019-09-25T16:55:05Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
   "media": [
     {
-      "mediaId": 23,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-bmw.jpg",
+      "mediaId": 59,
+      "path": "file:///opt/mpf/share/samples/text/lp-bmw.jpg",
+      "detectionProcessingErrors": {},
       "mimeType": "image/jpeg",
       "length": 1,
       "sha256": "8026df007258b0eaeb560254f867cd75b789864ec2139565bc9a5f15ea7327ff",
@@ -40,8 +43,8 @@
       "mediaMetadata": {
         "EXIF_ORIENTATION": "1",
         "HORIZONTAL_FLIP": "FALSE",
-        "ROTATION": "0",
-        "MIME_TYPE": "image/jpeg"
+        "MIME_TYPE": "image/jpeg",
+        "ROTATION": "0"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -51,61 +54,57 @@
             "source": "+#TEST OALPR TEXT DETECTION ACTION",
             "tracks": [
               {
-                "id": "71de9423dd44b8172c0c226eaa1d3fb9c4f86355cfbea16780d42ab3da91ba8a",
+                "id": "66ea69feef1361d57ef646e23ba96537f63ead85fbe2a858638ac6d6fb680378",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "confidence": 87.26358032226562,
+                "type": "TEXT",
+                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                "confidence": 89.48069,
                 "trackProperties": {
                   "TEXT": "LV42DY"
                 },
-                "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
                   "x": 358,
                   "y": 419,
-                  "width": 110,
-                  "height": 57,
-                  "confidence": 87.26358032226562,
+                  "width": 111,
+                  "height": 58,
+                  "confidence": 89.48069,
                   "detectionProperties": {
                     "TEXT": "LV42DY"
                   },
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/23/0/lp-bmw.jpg",
-                  "offset": 0
+                  "artifactPath": "file:///opt/mpf/share/artifacts/56/59/0/lp-bmw.jpg"
                 },
                 "detections": [
                   {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
                     "x": 358,
                     "y": 419,
-                    "width": 110,
-                    "height": 57,
-                    "confidence": 87.26358032226562,
+                    "width": 111,
+                    "height": 58,
+                    "confidence": 89.48069,
                     "detectionProperties": {
                       "TEXT": "LV42DY"
                     },
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/23/0/lp-bmw.jpg",
-                    "offset": 0
+                    "artifactPath": "file:///opt/mpf/share/artifacts/56/59/0/lp-bmw.jpg"
                   }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
+                ]
               }
             ]
           }
         ]
-      },
-      "detectionProcessingErrors": {}
+      }
     },
     {
-      "mediaId": 24,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-police-car.jpg",
+      "mediaId": 60,
+      "path": "file:///opt/mpf/share/samples/text/lp-police-car.jpg",
+      "detectionProcessingErrors": {},
       "mimeType": "image/jpeg",
       "length": 1,
       "sha256": "8702265ab5e48b937fc874bee33e9e20e44d9c5cf0e51acff574e96c7c1a4a34",
@@ -127,59 +126,55 @@
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "confidence": 86.75150299072266,
+                "type": "TEXT",
+                "source": "+#TEST OALPR TEXT DETECTION ACTION",
+                "confidence": 86.87361,
                 "trackProperties": {
                   "TEXT": "0116G"
                 },
-                "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
                   "x": 564,
                   "y": 1317,
                   "width": 238,
                   "height": 117,
-                  "confidence": 86.75150299072266,
+                  "confidence": 86.87361,
                   "detectionProperties": {
                     "TEXT": "0116G"
                   },
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/24/0/lp-police-car.jpg",
-                  "offset": 0
+                  "artifactPath": "file:///opt/mpf/share/artifacts/56/60/0/lp-police-car.jpg"
                 },
                 "detections": [
                   {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
                     "x": 564,
                     "y": 1317,
                     "width": 238,
                     "height": 117,
-                    "confidence": 86.75150299072266,
+                    "confidence": 86.87361,
                     "detectionProperties": {
                       "TEXT": "0116G"
                     },
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/24/0/lp-police-car.jpg",
-                    "offset": 0
+                    "artifactPath": "file:///opt/mpf/share/artifacts/56/60/0/lp-police-car.jpg"
                   }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
+                ]
               }
             ]
           }
         ]
-      },
-      "detectionProcessingErrors": {}
+      }
     },
     {
-      "mediaId": 25,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/text/lp-trailer.png",
+      "mediaId": 61,
+      "path": "file:///opt/mpf/share/samples/text/lp-trailer.png",
+      "detectionProcessingErrors": {},
       "mimeType": "image/png",
       "length": 1,
-      "sha256": "1fa8ede23ac49360fde6d3a063b3a4035ebfe450ed95e1d82ea108bc8e7accab",
+      "sha256": "e94b616b7125d178d6e124428f0fda51bfc8e9661218df92c3669780786de9da",
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
@@ -193,18 +188,20 @@
             "source": "+#TEST OALPR TEXT DETECTION ACTION",
             "tracks": [
               {
-                "id": "ca761723b92f926761d344eaeba438d34843bf8468216910021a4f78b5eeff3a",
+                "id": "3c6afa6f0794ca099b49790120439453acac973e82db2259960d9e1e1f7f9631",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 1,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
+                "type": "TEXT",
+                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "confidence": 90.93294,
                 "trackProperties": {
                   "TEXT": "6EMZ948"
                 },
-                "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
                 "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
                   "x": 2162,
                   "y": 927,
                   "width": 147,
@@ -213,14 +210,13 @@
                   "detectionProperties": {
                     "TEXT": "6EMZ948"
                   },
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/25/0/lp-trailer.jpg",
-                  "offset": 0
+                  "artifactPath": "file:///opt/mpf/share/artifacts/56/61/0/lp-trailer.png"
                 },
                 "detections": [
                   {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
                     "x": 2162,
                     "y": 927,
                     "width": 147,
@@ -229,21 +225,15 @@
                     "detectionProperties": {
                       "TEXT": "6EMZ948"
                     },
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-github-with-pull-request-opencv-3.2/openmpf/trunk/install/share/artifacts/19/25/0/lp-trailer.jpg",
-                    "offset": 0
+                    "artifactPath": "file:///opt/mpf/share/artifacts/56/61/0/lp-trailer.png"
                   }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
+                ]
               }
             ]
           }
         ]
-      },
-      "detectionProcessingErrors": {}
+      }
     }
   ]
 }

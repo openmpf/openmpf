@@ -27,7 +27,7 @@
 project(VideoOverlay)
 aux_source_directory(./src/main/cpp SRC)
 
-find_package(OpenCV 3.3 EXACT REQUIRED PATHS /opt/opencv-3.3.0)
+find_package(OpenCV 3.4.7 EXACT REQUIRED PATHS /opt/opencv-3.4.7)
 
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)

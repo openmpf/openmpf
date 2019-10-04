@@ -32,7 +32,7 @@
   "siteId": "mpf1",
   "externalJobId": "cca2ad27-8051-4d3d-bfa0-6fd45aa2c3a1",
   "timeStart": "2019-10-03T21:14:52-04:00",
-  "timeStop": null,
+  "timeStop": "2019-10-03T21:15:45-04:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},

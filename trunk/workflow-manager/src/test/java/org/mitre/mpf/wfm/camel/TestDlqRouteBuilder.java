@@ -155,6 +155,15 @@ public class TestDlqRouteBuilder {
         queueMbean.purge();
     }
 
+    private void closeQuietly(MessageConsumer messageConsumer) {
+        try {
+            messageConsumer.close();
+        } catch(Exception e) {
+            // Sometimes closing a MessageConsumer can cause a NullPointerException, possibly due to a race condition.
+            // Ignore these exceptions since they are not what's being tested.
+        }
+    }
+
     private Queue<Message> receiveMessages(String dest, boolean expectingMessages) throws JMSException {
         Queue<Message> messages = new LinkedList<>();
 
@@ -174,7 +183,7 @@ public class TestDlqRouteBuilder {
                     messages.add(message);
                 } else {
                     // Failed to receive message. Abort.
-                    messageConsumer.close();
+                    closeQuietly(messageConsumer);
                     return messages;
                 }
             }
@@ -185,7 +194,7 @@ public class TestDlqRouteBuilder {
         messages.add(messageConsumer.receiveNoWait());
         session.commit(); // ACK message
 
-        messageConsumer.close();
+        closeQuietly(messageConsumer);
         return messages;
     }
 

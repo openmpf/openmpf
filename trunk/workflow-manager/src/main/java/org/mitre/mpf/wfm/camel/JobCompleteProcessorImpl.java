@@ -125,6 +125,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
+            setJobCompletionStatus(jobId, jobStatus.getValue(), job);
             try {
                 // NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
                 createOutputObject(job, jobStatus);
@@ -144,8 +145,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!",
                          jobId, exception);
             }
-
-            setJobCompletionStatus(jobId, jobStatus.getValue(), job);
 
             try {
                 callback(job);

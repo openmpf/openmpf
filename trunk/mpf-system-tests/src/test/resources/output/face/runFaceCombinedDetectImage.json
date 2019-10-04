@@ -1,366 +1,308 @@
 {
   "jobId": 2,
-  "objectId": "a2c7c34c-90fe-4a8c-bcea-ec6bbc4d6351",
+  "jobErrors": [],
+  "jobWarnings": [],
+  "objectId": "980deb50-3517-4a54-b095-4d6c4e3a88d6",
   "pipeline": {
     "name": "TEST CVFACE DLIB COMBINED PIPELINE",
     "description": "TEST CVFACE DLIB COMBINED PIPELINE",
-    "stages": [
-      {
-        "actionType": "DETECTION",
-        "name": "TEST CVFACE DLIB COMBINED TASK",
-        "description": "TEST CVFACE DLIB COMBINED TASK",
-        "actions": [
-          {
-            "algorithm": "FACECV",
-            "name": "OCV FACE DETECTION ACTION",
-            "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": {}
-          },
-          {
-            "algorithm": "DLIB",
-            "name": "DLIB FACE DETECTION ACTION",
-            "description": "Executes the dlib face detection algorithm using the default parameters.",
-            "properties": {}
-          }
-        ]
-      }
-    ]
+    "tasks": [{
+      "actionType": "DETECTION",
+      "name": "TEST CVFACE DLIB COMBINED TASK",
+      "description": "TEST CVFACE DLIB COMBINED TASK",
+      "actions": [{
+        "algorithm": "FACECV",
+        "name": "OCV FACE DETECTION ACTION",
+        "description": "Executes the OpenCV face detection algorithm using the default parameters.",
+        "properties": {}
+      }, {
+        "algorithm": "DLIB",
+        "name": "DLIB FACE DETECTION ACTION",
+        "description": "Executes the dlib face detection algorithm using the default parameters.",
+        "properties": {}
+      }]
+    }]
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "657682a9-973d-42f1-ac8c-fccbcda99b44",
-  "timeStart": "2017-06-15T23:15:42.0-05:00",
-  "timeStop": "2017-06-15T23:15:50.0-05:00",
+  "externalJobId": "4a1d2722-0d62-4c58-b1c2-dd2281df21f6",
+  "timeStart": "2019-10-03T21:15:39-04:00",
+  "timeStop": null,
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
-  "media": [
-    {
-      "mediaId": 10,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "FACE": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "a2b623ec3d73a82702e54d75f84fe902e79842f10ef228e3cc5712b27f02b143",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "confidence": 2.383536,
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "exemplar": {
-                  "x": 114,
-                  "y": 238,
-                  "width": 225,
-                  "height": 225,
-                  "confidence": 2.383536,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/10/0/meds-aa-S001-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 114,
-                    "y": 238,
-                    "width": 225,
-                    "height": 225,
-                    "confidence": 2.383536,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/10/0/meds-aa-S001-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "c8c6c92aca173f022acb47ac1ced51bbd182ffc2415ee262d89b7d10c9862136",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
-                "confidence": 58.0,
-                "exemplar": {
-                  "x": 85,
-                  "y": 212,
-                  "width": 283,
-                  "height": 283,
-                  "confidence": 58.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/10/0/meds-aa-S001-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 85,
-                    "y": 212,
-                    "width": 283,
-                    "height": 283,
-                    "confidence": 58.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/10/0/meds-aa-S001-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
+  "media": [{
+    "mediaId": 11,
+    "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01.jpg",
+    "detectionProcessingErrors": {},
+    "mimeType": "image/jpeg",
+    "length": 1,
+    "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
+    "message": null,
+    "status": "COMPLETE",
+    "mediaMetadata": {
+      "MIME_TYPE": "image/jpeg"
     },
-    {
-      "mediaId": 11,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S029-01.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "FACE": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "c22d1cba7099aa21690e77b126cc83a3c3317abbef800e390c87f2ae0616e98b",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 2.268096685409546,
-                "exemplar": {
-                  "x": 90,
-                  "y": 139,
-                  "width": 224,
-                  "height": 224,
-                  "confidence": 2.268096685409546,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S029-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 90,
-                    "y": 139,
-                    "width": 224,
-                    "height": 224,
-                    "confidence": 2.268096685409546,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S029-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
+    "mediaProperties": {},
+    "markupResult": null,
+    "output": {
+      "FACE": [{
+        "source": "+#DLIB FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "a2b623ec3d73a82702e54d75f84fe902e79842f10ef228e3cc5712b27f02b143",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#DLIB FACE DETECTION ACTION",
+          "confidence": 2.3898146,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 114,
+            "y": 238,
+            "width": 225,
+            "height": 225,
+            "confidence": 2.3898146,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S001-01.jpg"
           },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "7bb7b876b54895645d4a7ff26d47a1bb0593994930d5962bf5afaa05f9a1a89a",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
-                "confidence": 75.0,
-                "exemplar": {
-                  "x": 80,
-                  "y": 130,
-                  "width": 238,
-                  "height": 238,
-                  "confidence": 75.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S029-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 80,
-                    "y": 130,
-                    "width": 238,
-                    "height": 238,
-                    "confidence": 75.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S029-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
-    },
-    {
-      "mediaId": 12,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-af-S419-01.jpg",
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "39323774cdeabffad373cad1dcb9f4e59f8dbc7f946f245ce2c4055f422333e4",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "FACE": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "954c58899a3b31381a2f7e48312a60dd6a3202712a5efa905cde703bfae62e44",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 1.9830125570297241,
-                "exemplar": {
-                  "x": 107,
-                  "y": 197,
-                  "width": 269,
-                  "height": 269,
-                  "confidence": 1.9830125570297241,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/12/0/meds-af-S419-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 107,
-                    "y": 197,
-                    "width": 269,
-                    "height": 269,
-                    "confidence": 1.9830125570297241,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/12/0/meds-af-S419-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 114,
+            "y": 238,
+            "width": 225,
+            "height": 225,
+            "confidence": 2.3898146,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S001-01.jpg"
+          }]
+        }]
+      }, {
+        "source": "+#OCV FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "afba8b4afeb29c2d0b8453f3c1795920dd06d94c18596390a1067d706cfdb453",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#OCV FACE DETECTION ACTION",
+          "confidence": 57.0,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 83,
+            "y": 209,
+            "width": 285,
+            "height": 285,
+            "confidence": 57.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S001-01.jpg"
           },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "36c8912f314e0203024975b97d261080b28d4f2d3d613910e96fb2bbe664845d",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 1,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#OCV FACE DETECTION ACTION",
-                "confidence": 62.0,
-                "exemplar": {
-                  "x": 93,
-                  "y": 164,
-                  "width": 299,
-                  "height": 299,
-                  "confidence": 62.0,
-                  "detectionProperties": {},
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/12/0/meds-af-S419-01.jpg",
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 93,
-                    "y": 164,
-                    "width": 299,
-                    "height": 299,
-                    "confidence": 62.0,
-                    "detectionProperties": {},
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/install/share/artifacts/2/12/0/meds-af-S419-01.jpg",
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 1,
-                "startOffset": 0
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 83,
+            "y": 209,
+            "width": 285,
+            "height": 285,
+            "confidence": 57.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/11/0/meds-aa-S001-01.jpg"
+          }]
+        }]
+      }]
     }
-  ]
+  }, {
+    "mediaId": 12,
+    "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S029-01.jpg",
+    "detectionProcessingErrors": {},
+    "mimeType": "image/jpeg",
+    "length": 1,
+    "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
+    "message": null,
+    "status": "COMPLETE",
+    "mediaMetadata": {
+      "MIME_TYPE": "image/jpeg"
+    },
+    "mediaProperties": {},
+    "markupResult": null,
+    "output": {
+      "FACE": [{
+        "source": "+#DLIB FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "c22d1cba7099aa21690e77b126cc83a3c3317abbef800e390c87f2ae0616e98b",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#DLIB FACE DETECTION ACTION",
+          "confidence": 2.2680967,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 90,
+            "y": 139,
+            "width": 224,
+            "height": 224,
+            "confidence": 2.2680967,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/12/0/meds-aa-S029-01.jpg"
+          },
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 90,
+            "y": 139,
+            "width": 224,
+            "height": 224,
+            "confidence": 2.2680967,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/12/0/meds-aa-S029-01.jpg"
+          }]
+        }]
+      }, {
+        "source": "+#OCV FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "5e2e782e336b39a54f6bd68ea5ee64cdec2ae651fb53454635cdfac2c1eea7b4",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#OCV FACE DETECTION ACTION",
+          "confidence": 74.0,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 82,
+            "y": 132,
+            "width": 234,
+            "height": 234,
+            "confidence": 74.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/12/0/meds-aa-S029-01.jpg"
+          },
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 82,
+            "y": 132,
+            "width": 234,
+            "height": 234,
+            "confidence": 74.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/12/0/meds-aa-S029-01.jpg"
+          }]
+        }]
+      }]
+    }
+  }, {
+    "mediaId": 13,
+    "path": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-af-S419-01.jpg",
+    "detectionProcessingErrors": {},
+    "mimeType": "image/jpeg",
+    "length": 1,
+    "sha256": "39323774cdeabffad373cad1dcb9f4e59f8dbc7f946f245ce2c4055f422333e4",
+    "message": null,
+    "status": "COMPLETE",
+    "mediaMetadata": {
+      "MIME_TYPE": "image/jpeg"
+    },
+    "mediaProperties": {},
+    "markupResult": null,
+    "output": {
+      "FACE": [{
+        "source": "+#DLIB FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "954c58899a3b31381a2f7e48312a60dd6a3202712a5efa905cde703bfae62e44",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#DLIB FACE DETECTION ACTION",
+          "confidence": 1.9830126,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 107,
+            "y": 197,
+            "width": 269,
+            "height": 269,
+            "confidence": 1.9830126,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/13/0/meds-af-S419-01.jpg"
+          },
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 107,
+            "y": 197,
+            "width": 269,
+            "height": 269,
+            "confidence": 1.9830126,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/13/0/meds-af-S419-01.jpg"
+          }]
+        }]
+      }, {
+        "source": "+#OCV FACE DETECTION ACTION",
+        "tracks": [{
+          "id": "1f3d1be6aaafbfdd3b659514bf7f18b971bb078986888d6922c6a776f5d31e7c",
+          "startOffsetFrame": 0,
+          "stopOffsetFrame": 1,
+          "startOffsetTime": 0,
+          "stopOffsetTime": 0,
+          "type": "FACE",
+          "source": "+#OCV FACE DETECTION ACTION",
+          "confidence": 62.0,
+          "trackProperties": {},
+          "exemplar": {
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 91,
+            "y": 165,
+            "width": 300,
+            "height": 300,
+            "confidence": 62.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/13/0/meds-af-S419-01.jpg"
+          },
+          "detections": [{
+            "offsetFrame": 0,
+            "offsetTime": 0,
+            "x": 91,
+            "y": 165,
+            "width": 300,
+            "height": 300,
+            "confidence": 62.0,
+            "detectionProperties": {},
+            "artifactExtractionStatus": "COMPLETED",
+            "artifactPath": "file:///var/jenkins/workspace/openmpf-nightly/openmpf/trunk/install/share/artifacts/2/13/0/meds-af-S419-01.jpg"
+          }]
+        }]
+      }]
+    }
+  }]
 }

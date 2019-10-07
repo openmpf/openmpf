@@ -38,6 +38,8 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -48,7 +50,7 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class TestArtifactExtractionSplitter {
@@ -58,7 +60,8 @@ public class TestArtifactExtractionSplitter {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
+    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class, RETURNS_DEEP_STUBS);
+
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
             _jsonUtils,
@@ -66,10 +69,7 @@ public class TestArtifactExtractionSplitter {
             _mockPropertiesUtil,
             _mockAggregateJobPropertiesUtil);
 
-    @Before
-    public void init() {
-        _jsonUtils.init();
-    }
+
 
     ////////////////////////////////////////////////////////
     @Test
@@ -541,7 +541,7 @@ public class TestArtifactExtractionSplitter {
 
         long jobId = 123;
         long mediaId = 5321;
-        TransientJob job = mock(TransientJob.class, RETURNS_DEEP_STUBS);
+        BatchJob job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         when(job.getId())
                 .thenReturn(jobId);
         when(job.getSystemPropertiesSnapshot())
@@ -553,7 +553,7 @@ public class TestArtifactExtractionSplitter {
         when(_mockInProgressJobs.getTracks(jobId, mediaId, 0, 0))
                 .thenReturn(tracks);
 
-        TransientMedia media = mock(TransientMedia.class);
+        Media media = mock(Media.class);
         when(media.getId())
                 .thenReturn(mediaId);
         when(media.getMediaType())
@@ -563,16 +563,44 @@ public class TestArtifactExtractionSplitter {
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
-        TransientStage stage = mock(TransientStage.class, RETURNS_DEEP_STUBS);
-        when(job.getPipeline().getStages().get(0))
-                .thenReturn(stage);
-        when(stage.getActions().size())
+        Action action = mock(Action.class);
+        Task task = mock(Task.class);
+        ImmutableList<String> actionList = ImmutableList.of("Test Action");
+        when(task.getActions())
+                .thenReturn(actionList);
+
+        JobPipelineElements pipelineElements = mock(JobPipelineElements.class, RETURNS_DEEP_STUBS);
+        when(job.getPipelineElements())
+                .thenReturn(pipelineElements);
+        when(pipelineElements.getAction(anyInt(), anyInt()))
+             .thenReturn(action);
+        when(pipelineElements.getTask(anyInt()))
+                .thenReturn(task);
+
+
+        when(pipelineElements.getTaskCount())
                 .thenReturn(1);
 
-        when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, mediaId, 0, 0))
+        when(pipelineElements.getAlgorithm(anyInt(), anyInt()).getActionType())
+                .thenReturn(ActionType.DETECTION);
+
+
+        when(_mockAggregateJobPropertiesUtil.getCombinedProperties(job, media, action))
                 .thenReturn(pName -> pName.equals(MpfConstants.ARTIFACT_EXTRACTION_POLICY_PROPERTY)
-                        ? extractionPolicy.name()
-                        : null);
+                            ? extractionPolicy.name()
+                            : null);
+
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.exemplar.frame.plus"));
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.first.frame"));
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.middle.frame"));
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_LAST_FRAME"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.last.frame"));
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT"), any(BatchJob.class), any(Media.class), any(Action.class)))
+        .thenReturn(systemPropertiesSnapshot.lookup("detection.artifact.extraction.policy.top.confidence.count"));
+
 
         Exchange exchange = TestUtil.createTestExchange();
         TrackMergingContext trackMergingContext = new TrackMergingContext(jobId, 0);
@@ -580,7 +608,6 @@ public class TestArtifactExtractionSplitter {
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
-
         ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
                 .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
                 .flatMap(req -> req.getFrameNumbers().stream())

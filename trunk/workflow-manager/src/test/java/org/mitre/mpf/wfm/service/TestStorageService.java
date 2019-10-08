@@ -29,12 +29,14 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mockito.InjectMocks;
@@ -79,14 +81,15 @@ public class TestStorageService {
 
 
     @Test
-    public void S3BackendHasHigherPriorityThenNginx() throws IOException, StorageException {
+    public void S3BackendHasHigherPriorityThanNginx() throws IOException, StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
         when(_mockNginxBackend.canStore(outputObject))
                 .thenReturn(true);
 
-        _storageService.store(outputObject);
+        _storageService.store(outputObject,
+                new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
 
         verify(_mockS3Backend)
                 .store(outputObject);
@@ -105,7 +108,8 @@ public class TestStorageService {
         when(_mockS3Backend.store(outputObject))
                 .thenReturn(TEST_REMOTE_URI);
 
-        URI result = _storageService.store(outputObject);
+        URI result = _storageService.store(outputObject,
+                new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
         assertEquals(TEST_REMOTE_URI, result);
 
         verifyZeroInteractions(_mockLocalBackend);
@@ -118,9 +122,10 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
-
+        URI result = _storageService.store(outputObject,
+                new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
         assertEquals(TEST_LOCAL_URI, result);
+
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
                 .canStore(outputObject);
@@ -143,7 +148,8 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
+        URI result = _storageService.store(outputObject,
+                new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
         assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
@@ -165,7 +171,8 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
+        URI result = _storageService.store(outputObject,
+                new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
         assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
@@ -194,7 +201,8 @@ public class TestStorageService {
                 .when(_mockLocalBackend).store(outputObject);
 
         try {
-            _storageService.store(outputObject);
+            _storageService.store(outputObject,
+                    new MutableObject<>(BatchJobStatusType.parse(outputObject.getStatus())));
             fail("Expected IOException");
         }
         catch (IOException e) {

@@ -29,6 +29,7 @@ package org.mitre.mpf.interop.util;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 public class TimeUtils {
 
@@ -43,7 +44,7 @@ public class TimeUtils {
     public static String toIsoString(Instant instant) {
         return instant == null
                 ? null
-                : timestampFormatter.format(instant);
+                : timestampFormatter.format(instant.truncatedTo(ChronoUnit.SECONDS));
     }
 
     public static String toIsoString(long millis) {
@@ -54,6 +55,6 @@ public class TimeUtils {
     public static Instant toInstant(String isoString) {
         return isoString == null
                 ? null
-                : timestampFormatter.parse(isoString, Instant::from);
+                : timestampFormatter.parse(isoString, Instant::from).truncatedTo(ChronoUnit.SECONDS);
     }
 }

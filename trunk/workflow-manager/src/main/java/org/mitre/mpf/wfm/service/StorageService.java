@@ -28,10 +28,13 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.wfm.camel.JobStatusCalculator;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
@@ -68,7 +71,7 @@ public class StorageService {
     }
 
 
-    public URI store(JsonOutputObject outputObject) throws IOException {
+    public URI store(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) throws IOException {
         Exception remoteException = null;
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
@@ -80,10 +83,11 @@ public class StorageService {
         catch (StorageException ex) {
             remoteException = ex;
             LOG.warn(String.format(
-                    "Failed to remotely store output object for job id %s. It will be stored locally instead.",
+                    "Failed to remotely store output object for job id %d. It will be stored locally instead.",
                     outputObject.getJobId()), ex);
             outputObject.getJobWarnings().add(
                     "This output object was stored locally because storing it remotely failed due to: " + ex);
+            JobStatusCalculator.checkErrorMessages(outputObject, jobStatus);
         }
 
         try {
@@ -159,7 +163,7 @@ public class StorageService {
 
 
     private void handleRemoteStorageFailure(ArtifactExtractionRequest request, Exception e) {
-        LOG.warn(String.format("Failed to store artifact for job id %s. It will be stored locally instead.",
+        LOG.warn(String.format("Failed to store artifact for job id %d. It will be stored locally instead.",
                                request.getJobId()), e);
         _inProgressJobs.addJobWarning(
                 request.getJobId(),
@@ -178,7 +182,7 @@ public class StorageService {
         }
         catch (IOException | StorageException ex) {
             LOG.warn(String.format(
-                    "Failed to remotely store markup for job id %s. It will be stored locally instead.",
+                    "Failed to remotely store markup for job id %d. It will be stored locally instead.",
                     markupResult.getJobId()), ex);
 
 

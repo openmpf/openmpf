@@ -73,7 +73,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runArtifactExtractionArtifactsAndExemplarsOnlyTest() {
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put("mpf.output.objects.artifacts.and.exemplars.only", "true");
-        jobProperties.put("detection.artifact.extraction.policy.exemplar.frame.plus", "1");
         jobProperties.put("detection.artifact.extraction.policy.first.frame", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
@@ -97,12 +96,26 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                                                     .collect(toList());
         assertTrue("Output contained unextracted detections", unextractedDetections.isEmpty());
 
-        List<Integer> expectedExtractions = Arrays.asList(0, 32, 33, 34, 65, 66, 67);
-        List<Integer> actualExtractions = tracks.stream()
-                                      .flatMap(track -> track.getDetections().stream())
-                                      .map(d -> d.getOffsetFrame())
-                                      .collect(toList());
-        assertEquals(expectedExtractions, actualExtractions);
+        // Check that the exemplars were all extracted
+        List<JsonDetectionOutputObject> exemplars = tracks.stream()
+                                                    .map(track -> track.getExemplar())
+                                                    .collect(toList());
+        assertTrue(exemplars.stream().allMatch(e -> e.getArtifactExtractionStatus().toUpperCase() == "COMPLETED"));
+
+        // Check that all of the first frames were extracted
+        List<JsonDetectionOutputObject> firstFrames = tracks.stream()
+                                                     .map(track -> track.getDetections().first())
+                                                     .collect(toList());
+        assertTrue(firstFrames.stream().allMatch(d -> d.getArtifactExtractionStatus().toUpperCase() == "COMPLETED"));
+
+        // Check that the only objects reported were the exemplars and first frames
+        List<JsonDetectionOutputObject> expectedFramesInOutput = new ArrayList<>(firstFrames);
+        expectedFramesInOutput.addAll(exemplars);
+
+        List<JsonDetectionOutputObject> allFramesInOutput = tracks.stream()
+                                                            .flatMap(t -> t.getDetections().stream())
+                                                            .collect(toList());
+        assertEquals(expectedFramesInOutput, allFramesInOutput);
     }
 
 
@@ -119,12 +132,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
+        // Check that the first stage (MOTION) was suppressed
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> motionActionOutput = outputMedia.getTypes().get("TRACKS_SUPPRESSED");
+        SortedSet<JsonActionOutputObject> suppressedActionOutput = outputMedia.getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
 
-        assertNotNull("Output object did not contain TRACKS_SUPPRESSED action type", motionActionOutput);
-        assertEquals(1, motionActionOutput.size());
-        assertEquals("Tracks suppressed for task other than MOTION", motionActionOutput.first().getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
+        assertNotNull("Output object did not contain TRACKS_SUPPRESSED action type", suppressedActionOutput);
+        assertEquals(1, suppressedActionOutput.size());
+        assertEquals("Tracks suppressed for task other than MOTION", suppressedActionOutput.first().getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
 
         SortedSet<JsonActionOutputObject> faceActionOutputs = outputMedia.getTypes().get("FACE");
         assertNotNull("Output object did not contain FACE action type", faceActionOutputs);

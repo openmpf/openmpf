@@ -85,6 +85,8 @@ public class StorageService {
             LOG.warn(String.format(
                     "Failed to remotely store output object for job id %d. It will be stored locally instead.",
                     outputObject.getJobId()), ex);
+            _inProgressJobs.addJobWarning(outputObject.getJobId(),
+                    "The output object was stored locally because storing it remotely failed due to: " + ex);
             outputObject.getJobWarnings().add(
                     "This output object was stored locally because storing it remotely failed due to: " + ex);
             JobStatusCalculator.checkErrorMessages(outputObject, jobStatus);

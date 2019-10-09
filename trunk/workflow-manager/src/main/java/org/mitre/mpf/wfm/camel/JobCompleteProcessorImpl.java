@@ -69,7 +69,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.IntStream;
@@ -130,7 +129,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
             JobRequest jobRequest = jobRequestDao.findById(jobId);
-            jobRequest.setTimeCompleted(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+            jobRequest.setTimeCompleted(Instant.now());
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
             try {
@@ -140,6 +139,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
             } catch (Exception exception) {
                 log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId), exception);
+                inProgressBatchJobs.addJobError(jobId, "Failed to create the output object due to: " + exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
             }
 

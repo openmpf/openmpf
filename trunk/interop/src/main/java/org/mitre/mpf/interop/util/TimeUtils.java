@@ -44,7 +44,7 @@ public class TimeUtils {
     public static String toIsoString(Instant instant) {
         return instant == null
                 ? null
-                : timestampFormatter.format(instant.truncatedTo(ChronoUnit.SECONDS));
+                : timestampFormatter.format(instant.truncatedTo(ChronoUnit.MILLIS));
     }
 
     public static String toIsoString(long millis) {
@@ -55,6 +55,6 @@ public class TimeUtils {
     public static Instant toInstant(String isoString) {
         return isoString == null
                 ? null
-                : timestampFormatter.parse(isoString, Instant::from).truncatedTo(ChronoUnit.SECONDS);
+                : timestampFormatter.parse(isoString, Instant::from).truncatedTo(ChronoUnit.MILLIS);
     }
 }

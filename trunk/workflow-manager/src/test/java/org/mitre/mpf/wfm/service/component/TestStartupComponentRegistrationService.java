@@ -36,6 +36,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -49,7 +50,10 @@ import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
 import static java.util.stream.Collectors.toList;
-import static org.mitre.mpf.test.TestUtil.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.test.TestUtil.collectionContaining;
+import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -206,6 +210,14 @@ public class TestStartupComponentRegistrationService {
         _pluginDeploymentDir.newFolder("Deployed", "descriptor");
         File deployedDescriptor = _pluginDeploymentDir.newFile("Deployed/descriptor/descriptor.json");
 
+        _pluginDeploymentDir.newFolder("DescriptorOnly", "descriptor");
+        File descriptorOnly = _pluginDeploymentDir.newFile("DescriptorOnly/descriptor/descriptor.json");
+
+        var descriptorOnlyRcm = new RegisterComponentModel();
+        descriptorOnlyRcm.setComponentName("DescriptorOnly");
+        when(_mockAddComponentSvc.registerDeployedComponent(descriptorOnly.toString()))
+                .thenReturn(descriptorOnlyRcm);
+
         _startupRegisterSvc.registerUnregisteredComponents();
 
         verify(_mockComponentStateSvc)
@@ -217,6 +229,23 @@ public class TestStartupComponentRegistrationService {
                 .addEntryForUploadedPackage(packages.get(1));
         verify(_mockAddComponentSvc)
                 .registerComponent("NotDeployed.tar.gz");
+
+        verify(_mockAddComponentSvc)
+                .registerDeployedComponent(descriptorOnly.toString());
+
+        var rcmListCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(_mockServiceStarter)
+                .startServicesForComponents((List<RegisterComponentModel>) rcmListCaptor.capture());
+
+        var rcmList = (List<RegisterComponentModel>) rcmListCaptor.getValue();
+        assertEquals(3, rcmList.size());
+        assertTrue(rcmList.stream()
+                           .anyMatch(rcm -> rcm.getComponentName().equals("Deployed")));
+        assertTrue(rcmList.stream()
+                           .anyMatch(rcm -> rcm.getComponentName().equals("NotDeployed")));
+        assertTrue(rcmList.stream()
+                           .anyMatch(rcm -> rcm.getComponentName().equals("DescriptorOnly")));
     }
 
 

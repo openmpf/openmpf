@@ -168,7 +168,7 @@ public class AddComponentServiceImpl implements AddComponentService {
     }
 
     @Override
-    public synchronized void registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
+    public synchronized RegisterComponentModel registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
         JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
 
         RegisterComponentModel registrationModel = _componentStateService
@@ -182,6 +182,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         registrationModel.setComponentState(ComponentState.REGISTERED);
         registrationModel.setDateRegistered(Instant.now());
         _componentStateService.update(registrationModel);
+        return registrationModel;
     }
 
     private void registerDeployedComponent(JsonComponentDescriptor descriptor, RegisterComponentModel model)

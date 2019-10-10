@@ -32,13 +32,13 @@ include(${QT_USE_FILE})
 add_definitions(${QT_DEFINITIONS})
 
 ## Find and install activemq-cpp
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")
 pkg_search_module(ACTIVEMQ-CPP REQUIRED activemq-cpp)
 include_directories(${ACTIVEMQ-CPP_INCLUDE_DIRS})
 
 file(GLOB MATCHING_FILES
-	 ${ACTIVEMQ-CPP_LIBRARY_DIRS}/libactivemq-cpp.so* )
+	 ${ACTIVEMQ-CPP_LIBDIR}/libactivemq-cpp.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
 ## Find Apache Portable Runtime

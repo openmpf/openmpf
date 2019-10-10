@@ -78,6 +78,9 @@ public class PropertiesUtil {
     @javax.annotation.Resource(name="mediaTypesFile")
     private FileSystemResource mediaTypesFile;
 
+    @javax.annotation.Resource(name="userFile")
+    private FileSystemResource userFile;
+
     private ImmutableConfiguration mpfPropertiesConfig;
 
     // The set of core nodes will not change while the WFM is running.
@@ -93,6 +96,10 @@ public class PropertiesUtil {
 
         if (!mediaTypesFile.exists()) {
             copyResource(mediaTypesFile, getMediaTypesTemplate());
+        }
+
+        if (!userFile.exists()) {
+            copyResource(userFile, getUserTemplate());
         }
 
         Set<PosixFilePermission> permissions = new HashSet<>();
@@ -603,6 +610,16 @@ public class PropertiesUtil {
     private Resource getMediaTypesTemplate() {
         return appContext.getResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
     }
+
+
+    public FileSystemResource getUserFile() {
+        return userFile;
+    }
+
+    private Resource getUserTemplate() {
+        return appContext.getResource(mpfPropertiesConfig.getString("config.user.template"));
+    }
+
 
     public String getAmqUri() {
         return mpfPropertiesConfig.getString("amq.broker.uri");

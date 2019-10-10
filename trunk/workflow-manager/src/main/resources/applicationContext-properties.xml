@@ -41,6 +41,10 @@
         <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mediaType.properties</value></constructor-arg>
     </bean>
 
+    <bean id="userFile" class="org.springframework.core.io.FileSystemResource">
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/user.properties</value></constructor-arg>
+    </bean>
+
     <beans profile="default">
         <!-- Order is important. Files at the top override files at the bottom. -->
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">

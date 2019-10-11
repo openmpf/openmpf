@@ -67,8 +67,8 @@ public class UserUtils {
 
     @PostConstruct
     private void init() {
-        // get the user properties file from the PropertiesUtil;
-        // the PropertiesUtil will ensure that it is copied from the template, if necessary
+        // Get the user properties file from the PropertiesUtil.
+        // The PropertiesUtil will ensure that it is copied from the template, if necessary.
         userFile = propertiesUtil.getUserFile();
 
         URL url;
@@ -95,7 +95,9 @@ public class UserUtils {
     }
 
     private void populateUserDatabase() {
-        //propertiesConfig.get
+        for (String userName : propertiesConfig.getKeys()) {
+
+        }
 
         /*
         log.debug("Checking whether user table is populated");

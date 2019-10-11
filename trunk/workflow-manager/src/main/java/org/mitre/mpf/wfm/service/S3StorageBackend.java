@@ -142,7 +142,7 @@ public class S3StorageBackend implements StorageBackend {
         }
         catch (StorageException | IOException e) {
             LOG.error(String.format(
-                    "An error occurred while uploading artifacts for job %s and media %s. " +
+                    "An error occurred while uploading artifacts for job %d and media %d. " +
                             "They will be stored locally instead.",
                     request.getJobId(), request.getMediaId()), e);
             _inProgressJobs.addJobWarning(

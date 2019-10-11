@@ -166,7 +166,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
                 .getSystemPropertiesSnapshot()
                 .getNginxStorageServiceUri()
                 // The URI should always be present at this point since it was checked in canStore().
-                .orElseThrow(() -> new StorageException(String.format("Unable to store job %s in Nginx.", jobId)));
+                .orElseThrow(() -> new StorageException(String.format("Unable to store job %d in Nginx.", jobId)));
     }
 
 
@@ -267,14 +267,14 @@ public class CustomNginxStorageBackend implements StorageBackend {
             Header eTagHeader = response.getFirstHeader("ETag");
             if (eTagHeader == null) {
                 throw new StorageException(String.format(
-                        "The HTTP response for upload id \"%s\"'s part number %s did not contain an \"ETag\" header.",
+                        "The HTTP response for upload id \"%s\"'s part number %d did not contain an \"ETag\" header.",
                         uploadId, partNumber));
             }
             return new FilePartETag(partNumber, eTagHeader.getValue());
         }
         catch (IOException e) {
             throw new StorageException(String.format(
-                    "An error occurred while trying to upload part number %s for upload id \"%s\": %s",
+                    "An error occurred while trying to upload part number %d for upload id \"%s\": %s",
                     partNumber, uploadId, e), e);
         }
     }
@@ -289,7 +289,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
         }
         catch (URISyntaxException e) {
             throw new StorageException(String.format(
-                    "An error occurred while trying to build the URI to send part number %s for upload id \"%s\": %s",
+                    "An error occurred while trying to build the URI to send part number %d for upload id \"%s\": %s",
                     partNumber, uploadId, e), e);
         }
     }
@@ -403,7 +403,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
             }
             catch (IOException e) {
                 throw new StorageException(String.format(
-                        "An error occurred while trying to get the data to upload for part number %s for upload id \"%s\": %s",
+                        "An error occurred while trying to get the data to upload for part number %d for upload id \"%s\": %s",
                         _partCount, _uploadId, e), e);
             }
 

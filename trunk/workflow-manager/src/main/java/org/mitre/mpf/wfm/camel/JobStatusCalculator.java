@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -75,6 +77,25 @@ public class JobStatusCalculator {
                 return BatchJobStatusType.CANCELLED;
             default:
                 return BatchJobStatusType.COMPLETE;
+        }
+    }
+
+    public static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
+        // Only update a non-terminal status, or a COMPLETE_* status.
+        if (!jobStatus.getValue().isTerminal()
+                || jobStatus.getValue() == BatchJobStatusType.COMPLETE
+                || jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_WARNINGS) {
+
+            if (!outputObject.getJobErrors().isEmpty()) {
+                jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_ERRORS);
+                outputObject.setStatus(BatchJobStatusType.COMPLETE_WITH_ERRORS.toString());
+                return;
+            }
+
+            if (!outputObject.getJobWarnings().isEmpty()) {
+                jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_WARNINGS);
+                outputObject.setStatus(BatchJobStatusType.COMPLETE_WITH_WARNINGS.toString());
+            }
         }
     }
 }

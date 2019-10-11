@@ -47,7 +47,8 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -114,24 +115,38 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
         Long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.", MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
+        assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.",
+                MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
         if(jobId == Long.MIN_VALUE) {
             // If we receive a very large negative Job ID, it means an exception was encountered during processing of a job,
             // and none of the provided error handling logic could fix it. Further processing should not be performed.
-            log.warn("[Job {}:*:*] An error prevents a job from completing successfully. Please review the logs for additional information.", jobId);
+            log.warn("[Job {}:*:*] An error prevents a job from completing successfully." +
+                    " Please review the logs for additional information.", jobId);
         } else {
             String statusString = exchange.getIn().getHeader(MpfHeaders.JOB_STATUS, String.class);
-            Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
+            Mutable<BatchJobStatusType> jobStatus =
+                    new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
+
+            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            jobRequest.setTimeCompleted(Instant.now());
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
             try {
-                // NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
-                createOutputObject(job, jobStatus);
+                URI outputLocation = createOutputObject(job, jobRequest.getTimeReceived(),
+                        jobRequest.getTimeCompleted(), jobStatus); // this may update the job status
+                jobRequest.setOutputObjectPath(outputLocation.toString());
+                jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
             } catch (Exception exception) {
-                log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
+                log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId), exception);
+                inProgressBatchJobs.addJobError(jobId, "Failed to create the output object due to: " + exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
             }
+
+            inProgressBatchJobs.setJobStatus(jobId, jobStatus.getValue());
+            jobRequest.setStatus(jobStatus.getValue());
+            jobRequest.setJob(jsonUtils.serialize(job));
+            jobRequestDao.persist(jobRequest);
 
             IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
             IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
@@ -141,23 +156,23 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jmsUtils.destroyCancellationRoutes(jobId);
             }
             catch (Exception exception) {
-                log.warn("Failed to destroy the cancellation routes associated with {}. If this job is resubmitted, it will likely not complete again!",
-                         jobId, exception);
+                log.warn(String.format("Failed to destroy the cancellation routes associated with job %d." +
+                                " If this job is resubmitted, it will likely not complete again!", jobId), exception);
             }
-
-            setJobCompletionStatus(jobId, jobStatus.getValue(), job);
 
             try {
                 callback(job);
             } catch (Exception exception) {
-                log.warn("Failed to make callback (if appropriate) for Job #{}.", jobId);
+                log.warn("Failed to make callback for job {}.", jobId);
             }
 
             // Tear down the job.
             try {
                 destroy(job);
             } catch (Exception exception) {
-                log.warn("Failed to clean up Job {} due to an exception. Data for this job will remain in the transient data store, but the status of the job has not been affected by this failure.", jobId, exception);
+                log.warn(String.format("Failed to clean up job %d due to an exception." +
+                        " Data for this job will remain in the transient data store," +
+                        " but the status of the job has not been affected by this failure.", jobId), exception);
             }
 
             log.info("Notifying {} completion consumer(s).", consumers.size());
@@ -166,7 +181,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     log.info("Notifying completion consumer {}.", consumer.getId());
                     consumer.onNotification(this, new JobCompleteNotification(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class)));
                 } catch (Exception exception) {
-                    log.warn("Completion consumer {} threw an exception.", consumer.getId(), exception);
+                    log.warn(String.format("Completion consumer %d threw an exception.", consumer.getId()), exception);
                 }
             }
 
@@ -189,48 +204,35 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return;
         }
 
-
         log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
         try {
             JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, batchJob.getExternalId().orElse(null));
             new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
         } catch (IOException ioe) {
-            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+            log.warn(String.format("Failed to issue %s callback to '%s' for job %d.",
                                    jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
         }
     }
 
 
-    private void setJobCompletionStatus(long jobId, BatchJobStatusType jobStatus, BatchJob job) {
-        inProgressBatchJobs.setJobStatus(jobId, jobStatus);
-
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        assert jobRequest != null : String.format("A job request entity must exist with the ID %d", jobId);
-
-        jobRequest.setTimeCompleted(Instant.now());
-        jobRequest.setStatus(jobStatus);
-        jobRequest.setJob(jsonUtils.serialize(job));
-        jobRequestDao.persist(jobRequest);
-    }
-
     @Override
-    public void createOutputObject(BatchJob job, Mutable<BatchJobStatusType> jobStatus) throws IOException {
+    public URI createOutputObject(BatchJob job, Instant timeReceived, Instant timeCompleted,
+                                  Mutable<BatchJobStatusType> jobStatus) throws IOException {
         long jobId = job.getId();
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
 
-        if(job.isCancelled()) {
+        if (job.isCancelled()) {
             jobStatus.setValue(BatchJobStatusType.CANCELLED);
         }
 
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
-                jobRequest.getId(),
+                jobId,
                 UUID.randomUUID().toString(),
                 jsonUtils.convert(job.getPipelineElements()),
                 job.getPriority(),
                 propertiesUtil.getSiteId(),
                 job.getExternalId().orElse(null),
-                jobRequest.getTimeReceived(),
-                jobRequest.getTimeCompleted(),
+                timeReceived,
+                timeCompleted,
                 jobStatus.getValue().toString());
 
         if (job.getJobProperties() != null) {
@@ -258,9 +260,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
             MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
             if(markupResult != null) {
-                mediaOutputObject.setMarkupResult(new JsonMarkupOutputObject(markupResult.getId(), markupResult.getMarkupUri(), markupResult.getMarkupStatus().name(), markupResult.getMessage()));
+                mediaOutputObject.setMarkupResult(new JsonMarkupOutputObject(markupResult.getId(),
+                        markupResult.getMarkupUri(), markupResult.getMarkupStatus().name(), markupResult.getMessage()));
             }
-
 
             Set<Integer> suppressedTasks = getSuppressedTasks(media, job);
 
@@ -284,9 +286,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
                         if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
                             mediaOutputObject.setStatus("INCOMPLETE");
-                            if (StringUtils.equalsIgnoreCase(jsonOutputObject.getStatus(), "COMPLETE")) {
-                                jsonOutputObject.setStatus("INCOMPLETE");
-                            }
                         }
                     }
 
@@ -342,11 +341,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     .add("Some components had errors for some media. Refer to the detectionProcessingErrors fields.");
         }
 
-        URI outputLocation = storageService.store(jsonOutputObject);
-        jobRequest.setOutputObjectPath(outputLocation.toString());
-        jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-        checkErrorMessages(jsonOutputObject, jobStatus);
-        jobRequestDao.persist(jobRequest);
+        JobStatusCalculator.checkErrorMessages(jsonOutputObject, jobStatus);
+
+        return storageService.store(jsonOutputObject, jobStatus); // this may update the job status
     }
 
 
@@ -413,21 +410,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 detection.getMediaOffsetTime(),
                 detection.getArtifactExtractionStatus().name(),
                 detection.getArtifactPath());
-    }
-
-
-    private static void checkErrorMessages(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus) {
-        if (jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_ERRORS
-                || jobStatus.getValue() == BatchJobStatusType.ERROR) {
-            return;
-        }
-        if (!outputObject.getJobErrors().isEmpty()) {
-            jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_ERRORS);
-            return;
-        }
-        if (!outputObject.getJobWarnings().isEmpty()) {
-            jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_WARNINGS);
-        }
     }
 
 
@@ -542,7 +524,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
                     req = post;
                 } catch (WfmProcessingException e) {
-                    log.error("Cannot serialize CallbackBody for job id " + jobId, e);
+                    log.error("Cannot serialize CallbackBody for job " + jobId, e);
                 }
             }
         }
@@ -555,7 +537,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 log.info("{} callback issued to '{}' for job id {}. (Response={})",
                          callbackMethod, callbackURL, jobId, response);
             } catch (Exception exception) {
-                log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                log.warn(String.format("Failed to issue %s callback to '%s' for job %d.",
                                        callbackMethod, callbackURL, jobId), exception);
             }
         }

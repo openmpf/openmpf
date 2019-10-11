@@ -36,10 +36,13 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.event.NotificationProducer;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Instant;
 
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-    void createOutputObject(BatchJob batchJob, Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
+    URI createOutputObject(BatchJob batchJob, Instant timeReceived, Instant timeCompleted,
+                           Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
     void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
     void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
 }

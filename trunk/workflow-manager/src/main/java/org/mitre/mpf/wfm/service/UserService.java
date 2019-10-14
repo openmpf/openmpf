@@ -88,79 +88,63 @@ public class UserService {
             throw new IllegalStateException("Cannot create configuration from " + _userFile + ".", e);
         }
 
-        populateUserDatabase();
+        populateDatabase();
     }
 
-    private void populateUserDatabase() {
+    private void populateDatabase() {
         for (Iterator<String> it = _propertiesConfig.getKeys(); it.hasNext(); ) {
             String userName = it.next();
-
             String value = _propertiesConfig.getString(userName);
-            String[] entryTokens = value.split(",", 2);
 
-            if (entryTokens.length < 2) {
-                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
-                         "\nEntries should follow the format: <name>=<role>,<encoded-password>");
-                continue;
-            }
-
-            UserRole role;
+            User user;
             try {
-                role = UserRole.valueOf(entryTokens[0].toUpperCase());
-            } catch (IllegalArgumentException e) {
-                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
-                         "\nInvalid role \"" + entryTokens[0] + "\"." +
-                         " Valid roles are: " + Arrays.toString(UserRole.values()).toLowerCase());
+                user = parseEntry(userName, value);
+            } catch (UserCreationException e) {
+                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value + "\n" + e.getMessage());
                 continue;
             }
 
-            String encodedPassword = entryTokens[1];
-            String[] encodedPasswordTokens = encodedPassword.split("\\$");
-
-            if (encodedPasswordTokens.length != 4) {
-                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
-                         "\nInvalid encoded password \"" + encodedPassword + "\"." +
-                         " Encoded passwords should follow the format:" +
-                         " $<bcrypt-algorithm-version>$<encoding-strength>$<modified-base-64-salt-and-cipher-text>");
-                continue;
-            }
-
-            String saltAndCipherText = encodedPasswordTokens[3];
-
-            if (saltAndCipherText.length() != SALT_AND_CIPHER_TEXT_LENGTH) {
-                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
-                         "\nInvalid modified base-64 salt and cipher text \"" + saltAndCipherText + "\"." +
-                         " Text should be " + SALT_AND_CIPHER_TEXT_LENGTH + " characters long.");
-                continue;
-            }
-
-            log.info("Creating user \"" + userName + "\" with role \"" + role + "\".");
-
-            User user = new User(userName, role, encodedPassword);
+            log.info("Creating user \"" + user.getUsername() + "\" with roles \"" + user.getUserRoles() + "\".");
             _userDao.persist(user);
         }
+    }
 
-        /*
-        log.debug("Checking whether user table is populated");
-        org.mitre.mpf.wfm.data.entities.persistent.User user = userDao.findByUserName(mpfUser);
-        if (user == null) {  // this will only be true once
-            log.debug("About to initialize db with users {} & {}", mpfUser, adminUser);
-
-            //mpf
-            String saltedAndHashedMpfPassword = passwordEncoder.encode(mpfPwd);
-            user = new org.mitre.mpf.wfm.data.entities.persistent.User(mpfUser, saltedAndHashedMpfPassword);
-            user.setUserRoles(userRoleSet);
-            userDao.persist(user);
-
-            //admin
-            String saltedAndHashedAdminPwd = passwordEncoder.encode(adminPwd);
-            org.mitre.mpf.wfm.data.entities.persistent.User userAdmin =
-                    new org.mitre.mpf.wfm.data.entities.persistent.User(adminUser, saltedAndHashedAdminPwd);
-            userAdmin.setUserRoles(userAdminRoleSet);
-            userDao.persist(userAdmin);
-
-            log.debug("Successfully persisted users {} & {}", mpfUser, adminUser);
+    // protected for unit tests
+    protected static User parseEntry(String userName, String value) throws UserCreationException {
+        if (userName.isEmpty()) {
+            throw new UserCreationException("Invalid user name \"" + userName + "\".");
         }
-        */
+
+        String[] entryTokens = value.split(",", 2);
+
+        if (entryTokens.length < 2) {
+            throw new UserCreationException("Entries should follow the format: <name>=<role>,<encoded-password>");
+        }
+
+        UserRole role;
+        try {
+            role = UserRole.valueOf(entryTokens[0].toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new UserCreationException("Invalid role \"" + entryTokens[0] + "\"." +
+                    " Valid roles are: " + Arrays.toString(UserRole.values()));
+        }
+
+        String encodedPassword = entryTokens[1];
+        String[] encodedPasswordTokens = encodedPassword.split("\\$");
+
+        if (encodedPasswordTokens.length != 4) {
+            throw new UserCreationException("Invalid encoded password \"" + encodedPassword + "\"." +
+                    " Encoded passwords should follow the format:" +
+                    " $<bcrypt-algorithm-version>$<encoding-strength>$<modified-base-64-salt-and-cipher-text>");
+        }
+
+        String saltAndCipherText = encodedPasswordTokens[3];
+
+        if (saltAndCipherText.length() != SALT_AND_CIPHER_TEXT_LENGTH) {
+            throw new UserCreationException("Invalid modified base-64 salt and cipher text \"" + saltAndCipherText + "\"." +
+                    " Text should be " + SALT_AND_CIPHER_TEXT_LENGTH + " characters long.");
+        }
+
+        return new User(userName, role, encodedPassword);
     }
 }

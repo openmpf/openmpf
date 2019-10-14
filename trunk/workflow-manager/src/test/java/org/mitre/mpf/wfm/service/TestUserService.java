@@ -26,10 +26,12 @@
 
 package org.mitre.mpf.wfm.service;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.access.UserDao;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
 import org.mitre.mpf.wfm.enums.UserRole;
@@ -65,27 +67,31 @@ public class TestUserService {
 
 
     // Not initialized in init() so tests have a chance to populate userFile
-    private void createUserService() {
-        new UserService(_mockPropertiesUtil, _mockUserDao);
+    private UserService createUserService() {
+        return new UserService(_mockPropertiesUtil, _mockUserDao);
     }
 
-    private void createServiceWithUserContent(String content) throws IOException {
+    private UserService createServiceWithContent(String content) throws IOException {
         Files.writeString(userFile.toPath(), content);
-        createUserService();
+        return createUserService();
+    }
+
+    private UserService createServiceWithNoContent() {
+        return createUserService();
     }
 
     private String toUserEntry(User user) {
-        return user.getUsername() + "=" + user.getUserRoles().iterator().next() + "," + user.getPassword();
+        return user.getUsername() + "=" + user.getUserRoles().iterator().next() + "," + user.getPassword() + "\n";
     }
 
 
     @Test
-    public void handleValidUsers() throws IOException {
+    public void handleValidFile() throws IOException {
         User nonAdminUser = new User("test.user", UserRole.USER, ENCODED_USER_PASSWORD);
         User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
 
-        createServiceWithUserContent(
-                toUserEntry(nonAdminUser) + "\n" +
+        createServiceWithContent(
+                toUserEntry(nonAdminUser) +
                 toUserEntry(adminUser)
         );
 
@@ -95,80 +101,89 @@ public class TestUserService {
     }
 
     @Test
-    public void handleMissingUserName() throws IOException {
+    public void handleInvalidPasswordInFile() throws IOException {
+        User nonAdminUser = new User("test.user", UserRole.USER, ENCODED_USER_PASSWORD);
+        User badUser = new User("test.bad", UserRole.ADMIN, "garbage-password"); // will be ignored
         User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
 
-        createServiceWithUserContent(
-                "=user" + ENCODED_USER_PASSWORD + "\n" +
+        createServiceWithContent(
+                toUserEntry(nonAdminUser) +
+                toUserEntry(badUser) +
                 toUserEntry(adminUser)
         );
 
-        verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+        verify(_mockUserDao, times(2)).persist(any());
+        verify(_mockUserDao).persist(eq(nonAdminUser));
+        verify(_mockUserDao).persist(eq(adminUser)); // ensure users after the bad entry are handled
     }
 
     @Test
-    public void handleMissingRole() throws IOException {
+    public void handleMissingUserNameInFile() throws IOException {
         User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
 
-        createServiceWithUserContent(
-                "test.user=," + ENCODED_USER_PASSWORD + "\n" +
+        createServiceWithContent(
+                "=user," + ENCODED_USER_PASSWORD + "\n" +
                 toUserEntry(adminUser)
         );
 
         verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+        verify(_mockUserDao).persist(eq(adminUser)); // ensure users after the bad entry are handled
     }
 
     @Test
-    public void handleMissingPassword() throws IOException {
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+    public void handleMissingFile() {
+        userFile.delete();
+        try {
+            createUserService();
+            Assert.fail();
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getCause().getMessage().contains("Unable to load the configuration"));
+            Assert.assertTrue(e.getCause().getCause().getMessage().contains("No such file"));
+        }
+    }
 
-        createServiceWithUserContent(
-                "test.user=user,\n" +
-                toUserEntry(adminUser)
-        );
 
-        verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+    @Test
+    public void handleMissingUserName() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("", "," + ENCODED_USER_PASSWORD));
+        Assert.assertTrue(ex.getMessage().contains("Invalid user name"));
     }
 
     @Test
-    public void handleInvalidRole() throws IOException {
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
-
-        createServiceWithUserContent(
-                "test.user=foo," + ENCODED_USER_PASSWORD + "\n" +
-                toUserEntry(adminUser)
-        );
-
-        verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+    public void handleMissingRole() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("test.user", "," + ENCODED_USER_PASSWORD));
+        Assert.assertTrue(ex.getMessage().contains("Invalid role"));
     }
 
     @Test
-    public void handleInvalidPasswordFormat() throws IOException {
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
-
-        createServiceWithUserContent(
-                "test.user=user,garbage-pass\n" +
-                toUserEntry(adminUser)
-        );
-
-        verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+    public void handleMissingPassword() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("test.user", "user,"));
+        Assert.assertTrue(ex.getMessage().contains("Invalid encoded password"));
     }
 
     @Test
-    public void handleInvalidPasswordLength() throws IOException {
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+    public void handleInvalidRole() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("test.user", "foo," + ENCODED_USER_PASSWORD));
+        Assert.assertTrue(ex.getMessage().contains("Invalid role"));
+    }
 
-        createServiceWithUserContent(
-                "test.user=user," + ENCODED_USER_PASSWORD.substring(0, ENCODED_USER_PASSWORD.length()-1) + "\n" +
-                toUserEntry(adminUser)
-        );
+    @Test
+    public void handleInvalidPasswordFormat() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("test.user", "user,garbage-pass"));
+        Assert.assertTrue(ex.getMessage().contains("Invalid encoded password"));
+    }
 
-        verify(_mockUserDao, times(1)).persist(any());
-        verify(_mockUserDao).persist(eq(adminUser));
+    @Test
+    public void handleInvalidPasswordLength() {
+        var ex = TestUtil.assertThrows(UserCreationException.class,
+                () -> createServiceWithNoContent().parseEntry("test.user",
+                        "user," + ENCODED_USER_PASSWORD.substring(0, ENCODED_USER_PASSWORD.length()-1)));
+        Assert.assertTrue(ex.getMessage().contains("Invalid modified base-64 salt and cipher text"));
+        Assert.assertTrue(ex.getMessage().contains("characters long"));
     }
 }

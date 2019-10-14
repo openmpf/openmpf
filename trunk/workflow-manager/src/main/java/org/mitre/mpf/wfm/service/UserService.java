@@ -136,7 +136,7 @@ public class UserService {
 
             log.info("Creating user \"" + userName + "\" with role \"" + role + "\".");
 
-            User user = new User(userName, role encodedPassword);
+            User user = new User(userName, role, encodedPassword);
             _userDao.persist(user);
         }
 

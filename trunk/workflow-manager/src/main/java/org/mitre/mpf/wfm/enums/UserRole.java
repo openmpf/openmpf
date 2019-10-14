@@ -28,8 +28,8 @@ package org.mitre.mpf.wfm.enums;
 
 public enum UserRole {
     /** The user is a non-administrator of the system. */
-	ROLE_USER,
+    USER,
 
-	/** The user is an administrator of the system. */
-    ROLE_ADMIN
+    /** The user is an administrator of the system. */
+    ADMIN
 }

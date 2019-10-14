@@ -55,6 +55,11 @@ public class User {
         this.password = password;
     }
 
+    public User(String username, UserRole role, String password) {
+        this(username, password);
+        setUserRoles(Set.of(role));
+    }
+
     public long getId() {
         return id;
     }
@@ -87,4 +92,17 @@ public class User {
         this.userRoles = userRoles;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof User)) {
+            return false;
+        }
+        User casted = (User) obj;
+        return username.equals(casted.username)
+                && password.equals(casted.password)
+                && userRoles.equals(casted.userRoles);
+    }
 }

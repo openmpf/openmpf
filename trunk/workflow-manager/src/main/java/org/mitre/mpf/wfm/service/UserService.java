@@ -24,79 +24,120 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.wfm.service;
 
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateUserDaoImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.mitre.mpf.wfm.enums.UserRole;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Iterator;
 
-@Component(UserUtils.REF)
-public class UserUtils {
+@Service
+public class UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserUtils.class);
-    public static final String REF = "userUtils";
+    public static final int SALT_AND_CIPHER_TEXT_LENGTH = 53;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
-    @Autowired
-    @Qualifier(HibernateUserDaoImpl.REF)
-    private UserDao userDao;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserDao _userDao;
 
-    private static FileSystemResource userFile;
+    private FileSystemResource _userFile;
 
-    private static PropertiesConfiguration propertiesConfig;
+    private PropertiesConfiguration _propertiesConfig;
 
-    @PostConstruct
-    private void init() {
+    @Inject
+    public UserService(PropertiesUtil propertiesUtil, UserDao userDao) {
+        _propertiesUtil = propertiesUtil;
+        _userDao = userDao;
+
         // Get the user properties file from the PropertiesUtil.
         // The PropertiesUtil will ensure that it is copied from the template, if necessary.
-        userFile = propertiesUtil.getUserFile();
+        _userFile = propertiesUtil.getUserFile();
 
         URL url;
         try {
-            url = userFile.getURL();
+            url = _userFile.getURL();
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot get URL from " + userFile + ".", e);
+            throw new IllegalStateException("Cannot get URL from " + _userFile + ".", e);
         }
 
         FileBasedConfigurationBuilder<PropertiesConfiguration> fileBasedConfigBuilder =
                 new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
 
         Parameters configBuilderParameters = new Parameters();
-        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url)
-                .setListDelimiterHandler(new DefaultListDelimiterHandler(',')));
+        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url));
 
         try {
-            propertiesConfig = fileBasedConfigBuilder.getConfiguration();
+            _propertiesConfig = fileBasedConfigBuilder.getConfiguration();
         } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot create configuration from " + userFile + ".", e);
+            throw new IllegalStateException("Cannot create configuration from " + _userFile + ".", e);
         }
 
         populateUserDatabase();
     }
 
     private void populateUserDatabase() {
-        for (String userName : propertiesConfig.getKeys()) {
+        for (Iterator<String> it = _propertiesConfig.getKeys(); it.hasNext(); ) {
+            String userName = it.next();
 
+            String value = _propertiesConfig.getString(userName);
+            String[] entryTokens = value.split(",", 2);
+
+            if (entryTokens.length < 2) {
+                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
+                         "\nEntries should follow the format: <name>=<role>,<encoded-password>");
+                continue;
+            }
+
+            UserRole role;
+            try {
+                role = UserRole.valueOf(entryTokens[0].toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
+                         "\nInvalid role \"" + entryTokens[0] + "\"." +
+                         " Valid roles are: " + Arrays.toString(UserRole.values()).toLowerCase());
+                continue;
+            }
+
+            String encodedPassword = entryTokens[1];
+            String[] encodedPasswordTokens = encodedPassword.split("\\$");
+
+            if (encodedPasswordTokens.length != 4) {
+                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
+                         "\nInvalid encoded password \"" + encodedPassword + "\"." +
+                         " Encoded passwords should follow the format:" +
+                         " $<bcrypt-algorithm-version>$<encoding-strength>$<modified-base-64-salt-and-cipher-text>");
+                continue;
+            }
+
+            String saltAndCipherText = encodedPasswordTokens[3];
+
+            if (saltAndCipherText.length() != SALT_AND_CIPHER_TEXT_LENGTH) {
+                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value +
+                         "\nInvalid modified base-64 salt and cipher text \"" + saltAndCipherText + "\"." +
+                         " Text should be " + SALT_AND_CIPHER_TEXT_LENGTH + " characters long.");
+                continue;
+            }
+
+            log.info("Creating user \"" + userName + "\" with role \"" + role + "\".");
+
+            User user = new User(userName, role encodedPassword);
+            _userDao.persist(user);
         }
 
         /*
@@ -122,33 +163,4 @@ public class UserUtils {
         }
         */
     }
-
-    /*
-    public static MediaType parse(String mimeType) {
-        String trimmedMimeType = TextUtils.trim(mimeType);
-
-        if (propertiesConfig == null) {
-            log.warn("Media type properties could not be loaded from " + mediaTypesFile + ".");
-        } else {
-            String typeFromWhitelist = propertiesConfig.getString("whitelist." + mimeType);
-            if (typeFromWhitelist != null) {
-                log.debug("Media type found in whitelist: " + mimeType + " is " + typeFromWhitelist);
-                MediaType type = MediaType.valueOf(typeFromWhitelist);
-                if (type != null) {
-                    return type;
-                }
-            }
-        }
-
-        if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "AUDIO")) {
-            return MediaType.AUDIO;
-        } else if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "IMAGE")) {
-            return MediaType.IMAGE;
-        } else if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "VIDEO")) {
-            return MediaType.VIDEO;
-        } else {
-            return MediaType.UNKNOWN;
-        }
-    }
-    */
 }

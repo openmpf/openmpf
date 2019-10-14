@@ -29,12 +29,14 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mockito.InjectMocks;
@@ -79,14 +81,16 @@ public class TestStorageService {
 
 
     @Test
-    public void S3BackendHasHigherPriorityThenNginx() throws IOException, StorageException {
+    public void S3BackendHasHigherPriorityThanNginx() throws IOException, StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
         when(_mockNginxBackend.canStore(outputObject))
                 .thenReturn(true);
 
-        _storageService.store(outputObject);
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
+        _storageService.store(outputObject, status);
+        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
 
         verify(_mockS3Backend)
                 .store(outputObject);
@@ -105,8 +109,10 @@ public class TestStorageService {
         when(_mockS3Backend.store(outputObject))
                 .thenReturn(TEST_REMOTE_URI);
 
-        URI result = _storageService.store(outputObject);
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
+        URI result = _storageService.store(outputObject, status);
         assertEquals(TEST_REMOTE_URI, result);
+        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
 
         verifyZeroInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
@@ -118,9 +124,11 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
-
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
+        URI result = _storageService.store(outputObject, status);
         assertEquals(TEST_LOCAL_URI, result);
+        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
+
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
                 .canStore(outputObject);
@@ -130,8 +138,12 @@ public class TestStorageService {
 
     @Test
     public void outputObjectGetsStoredLocallyWhenBackendException() throws IOException, StorageException {
-        SortedSet<String> warnings = new TreeSet<>();
+        long jobId = 867;
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobId())
+                .thenReturn(jobId);
+
+        SortedSet<String> warnings = new TreeSet<>();
         when(outputObject.getJobWarnings())
                 .thenReturn(warnings);
 
@@ -143,10 +155,12 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
+        URI result = _storageService.store(outputObject, status);
         assertEquals(TEST_LOCAL_URI, result);
+        assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
-        verifyNoInProgressJobWarnings();
+        verifyJobWarning(jobId);
         assertEquals(1, warnings.size());
         assertFalse(StringUtils.isBlank(warnings.first()));
     }
@@ -154,8 +168,12 @@ public class TestStorageService {
 
     @Test
     public void outputObjectGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
-        SortedSet<String> warnings = new TreeSet<>();
+        long jobId = 869;
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobId())
+                .thenReturn(jobId);
+
+        SortedSet<String> warnings = new TreeSet<>();
         when(outputObject.getJobWarnings())
                 .thenReturn(warnings);
 
@@ -165,10 +183,12 @@ public class TestStorageService {
         when(_mockLocalBackend.store(outputObject))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject);
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
+        URI result = _storageService.store(outputObject, status);
         assertEquals(TEST_LOCAL_URI, result);
+        assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
-        verifyNoInProgressJobWarnings();
+        verifyJobWarning(jobId);
         assertEquals(1, warnings.size());
         assertFalse(StringUtils.isBlank(warnings.first()));
 
@@ -179,8 +199,9 @@ public class TestStorageService {
 
     @Test
     public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
-        SortedSet<String> warnings = new TreeSet<>();
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
+
+        SortedSet<String> warnings = new TreeSet<>();
         when(outputObject.getJobWarnings())
                 .thenReturn(warnings);
 
@@ -193,12 +214,16 @@ public class TestStorageService {
         doThrow(new IOException("test"))
                 .when(_mockLocalBackend).store(outputObject);
 
+        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
         try {
-            _storageService.store(outputObject);
+            _storageService.store(outputObject, status);
             fail("Expected IOException");
         }
         catch (IOException e) {
             assertTrue(e.getSuppressed()[0] instanceof StorageException);
+            // The code that calls _storageService.store() will catch the exception and set the final status to ERROR.
+            // Until then, the status is COMPLETE_WITH_WARNINGS.
+            assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
             assertEquals(1, warnings.size());
             assertFalse(StringUtils.isBlank(warnings.first()));
         }

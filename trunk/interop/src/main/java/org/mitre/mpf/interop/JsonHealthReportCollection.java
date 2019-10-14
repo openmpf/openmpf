@@ -28,6 +28,7 @@ package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.exceptions.MpfInteropUsageException;
+import org.mitre.mpf.interop.util.TimeUtils;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -93,7 +94,8 @@ public class JsonHealthReportCollection {
         public String toString() {
             return "[ jobId = " + getJobId() + ", externalId = " + getExternalId() +
                    ", jobStatus = " + getJobStatus() + ", jobStatusDetail = " + getJobStatusDetail() +
-                   ", activityFrameId = " + getActivityFrameId() + ", activityTimestamp = " + getActivityTimestamp() + "]";
+                   ", activityFrameId = " + getActivityFrameId() +
+                   ", activityTimestamp = " + TimeUtils.toIsoString(getActivityTimestamp()) + "]";
         }
     }
 
@@ -162,8 +164,7 @@ public class JsonHealthReportCollection {
     /**
      * Get the activity timestamp for each streaming job in this health report.
      * @return The activity timestamps for each streaming job. Values within the List may be null if
-     * there has not been any activity in this streaming job. Otherwise, the timestamp will be returned as a String
-     * matching the TIMESTAMP_PATTERN, which is currently defined as {@link TimeUtils#TIMESTAMP_PATTERN}
+     * there has not been any activity in this streaming job.
      */
     @JsonIgnore
     public List<Instant> getActivityTimestamps() {
@@ -273,7 +274,7 @@ public class JsonHealthReportCollection {
 
     @JsonIgnore
     public String toString() {
-        return "reportDate = " + reportDate + ", reports = " + reports;
+        return "reportDate = " + TimeUtils.toIsoString(reportDate) + ", reports = " + reports;
     }
 
 }

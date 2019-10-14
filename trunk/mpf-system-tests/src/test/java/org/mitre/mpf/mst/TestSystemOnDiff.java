@@ -551,17 +551,17 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenCaffeFeedForwardSupersetRegionTest() {
-        String actionTaskName = "TEST CAFFE WITH FEED FORWARD SUPERSET REGION";
+    public void runMogThenOcvDnnFeedForwardSupersetRegionTest() {
+        String actionTaskName = "TEST DNNCV WITH FEED FORWARD SUPERSET REGION";
 
         String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "CAFFE",
+        addAction(actionName, "DNNCV",
                   ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
 
         String taskName = actionTaskName + " TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "MOG FEED SUPERSET REGION TO CAFFE PIPELINE";
+        String pipelineName = "MOG FEED SUPERSET REGION TO DNNCV PIPELINE";
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
         int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
@@ -573,17 +573,17 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenCaffeFeedForwardExactRegionTest() {
-        String actionTaskName = "TEST CAFFE WITH FEED FORWARD EXACT REGION";
+    public void runMogThenOcvDnnFeedForwardExactRegionTest() {
+        String actionTaskName = "TEST DNNCV WITH FEED FORWARD EXACT REGION";
 
         String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "CAFFE",
+        addAction(actionName, "DNNCV",
                   ImmutableMap.of("FEED_FORWARD_TYPE", "REGION"));
 
         String taskName = actionTaskName + " TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "MOG FEED EXACT REGION TO CAFFE PIPELINE";
+        String pipelineName = "MOG FEED EXACT REGION TO DNNCV PIPELINE";
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
@@ -596,13 +596,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> caffeOutputObjects = outputMedia.getTypes().get("CLASS");
-        assertNotNull(caffeOutputObjects);
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        assertNotNull(ocvDnnOutputObjects);
 
         SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
         assertNotNull(motionOutputObjects);
 
-        List<JsonTrackOutputObject> caffeTracks = caffeOutputObjects.stream()
+        List<JsonTrackOutputObject> ocvDnnTracks = ocvDnnOutputObjects.stream()
                 .flatMap(o -> o.getTracks().stream())
                 .collect(toList());
 
@@ -610,25 +610,25 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 .flatMap(o -> o.getTracks().stream())
                 .collect(toList());
 
-        assertTracksMatch(caffeTracks, motionTracks);
+        assertTracksMatch(ocvDnnTracks, motionTracks);
 
 
-        List<JsonDetectionOutputObject> caffeDetections = caffeTracks.stream()
+        List<JsonDetectionOutputObject> ocvDnnDetections = ocvDnnTracks.stream()
                 .flatMap(t -> t.getDetections().stream())
                 .collect(toList());
 
 
-        assertTrue(caffeDetections.stream()
+        assertTrue(ocvDnnDetections.stream()
                            .allMatch(d -> d.getOffsetFrame() >= 31));
 
-        assertTrue(caffeDetections.stream()
+        assertTrue(ocvDnnDetections.stream()
                            .allMatch(d -> d.getX() + d.getWidth() <= 180));
 
 
-        Set<String> detectedObjects = caffeDetections.stream()
+        Set<String> detectedObjects = ocvDnnDetections.stream()
                 .map(d -> d.getDetectionProperties().get("CLASSIFICATION"))
-                // Not sure why Caffe detects an envelope,
-                // but the important thing is that Caffe doesn't find Granny Smith.
+                // Not sure why OcvDnn detects an envelope,
+                // but the important thing is that OcvDnn doesn't find Granny Smith.
                 .filter(c -> !c.equalsIgnoreCase("envelope"))
                 .collect(toSet());
 
@@ -638,17 +638,17 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenCaffeRotated60degFeedForwardExactRegionTest() {
-        String actionTaskName = "TEST CAFFE WITH FEED FORWARD EXACT REGION";
+    public void runMogThenOcvDnnRotated60degFeedForwardExactRegionTest() {
+        String actionTaskName = "TEST DNNCV WITH FEED FORWARD EXACT REGION";
 
         String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "CAFFE",
+        addAction(actionName, "DNNCV",
                   ImmutableMap.of("FEED_FORWARD_TYPE", "REGION"));
 
         String taskName = actionTaskName + " TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "MOG FEED EXACT REGION TO CAFFE PIPELINE";
+        String pipelineName = "MOG FEED EXACT REGION TO DNNCV PIPELINE";
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
@@ -662,13 +662,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> caffeOutputObjects = outputMedia.getTypes().get("CLASS");
-        assertNotNull(caffeOutputObjects);
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        assertNotNull(ocvDnnOutputObjects);
 
         SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
         assertNotNull(motionOutputObjects);
 
-        List<JsonTrackOutputObject> caffeTracks = caffeOutputObjects.stream()
+        List<JsonTrackOutputObject> ocvDnnTracks = ocvDnnOutputObjects.stream()
                 .flatMap(o -> o.getTracks().stream())
                 .collect(toList());
 
@@ -676,23 +676,23 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 .flatMap(o -> o.getTracks().stream())
                 .collect(toList());
 
-        assertTracksMatch(caffeTracks, motionTracks);
+        assertTracksMatch(ocvDnnTracks, motionTracks);
 
 
-        List<JsonDetectionOutputObject> caffeDetections = caffeTracks.stream()
+        List<JsonDetectionOutputObject> ocvDnnDetections = ocvDnnTracks.stream()
                 .flatMap(t -> t.getDetections().stream())
                 .collect(toList());
 
 
-        assertTrue(caffeDetections.stream()
+        assertTrue(ocvDnnDetections.stream()
                            .allMatch(d -> d.getOffsetFrame() >= 31));
 
         assertAllInExpectedRegion(
                 new int[] {-40, 368, 368, -40},
                 new int[] {40, 272, 450, 450},
-                caffeDetections);
+                ocvDnnDetections);
 
-        Set<String> detectedObjects = caffeDetections.stream()
+        Set<String> detectedObjects = ocvDnnDetections.stream()
                 .filter(d -> d.getConfidence() > 0.9)
                 .map(d -> d.getDetectionProperties().get("CLASSIFICATION"))
                 .collect(toSet());
@@ -703,17 +703,17 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenCaffeRotated60degFeedForwardSupersetRegionTest() {
-        String actionTaskName = "TEST CAFFE WITH FEED FORWARD SUPERSET REGION";
+    public void runMogThenOcvDnnRotated60degFeedForwardSupersetRegionTest() {
+        String actionTaskName = "TEST DNNCV WITH FEED FORWARD SUPERSET REGION";
 
         String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "CAFFE",
+        addAction(actionName, "DNNCV",
                   ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
 
         String taskName = actionTaskName + " TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "MOG FEED SUPERSET REGION TO CAFFE PIPELINE";
+        String pipelineName = "MOG FEED SUPERSET REGION TO DNNCV PIPELINE";
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
 
@@ -728,25 +728,25 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
 
-        SortedSet<JsonActionOutputObject> caffeOutputObjects = outputMedia.getTypes().get("CLASS");
-        assertNotNull(caffeOutputObjects);
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        assertNotNull(ocvDnnOutputObjects);
 
 
-        List<JsonDetectionOutputObject> caffeDetections = caffeOutputObjects.stream()
+        List<JsonDetectionOutputObject> ocvDnnDetections = ocvDnnOutputObjects.stream()
                 .flatMap(a -> a.getTracks().stream())
                 .flatMap(t -> t.getDetections().stream())
                 .collect(toList());
 
 
-        assertTrue(caffeDetections.stream()
+        assertTrue(ocvDnnDetections.stream()
                            .allMatch(d -> d.getOffsetFrame() >= 31));
 
         assertAllInExpectedRegion(
                 new int[] {-52, 368, 368, -40},
                 new int[] {36, 270, 450, 450},
-                caffeDetections);
+                ocvDnnDetections);
 
-        Set<String> detectedObjects = caffeDetections.stream()
+        Set<String> detectedObjects = ocvDnnDetections.stream()
                 .filter(d -> d.getConfidence() > 0.9)
                 .map(d -> d.getDetectionProperties().get("CLASSIFICATION"))
                 .collect(toSet());
@@ -890,22 +890,22 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenCaffeFeedForwardFullFrameTest() {
-        String actionTaskName = "TEST CAFFE WITH FEED FORWARD FULL FRAME";
+    public void runMogThenOcvDnnFeedForwardFullFrameTest() {
+        String actionTaskName = "TEST DNNCV WITH FEED FORWARD FULL FRAME";
 
         String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "CAFFE",
+        addAction(actionName, "DNNCV",
                   ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
 
         String taskName = actionTaskName + " TASK";
         addTask(taskName, actionName);
 
-        String pipelineName = "MOG FEED FULL FRAME TO CAFFE PIPELINE";
+        String pipelineName = "MOG FEED FULL FRAME TO DNNCV PIPELINE";
         addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
 
         int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXLeftDetection = 680;  // Video is 680x320 and Caffe reports entire frame.
-        int minXRightDetection = 0;  //  Video is 680x320 and Caffe reports entire frame.
+        int maxXLeftDetection = 680;  // Video is 680x320 and OcvDnn reports entire frame.
+        int minXRightDetection = 0;  //  Video is 680x320 and OcvDnn reports entire frame.
         runFeedForwardFullFrameTest(pipelineName, "/samples/object/ff-region-object-motion.avi",
                                     "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
     }

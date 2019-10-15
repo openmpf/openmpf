@@ -93,7 +93,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         boolean noUnextractedDetections = tracks.stream()
                                           .flatMap(track -> track.getDetections().stream())
                                           .allMatch(d -> d.getArtifactExtractionStatus().equalsIgnoreCase("COMPLETED"));
-        assertTrue(noUnextractedDetections);
+        assertTrue("Unextracted detections found in putput", noUnextractedDetections);
 
         // Check that the exemplars were all extracted
         List<JsonDetectionOutputObject> exemplars = tracks.stream()
@@ -136,9 +136,64 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals("Tracks suppressed for task other than MOTION", suppressedActionOutput.first().getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
     }
 
+    @Test(timeout = 5 * MINUTES)
+    public void runArtifactExtractionWithActionProperties() {
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
+        String propActionName = "TEST OCV FACE WITH ARTIFACT EXTRACTION PROPERTIES ACTION";
+        addAction(propActionName, "FACECV",
+                  ImmutableMap.of(
+                          "OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true",
+                          "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS", "1"));
+
+        String propTaskName = "TEST OCV FACE WITH ARTIFACT EXTRACTION PROPERTIES TASK";
+        addTask(propTaskName, propActionName);
+
+        String pipelineName = "TEST OCV FACE WITH ARTIFACT EXTRACTION PROPERTIES PIPELINE";
+        addPipeline(pipelineName, propTaskName);
+
+        long jobId = runPipelineOnMedia(pipelineName, media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+
+        assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
+
+        List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
+                                             .flatMap(outputObj -> outputObj.getTracks().stream())
+                                             .collect(toList());
+
+        // Check that the only detections in the output object are ones that have been extracted
+        boolean noUnextractedDetections = tracks.stream()
+                                          .flatMap(track -> track.getDetections().stream())
+                                          .allMatch(d -> d.getArtifactExtractionStatus().equalsIgnoreCase("COMPLETED"));
+        assertTrue("Unextracted detections found in putput", noUnextractedDetections);
+        // Check that the exemplars were all extracted
+        List<JsonDetectionOutputObject> exemplars = tracks.stream()
+                                                    .map(track -> track.getExemplar())
+                                                    .collect(toList());
+        assertTrue(exemplars.stream().allMatch(e -> e.getArtifactExtractionStatus().equalsIgnoreCase("COMPLETED")));
+        List<Integer> detections = tracks.stream()
+                                   .flatMap(t -> t.getDetections().stream())
+                                   .map(d -> d.getOffsetFrame())
+                                   .collect(toList());
+        // Check that all of the expected frames were extracted
+        for (JsonTrackOutputObject track : tracks) {
+            int exemplarIndex = track.getExemplar().getOffsetFrame();
+            if (exemplarIndex-1 >= track.getStartOffsetFrame()) {
+                assertTrue("Missing extraction before exemplar", detections.contains(exemplarIndex-1));
+            }
+            if (exemplarIndex+1 <= track.getStopOffsetFrame()) {
+                assertTrue("Missing extraction after exemplar", detections.contains(exemplarIndex+1));
+            }
+        }
+    }
+
+    @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithMediaProperty() {
         List<JobCreationMediaData> media = toMediaObjectList(
-            ioUtils.findFile("/samples/face/ff-region-motion-face.avi", "/samples/face/ff-region-motion-face.avi"));
+            ioUtils.findFile("/samples/face/ff-region-motion-face.avi"), ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
         media.get(0).getProperties().put("OUTPUT_LAST_TASK_ONLY", "true");
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         long jobId = runPipelineOnMedia(pipelineName, media);
@@ -147,16 +202,16 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         // Check that the first task (MOTION) was suppressed for the first media
         List<JsonMediaOutputObject> mediaOutput = outputObject.getMedia().stream().collect(toList());
         assertEquals(2, mediaOutput.size());
-        SortedSet<JsonActionOutputObject> firstMediaSuppressed = mediaOutput[0].getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
-        assertNotNull("Output object did not contain TRACKS_SUPPRESSED action type", suppressedActionOutput);
+        SortedSet<JsonActionOutputObject> firstMediaSuppressed = mediaOutput.get(0).getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
+        assertNotNull("Output object did not contain TRACKS_SUPPRESSED action type", firstMediaSuppressed);
         // Make sure that only one action was suppressed
-        assertEquals("Output contained more than one suppressed action", 1, suppressedActionOutput.size());
+        assertEquals("Output contained more than one suppressed action", 1, firstMediaSuppressed.size());
         // Make sure that the suppressed action was MOTION
-        assertEquals("Tracks suppressed for action other than MOTION", suppressedActionOutput.first().getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
+        assertEquals("Tracks suppressed for action other than MOTION", firstMediaSuppressed.first().getSource(), "+#MOG MOTION DETECTION PREPROCESSOR ACTION");
 
         // Check that the second media did not have a suppressed action
-        SortedSet<JsonActionOutputObject> secondMediaSuppressed = mediaOutput[1].getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
-        assertTrue(secondMediaSuppressed.isEmpty());
+        SortedSet<JsonActionOutputObject> secondMediaSuppressed = mediaOutput.get(1).getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
+        assertNull("Found an incorrectly suppressed action", secondMediaSuppressed);
     }
 
 

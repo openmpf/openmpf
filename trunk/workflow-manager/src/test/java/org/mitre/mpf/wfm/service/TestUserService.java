@@ -81,7 +81,7 @@ public class TestUserService {
     }
 
     private String toUserEntry(User user) {
-        return user.getUsername() + "=" + user.getUserRoles().iterator().next() + "," + user.getPassword() + "\n";
+        return user.getUserName() + "=" + user.getUserRoles().iterator().next() + "," + user.getPassword() + "\n";
     }
 
 

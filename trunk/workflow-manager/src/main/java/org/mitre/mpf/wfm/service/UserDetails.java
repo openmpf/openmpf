@@ -32,46 +32,53 @@ import org.springframework.security.core.userdetails.User;
 import java.io.Serializable;
 import java.util.Collection;
 
-public class MpfUserDetails extends org.springframework.security.core.userdetails.User implements Serializable {
+public class UserDetails extends org.springframework.security.core.userdetails.User implements Serializable {
 
     private static final long serialVersionUID = -203279271211455050L;
 
-    private String username = null;
+    private String userName;
 
     // inherited
-    public MpfUserDetails(User user, Collection<? extends GrantedAuthority> authorities) {
+    public UserDetails(User user, Collection<? extends GrantedAuthority> authorities) {
         super(user.getUsername(), user.getPassword(), authorities);
-        this.username = user.getUsername();
+        this.userName = user.getUsername();
     }
 
     // inherited
-    public MpfUserDetails(User user, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities) {
-        super(user.getUsername(), user.getPassword(), enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
-        this.username = user.getUsername();
+    public UserDetails(User user, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired,
+                       boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities) {
+        super(user.getUsername(), user.getPassword(), enabled, accountNonExpired, credentialsNonExpired,
+                accountNonLocked, authorities);
+        this.userName = user.getUsername();
     }
 
     // custom
-    public MpfUserDetails(User user) {
-        super(user.getUsername(), user.getPassword(), user.isEnabled(), user.isAccountNonExpired(), user.isCredentialsNonExpired(), user.isAccountNonLocked(), user.getAuthorities());
-        this.username = user.getUsername();
+    public UserDetails(User user) {
+        super(user.getUsername(), user.getPassword(), user.isEnabled(), user.isAccountNonExpired(),
+                user.isCredentialsNonExpired(), user.isAccountNonLocked(), user.getAuthorities());
+        this.userName = user.getUsername();
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
 
     // need for session concurrency control
     @Override
     public int hashCode() {
-        return username.hashCode();
+        return userName.hashCode();
     }
 
     // need for session concurrency control
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) { return false; }
-        if (!(obj instanceof  MpfUserDetails)) { return false; }
-        MpfUserDetails other = (MpfUserDetails)obj;
-        return username.equals(other.getUsername());
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof UserDetails)) {
+            return false;
+        }
+        UserDetails casted = (UserDetails)obj;
+        return userName.equals(casted.getUserName());
     }
 }

@@ -40,7 +40,7 @@ public class User {
     private long id;
 
     @Column(unique=true, nullable=false)
-    private String username;
+    private String userName;
 
     @Column
     private String password;
@@ -50,13 +50,13 @@ public class User {
 
     public User() { }
 
-    public User(String username, String password) {
-        this.username = username;
+    public User(String userName, String password) {
+        this.userName = userName;
         this.password = password;
     }
 
-    public User(String username, UserRole role, String password) {
-        this(username, password);
+    public User(String userName, UserRole role, String password) {
+        this(userName, password);
         setUserRoles(Set.of(role));
     }
 
@@ -68,12 +68,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getPassword() {
@@ -101,7 +101,7 @@ public class User {
             return false;
         }
         User casted = (User) obj;
-        return username.equals(casted.username)
+        return userName.equals(casted.userName)
                 && password.equals(casted.password)
                 && userRoles.equals(casted.userRoles);
     }

@@ -29,7 +29,6 @@ package org.mitre.mpf.rest.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import http.rest.RequestInterceptor;
 import http.rest.RestClientException;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.mitre.mpf.interop.util.MpfObjectMapper;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
@@ -47,30 +46,31 @@ import java.util.List;
 import java.util.Map;
 
 public class Main {
-	
-    public static void main( String[] args ) throws RestClientException, IOException, InterruptedException
-    {
+
+    // How to generate a base-64 encoded string:
+    //   byte[] encodedBytes = Base64.encodeBase64((userName + ":" + password).getBytes());
+    //   String base64 = new String(encodedBytes);
+    // Base64 encoding does not mean encryption or hashing.
+    // HTTP Authorization is as secure as sending the credentials in clear text. Consider using HTTPS.
+    public static final String ENCODED_USERNAME_PASSWORD = "bXBmOm1wZjEyMw=="; // non-admin user
+
+    public static void main( String[] args ) throws RestClientException, IOException, InterruptedException {
         System.out.println("Starting rest-client!");
         
         //not necessary for localhost, but left if a proxy configuration is needed
         //System.setProperty("http.proxyHost","");
-        //System.setProperty("http.proxyPort","");  
+        //System.setProperty("http.proxyPort","");
         
         String currentDirectory;
 		currentDirectory = System.getProperty("user.dir");
 		System.out.println("Current working directory : " + currentDirectory);
-		
-		String username = "mpf";
-		String password = "mpf123";
-		byte[] encodedBytes = Base64.encodeBase64((username + ":" + password).getBytes());
-		String base64 = new String(encodedBytes);
-		System.out.println("encodedBytes " + base64);
-		final String mpfAuth = "Basic " + base64;
-        
+
+		final String mpfAuth = "Basic " + ENCODED_USERNAME_PASSWORD;
+
         RequestInterceptor authorize = new RequestInterceptor() {
             @Override
             public void intercept(HttpRequestBase request) {
-                request.addHeader("Authorization", mpfAuth /*credentials*/);
+                request.addHeader("Authorization", mpfAuth);
             }
         };
         

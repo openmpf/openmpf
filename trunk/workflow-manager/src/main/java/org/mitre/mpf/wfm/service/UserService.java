@@ -37,16 +37,21 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     public static final int SALT_AND_CIPHER_TEXT_LENGTH = 53;
 
@@ -104,12 +109,12 @@ public class UserService {
                 continue;
             }
 
-            log.info("Creating user \"" + user.getUsername() + "\" with roles \"" + user.getUserRoles() + "\".");
+            log.info("Creating user \"" + user.getUserName() + "\" with roles \"" + user.getUserRoles() + "\".");
             _userDao.persist(user);
         }
     }
 
-    // protected for unit tests
+    // protected to enable unit test access
     protected static User parseEntry(String userName, String value) throws UserCreationException {
         if (userName.isEmpty()) {
             throw new UserCreationException("Invalid user name \"" + userName + "\".");
@@ -146,5 +151,37 @@ public class UserService {
         }
 
         return new User(userName, role, encodedPassword);
+    }
+
+    @Transactional
+    @Override
+    public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
+        log.debug("Loading user \"{}\".", userName);
+        User user = _userDao.findByUserName(userName);
+        List<GrantedAuthority> authorities;
+        if (user != null) {
+            authorities = buildUserAuthority(user.getUserRoles());
+        } else {
+            log.debug("No user \"{}\" found.", userName);
+            throw new UsernameNotFoundException(String.format("No user %s found.", userName));
+        }
+        return buildUserForAuthentication(user, authorities);
+    }
+
+    private org.springframework.security.core.userdetails.User buildUserForAuthentication(org.mitre.mpf.wfm.data.entities.persistent.User user,
+                                                                                          List<GrantedAuthority> authorities) {
+        org.springframework.security.core.userdetails.User springUser =
+                new org.springframework.security.core.userdetails.User(user.getUserName(),
+                        user.getPassword(), true, true, true, true, authorities);
+        return new org.mitre.mpf.wfm.service.UserDetails(springUser);
+    }
+
+    private List<GrantedAuthority> buildUserAuthority(Set<UserRole> userRoles) {
+        Set<GrantedAuthority> setAuths = new HashSet<>();
+        log.debug("Building user authorities for {}.", userRoles);
+        for (UserRole userRole : userRoles) {
+            setAuths.add(new SimpleGrantedAuthority(userRole.toString()));
+        }
+        return new ArrayList<>(setAuths);
     }
 }

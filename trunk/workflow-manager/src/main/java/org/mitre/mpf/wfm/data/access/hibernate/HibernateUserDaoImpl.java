@@ -43,10 +43,10 @@ public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements 
         this.setClass(User.class);
     }
 
-    public User findByUserName(final String username) {
+    public User findByUserName(final String userName) {
         List<User> users = (List<User>) getCurrentSession()
                 .createQuery("from User as u where u.username=:username")
-                .setParameter("username", username)
+                .setParameter("username", userName)
                 .list();
         if (users.size() > 0) {
             return users.get(0);

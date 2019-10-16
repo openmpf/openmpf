@@ -49,6 +49,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("mpfUserService")
 public class UserService implements UserDetailsService {
@@ -130,12 +131,10 @@ public class UserService implements UserDetailsService {
             throw new UserCreationException("Entries should follow the format: <name>=<role>,<encoded-password>");
         }
 
-        UserRole role;
-        try {
-            role = UserRole.valueOf(entryTokens[0].toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new UserCreationException("Invalid role \"" + entryTokens[0] + "\"." +
-                    " Valid roles are: " + Arrays.toString(UserRole.values()));
+        UserRole role = UserRole.parse(entryTokens[0]);
+        if (role == null) {
+            throw new UserCreationException("Invalid role \"" + entryTokens[0] + "\". Valid roles are: " +
+                    Arrays.stream(UserRole.values()).map(UserRole::getShortName).collect(Collectors.joining(", ")));
         }
 
         String encodedPassword = entryTokens[1];

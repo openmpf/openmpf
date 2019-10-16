@@ -81,14 +81,16 @@ public class TestUserService {
     }
 
     private String toUserEntry(User user) {
-        return user.getUserName() + "=" + user.getUserRoles().iterator().next() + "," + user.getPassword() + "\n";
+        return user.getUserName() + "=" +
+               user.getUserRoles().iterator().next().getShortName() + "," +
+               user.getPassword() + "\n";
     }
 
 
     @Test
     public void handleValidFile() throws IOException {
-        User nonAdminUser = new User("test.user", UserRole.USER, ENCODED_USER_PASSWORD);
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+        User nonAdminUser = new User("test.user", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
+        User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
 
         createServiceWithContent(
                 toUserEntry(nonAdminUser) +
@@ -102,9 +104,9 @@ public class TestUserService {
 
     @Test
     public void handleInvalidPasswordInFile() throws IOException {
-        User nonAdminUser = new User("test.user", UserRole.USER, ENCODED_USER_PASSWORD);
-        User badUser = new User("test.bad", UserRole.ADMIN, "garbage-password"); // will be ignored
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+        User nonAdminUser = new User("test.user", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
+        User badUser = new User("test.bad", UserRole.ROLE_ADMIN, "garbage-password"); // will be ignored
+        User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
 
         createServiceWithContent(
                 toUserEntry(nonAdminUser) +
@@ -119,7 +121,7 @@ public class TestUserService {
 
     @Test
     public void handleMissingUserNameInFile() throws IOException {
-        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+        User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
 
         createServiceWithContent(
                 "=user," + ENCODED_USER_PASSWORD + "\n" +

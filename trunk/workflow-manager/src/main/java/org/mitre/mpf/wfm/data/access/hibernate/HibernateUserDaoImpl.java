@@ -45,7 +45,7 @@ public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements 
 
     public User findByUserName(final String userName) {
         List<User> users = (List<User>) getCurrentSession()
-                .createQuery("from User as u where u.username=:username")
+                .createQuery("from User as u where u.userName=:username")
                 .setParameter("username", userName)
                 .list();
         if (users.size() > 0) {

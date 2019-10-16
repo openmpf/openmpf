@@ -39,14 +39,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(unique=true, nullable=false)
+    @Column(name="username", unique=true, nullable=false)
     private String userName;
 
     @Column
     private String password;
 
     @ElementCollection(fetch=FetchType.EAGER)
-    private Set<UserRole> userRoles = new HashSet<UserRole>(0);
+    private Set<UserRole> userRoles = new HashSet<>(0);
 
     public User() { }
 

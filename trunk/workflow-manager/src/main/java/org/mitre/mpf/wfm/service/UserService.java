@@ -72,7 +72,7 @@ public class UserService implements UserDetailsService {
 
         // Get the user properties file from the PropertiesUtil.
         // The PropertiesUtil will ensure that it is copied from the template, if necessary.
-        _userFile = propertiesUtil.getUserFile();
+        _userFile = _propertiesUtil.getUserFile();
 
         URL url;
         try {
@@ -101,7 +101,11 @@ public class UserService implements UserDetailsService {
             String userName = it.next();
             String value = _propertiesConfig.getString(userName);
 
-            User user;
+            User user = _userDao.findByUserName(userName);
+            if (user != null) {
+                continue; // this user already exists
+            }
+
             try {
                 user = parseEntry(userName, value);
             } catch (UserCreationException e) {

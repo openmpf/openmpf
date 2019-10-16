@@ -31,7 +31,7 @@
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
         <version>4.1.0</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>./pom.xml</relativePath>
     </parent>
 
     <groupId>org.mitre.mpf</groupId>

@@ -50,7 +50,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-@Service
+@Service("mpfUserService")
 public class UserService implements UserDetailsService {
 
     public static final int SALT_AND_CIPHER_TEXT_LENGTH = 53;

@@ -51,12 +51,6 @@
             <artifactId>javax.annotation-api</artifactId>
             <version>${javax.annotation-api}</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -124,10 +118,11 @@
             <artifactId>spring-tx</artifactId>
             <version>${spring.framework.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>jms</artifactId>
-            <version>${javax.jms.version}</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jms</artifactId>
+            <version>${spring.framework.version}</version>
         </dependency>
 
         <dependency>
@@ -194,6 +189,12 @@
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-video-overlay</artifactId>
             <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>27.0.1-jre</version>
         </dependency>
     </dependencies>
 

@@ -29,6 +29,7 @@ package org.mitre.mpf.rest.client;
 import com.fasterxml.jackson.core.type.TypeReference;
 import http.rest.RequestInterceptor;
 import http.rest.RestClientException;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.mitre.mpf.interop.util.MpfObjectMapper;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
@@ -38,34 +39,47 @@ import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 
 import java.io.IOException;
-import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Main {
 
-    // How to generate a base-64 encoded string:
-    //   byte[] encodedBytes = Base64.encodeBase64((userName + ":" + password).getBytes());
-    //   String base64 = new String(encodedBytes);
-    // Base64 encoding does not mean encryption or hashing.
-    // HTTP Authorization is as secure as sending the credentials in clear text. Consider using HTTPS.
-    public static final String ENCODED_USERNAME_PASSWORD = "bXBmOm1wZjEyMw=="; // non-admin user
+    public static final String USAGE = "Args: <username> <raw-password> <face-image-file-path>";
+    public static final String HOST_PREFIX = "http://localhost:8080/workflow-manager/rest/";
 
-    public static void main( String[] args ) throws RestClientException, IOException, InterruptedException {
-        System.out.println("Starting rest-client!");
-        
-        //not necessary for localhost, but left if a proxy configuration is needed
-        //System.setProperty("http.proxyHost","");
-        //System.setProperty("http.proxyPort","");
-        
-        String currentDirectory;
-		currentDirectory = System.getProperty("user.dir");
-		System.out.println("Current working directory : " + currentDirectory);
+    public static void main(String[] args) {
 
-		final String mpfAuth = "Basic " + ENCODED_USERNAME_PASSWORD;
+        if (args.length < 3 || args[0].equals("-h") || args[0].equals("-help") || args[0].equals("--help")) {
+            System.out.println(USAGE);
+            System.exit(0);
+        }
+
+        String userName = args[0];
+        String password = args[1];
+        String media = args[2];
+
+        Path mediaPath = Paths.get(media);
+        if (!Files.exists(mediaPath)) {
+            System.err.println("Error: " + media + " does not exist.");
+            System.exit(1);
+        }
+
+        System.out.println("Starting example REST client!\n");
+
+        // Not necessary for localhost, but may be useful if a proxy configuration is needed:
+        // System.setProperty("http.proxyHost","");
+        // System.setProperty("http.proxyPort","");
+
+        // Base64 encoding does not mean encryption or hashing.
+        // HTTP Authorization is as secure as sending the credentials in clear text. Consider using HTTPS.
+        byte[] encodedBytes = Base64.encodeBase64((userName + ":" + password).getBytes());
+        String base64 = new String(encodedBytes);
+
+        final String mpfAuth = "Basic " + base64;
 
         RequestInterceptor authorize = new RequestInterceptor() {
             @Override
@@ -73,65 +87,69 @@ public class Main {
                 request.addHeader("Authorization", mpfAuth);
             }
         };
-        
+
         CustomRestClient client = (CustomRestClient) CustomRestClient.builder()
                 .restClientClass(CustomRestClient.class)
                 .requestInterceptor(authorize)
                 .objectMapper(new MpfObjectMapper())
                 .build();
-        
-		//getAvailableWorkPipelineNames
-        String url = "http://localhost:8080/workflow-manager/rest/pipelines";
-        Map<String, String> params = new HashMap<>();
-        List<Pipeline> pipelines = client.get(url, params, new TypeReference<>() {});
-        System.out.println("availableWorkPipelines size: " + pipelines.size());
-        System.out.println(Arrays.toString(pipelines.stream().map(Pipeline::getName).toArray()));
-        
-        //processMedia        
-		JobCreationRequest jobCreationRequest = new JobCreationRequest();
-        URI uri = Paths.get(currentDirectory,"/trunk/workflow-manager/src/test/resources/samples/meds/aa/S001-01-t10_01.jpg").toUri();
-        jobCreationRequest.getMedia().add(new JobCreationMediaData(uri.toString()));
-        uri = Paths.get(currentDirectory,"/trunk/workflow-manager/src/test/resources/samples/meds/aa/S008-01-t10_01.jpg").toUri();
-		jobCreationRequest.getMedia().add(new JobCreationMediaData(uri.toString()));
-		jobCreationRequest.setExternalId("external id");
-		
-		//get first DLIB pipeline
-		String firstDlibPipeline = pipelines.stream().map(Pipeline::getName)
-				//.peek(pipelineName -> System.out.println("will filter - " + pipelineName))
-	            .filter(pipelineName -> pipelineName.startsWith("DLIB"))
-	            .findFirst()
-	            .get();
-		
-		System.out.println("found firstDlibPipeline: " + firstDlibPipeline);
-		
-		jobCreationRequest.setPipelineName(firstDlibPipeline); //grabbed from 'rest/pipelines' - see #1
-		//two optional params
-		jobCreationRequest.setBuildOutput(true);
-		//jobCreationRequest.setPriority(priority); //will be set to 4 (default) if not set
-		JobCreationResponse jobCreationResponse = client.customPostObject("http://localhost:8080/workflow-manager/rest/jobs", jobCreationRequest, JobCreationResponse.class);
-		System.out.println("jobCreationResponse job id: " + jobCreationResponse.getJobId());        
-        
-		System.out.println("\n---Sleeping for 10 seconds to let the job process---\n");
-        Thread.sleep(10000);
-		
-        //getJobStatus
-        url = "http://localhost:8080/workflow-manager/rest/jobs";
-        params = new HashMap<>();
 
-        //OPTIONAL
-        //params.put("v", "") - no versioning currently implemented         
-        //id is now a path var - if not set, all job info will returned
-        url = url + "/" + jobCreationResponse.getJobId();
-        SingleJobInfo jobInfo = client.get(url, params, SingleJobInfo.class);
-        System.out.println("jobInfo id: " + jobInfo.getJobId());
-	        
-        //getSerializedOutput
-        String jobIdToGetOutputStr = Long.toString(jobCreationResponse.getJobId());
-        url = "http://localhost:8080/workflow-manager/rest/jobs/" + jobIdToGetOutputStr + "/output/detection";
-        params = new HashMap<>();
+        try {
 
-        //REQUIRED  - job id is now a path var and required for this endpoint
-        String serializedOutput = client.getAsString(url, params);
-        System.out.println("serializedOutput: " + serializedOutput);
+            // Get available pipeline names
+            List<Pipeline> pipelines = client.get(HOST_PREFIX + "pipelines", new HashMap<>(), new TypeReference<>() {
+            });
+            System.out.println("Number of available pipelines: " + pipelines.size());
+            System.out.println("Available pipelines:\n" +
+                    pipelines.stream().map(Pipeline::getName).collect(Collectors.joining("\n")) + "\n");
+
+            JobCreationRequest jobCreationRequest = new JobCreationRequest();
+            jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPath.toUri().toString()));
+            jobCreationRequest.setExternalId("external id");
+
+            // Get the first DLIB pipeline
+            String firstDlibPipeline = pipelines.stream().map(Pipeline::getName)
+                    //.peek(pipelineName -> System.out.println("will filter - " + pipelineName))
+                    .filter(pipelineName -> pipelineName.startsWith("DLIB"))
+                    .findFirst()
+                    .get();
+
+            System.out.println("Using DLIB pipeline: " + firstDlibPipeline);
+
+            jobCreationRequest.setPipelineName(firstDlibPipeline);
+            jobCreationRequest.setBuildOutput(true);
+            // jobCreationRequest.setPriority(priority); //will be set to 4 (default) if not set
+
+            JobCreationResponse jobCreationResponse = client.customPostObject(HOST_PREFIX + "jobs",
+                    jobCreationRequest, JobCreationResponse.class);
+            System.out.println("Job id: " + jobCreationResponse.getJobId() + "\n");
+
+            System.out.println("---Sleeping for 10 seconds to let the job process---\n");
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Id is now a path var. If not set, all job info will returned.
+            SingleJobInfo jobInfo = client.get(HOST_PREFIX + "jobs/" + jobCreationResponse.getJobId(),
+                    new HashMap<>(), SingleJobInfo.class);
+            System.out.println("Job status: " + jobInfo.getJobStatus() + "\n");
+
+            // Job id is now a path var and required for this endpoint
+            String jsonOutput = client.getAsString(HOST_PREFIX + "jobs/" + jobCreationResponse.getJobId() +
+                    "/output/detection", new HashMap<>());
+
+            // Format output to look pretty
+            MpfObjectMapper objectMapper = new MpfObjectMapper();
+            Object jsonObject = objectMapper.readValue(jsonOutput, Object.class);
+            String formattedJsonOutput = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
+
+            System.out.println("JSON output:\n" + formattedJsonOutput);
+
+        } catch (RestClientException | IOException e) {
+            System.err.println("\nError: " + e.getMessage());
+            System.exit(1);
+        }
     }
 }

@@ -41,8 +41,8 @@
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
         },
         {
-            "name": "CaffeDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection"
+            "name": "OcvDnnDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvDnnDetection"
         },
         {
             "name": "DarknetDetection",

@@ -1,0 +1,64 @@
+{
+	"packageTag":"open-source",
+
+	"MPF_Core_RPMs": [
+		"markup",
+		"nodeManager",
+		"protobuf",
+		"video-overlay",
+		"workflowManager",
+		"java-component-api",
+		"java-component-executor"
+	],
+
+	"MPF_Core_Tars": [
+		"mpf-install-dep"
+	],
+
+    "MPF_Components": [
+        {
+            "name": "MogMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/MogMotionDetection"
+        },
+        {
+            "name": "SubsenseMotionDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
+        },
+        {
+            "name": "DlibFaceDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DlibFaceDetection"
+        },
+        {
+            "name": "OcvPersonDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/OcvPersonDetection"
+        },
+        {
+            "name": "OalprLicensePlateTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OalprLicensePlateTextDetection"
+        },
+        {
+            "name": "SphinxSpeechDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
+        },
+        {
+            "name": "CaffeDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection"
+        },
+        {
+            "name": "DarknetDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DarknetDetection"
+        },
+        {
+            "name": "SceneChangeDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/SceneChangeDetection"
+        },
+        {
+            "name": "TikaTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
+        },
+        {
+            "name": "TikaImageDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaImageDetection"
+        }
+    ]
+}

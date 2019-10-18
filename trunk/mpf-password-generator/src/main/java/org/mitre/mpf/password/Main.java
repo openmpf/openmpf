@@ -75,7 +75,7 @@ public class Main {
 			}
 		}
 
-	// bcrypt has built-in salts:
+        // bcrypt has built-in salts:
         // https://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts?answertab=votes#tab-top
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(strength);
         for (int i = 0; i < numHashes; i++) {

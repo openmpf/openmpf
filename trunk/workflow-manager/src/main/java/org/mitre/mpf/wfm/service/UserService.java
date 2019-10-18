@@ -114,7 +114,8 @@ public class UserService implements UserDetailsService {
                 continue;
             }
 
-            log.info("Creating user \"" + user.getUserName() + "\" with roles \"" + user.getUserRoles() + "\".");
+            log.info("Creating user \"" + user.getUserName() + "\" with roles: " +
+                    user.getUserRoles().stream().map(UserRole::getShortName).collect(Collectors.joining(", ")));
             _userDao.persist(user);
         }
     }

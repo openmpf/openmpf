@@ -33,16 +33,20 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
 
+    <!-- Store this file in $MPF_HOME/share, which is backed by a Docker volume. This allows changes to be persisted
+         across Docker redeployments. -->
     <bean id="customPropFile" class="org.springframework.core.io.FileSystemResource">
         <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mpf-custom.properties</value></constructor-arg>
     </bean>
 
+    <!-- Don't store user.properties in $MPF_HOME/share. We shouldn't expose user information to component services. -->
+    <!-- In a Docker deployment, the following files can be injected into the WFM container using a "docker secret" or
+         "docker config". -->
     <bean id="mediaTypesFile" class="org.springframework.core.io.FileSystemResource">
-        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/mediaType.properties</value></constructor-arg>
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/mediaType.properties</value></constructor-arg>
     </bean>
-
     <bean id="userFile" class="org.springframework.core.io.FileSystemResource">
-        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/share/config/user.properties</value></constructor-arg>
+        <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/user.properties</value></constructor-arg>
     </bean>
 
     <beans profile="default">

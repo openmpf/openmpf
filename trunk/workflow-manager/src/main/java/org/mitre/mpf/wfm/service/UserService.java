@@ -67,7 +67,7 @@ public class UserService implements UserDetailsService {
     private PropertiesConfiguration _propertiesConfig;
 
     @Inject
-    public UserService(PropertiesUtil propertiesUtil, UserDao userDao) {
+    public UserService(PropertiesUtil propertiesUtil, UserDao userDao) throws UserCreationException {
         _propertiesUtil = propertiesUtil;
         _userDao = userDao;
 
@@ -97,64 +97,69 @@ public class UserService implements UserDetailsService {
         populateDatabase();
     }
 
-    private void populateDatabase() {
+    private void populateDatabase() throws UserCreationException {
+        String userName = null;
+        String value = null;
+        String creationError = null;
+
         for (Iterator<String> it = _propertiesConfig.getKeys(); it.hasNext(); ) {
-            String userName = it.next();
-            String value = _propertiesConfig.getString(userName);
+            userName = it.next();
+            value = _propertiesConfig.getString(userName);
 
             User user = _userDao.findByUserName(userName);
             if (user != null) {
                 continue; // this user already exists
             }
 
-            try {
-                user = parseEntry(userName, value);
-            } catch (UserCreationException e) {
-                log.warn("Invalid user entry in " + _userFile.getPath() + ":\n\t" + userName + "=" + value + "\n" + e.getMessage());
-                continue;
+            if (userName.isEmpty()) {
+                creationError = "Invalid user name \"" + userName + "\".";
+                break;
             }
+
+            String[] entryTokens = value.split(",", 2);
+
+            if (entryTokens.length < 2) {
+                creationError = "Entries should follow the format: <name>=<role>,<encoded-password>";
+                break;
+            }
+
+            UserRole role = UserRole.parse(entryTokens[0]);
+            if (role == null) {
+                creationError = "Invalid role \"" + entryTokens[0] + "\". Valid roles are: " +
+                        Arrays.stream(UserRole.values()).map(UserRole::getShortName).collect(Collectors.joining(", "));
+                break;
+            }
+
+            String encodedPassword = entryTokens[1];
+            String[] encodedPasswordTokens = encodedPassword.split("\\$");
+
+            if (encodedPasswordTokens.length != 4) {
+                creationError = "Invalid encoded password \"" + encodedPassword + "\"." +
+                        " Encoded passwords should follow the format:" +
+                        " $<bcrypt-algorithm-version>$<encoding-strength>$<modified-base-64-salt-and-cipher-text>";
+                break;
+            }
+
+            String saltAndCipherText = encodedPasswordTokens[3];
+
+            if (saltAndCipherText.length() != SALT_AND_CIPHER_TEXT_LENGTH) {
+                creationError = "Invalid modified base-64 salt and cipher text \"" + saltAndCipherText + "\"." +
+                        " Text should be " + SALT_AND_CIPHER_TEXT_LENGTH + " characters long.";
+                break;
+            }
+
+            user = new User(userName, role, encodedPassword);
 
             log.info("Creating user \"" + user.getUserName() + "\" with roles: " +
                     user.getUserRoles().stream().map(UserRole::getShortName).collect(Collectors.joining(", ")));
+
             _userDao.persist(user);
         }
-    }
 
-    // protected to enable unit test access
-    protected static User parseEntry(String userName, String value) throws UserCreationException {
-        if (userName.isEmpty()) {
-            throw new UserCreationException("Invalid user name \"" + userName + "\".");
+        if (creationError != null) {
+            throw new UserCreationException("Invalid user entry in " + _userFile.getPath() + ":\n" +
+                    "\t" + userName + "=" + value + "\n" + creationError);
         }
-
-        String[] entryTokens = value.split(",", 2);
-
-        if (entryTokens.length < 2) {
-            throw new UserCreationException("Entries should follow the format: <name>=<role>,<encoded-password>");
-        }
-
-        UserRole role = UserRole.parse(entryTokens[0]);
-        if (role == null) {
-            throw new UserCreationException("Invalid role \"" + entryTokens[0] + "\". Valid roles are: " +
-                    Arrays.stream(UserRole.values()).map(UserRole::getShortName).collect(Collectors.joining(", ")));
-        }
-
-        String encodedPassword = entryTokens[1];
-        String[] encodedPasswordTokens = encodedPassword.split("\\$");
-
-        if (encodedPasswordTokens.length != 4) {
-            throw new UserCreationException("Invalid encoded password \"" + encodedPassword + "\"." +
-                    " Encoded passwords should follow the format:" +
-                    " $<bcrypt-algorithm-version>$<encoding-strength>$<modified-base-64-salt-and-cipher-text>");
-        }
-
-        String saltAndCipherText = encodedPasswordTokens[3];
-
-        if (saltAndCipherText.length() != SALT_AND_CIPHER_TEXT_LENGTH) {
-            throw new UserCreationException("Invalid modified base-64 salt and cipher text \"" + saltAndCipherText + "\"." +
-                    " Text should be " + SALT_AND_CIPHER_TEXT_LENGTH + " characters long.");
-        }
-
-        return new User(userName, role, encodedPassword);
     }
 
     @Transactional

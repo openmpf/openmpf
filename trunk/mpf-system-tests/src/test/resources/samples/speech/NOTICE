@@ -1,4 +1,4 @@
-# green.wav, left.wav, 10001-90210-01803.wav
+# green.wav, 10001-90210-01803.wav
 
 Sphinx-4 Speech Recognition System
 Copyright 1999-2015 Carnegie Mellon University. All Rights Reserved. http://cmusphinx.sourceforge.net/
@@ -40,7 +40,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-# green.mov, left.avi, 10001-90210-01803.mp4
+# green.mov, 10001-90210-01803.mp4
 Created by combining each of the *.wav audio files with the same name with public domain footage.
 
 

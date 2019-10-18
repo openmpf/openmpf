@@ -49,6 +49,12 @@
     <dependencies>
         <dependency>
             <groupId>org.mitre.mpf</groupId>
+            <artifactId>mpf-logging-dependencies</artifactId>
+            <version>${project.parent.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-protobuf</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

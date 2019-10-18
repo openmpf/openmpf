@@ -72,6 +72,34 @@
         </profile>
     </profiles>
 
+    <repositories>
+        <repository>
+            <id>repository.springframework.maven.release</id>
+            <name>Spring Framework Maven Release Repository</name>
+            <url>http://maven.springframework.org/release</url>
+        </repository>
+        <repository>
+            <id>mygrid-repository</id>
+            <name>myGrid Repository</name>
+            <url>http://www.mygrid.org.uk/maven/repository</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>maven-us.nuxeo.org-vendor-releases</id>
+            <name>nexus-vendor-releases</name>
+            <url>http://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>dtrott</id>
+            <url>http://maven.davidtrott.com/repository</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -89,7 +117,10 @@
         <hibernate.validator.version>5.2.4.Final</hibernate.validator.version>
         <javax.el.api.version>2.2.4</javax.el.api.version>
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
-        <camel.framework.version>2.21.5</camel.framework.version>
+        <camel.framework.version>2.16.2</camel.framework.version>
+        <jaxb.version>2.3.0</jaxb.version>
+        <jaxws.rt.version>2.3.0</jaxws.rt.version>
+        <jaxws.spring.version>1.9</jaxws.spring.version>
         <activemq.framework.version>5.13.0</activemq.framework.version>
         <leveldb-api-version>0.7</leveldb-api-version>
         <leveldb-version>0.7</leveldb-version>
@@ -115,8 +146,6 @@
         <javax.activation.version>1.1.1</javax.activation.version>
         <xbean.spring.version>4.3</xbean.spring.version>
         <commons.lang3.version>3.4</commons.lang3.version>
-        <jaxws.rt.version>2.3.0</jaxws.rt.version>
-        <jaxws.spring.version>1.9</jaxws.spring.version>
         <cglib.version>3.1</cglib.version>
         <tika.core.version>1.17</tika.core.version>
         <apache.httpclient.version>4.5.2</apache.httpclient.version>
@@ -143,21 +172,18 @@
         <velocity.version>1.7</velocity.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <janino.version>2.7.8</janino.version>
+        <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
+        <!-- for more information, see https://github.com/springfox/springfox/issues/951. Version 2.3 of SpringFox is supposed to bring     -->
+        <!-- this functionality back, but as of mpf release 4, this is not yet ready, so we're forced to use 2.1.1 -->
         <springfox.swagger.version>2.1.1</springfox.swagger.version>
         <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in 
         order to maintain cross-compatibility. -->
         <maven.surefire.plugin.version>2.22.1</maven.surefire.plugin.version>
-        <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
-        <!-- for more information, see https://github.com/springfox/springfox/issues/951. Version 2.3 of SpringFox is supposed to bring     -->
-        <!-- this functionality back, but as of mpf release 4, this is not yet ready, so we're forced to use 2.1.1 -->
         <atmosphere.runtime.version>2.3.4</atmosphere.runtime.version>
 
-        <!-- added props node manager -->
         <jgroups.version>4.0.11.Final</jgroups.version>
-
-        <!-- added props mpf-markup -->
         <junit.version>4.12</junit.version>
-
+        <hamcrest.version>1.3</hamcrest.version>
         <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
 
         <!-- added props for REST web service -->
@@ -205,7 +231,7 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
+            <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -52,7 +52,8 @@ sql_args = arg_group(
     argh.arg('--sql-user', default='root',
              help='username used to log in to the SQL server'),
     argh.arg('--sql-password', default='password',
-             help="password used to log in to the SQL server")
+             help='password used to log in to the SQL server'),
+    argh.arg('--skip-sql-start', default=False, help='do not SQL server if not already running')
 )
 
 
@@ -97,7 +98,7 @@ def env_arg(arg_name, env_var, help='', **kwargs):
         env_var (str): The name of the environment variable
         help (str): Help text for argument
         **kwargs: Additional arguments that will be passed to argh.arg
-        
+
     """
     help += ' If not provided, it will be taken from the environment variable %s' % env_var
     return argh.arg(arg_name, env_var_name=env_var, action=_EnvDefault, help=help, **kwargs)

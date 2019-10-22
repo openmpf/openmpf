@@ -71,12 +71,13 @@ def hash_password(password):
 
 
 class UserManager(object):
-    def __init__(self, sql_host='localhost', sql_user='root', sql_password='password'):
-        sql_manager = mpf_sys.MySqlManager(False)
-        if not sql_manager.status():
-            print 'Starting MySQL service...'
-            sql_manager.start()
-            print
+    def __init__(self, sql_host='localhost', sql_user='root', sql_password='password', skip_sql_start=False):
+        if not skip_sql_start:
+            sql_manager = mpf_sys.MySqlManager(False)
+            if not sql_manager.status():
+                print 'Starting MySQL service...'
+                sql_manager.start()
+                print
 
         self._connection = mpf_util.sql_connection(sql_host, sql_user, sql_password)
         self._cursor = self._connection.cursor()
@@ -215,7 +216,7 @@ def get_password(password):
 
 USER_MODIFICATION_NOTICE = mpf_util.MsgUtil.yellow(
     'Changes will not take effect if the user is currently logged in. The user must log out first. '
-    'To force these changes now, restart MPF using the following command: "mpf restart"')
+    'To force these changes now, restart Workflow Manager.')
 
 
 # Setup Commands

@@ -38,7 +38,6 @@ import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -271,11 +270,11 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             // frame. The middle frame is the frame that is equally distant from the start and stop
             // frames, but that frame does not necessarily contain a detection in this track, so we
             // search for the detection in the track that is closest to that middle frame.
-            int middleIndex = (firstDetectionFrame + lastDetectionFrame) / 2;
-            int smallestDistance = Integer.MAX_VALUE;
+            double middleIndex = (firstDetectionFrame + lastDetectionFrame) / 2.0;
+            double smallestDistance = Double.MAX_VALUE;
             int middleFrame = 0;
             for (Detection detection : track.getDetections()) {
-                int distance = Math.abs(detection.getMediaOffsetFrame() - middleIndex);
+                double distance = Math.abs(detection.getMediaOffsetFrame() - middleIndex);
                 if (distance < smallestDistance) {
                     smallestDistance = distance;
                     middleFrame = detection.getMediaOffsetFrame();
@@ -303,7 +302,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             detectionsCopy.sort(
                 Comparator.comparing(Detection::getConfidence)
                 .reversed()
-                .thenComparing(Detection::getMediaOffsetFrame));
+                .thenComparing(Comparator.naturalOrder()));
             int extractCount = Math.min(topConfidenceCount, detectionsCopy.size());
             for (int i = 0; i < extractCount; i++) {
                 LOG.debug("Extracting frame #{} with confidence = {}",

@@ -364,12 +364,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                           BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
-        String exemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
+        String artifactsAndExemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
             MpfConstants.OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY_PROPERTY, job, media, action);
-        boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
+        boolean artifactsAndExemplarsOnly = Boolean.parseBoolean(artifactsAndExemplarsOnlyProp);
 
         List<JsonDetectionOutputObject> detections;
-        if (exemplarsOnly) {
+        if (artifactsAndExemplarsOnly) {
             // This property requires that the exemplar AND all extracted frames be
             // available in the output object. Otherwise, the user might never know that
             // there were other artifacts extracted.
@@ -377,7 +377,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                          .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
                          .map(d -> createDetectionOutputObject(d))
                          .collect(toList());
-            detections.add(exemplar);
         }
         else {
             detections = track.getDetections().stream()
@@ -424,12 +423,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_STAGE_ONLY to a single task.
-        String mediaProperty = aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media);
-        if (mediaProperty != null) {
-            return Boolean.parseBoolean(mediaProperty);
-        }
-
-        return job.getSystemPropertiesSnapshot().isOutputObjectLastTaskOnly();
+        return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
     }
 
 

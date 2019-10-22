@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -90,7 +89,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 9, 10), // Detection frames
-                Arrays.asList(5)); // Expected artifact frames
+                Arrays.asList(9)); // Expected artifact frames
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -136,7 +135,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5));
+                Arrays.asList(5, 9));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -180,7 +179,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5, 10));
+                Arrays.asList(9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -208,7 +207,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5, 10));
+                Arrays.asList(9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,

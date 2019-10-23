@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
@@ -65,19 +66,23 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
     private final StartupComponentServiceStarter _componentServiceStarter;
 
+    private final ObjectMapper _objectMapper;
+
 
     @Inject
     public StartupComponentRegistrationServiceImpl(
             PropertiesUtil propertiesUtil,
             ComponentStateService componentStateService,
             AddComponentService addComponentService,
-            StartupComponentServiceStarter componentServiceStarter) {
+            StartupComponentServiceStarter componentServiceStarter,
+            ObjectMapper objectMapper) {
         _startupAutoRegistrationSkipped = propertiesUtil.isStartupAutoRegistrationSkipped();
         _componentUploadDir = propertiesUtil.getUploadedComponentsDirectory().toPath();
         _pluginDeploymentDir = propertiesUtil.getPluginDeploymentPath();
         _componentStateSvc = componentStateService;
         _addComponentService = addComponentService;
         _componentServiceStarter = componentServiceStarter;
+        _objectMapper = objectMapper;
     }
 
 
@@ -98,7 +103,7 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
                 .collect(toMap(p -> p.getParent().getParent().getFileName().toString(),
                                Function.identity()));
 
-        var registeredComponents = new ArrayList<RegisterComponentModel>();
+        var registeredComponentsWithServiceToStart = new ArrayList<RegisterComponentModel>();
 
         for (Path unregisteredPackage : unregisteredComponentPackages) {
             String packageTld = getPackageTld(unregisteredPackage);
@@ -118,7 +123,7 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
             String packageName = unregisteredPackage.getFileName().toString();
             try {
                 RegisterComponentModel component = _addComponentService.registerComponent(packageName);
-                registeredComponents.add(component);
+                registeredComponentsWithServiceToStart.add(component);
             }
             catch (ComponentRegistrationException e) {
                 _log.error(String.format("Failed to register %s", packageName), e);
@@ -127,16 +132,16 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
         for (Path unregisteredDescriptor : unregisteredDescriptors) {
             try {
-                RegisterComponentModel component
-                        = _addComponentService.registerDeployedComponent(unregisteredDescriptor.toString());
-                registeredComponents.add(component);
+                var descriptor
+                        = _objectMapper.readValue(unregisteredDescriptor.toFile(), JsonComponentDescriptor.class);
+                _addComponentService.registerUnmanagedComponent(descriptor);
             }
-            catch (ComponentRegistrationException e) {
+            catch (ComponentRegistrationException | IOException e) {
                 _log.error(String.format("Failed to register %s", unregisteredDescriptor), e);
             }
         }
 
-        _componentServiceStarter.startServicesForComponents(registeredComponents);
+        _componentServiceStarter.startServicesForComponents(registeredComponentsWithServiceToStart);
     }
 
 

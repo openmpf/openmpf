@@ -99,8 +99,7 @@ public class ITWebREST {
 	// based on the registered components, this may not be a complete list of services
 	private static final String[] TEST_SERVICES = { "Markup",
 			"OcvPersonDetection", "SphinxSpeechDetection",
-			"MogMotionDetection", "OcvFaceDetection",
-			"DlibFaceDetection", "OalprLicensePlateTextDetection" };
+			"MogMotionDetection", "DlibFaceDetection", "OalprLicensePlateTextDetection" };
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
@@ -409,7 +408,7 @@ public class ITWebREST {
 		jobCreationRequest.setPipelineName(detPipeline);
 		jobCreationRequest.setPriority(7); //why not
 
-		//convert params to json string		
+		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
 
 		URL actualUrl = new URL(postJobsUrl);
@@ -746,9 +745,9 @@ public class ITWebREST {
 		}
 		String service_name = node.getString("name");
 		Assert.assertTrue(service_name != null && service_name.length() > 0);
-		
+
 		/*
-		 * stop service tests		
+		 * stop service tests
 		 */
 		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
 
@@ -798,7 +797,7 @@ public class ITWebREST {
 			}
 		}
 		Assert.assertTrue(completed);
-		
+
 		/*
 		 * start service tests
 		 */

@@ -46,80 +46,81 @@ import static java.util.stream.Collectors.toMap;
 @Named
 public class StartupComponentServiceStarterImpl implements StartupComponentServiceStarter {
 
-	private final boolean _isNodeAutoConfigEnabled;
+    private final boolean _isNodeAutoConfigEnabled;
 
-	private final int _nodeAutoConfigNumServices;
+    private final int _nodeAutoConfigNumServices;
 
-	private final NodeManagerService _nodeManagerService;
-
-
-	@Inject
-	public StartupComponentServiceStarterImpl(
-			PropertiesUtil propertiesUtil,
-			NodeManagerService nodeManagerService) {
-		_isNodeAutoConfigEnabled = propertiesUtil.isNodeAutoConfigEnabled();
-		_nodeAutoConfigNumServices = propertiesUtil.getNodeAutoConfigNumServices();
-		_nodeManagerService = nodeManagerService;
-	}
+    private final NodeManagerService _nodeManagerService;
 
 
-	@Override
-	public void startServicesForComponents(List<RegisterComponentModel> components) {
-		if (!_isNodeAutoConfigEnabled || _nodeAutoConfigNumServices <= 0) {
-			return;
-		}
-
-		Map<String, ServiceModel> allServiceModels = _nodeManagerService.getServiceModels();
-		List<ServiceModel> servicesToStart = getServicesToStart(components, allServiceModels);
-		if (servicesToStart.isEmpty()) {
-			return;
-		}
-
-		servicesToStart.forEach(n -> n.setServiceCount(_nodeAutoConfigNumServices));
-
-		List<NodeManagerModel> allConfiguredNodes = _nodeManagerService.getNodeManagerModels();
-		allConfiguredNodes.stream().filter(NodeManagerModel::isAutoConfigured)
-				.forEach(n -> addServicesToNode(n, servicesToStart));
-
-		try {
-			_nodeManagerService.saveAndReloadNodeManagerConfig(allConfiguredNodes);
-		}
-		catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	private static final List<String> SERVICES_TO_ALWAYS_START = Collections.singletonList("Markup");
-
-	private static List<ServiceModel> getServicesToStart(
-			Collection<RegisterComponentModel> components,
-			Map<String, ServiceModel> allServiceModels) {
-
-		Stream<String> componentServiceNames = components.stream()
-				.map(RegisterComponentModel::getServiceName)
-				.filter(Objects::nonNull);
-
-		return Stream.concat(componentServiceNames, SERVICES_TO_ALWAYS_START.stream())
-				.map(allServiceModels::get)
-				.filter(Objects::nonNull)
-				.collect(toList());
-	}
+    @Inject
+    public StartupComponentServiceStarterImpl(
+            PropertiesUtil propertiesUtil,
+            NodeManagerService nodeManagerService) {
+        _isNodeAutoConfigEnabled = propertiesUtil.isNodeAutoConfigEnabled();
+        _nodeAutoConfigNumServices = propertiesUtil.getNodeAutoConfigNumServices();
+        _nodeManagerService = nodeManagerService;
+    }
 
 
-	private static void addServicesToNode(NodeManagerModel node, Iterable<ServiceModel> servicesToStart) {
-		Map<String, ServiceModel> existingServices = node.getServices()
-				.stream()
-				.collect(toMap(ServiceModel::getServiceName, s -> s));
+    @Override
+    public void startServicesForComponents(List<RegisterComponentModel> components) {
+        if (!_isNodeAutoConfigEnabled || _nodeAutoConfigNumServices <= 0) {
+            return;
+        }
 
-		for (ServiceModel service : servicesToStart) {
-			ServiceModel existingService = existingServices.get(service.getServiceName());
-			if (existingService == null) {
-				node.getServices().add(service);
-			}
-			else {
-				existingService.setServiceCount(service.getServiceCount());
-			}
-		}
-	}
+        Map<String, ServiceModel> allServiceModels = _nodeManagerService.getServiceModels();
+        List<ServiceModel> servicesToStart = getServicesToStart(components, allServiceModels);
+        if (servicesToStart.isEmpty()) {
+            return;
+        }
+
+        servicesToStart.forEach(n -> n.setServiceCount(_nodeAutoConfigNumServices));
+
+        List<NodeManagerModel> allConfiguredNodes = _nodeManagerService.getNodeManagerModels();
+        allConfiguredNodes.stream().filter(NodeManagerModel::isAutoConfigured)
+                .forEach(n -> addServicesToNode(n, servicesToStart));
+
+        try {
+            _nodeManagerService.saveAndReloadNodeManagerConfig(allConfiguredNodes);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static final List<String> SERVICES_TO_ALWAYS_START = Collections.singletonList("Markup");
+
+    private static List<ServiceModel> getServicesToStart(
+            Collection<RegisterComponentModel> components,
+            Map<String, ServiceModel> allServiceModels) {
+
+        Stream<String> componentServiceNames = components.stream()
+                .filter(RegisterComponentModel::isManaged)
+                .map(RegisterComponentModel::getServiceName)
+                .filter(Objects::nonNull);
+
+        return Stream.concat(componentServiceNames, SERVICES_TO_ALWAYS_START.stream())
+                .map(allServiceModels::get)
+                .filter(Objects::nonNull)
+                .collect(toList());
+    }
+
+
+    private static void addServicesToNode(NodeManagerModel node, Iterable<ServiceModel> servicesToStart) {
+        Map<String, ServiceModel> existingServices = node.getServices()
+                .stream()
+                .collect(toMap(ServiceModel::getServiceName, s -> s));
+
+        for (ServiceModel service : servicesToStart) {
+            ServiceModel existingService = existingServices.get(service.getServiceName());
+            if (existingService == null) {
+                node.getServices().add(service);
+            }
+            else {
+                existingService.setServiceCount(service.getServiceCount());
+            }
+        }
+    }
 
 }

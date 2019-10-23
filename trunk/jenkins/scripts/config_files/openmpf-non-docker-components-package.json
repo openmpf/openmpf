@@ -45,10 +45,6 @@
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvDnnDetection"
         },
         {
-            "name": "DarknetDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DarknetDetection"
-        },
-        {
             "name": "SceneChangeDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/SceneChangeDetection"
         },

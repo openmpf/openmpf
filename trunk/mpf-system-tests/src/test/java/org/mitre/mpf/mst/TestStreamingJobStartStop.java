@@ -30,10 +30,7 @@ package org.mitre.mpf.mst;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jgroups.Address;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.mitre.mpf.interop.*;
@@ -47,6 +44,7 @@ import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
+import org.mitre.mpf.wfm.service.component.ComponentStateService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mockito.ArgumentCaptor;
@@ -72,6 +70,8 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Mockito.*;
@@ -112,6 +112,9 @@ public class TestStreamingJobStartStop {
     @Autowired
     private PipelineService _pipelineService;
 
+    @Autowired
+    private ComponentStateService _componentStateService;
+
     @ClassRule
     public static TestInfoLoggerClassRule _testInfoLoggerClassRule = new TestInfoLoggerClassRule();
     @Rule
@@ -126,6 +129,14 @@ public class TestStreamingJobStartStop {
 
     @Test(timeout = 5 * 60_000)
     public void testJobStartStop() throws InterruptedException {
+        var subsenseRcm = _componentStateService.getByComponentName("SubsenseMotionDetection")
+                .orElse(null);
+        assumeFalse("Skipping testJobStartStop because SubsenseMotionDetection component is not registered.",
+                    subsenseRcm == null);
+        assumeTrue(
+                "Skipping testJobStartStop because SubsenseMotionDetection is registered as an unmanaged component.",
+                subsenseRcm.isManaged());
+
         long jobId = 43231;
         long test_start_time = System.currentTimeMillis();
 
@@ -173,6 +184,13 @@ public class TestStreamingJobStartStop {
 
     @Test(timeout = 5 * 60_000)
     public void testDarknetStreaming() throws InterruptedException, IOException {
+        var darknetRcm = _componentStateService.getByComponentName("DarknetDetection")
+                .orElse(null);
+        assumeFalse("Skipping testDarknetStreaming because DarknetDetection component is not registered.",
+                    darknetRcm == null);
+        assumeTrue("Skipping testDarknetStreaming because DarknetDetection is registered as an unmanaged component.",
+                   darknetRcm.isManaged());
+
         long jobId = 43234;
         int segmentSize = 10;
         long test_start_time = System.currentTimeMillis();

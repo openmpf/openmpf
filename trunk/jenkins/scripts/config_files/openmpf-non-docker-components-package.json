@@ -37,10 +37,6 @@
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
         },
         {
-            "name": "OcvDnnDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvDnnDetection"
-        },
-        {
             "name": "TikaTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
         },

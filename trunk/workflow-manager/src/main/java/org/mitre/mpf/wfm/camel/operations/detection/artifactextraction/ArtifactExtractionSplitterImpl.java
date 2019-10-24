@@ -158,7 +158,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 // not the last task, then skip extraction for this media. Also return an empty
                 // list if this is the second to last task, but the action type of the last task
                 // is MARKUP.
-                // The output.last.task.only property only makes sense to be set at the job or
+                // The OUTPUT_LAST_TASK_ONLY property only makes sense to be set at the job or
                 // media level.
                 boolean lastTaskOnly = Boolean.parseBoolean(_aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
                 if (lastTaskOnly && notLastTask) {
@@ -336,7 +336,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
 
     private boolean isNonVisualObjectType(String type) {
-        for ( String propType : _propertiesUtil.getArtifactExtractionNonvisualTypesList() ) {
+        for ( String propType : _propertiesUtil.getArtifactExtractionNonVisualTypesList() ) {
             if (StringUtils.equalsIgnoreCase(type, propType)) return true;
         }
         return false;

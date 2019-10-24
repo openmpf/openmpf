@@ -422,7 +422,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
-        // OUTPUT_LAST_STAGE_ONLY to a single task.
+        // OUTPUT_LAST_TASK_ONLY to a single task.
         return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
     }
 

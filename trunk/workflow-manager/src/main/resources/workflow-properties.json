@@ -31,7 +31,7 @@
         "name": "OUTPUT_LAST_TASK_ONLY",
         "description": "The JSON output object will contain the exemplar and extracted artifacts for each track in the last task only.",
         "type": "BOOLEAN",
-        "propertiesKey": "mpf.output.objects.last.stage.only",
+        "propertiesKey": "mpf.output.objects.last.task.only",
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {

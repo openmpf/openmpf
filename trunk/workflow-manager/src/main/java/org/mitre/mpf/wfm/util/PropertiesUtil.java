@@ -259,8 +259,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
     }
 
-    public boolean isOutputObjectsLastStageOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
+    public boolean isOutputObjectsLastTaskOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
     }
 
     public String getSharePath() {
@@ -396,7 +396,7 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
     }
 
-    public Set<String> getArtifactExtractionNonvisualTypesList() {
+    public Set<String> getArtifactExtractionNonVisualTypesList() {
         return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
     }
 

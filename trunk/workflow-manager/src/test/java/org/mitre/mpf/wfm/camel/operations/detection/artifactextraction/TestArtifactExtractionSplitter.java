@@ -59,7 +59,7 @@ public class TestArtifactExtractionSplitter {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class, RETURNS_DEEP_STUBS);
+    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
@@ -451,6 +451,24 @@ public class TestArtifactExtractionSplitter {
                 Arrays.asList(14, 15, 16, 17, 18, 20));
     }
 
+    @Test
+    public void canGetNone() {
+        runTest(ArtifactExtractionPolicy.NONE,
+                createExtractionPropertySnapshot(2, false, false, true, 0),
+                16,
+                Arrays.asList(5, 9, 10, 16, 20),
+                Collections.<Integer>emptyList());
+    }
+
+    @Test
+    public void canGetAllDetections() {
+        runTest(ArtifactExtractionPolicy.ALL_DETECTIONS,
+                createExtractionPropertySnapshot(0, false, false, false, 0),
+                16,
+                Arrays.asList(5, 9, 10, 16, 20),
+                Arrays.asList(5, 9, 10, 16, 20));
+    }
+
     //////////////////////////////////////////////////////////
     @Test
     public void canGetAllFrames() {
@@ -480,7 +498,6 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     /// Test that setting the top confidence count to a value larger than the number of
     /// detections does not throw an exception, and extracts all detections.
-    @Test(expected = Test.None.class)
     public void TopConfidenceCountTooLarge() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
             -1, false, false, false, 12);

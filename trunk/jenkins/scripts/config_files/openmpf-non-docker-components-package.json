@@ -41,10 +41,6 @@
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvDnnDetection"
         },
         {
-            "name": "SceneChangeDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/SceneChangeDetection"
-        },
-        {
             "name": "TikaTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
         },

@@ -17,10 +17,6 @@
 
     "MPF_Components": [
         {
-            "name": "MogMotionDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/MogMotionDetection"
-        },
-        {
             "name": "SubsenseMotionDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
         },

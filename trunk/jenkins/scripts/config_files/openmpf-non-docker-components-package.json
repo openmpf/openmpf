@@ -17,10 +17,6 @@
 
     "MPF_Components": [
         {
-            "name": "SubsenseMotionDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
-        },
-        {
             "name": "SphinxSpeechDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
         },

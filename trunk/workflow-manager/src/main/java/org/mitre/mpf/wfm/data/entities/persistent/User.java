@@ -30,6 +30,7 @@ import org.mitre.mpf.wfm.enums.UserRole;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -104,5 +105,10 @@ public class User {
         return userName.equals(casted.userName)
                 && password.equals(casted.password)
                 && userRoles.equals(casted.userRoles);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userName, password, userRoles);
     }
 }

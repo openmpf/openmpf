@@ -71,7 +71,7 @@ public class TestUserService {
         return new UserService(_mockPropertiesUtil, _mockUserDao);
     }
 
-    private UserService createServiceWithContent(String content) throws IOException, UserCreationException {
+    private UserService createUserServiceWithContent(String content) throws IOException, UserCreationException {
         Files.writeString(userFile.toPath(), content);
         return createUserService();
     }
@@ -87,7 +87,7 @@ public class TestUserService {
     public void handleValidFile() throws IOException, UserCreationException {
         User nonAdminUser = new User("test.user", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
         User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
-        createServiceWithContent(
+        createUserServiceWithContent(
                 toUserEntry(nonAdminUser) +
                 toUserEntry(adminUser)
         );
@@ -97,16 +97,13 @@ public class TestUserService {
     }
 
     @Test
-    public void handleMissingFile() throws UserCreationException {
+    public void handleMissingFile() {
         userFile.delete();
-        try {
-            createUserService();
-            Assert.fail();
-        } catch (IllegalStateException e) {
-            Assert.assertTrue(e.getCause().getMessage().contains("Unable to load the configuration"));
-            Assert.assertTrue(e.getCause().getCause().getMessage().contains("No such file"));
-            verify(_mockUserDao, never()).persist(any());
-        }
+        var ex = TestUtil.assertThrows(IllegalStateException.class,
+                () -> createUserService());
+        Assert.assertTrue(ex.getCause().getMessage().contains("Unable to load the configuration"));
+        Assert.assertTrue(ex.getCause().getCause().getMessage().contains("No such file"));
+        verify(_mockUserDao, never()).persist(any());
     }
 
     @Test
@@ -115,7 +112,7 @@ public class TestUserService {
         User otherUser = new User("test.other", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
 
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent(
+                () -> createUserServiceWithContent(
                         toUserEntry(adminUser) +
                         "=user," + ENCODED_USER_PASSWORD + "\n" +
                         toUserEntry(otherUser)));
@@ -128,7 +125,7 @@ public class TestUserService {
     @Test
     public void handleMissingRole() {
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent("test.user=," + ENCODED_USER_PASSWORD));
+                () -> createUserServiceWithContent("test.user=," + ENCODED_USER_PASSWORD));
         Assert.assertTrue(ex.getMessage().contains("Invalid role"));
         verify(_mockUserDao, never()).persist(any());
     }
@@ -136,7 +133,7 @@ public class TestUserService {
     @Test
     public void handleMissingPassword() {
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent("test.user=user,"));
+                () -> createUserServiceWithContent("test.user=user,"));
         Assert.assertTrue(ex.getMessage().contains("Invalid encoded password"));
         verify(_mockUserDao, never()).persist(any());
     }
@@ -144,7 +141,7 @@ public class TestUserService {
     @Test
     public void handleInvalidRole() {
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent("test.user=foo," + ENCODED_USER_PASSWORD));
+                () -> createUserServiceWithContent("test.user=foo," + ENCODED_USER_PASSWORD));
         Assert.assertTrue(ex.getMessage().contains("Invalid role"));
         verify(_mockUserDao, never()).persist(any());
     }
@@ -152,7 +149,7 @@ public class TestUserService {
     @Test
     public void handleInvalidPasswordFormat() {
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent("test.user=user,garbage-pass"));
+                () -> createUserServiceWithContent("test.user=user,garbage-pass"));
         Assert.assertTrue(ex.getMessage().contains("Invalid encoded password"));
         verify(_mockUserDao, never()).persist(any());
     }
@@ -160,7 +157,7 @@ public class TestUserService {
     @Test
     public void handleInvalidPasswordLength() {
         var ex = TestUtil.assertThrows(UserCreationException.class,
-                () -> createServiceWithContent("test.user=user," +
+                () -> createUserServiceWithContent("test.user=user," +
                         ENCODED_USER_PASSWORD.substring(0, ENCODED_USER_PASSWORD.length()-1)));
         Assert.assertTrue(ex.getMessage().contains("Invalid modified base-64 salt and cipher text"));
         Assert.assertTrue(ex.getMessage().contains("characters long"));

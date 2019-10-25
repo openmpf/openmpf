@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -54,32 +53,25 @@ import java.util.stream.Collectors;
 @Service("mpfUserService")
 public class UserService implements UserDetailsService {
 
-    public static final int SALT_AND_CIPHER_TEXT_LENGTH = 53;
+    private static final int SALT_AND_CIPHER_TEXT_LENGTH = 53;
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
-    private final PropertiesUtil _propertiesUtil;
-
     private final UserDao _userDao;
-
-    private FileSystemResource _userFile;
-
-    private PropertiesConfiguration _propertiesConfig;
 
     @Inject
     public UserService(PropertiesUtil propertiesUtil, UserDao userDao) throws UserCreationException {
-        _propertiesUtil = propertiesUtil;
         _userDao = userDao;
 
         // Get the user properties file from the PropertiesUtil.
         // The PropertiesUtil will ensure that it is copied from the template, if necessary.
-        _userFile = _propertiesUtil.getUserFile();
+        FileSystemResource userFile = propertiesUtil.getUserFile();
 
         URL url;
         try {
-            url = _userFile.getURL();
+            url = userFile.getURL();
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot get URL from " + _userFile + ".", e);
+            throw new IllegalStateException("Cannot get URL from " + userFile + ".", e);
         }
 
         FileBasedConfigurationBuilder<PropertiesConfiguration> fileBasedConfigBuilder =
@@ -88,23 +80,20 @@ public class UserService implements UserDetailsService {
         Parameters configBuilderParameters = new Parameters();
         fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url));
 
+        PropertiesConfiguration propertiesConfig;
         try {
-            _propertiesConfig = fileBasedConfigBuilder.getConfiguration();
+            propertiesConfig = fileBasedConfigBuilder.getConfiguration();
         } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot create configuration from " + _userFile + ".", e);
+            throw new IllegalStateException("Cannot create configuration from " + userFile + ".", e);
         }
 
-        populateDatabase();
-    }
-
-    private void populateDatabase() throws UserCreationException {
         String userName = null;
         String value = null;
         String creationError = null;
 
-        for (Iterator<String> it = _propertiesConfig.getKeys(); it.hasNext(); ) {
+        for (Iterator<String> it = propertiesConfig.getKeys(); it.hasNext(); ) {
             userName = it.next();
-            value = _propertiesConfig.getString(userName);
+            value = propertiesConfig.getString(userName);
 
             User user = _userDao.findByUserName(userName);
             if (user != null) {
@@ -126,7 +115,9 @@ public class UserService implements UserDetailsService {
             UserRole role = UserRole.parse(entryTokens[0]);
             if (role == null) {
                 creationError = "Invalid role \"" + entryTokens[0] + "\". Valid roles are: " +
-                        Arrays.stream(UserRole.values()).map(UserRole::getShortName).collect(Collectors.joining(", "));
+                        Arrays.stream(UserRole.values())
+                                .map(UserRole::getShortName)
+                                .collect(Collectors.joining(", "));
                 break;
             }
 
@@ -151,41 +142,35 @@ public class UserService implements UserDetailsService {
             user = new User(userName, role, encodedPassword);
 
             log.info("Creating user \"" + user.getUserName() + "\" with roles: " +
-                    user.getUserRoles().stream().map(UserRole::getShortName).collect(Collectors.joining(", ")));
+                    user.getUserRoles().stream()
+                            .map(UserRole::getShortName)
+                            .collect(Collectors.joining(", ")));
 
             _userDao.persist(user);
         }
 
         if (creationError != null) {
-            throw new UserCreationException("Invalid user entry in " + _userFile.getPath() + ":\n" +
+            throw new UserCreationException("Invalid user entry in " + userFile.getPath() + ":\n" +
                     "\t" + userName + "=" + value + "\n" + creationError);
         }
     }
 
     @Transactional
     @Override
-    public UserDetails loadUserByUsername(final String userName) throws UsernameNotFoundException {
+    public org.springframework.security.core.userdetails.User loadUserByUsername(final String userName) throws UsernameNotFoundException {
         log.debug("Loading user \"{}\".", userName);
         User user = _userDao.findByUserName(userName);
-        List<GrantedAuthority> authorities;
-        if (user != null) {
-            authorities = buildUserAuthority(user.getUserRoles());
-        } else {
+
+        if (user == null) {
             log.debug("No user \"{}\" found.", userName);
             throw new UsernameNotFoundException(String.format("No user %s found.", userName));
         }
-        return buildUserForAuthentication(user, authorities);
+
+        return new org.springframework.security.core.userdetails.User(user.getUserName(),
+                user.getPassword(), true, true, true, true, buildUserAuthorities(user.getUserRoles()));
     }
 
-    private org.springframework.security.core.userdetails.User buildUserForAuthentication(org.mitre.mpf.wfm.data.entities.persistent.User user,
-                                                                                          List<GrantedAuthority> authorities) {
-        org.springframework.security.core.userdetails.User springUser =
-                new org.springframework.security.core.userdetails.User(user.getUserName(),
-                        user.getPassword(), true, true, true, true, authorities);
-        return new org.mitre.mpf.wfm.service.UserDetails(springUser);
-    }
-
-    private List<GrantedAuthority> buildUserAuthority(Set<UserRole> userRoles) {
+    private static List<GrantedAuthority> buildUserAuthorities(Set<UserRole> userRoles) {
         Set<GrantedAuthority> setAuths = new HashSet<>();
         log.debug("Building user authorities for {}.", userRoles);
         for (UserRole userRole : userRoles) {

@@ -53,6 +53,8 @@ public enum UserRole {
 
     public static UserRole parse(String shortName) {
         String trimmed = StringUtils.trim(shortName).toLowerCase();
-        return Arrays.stream(UserRole.values()).filter(r -> r.getShortName().equals(trimmed)).findFirst().orElse(null);
+        return Arrays.stream(UserRole.values())
+                .filter(r -> r.getShortName().equals(trimmed))
+                .findFirst().orElse(null);
     }
 }

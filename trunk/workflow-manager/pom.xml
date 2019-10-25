@@ -73,7 +73,7 @@
         <pluginRepository>
             <id>dtrott</id>
             <url>http://maven.davidtrott.com/repository</url>
-        </pluginRepository> 
+        </pluginRepository>
     </pluginRepositories>
 
     <dependencies>
@@ -1031,7 +1031,7 @@
                         </deployable>
                     </deployables>
                     <deployer>
-                        <type>installed</type> 
+                        <type>installed</type>
                     </deployer>
                 </configuration>
                 <executions>
@@ -1251,29 +1251,6 @@
                     <!-- Make the wfm classes available to other modules, like mpf-system-tests -->
                     <attachClasses>true</attachClasses>
                 </configuration>
-            </plugin>
-
-            <!-- assemble the OALPR source code package -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>assemble-oalpr-package</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>OalprLicensePlateTextDetection</finalName>
-                            <descriptor>src/main/assembly/oalpr.xml</descriptor>
-                            <outputDirectory>src/main/webapp/resources/mytheme/downloads</outputDirectory>
-                            <tarLongFileMode>gnu</tarLongFileMode>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

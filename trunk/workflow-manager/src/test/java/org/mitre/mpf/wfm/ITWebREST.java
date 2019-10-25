@@ -97,8 +97,7 @@ public class ITWebREST {
 	};
 
 	// based on the registered components, this may not be a complete list of services
-	private static final String[] TEST_SERVICES = { "Markup",
-			"OcvPersonDetection", "SphinxSpeechDetection", "MogMotionDetection" };
+	private static final String[] TEST_SERVICES = { "Markup", "SphinxSpeechDetection", "MogMotionDetection" };
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 

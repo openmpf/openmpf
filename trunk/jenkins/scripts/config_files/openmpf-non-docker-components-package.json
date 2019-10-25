@@ -25,10 +25,6 @@
             "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
         },
         {
-            "name": "OcvPersonDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/OcvPersonDetection"
-        },
-        {
             "name": "SphinxSpeechDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
         },

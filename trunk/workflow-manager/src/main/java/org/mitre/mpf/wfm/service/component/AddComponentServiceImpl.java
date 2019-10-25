@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -259,8 +260,16 @@ public class AddComponentServiceImpl implements AddComponentService {
                 }
             }
             catch (FailedToParseDescriptorException e) {
-                _log.warn(String.format("Failed to parse existing descriptor for the \"%s\" component. It will be replaced with the newly received descriptor.",
-                        descriptor.getComponentName()), e);
+                if (e.getCause() instanceof FileNotFoundException) {
+                    _log.warn("An existing descriptor for the \"{}\" component was not found. " +
+                                      "The newly received descriptor will be used.",
+                              descriptor.getComponentName());
+                }
+                else {
+                    _log.warn(String.format("Failed to parse existing descriptor for the \"%s\" component. " +
+                                                    "It will be replaced with the newly received descriptor.",
+                                            descriptor.getComponentName()), e);
+                }
             }
             _removeComponentService.removeComponent(descriptor.getComponentName());
         }

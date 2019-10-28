@@ -56,7 +56,7 @@ public class TestNodeService {
     private static final Logger log = LoggerFactory.getLogger(TestNodeService.class);
 
     private static final String TEST_NODE_HOST_NAME = "testhost.testdomain";
-    private static final String SERVICE_NAME = "MogMotionDetection";
+    private static final String SERVICE_NAME = "Markup";
     private static final String TEST_SERVICE_NAME = "SomeTestDetection";
 
     @Autowired

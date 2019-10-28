@@ -266,14 +266,13 @@ public class TestArtifactExtractionSplitter {
                 Arrays.asList(5, 10));
 
         extractionProps = createExtractionPropertySnapshot(
-                -1, false, false, false, 5);
+            -1, false, false, false, 12);
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 9, 10, 14));
-
     }
 
 
@@ -373,7 +372,7 @@ public class TestArtifactExtractionSplitter {
 
     //////////////////////////////////////////////////////////
     @Test
-    public void canGetFramePlus() {
+    public void canGetExemplarFramePlus() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 2, false, false, false, 0);
 
@@ -416,7 +415,7 @@ public class TestArtifactExtractionSplitter {
 
 
     @Test
-    public void canGetFirstFrameAndFramePlus() {
+    public void canGetFirstFrameAndExemplarFramePlus() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 2, true, false, false, 0);
 
@@ -434,7 +433,7 @@ public class TestArtifactExtractionSplitter {
     }
 
     @Test
-    public void canGetMiddleFrameAndFramePlus() {
+    public void canGetMiddleFrameAndExemplarFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(2, false, true, false, 0),
                 16,
@@ -443,7 +442,7 @@ public class TestArtifactExtractionSplitter {
     }
 
     @Test
-    public void canGetLastFrameAndFramePlus() {
+    public void canGetLastFrameAndExemplarFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(2, false, false, true, 0),
                 16,
@@ -457,21 +456,13 @@ public class TestArtifactExtractionSplitter {
                 createExtractionPropertySnapshot(2, false, false, true, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
-                Collections.<Integer>emptyList());
+                Collections.emptyList());
     }
 
-    @Test
-    public void canGetAllDetections() {
-        runTest(ArtifactExtractionPolicy.ALL_DETECTIONS,
-                createExtractionPropertySnapshot(0, false, false, false, 0),
-                16,
-                Arrays.asList(5, 9, 10, 16, 20),
-                Arrays.asList(5, 9, 10, 16, 20));
-    }
 
     //////////////////////////////////////////////////////////
     @Test
-    public void canGetAllFrames() {
+    public void canGetAllDetections() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 -1, false, false, false, 0);
 
@@ -498,6 +489,7 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     /// Test that setting the top confidence count to a value larger than the number of
     /// detections does not throw an exception, and extracts all detections.
+    @Test
     public void TopConfidenceCountTooLarge() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
             -1, false, false, false, 12);

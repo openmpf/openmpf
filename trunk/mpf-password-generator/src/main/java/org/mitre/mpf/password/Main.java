@@ -31,11 +31,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 public class Main {
 
 	public static final int DEFAULT_ENCODER_STRENGTH = 12;
-	public static final int DEFAULT_NUM_HASHES = 1;
 
-	public static final String USAGE = "Args: <raw-password>" +
-			" [encoder-strength=" + DEFAULT_ENCODER_STRENGTH + "]" +
-			" [num-hashes-to-generate=" + DEFAULT_NUM_HASHES + "]";
+	public static final String USAGE = "Args: <raw-password> [encoder-strength=" + DEFAULT_ENCODER_STRENGTH + "]";
 
 	public static void handleUsageError(String error) {
 		System.err.println(error);
@@ -46,7 +43,6 @@ public class Main {
     public static void main(String[] args) {
 		String rawPassword;
     	int strength = DEFAULT_ENCODER_STRENGTH;
-        int numHashes = DEFAULT_NUM_HASHES;
 
         if (args.length == 0 || args[0].equals("-h") || args[0].equals("-help")|| args[0].equals("--help")) {
         	System.out.println(USAGE);
@@ -64,22 +60,10 @@ public class Main {
 				handleUsageError("\"" + args[1] + "\" must be in the range [4, 31].");
 			}
 		}
-		if (args.length > 2) {
-			try {
-				numHashes = Integer.parseInt(args[2]);
-			} catch (NumberFormatException e) {
-				handleUsageError("\"" + args[2] + "\" must be an integer.");
-			}
-			if (numHashes < 0) {
-				handleUsageError("\"" + args[2] + "\" must be a positive integer.");
-			}
-		}
 
         // bcrypt has built-in salts:
         // https://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts?answertab=votes#tab-top
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(strength);
-        for (int i = 0; i < numHashes; i++) {
-            System.out.println(passwordEncoder.encode(rawPassword));
-        }
+        System.out.println(passwordEncoder.encode(rawPassword));
     }
 }

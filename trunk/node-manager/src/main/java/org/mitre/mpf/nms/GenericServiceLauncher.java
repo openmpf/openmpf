@@ -67,7 +67,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
     public void started(OutputStream inStream, InputStream outStream, InputStream errStream) {}
 
     /**
-     * Returns the the full command to execute.
+     * Returns the full command to execute.
      * @return 
      */
     @Override

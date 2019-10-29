@@ -40,7 +40,8 @@
       "mediaMetadata": {
         "DURATION": "7084",
         "FPS": "24.0",
-        "FRAME_COUNT": "185"
+        "FRAME_COUNT": "185",
+        "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -207,7 +208,8 @@
       "mediaMetadata": {
         "DURATION": "2025",
         "FPS": "24.0",
-        "FRAME_COUNT": "54"
+        "FRAME_COUNT": "54",
+        "MIME_TYPE": "video/quicktime"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -262,79 +264,6 @@
                 ],
                 "stopOffset": 37,
                 "startOffset": 6
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
-    },
-    {
-      "mediaId": 21,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/left.avi",
-      "mimeType": "video/x-msvideo",
-      "length": 122,
-      "sha256": "7c4cdefce71aecd438ffab11cf6af48333760db87ab5b8fc940019a2284591e8",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "DURATION": "5008",
-        "FPS": "24.0",
-        "FRAME_COUNT": "122"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "SPEECH": [
-          {
-            "source": "+#SPHINX SPEECH DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "0b44b61d8c8fb797ce18e5929d5af72ffa0a2b6b532556eba019f6b02e08e6b4",
-                "startOffsetFrame": 25,
-                "stopOffsetFrame": 107,
-                "startOffsetTime": 1042,
-                "stopOffsetTime": 4458,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPTION": "this three left on the left side of the one closest to us"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPTION": "this three left on the left side of the one closest to us"
-                  },
-                  "offsetFrame": 25,
-                  "offsetTime": 1042,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 25
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPTION": "this three left on the left side of the one closest to us"
-                    },
-                    "offsetFrame": 25,
-                    "offsetTime": 1042,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 25
-                  }
-                ],
-                "stopOffset": 107,
-                "startOffset": 25
               }
             ]
           }

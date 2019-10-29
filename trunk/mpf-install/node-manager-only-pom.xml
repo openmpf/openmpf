@@ -41,6 +41,7 @@
 
     <!-- poms in the following directories -->
     <modules>
+        <module>../../logging-dependencies.xml</module>
         <module>../node-manager</module>
     </modules>
 

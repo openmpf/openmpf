@@ -24,54 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.service;
 
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+public class UserCreationException extends Exception {
 
-import java.io.Serializable;
-import java.util.Collection;
-
-public class MpfUserDetails extends org.springframework.security.core.userdetails.User implements Serializable {
-
-    private static final long serialVersionUID = -203279271211455050L;
-
-    private String username = null;
-
-    // inherited
-    public MpfUserDetails(User user, Collection<? extends GrantedAuthority> authorities) {
-        super(user.getUsername(), user.getPassword(), authorities);
-        this.username = user.getUsername();
-    }
-
-    // inherited
-    public MpfUserDetails(User user, boolean enabled, boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked, Collection<? extends GrantedAuthority> authorities) {
-        super(user.getUsername(), user.getPassword(), enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
-        this.username = user.getUsername();
-    }
-
-    // custom
-    public MpfUserDetails(User user) {
-        super(user.getUsername(), user.getPassword(), user.isEnabled(), user.isAccountNonExpired(), user.isCredentialsNonExpired(), user.isAccountNonLocked(), user.getAuthorities());
-        this.username = user.getUsername();
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    // need for session concurrency control
-    @Override
-    public int hashCode() {
-        return username.hashCode();
-    }
-
-    // need for session concurrency control
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) { return false; }
-        if (!(obj instanceof  MpfUserDetails)) { return false; }
-        MpfUserDetails other = (MpfUserDetails)obj;
-        return username.equals(other.getUsername());
+    public UserCreationException(String message) {
+        super(message);
     }
 }

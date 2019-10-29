@@ -25,51 +25,53 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.mitre.mpf</groupId>
-	<artifactId>mpf-password-generator</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mitre.mpf</groupId>
+        <artifactId>mpf-project</artifactId>
+        <version>4.1.0</version>
+        <relativePath>./pom.xml</relativePath>
+    </parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-core</artifactId>
-			<version>3.2.9.RELEASE</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-logging</groupId>
-			<artifactId>commons-logging</artifactId>
-			<version>1.1.1</version>
-		</dependency>
-	</dependencies>
+    <groupId>org.mitre.mpf</groupId>
+    <artifactId>mpf-logging-dependencies</artifactId>
+    <packaging>pom</packaging>
+    <name>MPF Logging Dependencies</name>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.1.1</version>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-					<archive>
-						<manifest>
-							<mainClass>org.mitre.mpf.password.Main</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id> <!-- this is used for inheritance merges -->
-						<phase>package</phase> <!-- bind to the packaging phase -->
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <!-- provides Java Common Logging; has a LogFactory which Spring uses (should use LoggerFactory) -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <!-- Optional dependency of log4j. Required to use async logging. -->
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.3.6</version>
+        </dependency>
+    </dependencies>
 </project>

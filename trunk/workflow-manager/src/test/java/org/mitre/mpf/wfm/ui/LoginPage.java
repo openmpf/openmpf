@@ -58,10 +58,10 @@ public class LoginPage {
 	 * @param password
 	 * @return HomePage object
 	 */
-	public HomePage loginValidUser(WebDriver driver,String username,String password) {
+	public HomePage loginValidUser(WebDriver driver, String userName,String password) {
 
 		WebElement element = driver.findElement(By.name("username"));
-		element.sendKeys(username);
+		element.sendKeys(userName);
 		element = driver.findElement(By.name("password"));
 		element.sendKeys(password);
 		// Now submit the form.

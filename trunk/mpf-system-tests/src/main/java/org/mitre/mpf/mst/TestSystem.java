@@ -206,7 +206,6 @@ public abstract class TestSystem {
      *
      * @param actualOutputPath
      * @param numInputMedia
-     * @throws javax.xml.bind.JAXBException
      */
     public void checkOutput(URI actualOutputPath, int numInputMedia) throws IOException {
         log.debug("Deserializing actual output {}", actualOutputPath);

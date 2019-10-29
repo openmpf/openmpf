@@ -346,7 +346,7 @@ public class ITWebREST {
 //	}
 
 	/*
-	 * rest/jobs (ALL) is not currently exposed, using the the exposed
+	 * rest/jobs (ALL) is not currently exposed, using the exposed
 	 * rest/jobs/{id} endpoint instead
 	 */
 	@Test(timeout = 1 * MINUTES)

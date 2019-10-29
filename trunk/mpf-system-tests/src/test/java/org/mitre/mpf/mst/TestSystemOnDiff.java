@@ -995,7 +995,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runSpeechSphinxDetectAudio() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectAudio.json",
                       "/samples/speech/green.wav",
-                      "/samples/speech/left.wav",
                       "/samples/speech/10001-90210-01803.wav");
     }
 
@@ -1003,7 +1002,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     public void runSpeechSphinxDetectVideo() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectVideo.json",
                       "/samples/speech/green.mov",
-                      "/samples/speech/left.avi",
                       "/samples/speech/10001-90210-01803.mp4"
         );
     }

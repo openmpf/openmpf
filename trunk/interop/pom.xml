@@ -45,34 +45,6 @@
         <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>repository.springframework.maven.release</id>
-            <name>Spring Framework Maven Release Repository</name>
-            <url>http://maven.springframework.org/release</url>
-        </repository>
-        <repository>
-            <id>mygrid-repository</id>
-            <name>myGrid Repository</name>
-            <url>http://www.mygrid.org.uk/maven/repository</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>maven-us.nuxeo.org-vendor-releases</id>
-            <name>nexus-vendor-releases</name>
-            <url>http://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>dtrott</id>
-            <url>http://maven.davidtrott.com/repository</url>
-        </pluginRepository>
-    </pluginRepositories>
-
     <build>
         <plugins>
             <plugin>

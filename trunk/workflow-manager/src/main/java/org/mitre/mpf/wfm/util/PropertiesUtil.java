@@ -53,7 +53,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,6 +78,9 @@ public class PropertiesUtil {
     @javax.annotation.Resource(name="mediaTypesFile")
     private FileSystemResource mediaTypesFile;
 
+    @javax.annotation.Resource(name="userFile")
+    private FileSystemResource userFile;
+
     private ImmutableConfiguration mpfPropertiesConfig;
 
     // The set of core nodes will not change while the WFM is running.
@@ -94,6 +96,10 @@ public class PropertiesUtil {
 
         if (!mediaTypesFile.exists()) {
             copyResource(mediaTypesFile, getMediaTypesTemplate());
+        }
+
+        if (!userFile.exists()) {
+            copyResource(userFile, getUserTemplate());
         }
 
         Set<PosixFilePermission> permissions = new HashSet<>();
@@ -271,8 +277,6 @@ public class PropertiesUtil {
     }
 
     private File artifactsDirectory;
-    public File getArtifactsDirectory() { return artifactsDirectory; }
-
     public File getJobArtifactsDirectory(long jobId) {
         return new File(artifactsDirectory, String.valueOf(jobId));
     }
@@ -365,12 +369,9 @@ public class PropertiesUtil {
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File markupDirectory;
-    public File getMarkupDirectory() { return markupDirectory; }
-
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
     }
-
 
     public Path createMarkupPath(long jobId, long mediaId, String extension) {
         try {
@@ -396,42 +397,6 @@ public class PropertiesUtil {
 
     public int getSamplingInterval() {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
-    }
-
-    public int getFrameRateCap() {
-        return mpfPropertiesConfig.getInt("detection.frame.rate.cap");
-    }
-
-    public double getConfidenceThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.confidence.threshold");
-    }
-
-    public int getMinAllowableSegmentGap() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.gap");
-    }
-
-    public int getTargetSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.target.length");
-    }
-
-    public int getMinSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.length");
-    }
-
-    public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
-    }
-
-    public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
-    }
-
-    public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
-    }
-
-    public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //
@@ -579,10 +544,6 @@ public class PropertiesUtil {
         }
     }
 
-    public String getThisMpfNodeHostName() {
-        return System.getenv(EnvVar.THIS_MPF_NODE);
-    }
-
     public Set<String> getCoreMpfNodes() {
         return coreMpfNodes;
     }
@@ -648,6 +609,16 @@ public class PropertiesUtil {
     private Resource getMediaTypesTemplate() {
         return appContext.getResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
     }
+
+
+    public FileSystemResource getUserFile() {
+        return userFile;
+    }
+
+    private Resource getUserTemplate() {
+        return appContext.getResource(mpfPropertiesConfig.getString("config.user.template"));
+    }
+
 
     public String getAmqUri() {
         return mpfPropertiesConfig.getString("amq.broker.uri");
@@ -751,10 +722,6 @@ public class PropertiesUtil {
             log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
             Files.createDirectories(resourceDir);
         }
-    }
-
-    public URI getNginxStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
     }
 
     public int getNginxStorageUploadThreadCount() {

@@ -70,7 +70,7 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
     }
 
     /**
-     * Returns the the full command to execute with current AMQ host inserted as
+     * Returns the full command to execute with current AMQ host inserted as
      * the first argument.
      *
      * @return

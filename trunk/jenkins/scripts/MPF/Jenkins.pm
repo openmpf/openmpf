@@ -343,17 +343,8 @@ sub mavenCompileNodeManager {
 
 	printInfo("Compiling MPF Node Manager\n");
 
-	my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs";
-
-	chdir "$mpfPath/trunk/node-manager";
-	open PIPE, $buildCommand . " |";
-	while(<PIPE>) {
-	   printMaven($_);
-	}
-	close PIPE;
-
 	chdir "$mpfPath/trunk/mpf-install";
-	open PIPE, $buildCommand . " -f node-manager-only-pom.xml |";
+	open PIPE, "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -f node-manager-only-pom.xml |";
 	while(<PIPE>) {
 	   printMaven($_);
 	}

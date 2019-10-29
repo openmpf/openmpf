@@ -58,8 +58,8 @@ public class MediaTypeUtils {
 
     @PostConstruct
     private void init() {
-        // get the media types properties file from the PropertiesUtil;
-        // the PropertiesUtil will ensure that it is copied from the template, if necessary
+        // Get the media types properties file from the PropertiesUtil.
+        // The PropertiesUtil will ensure that it is copied from the template, if necessary.
         mediaTypesFile = propertiesUtil.getMediaTypesFile();
 
         URL url;

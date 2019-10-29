@@ -73,7 +73,7 @@
 	</security:http>
 
 	<security:authentication-manager>
-		<security:authentication-provider user-service-ref="mpfUserDetailsService">
+		<security:authentication-provider user-service-ref="mpfUserService">
 			<!-- salt and hash passwords -->
 			<security:password-encoder ref="encoder" />
 		</security:authentication-provider>

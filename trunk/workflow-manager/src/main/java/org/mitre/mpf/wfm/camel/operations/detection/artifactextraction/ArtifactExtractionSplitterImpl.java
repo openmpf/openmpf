@@ -214,6 +214,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         int actionIndex) {
 
         LOG.debug("Processing extractions for action {}", actionIndex);
+        List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
+
         String exemplarPlusCountProp =
                 _aggregateJobPropertiesUtil.getValue("ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
                                                      job, media, action);
@@ -234,20 +236,21 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             int exemplarFrame = exemplar.getMediaOffsetFrame();
             LOG.debug("Extracting exemplar frame {}", exemplarFrame);
             addFrame(mediaAndActionToFrames, media.getId(), actionIndex, exemplarFrame);
+            int exemplarIndex = detectionsCopy.indexOf(exemplar);
             while (exemplarPlusCount > 0) {
-                // before frame: only extract if the frame lies within this track and is
-                // not less than 0.
-                int beforeIndex = exemplarFrame - exemplarPlusCount;
-                if ((beforeIndex >= 0) && (beforeIndex >= track.getStartOffsetFrameInclusive())) {
-                    LOG.debug("Extracting before-frame {}", beforeIndex);
-                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex, beforeIndex);
+                // before frame: Find the detections in this track that are previous to the exemplar.
+                int beforeIndex = exemplarIndex - exemplarPlusCount;
+                if (beforeIndex >= 0) {
+                    int beforeFrame = detectionsCopy.get(beforeIndex).getMediaOffsetFrame();
+                    LOG.debug("Extracting before-frame {}", beforeFrame);
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex, beforeFrame);
                 }
-                // after frame: only extract if the frame lies within this track and is
-                // not greater than the last frame in the media.
-                int afterIndex = exemplarFrame + exemplarPlusCount;
-                if ((afterIndex <= (media.getLength() - 1)) && (afterIndex <= track.getEndOffsetFrameInclusive())) {
-                    LOG.debug("Extracting after-frame {}", afterIndex);
-                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex, afterIndex);
+                // after frame: Find the detections in this track that are after the exemplar.
+                int afterIndex = exemplarIndex + exemplarPlusCount;
+                if (afterIndex < detectionsCopy.size()) {
+                    int afterFrame = detectionsCopy.get(afterIndex).getMediaOffsetFrame();
+                    LOG.debug("Extracting after-frame {}", afterFrame);
+                    addFrame(mediaAndActionToFrames, media.getId(), actionIndex, afterFrame);
                 }
                 exemplarPlusCount--;
             }
@@ -295,7 +298,6 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT", topConfidenceCountProp, topConfidenceCount);
         }
         if (topConfidenceCount > 0) {
-            List<Detection> detectionsCopy = new ArrayList<>(track.getDetections());
             // Sort the detections by confidence, then by frame number, if two detections have equal
             // confidence. The sort by confidence is reversed so that the N highest confidence
             // detections are at the start of the list.

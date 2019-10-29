@@ -380,19 +380,19 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
-                Arrays.asList(8, 9, 10, 11, 12));
+                Arrays.asList(5, 9, 10, 20));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 10,
-                Arrays.asList(5, 9, 10, 11),
-                Arrays.asList(8, 9, 10, 11));
+                Arrays.asList(8, 10, 12, 15, 16),
+                Arrays.asList(8, 10, 12, 15));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 6,
                 Arrays.asList(5, 6, 9, 10, 11),
-                Arrays.asList(5, 6, 7, 8));
+                Arrays.asList(5, 6, 9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -404,7 +404,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 5,
                 Arrays.asList(5, 9, 10, 11),
-                Arrays.asList(5, 6, 7));
+                Arrays.asList(5, 9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -423,13 +423,13 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
-                Arrays.asList(5, 8, 9, 10, 11, 12));
+                Arrays.asList(5, 9, 10, 20));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 5,
-                Arrays.asList(5, 6),
-                Arrays.asList(5, 6));
+                Arrays.asList(5, 6, 9, 12),
+                Arrays.asList(5, 6, 9));
     }
 
     @Test
@@ -438,7 +438,7 @@ public class TestArtifactExtractionSplitter {
                 createExtractionPropertySnapshot(2, false, true, false, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
-                Arrays.asList(10, 14, 15, 16, 17, 18));
+                Arrays.asList(9, 10, 16, 20));
     }
 
     @Test
@@ -447,7 +447,7 @@ public class TestArtifactExtractionSplitter {
                 createExtractionPropertySnapshot(2, false, false, true, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
-                Arrays.asList(14, 15, 16, 17, 18, 20));
+                Arrays.asList(9, 10, 16, 20));
     }
 
     @Test

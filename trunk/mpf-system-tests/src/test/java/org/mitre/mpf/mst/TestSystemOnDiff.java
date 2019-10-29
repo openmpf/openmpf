@@ -208,6 +208,9 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
+        // The media used in this test generates two tracks that both have the same range of frames, but different exemplars,
+        // and the set of extractions for each track do not intersect with each other.
+
         List<JsonTrackOutputObject> tracks = actionOutputObjects.stream()
                                              .flatMap(outputObj -> outputObj.getTracks().stream())
                                              .collect(toList());

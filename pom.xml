@@ -81,9 +81,6 @@
     </repositories>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
         <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
         <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>

@@ -59,19 +59,19 @@ public class TestInfoLoggerClassRule extends TestWatcher {
                 int numStartedThisClass = _numStartedPerClass.merge(description.getTestClass(), 1, Integer::sum);
                 _numStarted++;
 
-                LOG.info("\n=== Starting test #{}: {} (test #{} of {} in {}) ===",
+                LOG.info("\n\n=== Starting test #{}: {} (test #{} of {} in {}) ===",
                          _numStarted, description.getDisplayName(), numStartedThisClass,
                          _testCounts.get(description.getTestClass()), description.getTestClass().getName());
             }
 
             @Override
             protected void succeeded(Description description) {
-                LOG.info("\n=== {} succeeded ===", description.getDisplayName());
+                LOG.info("\n\n=== {} succeeded ===", description.getDisplayName());
             }
 
             @Override
             protected void failed(Throwable e, Description description) {
-                LOG.error("\n=== {} failed: {} ===", description.getDisplayName(), e.getMessage());
+                LOG.error("\n\n=== {} failed: {} ===", description.getDisplayName(), e.getMessage());
             }
         };
     }

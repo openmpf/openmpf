@@ -17,10 +17,6 @@
 
     "MPF_Components": [
         {
-            "name": "SphinxSpeechDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/java/SphinxSpeechDetection"
-        },
-        {
             "name": "TikaTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/java/TikaTextDetection"
         },

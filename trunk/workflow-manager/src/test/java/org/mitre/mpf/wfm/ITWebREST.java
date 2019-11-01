@@ -580,8 +580,6 @@ public class ITWebREST {
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
-		log.info("array length (should be >= 2):" + array.length()); // assume at least two services are running
-		Assert.assertTrue(array.length() >= 2);
 
 		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);

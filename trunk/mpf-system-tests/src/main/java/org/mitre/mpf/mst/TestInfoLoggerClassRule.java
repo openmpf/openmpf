@@ -59,7 +59,7 @@ public class TestInfoLoggerClassRule extends TestWatcher {
                 int numStartedThisClass = _numStartedPerClass.merge(description.getTestClass(), 1, Integer::sum);
                 _numStarted++;
 
-                LOG.info("\n\n=== Starting test #{}: {} (test #{} of {} in {}) ===",
+                LOG.info("\n\n=== Starting test #{}: {} (test #{} of {} in {}) ===\n",
                          _numStarted, description.getDisplayName(), numStartedThisClass,
                          _testCounts.get(description.getTestClass()), description.getTestClass().getName());
             }

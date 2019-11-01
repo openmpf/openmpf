@@ -487,7 +487,6 @@ public class AddComponentServiceImpl implements AddComponentService {
                 algorithmService.addArg(queueName);
                 algorithmService.addArg(serviceName);
                 algorithmService.setLauncher("generic");
-                algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
                 break;
 
             case CPP:
@@ -497,13 +496,13 @@ public class AddComponentServiceImpl implements AddComponentService {
                 algorithmService.addArg(queueName);
                 algorithmService.addArg(descriptor.getSourceLanguage().getValue());
                 algorithmService.setLauncher("simple");
-                algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
                 break;
 
             default:
                 throw new IllegalStateException("Unknown component language: " + descriptor.getSourceLanguage());
         }
 
+        algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
         algorithmService.setDescription(algorithm.getDescription());
         algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
         _log.debug("Created service definition");

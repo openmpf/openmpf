@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import com.google.common.collect.Sets;
 import org.mitre.mpf.wfm.enums.UserRole;
 
 import javax.persistence.*;
@@ -58,7 +59,7 @@ public class User {
 
     public User(String userName, UserRole role, String password) {
         this(userName, password);
-        setUserRoles(Set.of(role));
+        setUserRoles(Sets.newHashSet(role));
     }
 
     public long getId() {

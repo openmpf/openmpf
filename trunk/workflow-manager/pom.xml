@@ -1127,59 +1127,30 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.cargo</groupId>
-                <artifactId>cargo-maven2-plugin</artifactId>
-                <version>1.4.8</version>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <version>2.2</version>
                 <configuration>
-                    <wait>false</wait>
-                    <container>
-                        <containerId>tomcat8x</containerId>
-                        <home>/opt/apache-tomcat</home>
-                        <systemProperties>
-                            <spring.profiles.active>jenkins,website</spring.profiles.active>
-                            <web.rest.protocol>http</web.rest.protocol>
-                            <transport.guarantee>NONE</transport.guarantee>
-                        </systemProperties>
-                        <timeout>3600000</timeout>
-                    </container>
-                    <configuration>
-                        <type>standalone</type>
-                        <properties>
-                            <cargo.servlet.port>${tomcat.port}</cargo.servlet.port>
-                        </properties>
-                        <configfiles>
-                            <configfile>
-                                <file>/opt/apache-tomcat/conf/context.xml</file>
-                                <todir>conf/Catalina/localhost/</todir>
-                                <tofile>context.xml.default</tofile>
-                            </configfile>
-                        </configfiles>
-                    </configuration>
-                    <deployables>
-                        <deployable>
-                            <type>war</type>
-                            <properties>
-                                <context>${project.build.finalName}</context>
-                            </properties>
-                        </deployable>
-                    </deployables>
-                    <deployer>
-                        <type>installed</type> 
-                    </deployer>
+                    <fork>true</fork>
+                    <path>/${project.build.finalName}</path>
+                    <port>${tomcat.port}</port>
+                    <systemProperties>
+                        <spring.profiles.active>jenkins,website</spring.profiles.active>
+                    </systemProperties>
                 </configuration>
                 <executions>
                     <execution>
                         <id>start-tc</id>
                         <phase>pre-integration-test</phase>
                         <goals>
-                            <goal>start</goal>
+                            <goal>run-war-only</goal>
                         </goals>
                     </execution>
                     <execution>
                         <id>stop-tc</id>
                         <phase>post-integration-test</phase>
                         <goals>
-                            <goal>stop</goal>
+                            <goal>shutdown</goal>
                         </goals>
                     </execution>
                 </executions>

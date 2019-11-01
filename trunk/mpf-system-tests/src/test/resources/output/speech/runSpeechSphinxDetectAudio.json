@@ -38,8 +38,7 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "8031",
-        "MIME_TYPE": "audio/vnd.wave"
+        "DURATION": "8031"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -204,8 +203,7 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "2020",
-        "MIME_TYPE": "audio/vnd.wave"
+        "DURATION": "2020"
       },
       "mediaProperties": {},
       "markupResult": null,

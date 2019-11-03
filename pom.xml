@@ -98,8 +98,8 @@
         <javax.el.api.version>2.2.4</javax.el.api.version>
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
         <camel.framework.version>2.16.2</camel.framework.version>
-        <jaxb.version>2.3.0</jaxb.version>
-        <jaxws.rt.version>2.3.0</jaxws.rt.version>
+        <jaxb.version>2.2.11</jaxb.version> <!-- TODO: Use 2.3.0 for Java 11 -->
+        <jaxws.rt.version>2.2.10</jaxws.rt.version> <!-- TODO: Use 2.3.0 for Java 11 -->
         <jaxws.spring.version>1.9</jaxws.spring.version>
         <activemq.framework.version>5.13.0</activemq.framework.version>
         <leveldb-api-version>0.7</leveldb-api-version>

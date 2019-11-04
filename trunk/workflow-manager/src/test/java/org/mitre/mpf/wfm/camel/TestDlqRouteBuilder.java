@@ -252,7 +252,7 @@ public class TestDlqRouteBuilder {
             DetectionProtobuf.DetectionRequest detectionRequest = DetectionProtobuf.DetectionRequest.newBuilder()
                     .setRequestId(123)
                     .setDataUri("file:///test")
-                    .setTaskIndex(1)
+                    .setStageIndex(1)
                     .setActionIndex(1)
                     .setActionName("TEST ACTION")
                     .build();

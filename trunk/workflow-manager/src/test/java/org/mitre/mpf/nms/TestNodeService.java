@@ -34,6 +34,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -108,6 +109,7 @@ public class TestNodeService {
 
     @Test
     public void testIncrementAndDecrementExistingService() throws Exception {
+        TestUtil.assumeNodeManagerEnabled();
 
         // INCREMENT EXISTING SERVICE
 

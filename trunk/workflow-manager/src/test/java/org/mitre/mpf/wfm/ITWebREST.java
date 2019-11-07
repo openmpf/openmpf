@@ -38,6 +38,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -632,6 +633,9 @@ public class ITWebREST {
 		Assert.assertTrue(obj.getString("host").length() > 0);
 		JSONArray services = obj.getJSONArray("services");
 		Assert.assertTrue(services.length() >= 0);
+		if (!TestUtil.nodeManagerEnabled()) {
+			return;
+		}
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + services.length());
 
 		for (String test_service : TEST_SERVICES) {
@@ -885,6 +889,9 @@ public class ITWebREST {
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 		Assert.assertTrue(array.length() >= 0);
+		if (!TestUtil.nodeManagerEnabled()) {
+			return;
+		}
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 =obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);

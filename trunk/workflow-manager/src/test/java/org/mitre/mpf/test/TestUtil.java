@@ -180,6 +180,28 @@ public class TestUtil {
         }
     }
 
+    public interface ThrowingRunnable {
+        public void run() throws Exception;
+    }
+
+    public static <TEx extends Exception> TEx assertThrows(Class<TEx> expectedExceptionType,
+                                                           ThrowingRunnable runnable) {
+        try {
+            runnable.run();
+        }
+        catch (Exception ex) {
+            if (expectedExceptionType.isInstance(ex)) {
+                return (TEx) ex;
+            }
+            throw new AssertionError(String.format(
+                    "Expected an instance of %s to be thrown, but an instance of %s was thrown instead.",
+                    expectedExceptionType.getName(), ex.getClass().getName()), ex);
+        }
+        throw new AssertionError(String.format("Expected an instance of %s to be thrown, but nothing was thrown.",
+                                               expectedExceptionType.getName()));
+    }
+
+
     public static Exchange createTestExchange() {
         return createTestExchange(new DefaultMessage(), new DefaultMessage());
     }

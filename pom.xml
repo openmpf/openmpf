@@ -26,15 +26,16 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.mitre.mpf</groupId>
-  <artifactId>mpf-project</artifactId>
-  <packaging>pom</packaging>
-  <version>4.1.0</version>
-  <name>Media Processing Framework</name>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.mitre.mpf</groupId>
+    <artifactId>mpf-project</artifactId>
+    <packaging>pom</packaging>
+    <version>4.1.0</version>
+    <name>Media Processing Framework</name>
 
     <!-- poms in the following subdirectories -->
     <modules>
+        <module>logging-dependencies.xml</module>
         <module>trunk</module>
         <module>trunk/protobuf</module>
         <module>trunk/interop</module>
@@ -66,15 +67,26 @@
             <properties>
                 <components.build.parallel.builds>2</components.build.parallel.builds>
                 <components.build.make.jobs>8</components.build.make.jobs>
-                <components.build.components />
+                <components.build.components/>
             </properties>
         </profile>
     </profiles>
 
+    <repositories>
+        <repository>
+            <id>maven-us.nuxeo.org-vendor-releases</id>
+            <name>nexus-vendor-releases</name>
+            <url>http://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
+        </repository>
+    </repositories>
+
     <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
-      <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
-      <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
+        <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
+        <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
         <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
         <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
         <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
@@ -86,6 +98,9 @@
         <javax.el.api.version>2.2.4</javax.el.api.version>
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
         <camel.framework.version>2.16.2</camel.framework.version>
+        <jaxb.version>2.2.11</jaxb.version> <!-- TODO: Use 2.3.0 for Java 11 -->
+        <jaxws.rt.version>2.2.10</jaxws.rt.version> <!-- TODO: Use 2.3.0 for Java 11 -->
+        <jaxws.spring.version>1.9</jaxws.spring.version>
         <activemq.framework.version>5.13.0</activemq.framework.version>
         <leveldb-api-version>0.7</leveldb-api-version>
         <leveldb-version>0.7</leveldb-version>
@@ -96,25 +111,21 @@
         <log4j.version>2.9.1</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <rpm.maven.plugin.version>2.1.4</rpm.maven.plugin.version>
-        <jackson.mapper.asl.version>1.9.13</jackson.mapper.asl.version>
-        <!-- updated jackson version to 2.9.2 to better support JSON serialization of Java8 time -->
         <jackson.version>2.9.2</jackson.version>
 
-        <!-- more added properties for release 0.4 -->
-        <!-- sticking with the 3.2.8 release because
-        a jump to 4.x.x will require changing spring-security.xml -->
-        <org.springframework.data.spring-data-redis.version>1.6.6.RELEASE</org.springframework.data.spring-data-redis.version>
+        <!-- sticking with the 3.2.8 release because a jump to 4.x.x will require changing spring-security.xml -->
         <spring.security.version>3.2.8.RELEASE</spring.security.version>
+        <org.springframework.data.spring-data-redis.version>1.6.6.RELEASE</org.springframework.data.spring-data-redis.version>
         <commons.codec.version>1.10</commons.codec.version>
         <commons.collections4.version>4.0</commons.collections4.version>
         <commons.configuration2.version>2.2</commons.configuration2.version>
-        <javax.inject.version>1</javax.inject.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
+        <javax.inject.version>1</javax.inject.version>
         <javax.jms.version>1.1</javax.jms.version>
+        <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
+        <javax.activation.version>1.1.1</javax.activation.version>
         <xbean.spring.version>4.3</xbean.spring.version>
         <commons.lang3.version>3.4</commons.lang3.version>
-        <jaxws.rt.version>2.2.10</jaxws.rt.version>
-        <jaxws.spring.version>1.9</jaxws.spring.version>
         <cglib.version>3.1</cglib.version>
         <tika.core.version>1.17</tika.core.version>
         <apache.httpclient.version>4.5.2</apache.httpclient.version>
@@ -141,28 +152,24 @@
         <velocity.version>1.7</velocity.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <janino.version>2.7.8</janino.version>
+        <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
+        <!-- for more information, see https://github.com/springfox/springfox/issues/951. Version 2.3 of SpringFox is supposed to bring     -->
+        <!-- this functionality back, but as of mpf release 4, this is not yet ready, so we're forced to use 2.1.1 -->
         <springfox.swagger.version>2.1.1</springfox.swagger.version>
-    <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
-    <!-- for more information, see https://github.com/springfox/springfox/issues/951.  Version 2.3 of SpringFox is supposed to bring     -->
-    <!-- this functionality back, but as of mpf release 4, this is not yet ready, so we're forced to use 2.1.1 -->
+        <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in 
+        order to maintain cross-compatibility. -->
+        <maven.surefire.plugin.version>2.22.1</maven.surefire.plugin.version>
         <atmosphere.runtime.version>2.3.4</atmosphere.runtime.version>
 
-        <!-- added props mpf-speech-detection -->
-        <!-- requires a custom repo -->
-        <sphinx4.version>5prealpha-SNAPSHOT</sphinx4.version>
-
-        <!-- added props node manager -->
         <jgroups.version>4.0.11.Final</jgroups.version>
-
-        <!-- added props mpf-markup -->
         <junit.version>4.12</junit.version>
-
+        <hamcrest.version>1.3</hamcrest.version>
         <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
+        <guava.version>27.0.1-jre</guava.version>
 
         <!-- added props for REST web service -->
         <g00dnatur3.http-rest-client-version>1.0.21</g00dnatur3.http-rest-client-version>
         <com.googlecode.json-simple.json-simple.version>1.1</com.googlecode.json-simple.json-simple.version>
-
 
         <!-- The following properties are needed for the RPM build -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -184,10 +191,31 @@
         <components.build.components>openmpf-components:openmpf-contrib-components</components.build.components>
         <components.build.parallel.builds>1</components.build.parallel.builds>
         <components.build.make.jobs>4</components.build.make.jobs>
-        <components.build.package.json />
+        <components.build.package.json/>
 
         <startup.auto.registration.skip>true</startup.auto.registration.skip>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hamcrest-core</artifactId>
+                    <groupId>org.hamcrest</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>${hamcrest.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <!--
@@ -209,257 +237,22 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>rpm-maven-plugin</artifactId>
+                    <version>${rpm.maven.plugin.version}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <group>Application</group>
                     </configuration>
                 </plugin>
-        <plugin>
-                  <groupId>org.codehaus.mojo</groupId>
-                  <artifactId>rpm-maven-plugin</artifactId>
-                  <version>${rpm.maven.plugin.version}</version>
-          <configuration>
-          <group>Application</group>
-          </configuration>
-        </plugin>
-        <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-assembly-plugin</artifactId>
-                  <version>2.6</version>
-        </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
-
-    <repositories>
-        <repository>
-            <id>apache.maven.repo</id>
-            <name>Apache Maven2</name>
-            <url>http://repo.maven.apache.org/maven2/</url>
-        </repository>
-        <repository>
-            <id>repository.springframework.maven.release</id>
-            <name>Spring Framework Maven Release Repository</name>
-            <url>https://repo.spring.io/release</url>
-        </repository>
-        <repository>
-            <id>mygrid-repository</id>
-            <name>myGrid Repository</name>
-            <url>http://www.mygrid.org.uk/maven/repository</url>
-        </repository>
-        <repository>
-            <id>maven-us.nuxeo.org-vendor-releases</id>
-            <name>nexus-vendor-releases</name>
-            <url>http://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
-        </repository>
-        <repository>
-            <id>apache.snapshots</id>
-            <name>Apache Development Snapshot Repository</name>
-            <url>https://repository.apache.org/content/repositories/snapshots/</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>snapshots-repo</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases><enabled>false</enabled></releases>
-        <snapshots><enabled>true</enabled></snapshots>
-        </repository>
-    </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.javasimon</groupId>
-            <artifactId>javasimon-core</artifactId>
-            <version>${javasimon.version}</version>
-        </dependency>
-        <!-- Embedded Java Simon web console -->
-        <dependency>
-            <groupId>org.javasimon</groupId>
-            <artifactId>javasimon-console-embed</artifactId>
-            <version>${javasimon.version}</version>
-        </dependency>
-        <!-- Java Simon JDBC 4.0 (Java SE 6) proxy driver -->
-        <dependency>
-            <groupId>org.javasimon</groupId>
-            <artifactId>javasimon-jdbc4</artifactId>
-            <version>${javasimon.jdbc.version}</version>
-        </dependency>
-        <!-- Java Simon for Spring -->
-        <dependency>
-            <groupId>org.javasimon</groupId>
-            <artifactId>javasimon-spring</artifactId>
-            <version>${javasimon.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>hamcrest-core</artifactId>
-                    <groupId>org.hamcrest</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${google.protobuf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>27.0.1-jre</version>
-        </dependency>
-
-        <!-- Section: Logging Dependencies -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <!-- provides Java Common Logging; has a LogFactory which Spring uses (should use LoggerFactory) -->
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <!-- Optional dependency of log4j. Required to use async logging. -->
-            <groupId>com.lmax</groupId>
-            <artifactId>disruptor</artifactId>
-            <version>3.3.6</version>
-        </dependency>
-        <!-- End Section: Logging Dependencies -->
-
-        <dependency>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-camel</artifactId>
-            <version>${activemq.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-client</artifactId>
-            <version>${activemq.framework.version}</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-spring</artifactId>
-            <version>${activemq.framework.version}</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-context</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-beans</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context-support</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-orm</artifactId>
-            <version>${spring.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jms</artifactId>
-            <version>${spring.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>${spring.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${spring.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
 </project>

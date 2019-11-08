@@ -26,6 +26,13 @@
 
 package org.mitre.mpf.rest.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import http.rest.RequestInterceptor;
+import http.rest.RestClientException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.mitre.mpf.rest.api.*;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -33,19 +40,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.JobCreationResponse;
-import org.mitre.mpf.rest.api.JobCreationMediaData;
-import org.mitre.mpf.rest.api.PipelinesResponse;
-import org.mitre.mpf.rest.api.SingleJobInfo;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import http.rest.RequestInterceptor;
-import http.rest.RestClientException;
 
 public class Main {
 	

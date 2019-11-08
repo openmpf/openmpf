@@ -32,7 +32,7 @@
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
         <version>4.1.0</version>
-	<relativePath>../../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <groupId>org.mitre.mpf</groupId>
@@ -42,10 +42,11 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>${javax.annotation.api.version}</version>
         </dependency>
+
         <!-- depends on workflow-manager-classes.jar for applicationContext.xml -->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
@@ -62,14 +63,15 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-                <version>${spring.framework.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
+            <version>${spring.framework.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -81,6 +83,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>${hamcrest.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -108,7 +116,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-			            <version>2.14</version>
+                        <version>${maven.surefire.plugin.version}</version>
                         <configuration>
                             <systemPropertyVariables>
                                 <jenkins>true</jenkins>
@@ -137,7 +145,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.14</version>
+                <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
                     <!-- Excluded in the "test" phase of the build, not the "verify" phase. -->

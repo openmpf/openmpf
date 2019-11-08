@@ -26,9 +26,9 @@
 
 package org.mitre.mpf.rest.client;
 
-import java.io.IOException;
-import java.util.Map;
-
+import http.rest.RestClient;
+import http.rest.RestClientBuilder;
+import http.rest.RestClientException;
 import org.apache.commons.io.Charsets;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,9 +36,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 
-import http.rest.RestClient;
-import http.rest.RestClientBuilder;
-import http.rest.RestClientException;
+import java.io.IOException;
+import java.util.Map;
 
 public class CustomRestClient extends RestClient {
 
@@ -46,7 +45,7 @@ public class CustomRestClient extends RestClient {
 		super(builder);
 	}
 
-	//allows for posting with request/url params and returns an object
+	// Allows for posting with request/url params and returns an object
 	public <T> T customPostParams(String path, Map<String, String> queryParams, Class<T> entityClass, int expectedStatus) throws RestClientException, IOException {
 		HttpPost post = newHttpPost(appendParams(path, queryParams));
 		HttpResponse response = execute(interceptor, post, expectedStatus); //201 for post with create, 200 for updates
@@ -54,17 +53,17 @@ public class CustomRestClient extends RestClient {
 		return bindObject(jsonContentStr, entityClass);
 	}
 
-	//post that allows an object to be posted and an object to be returned	
+	// Post that allows an object to be posted and an object to be returned
 	public <T> T customPostObject(String urlStr, Object objToSend, 
 			Class<T> entityClass) throws IOException, RestClientException {
 		HttpPost post = contentTypeJson(newHttpPost(urlStr));
     	HttpEntity entity = new StringEntity(toJson(objToSend).toString(), Charsets.UTF_8);
     	post.setEntity(entity);
-    	HttpResponse response = execute(interceptor, post, 201 /*expectedStatus*/); //201 for post
-    	//System.out.println(Arrays.toString(response.getAllHeaders()));
-	    	
+    	HttpResponse response = execute(interceptor, post, 201 /*expectedStatus*/); // 201 for post
+    	// System.out.println(Arrays.toString(response.getAllHeaders()));
+
     	String jsonContentStr = contentAsString(response);
-    	//System.out.println("response: " + jsonContentStr);
+    	// System.out.println("response: " + jsonContentStr);
 	    	
     	if (jsonContentStr != null) {
     		return bindObject(jsonContentStr, entityClass);

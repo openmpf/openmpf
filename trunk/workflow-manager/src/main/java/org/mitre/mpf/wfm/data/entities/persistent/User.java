@@ -26,10 +26,12 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
+import com.google.common.collect.Sets;
 import org.mitre.mpf.wfm.enums.UserRole;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -39,20 +41,25 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(unique=true, nullable=false)
-    private String username;
+    @Column(name="username", unique=true, nullable=false)
+    private String userName;
 
     @Column
     private String password;
 
     @ElementCollection(fetch=FetchType.EAGER)
-    private Set<UserRole> userRoles = new HashSet<UserRole>(0);
+    private Set<UserRole> userRoles = new HashSet<>(0);
 
     public User() { }
 
-    public User(String username, String password) {
-        this.username = username;
+    public User(String userName, String password) {
+        this.userName = userName;
         this.password = password;
+    }
+
+    public User(String userName, UserRole role, String password) {
+        this(userName, password);
+        setUserRoles(Sets.newHashSet(role));
     }
 
     public long getId() {
@@ -63,12 +70,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getPassword() {
@@ -87,4 +94,22 @@ public class User {
         this.userRoles = userRoles;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof User)) {
+            return false;
+        }
+        User casted = (User) obj;
+        return userName.equals(casted.userName)
+                && password.equals(casted.password)
+                && userRoles.equals(casted.userRoles);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userName, password, userRoles);
+    }
 }

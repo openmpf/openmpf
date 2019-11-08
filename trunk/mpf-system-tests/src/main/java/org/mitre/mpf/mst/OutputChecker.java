@@ -261,7 +261,6 @@ public class OutputChecker {
                         actObjLocation.getWidth(), actObjLocation.getHeight(), actObjLocation.getX(), actObjLocation.getY(),
                         actObjLocation.getDetectionProperties().size(), actObjLocation.getConfidence());
                 // for all other cases, compare everything
-                // ? only speech and text have MetaData; should we not check it in other cases ?
                 _errorCollector.checkThat("Width", actObjLocation.getWidth(), is(expObjLocation.getWidth()));
                 _errorCollector.checkThat("Height", actObjLocation.getHeight(), is(expObjLocation.getHeight()));
                 _errorCollector.checkThat("OffsetFrame", actObjLocation.getOffsetFrame(),

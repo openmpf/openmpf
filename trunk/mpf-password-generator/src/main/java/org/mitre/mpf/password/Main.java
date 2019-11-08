@@ -30,34 +30,40 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class Main {
 
-	public static void main(String[] args) {		
-		int amountOfPasswords = 1;		
-		
-//		String password = "mpf123";
-//		String password = "mpfadm";
-		String password = null;
-		if (args.length > 0) {
-		    try {
-		    	password = args[0];
-		        if(args.length > 1) {
-		        	amountOfPasswords = Integer.parseInt(args[1]);
-		        }
-		    } catch (NumberFormatException e) {
-		        System.err.println("Argument" + args[1] + " must be an integer.");
-		        System.exit(1);
-		    }
-		} else {
-			System.err.println("Args: <password> <amountOfPasswords>");
-		} 		
-		
-		int i = 0;
-		while (password != null && i < amountOfPasswords) {									
-			//strength set to 11
-			BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
-			String hashedPassword = passwordEncoder.encode(password);
+	public static final int DEFAULT_ENCODER_STRENGTH = 12;
 
-			System.out.println(hashedPassword);
-			i++;
-		}
+	public static final String USAGE = "Args: <raw-password> [encoder-strength=" + DEFAULT_ENCODER_STRENGTH + "]";
+
+	public static void handleUsageError(String error) {
+		System.err.println(error);
+		System.err.println(USAGE);
+		System.exit(1);
 	}
+
+    public static void main(String[] args) {
+		String rawPassword;
+    	int strength = DEFAULT_ENCODER_STRENGTH;
+
+        if (args.length == 0 || args[0].equals("-h") || args[0].equals("-help")|| args[0].equals("--help")) {
+        	System.out.println(USAGE);
+        	System.exit(0);
+		}
+
+		rawPassword = args[0];
+		if (args.length > 1) {
+			try {
+				strength = Integer.parseInt(args[1]);
+			} catch (NumberFormatException e) {
+				handleUsageError("\"" + args[1] + "\" must be an integer.");
+			}
+			if (strength < 4 || strength > 31) {
+				handleUsageError("\"" + args[1] + "\" must be in the range [4, 31].");
+			}
+		}
+
+        // bcrypt has built-in salts:
+        // https://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts?answertab=votes#tab-top
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(strength);
+        System.out.println(passwordEncoder.encode(rawPassword));
+    }
 }

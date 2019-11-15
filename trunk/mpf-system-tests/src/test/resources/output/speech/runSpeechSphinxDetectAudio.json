@@ -58,7 +58,7 @@
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "trackProperties": {
-                  "TRANSCRIPTION": "one zero zero zero one"
+                  "TRANSCRIPT": "one zero zero zero one"
                 },
                 "exemplar": {
                   "x": 0,
@@ -67,7 +67,7 @@
                   "height": 0,
                   "confidence": -1.0,
                   "detectionProperties": {
-                    "TRANSCRIPTION": "one zero zero zero one"
+                    "TRANSCRIPT": "one zero zero zero one"
                   },
                   "offsetFrame": 0,
                   "offsetTime": 830,
@@ -83,7 +83,7 @@
                     "height": 0,
                     "confidence": -1.0,
                     "detectionProperties": {
-                      "TRANSCRIPTION": "one zero zero zero one"
+                      "TRANSCRIPT": "one zero zero zero one"
                     },
                     "offsetFrame": 0,
                     "offsetTime": 830,
@@ -105,7 +105,7 @@
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "trackProperties": {
-                  "TRANSCRIPTION": "nine oh two one oh"
+                  "TRANSCRIPT": "nine oh two one oh"
                 },
                 "exemplar": {
                   "x": 0,
@@ -114,7 +114,7 @@
                   "height": 0,
                   "confidence": -1.0,
                   "detectionProperties": {
-                    "TRANSCRIPTION": "nine oh two one oh"
+                    "TRANSCRIPT": "nine oh two one oh"
                   },
                   "offsetFrame": 0,
                   "offsetTime": 3920,
@@ -130,7 +130,7 @@
                     "height": 0,
                     "confidence": -1.0,
                     "detectionProperties": {
-                      "TRANSCRIPTION": "nine oh two one oh"
+                      "TRANSCRIPT": "nine oh two one oh"
                     },
                     "offsetFrame": 0,
                     "offsetTime": 3920,
@@ -152,7 +152,7 @@
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "trackProperties": {
-                  "TRANSCRIPTION": "cyril one eight zero three"
+                  "TRANSCRIPT": "cyril one eight zero three"
                 },
                 "exemplar": {
                   "x": 0,
@@ -161,7 +161,7 @@
                   "height": 0,
                   "confidence": -1.0,
                   "detectionProperties": {
-                    "TRANSCRIPTION": "cyril one eight zero three"
+                    "TRANSCRIPT": "cyril one eight zero three"
                   },
                   "offsetFrame": 0,
                   "offsetTime": 6240,
@@ -177,7 +177,7 @@
                     "height": 0,
                     "confidence": -1.0,
                     "detectionProperties": {
-                      "TRANSCRIPTION": "cyril one eight zero three"
+                      "TRANSCRIPT": "cyril one eight zero three"
                     },
                     "offsetFrame": 0,
                     "offsetTime": 6240,
@@ -224,7 +224,7 @@
                 "type": "SPEECH",
                 "source": "+#SPHINX SPEECH DETECTION ACTION",
                 "trackProperties": {
-                  "TRANSCRIPTION": "the green one right in the middle"
+                  "TRANSCRIPT": "the green one right in the middle"
                 },
                 "exemplar": {
                   "x": 0,
@@ -233,7 +233,7 @@
                   "height": 0,
                   "confidence": -1.0,
                   "detectionProperties": {
-                    "TRANSCRIPTION": "the green one right in the middle"
+                    "TRANSCRIPT": "the green one right in the middle"
                   },
                   "offsetFrame": 0,
                   "offsetTime": 280,
@@ -249,7 +249,7 @@
                     "height": 0,
                     "confidence": -1.0,
                     "detectionProperties": {
-                      "TRANSCRIPTION": "the green one right in the middle"
+                      "TRANSCRIPT": "the green one right in the middle"
                     },
                     "offsetFrame": 0,
                     "offsetTime": 280,

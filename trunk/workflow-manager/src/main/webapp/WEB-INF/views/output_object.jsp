@@ -44,7 +44,7 @@
                 })
                 .fail(function (evt) {
                     if (evt.status === 404) {
-                        alert('Job with id ' + jobId + ' does not exist.');
+                        alert('Output for job with id ' + jobId + ' does not exist.');
                         return;
                     }
                     var alertMsg = 'An error occurred while trying to get the output object for job ' + jobId;

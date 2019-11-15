@@ -12,4 +12,4 @@ Run this command in the directory with `pom.xml`:
 
 Run this command in the same directory:
 
-`java -jar target/mpf-rest-client-*-jar-with-dependencies.jar <username> <raw-password>`
+`java -jar target/mpf-rest-client-*-jar-with-dependencies.jar <username> <raw-password> <face-image-file-path>`

@@ -75,7 +75,7 @@
     - name: Get the component top level directory
       set_fact:
         component_tld: "{{ component_tld|default([])|union([{'tld': item}]) }}"
-      when: "{{ item | match(component_tld_regex) }}"
+      when: item is match(component_tld_regex)
       with_items: "{{ component_contents.stdout_lines }}"
       register: tld_r
 

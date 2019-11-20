@@ -377,6 +377,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                          .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
                          .map(d -> createDetectionOutputObject(d))
                          .collect(toList());
+            detections.add(exemplar);
         }
         else {
             detections = track.getDetections().stream()
@@ -423,7 +424,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_TASK_ONLY to a single task.
-        return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue("OUTPUT_LAST_TASK_ONLY", job, media));
+        return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
     }
 
 

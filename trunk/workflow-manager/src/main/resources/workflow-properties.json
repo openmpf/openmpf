@@ -43,7 +43,7 @@
     },
     {
         "name": "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
-        "description": "Extract the exemplar frame from the track, plus N frames before and after the exemplar. If N = 0, then only the exemplar frame will be extracted. If N > 0, then the exemplar frame plus N frames before and after it will be extracted, if they exist within the track. If N < 0, then this property is disabled.",
+        "description": "Extract the exemplar frame from the track, plus N frames before and after the exemplar. If N = 0, then only the exemplar frame will be extracted. If N > 0, then the exemplar frame plus N frames before and after it will be extracted, if they exist within the track. If N < 0, then this property is disabled. The exemplar will not be extracted.",
         "type": "INT",
         "propertiesKey": "detection.artifact.extraction.policy.exemplar.frame.plus",
         "mediaTypes": ["VIDEO","IMAGE"]

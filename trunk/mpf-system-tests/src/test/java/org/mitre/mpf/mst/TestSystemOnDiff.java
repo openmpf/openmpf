@@ -38,6 +38,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -266,7 +267,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithPolicyNoneTest() {
         Map<String, String> jobProperties = new HashMap<>();
-        jobProperties.put("OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true");
         jobProperties.put("ARTIFACT_EXTRACTION_POLICY", "NONE");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
@@ -285,9 +285,13 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         for (JsonTrackOutputObject track : tracks) {
             // Check that the set of detections for each track is empty.
-            assertTrue(track.getDetections().isEmpty());
+            boolean foundExtractions = track.getDetections().stream()
+                                       .anyMatch(d -> d.getArtifactExtractionStatus() == "COMPLETED");
+            assertFalse("Found extraction in output when the artifact extraction policy \"NONE\" was set",
+                        foundExtractions);
             // Check that the exemplar was not extracted either.
-            assertTrue(track.getExemplar().getArtifactExtractionStatus().equals("NOT_ATTEMPTED"));
+            assertTrue("Exemplar was extracted when the artifact extraction policy \"NONE\" was set",
+                       track.getExemplar().getArtifactExtractionStatus().equals("NOT_ATTEMPTED"));
         }
     }
 

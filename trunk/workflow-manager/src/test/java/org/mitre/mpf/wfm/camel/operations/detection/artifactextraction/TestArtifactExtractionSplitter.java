@@ -264,15 +264,6 @@ public class TestArtifactExtractionSplitter {
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10));
-
-        extractionProps = createExtractionPropertySnapshot(
-            -1, false, false, false, 12);
-
-        runTest(ArtifactExtractionPolicy.ALL_TYPES,
-                extractionProps,
-                10,
-                detectionFramesAndConfidences,
-                Arrays.asList(5, 9, 10, 14));
     }
 
 
@@ -430,6 +421,12 @@ public class TestArtifactExtractionSplitter {
                 5,
                 Arrays.asList(5, 6, 9, 12),
                 Arrays.asList(5, 6, 9));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                13,
+                Arrays.asList(5, 6, 9, 12, 13, 14, 15, 16),
+                Arrays.asList(5, 9, 12, 13, 14, 15));
     }
 
     @Test
@@ -439,6 +436,12 @@ public class TestArtifactExtractionSplitter {
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
                 Arrays.asList(9, 10, 16, 20));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(1, false, true, false, 0),
+                22,
+                Arrays.asList(5, 9, 10, 16, 20, 21, 22, 23),
+                Arrays.asList(16, 21, 22, 23));
     }
 
     @Test
@@ -448,6 +451,12 @@ public class TestArtifactExtractionSplitter {
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
                 Arrays.asList(9, 10, 16, 20));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(1, false, false, true, 0),
+                9,
+                Arrays.asList(5, 9, 10, 16, 20),
+                Arrays.asList(5, 9, 10, 20));
     }
 
     @Test
@@ -490,7 +499,7 @@ public class TestArtifactExtractionSplitter {
     /// Test that setting the top confidence count to a value larger than the number of
     /// detections does not throw an exception, and extracts all detections.
     @Test
-    public void TopConfidenceCountTooLarge() {
+    public void topConfidenceCountTooLarge() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
             -1, false, false, false, 12);
 

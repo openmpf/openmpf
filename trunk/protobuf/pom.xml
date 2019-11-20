@@ -38,7 +38,6 @@
     <artifactId>mpf-protobuf</artifactId>
     <packaging>jar</packaging>
     <name>MPF Protocol Buffers</name>
-    <description>The MPF Protocol Buffers Implementation</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -46,6 +45,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${google.protobuf.version}</version>
+        </dependency>
     </dependencies>
 
     <pluginRepositories>

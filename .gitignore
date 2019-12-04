@@ -63,7 +63,7 @@ cmake-build-release
 .classpath
 .project
 *.core.prefs
-
+.settings
 
 # Build Scripts
 

@@ -26,46 +26,39 @@
 
 package org.mitre.mpf.wfm.data;
 
-import org.apache.commons.lang.StringUtils;
-import org.hibernate.boot.model.naming.Identifier;
-import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
+import org.hibernate.dialect.PostgreSQL94Dialect;
+import org.springframework.core.annotation.AnnotationUtils;
 
-public class ImprovedNamingStrategy implements PhysicalNamingStrategy {
+import javax.persistence.Column;
+import java.sql.Types;
 
-    @Override
-    public Identifier toPhysicalCatalogName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
-    }
+public class EnhancedPostgreSQLDialect extends PostgreSQL94Dialect {
 
-    @Override
-    public Identifier toPhysicalColumnName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
-    }
+   public EnhancedPostgreSQLDialect() {
+       doNotSetStringColumnLengthWhenDefaultValueIsUsed();
+       // Change timestamps to include timezone.
+       registerColumnType(Types.TIMESTAMP, "timestamp with time zone");
+   }
 
-    @Override
-    public Identifier toPhysicalSchemaName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
-    }
 
-    @Override
-    public Identifier toPhysicalSequenceName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
-    }
+    /**
+     * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
+     * the maximum length for that column. When no length is specified, the we will typically want that column
+     * to not have a maximum size.
+     */
+   private void doNotSetStringColumnLengthWhenDefaultValueIsUsed() {
+       // Currently defaultLength = 255
+       int defaultLength = (int) AnnotationUtils.getDefaultValue(Column.class, "length");
 
-    @Override
-    public Identifier toPhysicalTableName(Identifier identifier, JdbcEnvironment jdbcEnv) {
-        return convert(identifier);
-    }
+       // This handles the case where @Column.length is explicitly set to some value below defaultLength.
+       // Since the value was explicitly set, we should use that value.
+       registerColumnType(Types.VARCHAR, defaultLength - 1, "varchar($l)");
 
-    private static Identifier convert(Identifier identifier) {
-        if (identifier == null || StringUtils.isBlank(identifier.getText())) {
-            return identifier;
-        }
-
-        String regex = "([a-z])([A-Z])";
-        String replacement = "$1_$2";
-        String newName = identifier.getText().replaceAll(regex, replacement).toLowerCase();
-        return Identifier.toIdentifier(newName, identifier.isQuoted());
-    }
+       // This handles the case where either no length is provided or (unfortunately) when the length is explicitly
+       // set to the default length. To explicitly set the column length to the default,
+       // `@Column(columnDefinition = "VARCHAR(255)")` can be used.
+       // The length provided to registerColumnType specifies the maximum length, so if the explicitly set length is
+       // greater than the default, the maximum length will be correctly set.
+       registerColumnType(Types.VARCHAR, defaultLength, "text");
+   }
 }

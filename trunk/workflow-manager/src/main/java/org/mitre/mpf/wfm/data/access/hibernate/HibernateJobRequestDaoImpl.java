@@ -80,12 +80,12 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 					".findByPage(int,int,String,String,String)").start();
 			try {
 				return getCurrentSession().createQuery("from " + clazz.getName() +
-						" where pipeline like concat('%', :searchTerm, '%')" +
-						" or status like concat('%', :searchTerm, '%')" +
-						" or time_received like concat('%', :searchTerm, '%')" +
-						" or time_completed like concat('%', :searchTerm, '%')" +
-						" order by " + sortColumn + " " + sortOrderDirection)
-						.setParameter("searchTerm", searchTerm)
+					   " where lower(pipeline) like concat('%', :searchTerm, '%')" +
+					   " or lower(status) like concat('%', :searchTerm, '%')" +
+					   " or to_char(time_received, 'YYYY-MM-DD HH24:MI:SS') like concat('%', :searchTerm, '%')" +
+					   " or to_char(time_completed, 'YYYY-MM-DD HH24:MI:SS') like concat('%', :searchTerm, '%')" +
+					   " order by " + sortColumn + " " + sortOrderDirection)
+						.setParameter("searchTerm", searchTerm.toLowerCase())
 						.setFirstResult(offset)
 						.setMaxResults(pageSize)
 						.list();
@@ -103,11 +103,12 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 		try {
 			return (long) getCurrentSession()
 					.createQuery("select count(*) from " + clazz.getName() +
-							" where pipeline like concat('%', :searchTerm, '%')" +
-							" or status like concat('%', :searchTerm, '%')" +
-							" or time_received like concat('%', :searchTerm, '%')" +
-							" or time_completed like concat('%', :searchTerm, '%')")
-					.setParameter("searchTerm", searchTerm).list().get(0);
+							" where lower(pipeline) like concat('%', :searchTerm, '%')" +
+							" or lower(status) like concat('%', :searchTerm, '%')" +
+							" or to_char(time_received, 'YYYY-MM-DD HH24:MI:SS') like concat('%', :searchTerm, '%')" +
+							" or to_char(time_completed, 'YYYY-MM-DD HH24:MI:SS') like concat('%', :searchTerm, '%')")
+					.setParameter("searchTerm", searchTerm.toLowerCase())
+					.list().get(0);
 		} finally {
 			split.stop();
 		}

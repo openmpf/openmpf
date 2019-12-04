@@ -35,6 +35,9 @@ import java.util.Objects;
 import java.util.Set;
 
 @Entity
+// PostgreSQL doesn't allow you to name a table or column "user" without escaping.
+// To make things more convenient when using external tools, we change the name of the table to mpf_user.
+@Table(name="mpf_user")
 public class User {
 
     @Id

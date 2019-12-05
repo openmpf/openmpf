@@ -59,9 +59,9 @@ public class JobRequest {
 	private Instant timeCompleted;
 	public Instant getTimeCompleted() { return timeCompleted; }
 	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
-	
+
 	/** The priority of the job set when creating the job.*/
-	@Column	
+	@Column
 	private int priority;
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
@@ -79,7 +79,7 @@ public class JobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column(columnDefinition = "TEXT")
+	@Column
 	private String outputObjectPath;
 	public String getOutputObjectPath() { return outputObjectPath; }
 	public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }

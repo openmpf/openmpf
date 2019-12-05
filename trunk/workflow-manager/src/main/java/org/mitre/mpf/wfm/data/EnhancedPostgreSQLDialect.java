@@ -43,7 +43,7 @@ public class EnhancedPostgreSQLDialect extends PostgreSQL94Dialect {
 
     /**
      * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
-     * the maximum length for that column. When no length is specified, the we will typically want that column
+     * the maximum length for that column. When no length is specified, then we will typically want that column
      * to not have a maximum size.
      */
    private void doNotSetStringColumnLengthWhenDefaultValueIsUsed() {

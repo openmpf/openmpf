@@ -59,7 +59,7 @@ import mpf_util
 @mpf_util.env_arg('--catalina-pid-file', 'CATALINA_PID', default='/tmp/mpf-script/catalina.pid',
                   help='Path to catalina pid file')
 def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=False,
-          delete_logs=False, sql_host='localhost', sql_user='root', sql_password='password',
+          delete_logs=False, sql_host='localhost', sql_user='mpf', sql_password='password',
           **opt_args):
     """ Reverts MPF to a new install state """
 

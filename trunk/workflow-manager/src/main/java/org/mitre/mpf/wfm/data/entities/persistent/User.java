@@ -26,11 +26,10 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import com.google.common.collect.Sets;
 import org.mitre.mpf.wfm.enums.UserRole;
 
 import javax.persistence.*;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -51,7 +50,8 @@ public class User {
     private String password;
 
     @ElementCollection(fetch=FetchType.EAGER)
-    private Set<UserRole> userRoles = new HashSet<>(0);
+    @Enumerated(EnumType.STRING)
+    private Set<UserRole> userRoles = EnumSet.noneOf(UserRole.class);
 
     public User() { }
 
@@ -62,7 +62,7 @@ public class User {
 
     public User(String userName, UserRole role, String password) {
         this(userName, password);
-        setUserRoles(Sets.newHashSet(role));
+        setUserRoles(EnumSet.of(role));
     }
 
     public long getId() {

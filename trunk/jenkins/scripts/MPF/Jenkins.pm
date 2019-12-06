@@ -175,7 +175,7 @@ sub cleanPostgreSQL {
 	printInfo("Cleaning out the PostgreSQL schema.\n");
 	runPostgreSQL();
 	printInfo("Dropping the schema.\n");
-	system "psql --username mpf --dbname mpf --command 'DROP OWNED BY mpf CASCADE'"
+	system "sudo --login --user mpf psql --dbname mpf --command 'DROP OWNED BY mpf CASCADE'"
 }
 
 

@@ -124,7 +124,7 @@ class SqlConnectionError(MpfError):
 
 class SqlLogInError(MpfError):
     def __init__(self, original_error):
-        # Use [:-1] because message end in new line.
+        # Use [:-1] because message ends in new line.
         super(SqlLogInError, self).__init__(
             original_error.message[:-1] + '. (Try setting --sql-user and/or --sql-password)')
 

@@ -46,7 +46,7 @@ MPF::Jenkins::printDebug("The MPF path supplied as: $mpfPath\n");
 MPF::Jenkins::printDebug("Teardown.\n");
 MPF::Jenkins::stopNodeManager();
 MPF::Jenkins::stopActiveMQ($amqPath);
-#MPF::Jenkins::stopMySQL();	#	MySQL is needed for Phabricator as well.
+MPF::Jenkins::stopPostgreSQL();
 MPF::Jenkins::stopRedis();	#	Only flush redis and don't shut it down.
 MPF::Jenkins::cleanRedis();	#	
 

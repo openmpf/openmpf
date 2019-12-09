@@ -78,15 +78,15 @@ public class TestUserService {
 
     private String toUserEntry(User user) {
         return user.getUserName() + "=" +
-               user.getUserRoles().iterator().next().getShortName() + "," +
+               user.getUserRoles().iterator().next() + "," +
                user.getPassword() + "\n";
     }
 
 
     @Test
     public void handleValidFile() throws IOException, UserCreationException {
-        User nonAdminUser = new User("test.user", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
-        User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
+        User nonAdminUser = new User("test.user", UserRole.USER, ENCODED_USER_PASSWORD);
+        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
         createUserServiceWithContent(
                 toUserEntry(nonAdminUser) +
                 toUserEntry(adminUser)
@@ -108,8 +108,8 @@ public class TestUserService {
 
     @Test
     public void handleMissingUserName() {
-        User adminUser = new User("test.admin", UserRole.ROLE_ADMIN, ENCODED_ADMIN_PASSWORD);
-        User otherUser = new User("test.other", UserRole.ROLE_USER, ENCODED_USER_PASSWORD);
+        User adminUser = new User("test.admin", UserRole.ADMIN, ENCODED_ADMIN_PASSWORD);
+        User otherUser = new User("test.other", UserRole.USER, ENCODED_USER_PASSWORD);
 
         var ex = TestUtil.assertThrows(UserCreationException.class,
                 () -> createUserServiceWithContent(

@@ -47,7 +47,7 @@ public class SystemMessage {
     private long id;
 
     @ApiModelProperty( value="The message.", position=1 )
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String msg;
 
     @ApiModelProperty( value="The severity of the message", allowableValues = "info, warning, error", position=1 )

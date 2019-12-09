@@ -21,7 +21,7 @@ There are several ways to run the workflow-manager Protractor tests:
 1.  Using `npm`
     1.  Go to the test directory:
         ```cd mpf/trunk/workflow-manage/src/test```
-    2.  Run workflow-manager (either in IDE or separately in Tomcat, but note that you need to also have the other MPF system dependencies running, i.e., MySQL, NodeManager, etc.).
+    2.  Run workflow-manager (either in IDE or separately in Tomcat, but note that you need to also have the other MPF system dependencies running, i.e., postgreSQL, NodeManager, etc.).
     3.  Run the npm script to run all tests (using `protractor-flake`)
         * to run all the tests
           ```npm run protractor```
@@ -30,7 +30,7 @@ There are several ways to run the workflow-manager Protractor tests:
 2.  Directly with a running Selenium server (easiest way while developing if you need to run individual test suites):
     1.  Run the selenium server:
         ```webdriver-manager start```
-    2.  Run workflow-manager (either in IDE or separately in Tomcat, but note that you need to also have the other MPF system dependencies running, i.e., MySQL, NodeManager, etc.).
+    2.  Run workflow-manager (either in IDE or separately in Tomcat, but note that you need to also have the other MPF system dependencies running, i.e., postgreSQL, NodeManager, etc.).
     3.  Go to the test directory:
         ```cd mpf/trunk/workflow-manage/src/test```
     4.  Run Protractor:

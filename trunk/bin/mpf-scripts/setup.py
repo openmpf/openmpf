@@ -33,4 +33,4 @@ setuptools.setup(name='mpf',
                  entry_points={
                      'console_scripts': ['mpf=mpf.command_line:main']
                  },
-                 install_requires=['argh', 'argcomplete', 'bcrypt', 'PyMySQL'])
+                 install_requires=['argh', 'argcomplete', 'bcrypt', 'psycopg2-binary'])

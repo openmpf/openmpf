@@ -453,7 +453,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
      * Builds a TransientStreamingJob.
      *
      * @param jobId                     unique id that is assigned to this job
-     * @param streamingJobRequestEntity the streaming job request as persisted in the long term database (mysql)
+     * @param streamingJobRequestEntity the streaming job request as persisted in the long term database
      * @param transientPipeline         pipeline that has been created for this streaming job
      * @param jsonStreamingJobRequest   JSON representation of the streaming job request
      * @return TransientStreamingJob
@@ -497,7 +497,7 @@ public class StreamingJobRequestBoImpl implements StreamingJobRequestBo {
                 jsonInputStream.getSegmentSize(),
                 jsonInputStream.getMediaProperties());
     }
-    
+
 
     /**
      * Complete a streaming job by updating the job in the persistent database(s), make any final callbacks for the job.

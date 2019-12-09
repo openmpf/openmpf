@@ -59,9 +59,9 @@ public class StreamingJobRequest {
 	private Instant timeCompleted;
 	public Instant getTimeCompleted() { return timeCompleted; }
 	public void setTimeCompleted(Instant timeCompleted) { this.timeCompleted = timeCompleted; }
-	
+
 	/** The priority of the job set when creating the streaming job.*/
-	@Column	
+	@Column
 	private int priority;
 	public int getPriority() { return  priority; }
 	public void setPriority(int priority) { this.priority = priority; }
@@ -82,7 +82,7 @@ public class StreamingJobRequest {
         setStatusDetail(statusDetail);
     }
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String statusDetail = null;
     public String getStatusDetail() { return statusDetail; }
     public void setStatusDetail(String statusDetail) { this.statusDetail = statusDetail; }
@@ -93,7 +93,7 @@ public class StreamingJobRequest {
 	public byte[] getInputObject() { return inputObject; }
 	public void setInputObject(byte[] inputObject) { this.inputObject = inputObject; }
 
-	@Column(columnDefinition = "TEXT")
+	@Column
 	private String outputObjectDirectory;
 	public String getOutputObjectDirectory() { return outputObjectDirectory; }
 	public void setOutputObjectDirectory(String outputObjectDirectory) { this.outputObjectDirectory = outputObjectDirectory; }
@@ -108,17 +108,17 @@ public class StreamingJobRequest {
 	public String getExternalId() { return externalId; }
 	public void setExternalId(String externalId) { this.externalId = externalId; }
 
-	@Column(columnDefinition = "TEXT")
+	@Column
 	private String streamUri;
 	public String getStreamUri() { return streamUri; }
 	public void setStreamUri(String streamUri) { this.streamUri = streamUri; }
 
-	@Column(columnDefinition = "TEXT")
+	@Column
 	private String healthReportCallbackUri;
 	public String getHealthReportCallbackUri() { return healthReportCallbackUri; }
 	public void setHealthReportCallbackUri(String healthReportCallbackUri) { this.healthReportCallbackUri = healthReportCallbackUri; }
 
-	@Column(columnDefinition = "TEXT")
+	@Column
 	private String summaryReportCallbackUri;
 	public String getSummaryReportCallbackUri() { return summaryReportCallbackUri; }
 	public void setSummaryReportCallbackUri(String summaryReportCallbackUri) { this.summaryReportCallbackUri = summaryReportCallbackUri; }

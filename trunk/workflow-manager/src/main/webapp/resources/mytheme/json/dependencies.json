@@ -186,11 +186,11 @@
           "licenseType": "GNU General Public License Version 2"
         },
         {
-          "name": "MySQL Server",
-          "copyright": "1997, 2016, Oracle and/or its affiliates",
-          "projectUrl": "http://www.mysql.com/",
-          "sourceUrl": "https://github.com/mysql/mysql-server",
-          "licenseType": "GNU General Public License Version 2"
+          "name": "PostgreSQL Database Management System",
+          "copyright": "portions 1996-2019, PostgreSQL Global Development Group and (c) Copyright portions 1994, The Regents of the University of California. All Rights Reserved. https://www.postgresql.org/",
+          "projectUrl": "https://www.postgresql.org/",
+          "sourceUrl": "https://git.postgresql.org/gitweb/?p=postgresql.git",
+          "licenseType": "The PostgreSQL Licence"
         },
         {
           "name": "Libav",
@@ -652,10 +652,11 @@
           "licenseType": "Apache License Version 2"
         },
         {
-          "name": "MySQL Connector/J",
-          "copyright": "1998, 2016, Oracle and/or its affiliates",
-          "projectUrl": "http://dev.mysql.com/doc/connector-j/5.1/en/",
-          "licenseType": "Apache License Version 2"
+          "name": "PostgreSQL JDBC Driver",
+          "copyright": "1997 PostgreSQL Global Development Group",
+          "projectUrl": "https://jdbc.postgresql.org/",
+          "sourceUrl": "https://github.com/pgjdbc/pgjdbc",
+          "licenseType": "BSD 2-Clause License"
         },
         {
           "name": "JUnit 4",
@@ -1501,17 +1502,11 @@
           "licenseType": "GNU General Public License Version 3"
         },
         {
-          "name": "MySQL Connector/Python",
-          "copyright": "2009, 2015, Oracle and/or its affiliates",
-          "projectUrl": "http://dev.mysql.com/doc/connector-python/en/",
-          "sourceUrl": "http://dev.mysql.com/downloads/connector/python/?os=26",
-          "licenseType": "GNU General Public License Version 2"
-        },
-        {
-          "name": "MySQLdb - A DB API v2.0 compatible interface to MySQL",
-          "copyright": "1999-2014 Andy Dustman",
-          "sourceUrl": "https://github.com/farcepest/MySQLdb1",
-          "licenseType": "GNU General Public License Version 2"
+          "name": "psycopg2 - Python-PostgreSQL Database Adapter",
+          "copyright": "2003-2019 Federico Di Gregorio and Daniele Varrazzo",
+          "projectUrl": "http://initd.org/psycopg/",
+          "sourceUrl": "https://github.com/psycopg/psycopg2",
+          "licenseType": "GNU Lesser General Public License Version 3"
         },
         {
           "name": "Pure-Python ECDSA",

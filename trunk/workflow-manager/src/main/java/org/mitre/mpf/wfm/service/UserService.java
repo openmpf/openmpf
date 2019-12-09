@@ -112,11 +112,14 @@ public class UserService implements UserDetailsService {
                 break;
             }
 
-            UserRole role = UserRole.parse(entryTokens[0]);
-            if (role == null) {
+            UserRole role;
+            try {
+                role = UserRole.valueOf(entryTokens[0].toUpperCase());
+            }
+            catch (IllegalArgumentException e) {
                 creationError = "Invalid role \"" + entryTokens[0] + "\". Valid roles are: " +
                         Arrays.stream(UserRole.values())
-                                .map(UserRole::getShortName)
+                                .map(Enum::toString)
                                 .collect(Collectors.joining(", "));
                 break;
             }
@@ -143,7 +146,7 @@ public class UserService implements UserDetailsService {
 
             log.info("Creating user \"" + user.getUserName() + "\" with roles: " +
                     user.getUserRoles().stream()
-                            .map(UserRole::getShortName)
+                            .map(UserRole::toString)
                             .collect(Collectors.joining(", ")));
 
             _userDao.persist(user);
@@ -174,7 +177,7 @@ public class UserService implements UserDetailsService {
         Set<GrantedAuthority> setAuths = new HashSet<>();
         log.debug("Building user authorities for {}.", userRoles);
         for (UserRole userRole : userRoles) {
-            setAuths.add(new SimpleGrantedAuthority(userRole.toString()));
+            setAuths.add(new SimpleGrantedAuthority(userRole.springName));
         }
         return new ArrayList<>(setAuths);
     }

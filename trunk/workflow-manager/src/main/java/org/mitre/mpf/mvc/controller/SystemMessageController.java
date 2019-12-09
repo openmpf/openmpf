@@ -50,8 +50,8 @@ import java.util.List;
 
 /**
  *  This controller enables Workflow manager to manage system level messages, such as notifying users that
- *  a server restart is needed. The messages are stored in MySQL, but all interactions with the database should be done
- *  via methods in this class.
+ *  a server restart is needed. The messages are stored in the SQL database, but all interactions with the
+ *  database should be done via methods in this class.
  */
 @Api( value = "System Message",
         description = "Send and retrieve system messages for clients" )

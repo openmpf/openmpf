@@ -41,7 +41,7 @@ my $amqPath = $ARGV[0];
 
 MPF::Jenkins::printDebug("The AMQ path supplied as: $amqPath\n");
 
-MPF::Jenkins::printDebug("Running MySQL, Redis, and ActiveMQ.\n");
-MPF::Jenkins::runMySQL();
+MPF::Jenkins::printDebug("Running PostgreSQL, Redis, and ActiveMQ.\n");
+MPF::Jenkins::runPostgreSQL();
 MPF::Jenkins::runRedis();
 MPF::Jenkins::runActiveMQ($amqPath);

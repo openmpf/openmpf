@@ -59,7 +59,7 @@ import mpf_util
 @mpf_util.env_arg('--catalina-pid-file', 'CATALINA_PID', default='/tmp/mpf-script/catalina.pid',
                   help='Path to catalina pid file')
 def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=False,
-          delete_logs=False, sql_host='localhost', sql_user='root', sql_password='password',
+          delete_logs=False, sql_host='localhost', sql_user='mpf', sql_password='password',
           **opt_args):
     """ Reverts MPF to a new install state """
 
@@ -92,10 +92,10 @@ def ensure_mpf_stopped(sys_config):
 
 
 def ensure_sql_is_running(sys_config):
-    sql_manager = mpf_sys.MySqlManager(sys_config)
+    sql_manager = mpf_sys.PostgresManager(sys_config)
     if sql_manager.status():
         return
-    print 'Starting MySQL service...'
+    print 'Starting PostgreSQL service...'
     sql_manager.start()
     print
 
@@ -124,10 +124,11 @@ def prompt_user(delete_uploaded_media, delete_logs, kahadb_dir):
 
 
 def truncate_tables(sql_host, sql_user, sql_password):
-    with mpf_util.sql_connection(sql_host, sql_user, sql_password) as conn:
-        conn.execute('DELETE FROM job_request')
-        conn.execute('DELETE FROM markup_result')
-        conn.execute('DELETE FROM streaming_job_request')
+    with mpf_util.sql_connection(sql_host, sql_user, sql_password) as conn, \
+            conn.cursor() as cursor:
+        cursor.execute('DELETE FROM job_request')
+        cursor.execute('DELETE FROM markup_result')
+        cursor.execute('DELETE FROM streaming_job_request')
 
 
 ALWAYS_DELETE_FOLDERS = ('artifacts', 'markup', 'output-objects')

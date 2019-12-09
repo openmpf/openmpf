@@ -26,35 +26,20 @@
 
 package org.mitre.mpf.wfm.enums;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-
 /**
- * These role names map directly to those supported by Spring Security:
+ * The names in the springName fields map directly to those supported by Spring Security:
  * https://docs.spring.io/spring-security/site/docs/current/reference/html/authorization.html
  */
 public enum UserRole {
     // The user is a non-administrator of the system.
-    ROLE_USER("user"),
+    USER("ROLE_USER"),
 
     // The user is an administrator of the system.
-    ROLE_ADMIN("admin");
+    ADMIN("ROLE_ADMIN");
 
-    private final String _shortName;
+    public final String springName;
 
-    public String getShortName() {
-        return _shortName;
-    }
-
-    UserRole(String shortName) {
-        _shortName = shortName;
-    }
-
-    public static UserRole parse(String shortName) {
-        String trimmed = StringUtils.trim(shortName).toLowerCase();
-        return Arrays.stream(UserRole.values())
-                .filter(r -> r.getShortName().equals(trimmed))
-                .findFirst().orElse(null);
+    UserRole(String springName) {
+        this.springName = springName;
     }
 }

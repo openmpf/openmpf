@@ -187,10 +187,10 @@
         },
         {
           "name": "PostgreSQL Database Management System",
-          "copyright": "Portions Copyright (c) 1996-2019, PostgreSQL Global Development Group and portions Copyright (c) 1994, The Regents of the University of California",
+          "copyright": "portions 1996-2019, PostgreSQL Global Development Group and (c) Copyright portions 1994, The Regents of the University of California. All Rights Reserved. https://www.postgresql.org/",
           "projectUrl": "https://www.postgresql.org/",
           "sourceUrl": "https://git.postgresql.org/gitweb/?p=postgresql.git",
-          "licenseType": "The PostgreSQL Licence)"
+          "licenseType": "The PostgreSQL Licence"
         },
         {
           "name": "Libav",
@@ -1506,7 +1506,7 @@
           "copyright": "2003-2019 Federico Di Gregorio and Daniele Varrazzo",
           "projectUrl": "http://initd.org/psycopg/",
           "sourceUrl": "https://github.com/psycopg/psycopg2",
-          "licenseType": "GNU Lesser General Public License"
+          "licenseType": "GNU Lesser General Public License Version 3"
         },
         {
           "name": "Pure-Python ECDSA",

@@ -83,7 +83,7 @@
         <Logger name="org.apache.xbean.spring" level="WARN"/>
 
         <!-- These are to cleanup junk logging on startup -->
-        <Logger name="org.apache.camel.processor.aggregate" level="WARN"/>
+        <!-- <Logger name="org.apache.camel.processor.aggregate" level="WARN"/> -->
         <Logger name="org.hibernate.tool.hbm2ddl" level="WARN"/>
         <Logger name="org.hibernate.cache" level="WARN"/>
         <Logger name="org.hibernate.cfg" level="WARN"/>

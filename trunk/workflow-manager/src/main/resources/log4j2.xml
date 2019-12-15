@@ -52,28 +52,36 @@
         <!-- To change the verbosity of MPF's own logging, change the level in the XML element below. -->
         <Logger name="org.mitre" level="INFO" />
 
-        <Root level="INFO">
+        <Root level="TRACE">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="WFM_FILE"/>
         </Root>
 
-        <Logger name="com.atomikos" level="WARN"/>
-        <Logger name="org.dstovall" level="WARN"/>
+        <!--
+        <Logger name="org.apache.camel" level="INFO"/>
+        <Logger name="org.apache.camel.spring.SpringCamelContext" level="WARN"/>
+        <Logger name="org.apache.camel.impl.DefaultShutdownStrategy" level="WARN"/>
+
         <Logger name="org.springframework.context.annotation" level="WARN"/>
         <Logger name="org.springframework.beans.factory" level="WARN"/>
         <Logger name="org.springframework.web.servlet.mvc.method.annotation" level="WARN"/>
-        <Logger name="springfox.documentation" level="WARN"/>
-        <Logger name="springfox.core" level="WARN"/>
-        <Logger name="org.atmosphere" level="WARN"/>
-        <!-- hides 'ResourceManager : unable to find resource *.html', which isn't an ERROR,
-                but simply a pass from the velocity resolver to the jsp resolver -->
-        <Logger name="org.apache.velocity" level="OFF"/>
-        <Logger name="org.apache.xbean.spring" level="WARN"/>
-        <Logger name="org.apache.camel" level="INFO"/>
-        <Logger name="org.apache.camel.spring.SpringCamelContext" level="WARN"/>
         <Logger name="org.springframework.security.config" level="WARN"/>
         <Logger name="org.springframework.context.support" level="WARN" />
         <Logger name="org.springframework.scheduling.concurrent" level="WARN" />
+        -->
+
+        <Logger name="com.atomikos" level="WARN"/>
+        <Logger name="org.dstovall" level="WARN"/>
+        <Logger name="springfox.documentation" level="WARN"/>
+        <Logger name="springfox.core" level="WARN"/>
+        <Logger name="org.atmosphere" level="WARN"/>
+
+        <!-- hides 'ResourceManager : unable to find resource *.html', which isn't an ERROR,
+                but simply a pass from the velocity resolver to the jsp resolver -->
+        <Logger name="org.apache.velocity" level="OFF"/>
+
+        <Logger name="org.apache.xbean.spring" level="WARN"/>
+
         <!-- These are to cleanup junk logging on startup -->
         <Logger name="org.apache.camel.processor.aggregate" level="WARN"/>
         <Logger name="org.hibernate.tool.hbm2ddl" level="WARN"/>
@@ -81,7 +89,6 @@
         <Logger name="org.hibernate.cfg" level="WARN"/>
         <Logger name="org.hibernate" level="WARN" />
         <Logger name="org.infinispan" level="WARN" />
-        <Logger name="org.apache.camel.impl.DefaultShutdownStrategy" level="WARN"/>
         <Logger name="org.apache.commons.beanutils" level="ERROR"/>
     </Loggers>
 </Configuration>

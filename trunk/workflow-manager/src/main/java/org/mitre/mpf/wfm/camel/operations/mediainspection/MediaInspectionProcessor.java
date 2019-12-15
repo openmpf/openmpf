@@ -81,9 +81,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
 	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting media inspection", jobId, mediaId);
+
 		TransientMedia transientMedia = inProgressJobs.getJob(jobId).getMedia(mediaId);
 
 		if(!transientMedia.isFailed()) {
+			log.debug(">> [JOB: {}, MEDIA: {}] transientMedia has not failed", jobId, mediaId);
+
 			// Any request to pull a remote file should have already populated the local uri.
 			assert transientMedia.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
 
@@ -93,29 +98,32 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				String mimeType = null;
 
 				try (InputStream inputStream = Files.newInputStream(localPath)) {
-					log.debug("Calculating hash for '{}'.", localPath);
+					log.debug(">> [JOB: {}, MEDIA: {}] Starting hash calculation for '{}'", jobId, mediaId, localPath);
                     sha = DigestUtils.sha256Hex(inputStream);
+					log.debug(">> [JOB: {}, MEDIA: {}] Ended hash calculation for '{}'", jobId, mediaId, localPath);
 				} catch(IOException ioe) {
 					String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                                             + ioe;
 					inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
-					log.error(errorMessage, ioe);
+					log.error(">> [JOB: " + jobId + ", MEDIA: " + mediaId + "] " + errorMessage, ioe);
 				}
 
 				try {
+					log.debug(">> [JOB: {}, MEDIA: {}] Starting get MIME type", jobId, mediaId);
 					mimeType = ioUtils.getMimeType(localPath);
+					log.debug(">> [JOB: {}, MEDIA: {}] Ended get MIME type", jobId, mediaId);
 				} catch(IOException ioe) {
 					String errorMessage = "Could not determine the MIME type for the media due to IOException: "
                                             + ioe;
 					inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
-                    log.error(errorMessage, ioe);
+                    			log.error(">> [JOB: " + jobId + ", MEDIA: " + mediaId + "] " + errorMessage, ioe);
 				}
 
 				Map<String, String> mediaMetadata = new HashMap<>();
 				int length = -1;
 				switch(MediaTypeUtils.parse(mimeType)) {
 					case AUDIO:
-						length = inspectAudio(localPath, mediaMetadata);
+						length = inspectAudio(localPath, jobId, mediaId, mediaMetadata);
 						break;
 
 					case VIDEO:
@@ -123,19 +131,19 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 
 					case IMAGE:
-						length = inspectImage(localPath, mediaMetadata);
+						length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
 						break;
 
 					default:
 						// DEBUG
 						//transientMedia.setFailed(true);
 						//transientMedia.setMessage("Unsupported file format.");
-                        log.error("transientMedia.getMediaType() = {} is undefined. ", transientMedia.getMediaType());
+                        			log.error(">> [JOB: {}, MEDIA: {}] transientMedia.getMediaType() = {} is undefined. ", jobId, mediaId, transientMedia.getMediaType());
 						break;
 				}
 				inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
 			} catch (Exception exception) {
-				log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), transientMedia.getLocalPath(), exception);
+				log.error(">> [JOB: " + jobId + ", MEDIA: " + mediaId + "] Failed to inspect " + transientMedia.getLocalPath() + " due to an exception.", exception);
 				if (exception instanceof TikaException) {
 					inProgressJobs.addMediaError(jobId, mediaId, "Tika media inspection error: " + exception.getMessage());
 				} else {
@@ -143,7 +151,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 				}
 			}
 		} else {
-			log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", transientMedia.getId());
+			log.error(">> [JOB: {}, MEDIA: {}] Skipping inspection of media as it is in an error state.", jobId, mediaId);
 		}
 
 		// Copy these headers to the output exchange.
@@ -155,15 +163,22 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		if (transientMedia.isFailed()) {
 			inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
 		}
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Ending media inspection", jobId, mediaId);
 	}
 
-	private int inspectAudio(Path localPath, Map<String, String> mediaMetadata) throws IOException, TikaException, SAXException {
+	private int inspectAudio(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetadata) throws IOException, TikaException, SAXException {
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting inspectAudio on '{}'", jobId, mediaId, localPath);
+
 		// We do not fetch the length of audio files.
 		Metadata audioMetadata = generateFFMPEGMetadata(localPath);
 		int audioMilliseconds = calculateDurationMilliseconds(audioMetadata.get("xmpDM:duration"));
 		if (audioMilliseconds >= 0) {
 			mediaMetadata.put("DURATION", Integer.toString(audioMilliseconds));
 		}
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Ending inspectAudio on '{}'", jobId, mediaId, localPath);
+
 		return -1;
 	}
 
@@ -172,10 +187,13 @@ public class MediaInspectionProcessor extends WfmProcessor {
     // The TransientMedias length will be set to FRAME_COUNT.
 	private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType, Map<String, String> mediaMetadata)
 			throws IOException, TikaException, SAXException {
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting inspectVideo on '{}'", jobId, mediaId, localPath);
+
 		// FRAME_COUNT
 
 		// Use the frame counter native library to calculate the length of videos.
-		log.debug("Counting frames in '{}'.", localPath);
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting counting frames in '{}'.", jobId, mediaId, localPath);
 
 		// We can't get the frame count directly from a gif,
 		// so iterate over the frames and count them one by one
@@ -190,9 +208,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		int frameCount = retval;
 		mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
 
+		log.debug(">> [JOB: {}, MEDIA: {}] Ended counting frames in '{}'. Counted {} frames.", jobId, mediaId, localPath, frameCount);
+
 		// FPS
 
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting get FFMPEG metadata for '{}'.", jobId, mediaId, localPath);
 		Metadata videoMetadata = generateFFMPEGMetadata(localPath);
+		log.debug(">> [JOB: {}, MEDIA: {}] Ended get FFMPEG metadata for '{}'.", jobId, mediaId, localPath);
+
 		String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
 		double fps = 0;
 		if (fpsStr != null) {
@@ -216,12 +239,22 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		if (rotation != null) {
 			mediaMetadata.put("ROTATION", rotation);
 		}
+
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Ending inspectVideo on '{}'", jobId, mediaId, localPath);
+
 		return frameCount;
 	}
 
-	private int inspectImage(Path localPath, Map<String, String> mediaMetdata)
+	private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
 			throws IOException, TikaException, SAXException {
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting inspectImage on '{}'", jobId, mediaId, localPath);
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Starting generate EXIF metadata for '{}'", jobId, mediaId, localPath);
 		Metadata imageMetadata = generateExifMetadata(localPath);
+		log.debug(">> [JOB: {}, MEDIA: {}] Ended generate EXIF metadata for '{}'", jobId, mediaId, localPath);
+
 		if (imageMetadata.get("tiff:Orientation") != null) {
 			mediaMetdata.put("EXIF_ORIENTATION", imageMetadata.get("tiff:Orientation"));
 			int orientation = Integer.valueOf(imageMetadata.get("tiff:Orientation"));
@@ -260,6 +293,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
 					break;
 			}
 		}
+
+		log.debug(">> [JOB: {}, MEDIA: {}] Ending inspectImage on '{}'", jobId, mediaId, localPath);
+
 		return 1;
 	}
 

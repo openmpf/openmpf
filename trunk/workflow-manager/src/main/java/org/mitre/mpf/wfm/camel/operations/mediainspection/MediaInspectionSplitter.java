@@ -58,6 +58,9 @@ public class MediaInspectionSplitter extends WfmSplitter {
 	@Override
 	public List<Message> wfmSplit(Exchange exchange) {
 		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+
+		log.debug(">> [JOB: {}] Starting media splitting", jobId);
+
 		TransientJob transientJob = inProgressJobs.getJob(jobId);
 		List<Message> messages = new ArrayList<>();
 
@@ -70,15 +73,17 @@ public class MediaInspectionSplitter extends WfmSplitter {
 					message.setHeader(MpfHeaders.MEDIA_ID, transientMedia.getId());
 					messages.add(message);
 				} else {
-					log.warn("Skipping '{}' ({}). It is in an error state.", transientMedia.getUri(), transientMedia.getId());
+					log.warn(">> [JOB: {}, MEDIA: {}] Skipping media '{}' that is in an error state.", jobId, transientMedia.getId(), transientMedia.getUri());
 				}
 			}
 			if (messages.isEmpty()) {
 				inProgressJobs.setJobStatus(transientJob.getId(), BatchJobStatusType.ERROR);
 			}
 		} else {
-			log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.", transientJob.getId());
+			log.warn(">> [JOB: {}] Media inspection will not be performed because this job has been cancelled.", jobId);
 		}
+
+		log.debug(">> [JOB: {}] Ending media splitting. Generated {} messages.", jobId, messages.size());
 
 		return messages;
 	}

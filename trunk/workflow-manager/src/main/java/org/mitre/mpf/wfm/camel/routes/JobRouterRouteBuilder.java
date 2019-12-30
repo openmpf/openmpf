@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 public class JobRouterRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(JobRouterRouteBuilder.class);
 
-	public static final String ENTRY_POINT = "direct:jobRouter";
+	public static final String ENTRY_POINT = "jms:MPF.JOB_ROUTER";
 	public static final String ROUTE_ID = "Job Router Route";
 
 	private final String entryPoint, routeId;

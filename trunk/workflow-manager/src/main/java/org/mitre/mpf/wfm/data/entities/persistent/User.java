@@ -29,11 +29,14 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import org.mitre.mpf.wfm.enums.UserRole;
 
 import javax.persistence.*;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
 @Entity
+// PostgreSQL doesn't allow you to name a table or column "user" without escaping.
+// To make things more convenient when using external tools, we change the name of the table to mpf_user.
+@Table(name="mpf_user")
 public class User {
 
     @Id
@@ -47,7 +50,8 @@ public class User {
     private String password;
 
     @ElementCollection(fetch=FetchType.EAGER)
-    private Set<UserRole> userRoles = new HashSet<>(0);
+    @Enumerated(EnumType.STRING)
+    private Set<UserRole> userRoles = EnumSet.noneOf(UserRole.class);
 
     public User() { }
 
@@ -58,7 +62,7 @@ public class User {
 
     public User(String userName, UserRole role, String password) {
         this(userName, password);
-        setUserRoles(Set.of(role));
+        setUserRoles(EnumSet.of(role));
     }
 
     public long getId() {

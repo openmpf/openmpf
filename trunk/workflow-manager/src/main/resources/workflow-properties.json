@@ -21,6 +21,62 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY",
+        "description": "The JSON output object will contain only the exemplar and extracted artifacts for each track.",
+        "type": "BOOLEAN",
+        "propertiesKey": "mpf.output.objects.artifacts.and.exemplars.only",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "OUTPUT_LAST_TASK_ONLY",
+        "description": "The JSON output object will contain the exemplar and extracted artifacts for each track in the last task only.",
+        "type": "BOOLEAN",
+        "propertiesKey": "mpf.output.objects.last.task.only",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY",
+        "description": "The policy for extracting artifacts (e.g., frames) from a medium. The value of this property MUST be one of the following choices. NONE: No artifact extraction will be performed. VISUAL_TYPES_ONLY: Extract artifacts only for tracks associated with a \"visual\" data type. ALL_TYPES: Extract artifacts regardless of data type. ALL_DETECTIONS: Extract artifacts for all detections in the track. With the VISUAL_TYPES_ONLY or ALL_TYPES policy, artifacts will be extracted according to the ARTIFACT_EXTRACTION_POLICY* properties. With the NONE and ALL_DETECTIONS policies, those settings are ignored.",
+        "type": "STRING",
+        "propertiesKey": "detection.artifact.extraction.policy",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
+        "description": "Extract the exemplar frame from the track, plus N frames before and after the exemplar. If N = 0, then only the exemplar frame will be extracted. If N > 0, then the exemplar frame plus N frames before and after it will be extracted, if they exist within the track. If N < 0, then this property is disabled. The exemplar will not be extracted.",
+        "type": "INT",
+        "propertiesKey": "detection.artifact.extraction.policy.exemplar.frame.plus",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
+        "description": "Extract the first frame from the track.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.artifact.extraction.policy.first.frame",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
+        "description": "Extract the frame with a detection that is closest to the middle frame from the track.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.artifact.extraction.policy.middle.frame",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
+        "description": "Extract the last frame from the track.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.artifact.extraction.policy.last.frame",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+        "description": "The detections in a track will be sorted by confidence and then the N detections with the highest confidence will be extracted, up to the number of available detections, where N is an integer greater than 0. If N is less than or equal to 0, then this policy is disabled.",
+        "type": "INT",
+        "propertiesKey": "detection.artifact.extraction.policy.top.confidence.count",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
         "name": "FRAME_INTERVAL",
         "description": "Controls whether the component performs detection on every frame in the video segment, or skips some frames at a regular interval. Must be set to a value >= 0. If set to 0 or 1, a frame interval of 1 will be used, meaning that detection is performed on every frame. If set to N > 1, every N-1 frames will be skipped. Default value is defined by the OpenMPF properties file.",
         "type": "INT",

@@ -277,7 +277,7 @@ public class JobController {
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
         //return 200 for successful GET and object; 404 for bad id
         JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
+        if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
             return ResponseEntity.notFound().build();
         }
         try {

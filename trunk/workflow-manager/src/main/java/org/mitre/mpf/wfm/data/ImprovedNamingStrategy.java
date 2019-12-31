@@ -58,7 +58,7 @@ public class ImprovedNamingStrategy implements PhysicalNamingStrategy {
         return convert(identifier);
     }
 
-    private Identifier convert(Identifier identifier) {
+    private static Identifier convert(Identifier identifier) {
         if (identifier == null || StringUtils.isBlank(identifier.getText())) {
             return identifier;
         }
@@ -66,6 +66,6 @@ public class ImprovedNamingStrategy implements PhysicalNamingStrategy {
         String regex = "([a-z])([A-Z])";
         String replacement = "$1_$2";
         String newName = identifier.getText().replaceAll(regex, replacement).toLowerCase();
-        return Identifier.toIdentifier(newName);
+        return Identifier.toIdentifier(newName, identifier.isQuoted());
     }
 }

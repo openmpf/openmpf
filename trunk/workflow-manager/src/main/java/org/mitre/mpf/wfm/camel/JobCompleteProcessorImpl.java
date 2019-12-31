@@ -52,6 +52,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -198,8 +199,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return;
         }
         String jsonCallbackMethod = batchJob.getCallbackMethod()
-                .filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
-                .orElse(null);
+                                    .filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
+                                    .orElse(null);
         if (jsonCallbackMethod == null) {
             return;
         }
@@ -273,13 +274,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
-                                job, media.getId(), taskIndex, actionIndex)) {
+                             job, media.getId(), taskIndex, actionIndex)) {
                         hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
                         JsonDetectionProcessingError jsonDetectionProcessingError
                                 = new JsonDetectionProcessingError(
-                                        detectionProcessingError.getStartOffset(),
-                                        detectionProcessingError.getEndOffset(),
-                                        detectionProcessingError.getError());
+                                    detectionProcessingError.getStartOffset(),
+                                    detectionProcessingError.getEndOffset(),
+                                    detectionProcessingError.getError());
                         if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
                             mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
                         }
@@ -348,7 +349,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private static List<DetectionProcessingError> getDetectionProcessingErrors(
-            BatchJob job, long mediaId, int taskIndex, int actionIndex) {
+        BatchJob job, long mediaId, int taskIndex, int actionIndex) {
         return job.getDetectionProcessingErrors()
                 .stream()
                 .filter(d -> d.getMediaId() == mediaId && d.getTaskIndex() == taskIndex
@@ -363,75 +364,71 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                           BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
-        String exemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
-                MpfConstants.OUTPUT_EXEMPLARS_ONLY_PROPERTY, job, media, action);
-        boolean exemplarsOnly = Boolean.parseBoolean(exemplarsOnlyProp);
+        String artifactsAndExemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
+            MpfConstants.OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY_PROPERTY, job, media, action);
+        boolean artifactsAndExemplarsOnly = Boolean.parseBoolean(artifactsAndExemplarsOnlyProp);
 
         List<JsonDetectionOutputObject> detections;
-        if (exemplarsOnly) {
-            detections = List.of(exemplar);
+        if (artifactsAndExemplarsOnly) {
+            // This property requires that the exemplar AND all extracted frames be
+            // available in the output object. Otherwise, the user might never know that
+            // there were other artifacts extracted.
+            detections = track.getDetections().stream()
+                         .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
+                         .map(d -> createDetectionOutputObject(d))
+                         .collect(toList());
+            detections.add(exemplar);
         }
         else {
             detections = track.getDetections().stream()
-                    .map(JobCompleteProcessorImpl::createDetectionOutputObject)
-                    .collect(toList());
+                         .map(JobCompleteProcessorImpl::createDetectionOutputObject)
+                         .collect(toList());
         }
 
         return new JsonTrackOutputObject(
-                TextUtils.getTrackUuid(media.getSha256(),
-                                       track.getExemplar().getMediaOffsetFrame(),
-                                       track.getExemplar().getX(),
-                                       track.getExemplar().getY(),
-                                       track.getExemplar().getWidth(),
-                                       track.getExemplar().getHeight(),
-                                       track.getType()),
-                track.getStartOffsetFrameInclusive(),
-                track.getEndOffsetFrameInclusive(),
-                track.getStartOffsetTimeInclusive(),
-                track.getEndOffsetTimeInclusive(),
-                track.getType(),
-                stateKey,
-                track.getConfidence(),
-                track.getTrackProperties(),
-                exemplar,
-                detections);
+            TextUtils.getTrackUuid(media.getSha256(),
+                                   track.getExemplar().getMediaOffsetFrame(),
+                                   track.getExemplar().getX(),
+                                   track.getExemplar().getY(),
+                                   track.getExemplar().getWidth(),
+                                   track.getExemplar().getHeight(),
+                                   track.getType()),
+            track.getStartOffsetFrameInclusive(),
+            track.getEndOffsetFrameInclusive(),
+            track.getStartOffsetTimeInclusive(),
+            track.getEndOffsetTimeInclusive(),
+            track.getType(),
+            stateKey,
+            track.getConfidence(),
+            track.getTrackProperties(),
+            exemplar,
+            detections);
     }
 
 
     private static JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
         return new JsonDetectionOutputObject(
-                detection.getX(),
-                detection.getY(),
-                detection.getWidth(),
-                detection.getHeight(),
-                detection.getConfidence(),
-                detection.getDetectionProperties(),
-                detection.getMediaOffsetFrame(),
-                detection.getMediaOffsetTime(),
-                detection.getArtifactExtractionStatus().name(),
-                detection.getArtifactPath());
+            detection.getX(),
+            detection.getY(),
+            detection.getWidth(),
+            detection.getHeight(),
+            detection.getConfidence(),
+            detection.getDetectionProperties(),
+            detection.getMediaOffsetFrame(),
+            detection.getMediaOffsetTime(),
+            detection.getArtifactExtractionStatus().name(),
+            detection.getArtifactPath());
     }
 
 
-    private static boolean isOutputLastTaskOnly(Media media, BatchJob job) {
+    private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
-        // OUTPUT_LAST_STAGE_ONLY to a single task.
-        String mediaProperty = media.getMediaSpecificProperty(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
-        if (mediaProperty != null) {
-            return Boolean.parseBoolean(mediaProperty);
-        }
-
-        String jobProperty = job.getJobProperties()
-                .get(MpfConstants.OUTPUT_LAST_STAGE_ONLY_PROPERTY);
-        if (jobProperty != null) {
-            return Boolean.parseBoolean(jobProperty);
-        }
-
-        return job.getSystemPropertiesSnapshot().isOutputObjectLastStageOnly();
+        // OUTPUT_LAST_TASK_ONLY to a single task.
+        return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
     }
 
 
-    private static Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
+    private Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
         if (!isOutputLastTaskOnly(media, job)) {
             return Set.of();
         }
@@ -454,7 +451,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private static void addMissingTrackInfo(String missingTrackKey, String stateKey,
                                             JsonMediaOutputObject mediaOutputObject) {
         Set<JsonActionOutputObject> trackSet = mediaOutputObject.getTypes().computeIfAbsent(
-                missingTrackKey, k -> new TreeSet<>());
+            missingTrackKey, k -> new TreeSet<>());
         boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
         if (stateMissing) {
             trackSet.add(new JsonActionOutputObject(stateKey));

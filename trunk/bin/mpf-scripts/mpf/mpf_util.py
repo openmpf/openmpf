@@ -28,8 +28,7 @@ import argparse
 import os
 
 import argh
-import pymysql
-import pymysql.constants.ER
+import psycopg2
 
 
 def arg_group(*arg_defs):
@@ -49,7 +48,7 @@ def arg_group(*arg_defs):
 
 sql_args = arg_group(
     argh.arg('--sql-host', default='localhost', help='hostname of the SQL server'),
-    argh.arg('--sql-user', default='root',
+    argh.arg('--sql-user', default='mpf',
              help='username used to log in to the SQL server'),
     argh.arg('--sql-password', default='password',
              help='password used to log in to the SQL server'),
@@ -98,7 +97,6 @@ def env_arg(arg_name, env_var, help='', **kwargs):
         env_var (str): The name of the environment variable
         help (str): Help text for argument
         **kwargs: Additional arguments that will be passed to argh.arg
-
     """
     help += ' If not provided, it will be taken from the environment variable %s' % env_var
     return argh.arg(arg_name, env_var_name=env_var, action=_EnvDefault, help=help, **kwargs)
@@ -111,27 +109,29 @@ class MpfError(Exception):
 
 def sql_connection(host, user, password):
     try:
-        return pymysql.connect(host, user, password, db='mpf')
-    except pymysql.err.OperationalError as err:
-        if err[0] == 2003:
-            raise SqlConnectionError(err)
-        elif err[0] == pymysql.constants.ER.ACCESS_DENIED_ERROR:
-            raise SqlLogInError(err)
+        if ':' in host:
+            host, port = host.split(':')
         else:
-            raise
-
+            port = 5432
+        return psycopg2.connect(host=host, port=port, user=user, password=password, dbname='mpf')
+    except psycopg2.OperationalError as err:
+        if 'Connection refused' in err.message or 'Name or service not known' in err.message:
+            raise SqlConnectionError(err)
+        if 'authentication failed' in err.message:
+            raise SqlLogInError(err)
+        raise
 
 class SqlConnectionError(MpfError):
     def __init__(self, original_error):
         super(SqlConnectionError, self).__init__(
-            original_error[1] +
-            '. (Make sure the MySQL server is running or try setting --sql-host)')
+            original_error.message + 'Make sure the PostgreSQL server is running or try setting --sql-host.')
 
 
 class SqlLogInError(MpfError):
     def __init__(self, original_error):
+        # Use [:-1] because message ends in new line.
         super(SqlLogInError, self).__init__(
-            original_error[1] + '. (Try setting --sql-user and/or --sql-password)')
+            original_error.message[:-1] + '. (Try setting --sql-user and/or --sql-password)')
 
 
 class MsgUtil(object):

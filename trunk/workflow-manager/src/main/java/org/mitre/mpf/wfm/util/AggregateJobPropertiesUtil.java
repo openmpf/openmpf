@@ -259,6 +259,11 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+    public String getValue(String propertyName, BatchJob job, Media media) {
+        return getValue(propertyName, job, media, null);
+    }
+
+
     public Function<String, String> getCombinedProperties(
             Action action,
             JobPipelineElements pipeline,

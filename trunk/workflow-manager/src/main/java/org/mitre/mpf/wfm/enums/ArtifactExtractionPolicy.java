@@ -29,22 +29,26 @@ package org.mitre.mpf.wfm.enums;
 import org.apache.commons.lang3.StringUtils;
 
 public enum ArtifactExtractionPolicy {
-	/** Never extract detected objects from the medium. */
+	/** Never extract detected objects from the medium regardless
+         * of the detection.artifact.extraction.policy.* settings.  */
 	NONE,
 
-	/** Default: Extract the exemplar detection in the track provided the track is associated with a &quot;visual&quot; object type. For example, this would include faces and cars, but it would exclude speech and motion. */
-	VISUAL_EXEMPLARS_ONLY,
+	/** Default: Extract artifacts for tracks associated
+            with a &quot;visual&quot; detection type according to the
+            detection.artifact.extraction.policy.* settings. For example, this
+            would include faces and cars, but it would exclude speech,
+            motion and scene detection. */
+	VISUAL_TYPES_ONLY,
 
-	/** Extract the exemplar detection from the track regardless of the track's object type. */
-	EXEMPLARS_ONLY,
+	/** Default: Extract artifacts for tracks associated with any
+         * detection type according to the detection.artifact.extraction.policy.* settings. */
+	ALL_TYPES,
 
-	/** Extract all detections in the track provided the track is associated with a &quot;visual&quot; object type. For example, this would include faces and cars, but it would exclude speech and motion. */
-	ALL_VISUAL_DETECTIONS,
-
-	/** Extract all detections in the track regardless of the track's object type. */
+        /** Extract artifacts for all detections in the track regardless
+         * of the track's object type and detection.artifact.extraction.policy.* settings. */
 	ALL_DETECTIONS;
 
-	public static final ArtifactExtractionPolicy DEFAULT = VISUAL_EXEMPLARS_ONLY;
+	public static final ArtifactExtractionPolicy DEFAULT = VISUAL_TYPES_ONLY;
 
 	/**
 	 * Retrieves the enum value with the given name. If an enum value with the given name does not exist, the defaultValue

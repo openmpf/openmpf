@@ -66,19 +66,19 @@ public class ITWebStreamingReports {
     private static final String PIPELINE_NAME = "SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE";
     private static final String DETECTION_TYPE = "MOTION";
 
+    private static final String CALLBACK_URI_PREFIX = "http://localhost:";
     private static final int SPARK_PORT = 20160;
-
-    private static final String SPARK_URI_PREFIX = "http://localhost:" + SPARK_PORT;
 
     private static final String HEALTH_REPORT_CALLBACK_PATH = "/callback/health-report";
     private static final String HEALTH_REPORT_CALLBACK_URI =
-            SPARK_URI_PREFIX + HEALTH_REPORT_CALLBACK_PATH;
+            CALLBACK_URI_PREFIX + SPARK_PORT + HEALTH_REPORT_CALLBACK_PATH;
 
     private static final String SUMMARY_REPORT_CALLBACK_PATH = "/callback/summary-report";
     private static final String SUMMARY_REPORT_CALLBACK_URI =
-            SPARK_URI_PREFIX + SUMMARY_REPORT_CALLBACK_PATH;
+            CALLBACK_URI_PREFIX + SPARK_PORT + SUMMARY_REPORT_CALLBACK_PATH;
 
-    private static final String STREAM_URI = SPARK_URI_PREFIX + "/video_01.mp4";
+    private static final String STREAM_URI
+            = "http://" + System.getenv("HOSTNAME") + ':' + SPARK_PORT + "/video_01.mp4";
 
     private static final String EXTERNAL_ID_1 = Integer.toString(701);
     private static final String EXTERNAL_ID_2 = Integer.toString(702);

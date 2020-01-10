@@ -100,7 +100,7 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Configuration<span class="caret"></span></a>
                     <ul class="dropdown-menu">
                         <li><a ui-sref="/admin/propertySettings" id="menu_adminPropertySettings" title="Edit process settings">Properties</a></li>
-                        <li><a ui-sref="/admin/componentRegistration" id="menu_adminComponentRegistrationLi" title="Register a component" style="display:none;">Component Registration</a></li>
+                        <li><a ui-sref="/admin/componentRegistration" id="menu_adminComponentRegistrationLi" title="Register a component">Component Registration</a></li>
                         <li><a ui-sref="/adminLogs" id="menu_adminLogs" title="Display process and system logs">Logs</a></li>
                         <li><a href="swagger-ui.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
                         <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>
@@ -269,9 +269,6 @@ tree rendering for each click... this would nearly lock the browser up with ~100
     function checkForRootInfo() {
         if (HomeUtilsFull.roleInfo) {
             $('#userNameMain').text(HomeUtilsFull.roleInfo.userPrincipalName);
-            if (HomeUtilsFull.roleInfo.admin) {
-                $('#menu_adminComponentRegistrationLi').show();
-            }
             clearInterval(checkForRootInfoId);
         }
     }

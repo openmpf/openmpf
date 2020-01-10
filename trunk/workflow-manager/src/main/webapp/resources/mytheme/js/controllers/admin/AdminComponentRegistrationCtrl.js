@@ -38,8 +38,13 @@ angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
     'ui.bootstrap'
 ])
 .controller('AdminComponentRegistrationCtrl',
-['$scope', 'Components', 'NotificationSvc', 'NodeService', '$uibModal',
-function ($scope, Components, NotificationSvc, NodeService, $uibModal) {
+['$scope', 'Components', 'NotificationSvc', 'NodeService', 'RoleService',
+function ($scope, Components, NotificationSvc, NodeService, RoleService) {
+
+    RoleService.getRoleInfo()
+        .then(function (roleInfo) {
+            $scope.isAdmin = roleInfo.admin;
+        });
 
     NodeService.getAllNodeHostnames("core").then(function (data) {
         $scope.coreNodes = data;

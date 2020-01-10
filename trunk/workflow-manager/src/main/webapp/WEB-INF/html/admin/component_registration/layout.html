@@ -37,92 +37,92 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <mpf-admin-only show-warning-message>
-            <h4>Upload New Component</h4>
-            <div class="row">
-                <div class="col-md-6 form-group">
-                    <mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
-                </div>
-                <div class="col-md-6 form-group">
-                    <div ng-if="coreNodes.length">
-                        Note that all actions performed on this page will only affect the workflow manager
-                        and the core nodes shown here:
-                        <ul>
-                            <li ng-repeat="coreNode in coreNodes">
-                                {{ coreNode }}
-                            </li>
-                        </ul>
-                    </div>
-                    <span ng-if="!coreNodes.length">
-                        Note that all actions performed on this page will only affect the workflow manager.
-                        There are no core nodes configured.
-                    </span>
-                </div>
+        <h4 ng-if="isAdmin">Upload New Component</h4>
+        <div ng-if="isAdmin"  class="row">
+            <div class="col-md-6 form-group">
+                <mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
             </div>
+            <div class="col-md-6 form-group">
+                <div ng-if="coreNodes.length">
+                    Note that all actions performed on this page will only affect the workflow manager
+                    and the core nodes shown here:
+                    <ul>
+                        <li ng-repeat="coreNode in coreNodes">
+                            {{ coreNode }}
+                        </li>
+                    </ul>
+                </div>
+                <span ng-if="!coreNodes.length">
+                    Note that all actions performed on this page will only affect the workflow manager.
+                    There are no core nodes configured.
+                </span>
+            </div>
+        </div>
 
-            <h4> Current Components </h4>
+        <h4> Current Components </h4>
 
-            <table class="table table-bordered table-hover">
-                <thead>
-                <tr>
-                    <th>Component name</th>
-                    <th>Package name</th>
-                    <th>Date uploaded</th>
-                    <th>Date registered</th>
-                    <th>Managed</th>
-                    <th>Status</th>
-                    <th class="text-center" colspan="3"> Actions </th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr ng-repeat="component in components | orderBy:getSortKey">
-                    <td>{{component.componentName}}</td>
-                    <td>{{component.packageFileName}}</td>
-                    <td>{{component.dateUploaded | date:'short'}}</td>
-                    <td>{{component.dateRegistered | date:'short'}}</td>
-                    <td>
-                        <span ng-if="component.managed">Yes</span>
-                        <span ng-if="!component.managed">No</span>
-                    </td>
-                    <td>{{stateToText(component.componentState)}}</td>
-                    <td>
-                        <button ng-if="component.managed"
-                                ng-disabled="!canRegister(component)"
-                                ng-click="registerComponent(component)"
-                                type="button"
-                                class="btn btn-success btn-block btn-xs">
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>Component name</th>
+                <th>Package name</th>
+                <th>Date uploaded</th>
+                <th>Date registered</th>
+                <th>Managed</th>
+                <th>Status</th>
+                <th>Version</th>
+                <th ng-if="isAdmin" class="text-center" colspan="3"> Actions </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="component in components | orderBy:getSortKey">
+                <td>{{component.componentName}}</td>
+                <td>{{component.packageFileName}}</td>
+                <td>{{component.dateUploaded | date:'short'}}</td>
+                <td>{{component.dateRegistered | date:'short'}}</td>
+                <td>
+                    <span ng-if="component.managed">Yes</span>
+                    <span ng-if="!component.managed">No</span>
+                </td>
+                <td>{{stateToText(component.componentState)}}</td>
+                <td>{{component.version}}</td>
+                <td ng-if="isAdmin">
+                    <button ng-if="component.managed"
+                            ng-disabled="!canRegister(component)"
+                            ng-click="registerComponent(component)"
+                            type="button"
+                            class="btn btn-success btn-block btn-xs">
 
-                            <i ng-if="isRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                        <i ng-if="isRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                            <span ng-if="!isRegistering(component)"> Register </span>
-                        </button>
-                    </td>
-                    <td>
-                        <button ng-disabled="!canRemove(component)"
-                                ng-click="removeComponent(component)"
-                                type="button"
-                                class="btn btn-danger btn-block btn-xs">
+                        <span ng-if="!isRegistering(component)"> Register </span>
+                    </button>
+                </td>
+                <td ng-if="isAdmin">
+                    <button ng-disabled="!canRemove(component)"
+                            ng-click="removeComponent(component)"
+                            type="button"
+                            class="btn btn-danger btn-block btn-xs">
 
-                            <i ng-if="isRemoving(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                        <i ng-if="isRemoving(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                            <span ng-if="!isRemoving(component)"> Remove </span>
-                        </button>
-                    </td>
-                    <td>
-                        <button ng-if="component.managed"
-                                ng-disabled="!canRemove(component)"
-                                ng-click="reRegister(component)"
-                                type="button" class="btn btn-warning btn-block btn-xs">
+                        <span ng-if="!isRemoving(component)"> Remove </span>
+                    </button>
+                </td>
+                <td ng-if="isAdmin">
+                    <button ng-if="component.managed"
+                            ng-disabled="!canRemove(component)"
+                            ng-click="reRegister(component)"
+                            type="button" class="btn btn-warning btn-block btn-xs">
 
-                            <i ng-if="isReRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
+                        <i ng-if="isReRegistering(component)" class="fa fa-refresh fa-spin fa-fw"></i>
 
-                            <span ng-if="!isReRegistering(component)"> Re-register </span>
-                        </button>
-                    </td>
+                        <span ng-if="!isReRegistering(component)"> Re-register </span>
+                    </button>
+                </td>
 
-                </tr>
-                </tbody>
-            </table>
-        </mpf-admin-only>
+            </tr>
+            </tbody>
+        </table>
     </div>
 </div>

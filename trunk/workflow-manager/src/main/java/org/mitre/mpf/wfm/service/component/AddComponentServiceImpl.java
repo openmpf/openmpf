@@ -196,6 +196,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         } else {
             _componentDescriptorValidator.validate(descriptor);
         }
+        model.setVersion(descriptor.getComponentVersion());
 
         Algorithm algorithm = descriptor.getAlgorithm();
         String algoName = null;

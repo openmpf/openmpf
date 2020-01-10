@@ -45,6 +45,7 @@ public class RegisterComponentModel {
 	private List<String> _tasks = new ArrayList<>();
 	private List<String> _pipelines = new ArrayList<>();
 	private boolean _isManaged = true;
+	private String _version;
 
 
 	public String getPackageFileName() {
@@ -154,5 +155,13 @@ public class RegisterComponentModel {
 
 	public void setManaged(boolean isManaged) {
 		_isManaged = isManaged;
+	}
+
+	public String getVersion() {
+		return _version;
+	}
+
+	public void setVersion(String version) {
+		_version = version;
 	}
 }

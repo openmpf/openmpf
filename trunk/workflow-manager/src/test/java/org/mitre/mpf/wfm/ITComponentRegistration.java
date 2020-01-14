@@ -62,10 +62,11 @@ public class ITComponentRegistration {
             boolean ansibleIsInstalled = new ProcessBuilder("ansible-playbook", "--version")
                     .start()
                     .waitFor() == 0;
-            Assume.assumeTrue("Ansible is installed", ansibleIsInstalled);
+            Assume.assumeTrue("Skipping component registration tests because Ansible is not installed.",
+                              ansibleIsInstalled);
         }
         catch (IOException e) {
-            Assume.assumeNoException("Ansible is installed", e);
+            Assume.assumeNoException("Skipping component registration tests because Ansible is not installed.", e);
         }
     }
 

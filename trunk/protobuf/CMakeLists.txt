@@ -25,9 +25,11 @@
 #############################################################################
 
 cmake_minimum_required(VERSION 3.6)
-project(MFP_PROTOBUF)
+project(MPF_PROTOBUF)
 
 ## Find ProtoBufs
+# The old build guide told developers to install libraries in weird non-standard locations
+# under /apps
 if (EXISTS /apps/install/include/google/protobuf)
     set(Protobuf_INCLUDE_DIR /apps/install/include)
 endif()

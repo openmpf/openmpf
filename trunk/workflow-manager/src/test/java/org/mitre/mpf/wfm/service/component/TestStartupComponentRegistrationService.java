@@ -240,6 +240,7 @@ public class TestStartupComponentRegistrationService {
         verify(_mockServiceStarter)
                 .startServicesForComponents((List<RegisterComponentModel>) rcmListCaptor.capture());
 
+        // DescriptorOnly is an unmanaged component and therefore the WFM will not have attempted to start that service.
         var rcmList = (List<RegisterComponentModel>) rcmListCaptor.getValue();
         assertEquals(2, rcmList.size());
         assertTrue(rcmList.stream()

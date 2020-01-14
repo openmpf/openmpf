@@ -582,6 +582,14 @@ public class ITWebREST {
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
 
+		if (!TestUtil.nodeManagerEnabled()) {
+			Assert.assertEquals(0, array.length());
+			log.info("Skipping the rest of test_NodeManager_getNodeManagerInfo " +
+					         "because the Node Manager is not enabled");
+			endTest();
+			return;
+		}
+
 		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);
 			JSONObject service = null;
@@ -609,7 +617,16 @@ public class ITWebREST {
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+
+		if (!TestUtil.nodeManagerEnabled()) {
+			Assert.assertEquals(0, array.length());
+			log.info("Skipping the rest of testPing_NodeManager_getNodeManagerConfig " +
+					         "because the Node Manager is not enabled");
+			endTest();
+			return;
+		}
+
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 = obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);
@@ -627,15 +644,21 @@ public class ITWebREST {
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
 		JSONArray array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() >= 0);
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + JSONstring);
+
+		if (!TestUtil.nodeManagerEnabled()) {
+		    Assert.assertEquals(0, array.length());
+			log.info("Skipping the rest of test_NodeManager_getNodeManagerConfig " +
+					         "because the Node Manager is not enabled");
+			endTest();
+			return;
+		}
+
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		Assert.assertTrue(obj.getString("host").length() > 0);
 		JSONArray services = obj.getJSONArray("services");
 		Assert.assertTrue(services.length() >= 0);
-		if (!TestUtil.nodeManagerEnabled()) {
-			return;
-		}
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + services.length());
 
 		for (String test_service : TEST_SERVICES) {
@@ -666,8 +689,15 @@ public class ITWebREST {
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
 		String orig_config =JSONstring;
 		JSONArray array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() >= 0);
+		if (!TestUtil.nodeManagerEnabled()) {
+			Assert.assertEquals(0, array.length());
+			log.info("Skipping the rest of test_NodeManager_saveNodeManagerConfigPOST " +
+					         "because the Node Manager is not enabled");
+			endTest();
+			return;
+		}
 
+		Assert.assertTrue(array.length() > 0);
 		//modify original by removing first service
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray services = obj.getJSONArray("services");
@@ -730,6 +760,13 @@ public class ITWebREST {
 	public void test_NodeManager_shutdown_startService() throws Exception {
 		startTest("test_NodeManager_shutdown_startService","");
 		JSONArray nodes = WebRESTUtils.getNodes();
+		if (!TestUtil.nodeManagerEnabled()) {
+			Assert.assertEquals(0, nodes.length());
+			log.info("Skipping the rest of test_NodeManager_shutdown_startService " +
+					         "because the Node Manager is not enabled");
+			endTest();
+			return;
+		}
 		Assert.assertTrue(nodes.length() > 0);
 		// get the first node that is running
 		JSONObject node = null;
@@ -888,10 +925,15 @@ public class ITWebREST {
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+
 		if (!TestUtil.nodeManagerEnabled()) {
+		    Assert.assertEquals(0, array.length());
+			log.info("Skipping the rest of testPing_NodeManagerConfig " +
+					         "because the Node Manager is not enabled");
+			endTest();
 			return;
 		}
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 =obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);

@@ -52,7 +52,7 @@ sql_args = arg_group(
              help='username used to log in to the SQL server'),
     argh.arg('--sql-password', default='password',
              help='password used to log in to the SQL server'),
-    argh.arg('--skip-sql-start', default=False, help='do not SQL server if not already running')
+    argh.arg('--skip-sql-start', default=False, help='do not start SQL server if not already running')
 )
 
 

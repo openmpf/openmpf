@@ -28,8 +28,8 @@ cmake_minimum_required(VERSION 3.6)
 project(MPF_PROTOBUF)
 
 ## Find ProtoBufs
-# The old build guide told developers to install libraries in weird non-standard locations
-# under /apps
+# When performing non-Docker builds, we must account for how the old build guide told developers
+# to install libraries in non-standard locations under /apps.
 if (EXISTS /apps/install/include/google/protobuf)
     set(Protobuf_INCLUDE_DIR /apps/install/include)
 endif()

@@ -66,17 +66,11 @@
 			</table>
 		</form>
 	</div>
-	<div class="buildnum">
-		<c:choose>
-			<c:when test="${build==0}">
-				Unofficial build
-			</c:when>
-			<c:otherwise>
-				Build ${build}
-			</c:otherwise>
-		</c:choose>
-	</div>
-
+	<c:if test="${not empty build && build != 0}">
+		<div class="buildnum">
+			Build ${build}
+		</div>
+	</c:if>
 </div>
 
 <script src="resources/js/jquery-1.11.0.min.js"></script>

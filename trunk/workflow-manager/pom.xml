@@ -1136,7 +1136,7 @@
                         <containerId>tomcat8x</containerId>
                         <home>/opt/apache-tomcat</home>
                         <systemProperties>
-                            <spring.profiles.active>jenkins,website</spring.profiles.active>
+                            <spring.profiles.active>jenkins</spring.profiles.active>
                             <web.rest.protocol>http</web.rest.protocol>
                             <transport.guarantee>NONE</transport.guarantee>
                         </systemProperties>

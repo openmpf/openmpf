@@ -56,6 +56,8 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
     private final boolean _startupAutoRegistrationSkipped;
 
+    private final boolean _dockerProfileEnabled;
+
     private final Path _componentUploadDir;
 
     private final Path _pluginDeploymentDir;
@@ -74,14 +76,15 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
             PropertiesUtil propertiesUtil,
             ComponentStateService componentStateService,
             AddComponentService addComponentService,
-            StartupComponentServiceStarter componentServiceStarter,
+            Optional<StartupComponentServiceStarter> componentServiceStarter,
             ObjectMapper objectMapper) {
         _startupAutoRegistrationSkipped = propertiesUtil.isStartupAutoRegistrationSkipped();
+        _dockerProfileEnabled = propertiesUtil.dockerProfileEnabled();
         _componentUploadDir = propertiesUtil.getUploadedComponentsDirectory().toPath();
         _pluginDeploymentDir = propertiesUtil.getPluginDeploymentPath();
         _componentStateSvc = componentStateService;
         _addComponentService = addComponentService;
-        _componentServiceStarter = componentServiceStarter;
+        _componentServiceStarter = componentServiceStarter.orElse(null);
         _objectMapper = objectMapper;
     }
 
@@ -92,7 +95,16 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
             _log.info("Skipping component auto registration.");
             return;
         }
+        if (_dockerProfileEnabled) {
+            registerDescriptors();
+            return;
+        }
 
+        registerAll();
+    }
+
+
+    private void registerAll() {
         List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
 
         Set<Path> unregisteredComponentPackages = getUnregisteredComponentPackages(allComponentEntries);
@@ -131,19 +143,34 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
         }
 
         for (Path unregisteredDescriptor : unregisteredDescriptors) {
-            try {
-                var descriptor
-                        = _objectMapper.readValue(unregisteredDescriptor.toFile(), JsonComponentDescriptor.class);
-                _addComponentService.registerUnmanagedComponent(descriptor);
-            }
-            catch (ComponentRegistrationException | IOException e) {
-                _log.error(String.format("Failed to register %s", unregisteredDescriptor), e);
-            }
+            registerDescriptor(unregisteredDescriptor);
         }
 
         _componentServiceStarter.startServicesForComponents(registeredComponentsWithServiceToStart);
     }
 
+
+    private void registerDescriptors() {
+        List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
+
+        Set<Path> unregisteredDescriptors = getUnregisteredDeployedDescriptors(allComponentEntries);
+
+        for (Path unregisteredDescriptor : unregisteredDescriptors) {
+            registerDescriptor(unregisteredDescriptor);
+        }
+    }
+
+
+    private void registerDescriptor(Path descriptorPath) {
+        try {
+            var descriptor
+                    = _objectMapper.readValue(descriptorPath.toFile(), JsonComponentDescriptor.class);
+            _addComponentService.registerUnmanagedComponent(descriptor);
+        }
+        catch (ComponentRegistrationException | IOException e) {
+            _log.error(String.format("Failed to register %s", descriptorPath), e);
+        }
+    }
 
 
     private Set<Path> getUnregisteredComponentPackages(

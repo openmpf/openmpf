@@ -61,17 +61,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.*;
 import static org.mockito.AdditionalMatchers.geq;
 import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Mockito.*;
@@ -97,10 +93,10 @@ public class TestStreamingJobStartStop {
         }
     }
 
-    @Autowired
+    @Autowired(required = false)
     private StreamingJobMessageSender _jobSender;
 
-    @Autowired
+    @Autowired(required = false)
     private MasterNode _masterNode;
 
     @Autowired
@@ -124,6 +120,10 @@ public class TestStreamingJobStartStop {
     @Before
     public void init() {
         reset(_mockStreamingJobRequestService);
+        assumeTrue("Skipping tests in TestStreamingJobStartStop because StreamingJobMessageSender is not configured.",
+                   _jobSender != null);
+        assumeTrue("Skipping tests in TestStreamingJobStartStop because MasterNode is not configured.",
+                   _masterNode != null);
     }
 
 

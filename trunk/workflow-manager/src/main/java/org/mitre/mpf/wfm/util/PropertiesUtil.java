@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
@@ -75,6 +76,9 @@ public class PropertiesUtil {
     @Autowired
     private MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder;
 
+    @Autowired
+    private Environment springEnvironment;
+
     @javax.annotation.Resource(name="mediaTypesFile")
     private FileSystemResource mediaTypesFile;
 
@@ -89,7 +93,6 @@ public class PropertiesUtil {
 
     @PostConstruct
     private void init() throws IOException, WfmProcessingException {
-
         parseCoreMpfNodes();
 
         mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
@@ -743,6 +746,10 @@ public class PropertiesUtil {
 
     public Resource getWorkflowPropertiesFile() {
         return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
+    }
+
+    public boolean dockerProfileEnabled() {
+        return springEnvironment.acceptsProfiles("docker");
     }
 }
 

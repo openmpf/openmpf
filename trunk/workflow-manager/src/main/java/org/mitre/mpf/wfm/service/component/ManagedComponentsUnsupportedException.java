@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2019 The MITRE Corporation                                       *
+ * Copyright 2018 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,45 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.nms.xml.Service;
-import org.mitre.mpf.rest.api.node.NodeManagerModel;
-import org.mitre.mpf.rest.api.node.ServiceModel;
-import org.mitre.mpf.wfm.util.Tuple;
+package org.mitre.mpf.wfm.service.component;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+public class ManagedComponentsUnsupportedException extends ComponentRegistrationException {
 
-public interface NodeManagerService {
-
-    public List<NodeManagerModel> getNodeManagerModels();
-
-    // this method is used by the ComponentRegistrationController but should not be
-    // publicly exposed as part of the REST API
-    public boolean addService(Service service);
-
-    // this method is used by the ComponentRegistrationController but should not be
-    // publicly exposed as part of the REST API
-    public Tuple<Boolean, String> removeService(Service service);
-
-    public Tuple<Boolean, String> removeService(String serviceName);
-
-    public Map<String, ServiceModel> getServiceModels();
-
-    public boolean setServiceModels(Map<String, ServiceModel> nodeManagerFilePaletteMap);
-
-    public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
-
-    public Set<String> getCoreNodes();
-
-    public boolean isCoreNode(String host);
-
-    public Set<String> getAvailableNodes();
-
-    public void autoConfigureNewNode(String host) throws IOException;
-
-    public void unconfigureIfAutoConfiguredNode(String host) throws IOException;
+    public ManagedComponentsUnsupportedException() {
+        super("Managed components are not supported in Docker deployments.");
+    }
 }

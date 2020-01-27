@@ -53,10 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -90,8 +87,8 @@ public class AddComponentServiceImpl implements AddComponentService {
     AddComponentServiceImpl(
             PropertiesUtil propertiesUtil,
             PipelineService pipelineService,
-            NodeManagerService nodeManagerService,
-            StreamingServiceManager streamingServiceManager,
+            Optional<NodeManagerService> nodeManagerService,
+            Optional<StreamingServiceManager> streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
             ComponentDescriptorValidator componentDescriptorValidator,
@@ -101,8 +98,8 @@ public class AddComponentServiceImpl implements AddComponentService {
     {
         _propertiesUtil = propertiesUtil;
         _pipelineService = pipelineService;
-        _nodeManagerService = nodeManagerService;
-        _streamingServiceManager = streamingServiceManager;
+        _nodeManagerService = nodeManagerService.orElse(null);
+        _streamingServiceManager = streamingServiceManager.orElse(null);
         _deployService = deployService;
         _componentStateService = componentStateService;
         _componentDescriptorValidator = componentDescriptorValidator;
@@ -113,6 +110,10 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     @Override
     public synchronized RegisterComponentModel registerComponent(String componentPackageFileName) throws ComponentRegistrationException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         ComponentState initialState = _componentStateService.getByPackageFile(componentPackageFileName)
                 .map(RegisterComponentModel::getComponentState)
                 .filter(Objects::nonNull)
@@ -170,6 +171,10 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     @Override
     public synchronized RegisterComponentModel registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
 
         RegisterComponentModel registrationModel = _componentStateService

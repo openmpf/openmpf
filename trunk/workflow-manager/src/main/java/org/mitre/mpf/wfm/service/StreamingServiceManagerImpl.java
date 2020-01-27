@@ -30,6 +30,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
+@Profile("!docker")
 public class StreamingServiceManagerImpl implements StreamingServiceManager {
 
 	private final PropertiesUtil _propertiesUtil;

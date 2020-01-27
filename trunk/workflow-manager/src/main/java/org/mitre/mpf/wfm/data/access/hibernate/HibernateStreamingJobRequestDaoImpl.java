@@ -32,12 +32,14 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository(HibernateStreamingJobRequestDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)
+@Profile("!docker")
 public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<StreamingJobRequest> implements StreamingJobRequestDao {
 	private static final Logger log = LoggerFactory.getLogger(HibernateStreamingJobRequestDaoImpl.class);
 
@@ -46,6 +48,7 @@ public class HibernateStreamingJobRequestDaoImpl extends AbstractHibernateDao<St
 
 	@Override
 	public void cancelJobsInNonTerminalState() {
+		log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
 		Query query = getCurrentSession().
 				createQuery("UPDATE StreamingJobRequest set status = :status, status_detail = :statusDetail where status in (:nonTerminalStatuses)");
 		query.setParameter("status", StreamingJobStatusType.CANCELLED_BY_SHUTDOWN);

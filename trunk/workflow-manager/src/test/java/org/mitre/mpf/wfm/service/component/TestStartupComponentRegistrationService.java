@@ -98,7 +98,8 @@ public class TestStartupComponentRegistrationService {
                 .thenReturn(false);
 
         _startupRegisterSvc = new StartupComponentRegistrationServiceImpl(
-                _mockPropertiesUtil, _mockComponentStateSvc, _mockAddComponentSvc, _mockServiceStarter, _objectMapper);
+                _mockPropertiesUtil, _mockComponentStateSvc, _mockAddComponentSvc, Optional.of(_mockServiceStarter),
+                _objectMapper);
 
         when(_mockAddComponentSvc.registerComponent(notNull()))
                 .thenAnswer(invocation -> {

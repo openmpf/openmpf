@@ -49,7 +49,7 @@
         <constructor-arg><value>#{systemEnvironment['MPF_HOME']}/config/user.properties</value></constructor-arg>
     </bean>
 
-    <beans profile="default">
+    <beans>
         <!-- Order is important. Files at the top override files at the bottom. -->
         <util:list id="propFiles" value-type="org.springframework.core.io.Resource">
             <ref bean="customPropFile" />

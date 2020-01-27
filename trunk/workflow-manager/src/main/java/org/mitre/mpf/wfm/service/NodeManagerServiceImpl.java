@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.util.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.WritableResource;
 
 import java.io.IOException;
@@ -52,6 +53,7 @@ import java.util.*;
 import static java.util.stream.Collectors.toCollection;
 
 @org.springframework.stereotype.Service
+@Profile("!docker")
 public class NodeManagerServiceImpl implements NodeManagerService {
 
     public static final Logger log = LoggerFactory.getLogger(NodeManagerService.class);

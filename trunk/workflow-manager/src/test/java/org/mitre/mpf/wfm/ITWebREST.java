@@ -564,6 +564,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -576,19 +578,13 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
-
-		if (!TestUtil.nodeManagerEnabled()) {
-			Assert.assertEquals(0, array.length());
-			log.info("Skipping the rest of test_NodeManager_getNodeManagerInfo " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
 
 		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);
@@ -612,19 +608,13 @@ public class ITWebREST {
 	// nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
-
-		if (!TestUtil.nodeManagerEnabled()) {
-			Assert.assertEquals(0, array.length());
-			log.info("Skipping the rest of testPing_NodeManager_getNodeManagerConfig " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
 
 		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
@@ -639,20 +629,14 @@ public class ITWebREST {
 	 **/
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerConfig() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + JSONstring);
-
-		if (!TestUtil.nodeManagerEnabled()) {
-		    Assert.assertEquals(0, array.length());
-			log.info("Skipping the rest of test_NodeManager_getNodeManagerConfig " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
 
 		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
@@ -681,6 +665,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_saveNodeManagerConfigPOST() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
 		String config = WebRESTUtils.REST_URL + "nodes/config.json";
@@ -689,14 +675,6 @@ public class ITWebREST {
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
 		String orig_config =JSONstring;
 		JSONArray array = new JSONArray(JSONstring);
-		if (!TestUtil.nodeManagerEnabled()) {
-			Assert.assertEquals(0, array.length());
-			log.info("Skipping the rest of test_NodeManager_saveNodeManagerConfigPOST " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
-
 		Assert.assertTrue(array.length() > 0);
 		//modify original by removing first service
 		JSONObject obj = array.getJSONObject(0);
@@ -758,15 +736,10 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_shutdown_startService() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		startTest("test_NodeManager_shutdown_startService","");
 		JSONArray nodes = WebRESTUtils.getNodes();
-		if (!TestUtil.nodeManagerEnabled()) {
-			Assert.assertEquals(0, nodes.length());
-			log.info("Skipping the rest of test_NodeManager_shutdown_startService " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
 		Assert.assertTrue(nodes.length() > 0);
 		// get the first node that is running
 		JSONObject node = null;
@@ -907,6 +880,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerInfo() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -920,19 +895,14 @@ public class ITWebREST {
 	//nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerConfig() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
 
-		if (!TestUtil.nodeManagerEnabled()) {
-		    Assert.assertEquals(0, array.length());
-			log.info("Skipping the rest of testPing_NodeManagerConfig " +
-					         "because the Node Manager is not enabled");
-			endTest();
-			return;
-		}
 		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 =obj.getJSONArray("services");

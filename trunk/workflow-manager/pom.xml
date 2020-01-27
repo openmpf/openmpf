@@ -46,6 +46,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
         <tomcat.port>8080</tomcat.port>
+        <cargo.spring.profiles.active>jenkins</cargo.spring.profiles.active>
+
     </properties>
 
     <dependencies>
@@ -1136,7 +1138,7 @@
                         <containerId>tomcat8x</containerId>
                         <home>/opt/apache-tomcat</home>
                         <systemProperties>
-                            <spring.profiles.active>jenkins</spring.profiles.active>
+                            <spring.profiles.active>${cargo.spring.profiles.active}</spring.profiles.active>
                             <web.rest.protocol>http</web.rest.protocol>
                             <transport.guarantee>NONE</transport.guarantee>
                         </systemProperties>

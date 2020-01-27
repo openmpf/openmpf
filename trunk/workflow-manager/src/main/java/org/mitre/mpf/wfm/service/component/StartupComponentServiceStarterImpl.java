@@ -32,6 +32,7 @@ import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.springframework.context.annotation.Profile;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -44,6 +45,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 @Named
+@Profile("!docker")
 public class StartupComponentServiceStarterImpl implements StartupComponentServiceStarter {
 
     private final boolean _isNodeAutoConfigEnabled;

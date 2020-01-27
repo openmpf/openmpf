@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -46,6 +47,7 @@ import java.util.Map;
 import static java.util.stream.Collectors.toMap;
 
 @Service
+@Profile("!docker")
 public class StreamingJobMessageSenderImpl implements StreamingJobMessageSender {
 
     private final PropertiesUtil _properties;

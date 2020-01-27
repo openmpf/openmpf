@@ -39,13 +39,12 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
+import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -64,7 +63,6 @@ import static org.mockito.Mockito.*;
 
 public class TestAddComponentService {
 
-    @InjectMocks
     private AddComponentServiceImpl _addComponentService;
 
     @Mock
@@ -102,6 +100,11 @@ public class TestAddComponentService {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+
+        _addComponentService = new AddComponentServiceImpl(
+                _mockPropertiesUtil, _mockPipelineService, Optional.of(_mockNodeManager),
+                Optional.of(_mockStreamingServiceManager), _mockDeploymentService, _mockStateService,
+                _mockDescriptorValidator, null, _mockRemoveComponentService, _mockObjectMapper);
     }
 
     @Test

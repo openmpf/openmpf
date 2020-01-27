@@ -30,6 +30,7 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.service.NodeManagerService;
+import org.springframework.context.annotation.Profile;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -38,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 @Named
+@Profile("!docker")
 public class ComponentReRegisterServiceImpl implements ComponentReRegisterService {
 
     private final ComponentStateService _componentStateService;

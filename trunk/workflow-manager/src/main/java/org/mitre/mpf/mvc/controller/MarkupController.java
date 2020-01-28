@@ -32,7 +32,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
@@ -71,6 +70,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -104,10 +104,10 @@ public class MarkupController {
         for (MarkupResult markupResult : markupResultDao.findAll()) {
             if (jobId != null) {
                 if (markupResult.getJobId() == jobId) {
-                    markupResultModels.add(ModelUtils.converMarkupResult(markupResult));
+                    markupResultModels.add(convertMarkupResult(markupResult));
                 }
             } else {
-                markupResultModels.add(ModelUtils.converMarkupResult(markupResult));
+                markupResultModels.add(convertMarkupResult(markupResult));
             }
         }
         return markupResultModels;
@@ -141,7 +141,7 @@ public class MarkupController {
         //convert markup objects
         List<MarkupResultConvertedModel> markupResultModels = new ArrayList<MarkupResultConvertedModel>();
         for (MarkupResult markupResult : markupResults) {
-            MarkupResultConvertedModel model = ModelUtils.convertMarkupResultWithContentType(markupResult);
+            MarkupResultConvertedModel model = convertMarkupResultWithContentType(markupResult);
             markupResultModels.add(model);
         }
 
@@ -296,5 +296,72 @@ public class MarkupController {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
 
         return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
+    }
+
+
+    //prevents needing org.mitre.mpf.** types in MarkupResultModel - this allows the api model classes
+    //to be used in other projects without added dependencies
+    private static MarkupResultModel convertMarkupResult(
+            MarkupResult markupResult) {
+        boolean isImage = false;
+        boolean fileExists = true;
+        if(markupResult.getMarkupUri() != null) {
+            String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
+            String markupContentType = NIOUtils.getPathContentType(Paths.get(nonUrlPath));
+            isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
+            fileExists = new File(nonUrlPath).exists();
+        }
+
+        //if the markup uri does not end with 'avi', the file is considered an image
+        return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
+                                     markupResult.getPipeline(), markupResult.getMarkupUri(),
+                                     markupResult.getSourceUri(), isImage, fileExists);
+    }
+
+    private static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
+        String markupUriContentType = "";
+        String markupImgUrl = "";
+        String markupDownloadUrl ="";
+        String sourceUriContentType="";
+        String sourceImgUrl = "";
+        String sourceDownloadUrl ="";
+        boolean markupFileAvailable = false;
+        boolean sourceFileAvailable = false;
+
+        if (markupResult.getMarkupUri() != null) {
+            Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
+            if (path != null && Files.exists(path)) {
+                markupUriContentType = NIOUtils.getPathContentType(path);
+                markupFileAvailable = true;
+                markupImgUrl = "markup/content?id=" + markupResult.getId();
+                markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+            }
+            if (path == null) {
+                markupFileAvailable = true;
+                markupDownloadUrl = markupResult.getMarkupUri();
+            }
+        }
+
+        if (markupResult.getSourceUri() != null) {
+            Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
+            if (path == null || Files.exists(path)) {
+                sourceDownloadUrl = UriComponentsBuilder
+                        .fromPath("server/download")
+                        .queryParam("sourceUri", markupResult.getSourceUri())
+                        .queryParam("jobId", markupResult.getJobId())
+                        .toUriString();
+                sourceFileAvailable = true;
+            }
+            if (path != null && Files.exists(path))  {
+                sourceUriContentType = NIOUtils.getPathContentType(path);
+                sourceImgUrl = "server/node-image?nodeFullPath=" + path;
+            }
+        }
+
+        return new MarkupResultConvertedModel(
+                markupResult.getId(), markupResult.getJobId(), markupResult.getPipeline(),
+                markupResult.getMarkupUri(), markupUriContentType, markupImgUrl, markupDownloadUrl,
+                markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
+                sourceDownloadUrl, sourceFileAvailable);
     }
 }

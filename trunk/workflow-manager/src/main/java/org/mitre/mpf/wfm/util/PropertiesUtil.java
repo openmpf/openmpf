@@ -565,10 +565,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("log.parent.dir");
     }
 
-    public List<String> getWebActiveProfiles() {
-        return mpfPropertiesConfig.getList(String.class, "web.active.profiles");
-    }
-
     public int getWebSessionTimeout() {
         return mpfPropertiesConfig.getInt("web.session.timeout");
     }

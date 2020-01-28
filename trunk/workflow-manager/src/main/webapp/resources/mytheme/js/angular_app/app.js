@@ -52,12 +52,6 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 	  // For any unmatched url, redirect to /jobs
 	  //$urlRouterProvider.otherwise("/home");
 	  $urlRouterProvider.otherwise("/jobs");
-	  
-	  $stateProvider.state('/home', {
-		  url: '/home',
-		  templateUrl: 'home/layout.html',
-		  controller: HomeCtrl
-	  });
 
 	  $stateProvider.state('/about', {
 		  url: '/about',
@@ -111,7 +105,7 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 		  templateUrl: 'admin/property_settings/layout',
 		  controller: 'AdminPropertySettingsCtrl'
 	  });
-	  
+
 	  $stateProvider.state('/admin/componentRegistration', {
 		  url: '/admin/componentRegistration',
 		  templateUrl: 'admin/component_registration/layout',
@@ -145,59 +139,10 @@ App.config(function($logProvider){
 	$logProvider.debugEnabled(true);
 });
 
-// interpolation decorator to help debug {{}}
-//	code from http://odetocode.com/blogs/scott/archive/2014/05/27/debugging-angularjs-data-binding.aspx
-//App.config(function($provide){
-//    $provide.decorator("$interpolate", function($delegate){
-// 
-//        var interpolateWrap = function(){
-//            var interpolationFn = $delegate.apply(this, arguments);
-//            if(interpolationFn) {
-//                return interpolationFnWrap(interpolationFn, arguments);
-//            }
-//        };
-// 
-//        var interpolationFnWrap = function(interpolationFn, interpolationArgs){
-//            return function(){
-//                var result = interpolationFn.apply(this, arguments);
-//                var log = result ? console.log : console.warn;
-//                log.call(console, "interpolation of  " + interpolationArgs[0].trim(), 
-//                                  ":", result.trim());
-//                return result;
-//            };
-//        };
-// 
-//        angular.extend(interpolateWrap, $delegate);
-//        return interpolateWrap;
-// 
-//    });
-//});
 
 //run startup code to redirect to the start page if this is an admin logic
 App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataService, ServerSidePush, SystemStatus,ClientState ,NodeService) {
 	$log.debug('WfmAngularSpringApp starting.');
-
-
-	// panel state css "enums"
-	var eOkState = "";
-	var eGoodState = "bg-success";
-	var eWarningState = "bg-warning";
-	var eErrorState = "bg-danger";
-
-	///////////////////////////////////////////////
-	// widget models
-	///////////////////////////////////////////////
-
-	$rootScope.widgetSystemHealth = {
-		icon: "fa fa-check",// fa-4x",
-		css : eGoodState };
-
-	$rootScope.widgetNodes = { hostnames : [] };
-
-	$rootScope.widgetServices = {
-		services : [],
-		numRunning : 0,
-		css : eOkState };
 
 	/* this is the data structure that the system-notice directive uses to store system notices */
 	$rootScope.systemNotices = [];
@@ -207,113 +152,6 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 	 * to any server-side exchange.
 	 */
 	$rootScope.lastServerExchangeTimestamp = moment();	// initialize to current time because we must have just gotten this file
-
-	// collects system health data and presents it to UI
-	$rootScope.calcSystemHealth = function() {
-		if ( ClientState.isConnectionActive() ) {
-			$rootScope.widgetSystemHealth.css = eGoodState;
-			$rootScope.widgetSystemHealth.icon = "fa fa-check"
-		}
-		else {
-			$rootScope.widgetSystemHealth.css = eErrorState;
-			$rootScope.widgetSystemHealth.icon = "fa fa-times-circle"
-		}
-	};
-
-	$rootScope.calcNodesWidget = function() {
-		NodeService.getNodeManagerHostnames().then(
-			function(payload) {
-				$rootScope.widgetNodes.hostnames = payload;
-			},
-			function(error) {
-				$rootScope.widgetNodes.hostnames = [];
-			});
-	};
-
-	$rootScope.calcServicesWidget = function() {
-		NodeService.getServices().then(
-			function(payload) {
-//					console.log("payload==>"+JSON.stringify(payload.nodeModels));
-				$rootScope.widgetServices.services = payload.nodeModels;
-				var num = $rootScope.widgetServices.services.length;
-				if ( num <= 0 )
-				{
-					$rootScope.widgetServices.css = eErrorState;
-				}
-				else
-				{
-					for ( var i = 0; i < $rootScope.widgetServices.services.length; i++ ) {
-						if ( $rootScope.widgetServices.services[i].lastKnownState !== "Running" ) {
-							$rootScope.widgetServices.css = eWarningState;
-							num--;
-						}
-					}
-					if ( num === $rootScope.widgetServices.services.length ) // we've gone through all of them, and they're all running
-					{
-						$rootScope.widgetServices.css = eGoodState;
-					}
-					$rootScope.widgetServices.numRunning = num;
-				}
-			},
-			function(error) {
-				$rootScope.widgetServices = { services : [], numRunning : 0, css : eErrorState };
-			});
-	};
-
-	RoleService.getRoleInfo().then(function(roleInfo) {
-		//TODO: extra work - can set the isAdmin field in HomeUtils
-		HomeUtilsFull.isAdmin = roleInfo.admin;
-		HomeUtilsFull.roleInfo = roleInfo;
-		
-		//also attach to rootScope, HomeUtilsFull will hopefully not be needed in the future
-		$rootScope.roleInfo = roleInfo;
-		
-		//only direct to the jobs on first admin login - not on hard refresh with an active session
-		if(roleInfo['admin'] && roleInfo['firstLogin']) {
-			$state.go('/jobs');
-		}
-	});
-	
-	MetadataService.getMetadata().then(function(data) {
-		HomeUtilsFull.displayVersion = data.version;
-		if ( data['gitBranch'] === "unknown" ) {
-			HomeUtilsFull.displayVersion += " (unofficial build)";
-		}
-		else if ( data['gitBranch'] === "develop" ) {
-			HomeUtilsFull.displayVersion += " ( " + data['gitBranch'] + "-" + data['buildNum'] + "-" + data['gitHash'] + " )";
-		}
-	});
-
-
-	///////////////////////////////////////////////
-	// event handlers
-	///////////////////////////////////////////////
-
-	$rootScope.$on('SSPC_ATMOSPHERE', function(event, msg ) {
-		console.log("SSPC_ATMOSPHERE message (received in dashboard):  " + JSON.stringify(msg,2,null));
-		$rootScope.calcSystemHealth();
-	});
-
-	$rootScope.$on('SSPC_HEARTBEAT', function(event, msg ) {
-		//console.log( "SSPC_HEARTBEAT: " + JSON.stringify(msg) );
-		$rootScope.calcSystemHealth();
-	});
-
-	$rootScope.$on('CS_CONNECTION_STATE_CHANGED', function(event, args) {
-		console.log("CS_CONNECTION_STATE_CHANGED message (received in dashboard)");
-		$rootScope.calcSystemHealth();
-	});
-
-	$rootScope.$on('SSPC_NODE', function(event, msg ) {
-		//console.log("SSPC_NODE: " + JSON.stringify(msg));
-		$rootScope.calcNodesWidget();
-	});
-
-	$rootScope.$on('SSPC_SERVICE', function(event, msg ) {
-		//console.log("SSPC_SERVICE: " + JSON.stringify(msg));
-		// all events affect this services widget
-		$rootScope.calcServicesWidget();
-	});
 
 
 	/* get initial System Messages */
@@ -329,10 +167,4 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 	$interval( function() {
 		MetadataService.getMetadata(true)
 	}, 2000);
-
-	//init
-	$rootScope.calcSystemHealth();
-	$rootScope.calcNodesWidget();
-	$rootScope.calcServicesWidget();
-
 } );

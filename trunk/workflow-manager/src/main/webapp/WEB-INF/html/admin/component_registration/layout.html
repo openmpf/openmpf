@@ -37,8 +37,8 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <h4 ng-if="isAdmin">Upload New Component</h4>
-        <div ng-if="isAdmin"  class="row">
+        <h4 ng-if="isAdmin && !dockerEnabled">Upload New Component</h4>
+        <div ng-if="isAdmin && !dockerEnabled"  class="row">
             <div class="col-md-6 form-group">
                 <mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
             </div>
@@ -65,8 +65,8 @@
             <thead>
             <tr>
                 <th>Component name</th>
-                <th>Package name</th>
-                <th>Date uploaded</th>
+                <th ng-if="!dockerEnabled">Package name</th>
+                <th ng-if="!dockerEnabled">Date uploaded</th>
                 <th>Date registered</th>
                 <th>Managed</th>
                 <th>Status</th>
@@ -77,8 +77,8 @@
             <tbody>
             <tr ng-repeat="component in components | orderBy:getSortKey">
                 <td>{{component.componentName}}</td>
-                <td>{{component.packageFileName}}</td>
-                <td>{{component.dateUploaded | date:'short'}}</td>
+                <td ng-if="!dockerEnabled">{{component.packageFileName}}</td>
+                <td ng-if="!dockerEnabled">{{component.dateUploaded | date:'short'}}</td>
                 <td>{{component.dateRegistered | date:'short'}}</td>
                 <td>
                     <span ng-if="component.managed">Yes</span>

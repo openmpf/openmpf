@@ -27,8 +27,7 @@
 package org.mitre.mpf.mvc.controller;
 
 import org.mitre.mpf.mvc.model.AuthenticationModel;
-import org.mitre.mpf.mvc.util.ModelUtils;
-import org.mitre.mpf.rest.api.InfoModel;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +47,6 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 @Controller
 @Scope("request")
@@ -58,10 +55,8 @@ public class LoginController {
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     @Autowired
-    private ModelUtils modelUtils;
+    private PropertiesUtil propertiesUtil;
 
-
-    private static Map<String, Boolean> firstLoginMap = new HashMap<String, Boolean>();
 
     public static AuthenticationModel getAuthenticationModel(HttpServletRequest request) {
         // get security context from thread local
@@ -83,14 +78,7 @@ public class LoginController {
         	userPrincipalName = request.getUserPrincipal().getName();
         }
 
-        //if doesn't contain, has to be the first login
-        boolean userFirstLogin = (firstLoginMap.containsKey(userPrincipalName)) ? firstLoginMap.get(userPrincipalName) : true;
-        AuthenticationModel authenticationModel = new AuthenticationModel(authenticated, admin, userPrincipalName, userFirstLogin);
-        //set back to false if there is a user
-        if(userFirstLogin && userPrincipalName != null) {
-        	firstLoginMap.put(userPrincipalName, false);
-        }
-     	return authenticationModel;
+        return new AuthenticationModel(authenticated, admin, userPrincipalName);
     }
 
     /** a helper method to put in all the security credentials needed
@@ -147,13 +135,6 @@ public class LoginController {
             clearSession = true;
         }
 
-        //reset the first login of the user back to true here!
-        AuthenticationModel authenticationModel = getAuthenticationModel(servletRequest);
-        if(authenticationModel.getUserPrincipalName() != null) {
-        	//checking if null because the login?<@RequestParam> urls can be requested without an active login
-        	firstLoginMap.put(authenticationModel.getUserPrincipalName(), true);
-        }
-
         if(clearSession) {
             session.invalidate();
 
@@ -161,13 +142,11 @@ public class LoginController {
             SecurityContextHolder.clearContext();
         }
 
-        // get version info
-        InfoModel meta = modelUtils.getInfoModel();
-        model.addObject("version", meta.getVersion());
-        model.addObject("build", meta.getBuildNum());
+        model.addObject("version", propertiesUtil.getSemanticVersion());
 
         return model;
     }
+
 
     @RequestMapping(value = "/user/role-info", method = RequestMethod.GET)
     @ResponseBody

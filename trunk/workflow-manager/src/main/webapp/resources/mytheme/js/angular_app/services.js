@@ -775,9 +775,9 @@ function ($q, NotificationSvc) {
             // localhost. Specifically, status 901 is processed as 65413, and status 902 is processed as 65414.
             // Seems related to integer rollover.
             if (response.status === 901 || response.status === 65413) {
-                HomeUtilsFull.sessionTimeout();
+                window.top.location.href = 'login?timeout';
             } else if (response.status === 902 || response.status === 65414) {
-                HomeUtilsFull.sessionBootout();
+                window.top.location.href = 'login?bootout';
             }
 
             var respData = response.data;

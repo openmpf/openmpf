@@ -238,7 +238,7 @@ def change_password(username, password=None, **kwargs):
 
 @mpf_util.sql_args
 @argh.arg('username', help='name of the user whose role will be changed')
-@argh.arg('role', help='new role for user')
+@argh.arg('role', help='new role for user', choices=('user', 'admin'), type=str.lower)
 def change_role(username, role, **kwargs):
     """ Changes a Workflow Manager user's role """
     with contextlib.closing(UserManager(**kwargs)) as um:

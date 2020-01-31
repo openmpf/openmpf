@@ -51,6 +51,10 @@ public interface MediaSegmenter {
 
 	public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
 
+	public static final String FEED_FORWARD_X_PADDING = "FEED_FORWARD_X_PADDING";
+
+	public static final String FEED_FORWARD_Y_PADDING = "FEED_FORWARD_Y_PADDING";
+
 	static final Set<String> FEED_FORWARD_TYPES
 			= ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 

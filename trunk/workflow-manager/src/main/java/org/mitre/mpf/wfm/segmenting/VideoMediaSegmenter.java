@@ -112,11 +112,43 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
 		int topConfidenceCount = getTopConfidenceCount(context);
 
+		String xPadding = getPadding(context, FEED_FORWARD_X_PADDING);
+		String yPadding = getPadding(context, FEED_FORWARD_Y_PADDING);
+
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
 			if (track.getDetections().isEmpty()) {
 				log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
 				continue;
+			}
+
+			// TODO: if there is padding, generate a new track, set exemplar
+			if (!xPadding.equals("0") || !yPadding.equals("0")) {
+				for (Detection detection : track.getDetections()) {
+
+					int xOffset;
+					if (xPadding.indexOf('%') != 0) {
+						double xPercent = Double.parseDouble(xPadding.substring(0, -1));
+						xOffset = (int) (xPercent / 100 * detection.getWidth());
+					} else {
+						xOffset = Integer.parseInt(xPadding);
+					}
+
+					int yOffset;
+					if (yPadding.indexOf('%') != 0) {
+						double yPercent = Double.parseDouble(yPadding.substring(0, -1));
+						yOffset = (int) (yPercent / 100 * detection.getHeight());
+					} else {
+						yOffset = Integer.parseInt(yPadding);
+					}
+
+					// TODO: Need to get frame dim: media inspection?
+					Detection newDetection = new Detection(
+							Math.min(0, detection.getX() - xOffset),
+							Math.min(0, detection.getY() - yOffset),
+							Math.max(context.))
+
+				}
 			}
 
 			VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
@@ -151,7 +183,6 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 				.setFeedForwardTrack(videoTrackBuilder)
 				.build();
 	}
-
 
 
 	private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
@@ -190,5 +221,33 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 				.mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
 				.findAny()
 				.orElse(0);
+	}
+
+
+	private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
+																	int topConfidenceCount) {
+	}
+
+
+	private static String getPadding(DetectionContext context, String propertyName) {
+		String padding = context.getAlgorithmProperties()
+				.stream()
+				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(propertyName))
+				.map(ap -> ap.getPropertyValue())
+				.findAny()
+				.orElse("0");
+		return padding.equals("0%") ? "0" : padding;
+	}
+
+	private static int getPercentOfDimension(String percent, int dimension) {
+
+		double percentNum = Double.parseDouble(percent.substring(0, -1));
+		if (percentNum < 0.0) {
+			return 0;
+		}
+		else if (percentNum > 100.0) {
+			return dimension;
+		}
+		return (int)(percentNum*dimension/100.0);
 	}
 }

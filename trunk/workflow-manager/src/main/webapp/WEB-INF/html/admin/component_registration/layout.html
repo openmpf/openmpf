@@ -23,9 +23,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
-<div class="page-header text-center">
+<div ng-if="dockerEnabled" class="page-header text-center">
+    <h3>Component Registration</h3>
+    <page-info>
+        Unmanaged components, such as Docker services, self-register with the Workflow Manager.
+        Removing one of these components through this page will not prevent it from self-registering in the future.
+        If a component with the same name as an existing component attempts to register itself,
+        the newest one will take precedence.
+    </page-info>
+</div>
+<div ng-if="!dockerEnabled" class="page-header text-center">
     <h3>Component Upload and Registration</h3>
-    <page-info>To upload a component click within the dropzone to open a file browser, or drag and drop a component
+    <page-info>
+        To upload a component click within the dropzone to open a file browser, or drag and drop a component
         .tar.gz package onto the dropzone area. Once uploaded, the registration process will automatically begin. Once
         registered, use the Nodes page to deploy component services.
     </page-info>

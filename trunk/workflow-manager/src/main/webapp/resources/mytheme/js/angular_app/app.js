@@ -50,7 +50,6 @@ var App = angular.module('mpf.wfm', [
 // Declare app level module which depends on filters, and services
 App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($stateProvider, $urlRouterProvider,$httpProvider) {
 	  // For any unmatched url, redirect to /jobs
-	  //$urlRouterProvider.otherwise("/home");
 	  $urlRouterProvider.otherwise("/jobs");
 
 	  $stateProvider.state('/about', {

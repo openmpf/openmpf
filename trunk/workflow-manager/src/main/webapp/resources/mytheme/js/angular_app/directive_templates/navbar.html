@@ -1,4 +1,30 @@
-<nav class="navbar navbar-default ">
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2020 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2020 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<nav class="navbar navbar-default">
     <div class="container-fluid">
         <div class="navbar-header">
             <a class="navbar-brand" href="#" title="Media Processing Framework"><img alt="Brand" src="resources/img/logo.png"></a>
@@ -24,7 +50,12 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Configuration<span class="caret"></span></a>
                     <ul class="dropdown-menu">
                         <li><a ui-sref="/admin/propertySettings" id="menu_adminPropertySettings" title="Edit process settings">Properties</a></li>
-                        <li><a ui-sref="/admin/componentRegistration" id="menu_adminComponentRegistrationLi" title="Register a component">Component Registration</a></li>
+                        <li>
+                            <a ui-sref="/admin/componentRegistration" id="menu_adminComponentRegistrationLi"
+                               title="{{dockerEnabled ? 'View registered components' : 'Register a component'}}">
+                                Component Registration
+                            </a>
+                        </li>
                         <li><a ui-sref="/adminLogs" id="menu_adminLogs" title="Display process and system logs">Logs</a></li>
                         <li><a href="swagger-ui.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
                         <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>

@@ -299,8 +299,6 @@ public class MarkupController {
     }
 
 
-    //prevents needing org.mitre.mpf.** types in MarkupResultModel - this allows the api model classes
-    //to be used in other projects without added dependencies
     private static MarkupResultModel convertMarkupResult(
             MarkupResult markupResult) {
         boolean isImage = false;
@@ -312,7 +310,6 @@ public class MarkupController {
             fileExists = new File(nonUrlPath).exists();
         }
 
-        //if the markup uri does not end with 'avi', the file is considered an image
         return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
                                      markupResult.getPipeline(), markupResult.getMarkupUri(),
                                      markupResult.getSourceUri(), isImage, fileExists);

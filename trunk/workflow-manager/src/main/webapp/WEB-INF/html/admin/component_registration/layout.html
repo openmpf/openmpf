@@ -29,7 +29,7 @@
         Unmanaged components, such as Docker services, self-register with the Workflow Manager.
         Removing one of these components through this page will not prevent it from self-registering in the future.
         If a component with the same name as an existing component attempts to register itself,
-        the newest one will take precedence.
+        it will overwrite the existing registration.
     </page-info>
 </div>
 <div ng-if="!dockerEnabled" class="page-header text-center">

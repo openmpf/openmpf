@@ -29,25 +29,31 @@
 /* Angular Services */
 var AppServices = angular.module('mpf.wfm.services', ['ngResource']);
 
-AppServices.value('version', '0.1');
 
-AppServices.service('MetadataService', function ($http, ClientState) {
-    this.getMetadata = function (noLogging) {
-        // $http returns a promise, which has a then function, which also returns a promise
-        var promise = $http.get('info').then(
-            function (response) {
-               ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
-                // The return value gets picked up by the then in the controller.
-                return response.data;
+AppServices.factory('MetadataService', [
+    '$http', 'ClientState',
+    function ($http, ClientState) {
+        var getMetadataNoCache = function () {
+            return $http.get('info')
+                .then(function (response) {
+                    ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
+                    return response.data;
+                })
+                .catch(function () {
+                    ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
+                });
+        };
+
+        var cachedPromise = getMetadataNoCache();
+
+        return {
+            getMetadata: function () {
+                return cachedPromise;
             },
-            function (error) {
-                ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
-            }
-        );
-        // Return the promise to the controller
-        return promise;
-    };
-});
+            getMetadataNoCache: getMetadataNoCache
+        };
+    }
+]);
 
 
 AppServices.factory('RoleService', [

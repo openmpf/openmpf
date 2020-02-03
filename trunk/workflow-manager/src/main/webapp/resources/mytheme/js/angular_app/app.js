@@ -96,7 +96,23 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 	  $stateProvider.state('/adminNodes', {
 		  url: '/adminNodes',
 		  templateUrl: 'admin/nodes/layout',
-		  controller: AdminNodesCtrl
+		  controller: AdminNodesCtrl,
+		  resolve: {
+			  checkDocker: ['MetadataService', '$state', function (MetadataService, $state) {
+				  return MetadataService.getMetadata()
+					  .then(function (metadata) {
+						  if (!metadata.dockerEnabled) {
+						      return;
+						  }
+						  if (!$state.current.name) {
+							  // Only send user to /jobs when they aren't currently on one of our pages.
+							  $state.go("/jobs");
+						  }
+						  // Throw error to prevent user from navigating to this page.
+						  throw new Error("The adminNodes page is disabled in Docker deployments.");
+					  });
+			  }] // checkDocker
+		  }
 	  });
 
 	  $stateProvider.state('/admin/propertySettings', {
@@ -108,7 +124,11 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 	  $stateProvider.state('/admin/componentRegistration', {
 		  url: '/admin/componentRegistration',
 		  templateUrl: 'admin/component_registration/layout',
-		  controller: 'AdminComponentRegistrationCtrl'
+		  controller: 'AdminComponentRegistrationCtrl',
+		  resolve: {
+			  roleInfo: ['RoleService', function (r) { return r.getRoleInfo(); }],
+			  metadata: ['MetadataService', function (m) { return  m.getMetadata(); }]
+		  }
 	  });
 
 	  $stateProvider.state('/adminLogs', {
@@ -164,6 +184,6 @@ App.run( function( $rootScope, $state, $log, $interval, RoleService, MetadataSer
 	// replaced $timeout since it interferes with protractor, and this is equivalent
 	//	however, this should be replaced by something more elegant, perhaps with server side push
 	$interval( function() {
-		MetadataService.getMetadata(true)
+		MetadataService.getMetadataNoCache()
 	}, 2000);
 } );

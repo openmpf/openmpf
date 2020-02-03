@@ -38,24 +38,18 @@ angular.module('mpf.wfm.controller.AdminComponentRegistrationCtrl', [
     'ui.bootstrap'
 ])
 .controller('AdminComponentRegistrationCtrl',
-['$scope', 'Components', 'NotificationSvc', 'NodeService', 'RoleService', 'MetadataService',
-function ($scope, Components, NotificationSvc, NodeService, RoleService, MetadataService) {
+['$scope', 'Components', 'NotificationSvc', 'NodeService', 'roleInfo', 'metadata',
+function ($scope, Components, NotificationSvc, NodeService, roleInfo, metadata) {
 
-    RoleService.getRoleInfo()
-        .then(function (roleInfo) {
-            $scope.isAdmin = roleInfo.admin;
-        });
+    $scope.isAdmin = roleInfo.admin;
 
-    MetadataService.getMetadata()
-        .then(function (data) {
-            $scope.dockerEnabled = data.dockerEnabled;
-            if (!$scope.dockerEnabled) {
-                return NodeService.getAllNodeHostnames("core");
-            }
-        })
-        .then(function(coreNodes) {
-            $scope.coreNodes = coreNodes;
-        });
+    $scope.dockerEnabled = metadata.dockerEnabled;
+    if (!$scope.dockerEnabled) {
+        NodeService.getAllNodeHostnames("core")
+            .then(function (coreNodes) {
+                $scope.coreNodes = coreNodes;
+            });
+    }
 
     $scope.components = Components.query();
 

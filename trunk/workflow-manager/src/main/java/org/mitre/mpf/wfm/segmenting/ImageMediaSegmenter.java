@@ -31,6 +31,7 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TransientMedia;
 import org.slf4j.Logger;
@@ -79,11 +80,21 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 
 
 	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
+		String xPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_X_PADDING);
+		String yPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_Y_PADDING);
+
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
-			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
+			Detection detection = track.getExemplar();
+
+			if (!xPadding.equals("0") || !yPadding.equals("0")) {
+				int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
+				int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
+				detection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
+			}
+
 			ImageRequest imageRequest = ImageRequest.newBuilder()
-					.setFeedForwardLocation(imageLocation)
+					.setFeedForwardLocation(MediaSegmenter.createImageLocation(detection))
 					.build();
 
 			messages.add(createProtobufMessage(media, context, imageRequest));

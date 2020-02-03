@@ -125,7 +125,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 
 					case IMAGE:
-						length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
+						length = inspectImage(localPath, mediaMetadata);
 						break;
 
 					default:
@@ -244,7 +244,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		return frameCount;
 	}
 
-	private int inspectImage(Path localPath,  long jobId, long mediaId, Map<String, String> mediaMetdata)
+	private int inspectImage(Path localPath, Map<String, String> mediaMetdata)
 			throws IOException, TikaException, SAXException {
 		Metadata imageMetadata = generateExifMetadata(localPath);
 

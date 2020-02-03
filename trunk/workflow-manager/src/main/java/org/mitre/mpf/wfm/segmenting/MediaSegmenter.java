@@ -88,7 +88,7 @@ public interface MediaSegmenter {
 	}
 
 
-	static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
+	public static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
 		if (context.isFirstDetectionStage()) {
 			return context.getAlgorithmProperties().stream()
 					.filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
@@ -180,6 +180,7 @@ public interface MediaSegmenter {
 		return result;
 	}
 
+
 	/**
 	 * Divides a large segment into a collection of one or more segments which respect the target and minimum segment
 	 * length parameters.
@@ -216,6 +217,7 @@ public interface MediaSegmenter {
 		return result;
 	}
 
+
 	/**
 	 * Returns {@link java.lang.Boolean#TRUE} iff the current and probe tracks overlap each other from a temporal context.
 	 * Assumes that the current track has a start time which is less than or equal to the target track's start time.
@@ -227,6 +229,7 @@ public interface MediaSegmenter {
 				target.getStartInclusive() - current.getEndInclusive() <= minGapBetweenSegments;
 	}
 
+
 	/**
 	 * Modifies the current TimePair such that it includes the entire range represented by the current
 	 * and target TimePairs.
@@ -234,5 +237,64 @@ public interface MediaSegmenter {
 	public static TimePair merge(TimePair current, TimePair target) {
 		return new TimePair(current.getStartInclusive(),
 		                    Math.max(current.getEndInclusive(), target.getEndInclusive()));
+	}
+
+
+	public static String getPadding(DetectionContext context, String propertyName) {
+		String padding = context.getAlgorithmProperties()
+				.stream()
+				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(propertyName))
+				.map(ap -> ap.getPropertyValue())
+				.findAny()
+				.orElse("0");
+		return padding.equals("0%") ? "0" : padding;
+	}
+
+
+	public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
+										 Detection detection) {
+		int xOffset = getOffset(xPadding, detection.getWidth());
+		int yOffset = getOffset(yPadding, detection.getHeight());
+
+		int newX = detection.getX() - xOffset;
+		int gutterX = 0;
+		if (newX < 0) {
+			gutterX = Math.abs(newX);
+			newX = 0;
+		}
+
+		int newY = detection.getY() - yOffset;
+		int gutterY = 0;
+		if (newY < 0) {
+			gutterY = Math.abs(newY);
+			newY = 0;
+		}
+
+		int newWidth = detection.getWidth() + xOffset - gutterX;
+		if (newX + newWidth > frameWidth) {
+			newWidth = frameWidth - newX;
+		}
+
+		int newHeight = detection.getHeight() + yOffset - gutterY;
+		if (newY + newHeight > frameHeight) {
+			newHeight = frameHeight - newY;
+		}
+
+		return new Detection(
+				newX, newY, newWidth, newHeight,
+				detection.getConfidence(),
+				detection.getMediaOffsetFrame(),
+				detection.getMediaOffsetTime(),
+				detection.getDetectionProperties());
+	}
+
+
+	public static int getOffset(String padding, int base) {
+		if (padding.indexOf('%') != 0) {
+			double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
+			percent += 100;
+			return (int) (percent / 200 * base);
+		}
+		return Integer.parseInt(padding);
 	}
 }

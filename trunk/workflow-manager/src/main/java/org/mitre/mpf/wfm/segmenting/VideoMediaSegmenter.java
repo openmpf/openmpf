@@ -112,8 +112,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
 		int topConfidenceCount = getTopConfidenceCount(context);
 
-		String xPadding = getPadding(context, FEED_FORWARD_X_PADDING);
-		String yPadding = getPadding(context, FEED_FORWARD_Y_PADDING);
+		String xPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_X_PADDING);
+		String yPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_Y_PADDING);
 
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
@@ -122,53 +122,16 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 				continue;
 			}
 
-			if (!xPadding.equals("0") || !yPadding.equals("0")) { // TODO: Create MediaSegmenterUtils
+			if (!xPadding.equals("0") || !yPadding.equals("0")) {
+				int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
+				int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
+
 				SortedSet<Detection> newDetections =
 						new TreeSet<>(Comparator.comparingDouble(Detection::getConfidence));
 
 				for (Detection detection : track.getDetections()) {
-					int xOffset;
-					if (xPadding.indexOf('%') != 0) {
-						double xPercent = Double.parseDouble(xPadding.substring(0, -1));
-						xOffset = (int) (xPercent / 200 * detection.getWidth());
-					}
-					else {
-						xOffset = Integer.parseInt(xPadding);
-					}
-
-					int yOffset;
-					if (yPadding.indexOf('%') != 0) {
-						double yPercent = Double.parseDouble(yPadding.substring(0, -1));
-						yOffset = (int) (yPercent / 200 * detection.getHeight());
-					}
-					else {
-						yOffset = Integer.parseInt(yPadding);
-					}
-
-					int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
-					int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
-
-					int newX = Math.min(0, detection.getX() - xOffset);
-					int newY = Math.min(0, detection.getY() - yOffset);
-
-					int newWidth = detection.getWidth() + xOffset;
-					if (newX + newWidth > frameWidth) {
-						newWidth = frameWidth - newX;
-					}
-
-					int newHeight = detection.getHeight() + yOffset;
-					if (newY + newHeight > frameHeight) {
-						newHeight = frameHeight - newY;
-					}
-
-					Detection newDetection = new Detection(
-							newX, newY, newWidth, newHeight,
-							detection.getConfidence(),
-							detection.getMediaOffsetFrame(),
-							detection.getMediaOffsetTime(),
-							detection.getDetectionProperties());
-
-					newDetections.add(newDetection);
+					newDetections.add(
+							MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection));
 				}
 
 				track = new Track(
@@ -256,16 +219,5 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 				.mapToInt(ap -> Integer.parseInt(ap.getPropertyValue()))
 				.findAny()
 				.orElse(0);
-	}
-
-
-	private static String getPadding(DetectionContext context, String propertyName) {
-		String padding = context.getAlgorithmProperties()
-				.stream()
-				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(propertyName))
-				.map(ap -> ap.getPropertyValue())
-				.findAny()
-				.orElse("0");
-		return padding.equals("0%") ? "0" : padding;
 	}
 }

@@ -341,6 +341,25 @@ public class TestMediaSegmenter {
 		assertEquals(new TimePair(0, 20), MediaSegmenter.merge(new TimePair(0, 15), new TimePair(10, 20)));
 	}
 
+	@Test
+	public void testFeedForwardPadding() {
+		// assertFeedForwardPadding(5, 5, 4, 4,  "100%", "100%", 10, 10,  1, 1, 8, 8);
+		// assertFeedForwardPadding(4, 4, 4, 4,  "100%", "100%", 10, 10,  0, 0, 8, 8);
+		// assertFeedForwardPadding(3, 3, 4, 4,  "100%", "100%", 10, 10,  0, 0, 7, 7);
+		// assertFeedForwardPadding(6, 6, 4, 4,  "100%", "100%", 10, 10,  2, 2, 8, 8);
+		// assertFeedForwardPadding(7, 7, 4, 4,  "100%", "100%", 10, 10,  3, 3, 7, 7);
+	}
+
+
+	private static void assertFeedForwardPadding(int x, int y, int width, int height,
+												 String xPadding, String yPadding, int frameWidth, int frameHeight,
+												 int expectedX, int expectedY, int expectedWidth, int expectedHeight) {
+		Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
+		Detection expectedDetection = new Detection(expectedX, expectedY, expectedWidth, expectedHeight, -1, 0, 0,
+				Collections.emptyMap());
+		Detection newDetection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
+		assertEquals("Unexpected feed forward padding", expectedDetection, newDetection);
+	}
 
 
 	protected static void assertContainsAlgoProperty(String key, String value, Collection<DetectionRequest> requests) {

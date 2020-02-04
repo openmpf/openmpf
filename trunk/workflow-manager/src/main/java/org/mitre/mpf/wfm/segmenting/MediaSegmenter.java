@@ -251,34 +251,44 @@ public interface MediaSegmenter {
 	}
 
 
+	/**
+	 * Padding is applied uniformly on both sides of the detection region.
+	 * For example, an x padding value of 50 increases the width by 100 px (50 px padded on the left and right,
+	 * respectively).
+	 * For example, an x padding value of 50% on a region with a width of 100 px results in a width of 200 px
+	 * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
+	 */
 	public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
-										 Detection detection) {
+										 Detection detection, boolean clipToFrame) {
 		int xOffset = getOffset(xPadding, detection.getWidth());
 		int yOffset = getOffset(yPadding, detection.getHeight());
 
 		int newX = detection.getX() - xOffset;
 		int gutterX = 0;
-		if (newX < 0) {
+
+		if (clipToFrame && (newX < 0)) {
 			gutterX = Math.abs(newX);
 			newX = 0;
 		}
 
 		int newY = detection.getY() - yOffset;
 		int gutterY = 0;
-		if (newY < 0) {
+		if (clipToFrame && (newY < 0)) {
 			gutterY = Math.abs(newY);
 			newY = 0;
 		}
 
 		int newWidth = detection.getWidth() + (2 * xOffset) - gutterX;
-		if (newX + newWidth > frameWidth) {
+		if (clipToFrame && (newX + newWidth > frameWidth)) {
 			newWidth = frameWidth - newX;
 		}
+		newWidth = Math.max(0, newWidth);
 
 		int newHeight = detection.getHeight() + (2 * yOffset) - gutterY;
-		if (newY + newHeight > frameHeight) {
+		if (clipToFrame && (newY + newHeight > frameHeight)) {
 			newHeight = frameHeight - newY;
 		}
+		newHeight = Math.max(0, newHeight);
 
 		return new Detection(
 				newX, newY, newWidth, newHeight,
@@ -292,10 +302,16 @@ public interface MediaSegmenter {
 	public static int getOffset(String padding, int length) {
 		if (padding.indexOf('%') != -1) {
 			double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
+			percent = Math.max(-50, percent); // can't shrink to less than nothing
 			percent = (percent / 100) + 1.0;
 			double newLength = percent * length;
-			return (int) (newLength - length) / 2; // half the diff
+			double offset = newLength - length;
+			return (int) (Math.signum(offset) * Math.ceil(Math.abs(offset))); // get negative or positive extreme
 		}
-		return Integer.parseInt(padding);
+		int offset = Integer.parseInt(padding);
+		if (length + (offset * 2) < 0) { // can't shrink to less than nothing
+			return (int) Math.floor(length / -2.0); // get negative extreme
+		}
+		return offset;
 	}
 }

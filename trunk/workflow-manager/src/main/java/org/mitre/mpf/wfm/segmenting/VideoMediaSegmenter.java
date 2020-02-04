@@ -131,7 +131,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 				for (Detection detection : track.getDetections()) {
 					newDetections.add(
-							MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection));
+							MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, false));
 				}
 
 				track = new Track(

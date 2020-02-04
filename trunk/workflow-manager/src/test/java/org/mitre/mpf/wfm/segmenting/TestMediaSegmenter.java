@@ -343,36 +343,50 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testFeedForwardPadding() {
-		assertFeedForwardPadding(3, 3, 4, 4,  "50%", "50%", 10, 10,  2, 2, 6, 6);   // expand uniformly
-		assertFeedForwardPadding(3, 3, 4, 4,  "0%", "50%", 10, 10,  3, 2, 4, 6);    // expand height only
-		assertFeedForwardPadding(3, 3, 4, 4,  "50%", "0%", 10, 10,  2, 3, 6, 4);    // expand width only
-		assertFeedForwardPadding(3, 3, 4, 4,  "0", "0", 10, 10,  3, 3, 4, 4);       // no-op
+		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "25%", 10, 10, true,  2, 2, 6, 6);   // expand uniformly
+		assertFeedForwardPadding(3, 3, 4, 4,  "0%", "25%", 10, 10, true,  3, 2, 4, 6);    // expand height only
+		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "0%", 10, 10, true,  2, 3, 6, 4);    // expand width only
+		assertFeedForwardPadding(3, 3, 4, 4,  "0", "0", 10, 10, true,  3, 3, 4, 4);       // no-op
 
-		assertFeedForwardPadding(5, 5, 4, 4,  "100%", "100%", 10, 10,  3, 3, 7, 7); // over-expand towards bottom right
-		assertFeedForwardPadding(1, 1, 4, 4,  "100%", "100%", 10, 10,  0, 0, 7, 7); // over-expand towards top left
-		assertFeedForwardPadding(1, 5, 4, 4,  "100%", "100%", 10, 10,  0, 3, 7, 7); // over-expand towards bottom left
-		assertFeedForwardPadding(5, 1, 4, 4,  "100%", "100%", 10, 10,  3, 0, 7, 7); // over-expand towards top right
+		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "50%", 10, 10, true,  3, 3, 7, 7);   // over-expand towards bottom right
+		assertFeedForwardPadding(1, 1, 4, 4,  "50%", "50%", 10, 10, true,  0, 0, 7, 7);   // over-expand towards top left
+		assertFeedForwardPadding(1, 5, 4, 4,  "50%", "50%", 10, 10, true,  0, 3, 7, 7);   // over-expand towards bottom left
+		assertFeedForwardPadding(5, 1, 4, 4,  "50%", "50%", 10, 10, true,  3, 0, 7, 7);   // over-expand towards top right
 
-		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "150%", 10, 10,  4, 2, 6, 8);  // over-expand towards bottom
-		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "300%", 10, 10,  4, 0, 6, 10); // over-expand towards top and bottom
+		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "75%", 10, 10, true,  4, 2, 6, 8);   // over-expand towards bottom
+		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "300%", 10, 10, true,  4, 0, 6, 10); // over-expand towards top and bottom
 
-		assertFeedForwardPadding(5, 5, 4, 4,  "150%", "50%", 10, 10,  2, 4, 8, 6);  // over-expand towards left
-		assertFeedForwardPadding(5, 5, 4, 4,  "300%", "50%", 10, 10,  0, 4, 10, 6); // over-expand towards left and right
+		assertFeedForwardPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, true,  2, 4, 8, 6);   // over-expand towards left
+		assertFeedForwardPadding(5, 5, 4, 4,  "300%", "25%", 10, 10, true,  0, 4, 10, 6); // over-expand towards left and right
 
-		assertFeedForwardPadding(3, 3, 4, 4,  "1", "50%", 10, 10,  2, 2, 6, 6);     // expand uniformly
+		assertFeedForwardPadding(3, 3, 4, 4,  "1", "25%", 10, 10, true,  2, 2, 6, 6); // expand uniformly
+		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "200%", 100, 100, true,  0, 0, 100, 100); // expand uniformly
+		assertFeedForwardPadding(40, 40, 20, 20,  "40", "40", 100, 100, true,  0, 0, 100, 100);     // expand uniformly
+		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "40", 100, 100, true,  0, 0, 100, 100);   // expand uniformly
 
-		// TODO: Different %s, mix %s and exacts, 0%s, 0 exacts
-		// TODO: How to handle rotation? Not crop anything?
+		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-25%", 100, 100, true,  45, 45, 10, 10); // shrink uniformly
+		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-5", 100, 100, true,  45, 45, 10, 10);   // shrink uniformly
+		assertFeedForwardPadding(40, 40, 20, 20,  "-50%", "-50%", 100, 100, true,  50, 50, 0, 0);   // shrink to nothing
+		assertFeedForwardPadding(40, 40, 20, 20,  "-100%", "-277", 100, 100, true,  50, 50, 0, 0);  // shrink beyond nothing
+		assertFeedForwardPadding(40, 40, 20, 20,  "-500%", "-500%", 100, 100, true,  50, 50, 0, 0); // shrink beyond nothing
+
+		assertFeedForwardPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, true,  20, 45, 60, 10); // expand and shrink
+
+		assertFeedForwardPadding(20, 20, 7, 7,  "-100%", "-100%", 40, 40, true,  24, 24, 0, 0); // shrink beyond nothing (not exact)
+		assertFeedForwardPadding(20, 20, 7, 7,  "-7", "-7", 40, 40, true,  24, 24, 0, 0);       // shrink beyond nothing (not exact)
+		assertFeedForwardPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
+		assertFeedForwardPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
+		assertFeedForwardPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, true,  22, 22, 3, 3);   // shrink uniformly (not exact)
 	}
 
 
-	private static void assertFeedForwardPadding(int x, int y, int width, int height,
-												 String xPadding, String yPadding, int frameWidth, int frameHeight,
+	private static void assertFeedForwardPadding(int x, int y, int width, int height, String xPadding, String yPadding,
+												 int frameWidth, int frameHeight, boolean clipToFrame,
 												 int expectedX, int expectedY, int expectedWidth, int expectedHeight) {
 		Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
 		Detection expectedDetection = new Detection(expectedX, expectedY, expectedWidth, expectedHeight, -1, 0, 0,
 				Collections.emptyMap());
-		Detection newDetection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
+		Detection newDetection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, clipToFrame);
 		assertEquals("Unexpected feed forward padding", expectedDetection, newDetection);
 	}
 

@@ -90,7 +90,7 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 			if (!xPadding.equals("0") || !yPadding.equals("0")) {
 				int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
 				int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
-				detection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
+				detection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, false);
 			}
 
 			ImageRequest imageRequest = ImageRequest.newBuilder()

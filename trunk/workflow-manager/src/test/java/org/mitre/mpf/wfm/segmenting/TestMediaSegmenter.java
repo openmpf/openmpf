@@ -343,11 +343,26 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testFeedForwardPadding() {
-		// assertFeedForwardPadding(5, 5, 4, 4,  "100%", "100%", 10, 10,  1, 1, 8, 8);
-		// assertFeedForwardPadding(4, 4, 4, 4,  "100%", "100%", 10, 10,  0, 0, 8, 8);
-		// assertFeedForwardPadding(3, 3, 4, 4,  "100%", "100%", 10, 10,  0, 0, 7, 7);
-		// assertFeedForwardPadding(6, 6, 4, 4,  "100%", "100%", 10, 10,  2, 2, 8, 8);
-		// assertFeedForwardPadding(7, 7, 4, 4,  "100%", "100%", 10, 10,  3, 3, 7, 7);
+		assertFeedForwardPadding(3, 3, 4, 4,  "50%", "50%", 10, 10,  2, 2, 6, 6);   // expand uniformly
+		assertFeedForwardPadding(3, 3, 4, 4,  "0%", "50%", 10, 10,  3, 2, 4, 6);    // expand height only
+		assertFeedForwardPadding(3, 3, 4, 4,  "50%", "0%", 10, 10,  2, 3, 6, 4);    // expand width only
+		assertFeedForwardPadding(3, 3, 4, 4,  "0", "0", 10, 10,  3, 3, 4, 4);       // no-op
+
+		assertFeedForwardPadding(5, 5, 4, 4,  "100%", "100%", 10, 10,  3, 3, 7, 7); // over-expand towards bottom right
+		assertFeedForwardPadding(1, 1, 4, 4,  "100%", "100%", 10, 10,  0, 0, 7, 7); // over-expand towards top left
+		assertFeedForwardPadding(1, 5, 4, 4,  "100%", "100%", 10, 10,  0, 3, 7, 7); // over-expand towards bottom left
+		assertFeedForwardPadding(5, 1, 4, 4,  "100%", "100%", 10, 10,  3, 0, 7, 7); // over-expand towards top right
+
+		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "150%", 10, 10,  4, 2, 6, 8);  // over-expand towards bottom
+		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "300%", 10, 10,  4, 0, 6, 10); // over-expand towards top and bottom
+
+		assertFeedForwardPadding(5, 5, 4, 4,  "150%", "50%", 10, 10,  2, 4, 8, 6);  // over-expand towards left
+		assertFeedForwardPadding(5, 5, 4, 4,  "300%", "50%", 10, 10,  0, 4, 10, 6); // over-expand towards left and right
+
+		assertFeedForwardPadding(3, 3, 4, 4,  "1", "50%", 10, 10,  2, 2, 6, 6);     // expand uniformly
+
+		// TODO: Different %s, mix %s and exacts, 0%s, 0 exacts
+		// TODO: How to handle rotation? Not crop anything?
 	}
 
 

@@ -270,12 +270,12 @@ public interface MediaSegmenter {
 			newY = 0;
 		}
 
-		int newWidth = detection.getWidth() + xOffset - gutterX;
+		int newWidth = detection.getWidth() + (2 * xOffset) - gutterX;
 		if (newX + newWidth > frameWidth) {
 			newWidth = frameWidth - newX;
 		}
 
-		int newHeight = detection.getHeight() + yOffset - gutterY;
+		int newHeight = detection.getHeight() + (2 * yOffset) - gutterY;
 		if (newY + newHeight > frameHeight) {
 			newHeight = frameHeight - newY;
 		}
@@ -289,11 +289,12 @@ public interface MediaSegmenter {
 	}
 
 
-	public static int getOffset(String padding, int base) {
-		if (padding.indexOf('%') != 0) {
+	public static int getOffset(String padding, int length) {
+		if (padding.indexOf('%') != -1) {
 			double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
-			percent += 100;
-			return (int) (percent / 200 * base);
+			percent = (percent / 100) + 1.0;
+			double newLength = percent * length;
+			return (int) (newLength - length) / 2; // half the diff
 		}
 		return Integer.parseInt(padding);
 	}

@@ -90,14 +90,14 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                         job, media.getId(), trackMergingContext.getStageIndex(), actionIndex);
 
-                String xPadding = combinedProperties.apply(MpfConstants.FINAL_X_PADDING);
+                String xPadding = combinedProperties.apply(MpfConstants.X_PADDING);
                 if (xPadding == null) {
-                    xPadding = _propertiesUtil.getFinalXPadding();
+                    xPadding = _propertiesUtil.getXPadding();
                 }
 
-                String yPadding = combinedProperties.apply(MpfConstants.FINAL_Y_PADDING);
+                String yPadding = combinedProperties.apply(MpfConstants.Y_PADDING);
                 if (yPadding == null) {
-                    yPadding = _propertiesUtil.getFinalYPadding();
+                    yPadding = _propertiesUtil.getYPadding();
                 }
 
                 if (!isEligible(xPadding) && !isEligible(yPadding)) {

@@ -184,7 +184,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * Return -1 for other (non-orthogonal) angles of rotation.
      */
     private static int getOrthogonalRotation(Detection detection) {
-        String rotation = detection.getDetectionProperties().get("ROTATION");
+        String rotation = detection.getDetectionProperties().get("ROTATION_ANGLE"); // TODO: Change to "ROTATION" in future releases
         if (rotation == null) {
             return 0;
         }

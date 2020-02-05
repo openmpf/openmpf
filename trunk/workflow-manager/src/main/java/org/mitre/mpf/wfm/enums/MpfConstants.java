@@ -56,8 +56,8 @@ public class MpfConstants {
             S3_SECRET_KEY_PROPERTY = "S3_SECRET_KEY",
             S3_RESULTS_BUCKET_PROPERTY = "S3_RESULTS_BUCKET",
             S3_UPLOAD_ONLY_PROPERTY = "S3_UPLOAD_ONLY",
-            X_PADDING = "X_PADDING",
-            Y_PADDING = "Y_PADDING";
+            DETECTION_PADDING_X = "DETECTION_PADDING_X",
+            DETECTION_PADDING_Y = "DETECTION_PADDING_Y";
 
 
     private MpfConstants() {

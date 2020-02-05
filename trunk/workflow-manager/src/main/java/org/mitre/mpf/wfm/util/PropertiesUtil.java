@@ -417,12 +417,12 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
-    public String getXPadding() {
-        return mpfPropertiesConfig.getString("detection.x.padding");
+    public String getDetectionPaddingX() {
+        return mpfPropertiesConfig.getString("detection.padding.x");
     }
 
-    public String getYPadding() {
-        return mpfPropertiesConfig.getString("detection.y.padding");
+    public String getDetectionPaddingY() {
+        return mpfPropertiesConfig.getString("detection.padding.y");
     }
 
     //

@@ -188,19 +188,19 @@ public class DetectionPaddingProcessor extends WfmProcessor {
         if (rotation == null) {
             return 0;
         }
-        try {
-            int rot = Integer.parseInt(rotation);
-            rot = rot % 360;
-            if (rot < 0) {
-                rot += 360;
-            }
-            if (rot % 90 == 0) {
-                return rot;
-            }
-            return -1;
-        } catch (NumberFormatException e) {
+        double tmp = Double.parseDouble(rotation);
+        int rot = (int)tmp;
+        if (Math.abs(tmp - rot) > 0) {
             return -1; // decimal rotations are not orthogonal
         }
+        rot = rot % 360;
+        if (rot < 0) {
+            rot += 360;
+        }
+        if (rot % 90 == 0) {
+            return rot;
+        }
+        return -1;
     }
 
 

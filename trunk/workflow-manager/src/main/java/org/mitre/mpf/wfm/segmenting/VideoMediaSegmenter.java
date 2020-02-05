@@ -80,12 +80,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 			assert segment.getEndInclusive() >= 0
 					: String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
 			log.debug("Creating segment [{}, {}] for {}.",
-			          segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
+					segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
 
 			VideoRequest videoRequest = VideoRequest.newBuilder()
-						.setStartFrame(segment.getStartInclusive())
-						.setStopFrame(segment.getEndInclusive())
-						.build();
+					.setStartFrame(segment.getStartInclusive())
+					.setStopFrame(segment.getEndInclusive())
+					.build();
 
 			messages.add(createProtobufMessage(media, context, videoRequest));
 		}
@@ -112,41 +112,11 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	private static List<Message> createFeedForwardMessages(TransientMedia media, DetectionContext context) {
 		int topConfidenceCount = getTopConfidenceCount(context);
 
-		String xPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_X_PADDING);
-		String yPadding = MediaSegmenter.getPadding(context, FEED_FORWARD_Y_PADDING);
-
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
 			if (track.getDetections().isEmpty()) {
 				log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
 				continue;
-			}
-
-			if (!xPadding.equals("0") || !yPadding.equals("0")) {
-				int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
-				int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
-
-				SortedSet<Detection> newDetections =
-						new TreeSet<>(Comparator.comparingDouble(Detection::getConfidence));
-
-				for (Detection detection : track.getDetections()) {
-					newDetections.add(
-							MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, false));
-				}
-
-				track = new Track(
-						track.getJobId(),
-						track.getMediaId(),
-						track.getStageIndex(),
-						track.getActionIndex(),
-						track.getStartOffsetFrameInclusive(),
-						track.getEndOffsetFrameInclusive(),
-						track.getStartOffsetTimeInclusive(),
-						track.getEndOffsetTimeInclusive(),
-						track.getType(),
-						track.getConfidence(),
-						newDetections,
-						track.getTrackProperties());
 			}
 
 			VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
@@ -183,8 +153,9 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 	}
 
 
+
 	private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
-	                                                               int topConfidenceCount) {
+																	int topConfidenceCount) {
 		if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
 			return allDetections;
 		}

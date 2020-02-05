@@ -137,25 +137,70 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
-                newDetections.add(padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, false));
+                int rotatedFrameWidth = frameWidth;
+                int rotatedFrameHeight = frameHeight;
+                boolean clipToFrame = false;
+
+                // Don't clip padded region to frame when the detection has a non-orthogonal rotation.
+                // Doing so may prevent capturing pixels near the frame corners.
+                int rotation = getOrthogonalRotation(detection);
+                if (rotation != -1) {
+                    clipToFrame = true;
+                    if (rotation == 90 || rotation == 270) {
+                        rotatedFrameWidth = frameHeight;
+                        rotatedFrameHeight = frameWidth;
+                    }
+                }
+                Detection newDetection = padDetection(xPadding, yPadding, rotatedFrameWidth, rotatedFrameHeight,
+                        detection, clipToFrame);
+                if (newDetection != null) {
+                    newDetections.add(newDetection);
+                }
             }
 
-            newTracks.add(new Track(
-                    track.getJobId(),
-                    track.getMediaId(),
-                    track.getStageIndex(),
-                    track.getActionIndex(),
-                    track.getStartOffsetFrameInclusive(),
-                    track.getEndOffsetFrameInclusive(),
-                    track.getStartOffsetTimeInclusive(),
-                    track.getEndOffsetTimeInclusive(),
-                    track.getType(),
-                    track.getConfidence(),
-                    newDetections,
-                    track.getTrackProperties()));
+            if (!newDetections.isEmpty()) {
+                newTracks.add(new Track(
+                        track.getJobId(),
+                        track.getMediaId(),
+                        track.getStageIndex(),
+                        track.getActionIndex(),
+                        track.getStartOffsetFrameInclusive(),
+                        track.getEndOffsetFrameInclusive(),
+                        track.getStartOffsetTimeInclusive(),
+                        track.getEndOffsetTimeInclusive(),
+                        track.getType(),
+                        track.getConfidence(),
+                        newDetections,
+                        track.getTrackProperties()));
+            }
         }
 
         return newTracks;
+    }
+
+
+    /**
+     * Return 0, 90, 180, or 270 if the detection has an orthogonal rotation, or no rotation.
+     * Return -1 for other (non-orthogonal) angles of rotation.
+     */
+    private static int getOrthogonalRotation(Detection detection) {
+        String rotation = detection.getDetectionProperties().get("ROTATION");
+        if (rotation == null) {
+            return 0;
+        }
+        try {
+            int rot = Integer.parseInt(rotation);
+            rot = rot % 360;
+            if (rot < 0) {
+                rot += 360;
+            }
+            if (rot % 90 == 0) {
+                return rot;
+            }
+            return -1;
+        } catch (NumberFormatException e) {
+            return -1; // decimal rotations are not orthogonal
+        }
     }
 
 
@@ -165,6 +210,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * respectively).
      * For example, an x padding value of 50% on a region with a width of 100 px results in a width of 200 px
      * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
+     * Return null if the new detection is shrunk to nothing.
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
                                          Detection detection, boolean clipToFrame) {
@@ -197,6 +243,10 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             newHeight = frameHeight - newY;
         }
         newHeight = Math.max(0, newHeight);
+
+        if (newWidth == 0 || newHeight == 0) {
+            return null; // drop empty detections
+        }
 
         return new Detection(
                 newX, newY, newWidth, newHeight,

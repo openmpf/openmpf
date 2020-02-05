@@ -341,93 +341,6 @@ public class TestMediaSegmenter {
 		assertEquals(new TimePair(0, 20), MediaSegmenter.merge(new TimePair(0, 15), new TimePair(10, 20)));
 	}
 
-	@Test
-	public void testFeedForwardPaddingWithClipToFrame() {
-		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "25%", 10, 10, true,  2, 2, 6, 6);   // expand uniformly
-		assertFeedForwardPadding(3, 3, 4, 4,  "0%", "25%", 10, 10, true,  3, 2, 4, 6);    // expand height only
-		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "0%", 10, 10, true,  2, 3, 6, 4);    // expand width only
-		assertFeedForwardPadding(3, 3, 4, 4,  "0", "0", 10, 10, true,  3, 3, 4, 4);       // no-op
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "50%", 10, 10, true,  3, 3, 7, 7);   // over-expand towards bottom right
-		assertFeedForwardPadding(1, 1, 4, 4,  "50%", "50%", 10, 10, true,  0, 0, 7, 7);   // over-expand towards top left
-		assertFeedForwardPadding(1, 5, 4, 4,  "50%", "50%", 10, 10, true,  0, 3, 7, 7);   // over-expand towards bottom left
-		assertFeedForwardPadding(5, 1, 4, 4,  "50%", "50%", 10, 10, true,  3, 0, 7, 7);   // over-expand towards top right
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "75%", 10, 10, true,  4, 2, 6, 8);   // over-expand towards bottom
-		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "300%", 10, 10, true,  4, 0, 6, 10); // over-expand towards top and bottom
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, true,  2, 4, 8, 6);   // over-expand towards left
-		assertFeedForwardPadding(5, 5, 4, 4,  "300%", "25%", 10, 10, true,  0, 4, 10, 6); // over-expand towards left and right
-
-		assertFeedForwardPadding(3, 3, 4, 4,  "1", "25%", 10, 10, true,  2, 2, 6, 6); // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "200%", 100, 100, true,  0, 0, 100, 100); // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "40", "40", 100, 100, true,  0, 0, 100, 100);     // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "40", 100, 100, true,  0, 0, 100, 100);   // expand uniformly
-
-		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-25%", 100, 100, true,  45, 45, 10, 10); // shrink uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-5", 100, 100, true,  45, 45, 10, 10);   // shrink uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "-50%", "-50%", 100, 100, true,  50, 50, 0, 0);   // shrink to nothing
-		assertFeedForwardPadding(40, 40, 20, 20,  "-100%", "-277", 100, 100, true,  50, 50, 0, 0);  // shrink beyond nothing
-		assertFeedForwardPadding(40, 40, 20, 20,  "-500%", "-500%", 100, 100, true,  50, 50, 0, 0); // shrink beyond nothing
-
-		assertFeedForwardPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, true,  20, 45, 60, 10); // expand and shrink
-
-		assertFeedForwardPadding(20, 20, 7, 7,  "-100%", "-100%", 40, 40, true,  24, 24, 0, 0); // shrink beyond nothing (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "-7", "-7", 40, 40, true,  24, 24, 0, 0);       // shrink beyond nothing (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, true,  22, 22, 3, 3);   // shrink uniformly (not exact)
-	}
-
-
-	@Test
-	public void testFeedForwardPaddingWithNoClipToFrame() {
-		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "25%", 10, 10, false,  2, 2, 6, 6);   // expand uniformly
-		assertFeedForwardPadding(3, 3, 4, 4,  "0%", "25%", 10, 10, false,  3, 2, 4, 6);    // expand height only
-		assertFeedForwardPadding(3, 3, 4, 4,  "25%", "0%", 10, 10, false,  2, 3, 6, 4);    // expand width only
-		assertFeedForwardPadding(3, 3, 4, 4,  "0", "0", 10, 10, false,  3, 3, 4, 4);       // no-op
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "50%", "50%", 10, 10, false,  3, 3, 8, 8);   // over-expand towards bottom right
-		assertFeedForwardPadding(1, 1, 4, 4,  "50%", "50%", 10, 10, false,  -1, -1, 8, 8); // over-expand towards top left
-		assertFeedForwardPadding(1, 5, 4, 4,  "50%", "50%", 10, 10, false,  -1, 3, 8, 8);  // over-expand towards bottom left
-		assertFeedForwardPadding(5, 1, 4, 4,  "50%", "50%", 10, 10, false,  3, -1, 8, 8);  // over-expand towards top right
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "75%", 10, 10, false,  4, 2, 6, 10);   // over-expand towards bottom
-		assertFeedForwardPadding(5, 5, 4, 4,  "25%", "300%", 10, 10, false,  4, -7, 6, 28); // over-expand towards top and bottom
-
-		assertFeedForwardPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, false,  2, 4, 10, 6);   // over-expand towards left
-		assertFeedForwardPadding(5, 5, 4, 4,  "300%", "25%", 10, 10, false,  -7, 4, 28, 6); // over-expand towards left and right
-
-		assertFeedForwardPadding(3, 3, 4, 4,  "1", "25%", 10, 10, false,  2, 2, 6, 6); // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "200%", 100, 100, false,  0, 0, 100, 100); // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "40", "40", 100, 100, false,  0, 0, 100, 100);     // expand uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "200%", "40", 100, 100, false,  0, 0, 100, 100);   // expand uniformly
-
-		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-25%", 100, 100, false,  45, 45, 10, 10); // shrink uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "-25%", "-5", 100, 100, false,  45, 45, 10, 10);   // shrink uniformly
-		assertFeedForwardPadding(40, 40, 20, 20,  "-50%", "-50%", 100, 100, false,  50, 50, 0, 0);   // shrink to nothing
-		assertFeedForwardPadding(40, 40, 20, 20,  "-100%", "-277", 100, 100, false,  50, 50, 0, 0);  // shrink beyond nothing
-		assertFeedForwardPadding(40, 40, 20, 20,  "-500%", "-500%", 100, 100, false,  50, 50, 0, 0); // shrink beyond nothing
-
-		assertFeedForwardPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, false,  20, 45, 60, 10); // expand and shrink
-
-		assertFeedForwardPadding(20, 20, 7, 7,  "-100%", "-100%", 40, 40, false,  24, 24, 0, 0); // shrink beyond nothing (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "-7", "-7", 40, 40, false,  24, 24, 0, 0);       // shrink beyond nothing (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
-		assertFeedForwardPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, false,  22, 22, 3, 3);   // shrink uniformly (not exact)
-	}
-
-
-	private static void assertFeedForwardPadding(int x, int y, int width, int height, String xPadding, String yPadding,
-												 int frameWidth, int frameHeight, boolean clipToFrame,
-												 int expectedX, int expectedY, int expectedWidth, int expectedHeight) {
-		Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
-		Detection expectedDetection = new Detection(expectedX, expectedY, expectedWidth, expectedHeight, -1, 0, 0,
-				Collections.emptyMap());
-		Detection newDetection = MediaSegmenter.padDetection(xPadding, yPadding, frameWidth, frameHeight, detection, clipToFrame);
-		assertEquals("Unexpected feed forward padding", expectedDetection, newDetection);
-	}
 
 
 	protected static void assertContainsAlgoProperty(String key, String value, Collection<DetectionRequest> requests) {
@@ -469,7 +382,7 @@ public class TestMediaSegmenter {
 	}
 
 	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
-	                                                           Set<Track> tracks) {
+																 Set<Track> tracks) {
 		return new DetectionContext(
 				1, stage, "STAGE_NAME", 0, "ACTION_NAME", stage == 0,
 				createTestAlgorithmProperties(additionalAlgoProps), tracks,
@@ -526,7 +439,7 @@ public class TestMediaSegmenter {
 	protected static Detection createDetection(int frame, float confidence) {
 		int dimensions = (int) confidence;
 		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-		                     createDetectionProperties(dimensions));
+				createDetectionProperties(dimensions));
 	}
 
 
@@ -546,7 +459,7 @@ public class TestMediaSegmenter {
 				.get();
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
-		                        exemplar.getConfidence(), detectionList, Collections.emptyMap());
+				exemplar.getConfidence(), detectionList, Collections.emptyMap());
 		return track;
 	}
 

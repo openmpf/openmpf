@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TestDetectionPaddingProcessor {
     
@@ -61,14 +62,14 @@ public class TestDetectionPaddingProcessor {
 
         assertPadding(40, 40, 20, 20,  "-25%", "-25%", 100, 100, true,  45, 45, 10, 10); // shrink uniformly
         assertPadding(40, 40, 20, 20,  "-25%", "-5", 100, 100, true,  45, 45, 10, 10);   // shrink uniformly
-        assertPadding(40, 40, 20, 20,  "-50%", "-50%", 100, 100, true,  50, 50, 0, 0);   // shrink to nothing
-        assertPadding(40, 40, 20, 20,  "-100%", "-277", 100, 100, true,  50, 50, 0, 0);  // shrink beyond nothing
-        assertPadding(40, 40, 20, 20,  "-500%", "-500%", 100, 100, true,  50, 50, 0, 0); // shrink beyond nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-50%", "-50%", 100, 100, true);            // shrink to nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-100%", "-277", 100, 100, true);           // shrink beyond nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-500%", "-500%", 100, 100, true);          // shrink beyond nothing
 
         assertPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, true,  20, 45, 60, 10); // expand and shrink
 
-        assertPadding(20, 20, 7, 7,  "-100%", "-100%", 40, 40, true,  24, 24, 0, 0); // shrink beyond nothing (not exact)
-        assertPadding(20, 20, 7, 7,  "-7", "-7", 40, 40, true,  24, 24, 0, 0);       // shrink beyond nothing (not exact)
+        assertPaddingToNull(20, 20, 7, 7,  "-100%", "-100%", 40, 40, true);          // shrink beyond nothing (not exact)
+        assertPaddingToNull(20, 20, 7, 7,  "-7", "-7", 40, 40, true);                // shrink beyond nothing (not exact)
         assertPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, true,  22, 22, 3, 3);   // shrink uniformly (not exact)
@@ -100,14 +101,14 @@ public class TestDetectionPaddingProcessor {
 
         assertPadding(40, 40, 20, 20,  "-25%", "-25%", 100, 100, false,  45, 45, 10, 10); // shrink uniformly
         assertPadding(40, 40, 20, 20,  "-25%", "-5", 100, 100, false,  45, 45, 10, 10);   // shrink uniformly
-        assertPadding(40, 40, 20, 20,  "-50%", "-50%", 100, 100, false,  50, 50, 0, 0);   // shrink to nothing
-        assertPadding(40, 40, 20, 20,  "-100%", "-277", 100, 100, false,  50, 50, 0, 0);  // shrink beyond nothing
-        assertPadding(40, 40, 20, 20,  "-500%", "-500%", 100, 100, false,  50, 50, 0, 0); // shrink beyond nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-50%", "-50%", 100, 100, false);            // shrink to nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-100%", "-277", 100, 100, false);           // shrink beyond nothing
+        assertPaddingToNull(40, 40, 20, 20,  "-500%", "-500%", 100, 100, false);          // shrink beyond nothing
 
         assertPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, false,  20, 45, 60, 10); // expand and shrink
 
-        assertPadding(20, 20, 7, 7,  "-100%", "-100%", 40, 40, false,  24, 24, 0, 0); // shrink beyond nothing (not exact)
-        assertPadding(20, 20, 7, 7,  "-7", "-7", 40, 40, false,  24, 24, 0, 0);       // shrink beyond nothing (not exact)
+        assertPaddingToNull(20, 20, 7, 7,  "-100%", "-100%", 40, 40, false);          // shrink beyond nothing (not exact)
+        assertPaddingToNull(20, 20, 7, 7,  "-7", "-7", 40, 40, false);                // shrink beyond nothing (not exact)
         assertPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, false,  22, 22, 3, 3);   // shrink uniformly (not exact)
@@ -123,5 +124,14 @@ public class TestDetectionPaddingProcessor {
         Detection newDetection = DetectionPaddingProcessor.padDetection(xPadding, yPadding, frameWidth, frameHeight,
                 detection, clipToFrame);
         assertEquals("Unexpected padding", expectedDetection, newDetection);
+    }
+
+
+    private static void assertPaddingToNull(int x, int y, int width, int height, String xPadding, String yPadding,
+                                      int frameWidth, int frameHeight, boolean clipToFrame) {
+        Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
+        Detection newDetection = DetectionPaddingProcessor.padDetection(xPadding, yPadding, frameWidth, frameHeight,
+                detection, clipToFrame);
+        assertNull("Expected null detection", newDetection);
     }
 }

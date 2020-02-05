@@ -125,7 +125,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 						break;
 
 					case IMAGE:
-						length = inspectImage(localPath, mediaMetadata);
+						length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
 						break;
 
 					default:
@@ -244,7 +244,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		return frameCount;
 	}
 
-	private int inspectImage(Path localPath, Map<String, String> mediaMetdata)
+	private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
 			throws IOException, TikaException, SAXException {
 		Metadata imageMetadata = generateExifMetadata(localPath);
 
@@ -254,6 +254,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
 		if (widthStr == null || heightStr == null) {
 			// As a last resort, load the whole image into memory.
 			BufferedImage bimg = ImageIO.read(localPath.toFile());
+			if (bimg == null) {
+				inProgressJobs.addMediaError(jobId, mediaId,
+						"Cannot detect image file frame size. Cannot read image file.");
+				return -1;
+			}
 			widthStr = Integer.toString(bimg.getWidth());
 			heightStr = Integer.toString(bimg.getHeight());
 		}

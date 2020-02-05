@@ -51,10 +51,6 @@ public interface MediaSegmenter {
 
 	public static final String FEED_FORWARD_TOP_CONFIDENCE_COUNT = "FEED_FORWARD_TOP_CONFIDENCE_COUNT";
 
-	public static final String FEED_FORWARD_X_PADDING = "FEED_FORWARD_X_PADDING";
-
-	public static final String FEED_FORWARD_Y_PADDING = "FEED_FORWARD_Y_PADDING";
-
 	static final Set<String> FEED_FORWARD_TYPES
 			= ImmutableSet.of("NONE", "FRAME", "SUPERSET_REGION", "REGION");
 
@@ -88,7 +84,7 @@ public interface MediaSegmenter {
 	}
 
 
-	public static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
+	static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> getAlgoProps(DetectionContext context) {
 		if (context.isFirstDetectionStage()) {
 			return context.getAlgorithmProperties().stream()
 					.filter(ap -> !ap.getPropertyName().equalsIgnoreCase(FEED_FORWARD_TYPE))
@@ -147,7 +143,7 @@ public interface MediaSegmenter {
 
 
 	public static List<TimePair> createSegments(Collection<TimePair> inputs, int targetSegmentLength,
-	                                            int minSegmentLength, int minGapBetweenSegments) {
+												int minSegmentLength, int minGapBetweenSegments) {
 		if (inputs == null || inputs.isEmpty()) {
 			// If the input collection was empty (or null), no segments should be returned.
 			return Collections.emptyList();
@@ -179,7 +175,6 @@ public interface MediaSegmenter {
 		result.addAll(segment(current, targetSegmentLength, minSegmentLength));
 		return result;
 	}
-
 
 	/**
 	 * Divides a large segment into a collection of one or more segments which respect the target and minimum segment
@@ -217,7 +212,6 @@ public interface MediaSegmenter {
 		return result;
 	}
 
-
 	/**
 	 * Returns {@link java.lang.Boolean#TRUE} iff the current and probe tracks overlap each other from a temporal context.
 	 * Assumes that the current track has a start time which is less than or equal to the target track's start time.
@@ -229,89 +223,12 @@ public interface MediaSegmenter {
 				target.getStartInclusive() - current.getEndInclusive() <= minGapBetweenSegments;
 	}
 
-
 	/**
 	 * Modifies the current TimePair such that it includes the entire range represented by the current
 	 * and target TimePairs.
 	 */
 	public static TimePair merge(TimePair current, TimePair target) {
 		return new TimePair(current.getStartInclusive(),
-		                    Math.max(current.getEndInclusive(), target.getEndInclusive()));
-	}
-
-
-	public static String getPadding(DetectionContext context, String propertyName) {
-		String padding = context.getAlgorithmProperties()
-				.stream()
-				.filter(ap -> ap.getPropertyName().equalsIgnoreCase(propertyName))
-				.map(ap -> ap.getPropertyValue())
-				.findAny()
-				.orElse("0");
-		return padding.equals("0%") ? "0" : padding;
-	}
-
-
-	/**
-	 * Padding is applied uniformly on both sides of the detection region.
-	 * For example, an x padding value of 50 increases the width by 100 px (50 px padded on the left and right,
-	 * respectively).
-	 * For example, an x padding value of 50% on a region with a width of 100 px results in a width of 200 px
-	 * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
-	 */
-	public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
-										 Detection detection, boolean clipToFrame) {
-		int xOffset = getOffset(xPadding, detection.getWidth());
-		int yOffset = getOffset(yPadding, detection.getHeight());
-
-		int newX = detection.getX() - xOffset;
-		int gutterX = 0;
-
-		if (clipToFrame && (newX < 0)) {
-			gutterX = Math.abs(newX);
-			newX = 0;
-		}
-
-		int newY = detection.getY() - yOffset;
-		int gutterY = 0;
-		if (clipToFrame && (newY < 0)) {
-			gutterY = Math.abs(newY);
-			newY = 0;
-		}
-
-		int newWidth = detection.getWidth() + (2 * xOffset) - gutterX;
-		if (clipToFrame && (newX + newWidth > frameWidth)) {
-			newWidth = frameWidth - newX;
-		}
-		newWidth = Math.max(0, newWidth);
-
-		int newHeight = detection.getHeight() + (2 * yOffset) - gutterY;
-		if (clipToFrame && (newY + newHeight > frameHeight)) {
-			newHeight = frameHeight - newY;
-		}
-		newHeight = Math.max(0, newHeight);
-
-		return new Detection(
-				newX, newY, newWidth, newHeight,
-				detection.getConfidence(),
-				detection.getMediaOffsetFrame(),
-				detection.getMediaOffsetTime(),
-				detection.getDetectionProperties());
-	}
-
-
-	public static int getOffset(String padding, int length) {
-		if (padding.indexOf('%') != -1) {
-			double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
-			percent = Math.max(-50, percent); // can't shrink to less than nothing
-			percent = (percent / 100) + 1.0;
-			double newLength = percent * length;
-			double offset = newLength - length;
-			return (int) (Math.signum(offset) * Math.ceil(Math.abs(offset))); // get negative or positive extreme
-		}
-		int offset = Integer.parseInt(padding);
-		if (length + (offset * 2) < 0) { // can't shrink to less than nothing
-			return (int) Math.floor(length / -2.0); // get negative extreme
-		}
-		return offset;
+				Math.max(current.getEndInclusive(), target.getEndInclusive()));
 	}
 }

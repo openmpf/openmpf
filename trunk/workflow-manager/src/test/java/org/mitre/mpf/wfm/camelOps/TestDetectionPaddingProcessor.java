@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.junit.Test;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionPaddingProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 import java.util.Collections;

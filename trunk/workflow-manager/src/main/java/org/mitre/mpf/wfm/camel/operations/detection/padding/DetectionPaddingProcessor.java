@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection;
+package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -90,19 +90,24 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                         job, media.getId(), trackMergingContext.getStageIndex(), actionIndex);
 
+                try {
+                    if (!requiresPadding(combinedProperties)) {
+                        continue;
+                    }
+                } catch (DetectionPaddingException e) {
+                    // This should not happen because we checked that the detection properties were valid when the
+                    // job was created.
+                    throw new WfmProcessingException(e);
+                }
+
                 String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                 if (xPadding == null) {
-
                     xPadding = _propertiesUtil.getDetectionPaddingX();
                 }
 
                 String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
                 if (yPadding == null) {
                     yPadding = _propertiesUtil.getDetectionPaddingY();
-                }
-
-                if (!isEligible(xPadding) && !isEligible(yPadding)) {
-                    continue;
                 }
 
                 int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
@@ -122,16 +127,45 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    private static boolean isEligible(String padding) {
-        if (padding.endsWith("%")) {
-            return Double.parseDouble(padding.substring(0, padding.length()-1)) != 0;
-        }
-        return Integer.parseInt(padding) != 0;
+    public static boolean requiresPadding(Function<String, String> properties)
+            throws DetectionPaddingException {
+        return requiresPadding(properties, MpfConstants.DETECTION_PADDING_X) ||
+               requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y);
     }
 
 
-    private Collection<Track> processTracks(String xPadding, String yPadding, int frameWidth, int frameHeight,
-                                      Iterable<Track> tracks) {
+    private static boolean requiresPadding(Function<String, String> properties, String propertyName)
+            throws DetectionPaddingException {
+        String padding = properties.apply(MpfConstants.DETECTION_PADDING_X);
+        if (padding == null) {
+            return false;
+        }
+        try {
+            if (padding.endsWith("%")) {
+                double xPercent = Double.parseDouble(padding.substring(0, padding.length() - 1));
+                if (xPercent <= -50.0) {
+                    // can't shrink to nothing
+                    throw new DetectionPaddingException(String.format(
+                            "The %s property was set to \"%s\", but that would result in empty detections. " +
+                                    "When specified as a percentage, padding values must be > -50%.",
+                            propertyName, padding));
+                }
+                return xPercent != 0.0;
+            }
+            return Integer.parseInt(padding) != 0;
+        } catch (NumberFormatException e) {
+            throw new DetectionPaddingException(String.format(
+                    "The %s property was set to \"%s\", but that is not a valid value. " +
+                            "Padding must be specified as whole number integer, or a percentage that ends " +
+                            "with \"%\". Percentages can be decimal values. Negative values are allowed in both " +
+                            "cases, but percentages must be > -50%.",
+                    propertyName, padding));
+        }
+    }
+
+
+    private static Collection<Track> processTracks(String xPadding, String yPadding, int frameWidth, int frameHeight,
+                                                   Iterable<Track> tracks) {
         SortedSet<Track> newTracks = new TreeSet<>();
 
         for (Track track : tracks) {

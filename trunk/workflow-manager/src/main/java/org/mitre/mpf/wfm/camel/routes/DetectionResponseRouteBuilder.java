@@ -33,7 +33,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledStringCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionPaddingProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;

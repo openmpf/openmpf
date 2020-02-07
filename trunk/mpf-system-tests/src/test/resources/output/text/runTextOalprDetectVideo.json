@@ -43,7 +43,9 @@
             "mediaMetadata": {
                 "DURATION": "19069",
                 "FPS": "23.98",
-                "FRAME_COUNT": "471"
+                "FRAME_COUNT": "471",
+                "FRAME_HEIGHT": "1080",
+                "FRAME_WIDTH": "1920"
             },
             "mediaProperties": {},
             "markupResult": null,
@@ -5645,7 +5647,9 @@
             "mediaMetadata": {
                 "DURATION": "16025",
                 "FPS": "29.97",
-                "FRAME_COUNT": "486"
+                "FRAME_COUNT": "486",
+                "FRAME_HEIGHT": "720",
+                "FRAME_WIDTH": "1280"
             },
             "mediaProperties": {},
             "markupResult": null,

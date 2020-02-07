@@ -40,7 +40,9 @@
       "mediaMetadata": {
         "DURATION": "17007",
         "FPS": "29.97",
-        "FRAME_COUNT": "511"
+        "FRAME_COUNT": "511",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "640"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -2986,7 +2988,9 @@
       "mediaMetadata": {
         "DURATION": "3004",
         "FPS": "29.97",
-        "FRAME_COUNT": "90"
+        "FRAME_COUNT": "90",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "640"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -5406,7 +5410,9 @@
       "mediaMetadata": {
         "DURATION": "17041",
         "FPS": "29.97",
-        "FRAME_COUNT": "521"
+        "FRAME_COUNT": "521",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "640"
       },
       "mediaProperties": {},
       "markupResult": null,

@@ -39,6 +39,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "EXIF_ORIENTATION": "1",
+        "FRAME_HEIGHT": "606",
+        "FRAME_WIDTH": "809",
         "HORIZONTAL_FLIP": "FALSE",
         "ROTATION": "0"
       },
@@ -110,7 +112,10 @@
       "sha256": "8702265ab5e48b937fc874bee33e9e20e44d9c5cf0e51acff574e96c7c1a4a34",
       "message": null,
       "status": "COMPLETE",
-      "mediaMetadata": {},
+      "mediaMetadata": {
+        "FRAME_HEIGHT": "1943",
+        "FRAME_WIDTH": "3597"
+      },
       "mediaProperties": {},
       "markupResult": null,
       "output": {
@@ -180,6 +185,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "FRAME_HEIGHT": "2037",
+        "FRAME_WIDTH": "3207"
       },
       "mediaProperties": {},
       "markupResult": null,

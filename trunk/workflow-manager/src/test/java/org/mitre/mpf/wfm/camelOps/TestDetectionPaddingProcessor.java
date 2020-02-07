@@ -52,7 +52,7 @@ public class TestDetectionPaddingProcessor {
         assertPadding(5, 5, 4, 4,  "25%", "75%", 10, 10, true,  4, 2, 6, 8);   // over-expand towards bottom
         assertPadding(5, 5, 4, 4,  "25%", "300%", 10, 10, true,  4, 0, 6, 10); // over-expand towards top and bottom
 
-        assertPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, true,  2, 4, 8, 6);   // over-expand towards left
+        assertPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, true,  2, 4, 8, 6);   // over-expand towards right
         assertPadding(5, 5, 4, 4,  "300%", "25%", 10, 10, true,  0, 4, 10, 6); // over-expand towards left and right
 
         assertPadding(3, 3, 4, 4,  "1", "25%", 10, 10, true,  2, 2, 6, 6); // expand uniformly
@@ -73,6 +73,9 @@ public class TestDetectionPaddingProcessor {
         assertPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, true,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, true,  22, 22, 3, 3);   // shrink uniformly (not exact)
+
+        assertPadding(6, 4, 4, 6,  "50%", "33.3%", 10, 20, true,  4, 2, 6, 10); // over-expand towards right (height > width)
+        assertPadding(6, 4, 4, 6,  "50%", "33.3%", 20, 10, true,  4, 2, 8, 8);  // over-expand towards bottom (width > height)
     }
 
 
@@ -91,7 +94,7 @@ public class TestDetectionPaddingProcessor {
         assertPadding(5, 5, 4, 4,  "25%", "75%", 10, 10, false,  4, 2, 6, 10);   // over-expand towards bottom
         assertPadding(5, 5, 4, 4,  "25%", "300%", 10, 10, false,  4, -7, 6, 28); // over-expand towards top and bottom
 
-        assertPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, false,  2, 4, 10, 6);   // over-expand towards left
+        assertPadding(5, 5, 4, 4,  "75%", "25%", 10, 10, false,  2, 4, 10, 6);   // over-expand towards right
         assertPadding(5, 5, 4, 4,  "300%", "25%", 10, 10, false,  -7, 4, 28, 6); // over-expand towards left and right
 
         assertPadding(3, 3, 4, 4,  "1", "25%", 10, 10, false,  2, 2, 6, 6); // expand uniformly
@@ -112,6 +115,9 @@ public class TestDetectionPaddingProcessor {
         assertPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, false,  18, 18, 11, 11);   // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, false,  22, 22, 3, 3);   // shrink uniformly (not exact)
+
+        assertPadding(6, 4, 4, 6,  "50%", "33.3%", 10, 20, false,  4, 2, 8, 10); // over-expand towards right (height > width)
+        assertPadding(6, 4, 4, 6,  "50%", "33.3%", 20, 10, false,  4, 2, 8, 10);  // over-expand towards bottom (width > height)
     }
 
 

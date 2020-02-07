@@ -118,12 +118,12 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             }
         }
 
-        exchange.getOut().setBody(_jsonUtils.serialize(trackMergingContext));
+        exchange.getOut().setBody(trackMergingContext);
     }
 
 
     private static boolean isEligible(String padding) {
-        if (padding.indexOf('%') != -1) {
+        if (padding.endsWith("%")) {
             return Double.parseDouble(padding.substring(0, padding.length()-1)) != 0;
         }
         return Integer.parseInt(padding) != 0;
@@ -258,13 +258,11 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    public static int getOffset(String padding, int length) {
-        if (padding.indexOf('%') != -1) {
+    private static int getOffset(String padding, int length) {
+        if (padding.endsWith("%")) {
             double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
             percent = Math.max(-50, percent); // can't shrink to less than nothing
-            percent = (percent / 100) + 1.0;
-            double newLength = percent * length;
-            double offset = newLength - length;
+            double offset = length * percent / 100;
             return (int) (Math.signum(offset) * Math.ceil(Math.abs(offset))); // get negative or positive extreme
         }
         int offset = Integer.parseInt(padding);

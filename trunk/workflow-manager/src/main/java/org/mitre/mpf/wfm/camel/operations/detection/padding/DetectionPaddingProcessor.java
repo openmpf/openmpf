@@ -123,7 +123,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             }
         }
 
-        exchange.getOut().setBody(trackMergingContext);
+        exchange.getOut().setBody(exchange.getIn().getBody());
     }
 
 
@@ -147,7 +147,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                     // can't shrink to nothing
                     throw new DetectionPaddingException(String.format(
                             "The %s property was set to \"%s\", but that would result in empty detections. " +
-                                    "When specified as a percentage, padding values must be > -50%.",
+                                    "When specified as a percentage, padding values must be > -50%%.",
                             propertyName, padding));
                 }
                 return xPercent != 0.0;
@@ -157,8 +157,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             throw new DetectionPaddingException(String.format(
                     "The %s property was set to \"%s\", but that is not a valid value. " +
                             "Padding must be specified as whole number integer, or a percentage that ends " +
-                            "with \"%\". Percentages can be decimal values. Negative values are allowed in both " +
-                            "cases, but percentages must be > -50%.",
+                            "with \"%%\". Percentages can be decimal values. Negative values are allowed in both " +
+                            "cases, but percentages must be > -50%%.",
                     propertyName, padding));
         }
     }

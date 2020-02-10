@@ -37,17 +37,20 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.awt.*;
+import java.util.*;
 import java.util.function.Function;
 
 @Component(DetectionPaddingProcessor.REF)
 public class DetectionPaddingProcessor extends WfmProcessor {
     public static final String REF = "detectionPaddingProcessor";
+
+    private static final Logger _log = LoggerFactory.getLogger(DetectionPaddingProcessor.class);
 
     private final JsonUtils _jsonUtils;
 
@@ -116,7 +119,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
                         trackMergingContext.getStageIndex(), actionIndex);
 
-                Collection<Track> newTracks = processTracks(xPadding, yPadding, frameWidth, frameHeight, tracks);
+                Collection<Track> newTracks = processTracks(
+                        job.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
 
                 _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
                         trackMergingContext.getStageIndex(), actionIndex, newTracks);
@@ -164,8 +168,9 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    private static Collection<Track> processTracks(String xPadding, String yPadding, int frameWidth, int frameHeight,
-                                                   Iterable<Track> tracks) {
+    private Collection<Track> processTracks(long jobId, String xPadding, String yPadding,
+                                                   int frameWidth, int frameHeight, Iterable<Track> tracks) {
+        boolean shrunkToNothing = false;
         SortedSet<Track> newTracks = new TreeSet<>();
 
         for (Track track : tracks) {
@@ -188,26 +193,30 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 }
                 Detection newDetection = padDetection(xPadding, yPadding, rotatedFrameWidth, rotatedFrameHeight,
                         detection, clipToFrame);
-                if (newDetection != null) {
-                    newDetections.add(newDetection);
-                }
+                shrunkToNothing |= newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
+                newDetections.add(newDetection);
             }
 
-            if (!newDetections.isEmpty()) {
-                newTracks.add(new Track(
-                        track.getJobId(),
-                        track.getMediaId(),
-                        track.getStageIndex(),
-                        track.getActionIndex(),
-                        track.getStartOffsetFrameInclusive(),
-                        track.getEndOffsetFrameInclusive(),
-                        track.getStartOffsetTimeInclusive(),
-                        track.getEndOffsetTimeInclusive(),
-                        track.getType(),
-                        track.getConfidence(),
-                        newDetections,
-                        track.getTrackProperties()));
-            }
+            newTracks.add(new Track(
+                    track.getJobId(),
+                    track.getMediaId(),
+                    track.getStageIndex(),
+                    track.getActionIndex(),
+                    track.getStartOffsetFrameInclusive(),
+                    track.getEndOffsetFrameInclusive(),
+                    track.getStartOffsetTimeInclusive(),
+                    track.getEndOffsetTimeInclusive(),
+                    track.getType(),
+                    track.getConfidence(),
+                    newDetections,
+                    track.getTrackProperties()));
+        }
+
+        if (shrunkToNothing) {
+            _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
+                    "1-pixel detection regions used instead.", jobId));
+            _inProgressBatchJobs.addJobWarning(jobId, "Shrunk one or more detection regions to nothing. " +
+                    "1-pixel detection regions used instead.");
         }
 
         return newTracks;
@@ -249,50 +258,36 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * respectively).
      * For example, an x padding value of 50% on a region with a width of 100 px results in a width of 200 px
      * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
-     * Return null if the new detection is shrunk to nothing.
+     * If the detection is shrunk to nothing, return a 1-pixel detection.
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
                                          Detection detection, boolean clipToFrame) {
-        int xOffset = getOffset(xPadding, detection.getWidth());
-        int yOffset = getOffset(yPadding, detection.getHeight());
+        int deltaX = getOffset(xPadding, detection.getWidth());
+        int deltaY = getOffset(yPadding, detection.getHeight());
 
-        int newX = detection.getX() - xOffset;
-        int gutterX = 0;
+        Rectangle detectionRect = new Rectangle(detection.getX(), detection.getY(),
+                detection.getWidth(), detection.getHeight());
+        detectionRect.grow(deltaX, deltaY);
 
-        if (clipToFrame && (newX < 0)) {
-            gutterX = Math.abs(newX);
-            newX = 0;
+        if (clipToFrame) {
+            Rectangle frameRect = new Rectangle(0, 0, frameWidth, frameHeight);
+            detectionRect = detectionRect.intersection(frameRect);
         }
 
-        int newY = detection.getY() - yOffset;
-        int gutterY = 0;
-        if (clipToFrame && (newY < 0)) {
-            gutterY = Math.abs(newY);
-            newY = 0;
-        }
-
-        int newWidth = detection.getWidth() + (2 * xOffset) - gutterX;
-        if (clipToFrame && (newX + newWidth > frameWidth)) {
-            newWidth = frameWidth - newX;
-        }
-        newWidth = Math.max(0, newWidth);
-
-        int newHeight = detection.getHeight() + (2 * yOffset) - gutterY;
-        if (clipToFrame && (newY + newHeight > frameHeight)) {
-            newHeight = frameHeight - newY;
-        }
-        newHeight = Math.max(0, newHeight);
-
-        if (newWidth == 0 || newHeight == 0) {
-            return null; // drop empty detections
+        SortedMap<String,String> detectionProperties = detection.getDetectionProperties();
+        if (detectionRect.isEmpty()) {
+            // return a 1-pixel detection at detection center
+            detectionRect = new Rectangle((int)detectionRect.getCenterX(), (int)detectionRect.getCenterY(), 1, 1);
+            detectionProperties = new TreeMap<>(detection.getDetectionProperties());
+            detectionProperties.put("SHRUNK_TO_NOTHING", "TRUE");
         }
 
         return new Detection(
-                newX, newY, newWidth, newHeight,
+                detectionRect.x, detectionRect.y, detectionRect.width, detectionRect.height,
                 detection.getConfidence(),
                 detection.getMediaOffsetFrame(),
                 detection.getMediaOffsetTime(),
-                detection.getDetectionProperties());
+                detectionProperties);
     }
 
 

@@ -138,7 +138,7 @@ public class TestDetectionPaddingProcessor {
         Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
         Detection newDetection = DetectionPaddingProcessor.padDetection(xPadding, yPadding, frameWidth, frameHeight,
                 detection, clipToFrame);
-        assertTrue("Expected SHRINK_TO_NOTHING.",
+        assertTrue("Expected SHRUNK_TO_NOTHING.",
                 newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING"));
     }
 }

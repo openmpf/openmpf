@@ -136,21 +136,21 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
     private static boolean requiresPadding(Function<String, String> properties, String propertyName)
             throws DetectionPaddingException {
-        String padding = properties.apply(MpfConstants.DETECTION_PADDING_X);
+        String padding = properties.apply(propertyName);
         if (padding == null) {
             return false;
         }
         try {
             if (padding.endsWith("%")) {
-                double xPercent = Double.parseDouble(padding.substring(0, padding.length() - 1));
-                if (xPercent <= -50.0) {
+                double percent = Double.parseDouble(padding.substring(0, padding.length() - 1));
+                if (percent <= -50.0) {
                     // can't shrink to nothing
                     throw new DetectionPaddingException(String.format(
                             "The %s property was set to \"%s\", but that would result in empty detections. " +
                                     "When specified as a percentage, padding values must be > -50%%.",
                             propertyName, padding));
                 }
-                return xPercent != 0.0;
+                return percent != 0.0;
             }
             return Integer.parseInt(padding) != 0;
         } catch (NumberFormatException e) {
@@ -219,9 +219,13 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * Return -1 for other (non-orthogonal) angles of rotation.
      */
     private static int getOrthogonalRotation(Detection detection) {
-        String rotation = detection.getDetectionProperties().get("ROTATION_ANGLE"); // TODO: Change to "ROTATION" in future releases
+        String rotation = detection.getDetectionProperties().get("ROTATION");
         if (rotation == null) {
-            return 0;
+            // TODO: ROTATION_ANGLE is not used in R4.1+
+            rotation = detection.getDetectionProperties().get("ROTATION_ANGLE");
+            if (rotation == null) {
+                return 0;
+            }
         }
         double tmp = Double.parseDouble(rotation);
         int rot = (int)tmp;

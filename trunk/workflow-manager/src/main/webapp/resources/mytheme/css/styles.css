@@ -41,8 +41,8 @@ html, body{
 
 .arrow-up {
     float: right;
-	width: 0; 
-	height: 0;  
+	width: 0;
+	height: 0;
 	border-left: 15px solid transparent;
 	border-right: 15px solid transparent;
 	border-bottom: 15px solid blue;
@@ -50,12 +50,12 @@ html, body{
 
 .arrow-down {
     float: right;
-	
-	width: 0; 
-	height: 0; 
+
+	width: 0;
+	height: 0;
 	border-left: 15px solid transparent;
 	border-right: 15px solid transparent;
-	
+
 	border-top: 15px solid green;
 }
 
@@ -116,6 +116,19 @@ html, body{
 }
 .nav .dropdown{
     cursor: pointer;
+}
+
+
+#version-header {
+    position: absolute;
+    left: 47%;
+    color: #FFF;
+}
+
+@media (min-width: 768px) and (max-width: 845px) {
+    #version-header {
+        left: 55%
+    }
 }
 
 .container-fluid {

@@ -113,8 +113,8 @@ public class TestDetectionPaddingProcessor {
 
         assertPadding(40, 40, 20, 20,  "100%", "-5", 100, 100, false,  20, 45, 60, 10); // expand and shrink
 
-        assertShrinkToNothing(20, 20, 7, 7,  "-100%", "-100%", 40, 40, true, 23, 23, 1, 1); // shrink beyond nothing (not exact)
-        assertShrinkToNothing(20, 20, 7, 7,  "-7", "-7", 40, 40, true, 23, 23, 1, 1);       // shrink beyond nothing (not exact)
+        assertShrinkToNothing(20, 20, 7, 7,  "-100%", "-100%", 40, 40, false, 23, 23, 1, 1); // shrink beyond nothing (not exact)
+        assertShrinkToNothing(20, 20, 7, 7,  "-7", "-7", 40, 40, false, 23, 23, 1, 1);       // shrink beyond nothing (not exact)
         assertPadding(20, 20, 7, 7,  "25%", "25%", 40, 40, false,  18, 18, 11, 11); // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "21%", "21%", 40, 40, false,  18, 18, 11, 11); // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7,  "-21%", "-21%", 40, 40, false,  22, 22, 3, 3); // shrink uniformly (not exact)

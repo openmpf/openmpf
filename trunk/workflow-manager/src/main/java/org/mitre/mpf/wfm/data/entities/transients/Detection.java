@@ -138,7 +138,7 @@ public class Detection implements Comparable<Detection> {
 			_x,
 			_y,
 			(_x + _width),
-			(_y + _width),
+			(_y + _height),
 			_confidence,
 			_mediaOffsetFrame,
 			_mediaOffsetTime,

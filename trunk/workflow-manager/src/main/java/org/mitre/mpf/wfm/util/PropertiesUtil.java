@@ -417,6 +417,14 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
+    public String getDetectionPaddingX() {
+        return mpfPropertiesConfig.getString("detection.padding.x");
+    }
+
+    public String getDetectionPaddingY() {
+        return mpfPropertiesConfig.getString("detection.padding.y");
+    }
+
     //
     // JMS configuration
     //

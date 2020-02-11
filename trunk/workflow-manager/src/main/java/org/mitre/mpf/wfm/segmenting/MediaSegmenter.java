@@ -143,7 +143,7 @@ public interface MediaSegmenter {
 
 
 	public static List<TimePair> createSegments(Collection<TimePair> inputs, int targetSegmentLength,
-	                                            int minSegmentLength, int minGapBetweenSegments) {
+												int minSegmentLength, int minGapBetweenSegments) {
 		if (inputs == null || inputs.isEmpty()) {
 			// If the input collection was empty (or null), no segments should be returned.
 			return Collections.emptyList();
@@ -229,6 +229,6 @@ public interface MediaSegmenter {
 	 */
 	public static TimePair merge(TimePair current, TimePair target) {
 		return new TimePair(current.getStartInclusive(),
-		                    Math.max(current.getEndInclusive(), target.getEndInclusive()));
+				Math.max(current.getEndInclusive(), target.getEndInclusive()));
 	}
 }

@@ -37,6 +37,8 @@ import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.ModelUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingException;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.exceptions.InvalidPropertyWfmProcessingException;
@@ -558,10 +560,11 @@ public class JobController {
                             = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
                     S3StorageBackend.requiresS3MediaDownload(combinedProperties);
                     S3StorageBackend.requiresS3ResultUpload(combinedProperties);
+                    DetectionPaddingProcessor.requiresPadding(combinedProperties);
                 }
             }
         }
-        catch (StorageException e) {
+        catch (StorageException | DetectionPaddingException e) {
             throw new InvalidPropertyWfmProcessingException("Property validation failed due to: " + e, e);
         }
     }

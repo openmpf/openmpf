@@ -42,6 +42,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "EXIF_ORIENTATION": "5",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "600",
         "HORIZONTAL_FLIP": "TRUE",
         "ROTATION": "90"
       },

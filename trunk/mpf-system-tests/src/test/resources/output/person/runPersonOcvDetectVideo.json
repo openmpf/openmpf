@@ -39,7 +39,9 @@
       "mediaMetadata": {
         "DURATION": "17041",
         "FPS": "29.97",
-        "FRAME_COUNT": "521"
+        "FRAME_COUNT": "521",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "640"
       },
       "markupResult": null,
       "tracks": {
@@ -22121,7 +22123,9 @@
       "mediaMetadata": {
         "DURATION": "68064",
         "FPS": "29.97",
-        "FRAME_COUNT": "2057"
+        "FRAME_COUNT": "2057",
+        "FRAME_HEIGHT": "336",
+        "FRAME_WIDTH": "448"
       },
       "markupResult": null,
       "tracks": {

@@ -399,6 +399,14 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
     }
 
+    public String getDetectionPaddingX() {
+        return mpfPropertiesConfig.getString("detection.padding.x");
+    }
+
+    public String getDetectionPaddingY() {
+        return mpfPropertiesConfig.getString("detection.padding.y");
+    }
+
     //
     // JMS configuration
     //

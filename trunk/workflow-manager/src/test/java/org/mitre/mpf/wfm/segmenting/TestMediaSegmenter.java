@@ -382,7 +382,7 @@ public class TestMediaSegmenter {
 	}
 
 	protected static DetectionContext createTestDetectionContext(int stage, Map<String, String> additionalAlgoProps,
-	                                                           Set<Track> tracks) {
+																 Set<Track> tracks) {
 		return new DetectionContext(
 				1, stage, "STAGE_NAME", 0, "ACTION_NAME", stage == 0,
 				createTestAlgorithmProperties(additionalAlgoProps), tracks,
@@ -439,7 +439,7 @@ public class TestMediaSegmenter {
 	protected static Detection createDetection(int frame, float confidence) {
 		int dimensions = (int) confidence;
 		return new Detection(dimensions, dimensions, dimensions, dimensions, confidence, frame, 1,
-		                     createDetectionProperties(dimensions));
+				createDetectionProperties(dimensions));
 	}
 
 
@@ -459,7 +459,7 @@ public class TestMediaSegmenter {
 				.get();
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
-		                        exemplar.getConfidence(), detectionList, Collections.emptyMap());
+				exemplar.getConfidence(), detectionList, Collections.emptyMap());
 		return track;
 	}
 

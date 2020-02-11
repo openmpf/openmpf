@@ -163,7 +163,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                             "Padding must be specified as whole number integer, or a percentage that ends " +
                             "with \"%%\". Percentages can be decimal values. Negative values are allowed in both " +
                             "cases, but percentages must be > -50%%.",
-                    propertyName, padding));
+                    propertyName, padding), e);
         }
     }
 
@@ -193,7 +193,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 }
                 Detection newDetection = padDetection(xPadding, yPadding, rotatedFrameWidth, rotatedFrameHeight,
                         detection, clipToFrame);
-                shrunkToNothing |= newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
+                shrunkToNothing = shrunkToNothing ||
+                        newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
                 newDetections.add(newDetection);
             }
 
@@ -258,7 +259,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * respectively).
      * For example, an x padding value of 50% on a region with a width of 100 px results in a width of 200 px
      * (50% of 100 px is 50 px, which is padded on the left and right, respectively).
-     * If the detection is shrunk to nothing, return a 1-pixel detection.
+     * If the detection width or height is shrunk to nothing, use a 1-pixel width or height, respectively.
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
                                          Detection detection, boolean clipToFrame) {
@@ -276,8 +277,19 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
         SortedMap<String,String> detectionProperties = detection.getDetectionProperties();
         if (detectionRect.isEmpty()) {
-            // return a 1-pixel detection at detection center
-            detectionRect = new Rectangle((int)detectionRect.getCenterX(), (int)detectionRect.getCenterY(), 1, 1);
+            int x = (int)detectionRect.getMinX();
+            int width = (int)detectionRect.getWidth();
+            if (width <= 0) {
+                x = (int)detectionRect.getCenterX();
+                width = 1;
+            }
+            int y = (int)detectionRect.getMinY();
+            int height = (int)detectionRect.getHeight();
+            if (height <= 0) {
+                y = (int)detectionRect.getCenterY();
+                height = 1;
+            }
+            detectionRect = new Rectangle(x, y, width, height);
             detectionProperties = new TreeMap<>(detection.getDetectionProperties());
             detectionProperties.put("SHRUNK_TO_NOTHING", "TRUE");
         }

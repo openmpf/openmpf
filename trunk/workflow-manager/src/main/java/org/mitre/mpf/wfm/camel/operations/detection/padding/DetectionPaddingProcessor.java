@@ -231,11 +231,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     private static int getOrthogonalRotation(Detection detection) {
         String rotation = detection.getDetectionProperties().get("ROTATION");
         if (rotation == null) {
-            // TODO: ROTATION_ANGLE is not used in R4.1+
-            rotation = detection.getDetectionProperties().get("ROTATION_ANGLE");
-            if (rotation == null) {
-                return 0;
-            }
+            return 0;
         }
         double tmp = Double.parseDouble(rotation);
         int rot = (int)tmp;

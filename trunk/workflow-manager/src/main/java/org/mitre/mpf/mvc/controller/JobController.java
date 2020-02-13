@@ -593,7 +593,7 @@ public class JobController {
                             = aggregateJobPropertiesUtil.getCombinedProperties(jobCreationRequest, media, action);
                     S3StorageBackend.requiresS3MediaDownload(combinedProperties);
                     S3StorageBackend.requiresS3ResultUpload(combinedProperties);
-                    DetectionPaddingProcessor.requiresPadding(combinedProperties);
+                    DetectionPaddingProcessor.requiresPadding(propertiesUtil, combinedProperties);
                 }
             }
         }

@@ -94,7 +94,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                         job, media.getId(), trackMergingContext.getStageIndex(), actionIndex);
 
                 try {
-                    if (!requiresPadding(combinedProperties)) {
+                    if (!requiresPadding(_propertiesUtil, combinedProperties)) {
                         continue;
                     }
                 } catch (DetectionPaddingException e) {
@@ -131,18 +131,18 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    public static boolean requiresPadding(Function<String, String> properties)
+    public static boolean requiresPadding(PropertiesUtil propertiesUtil, Function<String, String> properties)
             throws DetectionPaddingException {
-        return requiresPadding(properties, MpfConstants.DETECTION_PADDING_X) ||
-               requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y);
+        return requiresPadding(properties, MpfConstants.DETECTION_PADDING_X, propertiesUtil.getDetectionPaddingX()) ||
+               requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y, propertiesUtil.getDetectionPaddingY());
     }
 
 
-    private static boolean requiresPadding(Function<String, String> properties, String propertyName)
+    private static boolean requiresPadding(Function<String, String> properties, String propertyName, String systemValue)
             throws DetectionPaddingException {
         String padding = properties.apply(propertyName);
         if (padding == null) {
-            return false;
+            padding = systemValue;
         }
         try {
             if (padding.endsWith("%")) {

@@ -125,6 +125,11 @@ html, body{
     color: #FFF;
 }
 
+/* Starting a windows narrower than 845 px, the "About" button from the
+menu bar is actually in the center of the screen. This was causing the
+version number to be drawn over the "About" button. At widths narrower than
+768px, bootstrap moves the menu links to a hamburger button leaving room for
+the version number to go back in the center. */
 @media (min-width: 768px) and (max-width: 845px) {
     #version-header {
         left: 55%

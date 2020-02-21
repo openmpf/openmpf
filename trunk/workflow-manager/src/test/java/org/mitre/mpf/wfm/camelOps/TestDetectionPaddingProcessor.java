@@ -83,51 +83,97 @@ public class TestDetectionPaddingProcessor {
 
     @Test
     public void testRotatedClippingOrthogonal() {
-        Detection inputDetection = createDetection(0, 479, 480, 640, "90");
+        {
+            Detection input = createDetection(0, 479, 480, 640, "90");
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "200%", "200%", 640, 480, input);
+            // Input detection is already at max possible size.
+            assertEquals(input, actual);
+        }
 
-        Detection outputDetection = DetectionPaddingProcessor.padDetection(
-                "200%", "200%", 640, 480, inputDetection);
-
-        // Input detection is already at max possible size.
-        assertEquals(inputDetection, outputDetection);
+        {
+            Detection input = createDetection(300, 100, 400, 100, "90");
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "50%", "0", 500, 500, input);
+            Detection expected= createDetection(300, 300, 301, 100, "90");
+            assertEquals(expected, actual);
+        }
     }
 
 
     @Test
     public void testRotatedClippingNonOrthogonal() {
-        Detection inputDetection = createDetection(30, 40, 580, 400, "20");
+        {
+            Detection input = createDetection(30, 40, 580, 400, "20");
+            Detection padded = DetectionPaddingProcessor.padDetection(
+                    "1000%", "1000%", 640, 480, input);
+            Detection expected = createDetection(-153, 56, 766, 670, "20");
+            assertEquals(expected, padded);
+        }
 
-        Detection paddedDetection = DetectionPaddingProcessor.padDetection(
-                "1000%", "1000%", 640, 480, inputDetection);
+        {
+            Detection input = createDetection(300, 100, 400, 100, "45");
+            Detection padded = DetectionPaddingProcessor.padDetection(
+                    "0", "0", 500, 500, input);
+            Detection expected = createDetection(300, 100, 213, 100, "45");
+            assertEquals(expected, padded);
+        }
 
-        Detection expectedDetection = createDetection(-153, 56, 766, 670, "20");
+        {
+            Detection input = createDetection(300, 100, 400, 100, "45");
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "50%", "0", 500, 500, input);
+            Detection expected = createDetection(158, 241, 413, 100, "45");
+            assertEquals(expected, actual);
+        }
 
-        assertEquals(expectedDetection, paddedDetection);
+        {
+            Detection input = createDetection(300, 100, 400, 100, "225");
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "100%", "0", 500, 500, input);
+            Detection expected = createDetection(449, -49, 707, 100, "225");
+            assertEquals(expected, actual);
+        }
+
+        {
+            Detection input = createDetection(300, 100, 400, 100, "225");
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "50%", "0", 500, 500, input);
+            Detection expected = createDetection(441, -41, 696, 100, "225");
+            assertEquals(expected, actual);
+        }
     }
 
 
     @Test
     public void testRotationWithoutClippingNonOrthogonal() {
-        Detection inputDetection = createDetection(96, 140, 190, 42, "18.74");
+
+        Detection input = createDetection(96, 140, 190, 42, "18.74");
         {
             Detection expected = createDetection(6, 170, 380, 42, "18.74");
             Detection actual = DetectionPaddingProcessor.padDetection(
-                    "50%", "0", 1000, 1000, inputDetection);
+                    "50%", "0", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(89, 120, 190, 84, "18.74");
             Detection actual = DetectionPaddingProcessor.padDetection(
-                    "0%", "50%", 1000, 1000, inputDetection);
+                    "0%", "50%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(0, 150, 380, 84, "18.74");
             Detection actual = DetectionPaddingProcessor.padDetection(
-                    "50%", "50%", 1000, 1000, inputDetection);
+                    "50%", "50%", 1000, 1000, input);
             assertEquals(expected, actual);
+        }
+
+        {
+            Detection actual = DetectionPaddingProcessor.padDetection(
+                    "0", "0", 500, 500, input);
+            assertEquals(input, actual);
         }
     }
 
@@ -136,10 +182,8 @@ public class TestDetectionPaddingProcessor {
     public void testRotationWithoutClippingOrthogonal() {
 
         Detection input = createDetection(50, 60, 20, 40, "90");
-
         {
             Detection expected = createDetection(26, 60, 20, 88, "90");
-
             Detection actual = DetectionPaddingProcessor.padDetection(
                     "0", "60%", 1000, 1000, input);
             assertEquals(expected, actual);

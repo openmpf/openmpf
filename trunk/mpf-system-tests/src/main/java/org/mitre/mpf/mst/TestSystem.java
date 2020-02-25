@@ -307,7 +307,6 @@ public abstract class TestSystem {
     }
 
 
-
     public List<Point2D.Double> getCorners(JsonDetectionOutputObject detection) {
         double rotationDegrees = Double.parseDouble(detection.getDetectionProperties()
                                                             .getOrDefault("ROTATION", "0"));
@@ -315,14 +314,19 @@ public abstract class TestSystem {
         double sinVal = Math.sin(radians);
         double cosVal = Math.cos(radians);
 
-        double corner2X = detection.getX() + detection.getWidth() * cosVal;
-        double corner2Y = detection.getY() - detection.getWidth() * sinVal;
+        // Need to subtract one because if you have a Rect(x=0, y=0, width=10, height=10),
+        // the bottom right corner is (9, 9) not (10, 10)
+        double width = detection.getWidth() - 1;
+        double height = detection.getHeight() - 1;
 
-        double corner3X = corner2X + detection.getHeight() * sinVal;
-        double corner3Y = corner2Y + detection.getHeight() * cosVal;
+        double corner2X = detection.getX() + width * cosVal;
+        double corner2Y = detection.getY() - width * sinVal;
 
-        double corner4X = detection.getX() + detection.getHeight() * sinVal;
-        double corner4Y = detection.getY() + detection.getHeight() * cosVal;
+        double corner3X = corner2X + height * sinVal;
+        double corner3Y = corner2Y + height * cosVal;
+
+        double corner4X = detection.getX() + height * sinVal;
+        double corner4Y = detection.getY() + height * cosVal;
 
         return Arrays.asList(
                 new Point2D.Double(detection.getX(), detection.getY()),

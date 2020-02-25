@@ -26,7 +26,10 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Doubles;
 import org.apache.camel.Exchange;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -42,7 +45,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
 
@@ -177,22 +182,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
-                int rotatedFrameWidth = frameWidth;
-                int rotatedFrameHeight = frameHeight;
-                boolean clipToFrame = false;
+                Detection newDetection = padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
 
-                // Don't clip padded region to frame when the detection has a non-orthogonal rotation.
-                // Doing so may prevent capturing pixels near the frame corners.
-                int rotation = getOrthogonalRotation(detection);
-                if (rotation != -1) {
-                    clipToFrame = true;
-                    if (rotation == 90 || rotation == 270) {
-                        rotatedFrameWidth = frameHeight;
-                        rotatedFrameHeight = frameWidth;
-                    }
-                }
-                Detection newDetection = padDetection(xPadding, yPadding, rotatedFrameWidth, rotatedFrameHeight,
-                        detection, clipToFrame);
                 shrunkToNothing = shrunkToNothing ||
                         newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
                 newDetections.add(newDetection);
@@ -225,35 +216,6 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
 
     /**
-     * Return 0, 90, 180, or 270 if the detection has an orthogonal rotation, or no rotation.
-     * Return -1 for other (non-orthogonal) angles of rotation.
-     */
-    private static int getOrthogonalRotation(Detection detection) {
-        String rotation = detection.getDetectionProperties().get("ROTATION");
-        if (rotation == null) {
-            // TODO: ROTATION_ANGLE is not used in R4.1+
-            rotation = detection.getDetectionProperties().get("ROTATION_ANGLE");
-            if (rotation == null) {
-                return 0;
-            }
-        }
-        double tmp = Double.parseDouble(rotation);
-        int rot = (int)tmp;
-        if (Math.abs(tmp - rot) > 0) {
-            return -1; // decimal rotations are not orthogonal
-        }
-        rot = rot % 360;
-        if (rot < 0) {
-            rot += 360;
-        }
-        if (rot % 90 == 0) {
-            return rot;
-        }
-        return -1;
-    }
-
-
-    /**
      * Padding is applied uniformly on both sides of the detection region.
      * For example, an x padding value of 50 increases the width by 100 px (50 px padded on the left and right,
      * respectively).
@@ -262,58 +224,136 @@ public class DetectionPaddingProcessor extends WfmProcessor {
      * If the detection width or height is shrunk to nothing, use a 1-pixel width or height, respectively.
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
-                                         Detection detection, boolean clipToFrame) {
-        int deltaX = getOffset(xPadding, detection.getWidth());
-        int deltaY = getOffset(yPadding, detection.getHeight());
+                                         Detection detection) {
+        double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
+                .filter(StringUtils::isNotBlank)
+                .map(Double::parseDouble)
+                .orElse(0.0);
 
-        Rectangle detectionRect = new Rectangle(detection.getX(), detection.getY(),
-                detection.getWidth(), detection.getHeight());
-        detectionRect.grow(deltaX, deltaY);
+        AffineTransform transform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees));
 
-        if (clipToFrame) {
-            Rectangle frameRect = new Rectangle(0, 0, frameWidth, frameHeight);
-            detectionRect = detectionRect.intersection(frameRect);
-        }
+        Rectangle2D.Double rotationCorrectedDetectionRect = transformDetection(detection, transform);
+        Rectangle2D.Double grownDetectionRect = grow(rotationCorrectedDetectionRect, xPadding, yPadding);
+        Rectangle2D.Double clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
+        Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
-        SortedMap<String,String> detectionProperties = detection.getDetectionProperties();
-        if (detectionRect.isEmpty()) {
-            int x = (int)detectionRect.getMinX();
-            int width = (int)detectionRect.getWidth();
-            if (width <= 0) {
-                x = (int)detectionRect.getCenterX();
-                width = 1;
-            }
-            int y = (int)detectionRect.getMinY();
-            int height = (int)detectionRect.getHeight();
-            if (height <= 0) {
-                y = (int)detectionRect.getCenterY();
-                height = 1;
-            }
-            detectionRect = new Rectangle(x, y, width, height);
-            detectionProperties = new TreeMap<>(detection.getDetectionProperties());
-            detectionProperties.put("SHRUNK_TO_NOTHING", "TRUE");
-        }
-
-        return new Detection(
-                detectionRect.x, detectionRect.y, detectionRect.width, detectionRect.height,
-                detection.getConfidence(),
-                detection.getMediaOffsetFrame(),
-                detection.getMediaOffsetTime(),
-                detectionProperties);
+        return rectToDetection(detectionRectMappedBack, detection);
     }
 
 
-    private static int getOffset(String padding, int length) {
+
+
+    private static Rectangle2D.Double transformDetection(Detection detection, AffineTransform transform) {
+        double[] newTopLeft = new double[2];
+        transform.transform(new double[] { detection.getX(), detection.getY() }, 0, newTopLeft, 0, 1);
+        return new Rectangle2D.Double(newTopLeft[0], newTopLeft[1],
+                                      detection.getWidth(), detection.getHeight());
+    }
+
+
+    private static Rectangle2D.Double grow(Rectangle2D.Double rect, String xPadding, String yPadding) {
+        double changeInWidth = getPaddingPixelCount(xPadding, rect.getWidth());
+        double changeInHeight = getPaddingPixelCount(yPadding, rect.getHeight());
+
+        double newX = rect.getX() - changeInWidth;
+        double newY = rect.getY() - changeInHeight;
+        double newWidth = rect.getWidth() + 2 * changeInWidth;
+        double newHeight = rect.getHeight() + 2 * changeInHeight;
+        return new Rectangle2D.Double(newX, newY, newWidth, newHeight);
+    }
+
+
+    private static double getPaddingPixelCount(String padding, double totalLength) {
         if (padding.endsWith("%")) {
-            double percent = Double.parseDouble(padding.substring(0, padding.length()-1));
+            double percent = Double.parseDouble(padding.substring(0, padding.length() - 1));
             percent = Math.max(-50, percent); // can't shrink to less than nothing
-            double offset = length * percent / 100;
-            return (int) (Math.signum(offset) * Math.ceil(Math.abs(offset))); // get negative or positive extreme
+            return totalLength * percent / 100.0;
         }
         int offset = Integer.parseInt(padding);
-        if (length + (offset * 2) < 0) { // can't shrink to less than nothing
-            return (int) Math.floor(length / -2.0); // get negative extreme
+        if (totalLength + (offset * 2) < 0) { // can't shrink to less than nothing
+            return totalLength / -2.0;
         }
         return offset;
+    }
+
+
+    private static Rectangle2D.Double clip(Rectangle2D.Double detectionRect, int frameWidth, int frameHeight,
+                                           AffineTransform transform) {
+        Rectangle2D.Double frameRect = getTransformedFrameRect(frameWidth, frameHeight, transform);
+        Rectangle2D.Double result = new Rectangle2D.Double();
+        Rectangle2D.intersect(detectionRect, frameRect, result);
+        return result;
+    }
+
+
+    private static Rectangle2D.Double getTransformedFrameRect(int frameWidth, int frameHeight,
+                                                              AffineTransform transform) {
+        double[] preTransformCorners = {
+                0, 0,
+                0, frameHeight - 1,
+                frameWidth - 1, 0,
+                frameWidth - 1, frameHeight - 1 };
+
+        double[] corners = new double[preTransformCorners.length];
+
+        transform.transform(preTransformCorners, 0, corners, 0, preTransformCorners.length / 2);
+
+        double[] transformedXs = { corners[0], corners[2], corners[4], corners[6] };
+        double minX = Doubles.min(transformedXs);
+        double maxX = Doubles.max(transformedXs);
+
+        double[] transformedYs = { corners[1], corners[3], corners[5], corners[7] };
+        double minY = Doubles.min(transformedYs);
+        double maxY = Doubles.max(transformedYs);
+
+        return new Rectangle2D.Double(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
+
+
+    private static Rectangle2D.Double inverseTransform(Rectangle2D.Double rect, AffineTransform transform) {
+        try {
+            double[] newTopLeft = new double[2];
+            transform.inverseTransform(new double[] { rect.getX(), rect.getY() }, 0, newTopLeft, 0, 1);
+            return new Rectangle2D.Double(newTopLeft[0], newTopLeft[1], rect.getWidth(), rect.getHeight());
+        }
+        catch (NoninvertibleTransformException e) {
+            // It is impossible for this exception to be thrown because rotation is always invertible.
+            throw new IllegalStateException(e);
+        }
+    }
+
+
+    private static Detection rectToDetection(Rectangle2D.Double rect, Detection originalDetection) {
+        int x = (int) rect.getX();
+        int y = (int) rect.getY();
+        int width = (int) Math.ceil(rect.getWidth());
+        int height = (int) Math.ceil(rect.getHeight());
+        boolean shrunkToNothing = false;
+        if (width <= 0) {
+            width = 1;
+            shrunkToNothing = true;
+        }
+        if (height <= 0) {
+            height = 1;
+            shrunkToNothing = true;
+        }
+
+        Map<String, String> detectionProperties;
+        if (shrunkToNothing) {
+            detectionProperties = ImmutableMap.<String, String>builder()
+                    .putAll(originalDetection.getDetectionProperties())
+                    .put("SHRUNK_TO_NOTHING", "TRUE")
+                    .build();
+        }
+        else {
+            detectionProperties = originalDetection.getDetectionProperties();
+        }
+
+        return new Detection(
+                x, y, width, height,
+                originalDetection.getConfidence(),
+                originalDetection.getMediaOffsetFrame(),
+                originalDetection.getMediaOffsetTime(),
+                detectionProperties);
     }
 }

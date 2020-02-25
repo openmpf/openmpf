@@ -46,6 +46,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
         <tomcat.port>8080</tomcat.port>
+        <cargo.spring.profiles.active>jenkins</cargo.spring.profiles.active>
+
     </properties>
 
     <dependencies>
@@ -1136,7 +1138,7 @@
                         <containerId>tomcat8x</containerId>
                         <home>/opt/apache-tomcat</home>
                         <systemProperties>
-                            <spring.profiles.active>jenkins,website</spring.profiles.active>
+                            <spring.profiles.active>${cargo.spring.profiles.active}</spring.profiles.active>
                             <web.rest.protocol>http</web.rest.protocol>
                             <transport.guarantee>NONE</transport.guarantee>
                         </systemProperties>
@@ -1164,7 +1166,7 @@
                         </deployable>
                     </deployables>
                     <deployer>
-                        <type>installed</type> 
+                        <type>installed</type>
                     </deployer>
                 </configuration>
                 <executions>
@@ -1381,29 +1383,6 @@
                     <!-- Make the wfm classes available to other modules, like mpf-system-tests -->
                     <attachClasses>true</attachClasses>
                 </configuration>
-            </plugin>
-
-            <!-- assemble the OALPR source code package -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>assemble-oalpr-package</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>OalprLicensePlateTextDetection</finalName>
-                            <descriptor>src/main/assembly/oalpr.xml</descriptor>
-                            <outputDirectory>src/main/webapp/resources/mytheme/downloads</outputDirectory>
-                            <tarLongFileMode>gnu</tarLongFileMode>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

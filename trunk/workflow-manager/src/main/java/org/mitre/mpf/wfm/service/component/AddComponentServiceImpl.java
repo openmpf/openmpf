@@ -46,16 +46,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -89,8 +87,8 @@ public class AddComponentServiceImpl implements AddComponentService {
     AddComponentServiceImpl(
             PropertiesUtil propertiesUtil,
             PipelineService pipelineService,
-            NodeManagerService nodeManagerService,
-            StreamingServiceManager streamingServiceManager,
+            Optional<NodeManagerService> nodeManagerService,
+            Optional<StreamingServiceManager> streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
             ComponentDescriptorValidator componentDescriptorValidator,
@@ -100,8 +98,8 @@ public class AddComponentServiceImpl implements AddComponentService {
     {
         _propertiesUtil = propertiesUtil;
         _pipelineService = pipelineService;
-        _nodeManagerService = nodeManagerService;
-        _streamingServiceManager = streamingServiceManager;
+        _nodeManagerService = nodeManagerService.orElse(null);
+        _streamingServiceManager = streamingServiceManager.orElse(null);
         _deployService = deployService;
         _componentStateService = componentStateService;
         _componentDescriptorValidator = componentDescriptorValidator;
@@ -112,6 +110,10 @@ public class AddComponentServiceImpl implements AddComponentService {
 
     @Override
     public synchronized RegisterComponentModel registerComponent(String componentPackageFileName) throws ComponentRegistrationException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         ComponentState initialState = _componentStateService.getByPackageFile(componentPackageFileName)
                 .map(RegisterComponentModel::getComponentState)
                 .filter(Objects::nonNull)
@@ -168,7 +170,11 @@ public class AddComponentServiceImpl implements AddComponentService {
     }
 
     @Override
-    public synchronized void registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
+    public synchronized RegisterComponentModel registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
 
         RegisterComponentModel registrationModel = _componentStateService
@@ -182,6 +188,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         registrationModel.setComponentState(ComponentState.REGISTERED);
         registrationModel.setDateRegistered(Instant.now());
         _componentStateService.update(registrationModel);
+        return registrationModel;
     }
 
     private void registerDeployedComponent(JsonComponentDescriptor descriptor, RegisterComponentModel model)
@@ -194,6 +201,7 @@ public class AddComponentServiceImpl implements AddComponentService {
         } else {
             _componentDescriptorValidator.validate(descriptor);
         }
+        model.setVersion(descriptor.getComponentVersion());
 
         Algorithm algorithm = descriptor.getAlgorithm();
         String algoName = null;
@@ -258,8 +266,16 @@ public class AddComponentServiceImpl implements AddComponentService {
                 }
             }
             catch (FailedToParseDescriptorException e) {
-                _log.warn(String.format("Failed to parse existing descriptor for the \"%s\" component. It will be replaced with the newly received descriptor.",
-                        descriptor.getComponentName()), e);
+                if (e.getCause() instanceof FileNotFoundException) {
+                    _log.warn("An existing descriptor for the \"{}\" component was not found. " +
+                                      "The newly received descriptor will be used.",
+                              descriptor.getComponentName());
+                }
+                else {
+                    _log.warn(String.format("Failed to parse existing descriptor for the \"%s\" component. " +
+                                                    "It will be replaced with the newly received descriptor.",
+                                            descriptor.getComponentName()), e);
+                }
             }
             _removeComponentService.removeComponent(descriptor.getComponentName());
         }
@@ -477,7 +493,6 @@ public class AddComponentServiceImpl implements AddComponentService {
                 algorithmService.addArg(queueName);
                 algorithmService.addArg(serviceName);
                 algorithmService.setLauncher("generic");
-                algorithmService.setWorkingDirectory("${MPF_HOME}/jars");
                 break;
 
             case CPP:
@@ -487,13 +502,13 @@ public class AddComponentServiceImpl implements AddComponentService {
                 algorithmService.addArg(queueName);
                 algorithmService.addArg(descriptor.getSourceLanguage().getValue());
                 algorithmService.setLauncher("simple");
-                algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
                 break;
 
             default:
                 throw new IllegalStateException("Unknown component language: " + descriptor.getSourceLanguage());
         }
 
+        algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
         algorithmService.setDescription(algorithm.getDescription());
         algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
         _log.debug("Created service definition");

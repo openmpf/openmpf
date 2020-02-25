@@ -239,8 +239,7 @@
           "copyright": "2014, 2015, 2016 Matt Hill and OpenAPLR Team",
           "projectUrl": "http://www.openalpr.com",
           "sourceUrl": "https://github.com/openalpr/openalpr",
-          "licenseType": "GNU Affero General Public License",
-          "customLicenseId": "mpf-text-detection"
+          "licenseType": "GNU Affero General Public License"
         },
         {
           "name": "AngularJS",

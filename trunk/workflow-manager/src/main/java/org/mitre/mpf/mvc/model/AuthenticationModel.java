@@ -30,24 +30,21 @@ public class AuthenticationModel {
 	private boolean authenticated = false;
 	private boolean admin = false;
 	private String userPrincipalName = null;
-	private boolean firstLogin = false;
-	
-	public AuthenticationModel(boolean authenticated, boolean admin, 
-			String userPrincipalName, boolean firstLogin) {
+
+	public AuthenticationModel(boolean authenticated, boolean admin, String userPrincipalName) {
 		this.authenticated = authenticated;
 		this.admin = admin;
 		this.userPrincipalName = userPrincipalName;
-		this.firstLogin = firstLogin;
 	}
-	
+
 	public boolean isAuthenticated() {
 		return authenticated;
 	}
-	
+
 	public boolean isAdmin() {
 		return admin;
 	}
-	
+
 	public String getUserPrincipalName() {
 		return userPrincipalName;
 	}
@@ -60,9 +57,5 @@ public class AuthenticationModel {
 			return true;
 		}
 		return false;
-	}
-
-	public boolean isFirstLogin() {
-		return firstLogin;
 	}
 }

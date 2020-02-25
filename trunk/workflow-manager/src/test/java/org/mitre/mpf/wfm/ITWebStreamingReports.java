@@ -38,7 +38,6 @@ import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
-import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +100,7 @@ public class ITWebStreamingReports {
 
     // run once
     @BeforeClass
-    public static void initialize() throws ComponentRegistrationException, IOException {
+    public static void initialize() throws IOException {
         String pipelinesUrl = WebRESTUtils.REST_URL + "pipelines";
         String pipelinesResponse = WebRESTUtils
             .getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);

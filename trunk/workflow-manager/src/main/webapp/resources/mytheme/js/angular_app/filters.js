@@ -36,7 +36,7 @@ AppFilters.filter('interpolate', ['version', function (version) {
 }]);
 
 //keep the endDate from displaying when not COMPLETE after a job re-submission
-//handy when the table is manually refreshed 
+//handy when the table is manually refreshed
 AppFilters.filter('jobEndDate', function () {
 	return function (endDate, job) {
 		if(endDate && job.jobStatus != 'COMPLETE') {
@@ -64,7 +64,7 @@ AppFilters.filter('jobProgress', function () {
 //convert map to array to be able to use orderBy, which is only available for arrays in angular!
 AppFilters.filter('object2Array', function () {
 	return function(input) {
-		var out = []; 
+		var out = [];
 		for(var i in input){
 			out.push(input[i]);
 		}
@@ -127,7 +127,7 @@ App.filter('range', function() {
 	};
 });
 
-
-
-
+App.filter('objectKeys', function () {
+	return Object.keys;
+});
 

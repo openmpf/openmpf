@@ -27,6 +27,7 @@
 package org.mitre.mpf.nms;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,6 +35,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.nms.xml.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.nodeManager.NodeManagerStatus;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -56,7 +58,7 @@ public class TestNodeService {
     private static final Logger log = LoggerFactory.getLogger(TestNodeService.class);
 
     private static final String TEST_NODE_HOST_NAME = "testhost.testdomain";
-    private static final String SERVICE_NAME = "MogMotionDetection";
+    private static final String SERVICE_NAME = "Markup";
     private static final String TEST_SERVICE_NAME = "SomeTestDetection";
 
     @Autowired
@@ -65,6 +67,10 @@ public class TestNodeService {
     @Autowired
     private NodeManagerStatus nodeManagerStatus;
 
+    @BeforeClass
+    public static void classInit() {
+        TestUtil.assumeNodeManagerEnabled();
+    }
 
     @Test
     public void testAddAndRemoveNode() throws Exception {
@@ -108,7 +114,6 @@ public class TestNodeService {
 
     @Test
     public void testIncrementAndDecrementExistingService() throws Exception {
-
         // INCREMENT EXISTING SERVICE
 
         List<NodeManagerModel> nodeManagerModels = nodeManagerService.getNodeManagerModels();

@@ -51,7 +51,8 @@ sql_args = arg_group(
     argh.arg('--sql-user', default='mpf',
              help='username used to log in to the SQL server'),
     argh.arg('--sql-password', default='password',
-             help="password used to log in to the SQL server")
+             help='password used to log in to the SQL server'),
+    argh.arg('--skip-sql-start', default=False, help='do not start SQL server if not already running')
 )
 
 
@@ -108,7 +109,11 @@ class MpfError(Exception):
 
 def sql_connection(host, user, password):
     try:
-        return psycopg2.connect(host=host, user=user, password=password, dbname='mpf')
+        if ':' in host:
+            host, port = host.split(':')
+        else:
+            port = 5432
+        return psycopg2.connect(host=host, port=port, user=user, password=password, dbname='mpf')
     except psycopg2.OperationalError as err:
         if 'Connection refused' in err.message or 'Name or service not known' in err.message:
             raise SqlConnectionError(err)

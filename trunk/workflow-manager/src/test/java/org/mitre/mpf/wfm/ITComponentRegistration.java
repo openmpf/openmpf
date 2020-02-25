@@ -26,9 +26,7 @@
 
 package org.mitre.mpf.wfm;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -36,6 +34,8 @@ import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -55,6 +55,20 @@ public class ITComponentRegistration {
     private static final String _customPipelinesComponentName = "CplusplusHelloCustomPipelinesComponent";
     private static final String _customPipelinesComponentPackage = _customPipelinesComponentName + ".tar.gz";
 
+
+    @BeforeClass
+    public static void classInit() throws InterruptedException {
+        try {
+            boolean ansibleIsInstalled = new ProcessBuilder("ansible-playbook", "--version")
+                    .start()
+                    .waitFor() == 0;
+            Assume.assumeTrue("Skipping component registration tests because Ansible is not installed.",
+                              ansibleIsInstalled);
+        }
+        catch (IOException e) {
+            Assume.assumeNoException("Skipping component registration tests because Ansible is not installed.", e);
+        }
+    }
 
     @Before
     public void init() {

@@ -1,15 +1,15 @@
- /******************************************************************************
+/******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
  * This software (or technical data) was produced for the U.S. Government     *
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2020 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2019 The MITRE Corporation                                       *
+ * Copyright 2020 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,30 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.controller;
 
-import javax.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.ModelAndView;
+package org.mitre.mpf.wfm.service.component;
 
-@Controller
-@Scope("request")
-@Profile("website")
-public class AdminErrorsController 
-{	
-	private static final Logger log = LoggerFactory.getLogger(AdminErrorsController.class);
+public class ManagedComponentsUnsupportedException extends ComponentRegistrationException {
 
-	public static final String DEFAULT_ERROR_VIEW = "error";
-
-	@RequestMapping(value = "/adminErrors", method = RequestMethod.GET)
-	public ModelAndView adminErrors(HttpServletRequest request) {
-		return new ModelAndView("admin_errors");
-	}
+    public ManagedComponentsUnsupportedException() {
+        super("Managed components are not supported in Docker deployments.");
+    }
 }

@@ -40,12 +40,13 @@ def hash_password(password):
 
 
 class UserManager(object):
-    def __init__(self, sql_host='localhost', sql_user='mpf', sql_password='password'):
-        sql_manager = mpf_sys.PostgresManager(False)
-        if not sql_manager.status():
-            print 'Starting PostgreSQL service...'
-            sql_manager.start()
-            print
+    def __init__(self, sql_host='localhost', sql_user='mpf', sql_password='password', skip_sql_start=False):
+        if not skip_sql_start:
+            sql_manager = mpf_sys.PostgresManager(False)
+            if not sql_manager.status():
+                print 'Starting PostgreSQL service...'
+                sql_manager.start()
+                print
 
         self._connection = mpf_util.sql_connection(sql_host, sql_user, sql_password)
         self._cursor = self._connection.cursor()
@@ -190,7 +191,7 @@ def get_password(password):
 
 USER_MODIFICATION_NOTICE = mpf_util.MsgUtil.yellow(
     'Changes will not take effect if the user is currently logged in. The user must log out first. '
-    'To force these changes now, restart MPF using the following command: "mpf restart"')
+    'To force these changes now, restart Workflow Manager.')
 
 
 # Setup Commands
@@ -237,7 +238,7 @@ def change_password(username, password=None, **kwargs):
 
 @mpf_util.sql_args
 @argh.arg('username', help='name of the user whose role will be changed')
-@argh.arg('role', help='new role for user')
+@argh.arg('role', help='new role for user', choices=('user', 'admin'), type=str.lower)
 def change_role(username, role, **kwargs):
     """ Changes a Workflow Manager user's role """
     with contextlib.closing(UserManager(**kwargs)) as um:

@@ -208,5 +208,19 @@
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_X",
+        "description": "If this string contains the % sign, then its numeric value will be interpreted as a percentage of the width of the detection. If this string does not contain the % sign, then it will be interpreted as an exact number of pixels. A negative value will shrink the detection region. Percentages can include a decimal place and be > 100%, but must be > -50%. If the detection region is shrunk to nothing, the new width will be set to one pixel, and the detection properties will include SHRUNK_TO_NOTHING with a value of TRUE.",
+        "type": "STRING",
+        "propertiesKey": "detection.padding.x",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_Y",
+        "description": "If this string contains the % sign, then its numeric value will be interpreted as a percentage of the height of the detection. If this string does not contain the % sign, then it will be interpreted as an exact number of pixels. A negative value will shrink the detection region. Percentages can include a decimal place and be > 100%, but must be > -50%. If the detection region is shrunk to nothing, the new height will be set to one pixel, and the detection properties will include SHRUNK_TO_NOTHING with a value of TRUE.",
+        "type": "STRING",
+        "propertiesKey": "detection.padding.y",
+        "mediaTypes": ["VIDEO", "IMAGE"]
     }
 ]

@@ -44,6 +44,8 @@
                 "DURATION": "3004",
                 "FPS": "29.97",
                 "FRAME_COUNT": "90",
+                "FRAME_HEIGHT": "480",
+                "FRAME_WIDTH": "640",
                 "MIME_TYPE": "video/mp4"
             },
             "mediaProperties": {},

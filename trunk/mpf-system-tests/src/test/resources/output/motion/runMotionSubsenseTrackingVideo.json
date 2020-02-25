@@ -43,6 +43,8 @@
         "DURATION": "8070",
         "FPS": "25.28",
         "FRAME_COUNT": "220",
+        "FRAME_HEIGHT": "720",
+        "FRAME_WIDTH": "1152",
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},

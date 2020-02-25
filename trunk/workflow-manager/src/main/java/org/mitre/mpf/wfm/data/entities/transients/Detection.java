@@ -133,15 +133,15 @@ public class Detection implements Comparable<Detection> {
 	@Override
 	public String toString() {
 		return String.format(
-			"%s#<bounds=(%d, %d, %d, %d), confidence=%f, mediaOffsetFrame=%d, mediaOffsetTime=%d, detection properties='%s'>",
-			getClass().getName(),
-			_x,
-			_y,
-			(_x + _width),
-			(_y + _width),
-			_confidence,
-			_mediaOffsetFrame,
-			_mediaOffsetTime,
-			TextUtils.mapToStringValues(_detectionProperties));
+				"%s#<x=%d, y=%d, width=%d, height=%d, confidence=%f, mediaOffsetFrame=%d, mediaOffsetTime=%d, detection properties='%s'>",
+				getClass().getName(),
+				_x,
+				_y,
+				_width,
+				_height,
+				_confidence,
+				_mediaOffsetFrame,
+				_mediaOffsetTime,
+				TextUtils.mapToStringValues(_detectionProperties));
 	}
 }

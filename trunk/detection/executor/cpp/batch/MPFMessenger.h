@@ -136,6 +136,10 @@ class MPFMessenger {
   void SendMessage(const unsigned char* const packed_msg, const MPFMessageMetadata* const msg_metadata,
                    const int packed_length, const string job_name);
 
+  static constexpr const char * RESTRICT_MEDIA_TYPES_ENV_NAME = "RESTRICT_MEDIA_TYPES";
+
+  static std::string GetMediaTypeSelector();
+
  private:
 
   bool initialized;

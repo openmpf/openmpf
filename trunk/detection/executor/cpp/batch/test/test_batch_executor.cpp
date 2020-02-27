@@ -24,10 +24,19 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <log4cxx/logger.h>
 #include <gtest/gtest.h>
-#include <memory>
+#include <MPFDetectionObjects.h>
+#include <MPFDetectionComponent.h>
+
 #include "../PythonComponentHandle.h"
-#include <Utils.h>
+#include "../MPFMessenger.h"
 
 using namespace MPF::COMPONENT;
 
@@ -289,4 +298,44 @@ TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
     auto rc = py_component.GetDetections(job, results);
 
     ASSERT_EQ(rc, test_error);
+}
+
+
+TEST(TestRestrictMediaTypes, CanCreateRestrictMediaTypeSelector) {
+    auto restrict_media_types = MPFMessenger::RESTRICT_MEDIA_TYPES_ENV_NAME;
+    auto initial_value =  std::getenv("RESTRICT_MEDIA_TYPES");
+
+    unsetenv(restrict_media_types);
+    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, "", true);
+    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, ",", true);
+    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, "VIDEO", true);
+    ASSERT_EQ("MediaType in ('VIDEO')", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, "VIDEO, IMAGE", true);
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, "VIDEO,,IMAGE", true);
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, " VIDEO,  IMaGe ,  audio,", true);
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE', 'AUDIO')", MPFMessenger::GetMediaTypeSelector());
+
+    setenv(restrict_media_types, "HELLO", true);
+    ASSERT_THROW(MPFMessenger::GetMediaTypeSelector(), std::invalid_argument);
+
+    setenv(restrict_media_types, "VIDEO, HELLO", true);
+    ASSERT_THROW(MPFMessenger::GetMediaTypeSelector(), std::invalid_argument);
+
+    if (initial_value == nullptr) {
+        unsetenv(restrict_media_types);
+    }
+    else {
+        setenv(restrict_media_types, initial_value, true);
+    }
 }

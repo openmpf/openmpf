@@ -38,7 +38,6 @@ import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.StreamingJobCancelResponse;
 import org.mitre.mpf.rest.api.StreamingJobInfo;
-import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,19 +65,19 @@ public class ITWebStreamingReports {
     private static final String PIPELINE_NAME = "SUBSENSE MOTION DETECTION (WITH TRACKING) PIPELINE";
     private static final String DETECTION_TYPE = "MOTION";
 
-    // Use a public stream from: https://www.wowza.com/demo/rtsp
-    private static final String STREAM_URI = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
-
     private static final String CALLBACK_URI_PREFIX = "http://localhost:";
-    private static final int CALLBACK_PORT = 20160;
+    private static final int SPARK_PORT = 20160;
 
     private static final String HEALTH_REPORT_CALLBACK_PATH = "/callback/health-report";
     private static final String HEALTH_REPORT_CALLBACK_URI =
-            CALLBACK_URI_PREFIX + CALLBACK_PORT + HEALTH_REPORT_CALLBACK_PATH;
+            CALLBACK_URI_PREFIX + SPARK_PORT + HEALTH_REPORT_CALLBACK_PATH;
 
     private static final String SUMMARY_REPORT_CALLBACK_PATH = "/callback/summary-report";
     private static final String SUMMARY_REPORT_CALLBACK_URI =
-            CALLBACK_URI_PREFIX + CALLBACK_PORT + SUMMARY_REPORT_CALLBACK_PATH;
+            CALLBACK_URI_PREFIX + SPARK_PORT + SUMMARY_REPORT_CALLBACK_PATH;
+
+    private static final String STREAM_URI
+            = "http://" + System.getenv("HOSTNAME") + ':' + SPARK_PORT + "/video_01.mp4";
 
     private static final String EXTERNAL_ID_1 = Integer.toString(701);
     private static final String EXTERNAL_ID_2 = Integer.toString(702);
@@ -101,7 +100,7 @@ public class ITWebStreamingReports {
 
     // run once
     @BeforeClass
-    public static void initialize() throws ComponentRegistrationException, IOException {
+    public static void initialize() throws IOException {
         String pipelinesUrl = WebRESTUtils.REST_URL + "pipelines";
         String pipelinesResponse = WebRESTUtils
             .getJSON(new URL(pipelinesUrl), WebRESTUtils.MPF_AUTHORIZATION);
@@ -250,7 +249,9 @@ public class ITWebStreamingReports {
     }
 
     private static void setupSparkPost() {
-        Spark.port(CALLBACK_PORT);
+        Spark.port(SPARK_PORT);
+
+        Spark.staticFileLocation("/samples");
 
         Spark.post(HEALTH_REPORT_CALLBACK_PATH, (request, resp) -> {
 

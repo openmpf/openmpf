@@ -56,7 +56,7 @@ import static java.util.stream.Collectors.toList;
         description = "Streaming job create, status, cancel")
 @Controller
 @Scope("request")
-@Profile("website")
+@Profile("!docker")
 public class StreamingJobController {
     private static final Logger log = LoggerFactory.getLogger(StreamingJobController.class);
 

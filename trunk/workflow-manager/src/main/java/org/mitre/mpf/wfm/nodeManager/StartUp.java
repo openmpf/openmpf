@@ -30,9 +30,11 @@ import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
+@Profile("!docker")
 public class StartUp implements SmartLifecycle {
 
 	@Autowired

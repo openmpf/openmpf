@@ -29,6 +29,7 @@ package org.mitre.mpf.mst;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -114,7 +115,7 @@ public abstract class TestSystem {
     @Autowired
     protected JobRequestService jobRequestService;
 
-    @Autowired
+    @Autowired(required = false)
     protected StreamingJobRequestService streamingJobRequestService;
 
     @Autowired
@@ -264,6 +265,9 @@ public abstract class TestSystem {
     protected long runPipelineOnStream(
             String pipelineName, JobCreationStreamData stream, Map<String, String> jobProperties,
             boolean buildOutput, int priority, long stallTimeout) {
+
+        Assume.assumeTrue("Skipping test because StreamingJobRequestService was not configured.",
+                          streamingJobRequestService != null);
         var jobCreationRequest = new StreamingJobCreationRequest();
         jobCreationRequest.setExternalId(UUID.randomUUID().toString());
         jobCreationRequest.setPipelineName(pipelineName);

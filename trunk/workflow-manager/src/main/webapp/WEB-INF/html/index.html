@@ -74,65 +74,8 @@
 
 </head>
 <body>
-<nav class="navbar navbar-default ">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="#" title="Media Processing Framework"><img alt="Brand" src="resources/img/logo.png"></a>
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-        </div>
-        <div class="collapse navbar-collapse" id="navbar-collapse-1">
-            <ul class="nav navbar-nav">
-                <li class="dropdown">
-                    <a class="dropdown-toggle active" id="jobs_dropdown" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Jobs<span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a ui-sref="/jobs" id="menu_jobs" title="View status of queued jobs">Status</a></li>
-                        <li><a ui-sref="/server_media" id="menu_server_media" title="Create jobs and upload media to the server">Create</a></li>
-                        <li><a ui-sref="/adminStatistics" id="menu_adminStatistics" title="Displays job statistics">Statistics</a></li>
-                    </ul>
-                </li>
-                <li><a ui-sref="/adminNodes" title="View and edit running nodes and process">Nodes</a></li>
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Configuration<span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a ui-sref="/admin/propertySettings" id="menu_adminPropertySettings" title="Edit process settings">Properties</a></li>
-                        <li><a ui-sref="/admin/componentRegistration" id="menu_adminComponentRegistrationLi" title="Register a component">Component Registration</a></li>
-                        <li><a ui-sref="/adminLogs" id="menu_adminLogs" title="Display process and system logs">Logs</a></li>
-                        <li><a href="swagger-ui.html" target="_blank" title="Displays REST web service information (for Developers)">REST API</a></li>
-                        <li><a ui-sref="/pipelines" id="menu_pipelines" title="Create and edit pipelines and algorithms">Pipelines </a></li>
-                        <li><a ui-sref="/pipelines2" id="menu_pipelines2" title="Create and edit pipelines and algorithms">Pipelines 2</a></li>
-                    </ul>
-                </li>
-                <li><a ui-sref="/about">About</a></li>
-            </ul>
 
-            <div class="nav navbar-nav navbar-left" style="width:50%;">
-                <div id="navbar-version" class="text-center" style="padding-top:15px;color:#fff;"></div>
-            </div>
-            <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i ng-class="widgetSystemHealth.icon"></i> Status <span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a ui-sref="/adminNodes" ><i class="fa fa-cubes"></i> {{widgetNodes.hostnames.length}} Nodes</a></li>
-                        <li><a ui-sref="/adminNodes" ng-class="widgetServices.css" ><i class="fa fa-tasks"></i> {{widgetServices.numRunning}}/{{widgetServices.services.length}} Services</a></li>
-                        <li><a ui-sref="/adminLogs" ng-class="widgetSystemHealth.css"><i class="fa fa-comment"></i> Last Message from Server {{lastServerExchangeTimestamp.format("LTS")}}</a></li>
-                    </ul>
-                </li>
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" id="user_dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-user"></i> <strong id="userNameMain"></strong><span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/workflow-manager/login?logout" id="logout">Log Out</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-        </div>
-    </div>
-</nav>
-
+<mpf-navbar></mpf-navbar>
 
  <!-- IMPORTANT: do not nest container/container-fluid -->
     <!--Because System Messages are placed "on top" of the rest of the page content,
@@ -200,7 +143,6 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <!-- trying to move some of the js funtions to a new file if possible -->
 <script src="resources/js/utils.js"></script>
 <script src="resources/js/dialogs.js"></script>
-<script src="resources/js/home_utils_full.js"></script>
 
 <!-- noty js -->
 <script src="resources/js/jquery.noty.packaged.mod_2_3_8.min.js"></script>
@@ -240,7 +182,6 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <script src="resources/js/angular_app/directives.js"></script>
 <script src="resources/js/angular_app/services.js"></script>
 <!-- angular controllers -->
-<script src="resources/js/controllers/HomeCtrl.js"></script>
 <script src="resources/js/controllers/AboutCtrl.js"></script>
 <script src="resources/js/controllers/JobsCtrl.js"></script>
 <script src="resources/js/controllers/ServerMediaCtrl.js"></script>
@@ -262,39 +203,6 @@ tree rendering for each click... this would nearly lock the browser up with ~100
     <script src="resources/js/angular_app/pipelines2/Pipelines2Ctrl.js"></script>
     <script src="resources/js/angular_app/pipelines2/actionProperties.js"></script>
 
-<script>
-    var checkForRootInfoId = undefined;
-    var checkForDisplayVersionId = undefined;
-
-    function checkForRootInfo() {
-        if (HomeUtilsFull.roleInfo) {
-            $('#userNameMain').text(HomeUtilsFull.roleInfo.userPrincipalName);
-            clearInterval(checkForRootInfoId);
-        }
-    }
-
-    function checkForDisplayVersion() {
-        if (HomeUtilsFull.displayVersion) {
-            $('#navbar-version').text(HomeUtilsFull.displayVersion);
-            clearInterval(checkForDisplayVersionId);
-        }
-    }
-
-    $(document).ready(function () {
-        //These two interval checks are a solution for resolving angular {{ }} templates outside
-        //of the ui-view, we could use sub views to solve this in the future
-        //usually only one 250 ms internal is needed for each function - the wait isn't noticeable
-        checkForRootInfoId = setInterval(function () {
-            //check every 250 ms
-            checkForRootInfo();
-        }, 250);
-
-        checkForDisplayVersionId = setInterval(function () {
-            //check every 250 ms
-            checkForDisplayVersion();
-        }, 250);
-    });
-</script>
 
 <script type="text/ng-template" id="timeout_warning.html">
     <div class="modal-header">

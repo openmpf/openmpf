@@ -27,6 +27,7 @@
 package org.mitre.mpf.nms;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +67,10 @@ public class TestNodeService {
     @Autowired
     private NodeManagerStatus nodeManagerStatus;
 
+    @BeforeClass
+    public static void classInit() {
+        TestUtil.assumeNodeManagerEnabled();
+    }
 
     @Test
     public void testAddAndRemoveNode() throws Exception {
@@ -109,8 +114,6 @@ public class TestNodeService {
 
     @Test
     public void testIncrementAndDecrementExistingService() throws Exception {
-        TestUtil.assumeNodeManagerEnabled();
-
         // INCREMENT EXISTING SERVICE
 
         List<NodeManagerModel> nodeManagerModels = nodeManagerService.getNodeManagerModels();

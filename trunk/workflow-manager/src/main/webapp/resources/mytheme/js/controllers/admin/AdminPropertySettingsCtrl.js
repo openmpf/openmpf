@@ -149,12 +149,14 @@
     ]);
 
     propSettingsModule.controller('AdminPropertySettingsCtrl', [
-        '$scope', '$rootScope', '$confirm', '$state', 'PropertiesSvc',
-        'NotificationSvc',
-        function ($scope, $rootScope, $confirm, $state, PropertiesSvc,
-                  NotificationSvc) {
+        '$scope', '$confirm', '$state', 'PropertiesSvc',
+        'NotificationSvc', 'RoleService',
+        function ($scope, $confirm, $state, PropertiesSvc,
+                  NotificationSvc, RoleService) {
 
-            $scope.isAdmin = $rootScope.roleInfo.admin;
+            RoleService.getRoleInfo().then(function(roleInfo) {
+                $scope.isAdmin = roleInfo.admin;
+            });
 
             // Get the list of mutable system properties (each property in the list is of type org.mitre.mpf.mvc.model.PropertyModel).
             $scope.mutableProperties = PropertiesSvc.queryMutable();

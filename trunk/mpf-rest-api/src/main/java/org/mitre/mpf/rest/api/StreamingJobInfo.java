@@ -98,7 +98,7 @@ public class StreamingJobInfo {
     public String getOutputObjectDirectory() {
 		return outputObjectDirectory;
 	}
-	
+
 	private String streamUri = null;
     @ApiModelProperty(position=5, required = true)
     public String getStreamUri() { return streamUri; }
@@ -117,8 +117,7 @@ public class StreamingJobInfo {
     public Instant getActivityTimestamp() { return activityTimestamp; }
 
 
-	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
-	//to maintain the use of only standard Java in the model.api classes
+	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
 	private boolean terminal;
     @ApiModelProperty(position=11, required = true)
 	public boolean isTerminal() {

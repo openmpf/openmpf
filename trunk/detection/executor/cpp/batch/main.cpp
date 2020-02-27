@@ -67,6 +67,9 @@ string GetFileName(const string& s) {
 
 bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]);
 
+std::string get_virtual_env_activate_path();
+
+
 template <typename ComponentHandle>
 int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine);
@@ -109,7 +112,7 @@ int main(int argc, char* argv[]) {
 
     try {
         if (is_python(logger, argc, argv)) {
-            PythonComponentHandle component_handle(logger, lib_path);
+            PythonComponentHandle component_handle(logger, lib_path, get_virtual_env_activate_path());
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {
@@ -181,6 +184,17 @@ bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
     }
 }
 
+std::string get_virtual_env_activate_path()  {
+    std::string venv_path;
+    char* env_var_venv_path_ptr = getenv("COMPONENT_VIRTUALENV");
+    if (env_var_venv_path_ptr != nullptr && env_var_venv_path_ptr[0] != '\0') {
+        venv_path = env_var_venv_path_ptr;
+    }
+    else {
+        venv_path = "venv";
+    }
+    return venv_path + "/bin/activate_this.py";
+}
 
 
 template <typename ComponentHandle>

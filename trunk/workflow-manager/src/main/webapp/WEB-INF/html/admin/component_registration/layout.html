@@ -23,9 +23,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
-<div class="page-header text-center">
+<div ng-if="dockerEnabled" class="page-header text-center">
+    <h3>Component Registration</h3>
+    <page-info>
+        Unmanaged components, such as Docker services, self-register with the Workflow Manager.
+        Removing one of these components through this page will not prevent it from self-registering in the future.
+        If a component with the same name as an existing component attempts to register itself,
+        it will overwrite the existing registration.
+    </page-info>
+</div>
+<div ng-if="!dockerEnabled" class="page-header text-center">
     <h3>Component Upload and Registration</h3>
-    <page-info>To upload a component click within the dropzone to open a file browser, or drag and drop a component
+    <page-info>
+        To upload a component click within the dropzone to open a file browser, or drag and drop a component
         .tar.gz package onto the dropzone area. Once uploaded, the registration process will automatically begin. Once
         registered, use the Nodes page to deploy component services.
     </page-info>
@@ -37,8 +47,8 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <h4 ng-if="isAdmin">Upload New Component</h4>
-        <div ng-if="isAdmin"  class="row">
+        <h4 ng-if="isAdmin && !dockerEnabled">Upload New Component</h4>
+        <div ng-if="isAdmin && !dockerEnabled"  class="row">
             <div class="col-md-6 form-group">
                 <mpf-component-dropzone can-upload="canUploadPackage"></mpf-component-dropzone>
             </div>
@@ -65,8 +75,8 @@
             <thead>
             <tr>
                 <th>Component name</th>
-                <th>Package name</th>
-                <th>Date uploaded</th>
+                <th ng-if="!dockerEnabled">Package name</th>
+                <th ng-if="!dockerEnabled">Date uploaded</th>
                 <th>Date registered</th>
                 <th>Managed</th>
                 <th>Status</th>
@@ -77,8 +87,8 @@
             <tbody>
             <tr ng-repeat="component in components | orderBy:getSortKey">
                 <td>{{component.componentName}}</td>
-                <td>{{component.packageFileName}}</td>
-                <td>{{component.dateUploaded | date:'short'}}</td>
+                <td ng-if="!dockerEnabled">{{component.packageFileName}}</td>
+                <td ng-if="!dockerEnabled">{{component.dateUploaded | date:'short'}}</td>
                 <td>{{component.dateRegistered | date:'short'}}</td>
                 <td>
                     <span ng-if="component.managed">Yes</span>

@@ -30,13 +30,14 @@ import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 
 public interface RemoveComponentService {
 
-    public void removeComponent(String componentName);
+    public void removeComponent(String componentName) throws ManagedComponentsUnsupportedException;
 
-    public void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage);
+    public void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage)
+            throws ManagedComponentsUnsupportedException;
 
-    public void removePackage(String componentPackageFileName);
+    public void removePackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException;
 
-    public void unregisterRetainPackage(String componentPackageFileName);
+    public void unregisterRetainPackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException;
 
-    public void deleteCustomPipelines(RegisterComponentModel rcm);
+    public void deleteCustomPipelines(RegisterComponentModel rcm) throws ManagedComponentsUnsupportedException;
 }

@@ -65,14 +65,14 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
     @Inject
     RemoveComponentServiceImpl(
-            NodeManagerService nodeManagerService,
-            StreamingServiceManager streamingServiceManager,
+            Optional<NodeManagerService> nodeManagerService,
+            Optional<StreamingServiceManager> streamingServiceManager,
             ComponentDeploymentService deployService,
             ComponentStateService componentStateService,
             PipelineService pipelineService,
             PropertiesUtil propertiesUtil) {
-        _nodeManagerService = nodeManagerService;
-        _streamingServiceManager = streamingServiceManager;
+        _nodeManagerService = nodeManagerService.orElse(null);
+        _streamingServiceManager = streamingServiceManager.orElse(null);
         _deployService = deployService;
         _componentStateService = componentStateService;
         _pipelineService = pipelineService;
@@ -80,12 +80,17 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     @Override
-    public synchronized void removeComponent(String componentName) {
+    public synchronized void removeComponent(String componentName) throws ManagedComponentsUnsupportedException {
+        RegisterComponentModel registerModel = _componentStateService
+                .getByComponentName(componentName)
+                .orElseThrow(() -> new IllegalStateException(String.format(
+                        "Couldn't remove %s because it is not registered as a component", componentName)));
+
+        if (_propertiesUtil.dockerProfileEnabled() && registerModel.isManaged()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         try {
-            RegisterComponentModel registerModel = _componentStateService
-                    .getByComponentName(componentName)
-                    .orElseThrow(() -> new IllegalStateException(String.format(
-                            "Couldn't remove %s because it is not registered as a component", componentName)));
             if (registerModel.isManaged()) {
                 removeManagedComponent(registerModel, true);
             }
@@ -100,7 +105,7 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     private void removeManagedComponent(RegisterComponentModel registerModel,
-                                        boolean deletePackage) {
+                                        boolean deletePackage) throws ManagedComponentsUnsupportedException {
         deleteCustomPipelines(registerModel);
 
         if (registerModel.getJsonDescriptorPath() == null) {
@@ -137,7 +142,8 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
 
-    private void removeUnmanagedComponent(RegisterComponentModel registerModel) {
+    private void removeUnmanagedComponent(RegisterComponentModel registerModel)
+            throws ManagedComponentsUnsupportedException {
         deleteCustomPipelines(registerModel);
         Path componentDir = getComponentTopLevelDir(registerModel.getJsonDescriptorPath());
 
@@ -157,7 +163,13 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
 
     @Override
-    public synchronized void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage) {
+    public synchronized void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage)
+            throws ManagedComponentsUnsupportedException {
+
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         Optional<RegisterComponentModel> optRegisterModel = _componentStateService.get()
                 .stream()
                 .filter(rcm -> jsonDescriptorPath.equals(rcm.getJsonDescriptorPath()))
@@ -180,7 +192,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
     }
 
     @Override
-    public void removePackage(String componentPackageFileName) {
+    public void removePackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         Optional<RegisterComponentModel> optRegisterModel =
                 _componentStateService.getByPackageFile(componentPackageFileName);
 
@@ -205,18 +221,24 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
 
     @Override
-    public void unregisterRetainPackage(String componentPackageFileName) {
-        _componentStateService.getByPackageFile(componentPackageFileName)
-                .ifPresent(rcm -> {
-                    Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
-                    removeManagedComponent(rcm, false);
-                    _componentStateService.addEntryForUploadedPackage(pathToPackage);
-                });
+    public void unregisterRetainPackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
+        RegisterComponentModel rcm = _componentStateService.getByPackageFile(componentPackageFileName)
+                .orElse(null);
+        if (rcm != null) {
+            Path pathToPackage = Paths.get(rcm.getFullUploadedFilePath());
+            removeManagedComponent(rcm, false);
+            _componentStateService.addEntryForUploadedPackage(pathToPackage);
+        }
     }
 
 
     @Override
-    public void deleteCustomPipelines(RegisterComponentModel registrationModel) {
+    public void deleteCustomPipelines(RegisterComponentModel registrationModel)
+            throws ManagedComponentsUnsupportedException {
         if (registrationModel.getServiceName() != null) {
             removeBatchService(registrationModel.getServiceName());
         }
@@ -239,7 +261,11 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
 
 
-    private void removeBatchService(String serviceName) {
+    private void removeBatchService(String serviceName) throws ManagedComponentsUnsupportedException {
+        if (_propertiesUtil.dockerProfileEnabled()) {
+            throw new ManagedComponentsUnsupportedException();
+        }
+
         List<NodeManagerModel> nodeModels = _nodeManagerService.getNodeManagerModels();
         for (NodeManagerModel nmm : nodeModels) {
             nmm.getServices()

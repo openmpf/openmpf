@@ -37,7 +37,7 @@ var AboutCtrl = function($scope, $location, $interpolate, depResponse, MetadataS
 
     var fetchMetadata = function() {
         MetadataService.getMetadata().then(function(data) {
-            $scope.displayVersion = HomeUtilsFull.displayVersion;
+            $scope.displayVersion = data.version;
         });
     };
 

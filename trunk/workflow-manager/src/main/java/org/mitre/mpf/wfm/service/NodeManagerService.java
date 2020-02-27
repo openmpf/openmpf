@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@org.springframework.stereotype.Service
 public interface NodeManagerService {
 
     public List<NodeManagerModel> getNodeManagerModels();
@@ -56,7 +55,7 @@ public interface NodeManagerService {
     public boolean setServiceModels(Map<String, ServiceModel> nodeManagerFilePaletteMap);
 
     public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException;
-    
+
     public Set<String> getCoreNodes();
 
     public boolean isCoreNode(String host);

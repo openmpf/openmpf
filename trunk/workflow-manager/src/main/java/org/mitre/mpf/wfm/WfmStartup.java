@@ -55,10 +55,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletContext;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -71,10 +68,10 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
     private JobRequestDao jobRequestDao;
 
     @Autowired
-    private StreamingJobRequestDao streamingJobRequestDao;
+    private Optional<StreamingJobRequestDao> streamingJobRequestDao;
 
     @Autowired
-    private StreamingJobRequestService streamingJobRequestService;
+    private Optional<StreamingJobRequestService> streamingJobRequestService;
 
 
     @Autowired
@@ -114,8 +111,7 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
                 log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
                 jobRequestDao.cancelJobsInNonTerminalState();
 
-                log.info("Marking any remaining running streaming jobs as CANCELLED_BY_SHUTDOWN.");
-                streamingJobRequestDao.cancelJobsInNonTerminalState();
+                streamingJobRequestDao.ifPresent(StreamingJobRequestDao::cancelJobsInNonTerminalState);
 
                 if (propertiesUtil.isAmqBrokerEnabled()) {
                     try {
@@ -151,17 +147,21 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
 
     // startHealthReporting uses a scheduled executor.
     private void startHealthReporting() {
+        if (streamingJobRequestService.isEmpty()) {
+            return;
+        }
         healthReportExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
             try {
-                streamingJobRequestService.sendHealthReports();
+                streamingJobRequestService.get().sendHealthReports();
             } catch (Exception e) {
                 log.error("startHealthReporting: Exception occurred while sending scheduled health report",e);
             }
         };
 
-        healthReportExecutorService.scheduleWithFixedDelay(task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
-                                                           propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
+        healthReportExecutorService.scheduleWithFixedDelay(
+                task, propertiesUtil.getStreamingJobHealthReportCallbackRate(),
+                propertiesUtil.getStreamingJobHealthReportCallbackRate(), TimeUnit.MILLISECONDS);
 
     }
 

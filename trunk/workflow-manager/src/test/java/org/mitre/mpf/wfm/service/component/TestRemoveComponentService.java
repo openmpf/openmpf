@@ -38,10 +38,10 @@ import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.NodeManagerService;
 import org.mitre.mpf.wfm.service.StreamingServiceManager;
-import org.mockito.InjectMocks;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -61,7 +61,6 @@ import static org.mockito.Mockito.*;
 
 public class TestRemoveComponentService {
 
-    @InjectMocks
     private RemoveComponentServiceImpl _removeComponentService;
 
     @Mock
@@ -79,16 +78,23 @@ public class TestRemoveComponentService {
     @Mock
     private PipelineService _mockPipelineService;
 
+    @Mock
+    private PropertiesUtil _mockPropertiesUtil;
+
     @Rule
     public TemporaryFolder _tempDir = new TemporaryFolder();
 
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+
+        _removeComponentService = new RemoveComponentServiceImpl(
+                Optional.of(_mockNodeManager), Optional.of(_mockStreamingServiceManager), _mockDeploymentService,
+                _mockStateService, _mockPipelineService, _mockPropertiesUtil);
     }
 
     @Test
-    public void testRemoveComponentHappyPath() throws IOException {
+    public void testRemoveComponentHappyPath() throws IOException, ManagedComponentsUnsupportedException {
         // Arrange
         JsonComponentDescriptor descriptor = TestDescriptorFactory.get();
         String serviceName = descriptor.getAlgorithm().getName();
@@ -198,7 +204,7 @@ public class TestRemoveComponentService {
 
 
     @Test
-    public void testRemoveUnmanagedComponent() throws IOException {
+    public void testRemoveUnmanagedComponent() throws IOException, ManagedComponentsUnsupportedException {
         Path pluginsDir = _tempDir.newFolder("plugins").toPath();
         Path otherPluginDir = pluginsDir.resolve("other-plugin");
         Files.createDirectory(otherPluginDir);

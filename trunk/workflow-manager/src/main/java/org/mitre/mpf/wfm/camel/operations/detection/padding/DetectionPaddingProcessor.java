@@ -96,14 +96,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                     continue;
                 }
 
-                //Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                //        job, media.getId(), trackMergingContext.getTaskIndex(), actionIndex);
-
-                Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
-                        action, job.getPipelineElements(), media,
-                        job.getJobProperties(),
-                        job.getOverriddenAlgorithmProperties(),
-                        job.getSystemPropertiesSnapshot());
+                Function<String, String> combinedProperties =
+                        _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
 
                 try {
                     if (!requiresPadding(combinedProperties)) {

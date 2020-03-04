@@ -31,16 +31,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JsonCallbackBody {
     /** The internal identifier assigned to this job by MPF. */
-    private long jobId;
-    public long getJobId() { return jobId; }
+    private final long _jobId;
+    public long getJobId() { return _jobId; }
 
     /** The ID that was provided to this job when it was initially submitted. */
-    private String externalid;
-    public String getExternalId() { return externalid; }
+    private final String _externalId;
+    public String getExternalId() { return _externalId; }
+
+    private final String _outputObjectUri;
+    public String getOutputObjectUri() { return _outputObjectUri; }
 
     @JsonCreator
-    public JsonCallbackBody(@JsonProperty("jobId") long jobId, @JsonProperty("externalId") String externalid) {
-        this.jobId = jobId;
-        this.externalid = externalid;
+    public JsonCallbackBody(
+            @JsonProperty("jobId") long jobId,
+            @JsonProperty("externalId") String externalId,
+            @JsonProperty("outputObjectUri") String outputObjectUri) {
+        _jobId = jobId;
+        _externalId = externalId;
+        _outputObjectUri = outputObjectUri;
     }
 }

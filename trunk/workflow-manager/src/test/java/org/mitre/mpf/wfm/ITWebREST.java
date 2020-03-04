@@ -43,9 +43,6 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
 import spark.Spark;
 
 import java.io.IOException;
@@ -55,6 +52,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 
 //mvn -Dtest=ITWebREST test if running tomcat before
 //mvn verify -Dtest=none -DfailIfNoTests=false -Dit.test=ITWebREST
@@ -409,7 +408,7 @@ public class ITWebREST {
 		jobCreationRequest.setPipelineName(detPipeline);
 		jobCreationRequest.setPriority(7); //why not
 
-		//convert params to json string		
+		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
 
 		URL actualUrl = new URL(postJobsUrl);
@@ -746,9 +745,9 @@ public class ITWebREST {
 		}
 		String service_name = node.getString("name");
 		Assert.assertTrue(service_name != null && service_name.length() > 0);
-		
+
 		/*
-		 * stop service tests		
+		 * stop service tests
 		 */
 		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
 
@@ -798,7 +797,7 @@ public class ITWebREST {
 			}
 		}
 		Assert.assertTrue(completed);
-		
+
 		/*
 		 * start service tests
 		 */
@@ -953,11 +952,12 @@ public class ITWebREST {
 	// Callback
 	// ///////////////////////////
 
-	private final boolean[] sparkresponse = new boolean[2];
-	private final long[] sparkIds = new long[2];
+	private final CompletableFuture<JsonCallbackBody> getCallbackResult = new CompletableFuture<>();
+	private final CompletableFuture<JsonCallbackBody> postCallbackResult = new CompletableFuture<>();
+
 	@Test(timeout = 5 * MINUTES)
 	public void testJobWithCallback() throws Exception {
-		long externalId =  555;
+		String externalId = "555";
 		try {
 			String url = WebRESTUtils.REST_URL + "jobs";
 			startTest("testJobWithCallback",url);
@@ -978,87 +978,86 @@ public class ITWebREST {
 			media.put(medium);
 
 			params.put("media", media);
-			params.put("externalId", ""+externalId);
+			params.put("externalId", externalId);
 			params.put("buildOutput", true);
 			params.put("priority", 9);
 			params.put("callbackURL","http://0.0.0.0:20159/callback");
 			params.put("callbackMethod","POST");
 			String param_string = params.toString();
 
-			sparkresponse[0] =false;
-			sparkresponse[1] =false;
-
 			setupSpark();//start the listener
 
 			//submit a job request with a POST callback
 			log.info("Post to: " + url + " Params: " + param_string);
-			JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
-			log.info("results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
-			JSONObject obj = new JSONObject(JSONstring);
-			long jobId =  Long.valueOf(obj.getInt("jobId"));
+			String postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
+			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
+			JSONObject obj = new JSONObject(postResponseJson);
+			long jobId = obj.getLong("jobId");
 
 			//wait for it to callback
-			int count = 0;
-			while (sparkresponse[1] != true && count < 100) {
-				log.info("Waiting for POST callback...");
-				Thread.sleep(500);
-				count++;
-			}
-			sparkresponse[0] = (jobId == sparkIds[0] && externalId == sparkIds[1]);
-			Assert.assertTrue(sparkresponse[0]);
+			log.info("Waiting for POST callback...");
+			JsonCallbackBody postCallbackContent = postCallbackResult.get();
+			Assert.assertEquals(jobId, postCallbackContent.getJobId());
+			Assert.assertEquals(externalId, postCallbackContent.getExternalId());
+
+			Assert.assertTrue(postCallbackContent.getOutputObjectUri().startsWith("file:///"));
+			Assert.assertTrue(postCallbackContent.getOutputObjectUri().endsWith(
+					String.format("output-objects/%s/detection.json", jobId)));
 
 			//test GET
-			sparkresponse[0] =false;
-			sparkresponse[1] =false;
-			sparkIds[0] = -1;
-			sparkIds[1] = -1;
 			params.put("callbackMethod","GET");
 			param_string = params.toString();
 			log.info("Post to: " + url + " Params: " + param_string);
-			JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
-			log.info("results:" + JSONstring);// {"errorCode":0,"errorMessage":null,"jobId":5}
-			obj = new JSONObject(JSONstring);
-			jobId =  Long.valueOf(obj.getInt("jobId"));
+			postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
+			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
+			obj = new JSONObject(postResponseJson);
+			jobId =  obj.getLong("jobId");
 
 			//wait for it to callback
-			count = 0;
-			while (sparkresponse[1] != true  && count < 100) {
-				log.info("Waiting for GET callback...");
-				Thread.sleep(500);
-				count++;
-			}
-			sparkresponse[0] = (jobId == sparkIds[0] && externalId == sparkIds[1]);
-			Assert.assertTrue(sparkresponse[0]);
+			log.info("Waiting for GET callback...");
+			JsonCallbackBody getCallbackContent = getCallbackResult.get();
+			Assert.assertEquals(jobId, getCallbackContent.getJobId());
+			Assert.assertEquals(externalId, getCallbackContent.getExternalId());
 
-			endTest();
+			Assert.assertTrue(getCallbackContent.getOutputObjectUri().startsWith("file:///"));
+			Assert.assertTrue(getCallbackContent.getOutputObjectUri().endsWith(
+					String.format("output-objects/%s/detection.json", jobId)));
+
 		} finally {
+			endTest();
 			Spark.stop();
 		}
 	}
 
 	private void setupSpark(){
 		Spark.port(20159);
-		Spark.get("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..GET..from " + request.requestMethod());
-				sparkIds[0] = Long.parseLong(request.queryParams("jobid"));
-				sparkIds[1] = Long.parseLong(request.queryParams("externalid"));
-				log.info("Spark GET Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
-				sparkresponse[1] = true;
+		Spark.get("/callback", (request, resp) -> {
+			try {
+			    long jobId = Long.parseLong(request.queryParams("jobid"));
+				log.info("Spark received GET callback with url: " + request.url() + '?' + request.queryString());
+
+				JsonCallbackBody callbackBody = new JsonCallbackBody(
+						jobId, request.queryParams("externalid"), request.queryParams("outputobjecturi"));
+				getCallbackResult.complete(callbackBody);
 				return "";
 			}
+			catch (Exception e) {
+				getCallbackResult.completeExceptionally(e);
+				throw e;
+			}
 		});
-		Spark.post("/callback", new Route() {
-			@Override
-			public Object handle(Request request, Response resp) throws Exception {
-				log.info("Spark Servicing request..POST..from " + request.requestMethod() + " body:"+request.body());
-				JsonCallbackBody callbackBody = objectMapper.readValue(request.bodyAsBytes(), JsonCallbackBody.class);
-				sparkIds[0] = callbackBody.getJobId();
-				sparkIds[1] = Long.parseLong(callbackBody.getExternalId());
-				log.info("Spark POST Callback jobid=" + sparkIds[0] + " externalid="+sparkIds[1]);
-				sparkresponse[1] = true;
+
+		Spark.post("/callback", (request, resp) -> {
+			try {
+				log.info("Spark received POST callback with body: " + request.body());
+				JsonCallbackBody callbackBody = objectMapper.readValue(request.bodyAsBytes(),
+				                                                       JsonCallbackBody.class);
+				postCallbackResult.complete(callbackBody);
 				return "";
+			}
+			catch (Exception e) {
+				postCallbackResult.completeExceptionally(e);
+				throw e;
 			}
 		});
 

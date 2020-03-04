@@ -30,12 +30,13 @@ import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -66,6 +67,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
@@ -123,11 +125,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             Mutable<BatchJobStatusType> jobStatus = new MutableObject<>(BatchJobStatusType.parse(statusString, BatchJobStatusType.UNKNOWN));
 
             TransientJob transientJob = inProgressBatchJobs.getJob(jobId);
+            URI outputObjectUri = null;
             try {
                 markJobStatus(jobId, BatchJobStatusType.BUILDING_OUTPUT_OBJECT);
 
                 // NOTE: jobStatus is mutable - it __may__ be modified in createOutputObject!
-                createOutputObject(transientJob, jobStatus);
+                outputObjectUri = createOutputObject(transientJob, jobStatus);
             } catch (Exception exception) {
                 log.warn("Failed to create the output object for Job {} due to an exception.", jobId, exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
@@ -148,7 +151,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             markJobStatus(jobId, jobStatus.getValue());
 
             try {
-                callback(transientJob);
+                callback(transientJob, outputObjectUri);
             } catch (Exception exception) {
                 log.warn("Failed to make callback (if appropriate) for Job #{}.", jobId);
             }
@@ -176,7 +179,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private void callback(TransientJob transientJob) throws WfmProcessingException {
+    private void callback(TransientJob transientJob, URI outputObjectUri) throws WfmProcessingException {
         long jobId = transientJob.getId();
         String jsonCallbackURL = transientJob.getCallbackUrl().orElse(null);
         if (jsonCallbackURL == null) {
@@ -189,15 +192,56 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return;
         }
 
-
         log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
         try {
-            JsonCallbackBody jsonBody = new JsonCallbackBody(jobId, transientJob.getExternalId().orElse(null));
-            new Thread(new CallbackThread(jsonCallbackURL, jsonCallbackMethod, jsonBody)).start();
-        } catch (IOException ioe) {
-            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                   jsonCallbackMethod, jsonCallbackURL, jobId), ioe);
+            HttpRequestBase request = createCallbackRequest(jsonCallbackMethod, jsonCallbackURL,
+                                                            transientJob, outputObjectUri);
+            ThreadUtil.runAsync(() -> {
+                try (CloseableHttpClient client = HttpClientBuilder.create().build();
+                     CloseableHttpResponse response = client.execute(request)) {
+                    log.info("{} callback issued to '{}' for job id {}. (Response={})",
+                             jsonCallbackMethod, jsonCallbackURL, jobId, response);
+                }
+                catch (Exception e) {
+                    log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                                           jsonCallbackMethod, jsonCallbackURL, jobId), e);
+                }
+            });
         }
+        catch (IOException | URISyntaxException e) {
+            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                                   jsonCallbackMethod, jsonCallbackURL, jobId), e);
+        }
+    }
+
+    private HttpRequestBase createCallbackRequest(
+            String jsonCallbackMethod, String jsonCallbackURL, TransientJob transientJob, URI outputObjectUri)
+                throws URISyntaxException, UnsupportedEncodingException {
+
+        if ("GET".equals(jsonCallbackMethod)) {
+            URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
+                    .setParameter("jobid", String.valueOf(transientJob.getId()));
+
+            transientJob.getExternalId()
+                    .ifPresent(id -> callbackUriWithParamsBuilder.setParameter("externalid", id));
+
+            if (outputObjectUri != null) {
+                callbackUriWithParamsBuilder.setParameter("outputobjecturi", outputObjectUri.toString());
+            }
+            return new HttpGet(callbackUriWithParamsBuilder.build());
+        }
+
+        HttpPost post = new HttpPost(jsonCallbackURL);
+        post.addHeader("Content-Type", "application/json");
+
+        String outputObjectUriString = outputObjectUri == null
+                ? null
+                : outputObjectUri.toString();
+
+        JsonCallbackBody jsonBody = new JsonCallbackBody(
+                transientJob.getId(), transientJob.getExternalId().orElse(null), outputObjectUriString);
+        post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+        return post;
     }
 
     private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
@@ -212,7 +256,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
     @Override
-    public void createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws IOException {
+    public URI createOutputObject(TransientJob transientJob, Mutable<BatchJobStatusType> jobStatus) throws IOException {
         long jobId = transientJob.getId();
         JobRequest jobRequest = jobRequestDao.findById(jobId);
 
@@ -342,6 +386,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
         checkErrorMessages(jsonOutputObject, jobStatus);
         jobRequestDao.persist(jobRequest);
+        return outputLocation;
     }
 
 
@@ -513,57 +558,5 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     public void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer) {
         log.info("Unsubscribing completion consumer {}.", consumer.getId());
         consumers.remove(consumer);
-    }
-
-    /**
-     * Thread to handle the Callback to a URL given a HTTP method
-     */
-    public class CallbackThread implements Runnable {
-        private long jobId;
-        private String callbackURL;
-        private String callbackMethod;
-        private HttpUriRequest req;
-
-        public CallbackThread(String callbackURL,String callbackMethod,JsonCallbackBody body) throws UnsupportedEncodingException {
-            jobId = body.getJobId();
-            this.callbackURL = callbackURL;
-            this.callbackMethod = callbackMethod;
-
-            if(callbackMethod.equals("GET")) {
-                String jsonCallbackURL2 = callbackURL;
-                if(jsonCallbackURL2.contains("?")){
-                    jsonCallbackURL2 +="&";
-                }else{
-                    jsonCallbackURL2 +="?";
-                }
-                jsonCallbackURL2 +="jobid="+body.getJobId();
-                if(body.getExternalId() != null){
-                    jsonCallbackURL2 += "&externalid="+body.getExternalId();
-                }
-                req = new HttpGet(jsonCallbackURL2);
-            }else { // this is for a POST
-                HttpPost post = new HttpPost(callbackURL);
-                post.addHeader("Content-Type", "application/json");
-                try {
-                    post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(body)));
-                    req = post;
-                } catch (WfmProcessingException e) {
-                    log.error("Cannot serialize CallbackBody for job id " + jobId, e);
-                }
-            }
-        }
-
-        @Override
-        public void run() {
-            final HttpClient httpClient = HttpClientBuilder.create().build();
-            try {
-                HttpResponse response = httpClient.execute(req);
-                log.info("{} callback issued to '{}' for job id {}. (Response={})",
-                         callbackMethod, callbackURL, jobId, response);
-            } catch (Exception exception) {
-                log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                       callbackMethod, callbackURL, jobId), exception);
-            }
-        }
     }
 }

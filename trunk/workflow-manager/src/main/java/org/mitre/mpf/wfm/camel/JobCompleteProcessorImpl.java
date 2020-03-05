@@ -30,14 +30,14 @@ import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -67,12 +67,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.IntStream;
 
@@ -113,6 +114,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
+    @Autowired
+    private CallbackUtils callbackUtils;
 
 
     @Override
@@ -164,75 +168,111 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 " If this job is resubmitted, it will likely not complete again!", jobId), exception);
             }
 
-            try {
-                callback(job, outputObjectUri);
-            } catch (Exception exception) {
-                log.warn("Failed to make callback for job {}.", jobId);
+            if (job.getCallbackUrl().isPresent()) {
+                sendCallbackAsync(job, outputObjectUri)
+                        .whenCompleteAsync((resp, err) -> {
+                            if (err != null) { handleFailedCallback(job, jobStatus, err); }
+                            completeJob(job, jobStatus);
+                        });
             }
-
-            // Tear down the job.
-            try {
-                destroy(job);
-            } catch (Exception exception) {
-                log.warn(String.format("Failed to clean up job %d due to an exception." +
-                        " Data for this job will remain in the transient data store," +
-                        " but the status of the job has not been affected by this failure.", jobId), exception);
+            else {
+                completeJob(job, jobStatus);
             }
-
-            log.info("Notifying {} completion consumer(s).", consumers.size());
-            for (NotificationConsumer<JobCompleteNotification> consumer : consumers) {
-                try {
-                    log.info("Notifying completion consumer {}.", consumer.getId());
-                    consumer.onNotification(this, new JobCompleteNotification(exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class)));
-                } catch (Exception exception) {
-                    log.warn(String.format("Completion consumer %d threw an exception.", consumer.getId()), exception);
-                }
-            }
-
-            jobStatusBroadcaster.broadcast(jobId, 100, jobStatus.getValue(), Instant.now());
-            jobProgressStore.removeJob(jobId);
-            log.info("[Job {}:*:*] Job complete!", jobId);
         }
     }
 
-    private void callback(BatchJob job, URI outputObjectUri) throws WfmProcessingException {
-        long jobId = job.getId();
-        String jsonCallbackURL = job.getCallbackUrl().orElse(null);
-        if (jsonCallbackURL == null) {
-            return;
-        }
-        String jsonCallbackMethod = job.getCallbackMethod()
-                                    .filter(cbm -> cbm.equalsIgnoreCase("POST") || cbm.equalsIgnoreCase("GET"))
-                                    .orElse(null);
-        if (jsonCallbackMethod == null) {
-            return;
-        }
-
-        log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
+    private void completeJob(BatchJob job, Mutable<BatchJobStatusType> jobStatus) {
         try {
-            HttpRequestBase request = createCallbackRequest(jsonCallbackMethod, jsonCallbackURL,
-                                                            job, outputObjectUri);
-            ThreadUtil.runAsync(() -> {
-                try (CloseableHttpClient client = HttpClientBuilder.create().build();
-                     CloseableHttpResponse response = client.execute(request)) {
-                    log.info("{} callback issued to '{}' for job id {}. (Response={})",
-                             jsonCallbackMethod, jsonCallbackURL, jobId, response);
-                }
-                catch (Exception e) {
-                    log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                           jsonCallbackMethod, jsonCallbackURL, jobId), e);
-                }
-            });
+            destroy(job);
+        } catch (Exception exception) {
+            log.warn(String.format(
+                    "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
+                        "data store, but the status of the job has not been affected by this failure.", job.getId()),
+                     exception);
         }
-        catch (IOException | URISyntaxException e) {
-            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                   jsonCallbackMethod, jsonCallbackURL, jobId), e);
+
+        log.info("Notifying {} completion consumer(s).", consumers.size());
+        for (NotificationConsumer<JobCompleteNotification> consumer : consumers) {
+            try {
+                log.info("Notifying completion consumer {}.", consumer.getId());
+                consumer.onNotification(this, new JobCompleteNotification(job.getId()));
+            } catch (Exception exception) {
+                log.warn(String.format("Completion consumer %s threw an exception.", consumer.getId()), exception);
+            }
+        }
+
+        jobStatusBroadcaster.broadcast(job.getId(), 100, jobStatus.getValue(), Instant.now());
+        jobProgressStore.removeJob(job.getId());
+        log.info("[Job {}:*:*] Job complete!", job.getId());
+    }
+
+
+    private void handleFailedCallback(BatchJob job, Mutable<BatchJobStatusType> jobStatus,
+                                      Throwable callbackError) {
+        if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
+            callbackError = callbackError.getCause();
+        }
+
+        String warningMessage = String.format("Sending callback failed due to: %s", callbackError);
+        log.warn(warningMessage, callbackError);
+        inProgressBatchJobs.addJobWarning(job.getId(), warningMessage);
+
+        JobRequest jobRequest = jobRequestDao.findById(job.getId());
+        BatchJobStatusType initialStatus = jobStatus.getValue();
+        try {
+            createOutputObject(job, jobRequest.getTimeReceived(), jobRequest.getTimeCompleted(), jobStatus);
+        }
+        catch (Exception e) {
+            log.warn("Failed to create the output object for Job {} due to an exception.", job.getId(), e);
+            jobStatus.setValue(BatchJobStatusType.ERROR);
+        }
+
+        if (jobStatus.getValue() != initialStatus) {
+            jobRequest.setTimeCompleted(Instant.now());
+            jobRequest.setStatus(jobStatus.getValue());
+            jobRequestDao.persist(jobRequest);
         }
     }
 
-    private HttpRequestBase createCallbackRequest(
+    private CompletableFuture<HttpResponse> sendCallbackAsync(BatchJob job, URI outputObjectUri) {
+        String callbackMethod = job.getCallbackMethod().orElse("POST");
+
+        String callbackUrl = job.getCallbackUrl()
+                // This is will never throw because we already checked that the URL is present.
+                .orElseThrow();
+
+        log.info("Starting {} callback to {} for job id {}.", callbackMethod, callbackUrl, job.getId());
+        try {
+            HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
+                                                           job, outputObjectUri);
+            return callbackUtils.executeRequest(request)
+                    .thenApply(JobCompleteProcessorImpl::checkResponse);
+        }
+        catch (Exception e) {
+            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+                                   callbackMethod, callbackUrl, job.getId()), e);
+            return ThreadUtil.failedFuture(e);
+        }
+    }
+
+
+    private static HttpResponse checkResponse(HttpResponse response) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode >= 200 && statusCode <= 299) {
+            return response;
+        }
+        throw new IllegalStateException("The remote server responded with a non-200 status code of: " + statusCode);
+    }
+
+
+    private HttpUriRequest createCallbackRequest(
             String jsonCallbackMethod, String jsonCallbackURL, BatchJob job, URI outputObjectUri)
-                throws URISyntaxException, UnsupportedEncodingException {
+                throws URISyntaxException {
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setSocketTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
+                .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
+                .build();
 
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
@@ -244,11 +284,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             if (outputObjectUri != null) {
                 callbackUriWithParamsBuilder.setParameter("outputobjecturi", outputObjectUri.toString());
             }
-            return new HttpGet(callbackUriWithParamsBuilder.build());
+            var getRequest = new HttpGet(callbackUriWithParamsBuilder.build());
+            getRequest.setConfig(requestConfig);
+            return getRequest;
         }
 
-        HttpPost post = new HttpPost(jsonCallbackURL);
-        post.addHeader("Content-Type", "application/json");
+        var postRequest = new HttpPost(jsonCallbackURL);
+        postRequest.addHeader("Content-Type", "application/json");
+        postRequest.setConfig(requestConfig);
 
         String outputObjectUriString = outputObjectUri == null
                 ? null
@@ -256,9 +299,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         JsonCallbackBody jsonBody = new JsonCallbackBody(
                 job.getId(), job.getExternalId().orElse(null), outputObjectUriString);
-        post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
-        return post;
+
+        postRequest.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody),
+                                               ContentType.APPLICATION_JSON));
+        return postRequest;
     }
+
 
     @Override
     public URI createOutputObject(BatchJob job, Instant timeReceived, Instant timeCompleted,

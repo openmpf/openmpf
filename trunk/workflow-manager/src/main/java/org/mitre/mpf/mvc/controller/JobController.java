@@ -102,17 +102,17 @@ public class JobController {
     @RequestMapping(value = {"/rest/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a job using a JSON JobCreationRequest object as the request body.",
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The media array should" +
-                    " contain objects with a valid mediaUri. For example: http://localhost/images/image.png." +
+                    " contain objects with a valid mediaUri. For example: http://localhost/images/image.png. " +
                     " Another example: file:///home/user/images/image.jpg. A callbackURL (optional) and" +
                     " callbackMethod (GET or POST) may be added. When the job completes, the callback will perform" +
                     " a GET or POST to the callbackURL with the 'jobId' and 'externalId' parameters." +
                     " For example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1'," +
                     " and the externalId is 'someid', then a GET callback will be: " +
-                    " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file:///path/to/1/detection.json." +
+                    " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " If callbackURL ends in 'foo?someparam=something', then a GET callback will be:" +
-                    " http://api.example.com/foo?someparam=something&jobid=1&externalid=someid&outputobjecturi=file:///path/to/1/detection.json. " +
+                    " http://api.example.com/foo?someparam=something&jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json. " +
                     " If no externalId is provided, then a GET callback will be:" +
-                    " http://api.example.com/foo?jobid=1&outputobjecturi=file:///path/to/1/detection.json." +
+                    " http://api.example.com/foo?jobid=1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " The body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +
                     " An optional jobProperties object contains String key-value pairs which override the pipeline's" +

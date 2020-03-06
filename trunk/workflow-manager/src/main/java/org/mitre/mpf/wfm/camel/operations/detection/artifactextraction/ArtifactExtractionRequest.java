@@ -27,70 +27,72 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import org.mitre.mpf.wfm.enums.MediaType;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.wfm.enums.MediaType;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ArtifactExtractionRequest {
+
     /** The identifier of the medium associated with this request. */
     private final long _mediaId;
-    public long getMediaId() { return _mediaId; }
+
+    public long getMediaId() {
+        return _mediaId;
+    }
 
     /** The local path of the medium. */
     private final String _path;
-    public String getPath() { return _path; }
+
+    public String getPath() {
+        return _path;
+    }
 
     /** The type of media associated with this request. */
     private final MediaType _mediaType;
-    public MediaType getMediaType() { return _mediaType; }
+
+    public MediaType getMediaType() {
+        return _mediaType;
+    }
 
     /** The job id associated with this request. */
     private final long _jobId;
-    public long getJobId() { return _jobId; }
 
-    /** The task index in the pipeline. This information is necessary to map an artifact back to a track. */
-    private final int _taskIndex;
-    public int getTaskIndex() { return _taskIndex; }
-
-    /** A mapping of actionIndexes to frame numbers which should be extracted for that action. */
-    private final ImmutableMap<Integer, ImmutableSet<Integer>> _actionToFrameNumbers;
-    public ImmutableMap<Integer, ImmutableSet<Integer>> getActionToFrameNumbers() {
-        return _actionToFrameNumbers;
+    public long getJobId() {
+        return _jobId;
     }
 
-    private final ImmutableSet<Integer> _frameNumbers;
-    @JsonIgnore
-    public ImmutableSet<Integer> getFrameNumbers() {
-        return _frameNumbers;
+    /** The index of the task from which this request was derived. */
+    private final Integer _taskIndex;
+
+    public Integer getTaskIndex() {
+        return _taskIndex;
     }
 
+    /** The index of the action from which this request was derived. */
+    private final Integer _actionIndex;
+
+    public Integer getActionIndex() {
+        return _actionIndex;
+    }
+
+    private final List<JsonTrackOutputObject> _tracksToExtract = new ArrayList<>();
+
+    public List<JsonTrackOutputObject> getTracksToExtract() {
+        return _tracksToExtract;
+    }
 
     @JsonCreator
-    public ArtifactExtractionRequest(
-            @JsonProperty("jobId") long jobId,
-            @JsonProperty("mediaId") long mediaId,
-            @JsonProperty("path") String path,
-            @JsonProperty("mediaType") MediaType mediaType,
-            @JsonProperty("taskIndex") int taskIndex,
-            @JsonProperty("actionToFrameNumbers") Map<Integer, Set<Integer>> actionToFrameNumbers) {
+    public ArtifactExtractionRequest(@JsonProperty("jobId") long jobId, @JsonProperty("mediaId") long mediaId,
+            @JsonProperty("path") String path, @JsonProperty("mediaType") MediaType mediaType,
+            @JsonProperty("taskIndex") int taskIndex, @JsonProperty("actionIndex") int actionIndex) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;
         _mediaType = mediaType;
         _taskIndex = taskIndex;
-
-        _actionToFrameNumbers = actionToFrameNumbers.entrySet()
-                .stream()
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableSet.copyOf(e.getValue())));
-
-        _frameNumbers = _actionToFrameNumbers.values().stream()
-                .flatMap(Collection::stream)
-                .collect(ImmutableSet.toImmutableSet());
+        _actionIndex = actionIndex;
     }
 }

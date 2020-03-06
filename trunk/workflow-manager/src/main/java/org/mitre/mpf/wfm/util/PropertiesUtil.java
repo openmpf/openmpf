@@ -284,13 +284,14 @@ public class PropertiesUtil {
         return new File(artifactsDirectory, String.valueOf(jobId));
     }
 
-    public File createArtifactDirectory(long jobId, long mediaId, int taskIndex) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d", jobId, mediaId, taskIndex)).normalize().toAbsolutePath();
+    public File createArtifactDirectory(long jobId, long mediaId, int taskIndex,
+                                        int actionIndex) throws IOException {
+        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%d/%d", jobId, mediaId, taskIndex, actionIndex)).normalize().toAbsolutePath();
         Files.createDirectories(path);
         return path.toFile();
     }
-    public Path createArtifactFile(long jobId, long mediaId, int taskIndex, String name) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%s", jobId, mediaId, taskIndex, name)).normalize().toAbsolutePath();
+    public Path createArtifactFile(long jobId, long mediaId, int taskIndex, int actionIndex, int trackIndex, String name) throws IOException {
+        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%d/%d/%s", jobId, mediaId, taskIndex, actionIndex, trackIndex, name)).normalize().toAbsolutePath();
         Files.createDirectories(path.getParent());
         return path;
     }

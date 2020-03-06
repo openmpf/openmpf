@@ -24,27 +24,17 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.frameextractor;
 
-package org.mitre.mpf.wfm.service;
+public class FrameExtractionResult {
 
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-
-import com.google.common.collect.Table;
-
-import java.io.IOException;
-import java.net.URI;
-
-public interface StorageBackend {
-
-    public boolean canStore(JsonOutputObject outputObject) throws StorageException;
-    public URI store(JsonOutputObject outputObject) throws StorageException, IOException;
-
-
-    public boolean canStore(ArtifactExtractionRequest request) throws StorageException;
-    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
-
-    public boolean canStore(MarkupResult markupResult) throws StorageException;
-    public void store(MarkupResult markupResult) throws IOException, StorageException;
+    public int frameNumber;
+    public int trackNumber;
+    public String filePath;
+    
+    public FrameExtractionResult(int frameNum, int trackNum, String path) {
+        frameNumber = frameNum;
+        trackNumber = trackNum;
+        filePath = path;
+    }
 }

@@ -25,13 +25,17 @@
  ******************************************************************************/
 
 #include <jni.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string>
 #include <exception>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <MPFDetectionObjects.h>
 #include <MPFVideoCapture.h>
+#include <frame_transformers/AffineFrameTransformer.h>
+#include "JniHelper.h"
 
 /* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
 
@@ -39,184 +43,158 @@
 #define _Included_org_mitre_mpf_frameextractor_FrameExtractor
 #ifdef __cplusplus
 extern "C" {
-
 using namespace cv;
 
 #endif
 /*
  * Class:     org_mitre_mpf_frameextractor_FrameExtractor
  * Method:    executeNative
- * Signature: (java/lang/String;java/lang/String;java/util/Map;)I
+ * Signature: (java/lang/String;java/lang/String;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
-  (JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jobject map)
+(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jobject paths)
 {
-    if (env == nullptr) {
-        return 8700;
-    }
-
-    // Get the bounding box map.
-    jclass clzFrameExtractor = env->GetObjectClass(frameExtractorInstance);
-    jmethodID clzFrameExtractor_fnGetFrames = env->GetMethodID(clzFrameExtractor, "getFrames", "()Ljava/util/Set;");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8701;
-    }
-    jmethodID clzFrameExtractor_fnMakeFilename = env->GetMethodID(clzFrameExtractor, "makeFilename",
-                                                                  "(Ljava/lang/String;I)Ljava/lang/String;");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8702;
-    }
-    jobject framesSet = env->CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8703;
-    }
-
-    // Get the iterator class and methods.
-    jclass clzIterator = env->FindClass("java/util/Iterator");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8704;
-    }
-    jmethodID clzIterator_fnNext = env->GetMethodID(clzIterator, "next", "()Ljava/lang/Object;");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8705;
-    }
-    jmethodID clzIterator_fnHasNext = env->GetMethodID(clzIterator, "hasNext", "()Z");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8706;
-    }
-
-    // Get Set class and methods.
-    jclass clzSet = env->FindClass("java/util/TreeSet");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8707;
-    }
-    jmethodID clzSet_fnIterator = env->GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8708;
-    }
-
-    // Get the Map class and methods.
-    jclass clzMap = env->FindClass("java/util/Map");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8709;
-    }
-    jmethodID clzMap_fnPut = env->GetMethodID(clzMap, "put",
-                                              "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8710;
-    }
-
-    jclass clzInteger = env->FindClass("java/lang/Integer");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8711;
-    }
-    jmethodID clzInteger_fnIntValue = env->GetMethodID(clzInteger, "intValue", "()I");
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return 8712;
-    }
-
-    std::string videoPath;
-    {
-        const char *inChars = env->GetStringUTFChars(video, nullptr);
-        if (inChars == nullptr) {
-            return 8713;
-        }
-        videoPath = inChars;
-        env->ReleaseStringUTFChars(video, inChars);
-    }
-    if (videoPath.empty()) {
-        return 8714;
-    }
+    JniHelper jni(env);
 
     try {
+        // Get the list of track objects to extract from.
+        jclass clzFrameExtractor = jni.GetObjectClass(frameExtractorInstance);
+        jmethodID clzFrameExtractor_fnGetTracks = jni.GetMethodID(clzFrameExtractor,
+                "getTracksToExtract", "()Ljava/util/List;");
+        jobject trackList = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTracks);
+
+        jmethodID clzFrameExtractor_fnMakeFilename = jni.GetMethodID(clzFrameExtractor,
+                "makeFilename", "(Ljava/lang/String;II)Ljava/lang/String;");
+
+        // Get the List class and methods to access elements of the track list
+        jclass clzList = jni.FindClass("java/util/List");
+        jmethodID clzList_fnIterator = jni.GetMethodID(clzList, "iterator", "()Ljava/util/Iterator;");
+        // Get the List add method to put results into the output list
+        jmethodID clzList_fnAdd = jni.GetMethodID(clzList, "add", "(Ljava/lang/Object;)Z");
+
+        // Get the iterator class and methods
+        jclass clzIterator = jni.FindClass("java/util/Iterator");
+        jmethodID clzIterator_fnNext = jni.GetMethodID(clzIterator, "next", "()Ljava/lang/Object;");
+        jmethodID clzIterator_fnHasNext = jni.GetMethodID(clzIterator, "hasNext", "()Z");
+
+        // Get Set class and methods, for accessing the detections in the JsonTrackOutputObject
+        jclass clzSet = jni.FindClass("java/util/Set");
+        jmethodID clzSet_fnIterator = jni.GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
+
+        // Get the Map class and method to get the rotation property from the detection properties map
+        jclass clzMap = jni.FindClass("java/util/Map");
+        jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+
+        // Get the FrameExtractionResult class and its constructor
+        jclass clzExtractionResult = jni.FindClass("org/mitre/mpf/frameextractor/FrameExtractionResult");
+        jmethodID clzExtractionResult_fnConstruct = jni.GetMethodID(clzExtractionResult, "<init>", "(IILjava/lang/String;)V");
+
+        // Get the Integer class
+        jclass clzInteger = jni.FindClass("java/lang/Integer");
+        jmethodID clzInteger_fnParseInt = jni.GetStaticMethodID(clzInteger, "parseInt", "(Ljava/lang/String;)I");
+
+        // Get the JsonTrackOutputObject methods
+        jclass clzJsonTrackOutputObject = jni.FindClass("org/mitre/mpf/interop/JsonTrackOutputObject");
+        jmethodID clzJsonTrackOutputObject_fnGetId = jni.GetMethodID(clzJsonTrackOutputObject, "getId", "()Ljava/lang/String;");
+
+        jmethodID clzJsonTrackOutputObject_fnGetDetections = jni.GetMethodID(clzJsonTrackOutputObject,
+                "getDetections", "()Ljava/util/SortedSet;");
+
+        // Get the JsonDetectionOutputObject methods
+        jclass clzJsonDetectionOutputObject = jni.FindClass("org/mitre/mpf/interop/JsonDetectionOutputObject");
+        jmethodID clzJsonDetectionOutputObject_fnGetOffsetFrame = jni.GetMethodID(clzJsonDetectionOutputObject,
+                "getOffsetFrame", "()I");
+        jmethodID clzJsonDetectionOutputObject_fnGetX = jni.GetMethodID(clzJsonDetectionOutputObject, "getX", "()I");
+        jmethodID clzJsonDetectionOutputObject_fnGetY = jni.GetMethodID(clzJsonDetectionOutputObject, "getY", "()I");
+        jmethodID clzJsonDetectionOutputObject_fnGetHeight = jni.GetMethodID(clzJsonDetectionOutputObject, "getHeight", "()I");
+        jmethodID clzJsonDetectionOutputObject_fnGetWidth = jni.GetMethodID(clzJsonDetectionOutputObject, "getWidth", "()I");
+        jmethodID clzJsonDetectionOutputObject_fnGetProperties = jni.GetMethodID(clzJsonDetectionOutputObject,
+                "getDetectionProperties", "()Ljava/util/SortedMap;");
+        // For each detection to be extracted create an AffineFrameTransformer, apply it, and then write out the result.
+
+        std::string videoPath = jni.ToStdString(video);
+
         MPF::COMPONENT::MPFVideoCapture src(videoPath);
+        if (!src.IsOpened()) {
+            throw std::runtime_error("Unable to open input video file: " + videoPath);
+        }
 
         Mat frame;
 
-        jobject iterator = env->CallObjectMethod(framesSet, clzSet_fnIterator);
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-            return 8715;
-        }
-
-        // While there are more frames in the set...
-        while (env->CallBooleanMethod(iterator, clzIterator_fnHasNext) == JNI_TRUE) {
-            if (env->ExceptionCheck()) {
-                env->ExceptionClear();
-                return 8716;
+        jobject trackIterator = jni.CallObjectMethod(trackList, clzList_fnIterator);
+        // While there are more tracks in the list
+        while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
+            // Get the next track
+            jobject track = jni.CallObjectMethod(trackIterator, clzIterator_fnNext);
+            // Get the set of detections
+            jobject detections = jni.CallObjectMethod(track, clzJsonTrackOutputObject_fnGetDetections);
+            jobject detectionIterator = jni.CallObjectMethod(detections, clzSet_fnIterator);
+            jstring trackIdString = (jstring)jni.CallObjectMethod(track, clzJsonTrackOutputObject_fnGetId);
+            jint trackIdInt = 0;
+            if (trackIdString != nullptr) {
+                trackIdInt = jni.CallIntMethod(clzInteger, clzInteger_fnParseInt, trackIdString);
             }
-            // Get the next frame index from the set...
-            jobject boxed = env->CallObjectMethod(iterator, clzIterator_fnNext);
-            if (env->ExceptionCheck()) {
-                env->ExceptionClear();
-                return 8717;
-            }
-
-            // Unbox it because Java...
-            jint unboxed = env->CallIntMethod(boxed, clzInteger_fnIntValue);
-            if (env->ExceptionCheck()) {
-                env->ExceptionClear();
-                return 8718;
-            }
-
-            // Cast it to something OpenCV can use...
-            int nextFrameIndex = (int) unboxed;
-
-            // Tell OpenCV to go to that frame next...
-            src.SetFramePosition(nextFrameIndex);
-
-            // Get the frame...
-            src >> frame;
-
-            // If that frame is empty, we've reached the end of the video.
-            if (frame.empty()) { break; }
-
-            // Otherwise, extract that frame.
-            jstring filename = (jstring) env->CallObjectMethod(frameExtractorInstance,
-                                                               clzFrameExtractor_fnMakeFilename,
-                                                               destinationPath,
-                                                               unboxed);
-            if (env->ExceptionCheck()) {
-                env->ExceptionClear();
-                return 8719;
-            }
-            env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
-            if (env->ExceptionCheck()) {
-                env->ExceptionClear();
-                return 8720;
-            }
-
-            if (filename != nullptr) {
-                const char *destChars = env->GetStringUTFChars(filename, nullptr);
-                if (destChars == nullptr) {
-                    return 8721;
+            // While there are detections in the set
+            while (jni.CallBooleanMethod(detectionIterator, clzIterator_fnHasNext) == JNI_TRUE) {
+                jobject detection = jni.CallObjectMethod(detectionIterator, clzIterator_fnNext);
+                // Create the bounding box
+                jint X = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetX);
+                jint Y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
+                jint width = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetWidth);
+                jint height = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetHeight);
+                cv::Rect boundingBox(X, Y, width, height);
+                // Get the rotation property
+                jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
+                std::string rotationPropName("ROTATION");
+                jstring jPropName = jni.ToJString(rotationPropName);
+                jstring jPropValue = (jstring)jni.CallObjectMethod(properties, clzMap_fnGet, jPropName);
+                double rotation = 0.0;
+                if (jPropValue != nullptr) {
+                    std::string rotationPropValue = jni.ToStdString(jPropValue);
+                    rotation = atof(rotationPropValue.c_str());
                 }
-                imwrite(destChars, frame);
-                env->CallObjectMethod(map, clzMap_fnPut, boxed, filename);
-                if (env->ExceptionCheck()) {
-                    env->ReleaseStringUTFChars(filename, destChars);
-                    env->ExceptionClear();
-                    return 8722;
+                // Create the AffineTransformation
+                std::vector<std::tuple<cv::Rect, double, bool>> regions(1);
+                std::tuple<cv::Rect, double, bool> transform(boundingBox, rotation, false);
+                regions.push_back(transform);
+                MPF::COMPONENT::AffineTransformation affineTransform(regions, rotation, false);
+
+                // Get the frame number from the detection
+                jint offsetFrame = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetOffsetFrame);
+
+                // Tell OpenCV to go to that frame next...
+                src.SetFramePosition((int)offsetFrame);
+
+                // Get the frame...
+                src >> frame;
+
+                // If that frame is empty, we've reached the end of the video.
+                if (frame.empty()) { break; }
+
+                //Otherwise, apply the affine transform
+                affineTransform.Apply(frame);
+                jstring filename = (jstring) jni.CallObjectMethod(frameExtractorInstance,
+                        clzFrameExtractor_fnMakeFilename,
+                        destinationPath,
+                        trackIdInt,
+                        offsetFrame);
+
+                if (filename != nullptr) {
+                    std::string destFile = jni.ToStdString(filename);
+                    imwrite(destFile, frame);
+                    jobject result = jni.CallConstructorMethod(clzExtractionResult, clzExtractionResult_fnConstruct,
+                            offsetFrame, trackIdInt, filename);
+                    jni.CallObjectMethod(paths, clzList_fnAdd, result);
                 }
-                env->ReleaseStringUTFChars(filename, destChars);
             }
         }
         return 0;
     }
-    catch (std::exception &) {
-        return 8723;
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
+    }
+    catch (...) {
+        jni.ReportCppException();
     }
 }
 

@@ -38,7 +38,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -272,12 +274,17 @@ public class TestCustomNginxStorageBackend {
     @Test
     public void canStoreVideoArtifactRemotely() throws IOException, StorageException, URISyntaxException {
         assertTrue(JniLoader.isLoaded());
-        ImmutableMap<Integer, URI> expectedResults = ImmutableMap.of(
-                0, getExpectedUri("29373037d0551330acbde76c797cf6b2dadf635dc8c73b09b77ec7dec256abf6"),
-                5, getExpectedUri("759574570cf9741a55cb2509ea117d01d42d3d7a01cacc3d5db6541f9730f657"),
-                9, getExpectedUri("6036ecde5fe96e9fba9a56593d5bb64605dbc8f1c6ce07f7126b5efda63c05d3"));
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(1, 0, getExpectedUri("89799d3895c1967a652976f67ea918b4803f0e11a385a05c2d50547663127fb1"))
+                .put(1, 5, getExpectedUri("779519e5ee632f566287ffd00f2b8f1c732c7c09822ca606eae5cec251dc014c"))
+                .put(2, 9, getExpectedUri("c7206d6faac9b60ebbab6d4d282b07eb9e613316b9e8e4221d82a5fc13c55235"))
+                .build();
 
         Path testFile = getTestFileCopy();
+
+        List<JsonTrackOutputObject> tracksToExtract = new ArrayList<>();
+        tracksToExtract.add(createTrackOutputObject(1, Arrays.asList(0, 5)));
+        tracksToExtract.add(createTrackOutputObject(2, Arrays.asList(9)));
 
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(
                 TEST_JOB_ID,
@@ -285,12 +292,22 @@ public class TestCustomNginxStorageBackend {
                 testFile.toString(),
                 MediaType.VIDEO,
                 0,
-                ImmutableMap.of(
-                        0, ImmutableSet.of(0, 5),
-                        1, ImmutableSet.of(5, 9)
-                ));
-        Map<Integer, URI> results = _nginxStorageService.storeVideoArtifacts(request);
+                0);
+        request.getTracksToExtract().addAll(tracksToExtract);
+        Table<Integer, Integer, URI> results = _nginxStorageService.storeArtifacts(request);
         assertEquals(expectedResults, results);
+    }
+
+    private JsonTrackOutputObject createTrackOutputObject(Integer trackId, List<Integer> frames) {
+        SortedSet<JsonDetectionOutputObject> detections = new TreeSet<>();
+        for (Integer num : frames) {
+            detections.add(new JsonDetectionOutputObject(10, 20, 100, 200, (float)0.1,
+                    Collections.emptySortedMap(), num.intValue(),
+                    0, "NOT_ATTEMPTED", ""));
+        }
+        return new JsonTrackOutputObject(Integer.toString(trackId),
+                frames.get(0), frames.get(frames.size()-1), 0, 0, "", "", (float)0.0,
+                Collections.emptySortedMap(), detections.first(), detections);
     }
 
     private static final AtomicBoolean CAUSE_INIT_FAILURE = new AtomicBoolean();

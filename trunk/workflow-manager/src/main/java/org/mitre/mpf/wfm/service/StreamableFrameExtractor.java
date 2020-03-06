@@ -24,12 +24,22 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
+
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
+import org.mitre.mpf.interop.JsonTrackOutputObject;
+
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,8 +47,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
@@ -47,67 +56,60 @@ public class StreamableFrameExtractor {
     private StreamableFrameExtractor() {
     }
 
-
     @FunctionalInterface
     public static interface StoreStream {
         public URI store(InputStream inputStream) throws IOException, StorageException;
     }
 
-
-    public static Map<Integer, URI> run(ArtifactExtractionRequest request, StoreStream storeStreamFn)
+    public static Table<Integer, Integer, URI> run(ArtifactExtractionRequest request, StoreStream storeStreamFn)
             throws IOException, StorageException {
         Path tempDirectory = Files.createTempDirectory(
-                "artifacts_" + request.getJobId() + '_' + request.getMediaId() + '_').toAbsolutePath();
+                "artifacts_" + request.getJobId() + '_' + request.getMediaId() + '_' + request.getActionIndex() + '_')
+                .toAbsolutePath();
         Path pipePath = tempDirectory.resolve("pipe.png");
         createNamedPipe(pipePath.toString());
 
         try {
-            BlockingQueue<Integer> queue = new SynchronousQueue<>();
-            FrameExtractor frameExtractor = new FrameExtractor(
-                    Paths.get(request.getPath()).toUri(),
-                    tempDirectory.toUri(),
-                    filenameGenerator(pipePath.toString(), queue));
+            BlockingQueue<MutablePair<Integer, Integer>> queue = new SynchronousQueue<>();
+            FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
+                    tempDirectory.toUri(), filenameGenerator(pipePath.toString(), queue));
 
-            frameExtractor.getFrames().addAll(request.getFrameNumbers());
+            frameExtractor.getTracksToExtract().addAll(request.getTracksToExtract());
 
             ThreadUtil.runAsync(() -> {
                 try {
                     frameExtractor.execute();
-                }
-                finally {
-                    queue.put(-1);
+                } finally {
+                    queue.put(MutablePair.of(null, null));
                 }
             });
 
-            Map<Integer, URI> paths = new HashMap<>();
-            int frameNumber;
-            while ((frameNumber = queue.take()) >= 0) {
+            Pair<Integer, Integer> trackAndFrame;
+            Table<Integer, Integer, URI> trackAndFrameToUri = HashBasedTable.create();
+            while (!(trackAndFrame = queue.take()).equals(MutablePair.of(null, null))) {
                 try (InputStream inputStream = Files.newInputStream(pipePath)) {
                     URI location = storeStreamFn.store(inputStream);
-                    paths.put(frameNumber, location);
+                    trackAndFrameToUri.put(trackAndFrame.getLeft(), trackAndFrame.getRight(), location);
                 }
             }
-            return paths;
+            return trackAndFrameToUri;
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
-        }
-        finally {
+        } finally {
             Files.delete(pipePath);
             Files.delete(tempDirectory);
         }
     }
 
-
     private static FrameExtractor.FileNameGenerator filenameGenerator(String pipePath,
-                                                                      BlockingQueue<Integer> queue) {
-        return (path, frame, prefix) -> {
+            BlockingQueue<MutablePair<Integer, Integer>> queue) {
+        return (path, track, frame, prefix) -> {
             try {
-                queue.put(frame);
+                queue.put(new MutablePair<>(track, frame));
                 return pipePath;
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             }
@@ -116,15 +118,11 @@ public class StreamableFrameExtractor {
 
     private static void createNamedPipe(String path) throws IOException {
         try {
-            int rc = new ProcessBuilder("mkfifo", path)
-                    .inheritIO()
-                    .start()
-                    .waitFor();
+            int rc = new ProcessBuilder("mkfifo", path).inheritIO().start().waitFor();
             if (rc != 0) {
                 throw new IOException("Failed to create named pipe at: " + path);
             }
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }

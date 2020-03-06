@@ -21,13 +21,6 @@
         "mediaTypes": ["VIDEO"]
     },
     {
-        "name": "ARTIFACT_EXTRACTION_POLICY",
-        "description": "The policy for extracting artifacts (e.g., frames) from a medium. The value of this property MUST be one of the following choices. NONE: No artifact extraction will be performed. VISUAL_TYPES_ONLY: Extract artifacts only for tracks associated with a \"visual\" data type. ALL_TYPES: Extract artifacts regardless of data type. ALL_DETECTIONS: Extract artifacts for all detections in the track. With the VISUAL_TYPES_ONLY or ALL_TYPES policy, artifacts will be extracted according to the ARTIFACTION_EXTRACTION_POLICY* properties below. With the NONE and ALL_DETECTIONS policies, those settings are ignored.",
-        "type": "STRING",
-        "propertiesKey": "detection.artifact.extraction.policy",
-        "mediaTypes": ["VIDEO","IMAGE"]
-    },
-    {
         "name": "OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY",
         "description": "The JSON output object will contain only the exemplar and extracted artifacts for each track.",
         "type": "BOOLEAN",
@@ -38,12 +31,19 @@
         "name": "OUTPUT_LAST_TASK_ONLY",
         "description": "The JSON output object will contain the exemplar and extracted artifacts for each track in the last task only.",
         "type": "BOOLEAN",
-        "propertiesKey": "mpf.output.objects.last.stage.only",
+        "propertiesKey": "mpf.output.objects.last.task.only",
+        "mediaTypes": ["VIDEO","IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY",
+        "description": "The policy for extracting artifacts (e.g., frames) from a medium. The value of this property MUST be one of the following choices. NONE: No artifact extraction will be performed. VISUAL_TYPES_ONLY: Extract artifacts only for tracks associated with a \"visual\" data type. ALL_TYPES: Extract artifacts regardless of data type. ALL_DETECTIONS: Extract artifacts for all detections in the track. With the VISUAL_TYPES_ONLY or ALL_TYPES policy, artifacts will be extracted according to the ARTIFACT_EXTRACTION_POLICY* properties. With the NONE and ALL_DETECTIONS policies, those settings are ignored.",
+        "type": "STRING",
+        "propertiesKey": "detection.artifact.extraction.policy",
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
         "name": "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
-        "description": "Extract the exemplar frame from the track, plus N frames before and after the exemplar. If N = 0, then only the exemplar frame will be extracted. If N > 0, then the exemplar frame plus N frames before and after it will be extracted, if they exist. If N < 0, then this property is disabled.",
+        "description": "Extract the exemplar frame from the track, plus N frames before and after the exemplar. If N = 0, then only the exemplar frame will be extracted. If N > 0, then the exemplar frame plus N frames before and after it will be extracted, if they exist within the track. If N < 0, then this property is disabled. The exemplar will not be extracted.",
         "type": "INT",
         "propertiesKey": "detection.artifact.extraction.policy.exemplar.frame.plus",
         "mediaTypes": ["VIDEO","IMAGE"]
@@ -207,6 +207,20 @@
         "description": "Specifies whether or not to flip media based on EXIF data.",
         "type": "BOOLEAN",
         "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_X",
+        "description": "If this string contains the % sign, then its numeric value will be interpreted as a percentage of the width of the detection. If this string does not contain the % sign, then it will be interpreted as an exact number of pixels. A negative value will shrink the detection region. Percentages can include a decimal place and be > 100%, but must be > -50%. If the detection region is shrunk to nothing, the new width will be set to one pixel, and the detection properties will include SHRUNK_TO_NOTHING with a value of TRUE.",
+        "type": "STRING",
+        "propertiesKey": "detection.padding.x",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_Y",
+        "description": "If this string contains the % sign, then its numeric value will be interpreted as a percentage of the height of the detection. If this string does not contain the % sign, then it will be interpreted as an exact number of pixels. A negative value will shrink the detection region. Percentages can include a decimal place and be > 100%, but must be > -50%. If the detection region is shrunk to nothing, the new height will be set to one pixel, and the detection properties will include SHRUNK_TO_NOTHING with a value of TRUE.",
+        "type": "STRING",
+        "propertiesKey": "detection.padding.y",
         "mediaTypes": ["VIDEO", "IMAGE"]
     }
 ]

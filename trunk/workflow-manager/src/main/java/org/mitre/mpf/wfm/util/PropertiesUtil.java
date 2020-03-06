@@ -45,12 +45,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.*;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.*;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,8 +76,14 @@ public class PropertiesUtil {
     @Autowired
     private MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder;
 
+    @Autowired
+    private Environment springEnvironment;
+
     @javax.annotation.Resource(name="mediaTypesFile")
     private FileSystemResource mediaTypesFile;
+
+    @javax.annotation.Resource(name="userFile")
+    private FileSystemResource userFile;
 
     private ImmutableConfiguration mpfPropertiesConfig;
 
@@ -84,13 +93,16 @@ public class PropertiesUtil {
 
     @PostConstruct
     private void init() throws IOException, WfmProcessingException {
-
         parseCoreMpfNodes();
 
         mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
         if (!mediaTypesFile.exists()) {
             copyResource(mediaTypesFile, getMediaTypesTemplate());
+        }
+
+        if (!userFile.exists()) {
+            copyResource(userFile, getUserTemplate());
         }
 
         Set<PosixFilePermission> permissions = new HashSet<>();
@@ -259,8 +271,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
     }
 
-    public boolean isOutputObjectsLastStageOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.stage.only");
+    public boolean isOutputObjectsLastTaskOnly() {
+        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
     }
 
     public String getSharePath() {
@@ -268,8 +280,6 @@ public class PropertiesUtil {
     }
 
     private File artifactsDirectory;
-    public File getArtifactsDirectory() { return artifactsDirectory; }
-
     public File getJobArtifactsDirectory(long jobId) {
         return new File(artifactsDirectory, String.valueOf(jobId));
     }
@@ -367,12 +377,9 @@ public class PropertiesUtil {
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File markupDirectory;
-    public File getMarkupDirectory() { return markupDirectory; }
-
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
     }
-
 
     public Path createMarkupPath(long jobId, long mediaId, String extension) {
         try {
@@ -396,48 +403,12 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
     }
 
-    public Set<String> getArtifactExtractionNonvisualTypesList() {
+    public Set<String> getArtifactExtractionNonVisualTypesList() {
         return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
     }
 
     public int getSamplingInterval() {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
-    }
-
-    public int getFrameRateCap() {
-        return mpfPropertiesConfig.getInt("detection.frame.rate.cap");
-    }
-
-    public double getConfidenceThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.confidence.threshold");
-    }
-
-    public int getMinAllowableSegmentGap() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.gap");
-    }
-
-    public int getTargetSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.target.length");
-    }
-
-    public int getMinSegmentLength() {
-        return mpfPropertiesConfig.getInt("detection.segment.minimum.length");
-    }
-
-    public boolean isTrackMerging() {
-        return mpfPropertiesConfig.getBoolean("detection.video.track.merging.enabled");
-    }
-
-    public int getMinAllowableTrackGap() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.gap");
-    }
-
-    public int getMinTrackLength() {
-        return mpfPropertiesConfig.getInt("detection.video.track.min.length");
-    }
-
-    public double getTrackOverlapThreshold() {
-        return mpfPropertiesConfig.getDouble("detection.video.track.overlap.threshold");
     }
 
     //
@@ -581,10 +552,6 @@ public class PropertiesUtil {
         }
     }
 
-    public String getThisMpfNodeHostName() {
-        return System.getenv(EnvVar.THIS_MPF_NODE);
-    }
-
     public Set<String> getCoreMpfNodes() {
         return coreMpfNodes;
     }
@@ -596,10 +563,6 @@ public class PropertiesUtil {
     // directory under which log directory is located: <log.parent.dir>/<hostname>/log
     public String getLogParentDir() {
         return mpfPropertiesConfig.getString("log.parent.dir");
-    }
-
-    public List<String> getWebActiveProfiles() {
-        return mpfPropertiesConfig.getList(String.class, "web.active.profiles");
     }
 
     public int getWebSessionTimeout() {
@@ -650,6 +613,16 @@ public class PropertiesUtil {
     private Resource getMediaTypesTemplate() {
         return appContext.getResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
     }
+
+
+    public FileSystemResource getUserFile() {
+        return userFile;
+    }
+
+    private Resource getUserTemplate() {
+        return appContext.getResource(mpfPropertiesConfig.getString("config.user.template"));
+    }
+
 
     public String getAmqUri() {
         return mpfPropertiesConfig.getString("amq.broker.uri");
@@ -755,10 +728,6 @@ public class PropertiesUtil {
         }
     }
 
-    public URI getNginxStorageServiceUri() {
-        return mpfPropertiesConfig.get(URI.class, "http.object.storage.nginx.service.uri");
-    }
-
     public int getNginxStorageUploadThreadCount() {
         return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
     }
@@ -773,6 +742,10 @@ public class PropertiesUtil {
 
     public Resource getWorkflowPropertiesFile() {
         return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
+    }
+
+    public boolean dockerProfileEnabled() {
+        return springEnvironment.acceptsProfiles("docker");
     }
 }
 

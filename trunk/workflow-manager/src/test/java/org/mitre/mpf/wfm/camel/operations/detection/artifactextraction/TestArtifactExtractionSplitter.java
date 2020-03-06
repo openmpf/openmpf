@@ -32,13 +32,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -48,7 +48,9 @@ import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -60,7 +62,7 @@ public class TestArtifactExtractionSplitter {
 
     private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class, RETURNS_DEEP_STUBS);
+    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
@@ -90,7 +92,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10, // Exemplar
                 Arrays.asList(5, 9, 10), // Detection frames
-                Arrays.asList(5)); // Expected artifact frames
+                Arrays.asList(9)); // Expected artifact frames
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -136,7 +138,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5));
+                Arrays.asList(5, 9));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -180,7 +182,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5, 10));
+                Arrays.asList(9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -208,7 +210,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10),
-                Arrays.asList(5, 10));
+                Arrays.asList(9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -265,16 +267,6 @@ public class TestArtifactExtractionSplitter {
                 10,
                 detectionFramesAndConfidences,
                 Arrays.asList(5, 10));
-
-        extractionProps = createExtractionPropertySnapshot(
-                -1, false, false, false, 5);
-
-        runTest(ArtifactExtractionPolicy.ALL_TYPES,
-                extractionProps,
-                10,
-                detectionFramesAndConfidences,
-                Arrays.asList(5, 9, 10, 14));
-
     }
 
 
@@ -374,7 +366,7 @@ public class TestArtifactExtractionSplitter {
 
     //////////////////////////////////////////////////////////
     @Test
-    public void canGetFramePlus() {
+    public void canGetExemplarFramePlus() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 2, false, false, false, 0);
 
@@ -382,19 +374,19 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
-                Arrays.asList(8, 9, 10, 11, 12));
+                Arrays.asList(5, 9, 10, 20));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 10,
-                Arrays.asList(5, 9, 10, 11),
-                Arrays.asList(8, 9, 10, 11));
+                Arrays.asList(8, 10, 12, 15, 16),
+                Arrays.asList(8, 10, 12, 15));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 6,
                 Arrays.asList(5, 6, 9, 10, 11),
-                Arrays.asList(5, 6, 7, 8));
+                Arrays.asList(5, 6, 9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -406,7 +398,7 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 5,
                 Arrays.asList(5, 9, 10, 11),
-                Arrays.asList(5, 6, 7));
+                Arrays.asList(5, 9, 10));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
@@ -417,7 +409,7 @@ public class TestArtifactExtractionSplitter {
 
 
     @Test
-    public void canGetFirstFrameAndFramePlus() {
+    public void canGetFirstFrameAndExemplarFramePlus() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 2, true, false, false, 0);
 
@@ -425,36 +417,64 @@ public class TestArtifactExtractionSplitter {
                 extractionProps,
                 10,
                 Arrays.asList(5, 9, 10, 20),
-                Arrays.asList(5, 8, 9, 10, 11, 12));
+                Arrays.asList(5, 9, 10, 20));
 
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 extractionProps,
                 5,
-                Arrays.asList(5, 6),
-                Arrays.asList(5, 6));
+                Arrays.asList(5, 6, 9, 12),
+                Arrays.asList(5, 6, 9));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                extractionProps,
+                13,
+                Arrays.asList(5, 6, 9, 12, 13, 14, 15, 16),
+                Arrays.asList(5, 9, 12, 13, 14, 15));
     }
 
     @Test
-    public void canGetMiddleFrameAndFramePlus() {
+    public void canGetMiddleFrameAndExemplarFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(2, false, true, false, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
-                Arrays.asList(10, 14, 15, 16, 17, 18));
+                Arrays.asList(9, 10, 16, 20));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(1, false, true, false, 0),
+                22,
+                Arrays.asList(5, 9, 10, 16, 20, 21, 22, 23),
+                Arrays.asList(16, 21, 22, 23));
     }
 
     @Test
-    public void canGetLastFrameAndFramePlus() {
+    public void canGetLastFrameAndExemplarFramePlus() {
         runTest(ArtifactExtractionPolicy.ALL_TYPES,
                 createExtractionPropertySnapshot(2, false, false, true, 0),
                 16,
                 Arrays.asList(5, 9, 10, 16, 20),
-                Arrays.asList(14, 15, 16, 17, 18, 20));
+                Arrays.asList(9, 10, 16, 20));
+
+        runTest(ArtifactExtractionPolicy.ALL_TYPES,
+                createExtractionPropertySnapshot(1, false, false, true, 0),
+                9,
+                Arrays.asList(5, 9, 10, 16, 20),
+                Arrays.asList(5, 9, 10, 20));
     }
+
+    @Test
+    public void canGetNone() {
+        runTest(ArtifactExtractionPolicy.NONE,
+                createExtractionPropertySnapshot(2, false, false, true, 0),
+                16,
+                Arrays.asList(5, 9, 10, 16, 20),
+                Collections.emptyList());
+    }
+
 
     //////////////////////////////////////////////////////////
     @Test
-    public void canGetAllFrames() {
+    public void canGetAllDetections() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
                 -1, false, false, false, 0);
 
@@ -481,8 +501,8 @@ public class TestArtifactExtractionSplitter {
     //////////////////////////////////////////////////////////
     /// Test that setting the top confidence count to a value larger than the number of
     /// detections does not throw an exception, and extracts all detections.
-    @Test(expected = Test.None.class)
-    public void TopConfidenceCountTooLarge() {
+    @Test
+    public void topConfidenceCountTooLarge() {
         SystemPropertiesSnapshot extractionProps = createExtractionPropertySnapshot(
             -1, false, false, false, 12);
 
@@ -560,6 +580,8 @@ public class TestArtifactExtractionSplitter {
                 .thenReturn(MediaType.VIDEO);
         when(media.getLength())
                 .thenReturn(1000);
+        when(media.getLocalPath())
+        .thenReturn(Paths.get("/test/path"));
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
@@ -608,12 +630,21 @@ public class TestArtifactExtractionSplitter {
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
-        ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
+        List<JsonTrackOutputObject> tracksToExtract = resultMessages.stream()
                 .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
-                .flatMap(req -> req.getFrameNumbers().stream())
-                .collect(ImmutableSet.toImmutableSet());
+                .flatMap(req -> req.getTracksToExtract().stream())
+                .collect(Collectors.toList());
+        if (tracksToExtract.isEmpty()) {
+            assertTrue(expectedFrames.isEmpty());
+        }
+        else {
+            assertEquals(1, tracksToExtract.size());
+            ImmutableSet<Integer> actualFrameNumbers = tracksToExtract.get(0).getDetections().stream()
+                                                       .map(d -> d.getOffsetFrame())
+                                                       .collect(ImmutableSet.toImmutableSet());
 
-        assertEquals(ImmutableSet.copyOf(expectedFrames), actualFrameNumbers);
+            assertEquals(ImmutableSet.copyOf(expectedFrames), actualFrameNumbers);
+        }
 
     }
 

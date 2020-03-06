@@ -152,74 +152,30 @@ sub runActiveMQ {
 
 ##########################################################################################
 #
-#	MySQL FUNCTIONS
+#	PostgreSQL FUNCTIONS
 #
 ##########################################################################################
-sub stopMySQL {
-	my @MySQLList = ();
-
-	printInfo("Checking for current instances of MySQL...\n");
-
-	#	If MySQL is running tell it to shut down.
-	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
-	if((@MySQLList) > 0) {
-		printInfo("MySQL is currently running.  Shutting it down.\n");
-		system "sudo systemctl stop mysql > /dev/null";
-	}
-
-	#	If MySQL is still running, use the kill command to terminate it.\n";
-	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
-	if((@MySQLList) > 0) {
-		printError("MySQL did not respond to the shutdown request.\n");
-		foreach my $pid (@MySQLList) {
-			$pid =~ s/^\s+|\s+$//g;
-			my @tokens = split /\s/, $pid;
-			$pid = $tokens[0];
-			printError("Killing MySQL pid $pid.\n");
-			system "sudo kill -9 $pid";
-		}
-	}
-
-	#	If MySQL is still running, then somethine went wrong.  Exit.
-	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\"`;
-	if((@MySQLList) > 0) {
-		printFatal("MySQL did not respond to the shutdown request.\n");
-		fatalExit();
-	} else {
-		printInfo("\t\tCurrently shutdown.\n");
-	}
+sub stopPostgreSQL {
+	system "sudo systemctl stop postgresql-12";
 }
 
 
-sub runMySQL {
-	my @MySQLList = ();
-
-	printInfo("Starting MySQL...\n"	);
-	system "sudo systemctl start mysql > /dev/null";
+sub runPostgreSQL {
+	printInfo("Starting PostgreSQL...\n"	);
+	system "sudo systemctl start postgresql-12";
 	sleep(2);
-
-	#	Verify that MySQL is running...
-	@MySQLList = `ps ax | grep \"mysql\" | grep -v \"grep\" | grep -v \"safe\"`;
-	if((@MySQLList) == 0) {
-		printFatal("MySQL did not respond to the startup request.\n");
-		fatalExit();
-	}
-	if((@MySQLList) > 1) {
-		printFatal("MySQL launched multiple threads...\n");
-		foreach my $info (@MySQLList) {
-			chomp $info;
-			printFatal("$info\n");
-		}
+	if (system("sudo systemctl status postgresql-12") != 0) {
+		printFatal("PostgreSQL did not respond to the startup request.\n");
 		fatalExit();
 	}
 }
 
 
-sub cleanMySQL {
-	printInfo("Cleaning out the MySQL schema.\n");
-	runMySQL();
+sub cleanPostgreSQL {
+	printInfo("Cleaning out the PostgreSQL schema.\n");
+	runPostgreSQL();
 	printInfo("Dropping the schema.\n");
-	system "mysql --login-path=local -u root --execute \"drop database mpf;create database mpf\"";
+	system "sudo --login --user postgres psql --dbname mpf --command 'DROP OWNED BY mpf CASCADE'"
 }
 
 
@@ -343,17 +299,8 @@ sub mavenCompileNodeManager {
 
 	printInfo("Compiling MPF Node Manager\n");
 
-	my $buildCommand = "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs";
-
-	chdir "$mpfPath/trunk/node-manager";
-	open PIPE, $buildCommand . " |";
-	while(<PIPE>) {
-	   printMaven($_);
-	}
-	close PIPE;
-
 	chdir "$mpfPath/trunk/mpf-install";
-	open PIPE, $buildCommand . " -f node-manager-only-pom.xml |";
+	open PIPE, "mvn install -Pjenkins -DskipTests -Dmaven.test.skip=true -DskipITs -f node-manager-only-pom.xml |";
 	while(<PIPE>) {
 	   printMaven($_);
 	}
@@ -535,7 +482,7 @@ sub getSystemStatus {
 	printInfo("Checking the known environment variables\n");
 	my @vars = ("MPF_USER", "MPF_HOME", "MPF_LOG_PATH", "MASTER_MPF_NODE", "THIS_MPF_NODE", "CORE_MPF_NODES", "JAVA_HOME",
 	    "JGROUPS_TCP_ADDRESS", "JGROUPS_TCP_PORT", "JGROUPS_FILE_PING_LOCATION", "ACTIVE_MQ_BROKER_URI", "LD_LIBRARY_PATH",
-			 "ACTIVE_MQ_HOST", "MYSQL_HOST", "REDIS_HOST");
+			 "ACTIVE_MQ_HOST", "REDIS_HOST");
 	foreach my $var (@vars) {
 		my $varInfo = `echo \$$var`;
 		chomp $varInfo;
@@ -551,13 +498,11 @@ sub getSystemStatus {
 		printError("ActiveMQ is currently running ".(@ActiveMQList)." instances.\n");
 	}
 
-	my @MySQLList = `ps ax | grep \"mysql_safe\" | grep -v \"grep\" | grep -v \"perl\"`;
-	if((@MySQLList) == 0) {
-		printWarn("MySQL is not currently running.\n");
-	} elsif((@MySQLList) == 1) {
-		printInfo("MySQL is currently running.\n");
-	} else {
-		printError("MySQL is currently running ".(@MySQLList)." instances.\n");
+	if (system("sudo systemctl status postgresql-12") == 0) {
+		printInfo("PostgreSQL is currently running.\n");
+	}
+	else {
+		printWarn("PostgreSQL is not currently running.\n");
 	}
 
 	my @RedisList = `ps ax | grep \"redis-server\" | grep -v \"grep\"`;
@@ -735,7 +680,6 @@ export JGROUPS_TCP_PORT=7800
 export JGROUPS_FILE_PING_LOCATION="\$MPF_HOME/share/nodes"
 # CATALINA_OPTS is set in <TOMCAT_HOME>/bin/setenv.sh
 export ACTIVE_MQ_HOST="\$MASTER_MPF_NODE"
-export MYSQL_HOST="localhost"
 export REDIS_HOST="localhost"
 export ACTIVE_MQ_BROKER_URI="failover://(tcp://\$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 export LD_LIBRARY_PATH="/usr/local/lib"

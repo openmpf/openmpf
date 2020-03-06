@@ -51,7 +51,9 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -116,7 +118,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 int length = -1;
                 switch(MediaTypeUtils.parse(mimeType)) {
                     case AUDIO:
-                        length = inspectAudio(localPath, mediaMetadata);
+                        length = inspectAudio(localPath, jobId, mediaId, mediaMetadata);
                         break;
 
                     case VIDEO:
@@ -124,14 +126,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
 
                     case IMAGE:
-                        length = inspectImage(localPath, mediaMetadata);
+                        length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
                         break;
 
                     default:
                         // DEBUG
                         //media.setFailed(true);
                         //media.setMessage("Unsupported file format.");
-                        log.error("media.getMediaType() = {} is undefined. ", media.getMediaType());
+                        log.error("transientMedia.getMediaType() = {} is undefined. ", media.getMediaType());
                         break;
                 }
                 inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
@@ -158,10 +160,18 @@ public class MediaInspectionProcessor extends WfmProcessor {
         }
     }
 
-    private int inspectAudio(Path localPath, Map<String, String> mediaMetadata) throws IOException, TikaException, SAXException {
+    private int inspectAudio(Path localPath,  long jobId, long mediaId, Map<String, String> mediaMetadata)
+            throws IOException, TikaException, SAXException {
         // We do not fetch the length of audio files.
         Metadata audioMetadata = generateFFMPEGMetadata(localPath);
-        int audioMilliseconds = calculateDurationMilliseconds(audioMetadata.get("xmpDM:duration"));
+
+        String durationStr = audioMetadata.get("xmpDM:duration");
+        if (durationStr == null) {
+            inProgressJobs.addMediaError(jobId, mediaId, "Cannot detect audio file duration.");
+            return -1;
+        }
+
+        int audioMilliseconds = calculateDurationMilliseconds(durationStr);
         if (audioMilliseconds >= 0) {
             mediaMetadata.put("DURATION", Integer.toString(audioMilliseconds));
         }
@@ -169,8 +179,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
     }
 
 
-    // inspectVideo may add the following properties to the media metadata: FRAME_COUNT, FPS, DURATION, ROTATION.
-    // The Medias length will be set to FRAME_COUNT.
+    // inspectVideo may add the following properties to the transientMedias metadata:
+    // FRAME_COUNT, FRAME_HEIGHT, FRAME_WIDTH, FPS, DURATION, ROTATION.
+    // The Media's length will be set to FRAME_COUNT.
     private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType, Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
         // FRAME_COUNT
@@ -191,9 +202,24 @@ public class MediaInspectionProcessor extends WfmProcessor {
         int frameCount = retval;
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
 
-        // FPS
+        // FRAME_WIDTH and FRAME_HEIGHT
 
         Metadata videoMetadata = generateFFMPEGMetadata(localPath);
+
+        String resolutionStr = videoMetadata.get("videoResolution");
+        if (resolutionStr == null) {
+            inProgressJobs.addMediaError(jobId, mediaId, "Cannot detect video file resolution.");
+            return -1;
+        }
+
+        String[] resolutionTokens = resolutionStr.split("x");
+        int frameWidth = Integer.parseInt(resolutionTokens[0]);
+        int frameHeight = Integer.parseInt(resolutionTokens[1]);
+        mediaMetadata.put("FRAME_WIDTH", Integer.toString(frameWidth));
+        mediaMetadata.put("FRAME_HEIGHT", Integer.toString(frameHeight));
+
+        // FPS
+
         String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
         double fps = 0;
         if (fpsStr != null) {
@@ -220,12 +246,31 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return frameCount;
     }
 
-    private int inspectImage(Path localPath, Map<String, String> mediaMetdata)
+    private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
             throws IOException, TikaException, SAXException {
         Metadata imageMetadata = generateExifMetadata(localPath);
-        if (imageMetadata.get("tiff:Orientation") != null) {
-            mediaMetdata.put("EXIF_ORIENTATION", imageMetadata.get("tiff:Orientation"));
-            int orientation = Integer.valueOf(imageMetadata.get("tiff:Orientation"));
+
+        String widthStr = imageMetadata.get("tiff:ImageWidth");
+        String heightStr = imageMetadata.get("tiff:ImageLength");
+
+        if (widthStr == null || heightStr == null) {
+            // As a last resort, load the whole image into memory.
+            BufferedImage bimg = ImageIO.read(localPath.toFile());
+            if (bimg == null) {
+                inProgressJobs.addMediaError(jobId, mediaId,
+                        "Cannot detect image file frame size. Cannot read image file.");
+                return -1;
+            }
+            widthStr = Integer.toString(bimg.getWidth());
+            heightStr = Integer.toString(bimg.getHeight());
+        }
+        mediaMetdata.put("FRAME_WIDTH", widthStr);
+        mediaMetdata.put("FRAME_HEIGHT", heightStr);
+
+        String orientationStr = imageMetadata.get("tiff:Orientation");
+        if (orientationStr != null) {
+            mediaMetdata.put("EXIF_ORIENTATION", orientationStr);
+            int orientation = Integer.valueOf(orientationStr);
             switch (orientation) {
                 case 1:
                     mediaMetdata.put("ROTATION", "0");
@@ -267,7 +312,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private Metadata generateFFMPEGMetadata(Path path) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
-                                                             "Cannot open file '%s'", path)) {
+                "Cannot open file '%s'", path)) {
             metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(path));
             URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
             Parser parser = ExternalParsersConfigReader.read(url.openStream()).get(0);
@@ -279,7 +324,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private Metadata generateExifMetadata(Path path) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
-                                                             "Cannot open file '%s'", path)) {
+                "Cannot open file '%s'", path)) {
             metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
             Parser parser = new AutoDetectParser();
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());

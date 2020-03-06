@@ -330,16 +330,21 @@ void getCorners(int x, int y, int width, int height, double rotation, Point2f *c
     double sinVal = std::sin(radians);
     double cosVal = std::cos(radians);
 
-    double corner2X = x + width * cosVal;
-    double corner2Y = y - width * sinVal;
+    // Need to subtract one because if you have a Rect(x=0, y=0, width=10, height=10),
+    // the bottom right corner is (9, 9) not (10, 10)
+    double w = width - 1;
+    double h = height - 1;
+
+    double corner2X = x + w * cosVal;
+    double corner2Y = y - w * sinVal;
     corners[1] = cv::Point2f(corner2X, corner2Y);
 
-    double corner3X = corner2X + height * sinVal;
-    double corner3Y = corner2Y + height * cosVal;
+    double corner3X = corner2X + h * sinVal;
+    double corner3Y = corner2Y + h * cosVal;
     corners[2] = cv::Point2f(corner3X, corner3Y);
 
-    double corner4X = x + height * sinVal;
-    double corner4Y = y + height * cosVal;
+    double corner4X = x + h * sinVal;
+    double corner4Y = y + h * cosVal;
     corners[3] = cv::Point2f(corner4X, corner4Y);
 }
 
@@ -348,9 +353,14 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, int r
     Point2f corners[4];
     getCorners(x, y, width, height, rotation, corners);
 
-
     Scalar lineColor(blue, green, red);
-    int thickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 1.0);
+
+    // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
+    // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
+    // Specifically, no pixels will be drawn near the edge.
+    // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
+    // To address this, we use a minimum thickness of 2.
+    int thickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
 
     line(*image, corners[0], corners[1], lineColor, thickness, cv::LineTypes::LINE_AA);
     line(*image, corners[1], corners[2], lineColor, thickness, cv::LineTypes::LINE_AA);

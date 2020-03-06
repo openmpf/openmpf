@@ -30,11 +30,28 @@
 /* Angular Directives */
 var AppDirectives = angular.module('mpf.wfm.directives', []);
 
-AppDirectives.directive('appVersion', ['version', function (version) {
-    return function (scope, elm, attrs) {
-        elm.text(version);
+
+AppDirectives.directive('mpfNavbar',
+['MetadataService', 'RoleService',
+function (MetadataService, RoleService) {
+    return {
+        restrict: 'E',
+        templateUrl: 'resources/js/angular_app/directive_templates/navbar.html',
+        scope: {},
+        link: function ($scope) {
+            MetadataService.getMetadata().then(function (data) {
+                $scope.version = data.version;
+                $scope.dockerEnabled = data.dockerEnabled;
+            });
+
+            RoleService.getRoleInfo().then(function (roleInfo) {
+                $scope.userName = roleInfo.userPrincipalName;
+            });
+        }
     };
-}]);
+}
+]);
+
 
 /** directive that senses when the browser window has been resized
  *  based on https://gist.github.com/chrisjordanme/8668864
@@ -312,7 +329,7 @@ function () {
                 maxFilesize: 2048, //MB
                 accept: $scope.canUpload
             });
-            
+
             dropzone.on('error', function (file, errorInfo) {
                 dropzone.removeAllFiles();
                 $scope.$apply(function () {
@@ -326,13 +343,13 @@ function () {
                     $scope.$emit(eventNamed('success'), file);
                 });
             });
-            
+
             dropzone.on('sending', function (file) {
                 $scope.$apply(function () {
                     $scope.$emit(eventNamed('sending'), file);
                 });
             });
-            
+
             var eventNamed = function (shortName) {
                 return 'mpf.component.dropzone.' + shortName;
             };

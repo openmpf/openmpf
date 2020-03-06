@@ -127,28 +127,8 @@ public class SystemPropertiesSnapshot {
         }
     }
 
-    public boolean isOutputObjectArtifactsAndExemplarsOnly() {
-        return Boolean.parseBoolean(_properties.get("mpf.output.objects.artifacts.and.exemplars.only"));
-    }
-
-    public boolean isOutputObjectLastTaskOnly() {
-        return Boolean.parseBoolean(_properties.get("mpf.output.objects.last.task.only"));
-    }
-
     public int getArtifactExtractionPolicyExemplarFramePlus() {
         return Integer.parseInt(_properties.get("detection.artifact.extraction.policy.exemplar.frame.plus"));
-    }
-
-    public boolean isArtifactExtractionPolicyFirstFrame() {
-        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.first.frame"));
-    }
-
-    public boolean isArtifactExtractionPolicyLastFrame() {
-        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.last.frame"));
-    }
-
-    public boolean isArtifactExtractionPolicyMiddleFrame() {
-        return Boolean.parseBoolean(_properties.get("detection.artifact.extraction.policy.middle.frame"));
     }
 
     public int getArtifactExtractionPolicyTopConfidenceCount() {

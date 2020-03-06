@@ -44,6 +44,8 @@
         "DURATION": "19069",
         "FPS": "23.98",
         "FRAME_COUNT": "471",
+        "FRAME_HEIGHT": "1080",
+        "FRAME_WIDTH": "1920",
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
@@ -5861,6 +5863,8 @@
         "DURATION": "16025",
         "FPS": "29.97",
         "FRAME_COUNT": "486",
+        "FRAME_HEIGHT": "720",
+        "FRAME_WIDTH": "1280",
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},

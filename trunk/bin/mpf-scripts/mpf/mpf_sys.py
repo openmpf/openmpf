@@ -38,7 +38,7 @@ import socket
 
 
 def start_up_order():
-    return ActiveMqManager, MySqlManager, RedisManager, NodeManagerManager, TomcatManager
+    return ActiveMqManager, PostgresManager, RedisManager, NodeManagerManager, TomcatManager
 
 
 class BaseMpfSystemDependencyManager(object):
@@ -190,23 +190,23 @@ class ActiveMqManager(BaseMpfSystemDependencyManager):
             self._shell.check_call([self._config.active_mq, 'stop'])
 
 
-class MySqlManager(BaseMpfSystemDependencyManager):
-    SERVICE_NAME = 'mysqld'
+class PostgresManager(BaseMpfSystemDependencyManager):
+    SERVICE_NAME = 'postgresql-12'
 
     def dependency_name(self):
-        return 'MySQL'
+        return 'PostgreSQL'
 
     def _run_status_command(self):
-        return self._shell.service_status(MySqlManager.SERVICE_NAME)
+        return self._shell.service_status(PostgresManager.SERVICE_NAME)
 
     def _not_running_status_code(self):
         return ShellHelper.SERVICE_STOPPED_CODE
 
     def _run_start_command(self):
-        self._shell.start_service(MySqlManager.SERVICE_NAME)
+        self._shell.start_service(PostgresManager.SERVICE_NAME)
 
     def _run_stop_command(self):
-        self._shell.stop_service(MySqlManager.SERVICE_NAME)
+        self._shell.stop_service(PostgresManager.SERVICE_NAME)
 
 
 class RedisManager(BaseMpfSystemDependencyManager):
@@ -692,7 +692,7 @@ def filtered_start_up_order(skip_activemq, skip_sql, skip_redis, skip_node_manag
     if not skip_activemq:
         yield ActiveMqManager
     if not skip_sql:
-        yield MySqlManager
+        yield PostgresManager
     if not skip_redis:
         yield RedisManager
     if not skip_node_manager:

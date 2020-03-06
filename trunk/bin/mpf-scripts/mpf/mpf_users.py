@@ -24,9 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-import collections
 import contextlib
 import getpass
+import itertools
 
 import argh
 import bcrypt
@@ -35,48 +35,18 @@ import mpf_sys
 import mpf_util
 
 
-class Roles(object):
-    _roleNameDict = {'user': frozenset((0,)), 'admin': frozenset((0, 1))}
-    _roleIdDict = {v: k for k, v in _roleNameDict.iteritems()}
-
-    USER = _roleNameDict['user']
-    ADMIN = _roleNameDict['admin']
-    NAMES = _roleNameDict.keys()
-
-    @staticmethod
-    def from_name(name):
-        return Roles._roleNameDict[name.lower()]
-
-    @staticmethod
-    def get_name(role_ids):
-        return Roles._roleIdDict[frozenset(role_ids)]
-
-
-def format_user_list(users):
-    if not users:
-        print 'No users found'
-        return
-
-    max_username_len = max(len(u) for u, r in users)
-    justify_len = max(20, max_username_len + 3)
-
-    print 'Username'.ljust(justify_len), 'Role'
-    print '--------'.ljust(justify_len), '----'
-    for user, role in users:
-        print user.ljust(justify_len), role
-
-
 def hash_password(password):
     return bcrypt.hashpw(password, bcrypt.gensalt(12, prefix='2a'))
 
 
 class UserManager(object):
-    def __init__(self, sql_host='localhost', sql_user='root', sql_password='password'):
-        sql_manager = mpf_sys.MySqlManager(False)
-        if not sql_manager.status():
-            print 'Starting MySQL service...'
-            sql_manager.start()
-            print
+    def __init__(self, sql_host='localhost', sql_user='mpf', sql_password='password', skip_sql_start=False):
+        if not skip_sql_start:
+            sql_manager = mpf_sys.PostgresManager(False)
+            if not sql_manager.status():
+                print 'Starting PostgreSQL service...'
+                sql_manager.start()
+                print
 
         self._connection = mpf_util.sql_connection(sql_host, sql_user, sql_password)
         self._cursor = self._connection.cursor()
@@ -88,19 +58,27 @@ class UserManager(object):
     def list_users(self):
         sql = """
             SELECT username, roles.user_roles
-            FROM user
+            FROM mpf_user
             JOIN user_user_roles as roles
-              ON user.id = roles.user_id
+              ON mpf_user.id = roles.user_id
         """
         self._cursor.execute(sql)
         results = self._cursor.fetchall()
 
-        user_roles = collections.defaultdict(list)
-        for user, roleId in results:
-            user_roles[user].append(roleId)
+        if not results:
+            print 'No users found'
+            return
 
-        user_role_names = ((user, Roles.get_name(rIds)) for user, rIds in user_roles.iteritems())
-        return list(sorted(user_role_names))
+        max_username_len = max(len(u) for u, r in results)
+        justify_len = max(10, max_username_len + 3)
+
+        print 'Username'.ljust(justify_len), 'Role'
+        print '--------'.ljust(justify_len), '----'
+
+        for user, user_roles_pair in itertools.groupby(sorted(results), key=lambda x: x[0]):
+            sorted_roles = sorted(r for u, r in user_roles_pair)
+            print user.ljust(justify_len), ', '.join(sorted_roles)
+
 
     def add_user(self, username, password, role):
         self._verify_no_existing_user(username)
@@ -118,7 +96,7 @@ class UserManager(object):
         self._verify_user_exists(username)
         new_password = get_password(new_password)
         sql = """
-            UPDATE user
+            UPDATE mpf_user
             SET password = %s
             WHERE username = %s
         """
@@ -130,27 +108,27 @@ class UserManager(object):
         self._verify_user_exists(username)
         self._delete_roles(username)
         sql = """
-            DELETE FROM user
+            DELETE FROM mpf_user
             WHERE username = %s
         """
-        self._cursor.execute(sql, username)
+        self._cursor.execute(sql, (username,))
         self._connection.commit()
 
     def _user_exists(self, username):
         sql = """
             SELECT EXISTS(
                 SELECT 1
-                FROM user
+                FROM mpf_user
                 WHERE username = %s
             )
         """
-        self._cursor.execute(sql, username)
+        self._cursor.execute(sql, (username,))
         result = self._cursor.fetchone()
         return result[0] == 1
 
     def _insert_user(self, username, password):
         sql = """
-            INSERT INTO user (username, password)
+            INSERT INTO mpf_user (username, password)
             VALUES (%s, %s)
         """
         hashed_password = hash_password(password)
@@ -161,23 +139,21 @@ class UserManager(object):
         sql = """
             INSERT INTO user_user_roles (user_id, user_roles)
             SELECT id, %s
-            FROM user
+            FROM mpf_user
             WHERE username = %s
         """
-        role_ids = Roles.from_name(role)
-        for roleId in role_ids:
-            self._cursor.execute(sql, (roleId, username))
+        self._cursor.execute(sql, (role.upper(), username))
 
     def _delete_roles(self, username):
         sql = """
             DELETE FROM user_user_roles
             WHERE user_id in (
                 SELECT id
-                FROM user
+                FROM mpf_user
                 WHERE username = %s
             )
         """
-        self._cursor.execute(sql, username)
+        self._cursor.execute(sql, (username,))
 
     def _verify_no_existing_user(self, username):
         if self._user_exists(username):
@@ -215,7 +191,7 @@ def get_password(password):
 
 USER_MODIFICATION_NOTICE = mpf_util.MsgUtil.yellow(
     'Changes will not take effect if the user is currently logged in. The user must log out first. '
-    'To force these changes now, restart MPF using the following command: "mpf restart"')
+    'To force these changes now, restart Workflow Manager.')
 
 
 # Setup Commands
@@ -225,14 +201,13 @@ USER_MODIFICATION_NOTICE = mpf_util.MsgUtil.yellow(
 def list_users(**kwargs):
     """ Prints out the list of users """
     with contextlib.closing(UserManager(**kwargs)) as um:
-        users = um.list_users()
-        format_user_list(users)
+        um.list_users()
 
 
 @mpf_util.sql_args
 @argh.arg('username', help='name of the user to create', action=mpf_util.VerifyNoWhiteSpace)
 @argh.arg('-p', '--password', help='password for the new user', action=mpf_util.VerifyNoWhiteSpace)
-@argh.arg('role', help='role for the new user', choices=Roles.NAMES)
+@argh.arg('role', help='role for the new user', choices=('user', 'admin'), type=str.lower)
 def add_user(username, role, password=None, **kwargs):
     """ Adds a new user to the Workflow Manager """
     with contextlib.closing(UserManager(**kwargs)) as um:
@@ -263,7 +238,7 @@ def change_password(username, password=None, **kwargs):
 
 @mpf_util.sql_args
 @argh.arg('username', help='name of the user whose role will be changed')
-@argh.arg('role', help='new role for user')
+@argh.arg('role', help='new role for user', choices=('user', 'admin'), type=str.lower)
 def change_role(username, role, **kwargs):
     """ Changes a Workflow Manager user's role """
     with contextlib.closing(UserManager(**kwargs)) as um:

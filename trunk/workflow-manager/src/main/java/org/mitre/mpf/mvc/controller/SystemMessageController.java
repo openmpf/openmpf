@@ -35,7 +35,6 @@ import org.mitre.mpf.wfm.service.SystemMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -50,13 +49,12 @@ import java.util.List;
 
 /**
  *  This controller enables Workflow manager to manage system level messages, such as notifying users that
- *  a server restart is needed. The messages are stored in MySQL, but all interactions with the database should be done
- *  via methods in this class.
+ *  a server restart is needed. The messages are stored in the SQL database, but all interactions with the
+ *  database should be done via methods in this class.
  */
 @Api( value = "System Message",
         description = "Send and retrieve system messages for clients" )
 @Controller
-@Profile("website")
 public class SystemMessageController {
 
     private static final Logger log = LoggerFactory.getLogger(SystemMessageController.class);

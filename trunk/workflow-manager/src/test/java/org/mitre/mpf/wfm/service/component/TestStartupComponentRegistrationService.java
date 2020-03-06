@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -35,8 +36,9 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -49,16 +51,19 @@ import java.util.*;
 import java.util.zip.GZIPOutputStream;
 
 import static java.util.stream.Collectors.toList;
-import static org.mitre.mpf.test.TestUtil.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.test.TestUtil.collectionContaining;
+import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class TestStartupComponentRegistrationService {
 
 
-    @InjectMocks
     private StartupComponentRegistrationServiceImpl _startupRegisterSvc;
 
+    @Mock
     private PropertiesUtil _mockPropertiesUtil;
 
     @Mock
@@ -70,6 +75,8 @@ public class TestStartupComponentRegistrationService {
     @Mock
     private StartupComponentServiceStarter _mockServiceStarter;
 
+    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+
     @Rule
     public TemporaryFolder _componentUploadDir = new TemporaryFolder();
 
@@ -78,10 +85,11 @@ public class TestStartupComponentRegistrationService {
 
     @Before
     public void init() throws IOException, ComponentRegistrationException {
+        MockitoAnnotations.initMocks(this);
+
         _componentUploadDir.newFolder("test");
         _componentUploadDir.newFile("bad.bad");
 
-        _mockPropertiesUtil = mock(PropertiesUtil.class);
         when(_mockPropertiesUtil.getUploadedComponentsDirectory())
                 .thenReturn(_componentUploadDir.getRoot());
         when(_mockPropertiesUtil.getPluginDeploymentPath())
@@ -89,7 +97,9 @@ public class TestStartupComponentRegistrationService {
         when(_mockPropertiesUtil.isStartupAutoRegistrationSkipped())
                 .thenReturn(false);
 
-        MockitoAnnotations.initMocks(this);
+        _startupRegisterSvc = new StartupComponentRegistrationServiceImpl(
+                _mockPropertiesUtil, _mockComponentStateSvc, _mockAddComponentSvc, Optional.of(_mockServiceStarter),
+                _objectMapper);
 
         when(_mockAddComponentSvc.registerComponent(notNull()))
                 .thenAnswer(invocation -> {
@@ -206,6 +216,11 @@ public class TestStartupComponentRegistrationService {
         _pluginDeploymentDir.newFolder("Deployed", "descriptor");
         File deployedDescriptor = _pluginDeploymentDir.newFile("Deployed/descriptor/descriptor.json");
 
+        _pluginDeploymentDir.newFolder("DescriptorOnly", "descriptor");
+        File descriptorOnly = _pluginDeploymentDir.newFile("DescriptorOnly/descriptor/descriptor.json");
+        var testDescriptor = TestDescriptorFactory.getWithCustomPipeline();
+        _objectMapper.writeValue(descriptorOnly, testDescriptor);
+
         _startupRegisterSvc.registerUnregisteredComponents();
 
         verify(_mockComponentStateSvc)
@@ -217,6 +232,22 @@ public class TestStartupComponentRegistrationService {
                 .addEntryForUploadedPackage(packages.get(1));
         verify(_mockAddComponentSvc)
                 .registerComponent("NotDeployed.tar.gz");
+
+        verify(_mockAddComponentSvc)
+                .registerUnmanagedComponent(eq(testDescriptor));
+
+        var rcmListCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(_mockServiceStarter)
+                .startServicesForComponents((List<RegisterComponentModel>) rcmListCaptor.capture());
+
+        // DescriptorOnly is an unmanaged component and therefore the WFM will not have attempted to start that service.
+        var rcmList = (List<RegisterComponentModel>) rcmListCaptor.getValue();
+        assertEquals(2, rcmList.size());
+        assertTrue(rcmList.stream()
+                           .anyMatch(rcm -> rcm.getComponentName().equals("Deployed")));
+        assertTrue(rcmList.stream()
+                           .anyMatch(rcm -> rcm.getComponentName().equals("NotDeployed")));
     }
 
 

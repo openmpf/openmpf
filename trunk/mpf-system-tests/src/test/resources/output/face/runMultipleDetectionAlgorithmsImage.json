@@ -53,6 +53,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "FRAME_HEIGHT": "168",
+        "FRAME_WIDTH": "299",
         "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},
@@ -122,6 +124,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "FRAME_HEIGHT": "428",
+        "FRAME_WIDTH": "640",
         "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},

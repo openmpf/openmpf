@@ -33,5 +33,5 @@ import java.util.List;
 
 public interface StartupComponentServiceStarter {
 
-	public void startServicesForComponents(List<RegisterComponentModel> components);
+    public void startServicesForComponents(List<RegisterComponentModel> components);
 }

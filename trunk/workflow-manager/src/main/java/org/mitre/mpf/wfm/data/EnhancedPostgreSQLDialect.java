@@ -24,37 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-var HomeUtilsFull = new function () {     	
-    
-	//globals
-	this.roleInfo = undefined;
-	this.displayVersion = undefined;
-	this.isAdmin = false;
-	//this.timedout = false;
-	//good solution until a service (singleton in AngularJS) can be built
-	this.dashboardInitialized = false;
-	
-	this.sessionTimeout = function() {
-		window.top.location.href = 'login?timeout';
-	};
-	
-	this.sessionBootout = function() { 
-		window.top.location.href = 'login?bootout';
-	};
-	
-	// For handling errors, sometimes methods that throw exceptions return a ModelAndView object, other times
-	// they return a JsonObject (this handles both)
-	this.processResponse  = function(response, htmlDivName, isJsonObject) {
-	    if (isJsonObject) {
-	        $(htmlDivName).html(response.responseText); // this works to load error.jsp but loses url & exception
-	    } else {
-	        $(htmlDivName).html(response);
-	    }
-	};
-	
-	//annoying that after state changes there is nothing resetting the scroll position
-	//this function does that and should be called on all state changes
-	this.scrollToTop = function() {
-		$("html, body").animate({ scrollTop: 0 }, "fast");
-	};
-}; //end of HomeUtilsFull
+package org.mitre.mpf.wfm.data;
+
+import org.hibernate.dialect.PostgreSQL94Dialect;
+import org.springframework.core.annotation.AnnotationUtils;
+
+import javax.persistence.Column;
+import java.sql.Types;
+
+public class EnhancedPostgreSQLDialect extends PostgreSQL94Dialect {
+
+   public EnhancedPostgreSQLDialect() {
+       doNotSetStringColumnLengthWhenDefaultValueIsUsed();
+       // Change timestamps to include timezone.
+       registerColumnType(Types.TIMESTAMP, "timestamp with time zone");
+   }
+
+
+    /**
+     * When using the {@link Column} without specifying a length, the value of {@link Column#length()} is used for
+     * the maximum length for that column. When no length is specified, then we will typically want that column
+     * to not have a maximum size.
+     */
+   private void doNotSetStringColumnLengthWhenDefaultValueIsUsed() {
+       // Currently defaultLength = 255
+       int defaultLength = (int) AnnotationUtils.getDefaultValue(Column.class, "length");
+
+       // This handles the case where @Column.length is explicitly set to some value below defaultLength.
+       // Since the value was explicitly set, we should use that value.
+       registerColumnType(Types.VARCHAR, defaultLength - 1, "varchar($l)");
+
+       // This handles the case where either no length is provided or (unfortunately) when the length is explicitly
+       // set to the default length. To explicitly set the column length to the default,
+       // `@Column(columnDefinition = "VARCHAR(255)")` can be used.
+       // The length provided to registerColumnType specifies the maximum length, so if the explicitly set length is
+       // greater than the default, the maximum length will be correctly set.
+       registerColumnType(Types.VARCHAR, defaultLength, "text");
+   }
+}

@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -51,6 +52,7 @@ import static java.util.stream.Collectors.*;
 
 
 @Component
+@Profile("!docker")
 public class StreamingJobRoutesBuilder extends RouteBuilder {
 
     private final StreamingJobRequestService _streamingJobRequestService;

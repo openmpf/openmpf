@@ -25,11 +25,19 @@
 #############################################################################
 
 cmake_minimum_required(VERSION 3.6)
-project(MFP_PROTOBUF)
+project(MPF_PROTOBUF)
 
 ## Find ProtoBufs
-set(Protobuf_INCLUDE_DIR /apps/install/include)
-set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.a)
+# When performing non-Docker builds, we must account for how the old build guide told developers
+# to install libraries in non-standard locations under /apps.
+if (EXISTS /apps/install/include/google/protobuf)
+    set(Protobuf_INCLUDE_DIR /apps/install/include)
+endif()
+if (EXISTS /apps/install/lib/libprotobuf.a)
+    set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.a)
+elseif(EXISTS /usr/lib64/libprotobuf.a)
+    set(Protobuf_LIBRARY /usr/lib64/libprotobuf.a)
+endif()
 find_package(Protobuf REQUIRED)
 
 file(GLOB PROTO_FILES "${CMAKE_SOURCE_DIR}/protobuf/src/main/proto/*.proto")

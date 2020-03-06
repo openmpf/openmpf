@@ -44,6 +44,7 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -55,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@Profile("!docker")
 public class NodeManagerStatus implements ClusterChangeNotifier {
 
     private static final int VIEW_UPDATE_CHECK_TIME_MILLISEC = 500;

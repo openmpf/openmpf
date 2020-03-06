@@ -57,8 +57,8 @@ public class MpfPropertiesConfigurationBuilder {
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
             "detection.",
             "http.object.storage.nginx.service.uri",
-            "mpf.output.objects.exemplars.only",
-            "mpf.output.objects.last.stage.only");
+            "mpf.output.objects.artifacts.and.exemplars.only",
+            "mpf.output.objects.last.task.only");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;

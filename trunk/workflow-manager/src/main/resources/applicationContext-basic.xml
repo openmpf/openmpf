@@ -32,10 +32,13 @@
                            http://www.springframework.org/schema/beans/spring-beans.xsd
                            http://www.springframework.org/schema/context
                            http://www.springframework.org/schema/context/spring-context.xsd">
- 
+
     <context:component-scan base-package="org.mitre.mpf.mvc, org.mitre.mpf.wfm" />
     <context:annotation-config/>
 
-    <bean class="org.mitre.mpf.nms.MasterNode" factory-method="create" />
+    <bean primary="true" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
 
+    <beans profile="!docker">
+        <bean class="org.mitre.mpf.nms.MasterNode" factory-method="create" />
+    </beans>
 </beans>

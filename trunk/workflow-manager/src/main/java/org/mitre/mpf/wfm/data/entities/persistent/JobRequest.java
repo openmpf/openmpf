@@ -77,7 +77,7 @@ public class JobRequest {
     public byte[] getJob() { return job; }
     public void setJob(byte[] job) { this.job = job; }
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String outputObjectPath;
     public String getOutputObjectPath() { return outputObjectPath; }
     public void setOutputObjectPath(String outputObjectPath) { this.outputObjectPath = outputObjectPath; }

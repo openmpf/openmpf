@@ -28,6 +28,7 @@ package org.mitre.mpf.markup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jms.connection.CachingConnectionFactory;
 
@@ -45,7 +46,7 @@ public class MarkupMain {
      * @param args Command line arguments, should be empty
      * @throws InterruptedException
      */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         LOG.info("Beginning markup initialization");
 
         if (args.length > 0) {
@@ -55,26 +56,34 @@ public class MarkupMain {
         }
         LOG.trace("ACTIVE_MQ_BROKER_URI=" + ACTIVEMQHOST);
 
-        try (ClassPathXmlApplicationContext context
-                     = new ClassPathXmlApplicationContext("classpath:appConfig.xml")) {
+        var context = new ClassPathXmlApplicationContext("classpath:appConfig.xml");
+        context.registerShutdownHook();
 
-            context.registerShutdownHook();
-            CachingConnectionFactory connection = context.getBean("jmsFactory", CachingConnectionFactory.class);
+        var connection = context.getBean("jmsFactory", CachingConnectionFactory.class);
 
-            System.out.println("Enter 'q' to quit:");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            try {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    LOG.info("Received input on stdin: \"{}\"", line);
-                    if (line.startsWith("q")) {
-                        break;
-                    }
+        // Shutdown hook is required in order to shutdown when signal received.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(connection, context)));
+
+        try (var reader = new BufferedReader(new InputStreamReader(System.in))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LOG.info("Received input on stdin: \"{}\"", line);
+                if (line.startsWith("q")) {
+                    shutdown(connection, context);
+                    return;
                 }
-            } catch (IOException e) {
-                LOG.error(e.getMessage(), e);
             }
-            connection.destroy();
+
+            LOG.info("Standard in was closed. Must use a signal to exit.");
         }
+        catch (IOException e) {
+            LOG.error(e.getMessage(), e);
+        }
+    }
+
+
+    private static void shutdown(CachingConnectionFactory connection, ConfigurableApplicationContext context) {
+        connection.destroy();
+        context.close();
     }
 }

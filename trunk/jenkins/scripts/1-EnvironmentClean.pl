@@ -51,7 +51,7 @@ MPF::Jenkins::stopActiveMQ($amqPath);
 	
 MPF::Jenkins::printDebug("Cleaning the working environment.\n");
 MPF::Jenkins::cleanTmp($mpfLogPath);
-MPF::Jenkins::cleanMySQL();
+MPF::Jenkins::cleanPostgreSQL();
 MPF::Jenkins::cleanRedis();
 MPF::Jenkins::cleanActiveMQ($amqPath);
 MPF::Jenkins::cleanMaven($mpfPath);

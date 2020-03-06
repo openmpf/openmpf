@@ -38,6 +38,7 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -97,10 +98,7 @@ public class ITWebREST {
 	};
 
 	// based on the registered components, this may not be a complete list of services
-	private static final String[] TEST_SERVICES = { "Markup",
-			"OcvPersonDetection", "SphinxSpeechDetection",
-			"MogMotionDetection", "OcvFaceDetection",
-			"DlibFaceDetection", "OalprLicensePlateTextDetection" };
+	private static final String[] TEST_SERVICES = { "Markup" };
 
 	private static final Logger log = LoggerFactory.getLogger(ITWebREST.class);
 
@@ -349,7 +347,7 @@ public class ITWebREST {
 //	}
 
 	/*
-	 * rest/jobs (ALL) is not currently exposed, using the the exposed
+	 * rest/jobs (ALL) is not currently exposed, using the exposed
 	 * rest/jobs/{id} endpoint instead
 	 */
 	@Test(timeout = 1 * MINUTES)
@@ -409,7 +407,7 @@ public class ITWebREST {
 		jobCreationRequest.setPipelineName(detPipeline);
 		jobCreationRequest.setPriority(7); //why not
 
-		//convert params to json string		
+		//convert params to json string
 		String params = objectMapper.writeValueAsString(jobCreationRequest);
 
 		URL actualUrl = new URL(postJobsUrl);
@@ -566,6 +564,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -578,13 +578,13 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONObject obj = new JSONObject(JSONstring);
 		JSONArray array = obj.getJSONArray("nodeModels");
-		log.info("array length (should be >= 2):" + array.length()); // assume at least two services are running
-		Assert.assertTrue(array.length() >= 2);
 
 		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);
@@ -608,12 +608,15 @@ public class ITWebREST {
 	// nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 = obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);
@@ -626,13 +629,16 @@ public class ITWebREST {
 	 **/
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_getNodeManagerConfig() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
 		JSONArray array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() >= 0);
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + JSONstring);
+
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		Assert.assertTrue(obj.getString("host").length() > 0);
 		JSONArray services = obj.getJSONArray("services");
@@ -659,6 +665,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_saveNodeManagerConfigPOST() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
 		String config = WebRESTUtils.REST_URL + "nodes/config.json";
@@ -667,8 +675,7 @@ public class ITWebREST {
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
 		String orig_config =JSONstring;
 		JSONArray array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() >= 0);
-
+		Assert.assertTrue(array.length() > 0);
 		//modify original by removing first service
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray services = obj.getJSONArray("services");
@@ -729,6 +736,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void test_NodeManager_shutdown_startService() throws Exception {
+	    TestUtil.assumeNodeManagerEnabled();
+
 		startTest("test_NodeManager_shutdown_startService","");
 		JSONArray nodes = WebRESTUtils.getNodes();
 		Assert.assertTrue(nodes.length() > 0);
@@ -746,9 +755,9 @@ public class ITWebREST {
 		}
 		String service_name = node.getString("name");
 		Assert.assertTrue(service_name != null && service_name.length() > 0);
-		
+
 		/*
-		 * stop service tests		
+		 * stop service tests
 		 */
 		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
 
@@ -798,7 +807,7 @@ public class ITWebREST {
 			}
 		}
 		Assert.assertTrue(completed);
-		
+
 		/*
 		 * start service tests
 		 */
@@ -871,6 +880,8 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerInfo() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/info.json";
 		startTest("testPing_NodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
@@ -884,12 +895,15 @@ public class ITWebREST {
 	//nodes/config GET
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_NodeManagerConfig() throws Exception {
+		TestUtil.assumeNodeManagerEnabled();
+
 		String url = WebRESTUtils.REST_URL + "nodes/config.json";
 		startTest("testPing_NodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		JSONArray array = new JSONArray(JSONstring);
 		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+
+		Assert.assertTrue(array.length() > 0);
 		JSONObject obj = array.getJSONObject(0);
 		JSONArray array2 =obj.getJSONArray("services");
 		Assert.assertTrue(array2.length() >= 0);

@@ -27,49 +27,19 @@
 package org.mitre.mpf.rest.api;
 
 public class InfoModel {
-	/*
-	 * Fields and getters
-	 */
-	private String app = null;
-	public String getApp() {
-		return app;
-	}
-	
-	private String buildNum = null;
-	public String getBuildNum() {
-		return buildNum;
-	}
-	
-	private String gitHash = null;
-	public String getGitHash() {
-		return gitHash;
-	}
-	
-	private String appFamily = null;
-	public String getAppFamily() {
-		return appFamily;
-	}
-	
-	private String version = null;
+
+	private final String _version;
 	public String getVersion() {
-		return version;
+		return _version;
 	}
-	
-	private String gitBranch = null;
-	public String getGitBranch() {
-		return gitBranch;
+
+	private final boolean _isDockerEnabled;
+	public boolean isDockerEnabled() {
+		return _isDockerEnabled;
 	}
-	
-	/*
-	 * Constructor
-	 */
-	public InfoModel(String appFamily, String app, String version, 
-			String gitHash, String gitBranch, String buildNum) {
-		this.appFamily = appFamily;
-		this.app = app;
-		this.version = version;
-		this.gitHash = gitHash;
-		this.gitBranch = gitBranch;
-		this.buildNum = buildNum;		
+
+	public InfoModel(String version, boolean isDockerEnabled) {
+		_version = version;
+		_isDockerEnabled = isDockerEnabled;
 	}
 }

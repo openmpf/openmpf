@@ -24,35 +24,22 @@
   ~ See the License for the specific language governing permissions and       ~
   ~ limitations under the License.                                            ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
-        
+
 <web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
     http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
 
-	<!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
-	<context-param>
-		<param-name>contextConfigLocation</param-name>
-		<param-value>/WEB-INF/spring/root-context.xml</param-value>
-	</context-param>
-
-	<!-- left commented out to show that profiles can be statically defined here -->
-	<!-- <context-param>
-    	<param-name>spring.profiles.active</param-name>	
-    	<param-value>default,website</param-value>
-	</context-param> -->
-	
-	<!-- added CustomApplicationContextInitializer to contextInitializerClasses to allow 
-	for reading of mpf.properties early, which allows the servlet to grab the spring profiles property ( web.active.profiles )-->
     <context-param>
-	    <param-name>contextInitializerClasses</param-name>
-	    <param-value>org.mitre.mpf.mvc.CustomApplicationContextInitializer</param-value>
-	</context-param>
-	
-	<!-- Creates the Spring Container shared by all Servlets and Filters -->
-	<listener>
-		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-	</listener>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/applicationContext-web.xml</param-value>
+    </context-param>
+
+
+    <!-- Creates the Spring Container shared by all Servlets and Filters -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
 
     <!-- Expose sessions to Spring -->
     <listener>
@@ -64,39 +51,33 @@
         <listener-class>org.springframework.security.web.session.HttpSessionEventPublisher</listener-class>
     </listener>
 
-	<!-- Processes application requests -->
-	<servlet>
-		<servlet-name>appServlet</servlet-name>
-		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-		<init-param>
-			<param-name>contextConfigLocation</param-name>
-			<param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
-		</init-param>
-		
-		<!-- the CustomApplicationContextInitializer is used to read the properties before getting here-->
-		<init-param>
-	    	<param-name>spring.profiles.active</param-name>
-	    	<param-value>${web.active.profiles:default}</param-value>
-		</init-param>
-	
-		<load-on-startup>1</load-on-startup>
-	</servlet>
-	
-	<servlet-mapping>
-		<servlet-name>appServlet</servlet-name>
-		<url-pattern>/</url-pattern>
-	</servlet-mapping>
+    <!-- Processes HTTP requests and invokes the appropriate controller. -->
+    <servlet>
+        <servlet-name>appServlet</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value />
+        </init-param>
 
- 	<!-- Spring Security -->
-	<filter>
-		<filter-name>springSecurityFilterChain</filter-name>
-		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
-	</filter>
- 
-	<filter-mapping>
-		<filter-name>springSecurityFilterChain</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>appServlet</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+
+    <!-- Spring Security -->
+    <filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
 
     <filter>
         <filter-name>timeoutFilter</filter-name>
@@ -111,24 +92,24 @@
         <filter-name>timeoutFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
-    
-	<!--  javasimon console -->
-     <servlet>
-		<servlet-name>SimonConsoleServlet</servlet-name>
-		<servlet-class>org.javasimon.console.SimonConsoleServlet</servlet-class>
-		<init-param>
-		        <param-name>url-prefix</param-name>
-		        <param-value>/javasimon-console</param-value>
-		</init-param>
-	</servlet>
-	<servlet-mapping>
-	        <servlet-name>SimonConsoleServlet</servlet-name>
-	        <url-pattern>/javasimon-console/*</url-pattern>
-	</servlet-mapping>
-    
+
+    <!--  javasimon console -->
+    <servlet>
+        <servlet-name>SimonConsoleServlet</servlet-name>
+        <servlet-class>org.javasimon.console.SimonConsoleServlet</servlet-class>
+        <init-param>
+            <param-name>url-prefix</param-name>
+            <param-value>/javasimon-console</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SimonConsoleServlet</servlet-name>
+        <url-pattern>/javasimon-console/*</url-pattern>
+    </servlet-mapping>
+
 
     <!-- atmosphere -->
-   	<servlet>
+    <servlet>
         <description>AtmosphereServlet</description>
         <servlet-name>AtmosphereServlet</servlet-name>
         <servlet-class>org.atmosphere.cpr.AtmosphereServlet</servlet-class>
@@ -136,16 +117,10 @@
             <param-name>org.atmosphere.websocket.messageContentType</param-name>
             <param-value>application/json</param-value>
         </init-param>
-   	    <init-param>
-	    	<param-name>com.sun.jersey.config.property.packages</param-name>
-	  		<param-value>org.mitre.mpf</param-value>
-		</init-param>
-		<!-- seems to be necessary for autowiring support, but does not seem to work with spring 4? -->
-<!-- 		<init-param> 
-	        <param-name>org.atmosphere.cpr.objectFactory</param-name>  -->
-	        <!-- <param-value>org.atmosphere.spring.SpringObjectFactory</param-value> -->
-	        <!-- <param-value>org.atmosphere.spring.SpringWebObjectFactory</param-value> 	        
-		</init-param>  -->
+        <init-param>
+            <param-name>com.sun.jersey.config.property.packages</param-name>
+            <param-value>org.mitre.mpf</param-value>
+        </init-param>
         <init-param>
             <param-name>org.atmosphere.cpr.AtmosphereInterceptor</param-name>
             <param-value>org.atmosphere.interceptor.HeartbeatInterceptor</param-value>
@@ -162,19 +137,19 @@
         <url-pattern>/websocket/*</url-pattern>
     </servlet-mapping>
 
-	<error-page>
-		<location>/WEB-INF/views/error.jsp</location>
-	</error-page>
+    <error-page>
+        <location>/WEB-INF/views/error.jsp</location>
+    </error-page>
 
-	<!-- for https -->	
-	<security-constraint>
-		<web-resource-collection>
-			<web-resource-name>securedapp</web-resource-name>
-			<url-pattern>/*</url-pattern>
-		</web-resource-collection>
-		<user-data-constraint>
-			<!-- Use CATALINA_OPTS to set -Dtransport.guarantee="<value>" where <value> must be set to NONE, INTEGRAL, or CONFIDENTIAL. -->
-			<transport-guarantee>${transport.guarantee}</transport-guarantee>					
-		</user-data-constraint>
-	</security-constraint>
+    <!-- for https -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>securedapp</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <user-data-constraint>
+            <!-- Use CATALINA_OPTS to set -Dtransport.guarantee="<value>" where <value> must be set to NONE, INTEGRAL, or CONFIDENTIAL. -->
+            <transport-guarantee>${transport.guarantee}</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
 </web-app>

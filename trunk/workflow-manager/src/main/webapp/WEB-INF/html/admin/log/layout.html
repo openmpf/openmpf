@@ -46,12 +46,12 @@
                         <button type="button" class="btn btn-default dropdown-toggle"
                                 data-toggle="dropdown"><span>{{nodeTitle}}</span> <span class="caret"></span>
                         </button>
-                            <ul id="availableNodesList" class="dropdown-menu"
-                                role="menu">
-                                <li ng-repeat="(node,logs) in nodesAndLogs">
-                                    <a node='{{node}}' ng-click="handleNodeSelect(node)">{{node}}</a>
-                                </li>
-                            </ul>
+                        <ul id="availableNodesList" class="dropdown-menu"
+                            role="menu">
+                            <li ng-repeat="node in nodesAndLogs | objectKeys | orderBy">
+                                <a node='{{node}}' ng-click="handleNodeSelect(node)">{{node}}</a>
+                            </li>
+                        </ul>
                     </span>
                 &nbsp;
                     <span class="btn-group">
@@ -59,7 +59,8 @@
                                 data-toggle="dropdown" disabled><span>{{logTitle}}</span> <span class="caret"></span>
                         </button>
                         <ul id="availableLogsList" class="dropdown-menu" role="menu">
-                            <li ng-repeat="log in availableLogs"><a node='{{log}}' ng-click="handleLogSelect(log)">{{log}}</a>
+                            <li ng-repeat="log in availableLogs | orderBy">
+                                <a node='{{log}}' ng-click="handleLogSelect(log)">{{log}}</a>
                             </li>
                         </ul>
                     </span>

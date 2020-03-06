@@ -266,7 +266,7 @@ public class TestAdminComponentRegistrationController {
 
 
     @Test
-    public void canRemoveComponent() {
+    public void canRemoveComponent() throws ManagedComponentsUnsupportedException {
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.of(_testModel));
 
@@ -278,7 +278,7 @@ public class TestAdminComponentRegistrationController {
     }
 
     @Test
-    public void canRemoveComponentByPackageName() {
+    public void canRemoveComponentByPackageName() throws ManagedComponentsUnsupportedException {
         _controller.removeComponentPackageRest(_testPackageName);
         verify(_mockRemoveComponentService)
                 .removePackage(_testPackageName);

@@ -24,18 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data;
 
-import org.hibernate.dialect.MySQLDialect;
+package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
-import java.sql.Types;
+public class DetectionPaddingException extends Exception {
 
-// Weird mapping issue where MySql timestamps default to store only seconds. need to fix this if not mysql.
-// http://stackoverflow.com/questions/22785117/mysql-datetime-precision-joda-time-hibernate-org-jadira-usertype-hbm2ddl
-public class EnhancedMySQLDialect extends MySQLDialect {
-   public EnhancedMySQLDialect() {
-      super();
-      registerColumnType(Types.TIMESTAMP, 3, "datetime($l)");
-      registerColumnType(Types.TIMESTAMP, "datetime(3)");
-   }
+    public DetectionPaddingException(String message) {
+        super(message);
+    }
+
+    public DetectionPaddingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -29,6 +29,7 @@ package org.mitre.mpf.test;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
+import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentMatchers;
@@ -149,6 +150,20 @@ public class TestUtil {
         when(mockPropertiesUtil.getPipelineDefinitions())
                 .thenReturn(new PathResource(pipelinesPath));
         Files.writeString(pipelinesPath, "[]");
+    }
+
+
+    public static boolean nodeManagerEnabled() {
+        String property = System.getProperty("node.manager.disabled");
+        if (property == null) {
+            return true;
+        }
+        return !Boolean.parseBoolean(property);
+    }
+
+    public static void assumeNodeManagerEnabled() {
+        Assume.assumeTrue("Skipping this test because it requires Node Manager but it is disabled.",
+                           nodeManagerEnabled());
     }
 }
 

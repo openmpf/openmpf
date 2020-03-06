@@ -29,8 +29,6 @@
 
 var AboutCtrl = function($scope, $location, $interpolate, depResponse, MetadataService) {
 
-    $scope.text_detection_filepath = "resources/downloads/OalprLicensePlateTextDetection.tar.gz";
-
     var initView = function() {
         fetchMetadata();
         loadDependencyGroups();
@@ -39,7 +37,7 @@ var AboutCtrl = function($scope, $location, $interpolate, depResponse, MetadataS
 
     var fetchMetadata = function() {
         MetadataService.getMetadata().then(function(data) {
-            $scope.displayVersion = HomeUtilsFull.displayVersion;
+            $scope.displayVersion = data.version;
         });
     };
 

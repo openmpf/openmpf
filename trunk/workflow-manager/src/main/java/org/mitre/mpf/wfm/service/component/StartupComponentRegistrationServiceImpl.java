@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
@@ -55,6 +56,8 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
     private final boolean _startupAutoRegistrationSkipped;
 
+    private final boolean _dockerProfileEnabled;
+
     private final Path _componentUploadDir;
 
     private final Path _pluginDeploymentDir;
@@ -65,21 +68,25 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
 
     private final StartupComponentServiceStarter _componentServiceStarter;
 
+    private final ObjectMapper _objectMapper;
+
 
     @Inject
     public StartupComponentRegistrationServiceImpl(
             PropertiesUtil propertiesUtil,
             ComponentStateService componentStateService,
             AddComponentService addComponentService,
-            StartupComponentServiceStarter componentServiceStarter) {
+            Optional<StartupComponentServiceStarter> componentServiceStarter,
+            ObjectMapper objectMapper) {
         _startupAutoRegistrationSkipped = propertiesUtil.isStartupAutoRegistrationSkipped();
+        _dockerProfileEnabled = propertiesUtil.dockerProfileEnabled();
         _componentUploadDir = propertiesUtil.getUploadedComponentsDirectory().toPath();
         _pluginDeploymentDir = propertiesUtil.getPluginDeploymentPath();
         _componentStateSvc = componentStateService;
         _addComponentService = addComponentService;
-        _componentServiceStarter = componentServiceStarter;
+        _componentServiceStarter = componentServiceStarter.orElse(null);
+        _objectMapper = objectMapper;
     }
-
 
 
     @Override
@@ -88,104 +95,100 @@ public class StartupComponentRegistrationServiceImpl implements StartupComponent
             _log.info("Skipping component auto registration.");
             return;
         }
+        if (_dockerProfileEnabled) {
+            registerDescriptors();
+            return;
+        }
+
+        registerAll();
+    }
+
+
+    private void registerAll() {
+        List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
+
+        Set<Path> unregisteredComponentPackages = getUnregisteredComponentPackages(allComponentEntries);
+
+        Set<Path> unregisteredDescriptors = new HashSet<>(getUnregisteredDeployedDescriptors(allComponentEntries));
+        Map<String, Path> tldToDescriptorMapping = unregisteredDescriptors
+                .stream()
+                .collect(toMap(p -> p.getParent().getParent().getFileName().toString(),
+                               Function.identity()));
+
+        var registeredComponentsWithServiceToStart = new ArrayList<RegisterComponentModel>();
+
+        for (Path unregisteredPackage : unregisteredComponentPackages) {
+            String packageTld = getPackageTld(unregisteredPackage);
+            if (packageTld == null) {
+                continue;
+            }
+
+            Path descriptorPath = tldToDescriptorMapping.get(packageTld);
+            if (descriptorPath == null) {
+                _componentStateSvc.addEntryForUploadedPackage(unregisteredPackage);
+            }
+            else {
+                unregisteredDescriptors.remove(descriptorPath);
+                _componentStateSvc.addEntryForDeployedPackage(unregisteredPackage, descriptorPath);
+            }
+
+            String packageName = unregisteredPackage.getFileName().toString();
+            try {
+                RegisterComponentModel component = _addComponentService.registerComponent(packageName);
+                registeredComponentsWithServiceToStart.add(component);
+            }
+            catch (ComponentRegistrationException e) {
+                _log.error(String.format("Failed to register %s", packageName), e);
+            }
+        }
+
+        for (Path unregisteredDescriptor : unregisteredDescriptors) {
+            registerDescriptor(unregisteredDescriptor);
+        }
+
+        _componentServiceStarter.startServicesForComponents(registeredComponentsWithServiceToStart);
+    }
+
+
+    private void registerDescriptors() {
+        List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
+
+        Set<Path> unregisteredDescriptors = getUnregisteredDeployedDescriptors(allComponentEntries);
+
+        for (Path unregisteredDescriptor : unregisteredDescriptors) {
+            registerDescriptor(unregisteredDescriptor);
+        }
+    }
+
+
+    private void registerDescriptor(Path descriptorPath) {
+        try {
+            var descriptor
+                    = _objectMapper.readValue(descriptorPath.toFile(), JsonComponentDescriptor.class);
+            _addComponentService.registerUnmanagedComponent(descriptor);
+        }
+        catch (ComponentRegistrationException | IOException e) {
+            _log.error(String.format("Failed to register %s", descriptorPath), e);
+        }
+    }
+
+
+    private Set<Path> getUnregisteredComponentPackages(
+            Collection<RegisterComponentModel> allComponentEntries) {
 
         List<Path> uploadedComponentPackages = listDirContent(_componentUploadDir).stream()
                 .filter(Files::isRegularFile)
                 .filter(p -> p.toString().endsWith(".tar.gz"))
                 .collect(toList());
 
-        List<RegisterComponentModel> allComponentEntries = _componentStateSvc.get();
-        Set<Path> unregisteredComponentPackages = getUnregisteredComponentPackages(uploadedComponentPackages,
-                                                                                   allComponentEntries);
-        if (unregisteredComponentPackages.isEmpty()) {
-            _log.info("All component packages are already registered");
-            return;
-        }
-        Map<Path, Path> packageToDeployedDescriptorMapping = getPackageToDeployedDescriptorMapping(
-                unregisteredComponentPackages, allComponentEntries);
-
-        registerComponents(unregisteredComponentPackages, packageToDeployedDescriptorMapping);
-    }
-
-
-    private void registerComponents(Iterable<Path> unregisteredComponentPackages,
-                                    Map<Path, Path> packageToDeployedDescriptorMapping) {
-
-        List<RegisterComponentModel> registeredComponents = new ArrayList<>();
-        for (Path componentPackagePath : unregisteredComponentPackages) {
-            Path deployedDescriptor = packageToDeployedDescriptorMapping.get(componentPackagePath);
-
-            if (deployedDescriptor == null) {
-                _componentStateSvc.addEntryForUploadedPackage(componentPackagePath);
-            }
-            else {
-                _componentStateSvc.addEntryForDeployedPackage(componentPackagePath, deployedDescriptor);
-            }
-            String packageName = componentPackagePath.getFileName().toString();
-
-            try {
-                RegisterComponentModel component = _addComponentService.registerComponent(packageName);
-                registeredComponents.add(component);
-            }
-            catch (ComponentRegistrationException e) {
-                _log.error(String.format("Failed to register %s", packageName), e);
-            }
-        }
-        _componentServiceStarter.startServicesForComponents(registeredComponents);
-    }
-
-
-    private static Set<Path> getUnregisteredComponentPackages(
-            Collection<Path> uploadedPackages,
-            Collection<RegisterComponentModel> allComponentEntries) {
-
         Set<Path> registeredPaths = allComponentEntries.stream()
                 .filter(rcm -> rcm.getFullUploadedFilePath() != null)
                 .map(rcm -> Paths.get(rcm.getFullUploadedFilePath()))
                 .collect(toSet());
 
-        return uploadedPackages.stream()
+        return uploadedComponentPackages.stream()
                 .filter(p -> !registeredPaths.contains(p))
                 .collect(toSet());
-    }
-
-
-
-    private Map<Path, Path> getPackageToDeployedDescriptorMapping(
-                Collection<Path> unregisteredComponentPackages, Collection<RegisterComponentModel> components) {
-
-        Set<Path> descriptors = getUnregisteredDeployedDescriptors(components);
-        Map<String, Path> tldToDescriptorMapping = descriptors
-                .stream()
-                .collect(toMap(p -> p.getParent().getParent().getFileName().toString(),
-                               Function.identity()));
-
-        Map<Path, Path> packageToDeployedDescriptorMapping = new HashMap<>();
-        for (Path packagePath : unregisteredComponentPackages) {
-            String packageTld = getPackageTld(packagePath);
-            Optional.ofNullable(packageTld)
-                    .map(tldToDescriptorMapping::get)
-                    .ifPresent(desc -> packageToDeployedDescriptorMapping.put(packagePath, desc));
-        }
-
-        logDescriptorsWithNoMatchingPackages(descriptors, packageToDeployedDescriptorMapping.values());
-
-        return packageToDeployedDescriptorMapping;
-    }
-
-
-
-    private static void logDescriptorsWithNoMatchingPackages(Collection<Path> allDeployedDescriptors,
-                                                             Collection<Path> mappedDescriptors) {
-        Collection<Path> descriptorsWithNoMatchingPackages = new HashSet<>(allDeployedDescriptors);
-        descriptorsWithNoMatchingPackages.removeAll(mappedDescriptors);
-        if (descriptorsWithNoMatchingPackages.isEmpty()) {
-            return;
-        }
-
-        _log.error("The following descriptors do not have a matching component package and can not be registered: ");
-        descriptorsWithNoMatchingPackages
-                .forEach(d -> _log.error(d.toString()));
     }
 
 

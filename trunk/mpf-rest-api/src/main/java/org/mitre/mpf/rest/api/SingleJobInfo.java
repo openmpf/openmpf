@@ -37,12 +37,11 @@ public class SingleJobInfo {
 	private Instant startDate;
 	private Instant endDate;
 	private String outputObjectPath;
-	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR - will be set in ModelUtils
-	//to maintain the use of only standard Java in the model.api classes
-	private boolean terminal;	
+	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
+	private boolean terminal;
 
 	public SingleJobInfo() {}
-	
+
 	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
 	                     Instant startDate, Instant endDate, String outputObjectPath, boolean terminal) {
 		this.jobId = jobId;
@@ -55,30 +54,30 @@ public class SingleJobInfo {
 		this.outputObjectPath = outputObjectPath;
 		this.terminal = terminal;
 	}
-	
+
 	public Long getJobId() {
 		return jobId;
 	}
-	
+
 	public String getPipelineName() {
 		return pipelineName;
 	}
-	
+
 	public int getJobPriority() {
 		return jobPriority;
 	}
-	
+
 	public String getJobStatus() {
 		return jobStatus;
 	}
-	
+
 	public float getJobProgress() {
 		return jobProgress;
 	}
 	public void setJobProgress(float jobProgress) {
 		this.jobProgress = jobProgress;
 	}
-	
+
 	public Instant getStartDate() {
 		return startDate;
 	}
@@ -86,11 +85,11 @@ public class SingleJobInfo {
 	public Instant getEndDate() {
 		return endDate;
 	}
-	
+
 	public String getOutputObjectPath() {
 		return outputObjectPath;
 	}
-	
+
 	public boolean isTerminal() {
 		return terminal;
 	}

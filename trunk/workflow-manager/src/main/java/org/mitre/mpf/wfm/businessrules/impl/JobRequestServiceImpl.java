@@ -34,6 +34,8 @@ import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingException;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -326,10 +328,11 @@ public class JobRequestServiceImpl implements JobRequestService {
                             systemPropertiesSnapshot);
 
                     S3StorageBackend.validateS3Properties(combinedProperties);
+                    DetectionPaddingProcessor.validatePaddingProperties(combinedProperties);
                 }
             }
         }
-        catch (StorageException e) {
+        catch (StorageException | DetectionPaddingException e) {
             throw new WfmProcessingException("Property validation failed due to: " + e, e);
         }
     }

@@ -26,10 +26,20 @@
 
 package org.mitre.mpf.wfm.enums;
 
+/**
+ * The names in the springName fields map directly to those supported by Spring Security:
+ * https://docs.spring.io/spring-security/site/docs/current/reference/html/authorization.html
+ */
 public enum UserRole {
-    /** The user is a non-administrator of the system. */
-	ROLE_USER,
+    // The user is a non-administrator of the system.
+    USER("ROLE_USER"),
 
-	/** The user is an administrator of the system. */
-    ROLE_ADMIN
+    // The user is an administrator of the system.
+    ADMIN("ROLE_ADMIN");
+
+    public final String springName;
+
+    UserRole(String springName) {
+        this.springName = springName;
+    }
 }

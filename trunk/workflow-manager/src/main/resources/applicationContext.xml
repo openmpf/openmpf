@@ -40,6 +40,4 @@
     <import resource="applicationContext-properties.xml"/>
     <import resource="applicationContext-redis.xml"/>
     <import resource="applicationContext-task.xml"/>
-    <import resource="applicationContext-json.xml"/>
-
 </beans>

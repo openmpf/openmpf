@@ -135,7 +135,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setTimeCompleted(Instant.now());
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
-            URI outputObjectUri = null;            
+            URI outputObjectUri = null;
             try {
                 outputObjectUri = createOutputObject(job, jobRequest.getTimeReceived(),
                         jobRequest.getTimeCompleted(), jobStatus); // this may update the job status
@@ -258,17 +258,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 job.getId(), job.getExternalId().orElse(null), outputObjectUriString);
         post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
         return post;
-    }
-
-    private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
-        log.debug("Marking Job {} as '{}'.", jobId, jobStatus);
-
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        assert jobRequest != null : String.format("A job request entity must exist with the ID %d", jobId);
-
-        jobRequest.setTimeCompleted(Instant.now());
-        jobRequest.setStatus(jobStatus);
-        jobRequestDao.persist(jobRequest);
     }
 
     @Override

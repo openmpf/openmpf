@@ -24,10 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
+
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -38,13 +40,8 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toMap;
 
 
 @Component
@@ -54,13 +51,11 @@ public class LocalStorageBackend implements StorageBackend {
 
     private final ObjectMapper _objectMapper;
 
-
     @Inject
     LocalStorageBackend(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) {
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
     }
-
 
     @Override
     public boolean canStore(JsonOutputObject outputObject) {
@@ -74,7 +69,6 @@ public class LocalStorageBackend implements StorageBackend {
         return outputPath.toUri();
     }
 
-
     @Override
     public boolean canStore(MarkupResult markupResult) {
         return true;
@@ -85,38 +79,19 @@ public class LocalStorageBackend implements StorageBackend {
         // No-op: markup is stored locally by the markup component.
     }
 
-
     @Override
     public boolean canStore(ArtifactExtractionRequest request) {
         return true;
     }
 
-
     @Override
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException {
-        Path inputMediaPath = Paths.get(request.getPath());
-        Path artifactFile = _propertiesUtil.createArtifactFile(request.getJobId(),
-                                                               request.getMediaId(),
-                                                               request.getTaskIndex(),
-                                                               inputMediaPath.getFileName().toString());
-        Files.copy(inputMediaPath, artifactFile, StandardCopyOption.REPLACE_EXISTING);
-        return artifactFile.toUri();
-    }
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
 
-
-    @Override
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
-        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(),
-                                                                         request.getMediaId(),
-                                                                         request.getTaskIndex()).toURI();
-        FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
-                                                           artifactsDirectory);
-        frameExtractor.getFrames().addAll(request.getFrameNumbers());
-        Map<Integer, String> extractionResults = frameExtractor.execute();
-
-        return extractionResults.entrySet()
-                .stream()
-                .collect(toMap(Map.Entry::getKey,
-                               e -> Paths.get(e.getValue()).toUri()));
+        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(), request.getMediaId(),
+                request.getTaskIndex(), request.getActionIndex()).toURI();
+        FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(), artifactsDirectory);
+        frameExtractor.getTracksToExtract().addAll(request.getTracksToExtract());
+        Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
+        return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
     }
 }

@@ -69,7 +69,9 @@ std::string JniHelper::ToStdString(jstring jString) {
     return result;
 }
 
-
+jstring JniHelper::ToJString(std::string inString) {
+	return callJni(&JNIEnv::NewStringUTF,inString.c_str());
+}
 
 void JniHelper::CheckException() {
     if (env_->ExceptionCheck()) {

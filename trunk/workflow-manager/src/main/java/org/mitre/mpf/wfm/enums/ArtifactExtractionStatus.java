@@ -30,7 +30,7 @@ import org.mitre.mpf.wfm.util.TextUtils;
 
 public enum ArtifactExtractionStatus {
 	NOT_ATTEMPTED,
-	UNSUPPORTED_MEDIA_TYPE,
+	REQUESTED,
 	COMPLETED,
 	FAILED;
 

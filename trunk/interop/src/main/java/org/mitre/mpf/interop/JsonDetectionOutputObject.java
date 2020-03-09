@@ -30,6 +30,8 @@ import com.fasterxml.jackson.annotation.*;
 import org.mitre.mpf.interop.util.CompareUtils;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -88,7 +90,8 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	@JsonProperty("artifactExtractionStatus")
 	@JsonPropertyDescription("A status code indicating if an artifact was created for this detection.")
-	private final String artifactExtractionStatus;
+	private String artifactExtractionStatus;
+	public void setArtifactExtractionStatus(String status) { artifactExtractionStatus = status; }
 	public String getArtifactExtractionStatus() { return artifactExtractionStatus; }
 
 

@@ -41,7 +41,7 @@ import java.time.Instant;
 
 @Monitored
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-    URI createOutputObject(BatchJob batchJob, Instant timeReceived, Instant timeCompleted,
+    URI createOutputObject(BatchJob job, Instant timeReceived, Instant timeCompleted,
                            Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
     void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
     void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);

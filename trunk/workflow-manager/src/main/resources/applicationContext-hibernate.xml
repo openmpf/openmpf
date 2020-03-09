@@ -41,6 +41,7 @@
         <property name="username" value="${jdbc.username}"/>
         <property name="password" value="${jdbc.password}"/>
         <property name="validationQuery" value="SELECT 1" />
+        <property name="connectionProperties" value="hideUnprivilegedObjects=true" />
     </bean>
 
 
@@ -61,25 +62,21 @@
                 <prop key="hibernate.cache.use_second_level_cache">true</prop>
                 <prop key="hibernate.cache.use_query_cache">true</prop>
                 <prop key="hibernate.cache.region.factory_class">
-                    org.hibernate.cache.infinispan.InfinispanRegionFactory
+                    org.infinispan.hibernate.cache.v53.InfinispanRegionFactory
                 </prop>
 
-                <prop key="hibernate.cache.infinispan.cachemanager">java:CacheManager/entity</prop>
                 <prop key="hibernate.cache.infinispan.cfg">infinispan.xml</prop>
                 <prop key="hibernate.cache.infinispan.query.cfg">mpfCache</prop>
                 <prop key="hibernate.cache.infinispan.entity.cfg">mpfCache</prop>
                 <prop key="hibernate.cache.infinispan.collection.cfg">mpfCache</prop>
 
-                <!--<prop key="hibernate.transaction.manager_lookup_class">com.atomikos.icatch.jta.hibernate3.TransactionManagerLookup</prop>-->
-                <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
                 <prop key="hibernate.transaction.jta.platform">
-                    org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform
+                    org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform
                 </prop>
 
                 <prop key="hibernate.transaction.manager_lookup_class">
-                    org.hibernate.cache.infinispan.tm.HibernateTransactionManagerLookup
+                    org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup
                 </prop>
-                <!--<prop key="hibernate.transaction.factory_class">org.hibernate.engine.transaction.internal.jta.CMTTransactionFactory</prop>-->
             </props>
         </property>
 

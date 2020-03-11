@@ -46,6 +46,8 @@
     "message": null,
     "status": "COMPLETE",
     "mediaMetadata": {
+      "FRAME_HEIGHT": "600",
+      "FRAME_WIDTH": "480",
       "MIME_TYPE": "image/jpeg"
     },
     "mediaProperties": {},
@@ -108,6 +110,8 @@
     "message": null,
     "status": "COMPLETE",
     "mediaMetadata": {
+      "FRAME_HEIGHT": "480",
+      "FRAME_WIDTH": "384",
       "MIME_TYPE": "image/jpeg"
     },
     "mediaProperties": {},
@@ -173,6 +177,8 @@
       "DURATION": "17007",
       "FPS": "29.97",
       "FRAME_COUNT": "511",
+      "FRAME_HEIGHT": "480",
+      "FRAME_WIDTH": "640",
       "MIME_TYPE": "video/x-msvideo"
     },
     "mediaProperties": {},
@@ -2676,6 +2682,8 @@
       "DURATION": "5013",
       "FPS": "29.97",
       "FRAME_COUNT": "154",
+      "FRAME_HEIGHT": "540",
+      "FRAME_WIDTH": "960",
       "MIME_TYPE": "video/x-matroska"
     },
     "mediaProperties": {},
@@ -2785,6 +2793,8 @@
       "DURATION": "17041",
       "FPS": "29.97",
       "FRAME_COUNT": "521",
+      "FRAME_HEIGHT": "480",
+      "FRAME_WIDTH": "640",
       "MIME_TYPE": "video/mp4"
     },
     "mediaProperties": {},

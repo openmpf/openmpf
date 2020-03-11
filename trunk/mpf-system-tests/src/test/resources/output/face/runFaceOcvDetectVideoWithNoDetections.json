@@ -37,6 +37,8 @@
       "DURATION": "2025",
       "FPS": "24.0",
       "FRAME_COUNT": "54",
+      "FRAME_HEIGHT": "1080",
+      "FRAME_WIDTH": "1920",
       "MIME_TYPE": "video/quicktime"
     },
     "mediaProperties": {},

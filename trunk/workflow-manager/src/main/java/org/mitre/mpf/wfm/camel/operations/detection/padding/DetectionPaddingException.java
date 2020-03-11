@@ -24,25 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
 
-import org.apache.commons.lang3.mutable.Mutable;
-import org.javasimon.aop.Monitored;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.event.JobCompleteNotification;
-import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.event.NotificationProducer;
+package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
-import java.io.IOException;
-import java.net.URI;
-import java.time.Instant;
+public class DetectionPaddingException extends Exception {
 
-@Monitored
-public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
-    URI createOutputObject(BatchJob job, Instant timeReceived, Instant timeCompleted,
-                           Mutable<BatchJobStatusType> jobStatus) throws WfmProcessingException, IOException;
-    void subscribe(NotificationConsumer<JobCompleteNotification> consumer);
-    void unsubscribe(NotificationConsumer<JobCompleteNotification> consumer);
+    public DetectionPaddingException(String message) {
+        super(message);
+    }
+
+    public DetectionPaddingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -50,6 +50,8 @@
         "DURATION": "17007",
         "FPS": "29.97",
         "FRAME_COUNT": "511",
+        "FRAME_HEIGHT": "480",
+        "FRAME_WIDTH": "640",
         "MIME_TYPE": "video/x-msvideo"
       },
       "mediaProperties": {},

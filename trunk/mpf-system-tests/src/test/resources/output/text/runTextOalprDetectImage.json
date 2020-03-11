@@ -42,6 +42,8 @@
       "status": "COMPLETE",
       "mediaMetadata": {
         "EXIF_ORIENTATION": "1",
+        "FRAME_HEIGHT": "606",
+        "FRAME_WIDTH": "809",
         "HORIZONTAL_FLIP": "FALSE",
         "MIME_TYPE": "image/jpeg",
         "ROTATION": "0"
@@ -111,6 +113,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "FRAME_HEIGHT": "1943",
+        "FRAME_WIDTH": "3597",
         "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},
@@ -178,6 +182,8 @@
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
+        "FRAME_HEIGHT": "2037",
+        "FRAME_WIDTH": "3207",
         "MIME_TYPE": "image/png"
       },
       "mediaProperties": {},

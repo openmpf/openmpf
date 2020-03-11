@@ -224,7 +224,6 @@ public class AnsibleDeploymentService implements ComponentDeploymentService {
                 "ansible-playbook",
                 playbookPath,
                 "--user=mpf",
-                "-e", "@" + propertiesUtil.getAnsibleChildVarsPath(),
                 "-e", finalArg);
         if (propertiesUtil.isAnsibleLocalOnly()) {
             command.add("--connection=local");

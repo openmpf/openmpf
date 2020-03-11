@@ -652,10 +652,6 @@ public class PropertiesUtil {
     // Ansible configuration
     //
 
-    public String getAnsibleChildVarsPath() {
-        return mpfPropertiesConfig.getString("mpf.ansible.child.vars.path");
-    }
-
     public String getAnsibleCompDeployPath() {
         return mpfPropertiesConfig.getString("mpf.ansible.compdeploy.path");
     }

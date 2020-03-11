@@ -43,7 +43,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
     </properties>
 
     <dependencies>
@@ -126,45 +125,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <!-- Build the RPM -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>rpm-maven-plugin</artifactId>
-                <version>${rpm.maven.plugin.version}</version>
-                <configuration>
-                    <name>mpf-java-component-executor</name>
-                    <release>${rpmReleasePrefix}.${maven.build.timestamp}_${gitBranch}_${jenkinsBuildNumber}</release>
-                    <defineStatements>
-                    </defineStatements>
-                    <repackJars>false</repackJars>
-                    <needarch>false</needarch>
-                    <vendor>The MITRE Corporation</vendor>
-                    <license>COPYRIGHT 2019 MITRE CORPORATION, all rights reserved.</license>
-                    <distribution>MPF</distribution>
-                    <group>Application</group>
-                    <version>${project.version}</version>
-                    <prefixes>
-                        <prefix>${maven.rpm.prefix}</prefix>
-                    </prefixes>
-                    <mappings>
-                        <mapping>
-                            <directory>${maven.rpm.prefix}/jars</directory>
-                            <directoryIncluded>false</directoryIncluded>
-                            <filemode>440</filemode>
-                            <username>mpf</username>N
-                            <groupname>mpf</groupname>
-                            <sources>
-                                <source>
-                                    <location>target</location>
-                                    <includes>
-                                        <include>${project.artifactId}-${project.version}.jar</include>
-                                    </includes>
-                                </source>
-                            </sources>
-                        </mapping>
-                    </mappings>
-                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -77,7 +77,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 		String routeId = routeIdPrefix + " for Duplicate Messages";
 		log.debug("Configuring route '{}'.", routeId);
 
-		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate from store%'";
+		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate%'";
 		String selector = "?selector=" + java.net.URLEncoder.encode(dupCondition, "UTF-8");
 
 		from(entryPoint + selector)

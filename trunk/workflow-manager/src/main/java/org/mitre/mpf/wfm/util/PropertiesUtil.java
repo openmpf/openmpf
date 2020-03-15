@@ -286,7 +286,7 @@ public class PropertiesUtil {
 
     public File createArtifactDirectory(long jobId, long mediaId, int taskIndex,
                                         int actionIndex) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%d/%d", jobId, mediaId, taskIndex, actionIndex)).normalize().toAbsolutePath();
+        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%d/", jobId, mediaId, taskIndex, actionIndex)).normalize().toAbsolutePath();
         Files.createDirectories(path);
         return path.toFile();
     }

@@ -31,7 +31,6 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.camel.WfmSplitter;
@@ -159,12 +158,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     private void processTracks(ArtifactExtractionRequest request, Collection<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
 
-        int trackId = 0;
+        Integer trackId = 0;
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
 
             switch (policy) {
             case ALL_DETECTIONS:
-                // Convert this track to a JsonTrackOutputObject
                 SortedSet<JsonDetectionOutputObject> outputDetections = track.getDetections().stream()
                 .map(d -> {
                     d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED);
@@ -172,19 +171,11 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 .map(d -> createDetectionOutputObject(d))
                 .collect(Collectors.toCollection(TreeSet::new));
                 track.setArtifactExtractionTrackId(trackId);
-
-                request.getTracksToExtract()
-                       .add(new JsonTrackOutputObject(Integer.toString(trackId),
-                                                      track.getStartOffsetFrameInclusive(),
-                                                      track.getEndOffsetFrameInclusive(),
-                                                      (int) track.getStartOffsetTimeInclusive(),
-                                                      (int) track.getEndOffsetTimeInclusive(),
-                                                      track.getType(),
-                                                      "", // no need for source
-                                                      track.getConfidence(),
-                                                      track.getTrackProperties(),
-                                                      createDetectionOutputObject(track.getExemplar()),
-                                                      outputDetections));
+                for (JsonDetectionOutputObject detection : outputDetections) {
+                    Map<Integer, JsonDetectionOutputObject> entry = new HashMap<>();
+                    entry.put(trackId, detection);
+                    extractionsMap.put(detection.getOffsetFrame(), entry);
+                }
 
                 break;
             case VISUAL_TYPES_ONLY:
@@ -193,9 +184,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 }
                 // fall through
             case ALL_TYPES:
-                JsonTrackOutputObject trackOutputObj = processExtractionsInTrack(job, track, trackId, media, action,
-                        actionIndex);
-                request.getTracksToExtract().add(trackOutputObj);
+                SortedSet<JsonDetectionOutputObject> processedDetections = processExtractionsInTrack(job, track, trackId, media, action,
+                      actionIndex);
+                for (JsonDetectionOutputObject detection : processedDetections) {
+                    Map<Integer, JsonDetectionOutputObject> entry = new HashMap<>();
+                    entry.put(trackId, detection);
+                    extractionsMap.put(detection.getOffsetFrame(), entry);
+                }
+
                 track.setArtifactExtractionTrackId(trackId);
                 break;
             default:
@@ -205,12 +201,11 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     }
 
-    private JsonTrackOutputObject processExtractionsInTrack(BatchJob job, Track track, int trackId, Media media,
+    private SortedSet<JsonDetectionOutputObject> processExtractionsInTrack(BatchJob job, Track track, int trackId, Media media,
             Action action, int actionIndex) {
 
         LOG.debug("Processing extractions for action {}", actionIndex);
         List<Detection> sortedDetections = new ArrayList<>(track.getDetections());
-        // List<JsonDetectionOutputObject> detections = new ArrayList<>();
         SortedSet<Integer> framesToExtract = new TreeSet<>();
 
         String exemplarPlusCountProp = _aggregateJobPropertiesUtil
@@ -317,24 +312,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         }
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a 
         // JsonDetectionOutputObject
-        List<JsonDetectionOutputObject> detections = track.getDetections().stream()
+        SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()
                                                      .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))
                                                      .map(d -> CreateExtractableDetection(d))
-                                                      .collect(Collectors.toCollection(ArrayList::new));
+                                                      .collect(Collectors.toCollection(TreeSet::new));
         detections.stream().filter(d -> framesToExtract.contains(d.getOffsetFrame()))
                 .forEach(d -> d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED.name()));
+        return detections;
 
-        return new JsonTrackOutputObject(
-                Integer.toString(trackId),
-                track.getStartOffsetFrameInclusive(),
-                track.getEndOffsetFrameInclusive(),
-                track.getStartOffsetTimeInclusive(),
-                track.getEndOffsetTimeInclusive(), track.getType(),
-                "", // don't need the source (i.e., pipeline task/action)
-                track.getConfidence(),
-                track.getTrackProperties(),
-                createDetectionOutputObject(track.getExemplar()),
-                detections);
     }
 
     private boolean isNonVisualObjectType(String type) {

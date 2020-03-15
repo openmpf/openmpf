@@ -74,7 +74,7 @@ public class StreamableFrameExtractor {
             FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
                     tempDirectory.toUri(), filenameGenerator(pipePath.toString(), queue));
 
-            frameExtractor.getTracksToExtract().addAll(request.getTracksToExtract());
+            frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
 
             ThreadUtil.runAsync(() -> {
                 try {

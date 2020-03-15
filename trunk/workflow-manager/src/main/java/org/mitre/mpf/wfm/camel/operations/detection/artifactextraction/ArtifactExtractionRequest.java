@@ -29,10 +29,11 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.wfm.enums.MediaType;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class ArtifactExtractionRequest {
 
@@ -78,10 +79,10 @@ public class ArtifactExtractionRequest {
         return _actionIndex;
     }
 
-    private final List<JsonTrackOutputObject> _tracksToExtract = new ArrayList<>();
-
-    public List<JsonTrackOutputObject> getTracksToExtract() {
-        return _tracksToExtract;
+    // Maps frame numbers to pairs of trackId and detection to be extracted.
+    private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+    public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
+        return extractionsMap;
     }
 
     @JsonCreator

@@ -38,7 +38,6 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -630,22 +629,13 @@ public class TestArtifactExtractionSplitter {
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
-        List<JsonTrackOutputObject> tracksToExtract = resultMessages.stream()
-                .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
-                .flatMap(req -> req.getTracksToExtract().stream())
-                .collect(Collectors.toList());
-        if (tracksToExtract.isEmpty()) {
-            assertTrue(expectedFrames.isEmpty());
-        }
-        else {
-            assertEquals(1, tracksToExtract.size());
-            ImmutableSet<Integer> actualFrameNumbers = tracksToExtract.get(0).getDetections().stream()
-                                                       .map(d -> d.getOffsetFrame())
-                                                       .collect(ImmutableSet.toImmutableSet());
 
-            assertEquals(ImmutableSet.copyOf(expectedFrames), actualFrameNumbers);
-        }
+        ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
+                .map(msg -> _jsonUtils.deserialize(msg.getBody(byte[].class), ArtifactExtractionRequest.class))
+                .flatMap(req -> req.getExtractionsMap().keySet().stream())
+                .collect(ImmutableSet.toImmutableSet());
 
+        assertEquals(ImmutableSet.copyOf(expectedFrames), actualFrameNumbers);
     }
 
 

@@ -90,7 +90,7 @@ public class LocalStorageBackend implements StorageBackend {
         URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(), request.getMediaId(),
                 request.getTaskIndex(), request.getActionIndex()).toURI();
         FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(), artifactsDirectory);
-        frameExtractor.getTracksToExtract().addAll(request.getTracksToExtract());
+        frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
         Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
         return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
     }

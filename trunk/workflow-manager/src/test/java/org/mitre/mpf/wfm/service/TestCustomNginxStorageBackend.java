@@ -275,16 +275,22 @@ public class TestCustomNginxStorageBackend {
     public void canStoreVideoArtifactRemotely() throws IOException, StorageException, URISyntaxException {
         assertTrue(JniLoader.isLoaded());
         Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
-                .put(1, 0, getExpectedUri("89799d3895c1967a652976f67ea918b4803f0e11a385a05c2d50547663127fb1"))
-                .put(1, 5, getExpectedUri("779519e5ee632f566287ffd00f2b8f1c732c7c09822ca606eae5cec251dc014c"))
-                .put(2, 9, getExpectedUri("c7206d6faac9b60ebbab6d4d282b07eb9e613316b9e8e4221d82a5fc13c55235"))
+                .put(1, 0, getExpectedUri("f97dd04f771f00ff8230964b41ee8bb9f0a494c95d8266eb3797233fa62b2a0c"))
+                .put(6, 5, getExpectedUri("6f40abbb266b4b75623901850be789f151f1a2b7c10468e952acc2758533d231"))
+                .put(10, 9, getExpectedUri("e42964a776a29b3e7be02761d6723c467bd336e7d5b7a4bdd3131f8ae26db3c2"))
                 .build();
 
         Path testFile = getTestFileCopy();
 
-        List<JsonTrackOutputObject> tracksToExtract = new ArrayList<>();
-        tracksToExtract.add(createTrackOutputObject(1, Arrays.asList(0, 5)));
-        tracksToExtract.add(createTrackOutputObject(2, Arrays.asList(9)));
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+        List<Integer> frames = Arrays.asList(0, 5, 9);
+        for (Integer frame : frames) {
+            Map<Integer, JsonDetectionOutputObject> trackAndDetection = new TreeMap<>();
+            trackAndDetection.put(frame+1, new JsonDetectionOutputObject(10, 20, 100, 200, (float)0.1,
+                    Collections.emptySortedMap(), frame.intValue(),
+                    0, "REQUESTED", ""));
+            extractionsMap.put(frame, trackAndDetection);
+        }
 
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(
                 TEST_JOB_ID,
@@ -293,21 +299,9 @@ public class TestCustomNginxStorageBackend {
                 MediaType.VIDEO,
                 0,
                 0);
-        request.getTracksToExtract().addAll(tracksToExtract);
+        request.getExtractionsMap().putAll(extractionsMap);
         Table<Integer, Integer, URI> results = _nginxStorageService.storeArtifacts(request);
         assertEquals(expectedResults, results);
-    }
-
-    private JsonTrackOutputObject createTrackOutputObject(Integer trackId, List<Integer> frames) {
-        SortedSet<JsonDetectionOutputObject> detections = new TreeSet<>();
-        for (Integer num : frames) {
-            detections.add(new JsonDetectionOutputObject(10, 20, 100, 200, (float)0.1,
-                    Collections.emptySortedMap(), num.intValue(),
-                    0, "NOT_ATTEMPTED", ""));
-        }
-        return new JsonTrackOutputObject(Integer.toString(trackId),
-                frames.get(0), frames.get(frames.size()-1), 0, 0, "", "", (float)0.0,
-                Collections.emptySortedMap(), detections.first(), detections);
     }
 
     private static final AtomicBoolean CAUSE_INIT_FAILURE = new AtomicBoolean();

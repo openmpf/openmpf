@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
@@ -46,7 +45,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.List;
 
 import static java.util.stream.Collectors.toCollection;
 
@@ -134,11 +132,12 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
     }
 
     private SortedSet<Integer> findMissingFrames(ArtifactExtractionRequest request) {
-        List<JsonTrackOutputObject> jobTracks = request.getTracksToExtract();
-        return jobTracks.stream().flatMap(t -> t.getDetections().stream())
-                .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED.name()) ||
-                             (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.REQUESTED.name()))
-                .map(JsonDetectionOutputObject::getOffsetFrame).collect(toCollection(TreeSet::new));
+
+        return request.getExtractionsMap().values().stream()
+                                   .flatMap(v -> v.values().stream())
+                                   .filter(d ->(d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED.name()) ||
+                                    (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.REQUESTED.name()))
+                                   .map(JsonDetectionOutputObject::getOffsetFrame).collect(toCollection(TreeSet::new));
     }
 
     private void handleException(ArtifactExtractionRequest request, IOException e) {

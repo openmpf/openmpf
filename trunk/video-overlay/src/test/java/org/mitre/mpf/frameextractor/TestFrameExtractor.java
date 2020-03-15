@@ -33,7 +33,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.JniTestUtils;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 
 import com.google.common.collect.Table;
 
@@ -42,13 +41,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -71,77 +71,90 @@ public class TestFrameExtractor {
 
     @Test
     public void testFrameExtractorOnVideo() throws IOException {
-        JsonTrackOutputObject track = createTrackObject(1, Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999),
-                                                        100, 150);
-        extractFrames("samples/five-second-marathon-clip-numbered.mp4", Arrays.asList(track));
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        List<Integer> trackIds = Arrays.asList(1, 2);
+        List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
+        frameNumbers.stream()
+                    .forEach(n -> putInExtractionMap(n, trackIds, 100, 150, requestedExtractions));
+        extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnGif() throws IOException {
-        JsonTrackOutputObject track = createTrackObject(2, Arrays.asList(2, 4, 8),
-                                                        150, 100);
-        extractFrames("samples/face-morphing.gif", Arrays.asList(track));
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        List<Integer> trackIds = Arrays.asList(1);
+        List<Integer> frameNumbers = Arrays.asList(2, 4, 8);
+        frameNumbers.stream()
+                    .forEach(n -> putInExtractionMap(n, trackIds, 150, 100, requestedExtractions));
+        extractFrames("samples/face-morphing.gif", requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnImage() throws IOException {
-        JsonTrackOutputObject track = createTrackObject(3, Arrays.asList(0),
-                                                        400, 300);
-        extractFrames("samples/person_cropped_2.png", Arrays.asList(track));
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        putInExtractionMap(0, Arrays.asList(3), 150, 100, requestedExtractions);
+        extractFrames("samples/person_cropped_2.png", requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorMultipleTracks() throws IOException {
-        List<JsonTrackOutputObject> tracks = new ArrayList<>();
-        tracks.add(createTrackObject(4, Arrays.asList(0, 1, 2, 4, 8, 12), 90, 90));
-        tracks.add(createTrackObject(5, Arrays.asList(5, 10, 20), 120, 120));
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        List<Integer> trackIds = Arrays.asList(1, 2);
+        List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
+        frameNumbers.stream()
+                    .forEach(n -> putInExtractionMap(n, trackIds, 100, 150, requestedExtractions));
+        List<Integer> nextTrackIds = Arrays.asList(1, 2);
+        frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
+        frameNumbers.stream()
+        .forEach(n -> putInExtractionMap(n, nextTrackIds, 90, 125, requestedExtractions));
 
-        extractFrames("samples/five-second-marathon-clip-numbered.mp4", tracks);
+        extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
     }
 
-    private void extractFrames(String resourcePath, List<JsonTrackOutputObject> tracks) throws IOException {
+    private void extractFrames(String resourcePath,
+            SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) throws IOException {
         URI resource = JniTestUtils.getFileResource(resourcePath);
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
         FrameExtractor extractor = new FrameExtractor(resource, outputDirectory.toUri());
-        extractor.getTracksToExtract().addAll(tracks);
+        extractor.getExtractionsMap().putAll(requestedExtractions);
         Table<Integer, Integer, String> results = extractor.execute();
 
         Set<String> fileNames = new TreeSet<>();
-        for (JsonTrackOutputObject track : tracks) {
-            Path trackPath = outputDirectory.resolve(track.getId());
+        Set<Integer> trackIds = requestedExtractions.keySet().stream()
+                .map(k -> requestedExtractions.get(k))
+                .flatMap(e -> e.keySet().stream())
+                .collect(Collectors.toCollection(TreeSet::new));
+        for (Integer track : trackIds) {
+            Path trackPath = outputDirectory.resolve(track.toString());
             try(Stream<Path> paths = Files.list(trackPath)) {
                 Set<String> tmpNames = paths.map(p -> p.getFileName().toString())
                                 .collect(toSet());
                 fileNames.addAll(tmpNames);
             }
         }
-        List<Integer> frames = tracks.stream()
-                .flatMap(t -> t.getDetections().stream())
-                .map(d -> d.getOffsetFrame())
-                .collect(Collectors.toList());
+        Set<Integer> frames = requestedExtractions.keySet();
         Assert.assertEquals(frames.size(), fileNames.size());
         frames.forEach(f -> Assert.assertTrue(fileNames.contains("frame-" + f + ".png")));
 
-        for (JsonTrackOutputObject track : tracks) {
-            track.getDetections().stream()
-            .forEach(d -> assertSizesMatch(d, results.get(Integer.parseInt(track.getId()), d.getOffsetFrame())));
+        for (Integer frame : frames) {
+            for (Integer trackId : requestedExtractions.get(frame).keySet()) {
+                assertSizesMatch(requestedExtractions.get(frame).get(trackId), results.get(trackId, frame));
+            }
         }
     }
 
 
-    private JsonTrackOutputObject createTrackObject(Integer trackId, List<Integer> frames,
-                                                    int width, int height) {
-        SortedSet<JsonDetectionOutputObject> detections = new TreeSet<>();
-        for (int i = 0; i < frames.size(); ++i) {
-            detections.add(new JsonDetectionOutputObject(0, 0, width, height,
-                    (float)0.0, Collections.emptySortedMap(), frames.get(i).intValue(),
+    private void putInExtractionMap(Integer frameNumber, List<Integer> trackIds,
+                                    int width, int height,
+                                    SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) {
+        Map<Integer, JsonDetectionOutputObject> trackIdAndDetection = new TreeMap<>();
+        for (Integer trackId : trackIds) {
+            trackIdAndDetection.put(trackId, new JsonDetectionOutputObject(0, 0, width, height,
+                    (float)0.0, Collections.emptySortedMap(), frameNumber.intValue(),
                     0, "NOT_ATTEMPTED", ""));
         }
-        return new JsonTrackOutputObject(Integer.toString(trackId),
-                frames.get(0), frames.get(frames.size()-1), 0, 0, "", "", (float)0.0,
-                Collections.emptySortedMap(), detections.first(), detections);
-
+        requestedExtractions.put(frameNumber.intValue(), trackIdAndDetection);
     }
 
     private void assertSizesMatch(JsonDetectionOutputObject detection, String uri) {

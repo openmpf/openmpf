@@ -28,7 +28,7 @@ package org.mitre.mpf.frameextractor;
 
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashBasedTable;
@@ -40,6 +40,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
@@ -47,8 +51,19 @@ public class FrameExtractor {
     private final URI media;
     private final URI extractionDirectory;
     private final FileNameGenerator fileNameGenerator;
-    private List<JsonTrackOutputObject> tracksToExtract = new ArrayList<JsonTrackOutputObject>();
-    public List<JsonTrackOutputObject> getTracksToExtract() { return tracksToExtract; }
+
+    // Maps frame numbers to pairs of trackId and detection to be extracted.
+    private SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+    public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
+        return extractionsMap;
+    }
+    // Access methods for the extractions map.
+    public Set<Integer> getFrameNumbers() { return extractionsMap.keySet(); }
+    public Set<Integer> getTrackIds(Integer frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
+    public JsonDetectionOutputObject getDetection(Integer frameNumber, Integer trackId) {
+        return extractionsMap.get(frameNumber).get(trackId);
+    }
+
     private String prefix = "frame";
 
 
@@ -80,7 +95,7 @@ public class FrameExtractor {
             Split nativeSplit = SimonManager.getStopwatch("org.mitre.mpf.frameextractor.FrameExtractor.execute->native").start();
             int response = -1;
             try {
-                if(tracksToExtract.size() == 0) {
+                if(extractionsMap.size() == 0) {
                     log.debug("No track to extract.");
                     response = 0;
                 }

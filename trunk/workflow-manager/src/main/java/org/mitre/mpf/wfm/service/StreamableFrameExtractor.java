@@ -29,14 +29,9 @@ package org.mitre.mpf.wfm.service;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,7 +42,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 

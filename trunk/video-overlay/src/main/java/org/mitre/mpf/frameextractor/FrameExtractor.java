@@ -96,7 +96,7 @@ public class FrameExtractor {
             int response = -1;
             try {
                 if(extractionsMap.size() == 0) {
-                    log.debug("No track to extract.");
+                    log.debug("extractionsMap is empty -- nothing to extract.");
                     response = 0;
                 }
                 else {

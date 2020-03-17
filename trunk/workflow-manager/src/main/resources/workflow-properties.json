@@ -183,9 +183,9 @@
     },
     {
         "name": "ROTATION",
-        "description": "Specifies the number of degrees in the clockwise direction that the media will be rotated. Only 90, 180 and 270 degrees are supported.",
-        "type": "INT",
-        "defaultValue": "0",
+        "description": "Specifies the number of degrees in the clockwise direction that the media will be rotated. A floating point value in the interval [0.0, 360.0).",
+        "type": "DOUBLE",
+        "defaultValue": "0.0",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {

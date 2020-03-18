@@ -75,7 +75,7 @@ public class TestFrameExtractor {
         List<Integer> trackIds = Arrays.asList(1, 2);
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-                    .forEach(n -> putInExtractionMap(n, trackIds, 100, 150, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, trackIds, 20, 30, 100, 150, 0.0, requestedExtractions));
         extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
     }
 
@@ -85,15 +85,30 @@ public class TestFrameExtractor {
         List<Integer> trackIds = Arrays.asList(1);
         List<Integer> frameNumbers = Arrays.asList(2, 4, 8);
         frameNumbers.stream()
-                    .forEach(n -> putInExtractionMap(n, trackIds, 150, 100, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, trackIds, 100, 100, 150, 100, 0.0, requestedExtractions));
         extractFrames("samples/face-morphing.gif", requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        putInExtractionMap(0, Arrays.asList(3), 150, 100, requestedExtractions);
+        putInExtractionMap(0, Arrays.asList(3),200, 200, 150, 100, 0.0, requestedExtractions);
         extractFrames("samples/person_cropped_2.png", requestedExtractions);
+    }
+
+    @Test
+    public void testFrameExtractorOnRotatedImage() throws IOException {
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, requestedExtractions);
+        extractFrames("samples/meds-aa-S001-01-exif-rotation.jpg", requestedExtractions);
+    }
+
+    @Test
+    public void testFrameExtractorOnImageWithMultipleDetections() throws IOException {
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, requestedExtractions);
+        putInExtractionMap(0, Arrays.asList(1), 970, 165, 329, 329, 0.0, requestedExtractions);
+        extractFrames("samples/girl-1741925_1920.jpg", requestedExtractions);
     }
 
     @Test
@@ -102,11 +117,11 @@ public class TestFrameExtractor {
         List<Integer> trackIds = Arrays.asList(1, 2);
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-                    .forEach(n -> putInExtractionMap(n, trackIds, 100, 150, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, trackIds, 50, 50, 100, 150, 0.0, requestedExtractions));
         List<Integer> nextTrackIds = Arrays.asList(1, 2);
         frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-        .forEach(n -> putInExtractionMap(n, nextTrackIds, 90, 125, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, nextTrackIds,0, 0, 90, 125, 0.0, requestedExtractions));
 
         extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
     }
@@ -146,12 +161,14 @@ public class TestFrameExtractor {
 
 
     private void putInExtractionMap(Integer frameNumber, List<Integer> trackIds,
-                                    int width, int height,
+                                    int x, int y, int width, int height, double rotation,
                                     SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) {
         Map<Integer, JsonDetectionOutputObject> trackIdAndDetection = new TreeMap<>();
+        SortedMap<String, String> props = new TreeMap<>();
+        props.put("ROTATION", Double.toString(rotation));
         for (Integer trackId : trackIds) {
-            trackIdAndDetection.put(trackId, new JsonDetectionOutputObject(0, 0, width, height,
-                    (float)0.0, Collections.emptySortedMap(), frameNumber.intValue(),
+            trackIdAndDetection.put(trackId, new JsonDetectionOutputObject(x, y, width, height,
+                    (float)0.0, props, frameNumber.intValue(),
                     0, "NOT_ATTEMPTED", ""));
         }
         requestedExtractions.put(frameNumber.intValue(), trackIdAndDetection);

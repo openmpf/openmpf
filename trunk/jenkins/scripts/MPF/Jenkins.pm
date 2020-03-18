@@ -312,52 +312,6 @@ sub mavenCompileNodeManager {
 }
 
 
-sub mavenRPM {
-	if ((@_) != 5) {
-		printFatal("Arguments: mpfPath gitBranch gitCommit buildNum jsonPackagePath.\n");
-		fatalExit();
-	}
-	my $mpfPath         = $_[0];
-	my $gitBranch       = $_[1];
-	my $gitCommit       = $_[2];
-	my $buildNum      	= $_[3];
-	my $jsonPackagePath = $_[4];
-
-	my $rpmReleasePrefix = ($gitBranch eq "origin/master") ? "1" : "0";
-	my $pwd = `pwd`;
-
-	my @tokens = split /\//, $gitBranch;
-	$gitBranch = $tokens[$#tokens];
-
-    my $buildCommand = "mvn package -Pcreate-tar rpm:rpm -DskipTests -Dmaven.test.skip=true -DskipITs -Dmaven.tomcat.skip=true ".
-        "-DgitBranch=$gitBranch -DgitShortId=$gitCommit -DjenkinsBuildNumber=$buildNum -DrpmReleasePrefix=$rpmReleasePrefix ".
-        "-Dcomponents.build.dir=$mpfPath/mpf-component-build ".
-        "-Dcomponents.build.package.json=$jsonPackagePath |";
-
-	printDebug("Packaging command: $buildCommand");
-	printInfo("Packaging MPF RPMs...\n");
-	printWarn("\t\tThis may take a few minutes.\n");
-	printWarn("\t\tTake a stretch break.\n");
-
-	chdir "$mpfPath";
-	open PIPE, $buildCommand;
-	while(<PIPE>) {
-		printMaven($_);
-	}
-	close PIPE;
-
-	chdir "$mpfPath/../openmpf-java-component-sdk";
-	open PIPE, $buildCommand;
-	while(<PIPE>) {
-		printMaven($_);
-	}
-	close PIPE;
-
-	printInfo("Packaging completed.\n");
-
-	chdir $pwd;
-}
-
 
 
 ##########################################################################################

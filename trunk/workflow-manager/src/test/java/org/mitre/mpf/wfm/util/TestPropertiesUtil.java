@@ -92,11 +92,6 @@ public class TestPropertiesUtil {
 
             System.out.println(key + " = " + value); // DEBUG
 
-            // NOTE: mpf.version.timestamp is set via maven filtering, so the next assert will fail if this test is run
-            // through IntelliJ unless "mvn compile" is run first. That can be done on the command line, or by adding a
-            // "Run Maven Goal" to the "Before launch" section of the IntelliJ test configuration and setting the
-            // "Command line" to "compile".
-
             Assert.assertFalse(key + " has a value of \"" + value + "\", which contains \"${\". Failed interpolation?",
                     value.contains("${"));
         }

@@ -155,6 +155,16 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         }
         return messages;
     }
+
+    private void putInExtractionsMap(Integer trackId, JsonDetectionOutputObject detection,
+                                     SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> map) {
+        Integer frameNumber = detection.getOffsetFrame();
+        if (map.get(frameNumber) == null) {
+            map.put(frameNumber, new TreeMap<Integer, JsonDetectionOutputObject>());
+        }
+        map.get(frameNumber).put(trackId, detection);
+    }
+
     private void processTracks(ArtifactExtractionRequest request, Collection<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
 
@@ -165,18 +175,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             switch (policy) {
             case ALL_DETECTIONS:
                 SortedSet<JsonDetectionOutputObject> outputDetections = track.getDetections().stream()
-                .map(d -> {
-                    d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED);
-                    return d;})
+                .map(d -> { d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED); return d;})
                 .map(d -> createDetectionOutputObject(d))
                 .collect(Collectors.toCollection(TreeSet::new));
+
                 track.setArtifactExtractionTrackId(trackId);
                 for (JsonDetectionOutputObject detection : outputDetections) {
-                    Map<Integer, JsonDetectionOutputObject> entry = new HashMap<>();
-                    entry.put(trackId, detection);
-                    extractionsMap.put(detection.getOffsetFrame(), entry);
+                    putInExtractionsMap(trackId, detection, extractionsMap);
                 }
-
                 break;
             case VISUAL_TYPES_ONLY:
                 if (isNonVisualObjectType(track.getType())) {
@@ -186,16 +192,15 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             case ALL_TYPES:
                 SortedSet<JsonDetectionOutputObject> processedDetections = processExtractionsInTrack(job, track, trackId, media, action,
                       actionIndex);
-                for (JsonDetectionOutputObject detection : processedDetections) {
-                    Map<Integer, JsonDetectionOutputObject> entry = new HashMap<>();
-                    entry.put(trackId, detection);
-                    extractionsMap.put(detection.getOffsetFrame(), entry);
-                }
 
                 track.setArtifactExtractionTrackId(trackId);
+                for (JsonDetectionOutputObject detection : processedDetections) {
+                    putInExtractionsMap(trackId, detection, extractionsMap);
+                }
                 break;
             default:
             }
+            trackId++;
         }
         _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(), request.getActionIndex(), tracks);
 

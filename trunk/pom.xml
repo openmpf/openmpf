@@ -38,17 +38,6 @@
   <artifactId>mpf-trunk-modules</artifactId>
   <name>MPF Trunk Modules</name>
 
-  <properties>
-        <!-- The following properties are needed for the RPM build -->
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.rpm.prefix>/opt/mpf</maven.rpm.prefix>
-        <maven.build.timestamp.format>yyyy.MM.dd.HH.mm.ss</maven.build.timestamp.format>
-        <version.timestamp>${maven.build.timestamp}</version.timestamp>
-        <gitBranch>unknown</gitBranch>
-        <gitShortId>0</gitShortId>
-        <jenkinsBuildNumber>0</jenkinsBuildNumber>
-        <rpmReleasePrefix>0</rpmReleasePrefix>
-  </properties>
 
     <build>
         <plugins>

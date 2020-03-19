@@ -136,10 +136,11 @@ public class FrameExtractor {
 
     @Override
     public String toString() {
-        return String.format("%s#<media='%s', extractionDirectory='%s'>",
+        return String.format("%s#<media='%s', extractionDirectory='%s', frames=%d>",
                              this.getClass().getSimpleName(),
                              media,
-                             extractionDirectory);
+                             extractionDirectory,
+                             extractionsMap.keySet().size());
     }
 
     private static String defaultFileNameGenerator(String path, int trackNumber, int frameNumber, String prefix) {

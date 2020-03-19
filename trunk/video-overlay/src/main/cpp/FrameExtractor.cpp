@@ -86,7 +86,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jmethodID clzSet_fnIterator = jni.GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
 
         // Get the Map class and method to get the rotation property from the detection properties map.
-        jclass clzMap = jni.FindClass("java/util/HashMap");
+        jclass clzMap = jni.FindClass("java/util/TreeMap");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
         // Get the FrameExtractionResult class and its constructor.
@@ -123,7 +123,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
         // Iterate over the frames in the set
         while (jni.CallBooleanMethod(frameIterator, clzIterator_fnHasNext) == JNI_TRUE) {
-            // Get map associated with this frame, its keyset,  and an iterator for the keyset.
+            // Get the frame number and read it.
             jobject thisFrameNumObj = jni.CallObjectMethod(frameIterator, clzIterator_fnNext);
             jint thisFrameNum = jni.CallIntMethod(thisFrameNumObj, clzInteger_fnIntValue);
 
@@ -153,6 +153,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                 jint Y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
                 jint width = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetWidth);
                 jint height = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetHeight);
+                Rect detectionBox(X, Y, width, height);
 
                 // Get the rotation property.
                 jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
@@ -164,18 +165,14 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     std::string rotationPropValue = jni.ToStdString(jPropValue);
                     rotation = atof(rotationPropValue.c_str());
                 }
-                // Create the AffineTransformer and transform the frame.
-                SearchRegion searchRegion(RegionEdge::Absolute(X),
-                                          RegionEdge::Absolute(Y),
-                                          RegionEdge::Absolute(X + width),
-                                          RegionEdge::Absolute(Y + height));
 
-                //Copy the frame and apply the transform to it.
                 Mat transformFrame = frame.clone();
 
-                AffineFrameTransformer transformer(
-                        rotation, false, searchRegion,
+                // Create the transformation for this frame and apply it.
+                FeedForwardExactRegionAffineTransformer transformer(
+                        { std::make_tuple(detectionBox, rotation, false) },
                         IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
+
                 transformer.TransformFrame(transformFrame, 0);
 
                 jstring filename = (jstring) jni.CallObjectMethod(frameExtractorInstance,

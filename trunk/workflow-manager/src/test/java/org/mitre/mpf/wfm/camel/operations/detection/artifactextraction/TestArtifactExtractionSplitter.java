@@ -631,7 +631,7 @@ public class TestArtifactExtractionSplitter {
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
 
         ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
-                .map(msg -> _jsonUtils.deserialize(msg.getBody(byte[].class), ArtifactExtractionRequest.class))
+                .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
                 .flatMap(req -> req.getExtractionsMap().keySet().stream())
                 .collect(ImmutableSet.toImmutableSet());
 

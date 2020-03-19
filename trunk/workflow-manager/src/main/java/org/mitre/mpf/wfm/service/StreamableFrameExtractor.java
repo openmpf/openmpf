@@ -65,8 +65,10 @@ public class StreamableFrameExtractor {
 
         try {
             BlockingQueue<MutablePair<Integer, Integer>> queue = new SynchronousQueue<>();
-            FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
-                    tempDirectory.toUri(), filenameGenerator(pipePath.toString(), queue));
+            FrameExtractor frameExtractor = new FrameExtractor(
+                    Paths.get(request.getPath()).toUri(),
+                    tempDirectory.toUri(),
+                    filenameGenerator(pipePath.toString(), queue));
 
             frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
 
@@ -98,12 +100,13 @@ public class StreamableFrameExtractor {
     }
 
     private static FrameExtractor.FileNameGenerator filenameGenerator(String pipePath,
-            BlockingQueue<MutablePair<Integer, Integer>> queue) {
+                                                                      BlockingQueue<MutablePair<Integer, Integer>> queue) {
         return (path, track, frame, prefix) -> {
             try {
                 queue.put(new MutablePair<>(track, frame));
                 return pipePath;
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             }
@@ -112,11 +115,15 @@ public class StreamableFrameExtractor {
 
     private static void createNamedPipe(String path) throws IOException {
         try {
-            int rc = new ProcessBuilder("mkfifo", path).inheritIO().start().waitFor();
+            int rc = new ProcessBuilder("mkfifo", path)
+                    .inheritIO()
+                    .start()
+                    .waitFor();
             if (rc != 0) {
                 throw new IOException("Failed to create named pipe at: " + path);
             }
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }

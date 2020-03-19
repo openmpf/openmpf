@@ -38,9 +38,9 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -72,7 +72,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
-    ArtifactExtractionSplitterImpl(JsonUtils jsonUtils,
+    ArtifactExtractionSplitterImpl(
+            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
@@ -321,8 +322,6 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                                                      .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))
                                                      .map(d -> CreateExtractableDetection(d))
                                                       .collect(Collectors.toCollection(TreeSet::new));
-        detections.stream().filter(d -> framesToExtract.contains(d.getOffsetFrame()))
-                .forEach(d -> d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED.name()));
         return detections;
 
     }

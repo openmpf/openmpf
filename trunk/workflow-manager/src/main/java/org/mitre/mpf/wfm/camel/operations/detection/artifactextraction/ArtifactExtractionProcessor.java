@@ -67,7 +67,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
     @Inject
     ArtifactExtractionProcessor(
-            JsonUtils jsonUtils, 
+            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             StorageService storageService) {
         _jsonUtils = jsonUtils;

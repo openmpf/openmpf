@@ -36,48 +36,29 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class ArtifactExtractionRequest {
-
     /** The identifier of the medium associated with this request. */
     private final long _mediaId;
-
-    public long getMediaId() {
-        return _mediaId;
-    }
+    public long getMediaId() { return _mediaId; }
 
     /** The local path of the medium. */
     private final String _path;
-
-    public String getPath() {
-        return _path;
-    }
+    public String getPath() { return _path; }
 
     /** The type of media associated with this request. */
     private final MediaType _mediaType;
-
-    public MediaType getMediaType() {
-        return _mediaType;
-    }
+    public MediaType getMediaType() { return _mediaType; }
 
     /** The job id associated with this request. */
     private final long _jobId;
-
-    public long getJobId() {
-        return _jobId;
-    }
+    public long getJobId() { return _jobId; }
 
     /** The index of the task from which this request was derived. */
     private final Integer _taskIndex;
-
-    public Integer getTaskIndex() {
-        return _taskIndex;
-    }
+    public Integer getTaskIndex() { return _taskIndex; }
 
     /** The index of the action from which this request was derived. */
     private final Integer _actionIndex;
-
-    public Integer getActionIndex() {
-        return _actionIndex;
-    }
+    public Integer getActionIndex() {  return _actionIndex; }
 
     // Maps frame numbers to pairs of trackId and detection to be extracted.
     private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
@@ -86,9 +67,13 @@ public class ArtifactExtractionRequest {
     }
 
     @JsonCreator
-    public ArtifactExtractionRequest(@JsonProperty("jobId") long jobId, @JsonProperty("mediaId") long mediaId,
-            @JsonProperty("path") String path, @JsonProperty("mediaType") MediaType mediaType,
-            @JsonProperty("taskIndex") int taskIndex, @JsonProperty("actionIndex") int actionIndex) {
+    public ArtifactExtractionRequest(
+            @JsonProperty("jobId") long jobId,
+            @JsonProperty("mediaId") long mediaId,
+            @JsonProperty("path") String path,
+            @JsonProperty("mediaType") MediaType mediaType,
+            @JsonProperty("taskIndex") int taskIndex,
+            @JsonProperty("actionIndex") int actionIndex) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;

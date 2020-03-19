@@ -44,7 +44,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.rpm.prefix>/opt/apache-tomcat/webapps</maven.rpm.prefix>
         <tomcat.port>8080</tomcat.port>
         <cargo.spring.profiles.active>jenkins</cargo.spring.profiles.active>
 
@@ -456,9 +455,9 @@
             <version>${hibernate.framework.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-infinispan</artifactId>
-            <version>${hibernate.framework.version}</version>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-hibernate-cache-v53</artifactId>
+            <version>10.1.3.Final</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jgroups</groupId>
@@ -631,7 +630,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.8</version>
+            <version>42.2.10</version>
         </dependency>
 
         <dependency>
@@ -1032,94 +1031,6 @@
     <build>
         <finalName>workflow-manager</finalName>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>rpm-maven-plugin</artifactId>
-                <version>${rpm.maven.plugin.version}</version>
-                <configuration>
-                    <artifactId>mpf-workflowManager</artifactId>
-                    <name>mpf-workflowManager</name>
-                    <release>${rpmReleasePrefix}.${maven.build.timestamp}_${gitBranch}_${jenkinsBuildNumber}</release>
-                    <defineStatements>
-                    </defineStatements>
-                    <repackJars>false</repackJars>
-                    <needarch>false</needarch>
-                    <vendor>The MITRE Corporation</vendor>
-                    <license>COPYRIGHT 2019 MITRE CORPORATION, all rights reserved.</license>
-                    <distribution>MPF</distribution>
-                    <group>Application</group>
-                    <version>${project.version}</version>
-                    <prefixes>
-                        <prefix>${maven.rpm.prefix}</prefix>
-                    </prefixes>
-                    <mappings>
-                        <mapping>
-                            <directory>${maven.rpm.prefix}</directory>
-                            <directoryIncluded>false</directoryIncluded>
-                            <filemode>550</filemode>
-                            <username>root</username>
-                            <groupname>root</groupname>
-                            <sources>
-                                <source>
-                                    <location>target</location>
-                                    <includes>
-                                        <include>workflow-manager.war</include>
-                                    </includes>
-                                </source>
-                            </sources>
-                        </mapping>
-                        <mapping>
-                            <directory>${maven.rpm.prefix}/workflow-manager/WEB-INF/classes</directory>
-                            <directoryIncluded>false</directoryIncluded>
-                            <configuration>true</configuration>
-                            <filemode>640</filemode>
-                            <username>root</username>
-                            <groupname>root</groupname>
-                            <sources>
-                                <source>
-                                    <location>target/classes</location>
-                                    <includes>
-                                        <include>ActionPipelines.xml</include>
-                                        <include>Actions.xml</include>
-                                        <include>Algorithms.xml</include>
-                                        <include>jms.xml</include>
-                                        <include>log4j2.xml</include>
-                                        <include>nodeServicesPalette.json</include>
-                                        <include>Pipelines.xml</include>
-                                        <include>Tasks.xml</include>
-                                    </includes>
-                                </source>
-                            </sources>
-                        </mapping>
-                        <mapping>
-                            <directory>${maven.rpm.prefix}/workflow-manager/WEB-INF/classes/properties</directory>
-                            <directoryIncluded>false</directoryIncluded>
-                            <configuration>true</configuration>
-                            <filemode>640</filemode>
-                            <username>root</username>
-                            <groupname>root</groupname>
-                            <sources>
-                                <source>
-                                    <location>target/classes/properties</location>
-                                    <includes>
-                                        <include>mpf.properties</include>
-                                        <include>mediaType.properties</include>
-                                    </includes>
-                                </source>
-                            </sources>
-                        </mapping>
-                    </mappings>
-                    <preinstallScriptlet>
-                        <scriptFile>src/scripts/preinstall.sh</scriptFile>
-                    </preinstallScriptlet>
-                    <postinstallScriptlet>
-                        <scriptFile>src/scripts/postinstall.sh</scriptFile>
-                    </postinstallScriptlet>
-                    <preremoveScriptlet>
-                        <scriptFile>src/scripts/preremove.sh</scriptFile>
-                    </preremoveScriptlet>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

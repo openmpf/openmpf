@@ -590,18 +590,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("mpf.version.semantic");
     }
 
-    public String getGitHash() {
-        return mpfPropertiesConfig.getString("mpf.version.git.hash");
-    }
-
-    public String getGitBranch() {
-        return mpfPropertiesConfig.getString("mpf.version.git.branch");
-    }
-
-    public String getBuildNum() {
-        return mpfPropertiesConfig.getString("mpf.version.jenkins.buildnum");
-    }
-
     public String getOutputObjectVersion() {
         return mpfPropertiesConfig.getString("mpf.version.json.output.object.schema");
     }
@@ -652,10 +640,6 @@ public class PropertiesUtil {
     //
     // Ansible configuration
     //
-
-    public String getAnsibleChildVarsPath() {
-        return mpfPropertiesConfig.getString("mpf.ansible.child.vars.path");
-    }
 
     public String getAnsibleCompDeployPath() {
         return mpfPropertiesConfig.getString("mpf.ansible.compdeploy.path");

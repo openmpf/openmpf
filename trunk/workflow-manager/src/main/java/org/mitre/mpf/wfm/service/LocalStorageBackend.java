@@ -24,12 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -51,11 +51,13 @@ public class LocalStorageBackend implements StorageBackend {
 
     private final ObjectMapper _objectMapper;
 
+
     @Inject
     LocalStorageBackend(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) {
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
     }
+
 
     @Override
     public boolean canStore(JsonOutputObject outputObject) {
@@ -69,6 +71,7 @@ public class LocalStorageBackend implements StorageBackend {
         return outputPath.toUri();
     }
 
+
     @Override
     public boolean canStore(MarkupResult markupResult) {
         return true;
@@ -79,10 +82,12 @@ public class LocalStorageBackend implements StorageBackend {
         // No-op: markup is stored locally by the markup component.
     }
 
+
     @Override
     public boolean canStore(ArtifactExtractionRequest request) {
         return true;
     }
+
 
     @Override
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {

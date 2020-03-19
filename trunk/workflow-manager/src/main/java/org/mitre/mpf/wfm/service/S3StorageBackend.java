@@ -146,10 +146,11 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public boolean canStore(MarkupResult markupResult) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(markupResult.getJobId());
-        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
+        Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
+                                                            markupResult.getActionIndex());
         Media media = job.getMedia(markupResult.getMediaId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media,
-                action);
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -160,8 +161,8 @@ public class S3StorageBackend implements StorageBackend {
         Media media = job.getMedia(markupResult.getMediaId());
         Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
                                                             markupResult.getActionIndex());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media,
-                action);
+        Function<String, String> combinedProperties
+                = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
         URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
@@ -170,7 +171,6 @@ public class S3StorageBackend implements StorageBackend {
 
     /**
      * Ensures that the S3-related properties are valid.
-     * 
      * @param properties Properties to validate
      * @throws StorageException when an invalid combination of S3 properties are provided.
      */
@@ -179,6 +179,8 @@ public class S3StorageBackend implements StorageBackend {
         requiresS3MediaDownload(properties);
         requiresS3ResultUpload(properties);
     }
+
+
 
     public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
         boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY));
@@ -312,8 +314,8 @@ public class S3StorageBackend implements StorageBackend {
             }
 
             URI objectUri = new URIBuilder(bucketUri)
-                            .setPath(bucketUri.getPath() + '/' + objectName)
-                            .build();
+                    .setPath(bucketUri.getPath() + '/' + objectName)
+                    .build();
             Files.delete(path);
             return objectUri;
         }
@@ -365,7 +367,8 @@ public class S3StorageBackend implements StorageBackend {
         return AmazonS3ClientBuilder
                 .standard()
                 .withPathStyleAccessEnabled(true)
-                .withEndpointConfiguration(endpointConfiguration).withClientConfiguration(clientConfig)
+                .withEndpointConfiguration(endpointConfiguration)
+                .withClientConfiguration(clientConfig)
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .build();
     }
@@ -375,7 +378,7 @@ public class S3StorageBackend implements StorageBackend {
         try {
             return removePartsAfterHost(uri);
         }
-        catch (URISyntaxException e) {
+        catch(URISyntaxException e) {
             throw new StorageException(
                     "An error occurred while trying to determine the S3 endpoint: " + e.getMessage(),
                     e);

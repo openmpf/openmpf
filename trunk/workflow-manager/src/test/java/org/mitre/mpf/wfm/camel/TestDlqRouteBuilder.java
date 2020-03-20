@@ -65,11 +65,11 @@ public class TestDlqRouteBuilder {
 
     public static final String BAD_SELECTOR_REPLY_TO = "queue://MPF.TEST.BAD.COMPLETED_DETECTIONS";
 
-    public static final String DLQ_DUPLICATE_FROM_STORE_FAILURE_CAUSE =
+    public static final String DUPLICATE_FROM_STORE_FAILURE_CAUSE =
             "java.lang.Throwable: duplicate from store for queue://MPF.DETECTION_DUMMY_REQUEST";
-    public static final String DLQ_SUPPRESS_DUPLICATE_FAILURE_CAUSE =
+    public static final String SUPPRESSING_DUPLICATE_FAILURE_CAUSE =
             "java.lang.Throwable: Suppressing duplicate delivery on connection, consumer ID:dummy";
-    public static final String DLQ_OTHER_FAILURE_CAUSE = "SOME OTHER FAILURE";
+    public static final String OTHER_FAILURE_CAUSE = "some other failure";
 
     public static final String RUN_ID_PROPERTY_KEY = "runId";
 
@@ -297,7 +297,7 @@ public class TestDlqRouteBuilder {
 
     @Test
     public void dropNoReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
+        runTest(ENTRY_POINT, null, DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -307,14 +307,14 @@ public class TestDlqRouteBuilder {
 
     @Test
     public void ignoreNoReplyToAndNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, null, DLQ_OTHER_FAILURE_CAUSE, false, true);
+        runTest(ENTRY_POINT, null, OTHER_FAILURE_CAUSE, false, true);
     }
 
     // Bad reply-to tests
 
     @Test
     public void dropBadReplyToAndDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -324,19 +324,19 @@ public class TestDlqRouteBuilder {
 
     @Test
     public void ignoreBadReplyToAndNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, false, true);
+        runTest(ENTRY_POINT, BAD_SELECTOR_REPLY_TO, OTHER_FAILURE_CAUSE, false, true);
     }
 
     // Good reply-to tests
 
     @Test
     public void dropGoodReplyToAndDupFromStoreFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DUPLICATE_FROM_STORE_FAILURE_CAUSE, false, false);
     }
 
     @Test
-    public void dropGoodReplyToAndSuppressDupFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_SUPPRESS_DUPLICATE_FAILURE_CAUSE, false, false);
+    public void dropGoodReplyToAndSuppressingDupFailure() throws Exception {
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, SUPPRESSING_DUPLICATE_FAILURE_CAUSE, false, false);
     }
 
     @Test
@@ -346,6 +346,6 @@ public class TestDlqRouteBuilder {
 
     @Test
     public void handleGoodReplyToAndNonDupFailure() throws Exception {
-        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, DLQ_OTHER_FAILURE_CAUSE, true, false);
+        runTest(ENTRY_POINT, SELECTOR_REPLY_TO, OTHER_FAILURE_CAUSE, true, false);
     }
 }

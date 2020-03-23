@@ -35,7 +35,7 @@
   pip:
     name: "{{ descriptor.batchLibrary | default('') }} {{ descriptor.streamLibrary | default('') }}"
     virtualenv: "{{ component_path }}/venv"
-    virtualenv_python: python2.7
+    virtualenv_command: python3.8 -m venv {{ component_path }}/venv
     extra_args: --find-links {{comp_wheelhouse_dir.stat.path}} --no-index
   when:
     - comp_wheelhouse_dir.stat.exists
@@ -45,7 +45,7 @@
   pip:
     name: mpf_component_api
     virtualenv: "{{ component_path }}/venv"
-    virtualenv_python: python2.7
+    virtualenv_command: python3.8 -m venv {{ component_path }}/venv
     extra_args: --find-links {{ lookup('env','MPF_HOME') }}/python/wheelhouse --no-index
   when:
     - not comp_wheelhouse_dir.stat.exists

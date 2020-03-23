@@ -389,7 +389,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                 }
 
                 // derived special configuration for the process environment allowed here
-                additionalProcessPreconfig(pb);
+                additionalProcessPreconfig(pb, mServiceDesc);
                 //System.out.println(Arrays.toString(pb.command().toArray(new String[]{})));
                 child = pb.start();
 
@@ -525,7 +525,7 @@ public abstract class BaseServiceLauncher implements Runnable {
      *
      * @param pb
      */
-    public abstract void additionalProcessPreconfig(ProcessBuilder pb);
+    public abstract void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor);
 
     public abstract void sendShutdownToApp();
 

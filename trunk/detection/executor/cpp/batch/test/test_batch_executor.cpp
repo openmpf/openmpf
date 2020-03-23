@@ -27,7 +27,6 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "../PythonComponentHandle.h"
-#include <Utils.h>
 
 using namespace MPF::COMPONENT;
 
@@ -38,10 +37,44 @@ log4cxx::LoggerPtr get_logger() {
     return logger;
 }
 
+std::string get_env_default(const std::string &var_name, const std::string &default_value = {}) {
+    char * var_value_ptr = std::getenv(var_name.c_str());
+    if (var_value_ptr) {
+        return var_value_ptr;
+    }
+    return default_value;
+}
+
+void init_python_path() {
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+
+    std::string python_path = get_env_default("PYTHONPATH");
+    python_path += ':';
+
+    std::string home_dir = get_env_default("HOME", "/home/mpf");
+    python_path += home_dir + "/openmpf-projects/openmpf-python-component-sdk/detection/api:";
+    python_path += home_dir + "/mpf-sdk-install/python/site-packages:";
+
+    std::string mpf_sdk_install = get_env_default("MPF_SDK_INSTALL");
+    if (!mpf_sdk_install.empty()) {
+        python_path += mpf_sdk_install + "/python/site-packages:";
+    }
+
+    std::string mpf_home = get_env_default("MPF_HOME", "/opt/mpf");
+    python_path += mpf_home + "/python/site-packages";
+
+    setenv("PYTHONPATH", python_path.c_str(), true);
+
+    initialized = true;
+}
+
 
 PythonComponentHandle get_component(const std::string &file_name) {
-    return PythonComponentHandle(get_logger(), "test_python_components/" + file_name,
-                                 "test_python_components/test_env_activate.py");
+    init_python_path();
+    return PythonComponentHandle(get_logger(), "test_python_components/" + file_name);
 }
 
 PythonComponentHandle get_test_component() {

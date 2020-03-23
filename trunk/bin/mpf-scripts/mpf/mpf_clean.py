@@ -30,8 +30,8 @@ import sys
 
 import argh
 
-import mpf_sys
-import mpf_util
+from . import mpf_sys
+from . import mpf_util
 
 
 @mpf_util.env_arg('--mpf-home', 'MPF_HOME',
@@ -66,7 +66,7 @@ def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=F
     sys_config = mpf_sys.MpfConfig(skip_redis=True, **opt_args)
     ensure_mpf_stopped(sys_config)
     if not force and not prompt_user(delete_uploaded_media, delete_logs, sys_config.kahadb_dir):
-        print 'Clean aborted by user'
+        print('Clean aborted by user')
         sys.exit(1)
 
     ensure_sql_is_running(sys_config)
@@ -75,7 +75,7 @@ def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=F
     delete_folder_contents(mpf_home, delete_uploaded_media, delete_logs, mpf_log_path)
     if sys_config.kahadb_dir:
         delete_children(sys_config.kahadb_dir)
-    print 'MPF clean complete'
+    print('MPF clean complete')
 
 
 must_be_stopped_dependencies = (mpf_sys.ActiveMqManager, mpf_sys.NodeManagerManager,
@@ -95,27 +95,27 @@ def ensure_sql_is_running(sys_config):
     sql_manager = mpf_sys.PostgresManager(sys_config)
     if sql_manager.status():
         return
-    print 'Starting PostgreSQL service...'
+    print('Starting PostgreSQL service...')
     sql_manager.start()
-    print
+    print()
 
 
 def prompt_user(delete_uploaded_media, delete_logs, kahadb_dir):
-    print 'The following items will be deleted:'
-    print '\t-Job information and results'
-    print '\t-Pending job requests'
-    print '\t-Marked up media files'
+    print('The following items will be deleted:')
+    print('\t-Job information and results')
+    print('\t-Pending job requests')
+    print('\t-Marked up media files')
     if kahadb_dir:
-        print '\t-ActiveMQ data'
+        print('\t-ActiveMQ data')
     if delete_uploaded_media:
-        print '\t-Uploaded media'
+        print('\t-Uploaded media')
     if delete_logs:
-        print '\t-Log files'
+        print('\t-Log files')
 
     if not kahadb_dir:
-        print mpf_util.MsgUtil.yellow('(no persistent ActiveMQ data found)')
+        print(mpf_util.MsgUtil.yellow('(no persistent ActiveMQ data found)'))
     try:
-        response = raw_input('Do you want to continue? [y/N]: ').lower()
+        response = input('Do you want to continue? [y/N]: ').lower()
     except EOFError:
         # user pressed ctrl-d
         return False

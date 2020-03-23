@@ -51,7 +51,7 @@ file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
 set(PYBIND11_CPP_STANDARD -std=c++11)
-set(PYBIND11_PYTHON_VERSION 2.7)
+set(PYBIND11_PYTHON_VERSION 3.8)
 add_subdirectory(pybind11)
 
 

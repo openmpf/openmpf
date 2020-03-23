@@ -115,23 +115,23 @@ def sql_connection(host, user, password):
             port = 5432
         return psycopg2.connect(host=host, port=port, user=user, password=password, dbname='mpf')
     except psycopg2.OperationalError as err:
-        if 'Connection refused' in err.message or 'Name or service not known' in err.message:
+        if 'Connection refused' in str(err) or 'Name or service not known' in str(err):
             raise SqlConnectionError(err)
-        if 'authentication failed' in err.message:
+        if 'authentication failed' in str(err):
             raise SqlLogInError(err)
         raise
 
 class SqlConnectionError(MpfError):
     def __init__(self, original_error):
         super(SqlConnectionError, self).__init__(
-            original_error.message + 'Make sure the PostgreSQL server is running or try setting --sql-host.')
+            str(original_error) + 'Make sure the PostgreSQL server is running or try setting --sql-host.')
 
 
 class SqlLogInError(MpfError):
     def __init__(self, original_error):
         # Use [:-1] because message ends in new line.
         super(SqlLogInError, self).__init__(
-            original_error.message[:-1] + '. (Try setting --sql-user and/or --sql-password)')
+            str(original_error)[:-1] + '. (Try setting --sql-user and/or --sql-password)')
 
 
 class MsgUtil(object):

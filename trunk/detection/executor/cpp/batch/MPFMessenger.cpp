@@ -365,7 +365,7 @@ std::string MPFMessenger::GetMediaTypeSelector() {
         if (cleaned_token != "VIDEO" && cleaned_token != "IMAGE" && cleaned_token != "AUDIO"
                 && cleaned_token != "UNKNOWN") {
             throw std::invalid_argument(
-                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma separated list "
+                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma-separated list "
                     "containing one or more of: VIDEO, IMAGE, AUDIO, UNKNOWN");
         }
         quoted_tokens.emplace_back('\'' + cleaned_token + '\'');

@@ -157,7 +157,7 @@ public class MPFDetectionMain {
     private static void validateMediaType(String mediaType) {
         if (!VALID_MEDIA_TYPES.contains(mediaType)) {
             throw new IllegalArgumentException(
-                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma separated list " +
+                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma-separated list " +
                             "containing one or more of: " + String.join(", ", VALID_MEDIA_TYPES));
         }
     }

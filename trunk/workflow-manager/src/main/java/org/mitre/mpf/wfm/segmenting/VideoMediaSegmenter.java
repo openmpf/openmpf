@@ -80,12 +80,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 			assert segment.getEndInclusive() >= 0
 					: String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
 			log.debug("Creating segment [{}, {}] for {}.",
-			          segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
+					segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
 
 			VideoRequest videoRequest = VideoRequest.newBuilder()
-						.setStartFrame(segment.getStartInclusive())
-						.setStopFrame(segment.getEndInclusive())
-						.build();
+					.setStartFrame(segment.getStartInclusive())
+					.setStopFrame(segment.getEndInclusive())
+					.build();
 
 			messages.add(createProtobufMessage(media, context, videoRequest));
 		}
@@ -155,7 +155,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 
 	private static Collection<Detection> getTopConfidenceDetections(Collection<Detection> allDetections,
-	                                                               int topConfidenceCount) {
+																	int topConfidenceCount) {
 		if (topConfidenceCount <= 0 || topConfidenceCount >= allDetections.size()) {
 			return allDetections;
 		}

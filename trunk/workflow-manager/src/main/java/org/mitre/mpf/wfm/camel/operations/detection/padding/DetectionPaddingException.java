@@ -24,12 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.service.component;
 
+package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
-public class DuplicateComponentException extends ComponentRegistrationException {
+public class DetectionPaddingException extends Exception {
 
-    public DuplicateComponentException(String message) {
+    public DetectionPaddingException(String message) {
         super(message);
+    }
+
+    public DetectionPaddingException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

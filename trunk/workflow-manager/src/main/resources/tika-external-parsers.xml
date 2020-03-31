@@ -41,7 +41,7 @@
             <match key="xmpDM:videoCompressor">\s*Stream.*:\s+Video:\s+([A-Za-z0-9\(\)/ ]+),.*</match>
             <match key="xmpDM:videoFrameRate">\s*Stream.*:\s+Video:.*,\s+([0-9\.]+)\s+fps,.*</match>
             <match key="encoder">\s*encoder\s*\:\s*(\w+).*</match>
-            <match key="videoResolution">\s*Stream.*:\s+Video:.*,\s+([0-9x]+),.*</match>
+            <match key="videoResolution">\s*Stream.*:\s+Video:.*,\s+([0-9]+x[0-9]+)(?:\s+\[.*\]){0,1},.*</match>
             <match key="rotation">rotate\s*:\s*(\d+)</match>
         </metadata>
     </parser>

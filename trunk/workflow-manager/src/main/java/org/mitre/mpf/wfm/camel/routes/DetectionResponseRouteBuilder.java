@@ -30,11 +30,14 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.*;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledStringCountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
+import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
@@ -96,6 +99,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
 					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
 					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
+					.process(DetectionPaddingProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.

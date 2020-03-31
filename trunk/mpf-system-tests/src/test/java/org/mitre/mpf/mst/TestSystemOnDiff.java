@@ -55,10 +55,6 @@ import static org.junit.Assert.*;
  * adding the same to the Run Configuration, if running via IntelliJ.  To verify if output checking is running or not: if
  * you see 'Deserializing ...' in the console or log output, it IS running; if you don't see it, it IS NOT running.
  *
- * If output checking fails, it can be hard to identify where or why.  To better see where the failure was, uncomment
- * this line in logback-test.xml:
- *      <!-- <logger name="org.mitre.mpf.mst" level="DEBUG"/> -->
- *
  * If the structure of the output changes or if an algorithm changes, output checking will undoubtedly fail.  Once it is
  * confirmed that the failure is expected, the outputs should just be regenerated and committed to the repository for
  * future checking. Output checking is designed to catch unintentional or erroneous changes. There are two scripts in the
@@ -118,6 +114,52 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         runSystemTest(pipelineName,
                 "output/face/runFaceOcvDetectVideoWithRegionOfInterest.json",
+                "/samples/face/new_face_video.avi");
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectVideoWithRegionOfInterestUsingPercent() throws Exception {
+		String roiActionName = "TEST OCV FACE WITH ROI PERCENT ACTION";
+	    addAction(roiActionName, "FACECV",
+                  ImmutableMap.of(
+                          "SEARCH_REGION_ENABLE_DETECTION", "true",
+                          "SEARCH_REGION_TOP_LEFT_X_DETECTION", "25%",
+                          "SEARCH_REGION_TOP_LEFT_Y_DETECTION", "25%",
+                          "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION", "75%",
+                          "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION", "75%"));
+
+	    String roiTaskName = "TEST OCV FACE WITH ROI PERCENT TASK";
+	    addTask(roiTaskName, roiActionName);
+
+	    String pipelineName = "TEST OCV FACE WITH ROI PERCENT PIPELINE";
+	    addPipeline(pipelineName, roiTaskName);
+
+        runSystemTest(pipelineName,
+                "output/face/runFaceOcvDetectVideoWithRegionOfInterestPercent.json",
+                "/samples/face/new_face_video.avi");
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void runFaceOcvDetectVideoWithRegionOfInterestUsingPercentAndLocation() throws Exception {
+		String roiActionName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION";
+	    addAction(roiActionName, "FACECV",
+                  ImmutableMap.of(
+                          "SEARCH_REGION_ENABLE_DETECTION", "true",
+                          "SEARCH_REGION_TOP_LEFT_X_DETECTION", "310",
+                          "SEARCH_REGION_TOP_LEFT_Y_DETECTION", "50",
+                          "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION", "90%",
+                          "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION", "90%"));
+
+	    String roiTaskName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK";
+	    addTask(roiTaskName, roiActionName);
+
+	    String pipelineName = "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE";
+	    addPipeline(pipelineName, roiTaskName);
+
+        runSystemTest(pipelineName,
+                "output/face/runFaceOcvDetectVideoWithRegionOfInterestPercentAndLocation.json",
                 "/samples/face/new_face_video.avi");
     }
 

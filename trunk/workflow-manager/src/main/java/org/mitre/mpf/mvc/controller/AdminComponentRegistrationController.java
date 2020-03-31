@@ -28,6 +28,9 @@ package org.mitre.mpf.mvc.controller;
 
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
@@ -38,6 +41,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -67,11 +71,11 @@ public class AdminComponentRegistrationController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminComponentRegistrationController.class);
 
-	private final PropertiesUtil _propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
     private final AddComponentService _addComponentService;
-  
-	private final RemoveComponentService _removeComponentService;
+
+    private final RemoveComponentService _removeComponentService;
 
     private final ComponentStateService _componentState;
 
@@ -99,10 +103,10 @@ public class AdminComponentRegistrationController {
      */
     @RequestMapping(value = {"/components", "/rest/components"}, method = RequestMethod.GET)
     @ResponseBody
-	public List<RegisterComponentModel> getComponentsRest() {
+    public List<RegisterComponentModel> getComponentsRest() {
         return withReadLock(_componentState::get);
     }
-    
+
     /*
      * GET single component info
      */
@@ -138,7 +142,7 @@ public class AdminComponentRegistrationController {
                         .orElseGet(() -> new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
             }
             catch (ComponentRegistrationException ex) {
-            	return handleAddComponentExceptions(componentPackageFileName, ex);
+                return handleAddComponentExceptions(componentPackageFileName, ex);
             }
         });
     }
@@ -165,6 +169,10 @@ public class AdminComponentRegistrationController {
                 || exception instanceof ComponentRegistrationSubsystemException) {
             return handleRegistrationErrorResponse(componentPackage, exception.getMessage(), HttpStatus.CONFLICT);
         }
+        else if (exception instanceof InvalidComponentDescriptorException) {
+            return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
+                                                   HttpStatus.BAD_REQUEST, exception);
+        }
         else {
             return handleRegistrationErrorResponse(componentPackage, exception.getMessage(),
                                                    HttpStatus.INTERNAL_SERVER_ERROR, exception);
@@ -186,6 +194,54 @@ public class AdminComponentRegistrationController {
         return handleRegistrationErrorResponse(componentPackageFileName, reason, httpStatus, null);
     }
 
+
+    @ApiOperation(value = "Register an unmanaged component.",
+                  notes = "An unmanaged component is a component that is not started or stopped by the Node Manager " +
+                          "so it must be done externally. For example, a component that runs in its own Docker " +
+                          "container is considered an unmanaged component. If there is no existing component with " +
+                          "the same name, then the component will be registered. If there is an existing unmanaged " +
+                          "component and it has an identical descriptor, nothing is changed. If there is an " +
+                          "existing unmanaged component and the descriptor is different, the existing component " +
+                          "will be replaced. If there is an existing managed component with the same name, " +
+                          "registration will fail with a 409 - Conflict response.",
+                  produces = "application/json",
+                  response = ResponseMessage.Message.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Successfully updated existing unmanaged component."),
+            @ApiResponse(code = 201, message = "Successfully registered new component."),
+            @ApiResponse(code = 400, message = "The descriptor was invalid."),
+            @ApiResponse(code = 401, message = "Invalid credentials."),
+            @ApiResponse(code = 409, message = "The component conflicts with an existing registered component.")
+    })
+    @RequestMapping(value = {"/components/registerUnmanaged", "/rest/components/registerUnmanaged"},
+                    method = RequestMethod.POST)
+    @ResponseBody
+    public ResponseMessage registerUnmanagedComponent(@RequestBody JsonComponentDescriptor descriptor) {
+        return withWriteLock(() -> {
+            boolean alreadyRegistered = _componentState.getByComponentName(descriptor.componentName).isPresent();
+            try {
+                boolean reRegistered = _addComponentService.registerUnmanagedComponent(descriptor);
+                if (alreadyRegistered) {
+                    if (reRegistered) {
+                        return new ResponseMessage("Modified existing component.", HttpStatus.OK);
+                    }
+                    return new ResponseMessage("Component already registered.", HttpStatus.OK);
+                }
+                else {
+                    return new ResponseMessage("New component registered.", HttpStatus.CREATED);
+                }
+            }
+            catch (ComponentRegistrationException e) {
+                return handleAddComponentExceptions(descriptor.componentName, e);
+            }
+        });
+    }
+
+    @ExceptionHandler(HttpMessageConversionException.class)
+    public ResponseMessage handle(HttpMessageConversionException exception){
+        // Handles invalid JSON being POSTed to registerUnmanagedComponent
+        return new ResponseMessage(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
 
 
     private static final Set<String> acceptableComponentContentTypes =
@@ -285,14 +341,21 @@ public class AdminComponentRegistrationController {
         });
     }
 
+    @ApiOperation(value = "Remove a component", code = 204)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "The component was successfully removed."),
+            @ApiResponse(code = 404, message = "There was no component with the specified name.")
+    })
     @RequestMapping(value = {"/components/{componentName}", "/rest/components/{componentName}"},
-            method=RequestMethod.DELETE)
+                    method = RequestMethod.DELETE)
     @ResponseBody
+    // Prevents Swagger from automatically adding 200 as a response status.
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> removeComponentRest(@PathVariable("componentName") String componentName) {
         return withWriteLock(() -> {
             Optional<RegisterComponentModel> existingRegisterModel = _componentState.getByComponentName(componentName);
             if (!existingRegisterModel.isPresent()) {
-            	return ResponseEntity.notFound().build();
+                return ResponseEntity.notFound().build();
             }
             _removeComponentService.removeComponent(componentName);
             return ResponseEntity.noContent().build();
@@ -316,14 +379,14 @@ public class AdminComponentRegistrationController {
             method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> reRegisterRest(@PathVariable("componentPackageFileName") String componentPackageFileName) {
-    	return withWriteLock(() -> {
+        return withWriteLock(() -> {
             try {
                 RegisterComponentModel componentModel = _reRegisterService
                         .reRegisterComponent(componentPackageFileName);
                 return ResponseEntity.ok(componentModel);
             }
             catch (ComponentRegistrationException e) {
-            	return handleAddComponentExceptions(componentPackageFileName, e);
+                return handleAddComponentExceptions(componentPackageFileName, e);
             }
         });
     }

@@ -44,6 +44,7 @@ public class MpfHeaders {
 		JOB_STATUS = "JobStatus",
 
 		MEDIA_ID = "MediaId",
+		MEDIA_TYPE = "MediaType",
 
 		RECIPIENT_QUEUE = "QueueName",
 

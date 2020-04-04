@@ -53,6 +53,9 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String SELECTOR_REPLY_TO = MpfEndpoints.COMPLETED_DETECTIONS_REPLY_TO;
 	public static final String DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
+	public static final String DUPLICATE_FROM_STORE_MESSAGE = "duplicate from store";
+	public static final String SUPPRESSING_DUPLICATE_DELIVERY_MESSAGE = "Suppressing duplicate delivery";
+
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeIdPrefix, selectorReplyTo;
 
 	public DlqRouteBuilder() {
@@ -77,7 +80,9 @@ public class DlqRouteBuilder extends RouteBuilder {
 		String routeId = routeIdPrefix + " for Duplicate Messages";
 		log.debug("Configuring route '{}'.", routeId);
 
-		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%duplicate from store%'";
+		// Note that "LIKE" is case sensitive.
+		String dupCondition = DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%" + DUPLICATE_FROM_STORE_MESSAGE + "%'" +
+				" OR " + DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY + " LIKE '%" + SUPPRESSING_DUPLICATE_DELIVERY_MESSAGE + "%'";
 		String selector = "?selector=" + java.net.URLEncoder.encode(dupCondition, "UTF-8");
 
 		from(entryPoint + selector)

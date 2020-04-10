@@ -42,9 +42,9 @@ import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -66,6 +67,7 @@ import java.util.Collections;
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
+@ActiveProfiles("jenkins")
 public class TestDetectionResponseProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(TestDetectionResponseProcessor.class);

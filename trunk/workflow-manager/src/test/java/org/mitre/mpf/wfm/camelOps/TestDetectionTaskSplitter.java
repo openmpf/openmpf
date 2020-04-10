@@ -40,11 +40,13 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionTaskSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -53,10 +55,13 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @ContextConfiguration(locations = {"classpath:applicationContext.xml"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @RunListener.ThreadSafe
+@ActiveProfiles("jenkins")
 public class TestDetectionTaskSplitter {
 
     @Autowired
@@ -139,6 +144,30 @@ public class TestDetectionTaskSplitter {
 
         List<Message> responseList = detectionSplitter.performSplit(testJob, task);
         Assert.assertTrue(responseList.isEmpty());
+    }
+
+    @Test
+    public void testMediaTypeHeaderSet() {
+        assertMediaTypeHeaderSet("video/avi", MediaType.VIDEO);
+        assertMediaTypeHeaderSet("image/jpeg", MediaType.IMAGE);
+        assertMediaTypeHeaderSet("audio/mp3", MediaType.AUDIO);
+        assertMediaTypeHeaderSet("application/pdf", MediaType.UNKNOWN);
+    }
+
+
+    private void assertMediaTypeHeaderSet(String mimeType, MediaType expectedMediaTypeHeader) {
+
+        BatchJob testJob = createSimpleJobForTest(Map.of(), Map.of(), Map.of(),
+                                                  "/samples/new_face_video.avi", mimeType);
+
+        List<Message> responseList = detectionSplitter.performSplit(
+                testJob, testJob.getPipelineElements().getTask(0));
+
+        assertFalse(responseList.isEmpty());
+
+        for (Message response : responseList) {
+            assertEquals(expectedMediaTypeHeader.toString(), response.getHeader(MpfHeaders.MEDIA_TYPE));
+        }
     }
 
 

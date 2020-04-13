@@ -163,7 +163,8 @@
         <jgroups.version>4.0.11.Final</jgroups.version>
         <junit.version>4.12</junit.version>
         <hamcrest.version>1.3</hamcrest.version>
-        <tomcat.version>7.0.76</tomcat.version>
+        <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
+        <tomcat.embed.version>7.0.76</tomcat.embed.version>
         <guava.version>27.0.1-jre</guava.version>
 
         <!-- added props for REST web service -->

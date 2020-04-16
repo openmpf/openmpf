@@ -140,8 +140,10 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
                     continue;
                 }
+                boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
+                                   .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
                 ArtifactExtractionRequest request = new ArtifactExtractionRequest(job.getId(), media.getId(),
-                        media.getLocalPath().toString(), media.getMediaType(), taskIndex, actionIndex);
+                         media.getLocalPath().toString(), media.getMediaType(), taskIndex, actionIndex, cropping);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());

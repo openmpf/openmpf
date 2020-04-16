@@ -64,6 +64,10 @@ public class FrameExtractor {
         return extractionsMap.get(frameNumber).get(trackId);
     }
 
+    private boolean croppingFlag = true;
+    public boolean getCroppingFlag() { return croppingFlag; }
+    public void setCroppingFlag(boolean flag) { croppingFlag = flag; }
+
     private String prefix = "frame";
 
 
@@ -100,7 +104,7 @@ public class FrameExtractor {
                     response = 0;
                 }
                 else {
-                    response = executeNative(new File(media).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), results);
+                    response = executeNative(new File(media).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), croppingFlag, results);
                 }
             } finally {
                 nativeSplit.stop();
@@ -121,7 +125,8 @@ public class FrameExtractor {
         return fileNameGenerator.generateFileName(path, trackNumber, frameNumber, prefix);
     }
 
-    private native int executeNative(String sourceMedia, String ExtractionDestination, List<FrameExtractionResult> results);
+    private native int executeNative(String sourceMedia, String ExtractionDestination,
+                                     boolean croppingFlag, List<FrameExtractionResult> results);
 
     public String getPrefix() {
         return prefix;

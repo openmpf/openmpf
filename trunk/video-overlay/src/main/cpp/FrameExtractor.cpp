@@ -50,13 +50,15 @@ using namespace MPF;
 using namespace COMPONENT;
 
 #endif
+
+
 /*
  * Class:     org_mitre_mpf_frameextractor_FrameExtractor
  * Method:    executeNative
- * Signature: (java/lang/String;java/lang/String;java/util/List;)I
+ * Signature: (java/lang/String;java/lang/String;Z;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
-(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jobject paths)
+(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jboolean croppingFlag, jobject paths)
 {
     JniHelper jni(env);
 
@@ -137,44 +139,10 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             // If that frame is empty, we've reached the end of the video.
             if (frame.empty()) { break; }
 
-            jobject trackIdSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIds, thisFrameNumObj);
-            jobject trackIterator = jni.CallObjectMethod(trackIdSet, clzSet_fnIterator);
+            jint thisTrack = 0;
 
-            // For each track, perform the extraction for the associated detection object.
-            while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
-                // Get the detection associated with this track
-                jobject thisTrackObj = jni.CallObjectMethod(trackIterator, clzIterator_fnNext);
-                jint thisTrack = jni.CallIntMethod(thisTrackObj, clzInteger_fnIntValue);
-                jobject detection = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetDetection,
-                                              thisFrameNumObj, thisTrackObj);
-
-                // Create the bounding box.
-                jint X = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetX);
-                jint Y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
-                jint width = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetWidth);
-                jint height = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetHeight);
-                Rect detectionBox(X, Y, width, height);
-
-                // Get the rotation property.
-                jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
-                std::string rotationPropName("ROTATION");
-                jstring jPropName = jni.ToJString(rotationPropName);
-                jstring jPropValue = (jstring)jni.CallObjectMethod(properties, clzMap_fnGet, jPropName);
-                double rotation = 0.0;
-                if (jPropValue != nullptr) {
-                    std::string rotationPropValue = jni.ToStdString(jPropValue);
-                    rotation = atof(rotationPropValue.c_str());
-                }
-
-                Mat transformFrame = frame.clone();
-
-                // Create the transformation for this frame and apply it.
-                FeedForwardExactRegionAffineTransformer transformer(
-                        { std::make_tuple(detectionBox, rotation, false) },
-                        IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
-
-                transformer.TransformFrame(transformFrame, 0);
-
+            if (!croppingFlag) {
+                // No cropping, so simply write the frame to the file and continue.
                 jstring filename = (jstring) jni.CallObjectMethod(frameExtractorInstance,
                         clzFrameExtractor_fnMakeFilename,
                         destinationPath,
@@ -183,10 +151,64 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                 if (filename != nullptr) {
                     std::string destFile = jni.ToStdString(filename);
-                    imwrite(destFile, transformFrame);
+                    imwrite(destFile, frame);
                     jobject result = jni.CallConstructorMethod(clzExtractionResult, clzExtractionResult_fnConstruct,
                                                                thisFrameNum, thisTrack, filename);
                     jni.CallObjectMethod(paths, clzList_fnAdd, result);
+                }
+            }
+            else {
+                jobject trackIdSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIds, thisFrameNumObj);
+                jobject trackIterator = jni.CallObjectMethod(trackIdSet, clzSet_fnIterator);
+
+                // For each track, perform the extraction for the associated detection object.
+                while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
+                    // Get the detection associated with this track
+                    jobject thisTrackObj = jni.CallObjectMethod(trackIterator, clzIterator_fnNext);
+                    jint thisTrack = jni.CallIntMethod(thisTrackObj, clzInteger_fnIntValue);
+                    jobject detection = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetDetection,
+                                                             thisFrameNumObj, thisTrackObj);
+
+                    // Create the bounding box.
+                    jint X = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetX);
+                    jint Y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
+                    jint width = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetWidth);
+                    jint height = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetHeight);
+                    Rect detectionBox(X, Y, width, height);
+
+                    // Get the rotation property.
+                    jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
+                    std::string rotationPropName("ROTATION");
+                    jstring jPropName = jni.ToJString(rotationPropName);
+                    jstring jPropValue = (jstring)jni.CallObjectMethod(properties, clzMap_fnGet, jPropName);
+                    double rotation = 0.0;
+                    if (jPropValue != nullptr) {
+                        std::string rotationPropValue = jni.ToStdString(jPropValue);
+                        rotation = atof(rotationPropValue.c_str());
+                    }
+
+                    Mat transformFrame = frame.clone();
+
+                    // Create the transformation for this frame and apply it.
+                    FeedForwardExactRegionAffineTransformer transformer(
+                        { std::make_tuple(detectionBox, rotation, false) },
+                        IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
+
+                    transformer.TransformFrame(transformFrame, 0);
+
+                    jstring filename = (jstring) jni.CallObjectMethod(frameExtractorInstance,
+                                                                      clzFrameExtractor_fnMakeFilename,
+                                                                      destinationPath,
+                                                                      thisTrack,
+                                                                      thisFrameNum);
+
+                    if (filename != nullptr) {
+                        std::string destFile = jni.ToStdString(filename);
+                        imwrite(destFile, transformFrame);
+                        jobject result = jni.CallConstructorMethod(clzExtractionResult, clzExtractionResult_fnConstruct,
+                                                                   thisFrameNum, thisTrack, filename);
+                        jni.CallObjectMethod(paths, clzList_fnAdd, result);
+                    }
                 }
             }
         }
@@ -199,6 +221,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jni.ReportCppException();
     }
 }
+
 
 #ifdef __cplusplus
 }

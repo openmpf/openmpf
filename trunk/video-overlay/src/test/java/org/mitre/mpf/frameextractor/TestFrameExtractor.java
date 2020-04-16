@@ -75,7 +75,10 @@ public class TestFrameExtractor {
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIds, 20, 30, 100, 150, 0.0, requestedExtractions));
-        extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
+        // test first with cropping, then without.
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
     @Test
@@ -85,21 +88,27 @@ public class TestFrameExtractor {
         List<Integer> frameNumbers = Arrays.asList(2, 4, 8);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIds, 100, 100, 150, 100, 0.0, requestedExtractions));
-        extractFrames("samples/face-morphing.gif", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/face-morphing.gif");
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(3),200, 200, 150, 100, 0.0, requestedExtractions);
-        extractFrames("samples/person_cropped_2.png", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/person_cropped_2.png");
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnRotatedImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, requestedExtractions);
-        extractFrames("samples/meds-aa-S001-01-exif-rotation.jpg", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
     @Test
@@ -107,7 +116,9 @@ public class TestFrameExtractor {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, requestedExtractions);
         putInExtractionMap(0, Arrays.asList(1), 970, 165, 329, 329, 0.0, requestedExtractions);
-        extractFrames("samples/girl-1741925_1920.jpg", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/girl-1741925_1920.jpg");
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
     @Test
@@ -122,39 +133,41 @@ public class TestFrameExtractor {
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, nextTrackIds,0, 0, 90, 125, 0.0, requestedExtractions));
 
-        extractFrames("samples/five-second-marathon-clip-numbered.mp4", requestedExtractions);
+        URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
+        extractFrames(media, true, requestedExtractions);
+        extractFrames(media, false, requestedExtractions);
     }
 
-    private void extractFrames(String resourcePath,
+
+    private void extractFrames(URI media, boolean cropFlag,
             SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) throws IOException {
-        URI resource = JniTestUtils.getFileResource(resourcePath);
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
-        FrameExtractor extractor = new FrameExtractor(resource, outputDirectory.toUri());
+        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri());
         extractor.getExtractionsMap().putAll(requestedExtractions);
+        extractor.setCroppingFlag(cropFlag);
         Table<Integer, Integer, String> results = extractor.execute();
 
-        Set<String> fileNames = new TreeSet<>();
-        Set<Integer> trackIds = requestedExtractions.keySet().stream()
-                .map(k -> requestedExtractions.get(k))
-                .flatMap(e -> e.keySet().stream())
-                .collect(Collectors.toCollection(TreeSet::new));
-        for (Integer track : trackIds) {
+        Set<Integer> frames = requestedExtractions.keySet();
+        if (cropFlag) {
+            for (Integer frame : frames) {
+                for (Integer trackId : requestedExtractions.get(frame).keySet()) {
+                    assertSizesMatch(requestedExtractions.get(frame).get(trackId), results.get(trackId, frame));
+                }
+            }
+        }
+        else {
+            Set<String> fileNames = new TreeSet<>();
+            Integer track = 0;
             Path trackPath = outputDirectory.resolve(track.toString());
             try(Stream<Path> paths = Files.list(trackPath)) {
                 Set<String> tmpNames = paths.map(p -> p.getFileName().toString())
-                                .collect(toSet());
+                        .collect(toSet());
                 fileNames.addAll(tmpNames);
             }
-        }
-        Set<Integer> frames = requestedExtractions.keySet();
-        Assert.assertEquals(frames.size(), fileNames.size());
-        frames.forEach(f -> Assert.assertTrue(fileNames.contains("frame-" + f + ".png")));
 
-        for (Integer frame : frames) {
-            for (Integer trackId : requestedExtractions.get(frame).keySet()) {
-                assertSizesMatch(requestedExtractions.get(frame).get(trackId), results.get(trackId, frame));
-            }
+            Assert.assertEquals(frames.size(), fileNames.size());
+            frames.forEach(f -> Assert.assertTrue(fileNames.contains("frame-" + f + ".png")));
         }
     }
 
@@ -162,23 +175,27 @@ public class TestFrameExtractor {
     private void putInExtractionMap(Integer frameNumber, List<Integer> trackIds,
                                     int x, int y, int width, int height, double rotation,
                                     SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) {
-        Map<Integer, JsonDetectionOutputObject> trackIdAndDetection = new TreeMap<>();
+
+        if (requestedExtractions.get(frameNumber) == null) {
+            requestedExtractions.put(frameNumber, new TreeMap<Integer, JsonDetectionOutputObject>());
+        }
+
         SortedMap<String, String> props = new TreeMap<>();
         props.put("ROTATION", Double.toString(rotation));
+
         for (Integer trackId : trackIds) {
-            trackIdAndDetection.put(trackId, new JsonDetectionOutputObject(x, y, width, height,
+            requestedExtractions.get(frameNumber).put(trackId, new JsonDetectionOutputObject(x, y, width, height,
                     (float)0.0, props, frameNumber.intValue(),
                     0, "NOT_ATTEMPTED", ""));
         }
-        requestedExtractions.put(frameNumber.intValue(), trackIdAndDetection);
     }
 
-    private void assertSizesMatch(JsonDetectionOutputObject detection, String uri) {
-        int expectedWidth = detection.getWidth();
-        int expectedHeight = detection.getHeight();
+    private void assertSizesMatch(JsonDetectionOutputObject extractedDetection, String artifactFilePath) {
+        int expectedWidth = extractedDetection.getWidth();
+        int expectedHeight = extractedDetection.getHeight();
         int actualWidth = 0;
         int actualHeight = 0;
-        File file = new File(uri);
+        File file = new File(artifactFilePath);
         try {
             ImageInputStream imageStream = ImageIO.createImageInputStream(file);
             Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
@@ -188,10 +205,15 @@ public class TestFrameExtractor {
                 actualWidth = reader.getWidth(0);
                 actualHeight = reader.getHeight(0);
             }
+            else {
+                throw new IOException("Could not read " + file.getAbsolutePath() + " to get width and height");
+            }
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
         assertTrue((actualWidth == expectedWidth) && (actualHeight == expectedHeight));
     }
+
+
 }
 

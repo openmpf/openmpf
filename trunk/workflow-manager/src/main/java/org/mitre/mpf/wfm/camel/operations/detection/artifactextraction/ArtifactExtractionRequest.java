@@ -60,7 +60,13 @@ public class ArtifactExtractionRequest {
     private final Integer _actionIndex;
     public Integer getActionIndex() {  return _actionIndex; }
 
-    // Maps frame numbers to pairs of trackId and detection to be extracted.
+    /** If the cropping flag is set to true, then each extraction will be cropped according to
+     * the bounding box in the corresponding detection. If false, then the entire frame
+     * will be extracted. */
+    private boolean _croppingFlag = true;
+    public boolean getCroppingFlag() { return _croppingFlag; }
+
+    /** Maps frame numbers to pairs of trackId and detection to be extracted. */
     private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
     public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
         return extractionsMap;
@@ -73,12 +79,14 @@ public class ArtifactExtractionRequest {
             @JsonProperty("path") String path,
             @JsonProperty("mediaType") MediaType mediaType,
             @JsonProperty("taskIndex") int taskIndex,
-            @JsonProperty("actionIndex") int actionIndex) {
+            @JsonProperty("actionIndex") int actionIndex,
+            @JsonProperty("croppingFlag") boolean flag) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;
         _mediaType = mediaType;
         _taskIndex = taskIndex;
         _actionIndex = actionIndex;
+        _croppingFlag = flag;
     }
 }

@@ -101,25 +101,38 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
     }
 
+
+    private void setStatus(Detection detection, URI uri) {
+        if (uri == null) {
+            detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
+        }
+        else {
+            detection.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
+            detection.setArtifactPath(uri.toString());
+        }
+    }
+
+
     private void processCompletedExtractionRequest(ArtifactExtractionRequest request,
                                                    Table<Integer, Integer, URI> trackAndFrameToUri) {
         SortedSet<Track> jobTracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                 request.getTaskIndex(), request.getActionIndex());
         for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
             URI uri = entry.getValue();
-            jobTracks.stream().filter(t -> t.getArtifactExtractionTrackId() == entry.getRowKey())
-                              .flatMap(t -> t.getDetections().stream())
-                              .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
-                              .forEach( d -> {
-                                  if (uri == null) {
-                                      d.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
-                                  }
-                                  else {
-                                      d.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
-                                      d.setArtifactPath(uri.toString());
-                                  }
-                              });
+            if (request.getCroppingFlag()) {
+                jobTracks.stream().filter(t -> t.getArtifactExtractionTrackId() == entry.getRowKey())
+                                  .flatMap(t -> t.getDetections().stream())
+                                  .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
+                                  .forEach( d -> setStatus(d, uri));
             }
+            else {
+                for (Integer frame : trackAndFrameToUri.columnKeySet()) {
+                    jobTracks.stream().flatMap(t -> t.getDetections().stream())
+                                      .filter(d -> frame.equals(d.getMediaOffsetFrame()))
+                                      .forEach(d -> setStatus(d, uri));
+                }
+            }
+        }
 
         SortedSet<Integer> missingFrames = findMissingFrames(request);
         if (!missingFrames.isEmpty()) {

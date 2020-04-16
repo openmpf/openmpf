@@ -298,7 +298,8 @@ public class TestCustomNginxStorageBackend {
                 testFile.toString(),
                 MediaType.VIDEO,
                 0,
-                0);
+                0,
+                true);
         request.getExtractionsMap().putAll(extractionsMap);
         Table<Integer, Integer, URI> results = _nginxStorageService.storeArtifacts(request);
         assertEquals(expectedResults, results);

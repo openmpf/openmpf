@@ -1040,6 +1040,7 @@ public class ITWebREST {
 			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
 			                                                         WebRESTUtils.MPF_AUTHORIZATION));
 			var jobStatus = jobResponseObj.getString("jobStatus");
+			// GET and POST both use the same code to handle callback failures.
 			Assert.assertEquals("COMPLETE_WITH_WARNINGS", jobStatus);
 
 		} finally {

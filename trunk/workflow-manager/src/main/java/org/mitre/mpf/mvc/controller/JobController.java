@@ -105,7 +105,7 @@ public class JobController {
                     " contain objects with a valid mediaUri. For example: http://localhost/images/image.png. " +
                     " Another example: file:///home/user/images/image.jpg. A callbackURL (optional) and" +
                     " callbackMethod (GET or POST) may be added. When the job completes, the callback will perform" +
-                    " a GET or POST to the callbackURL with the 'jobId' and 'externalId' parameters." +
+                    " a GET or POST to the callbackURL with the jobId, externalId, and outputObjectUri parameters." +
                     " For example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1'," +
                     " and the externalId is 'someid', then a GET callback will be: " +
                     " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +

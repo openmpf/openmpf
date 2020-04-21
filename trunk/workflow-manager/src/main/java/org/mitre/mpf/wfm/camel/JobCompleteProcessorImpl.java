@@ -213,7 +213,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             callbackError = callbackError.getCause();
         }
 
-        String warningMessage = String.format("Sending callback failed due to: %s", callbackError);
+        String callbackMethod = job.getCallbackMethod().orElse("POST");
+        String callbackUrl = job.getCallbackUrl()
+                // This is will never throw because we already checked that the URL is present.
+                .orElseThrow();
+
+        String warningMessage = String.format("Sending HTTP %s callback to %s failed due to: %s",
+                                              callbackMethod, callbackUrl, callbackError);
         log.warn(warningMessage, callbackError);
         inProgressBatchJobs.addJobWarning(job.getId(), warningMessage);
 

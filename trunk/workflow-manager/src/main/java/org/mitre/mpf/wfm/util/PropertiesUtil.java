@@ -731,5 +731,9 @@ public class PropertiesUtil {
     public boolean dockerProfileEnabled() {
         return springEnvironment.acceptsProfiles("docker");
     }
+
+    public int getHttpCallbackTimeoutMs() {
+        return mpfPropertiesConfig.getInt("http.callback.timeout.ms");
+    }
 }
 

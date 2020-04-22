@@ -1037,6 +1037,12 @@ public class ITWebREST {
 			Assert.assertTrue(getCallbackContent.getOutputObjectUri().endsWith(
 					String.format("output-objects/%s/detection.json", jobId)));
 
+			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
+			                                                         WebRESTUtils.MPF_AUTHORIZATION));
+			var jobStatus = jobResponseObj.getString("jobStatus");
+			// GET and POST both use the same code to handle callback failures.
+			Assert.assertEquals("COMPLETE_WITH_WARNINGS", jobStatus);
+
 		} finally {
 			endTest();
 			Spark.stop();
@@ -1053,6 +1059,7 @@ public class ITWebREST {
 				JsonCallbackBody callbackBody = new JsonCallbackBody(
 						jobId, request.queryParams("externalid"), request.queryParams("outputobjecturi"));
 				getCallbackResult.complete(callbackBody);
+				resp.status(404);
 				return "";
 			}
 			catch (Exception e) {

@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.util;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.EntityTemplate;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -36,28 +37,28 @@ import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.nio.reactor.ConnectingIOReactor;
+import org.apache.http.nio.reactor.IOReactorException;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.stream.Collectors.toList;
 
 
 @Component
-public class CallbackUtils {
+public class CallbackUtils implements AutoCloseable {
 
     private static final int MAX_CONNECTIONS_PER_ROUTE = 10;
     private static final int MAX_CONNECTIONS_TOTAL = 100;
@@ -66,13 +67,15 @@ public class CallbackUtils {
 
     private static final Logger log = LoggerFactory.getLogger(CallbackUtils.class);
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final JsonUtils jsonUtils;
 
-    private static CloseableHttpAsyncClient httpAsyncClient;
+    private final CloseableHttpAsyncClient httpAsyncClient;
 
-    @PostConstruct
-    public void initialize() throws IOException {
+
+    @Inject
+    CallbackUtils(JsonUtils jsonUtils) throws IOReactorException {
+        this.jsonUtils = jsonUtils;
+
         IOReactorConfig ioConfig = IOReactorConfig.custom()
                 // the default connect timeout value for non-blocking connection requests.
                 .setConnectTimeout(SOCKET_TIMEOUT_MILLISEC)
@@ -89,16 +92,12 @@ public class CallbackUtils {
         httpAsyncClient.start();
     }
 
-    @PreDestroy
-    public void shutdown() {
-        try {
-            if (httpAsyncClient != null) {
-                httpAsyncClient.close();
-            }
-        } catch (IOException e) {
-            log.warn("Unable to close httpAsyncClient.", e);
-        }
+
+    @Override
+    public void close() throws IOException {
+        httpAsyncClient.close();
     }
+
 
     // Send the health report to the URI identified by callbackUri, using the HTTP POST method.
     public void sendHealthReportCallback(String callbackUri, List<StreamingJob> jobs) {
@@ -129,6 +128,31 @@ public class CallbackUtils {
         sendPostCallback(summaryReport, callbackUri, Collections.singletonList(summaryReport.getJobId()),
                          "summary report");
     }
+
+
+    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request) {
+        var future = ThreadUtil.<HttpResponse>newFuture();
+
+        httpAsyncClient.execute(request, new FutureCallback<>() {
+            @Override
+            public void completed(HttpResponse result) {
+                future.complete(result);
+            }
+
+            @Override
+            public void failed(Exception ex) {
+                future.completeExceptionally(ex);
+            }
+
+            @Override
+            public void cancelled() {
+                future.cancel(true);
+            }
+        });
+
+        return future;
+    }
+
 
     // TODO: Implement sendGetCallback
 
@@ -167,15 +191,15 @@ public class CallbackUtils {
                     // Also, don't bother logging the stack trace. That adds clutter.
                     if (e instanceof SocketTimeoutException) {
                         // The message for a SocketTimeoutException is "null", so let's be more descriptive.
-	                    log.warn("Sent {} callback to {} for job ids {}. Receiver did not respond.",
+                        log.warn("Sent {} callback to {} for job ids {}. Receiver did not respond.",
                                  callbackType, callbackUri, jobIds);
                     } else {
-                    	log.warn("Error sending {} callback to {} for job ids {}: {}",
+                        log.warn("Error sending {} callback to {} for job ids {}: {}",
                                  callbackType, callbackUri, jobIds, e.getMessage());
                     }
                 }
                 public void cancelled() {
-                	log.warn("Cancelled sending {} callback to {} for job ids {}.",
+                    log.warn("Cancelled sending {} callback to {} for job ids {}.",
                              callbackType, callbackUri, jobIds);
                 }
             });

@@ -55,6 +55,10 @@
         {
             "name": "EastTextDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/python/EastTextDetection"
+        },
+        {
+            "name": "AzureOcrTextDetection",
+            "path": "/home/mpf/openmpf-projects/openmpf-components/python/AzureOcrTextDetection"
         }
     ]
 }

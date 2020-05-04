@@ -297,7 +297,6 @@ namespace MPF { namespace COMPONENT {
             py::object audio_track_ctor_;
             py::object generic_track_ctor_;
 
-            py::object frame_location_map_ctor_;
             py::object detection_exception_ctor_;
 
         public:
@@ -315,7 +314,6 @@ namespace MPF { namespace COMPONENT {
                     , video_track_ctor_(component_api_module.attr("VideoTrack"))
                     , audio_track_ctor_(component_api_module.attr("AudioTrack"))
                     , generic_track_ctor_(component_api_module.attr("GenericTrack"))
-                    , frame_location_map_ctor_(component_api_module.attr("FrameLocationMap"))
                     , detection_exception_ctor_(component_api_module.attr("DetectionException"))
             {
 
@@ -356,7 +354,7 @@ namespace MPF { namespace COMPONENT {
 
 
             py::object to_python(const MPFVideoTrack &track) {
-                py::object frame_loc_map = frame_location_map_ctor_();
+                py::dict frame_loc_map;
                 py::object flm_set = frame_loc_map.attr("__setitem__");
                 for (const auto &pair : track.frame_locations) {
                     flm_set(pair.first, to_python(pair.second));

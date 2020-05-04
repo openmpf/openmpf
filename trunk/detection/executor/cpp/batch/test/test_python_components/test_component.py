@@ -57,7 +57,7 @@ class TestComponent(object):
 
         error_code = image_job.job_properties.get('raise_exception', None)
         if error_code is not None:
-            raise mpf.DetectionException('Exception Message', mpf.DetectionError[int(error_code)])
+            raise mpf.DetectionException('Exception Message', mpf.DetectionError(int(error_code)))
 
         yield mpf.ImageLocation(10, 20, 12, 34, -1,
                                 {'METADATA': 'extra info for second result',
@@ -87,10 +87,10 @@ class TestComponent(object):
         track1.detection_properties.update(video_job.job_properties)
         track1.detection_properties.update(video_job.media_properties)
 
-        track2 = mpf.VideoTrack(3, 4, -1,
-                                {3: mpf.ImageLocation(9, 10, 11, 12, -1, [('ECHO_JOB', echo_job),
-                                                                          ('ECHO_MEDIA', echo_media)])},
-                                mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
+        track2 = mpf.VideoTrack(
+            3, 4, -1,
+            {3: mpf.ImageLocation(9, 10, 11, 12, -1, dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))},
+            dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media))
         # Make sure regular collections are accepted
         return [track1, track2]
 
@@ -102,7 +102,7 @@ class TestComponent(object):
         if audio_job.feed_forward_track is not None:
             return audio_job.feed_forward_track,
         echo_job, echo_media = cls.get_echo_msgs(audio_job)
-        detection_properties = mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
+        detection_properties = dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
 
         track1 = mpf.AudioTrack(0, 10, .75, detection_properties)
         # Make sure multiple return values are accepted

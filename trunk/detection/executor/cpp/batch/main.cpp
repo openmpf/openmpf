@@ -192,6 +192,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
     // Remain in loop handling job request messages
     // until 'q\n' is received on stdin
+    bool error_occurred = false;
     try {
 
         int nfds = 0;
@@ -534,15 +535,18 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
         } // end while
     } catch (std::exception &e) {
+        error_occurred = true;
         LOG4CXX_ERROR(logger, "Standard Exception caught in main.cpp:  "
                               << e.what()
                               << "\n");
     } catch (...) {
+        error_occurred = true;
         // Swallow any other unknown exceptions
         LOG4CXX_ERROR(logger, "Unknown Exception caught in main.cpp\n");
     }
 
     if (!detection_engine.Close()) {
+        error_occurred = true;
         LOG4CXX_ERROR(logger, "Detection engine failed to close... ");
     }
 
@@ -550,14 +554,17 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
     try {
         messenger.Shutdown();
     } catch (cms::CMSException &e) {
+        error_occurred = true;
         LOG4CXX_ERROR(logger, "CMS Exception caught during message interface shutdown: "
                               << request_queue << ": "
                               << e.what());
     } catch (exception &e) {
+        error_occurred = true;
         LOG4CXX_ERROR(logger, "Standard Exception caught during message interface shutdown: "
                               << request_queue << ": "
                               << e.what());
     } catch (...) {
+        error_occurred = true;
         // Swallow any other unknown exceptions
         LOG4CXX_ERROR(logger, "Unknown Exception caught during message interface shutdown: "
                               << request_queue);
@@ -565,5 +572,5 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
     // Close the logger
     log4cxx::LogManager::shutdown();
-    return 0;
+    return error_occurred ? 1 : 0;
 }

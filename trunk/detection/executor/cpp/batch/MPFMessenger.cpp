@@ -24,8 +24,13 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <memory>
 #include "MPFMessenger.h"
+
+#include <cstdlib>
+#include <memory>
+#include <stdexcept>
+
+#include <boost/algorithm/string.hpp>
 
 using std::string;
 using std::auto_ptr;
@@ -114,7 +119,17 @@ void MPFMessenger::Startup(
         request_destination_ = session_->createQueue(request_queue);
 
         // Create an ActiveMQ MessageConsumer for requests
-        request_consumer_ = session_->createConsumer(request_destination_);
+        std::string media_type_selector = GetMediaTypeSelector();
+        if (media_type_selector.empty()) {
+            LOG4CXX_INFO(main_logger_, "Creating ActiveMQ consumer for queue: " << request_queue)
+            request_consumer_ = session_->createConsumer(request_destination_);
+        }
+        else {
+            LOG4CXX_INFO(main_logger_, "Creating ActiveMQ consumer for queue " << request_queue
+                            << " with selector: " << media_type_selector);
+            request_consumer_ = session_->createConsumer(request_destination_, media_type_selector);
+        }
+
         connection_->start();
     } catch (InvalidDestinationException& e) {
         LOG4CXX_ERROR(main_logger_, "InvalidDestinationException in MPFMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
@@ -124,6 +139,7 @@ void MPFMessenger::Startup(
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
+        throw;
     } catch (...) {
         LOG4CXX_ERROR(main_logger_, "Unknown Exception occurred in MPFMessenger::Startup");
         throw;
@@ -325,5 +341,41 @@ void MPFMessenger::Shutdown() {
         ActiveMQCPP::shutdownLibrary();
     }
     initialized = false;
+}
+
+// Converts "VIDEO, IMAGE" to "MediaType in ('VIDEO', 'IMAGE')"
+// Converts "VIDEO" to "MediaType in ('VIDEO')"
+std::string MPFMessenger::GetMediaTypeSelector() {
+    const char * const env_val = std::getenv(MPFMessenger::RESTRICT_MEDIA_TYPES_ENV_NAME);
+    if (env_val == nullptr || env_val[0] == '\0') {
+        return "";
+    }
+
+    std::vector<std::string> tokens;
+    boost::split(tokens, env_val, boost::is_any_of(","), boost::algorithm::token_compress_on);
+
+    std::vector<std::string> quoted_tokens;
+    for (const std::string &raw_token : tokens) {
+        std::string cleaned_token = boost::trim_copy(raw_token);
+        boost::to_upper(cleaned_token);
+
+        if (cleaned_token.empty()) {
+            continue;
+        }
+        if (cleaned_token != "VIDEO" && cleaned_token != "IMAGE" && cleaned_token != "AUDIO"
+                && cleaned_token != "UNKNOWN") {
+            throw std::invalid_argument(
+                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma-separated list "
+                    "containing one or more of: VIDEO, IMAGE, AUDIO, UNKNOWN");
+        }
+        quoted_tokens.emplace_back('\'' + cleaned_token + '\'');
+    }
+
+    if (quoted_tokens.empty()) {
+        return "";
+    }
+
+    std::string joined_tokens = boost::join(quoted_tokens, ", ");
+    return "MediaType in (" + joined_tokens + ')';
 }
 

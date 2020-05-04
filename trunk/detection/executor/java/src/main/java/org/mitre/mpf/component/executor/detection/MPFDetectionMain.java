@@ -35,7 +35,13 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.jms.*;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 public class MPFDetectionMain {
 
@@ -96,7 +102,18 @@ public class MPFDetectionMain {
     private static void processMessages(Connection connection, String queueName, MPFDetectionComponentBase component)
             throws JMSException {
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        MessageConsumer requestConsumer = session.createConsumer(session.createQueue(queueName));
+
+        Optional<String> mediaTypeSelector = getMediaTypeSelector();
+        MessageConsumer requestConsumer;
+        if (mediaTypeSelector.isPresent()) {
+            LOG.info("Creating ActiveMQ consumer for queue {} with selector: {}", queueName, mediaTypeSelector.get());
+            requestConsumer = session.createConsumer(session.createQueue(queueName), mediaTypeSelector.get());
+        }
+        else {
+            LOG.info("Creating ActiveMQ consumer for queue: {}", queueName);
+            requestConsumer = session.createConsumer(session.createQueue(queueName));
+        }
+
         MPFDetectionMessenger messenger = new MPFDetectionMessenger(component, session);
 
         Message message;
@@ -105,6 +122,44 @@ public class MPFDetectionMain {
             messenger.onMessage(message);
         }
         LOG.info("Received null message indicating that the ActiveMQ connection was closed. Shutting down...");
+    }
+
+
+    private static Optional<String> getMediaTypeSelector() {
+        return getMediaTypeSelector(System.getenv());
+    }
+
+
+    public static final String RESTRICT_MEDIA_TYPES_ENV_NAME = "RESTRICT_MEDIA_TYPES";
+
+    // Converts "VIDEO, IMAGE" to "MediaType in ('VIDEO', 'IMAGE')"
+    // Converts "VIDEO" to "MediaType in ('VIDEO')"
+    public static Optional<String> getMediaTypeSelector(Map<String, String> environment) {
+        var envValue = environment.get(RESTRICT_MEDIA_TYPES_ENV_NAME);
+        if (envValue == null) {
+            return Optional.empty();
+        }
+
+        String joinedTokens = Stream.of(envValue.split(","))
+                .map(s -> s.strip().toUpperCase())
+                .filter(s -> !s.isEmpty())
+                .peek(MPFDetectionMain::validateMediaType)
+                .map(s -> String.format("'%s'", s))
+                .collect(joining(", "));
+
+        return joinedTokens.isEmpty()
+                ? Optional.empty()
+                : Optional.of(String.format("MediaType in (%s)", joinedTokens));
+    }
+
+    private static final Set<String> VALID_MEDIA_TYPES = Set.of("VIDEO", "AUDIO", "IMAGE", "UNKNOWN");
+
+    private static void validateMediaType(String mediaType) {
+        if (!VALID_MEDIA_TYPES.contains(mediaType)) {
+            throw new IllegalArgumentException(
+                    "Expected the RESTRICT_MEDIA_TYPES environment variable contain a comma-separated list " +
+                            "containing one or more of: " + String.join(", ", VALID_MEDIA_TYPES));
+        }
     }
 
 

@@ -26,33 +26,43 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
-import org.apache.commons.lang3.mutable.MutableInt;
+// import org.hamcrest.BaseMatcher;
+// import org.hamcrest.Description;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
+
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mockito.InjectMocks; 
+import org.mockito.Matchers; 
+import org.mockito.ArgumentMatcher; 
+import org.mockito.Mock; 
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
+
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -60,141 +70,234 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@RunListener.ThreadSafe
-@ActiveProfiles("jenkins")
+
 public class TestDetectionResponseProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(TestDetectionResponseProcessor.class);
-    private static final int MINUTES = 1000 * 60; // 1000 milliseconds/second & 60 seconds/minute.
+    @Mock
+    private PipelineService mockPipelineService;
 
-    @Autowired
-    private ApplicationContext context;
-
-    @Autowired
-    private CamelContext camelContext;
-
-    @Autowired
-    private JsonUtils jsonUtils;
-
-    @Autowired
-    private IoUtils ioUtils;
-
-    @Autowired
+    @Mock
     private InProgressBatchJobsService inProgressJobs;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    @Mock
+    private JsonUtils mockJsonUtils;
 
-    @Autowired
-    @Qualifier(DetectionResponseProcessor.REF)
-    private WfmProcessorInterface detectionResponseProcessor;
+    @InjectMocks
+    private DetectionResponseProcessor detectionResponseProcessor;
 
-    private static final MutableInt SEQUENCE = new MutableInt();
+    private final IoUtils ioUtils = new IoUtils();
 
-    public int next() {
-        synchronized (SEQUENCE) {
-            int next = SEQUENCE.getValue();
-            SEQUENCE.increment();
-            return next;
-        }
-    }
-    //	public Object processResponse(long jobId, Extraction.ExtractionResponse extractionResponse, Map<String, Object> headers) throws WfmProcessingException {
-    @Ignore
-    @Test
-    public void testDetectionResponse() throws Exception {
-        final int testJobId = next();
-        final long testMediaId = 12345678;
-        DetectionProtobuf.DetectionResponse response = DetectionProtobuf.DetectionResponse.newBuilder()
-            .setError(DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
-            .setMediaId(testMediaId)
-            .setStartIndex(0)
-            .setStopIndex(10)
-            .setTaskName("theWorld")
-            .setTaskIndex(1)
-            .setActionName("howLikeAnAngel")
-            .setActionIndex(1)
-            .setRequestId(123456)
-            .build();
+    private static final long JOB_ID = 111;
+    private static final long MEDIA_ID = 222;
+    private static final String DETECTION_RESPONSE_ALG_NAME = "TEST_DETECTION_RESPONSE_ALG";
+    private static final String DETECTION_RESPONSE_ACTION_NAME = "TEST_DETECTION_RESPONSE_ACTION";
+    private static final String DETECTION_RESPONSE_PIPELINE_NAME = "TEST_DETECTION_RESPONSE_PIPELINE";
+    private static final String DETECTION_RESPONSE_TASK_NAME = "TEST_DETECTION_RESPONSE_TASK";
 
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, testJobId);
-        exchange.getIn().setBody(response);
+    @Before
+    public void init() throws Exception {
 
-        detectionResponseProcessor.process(exchange);
-
-        Object responseBody = exchange.getOut().getBody();
-        TrackMergingContext processorResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-
-        Assert.assertTrue(processorResponse.getJobId() == testJobId);
-        Assert.assertTrue(processorResponse.getTaskIndex() == 1);
-
-        Assert.assertTrue(responseBody != null);
-    }
-
-    @Test
-    public void testSettingErrors() throws WfmProcessingException {
-        long jobId = 123123;
-        long testMediaId = 234234;
-        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
-                .setError(DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR)
-                .setMediaId(testMediaId)
-                .setStartIndex(0)
-                .setStopIndex(10)
-                .setTaskIndex(1)
-                .setActionIndex(1)
-                .setRequestId(123456)
-                .build();
-
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, jobId);
-        exchange.getIn().setBody(detectionResponse);
+        MockitoAnnotations.initMocks(this); 
 
         Algorithm algorithm = new Algorithm(
-                "detectionAlgo", "description", ActionType.DETECTION,
+                DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
-        Action action = new Action("detectionAction", "description", algorithm.getName(),
+
+        when(mockPipelineService.getAlgorithm(algorithm.getName())) 
+                .thenReturn(algorithm);
+
+        Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.getName(),
                                    Collections.emptyList());
-        Task task = new Task("detectionTask", "description", Collections.singleton(action.getName()));
-        Pipeline pipeline = new Pipeline("detectionPipeline", "description",
+        when(mockPipelineService.getAction(action.getName())) 
+                .thenReturn(action);
+
+        Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", Collections.singleton(action.getName()));
+        Pipeline pipeline = new Pipeline(DETECTION_RESPONSE_PIPELINE_NAME, "pipeline description",
                                          Collections.singleton(task.getName()));
         JobPipelineElements pipelineElements = new JobPipelineElements(
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
 
-        // Capture a snapshot of the detection system property settings when the job is created.
-        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
-
+        Map<String, String> propertiesMap = new HashMap<>(); 
+        propertiesMap.put("detection.confidence.threshold", "-1"); 
+        SystemPropertiesSnapshot systemPropertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
+
         MediaImpl media = new MediaImpl(
                 234234, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Collections.emptyMap(), null);
         media.addMetadata("DURATION", "3004");
         media.addMetadata("FPS", "29.97");
 
-        inProgressJobs.addJob(
-                jobId,
-                "234234",
-                systemPropertiesSnapshot,
-                pipelineElements,
-                1,
-                false,
-                null,
-                null,
-                Collections.singletonList(media),
-                Collections.emptyMap(),
-                Collections.emptyMap());
+        BatchJobImpl job = new BatchJobImpl(
+            JOB_ID,
+            "external id",
+            systemPropertiesSnapshot,
+            pipelineElements,
+            1,
+            false,
+            null,
+            null,
+            Collections.singletonList(media),
+            Collections.emptyMap(),
+            Collections.emptyMap());
 
-        detectionResponseProcessor.wfmProcess(exchange);
-        Assert.assertEquals(BatchJobStatusType.IN_PROGRESS_ERRORS, inProgressJobs.getJob(jobId).getStatus());
+        when(inProgressJobs.containsJob(JOB_ID)) 
+                .thenReturn(true); 
+
+        when(inProgressJobs.getJob(JOB_ID)) 
+                .thenReturn(job); 
+
+        when(mockJsonUtils.serialize(any())) 
+                .thenCallRealMethod(); 
+
+        when(mockJsonUtils.deserialize(any(), any())) 
+                .thenCallRealMethod(); 
 
     }
-}
 
+    @Test
+    public void testHappyPath() { 
+
+        DetectionProtobuf.DetectionResponse detectionResponse =
+                DetectionProtobuf.DetectionResponse.newBuilder()
+                .setMediaId(MEDIA_ID)
+                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                                   .setDetectionType("TEST")
+                                   .setStartFrame(0)
+                                   .setStopFrame(10)
+                                   .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
+                                                   .setStartFrame(5) 
+                                                   .setStopFrame(5) 
+                                                   .setConfidence(0.5f) 
+                                                   .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder() 
+                                                                           .setKey("TRACK_TEST_PROP_KEY") 
+                                                                           .setValue("TRACK_TEST_PROP_VALUE")) 
+                                                   .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder() 
+                                                                      .setFrame(5) 
+                                                                      .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder() 
+                                                                                        .setConfidence(0.5f) 
+                                                                                        .setXLeftUpper(0) 
+                                                                                        .setYLeftUpper(10) 
+                                                                                        .setHeight(10) 
+                                                                                        .setWidth(10) 
+                                                                                        .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
+                                                                                                                .setKey("DETECTION_TEST_PROP_KEY") 
+                                                                                                                .setValue("DETECTION_TEST_PROP_VALUE"))))))
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME) 
+                .setTaskIndex(1) 
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME) 
+                .setActionIndex(1) 
+                .setRequestId(123456) 
+                .build(); 
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext()); 
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID); 
+        exchange.getIn().setBody(detectionResponse); 
+
+        detectionResponseProcessor.wfmProcess(exchange); 
+        Object responseBody = exchange.getOut().getBody(); 
+        TrackMergingContext processorResponse = 
+                mockJsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class); 
+
+        Assert.assertEquals(JOB_ID, processorResponse.getJobId()); 
+        Assert.assertEquals(1, processorResponse.getTaskIndex()); 
+
+        verify(inProgressJobs, never()) 
+                .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point 
+
+        verify(inProgressJobs, never()) 
+                .addDetectionProcessingError(any()); 
+
+        verify(inProgressJobs, never()) 
+                .addJobError(eq(JOB_ID), any()); 
+
+        verify(inProgressJobs, never()) 
+                .addJobWarning(eq(JOB_ID), any()); 
+
+        verify(inProgressJobs, times(1)) 
+                .addTrack(track(JOB_ID, 5)); 
+    }
+
+
+    @Test
+    public void testDetectionProcessingError() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
+
+        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setError(error)
+                .setMediaId(MEDIA_ID)
+                .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+                        .setDetectionType("TEST")
+                        .setStartFrame(0)
+                        .setStopFrame(10))
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
+                .setTaskIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
+
+        detectionResponseProcessor.wfmProcess(exchange);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+
+        // TODO: https://github.com/openmpf/openmpf/issues/780
+        /*
+        verify(mockRedis, times(1))
+                .addJobError(eq(JOB_ID), any());
+        */
+    }
+
+    private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
+        return Matchers.argThat(new ArgumentMatcher<DetectionProcessingError>() {
+
+            public String toString() {
+                String description = "DetectionProcessingError { jobId = " + jobId;
+                if (error != null) {
+                    description += ", error = " + error.toString();
+                }
+                description += " }";
+                return description;
+            }
+
+            @Override
+            public boolean matches(DetectionProcessingError obj) {
+                return jobId == obj.getJobId() && (error == null || error.toString().equals(obj.getError()));
+            }
+        });
+    }
+
+    private static Track track(long jobId, int startFrame) {
+        return Matchers.argThat(new ArgumentMatcher<Track>() {
+            public String toString() {
+                String description = "Track { jobId = " + jobId + ", startFrame = " + startFrame + " }";
+                return description;
+            }
+
+            public boolean matches(Track obj) {
+                return jobId == obj.getJobId() && startFrame == obj.getStartOffsetFrameInclusive();
+            }
+        });
+    }
+}

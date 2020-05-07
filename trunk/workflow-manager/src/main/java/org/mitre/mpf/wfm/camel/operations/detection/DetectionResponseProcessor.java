@@ -91,11 +91,9 @@ public class DetectionResponseProcessor
             }
         }
 
-        log.debug("[{}] Response received for Media #{} [{}-{}]. Task: '{}'. Action: '{}'.",
+        log.debug("[{}] Response received for Media #{}. Task: '{}'. Action: '{}'.",
                   logLabel,
                   detectionResponse.getMediaId(),
-                  detectionResponse.getStartIndex(),
-                  detectionResponse.getStopIndex(),
                   detectionResponse.getTaskName(),
                   detectionResponse.getActionName());
 
@@ -103,26 +101,32 @@ public class DetectionResponseProcessor
             String errorMessage;
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-                log.debug("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}",
-                          logLabel, detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
-                          detectionResponse.getStopIndex(), detectionResponse.getError());
+                log.debug("[{}] Encountered a detection error while processing Media #{}: {}",
+                          logLabel, detectionResponse.getMediaId(),  detectionResponse.getError());
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorMessage = MpfConstants.REQUEST_CANCELLED;
             }
             else {
-                log.warn("[{}] Encountered a detection error while processing Media #{} [{}, {}]: {}", logLabel,
-                         detectionResponse.getMediaId(), detectionResponse.getStartIndex(),
-                         detectionResponse.getStopIndex(), detectionResponse.getError());
+                log.warn("[{}] Encountered a detection error while processing Media #{}: {}", logLabel,
+                         detectionResponse.getMediaId(), detectionResponse.getError());
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
                 errorMessage = Objects.toString(detectionResponse.getError());
             }
+            DetectionProtobuf.DetectionResponse.VideoResponse videoResponse = detectionResponse.getVideoResponses(0);
+            int startFrame = videoResponse.getStartFrame();
+            int stopFrame = videoResponse.getStopFrame();
+            int startTime = convertFrameToTime(startFrame, fps);
+            int stopTime = convertFrameToTime(stopFrame, fps);
+
             inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
                     jobId,
                     detectionResponse.getMediaId(),
                     detectionResponse.getTaskIndex(),
                     detectionResponse.getActionIndex(),
-                    detectionResponse.getStartIndex(),
-                    detectionResponse.getStopIndex(),
+                    startFrame,
+                    stopFrame,
+                    startTime,
+                    stopTime,
                     errorMessage));
         }
 
@@ -132,8 +136,7 @@ public class DetectionResponseProcessor
                 && detectionResponse.getGenericResponsesCount() == 0  ) {
 
             // The detector did not find any tracks in the medium between the given range. This isn't an error, but it is worth logging.
-            log.debug("[{}] No tracks were found in Media #{} [{}, {}].", logLabel, detectionResponse.getMediaId(),
-                      detectionResponse.getTaskIndex(), detectionResponse.getStopIndex());
+            log.debug("[{}] No tracks were found in Media #{}.", logLabel, detectionResponse.getMediaId());
 
 
         } else {
@@ -339,4 +342,12 @@ public class DetectionResponseProcessor
                         DetectionProtobuf.PropertyMap::getKey,
                         DetectionProtobuf.PropertyMap::getValue));
     }
+
+
+    private static int convertFrameToTime(int frame, Float fps) {
+
+        return fps == null ? 0 : Math.round(frame * 1000 / fps); // in milliseconds
+
+    }
+
 }

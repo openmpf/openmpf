@@ -36,45 +36,65 @@ import org.apache.commons.lang3.StringUtils;
 @JsonTypeName("DetectionProcessingError")
 public class JsonDetectionProcessingError implements Comparable<JsonDetectionProcessingError> {
 
-	@JsonProperty("startOffset")
-	@JsonPropertyDescription("The earliest offset in the medium which may be affected by this error.")
-	private int startOffset;
-	public int getStartOffset() { return startOffset; }
+	@JsonProperty("startOffsetFrame")
+	@JsonPropertyDescription("The earliest frame in the medium which may be affected by this error.")
+	private int startOffsetFrame;
+	public int getStartOffsetFrame() { return startOffsetFrame; }
 
-	@JsonProperty("stopOffset")
-	@JsonPropertyDescription("The latest offset in the medium which may be affected by this error.")
-	private int stopOffset;
-	public int getStopOffset() { return stopOffset; }
+	@JsonProperty("stopOffsetFrame")
+	@JsonPropertyDescription("The latest frame in the medium which may be affected by this error.")
+	private int stopOffsetFrame;
+	public int getStopOffsetFrame() { return stopOffsetFrame; }
+
+	@JsonProperty("startOffsetTime")
+	@JsonPropertyDescription("The earliest time in the medium which may be affected by this error, in milliseconds.")
+	private int startOffsetTime;
+	public int getStartOffsetTime() { return startOffsetTime; }
+
+	@JsonProperty("stopOffsetTime")
+	@JsonPropertyDescription("The latest time in the medium which may be affected by this error, in milliseconds.")
+	private int stopOffsetTime;
+	public int getStopOffsetTime() { return stopOffsetTime; }
 
 	@JsonProperty("message")
 	@JsonPropertyDescription("The messages associated with the detection error.")
 	private String message;
 	public String getMessage() { return message; }
 
+
 	@JsonCreator
-	public JsonDetectionProcessingError(@JsonProperty("startOffset") int startOffset,
-	                                    @JsonProperty("stopOffset") int stopOffset,
-	                                    @JsonProperty("message") String message) {
-		this.startOffset = startOffset;
-		this.stopOffset = stopOffset;
+	public JsonDetectionProcessingError(@JsonProperty("startOffsetFrame") int startOffsetFrame,
+										@JsonProperty("stopOffsetFrame") int stopOffsetFrame,
+										@JsonProperty("startOffsetTime") int startOffsetTime,
+										@JsonProperty("stopOffsetTime") int stopOffsetTime,
+										@JsonProperty("message") String message) {
+		this.startOffsetFrame = startOffsetFrame;
+		this.stopOffsetFrame = stopOffsetFrame;
+		this.startOffsetTime = startOffsetTime;
+		this.stopOffsetTime = stopOffsetTime;
 		this.message = message;
 	}
 
 	public int hashCode() {
 		int result = 37;
-		result = (37 * result) + startOffset;
-		result = (37 * result) + stopOffset;
+		result = (37 * result) + startOffsetFrame;
+		result = (37 * result) + stopOffsetFrame;
+		result = (37 * result) + startOffsetTime;
+		result = (37 * result) + stopOffsetTime;
 		result = (37 * result) + (message == null ? 0 : message.hashCode());
 		return result;
 	}
+
 
 	public boolean equals(Object other) {
 		if(other == null || !(other instanceof JsonDetectionProcessingError)) {
 			return false;
 		} else {
 			JsonDetectionProcessingError casted = (JsonDetectionProcessingError)other;
-			return startOffset == casted.startOffset &&
-					stopOffset == casted.stopOffset &&
+			return startOffsetFrame == casted.startOffsetFrame &&
+					stopOffsetFrame == casted.stopOffsetFrame &&
+					startOffsetTime == casted.startOffsetTime &&
+					stopOffsetTime == casted.stopOffsetTime &&
 					StringUtils.equals(message, casted.message);
 		}
 	}
@@ -82,11 +102,13 @@ public class JsonDetectionProcessingError implements Comparable<JsonDetectionPro
 	@Override
 	public int compareTo(JsonDetectionProcessingError other) {
 		int result = 0;
-		if(other == null) {
+		if (other == null) {
 			return 1;
-		} else if((result = Integer.compare(startOffset, other.startOffset)) != 0
-			|| (result = Integer.compare(stopOffset, other.stopOffset)) != 0
-			|| (result = ObjectUtils.compare(message, other.message)) != 0) {
+		} else if ((result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
+				|| (result = Integer.compare(stopOffsetFrame, other.stopOffsetFrame)) != 0
+				|| (result = Integer.compare(startOffsetTime, other.startOffsetTime)) != 0
+				|| (result = Integer.compare(stopOffsetTime, other.stopOffsetTime)) != 0
+				|| (result = ObjectUtils.compare(message, other.message)) != 0) {
 			return result;
 		} else {
 			return result;

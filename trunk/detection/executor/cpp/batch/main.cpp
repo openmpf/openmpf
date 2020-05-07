@@ -362,7 +362,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack video response
                             detection_response_body = detection_buf.PackVideoResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    tracks, msg_metadata, data_type,
+                                    video_request.start_frame, video_request.stop_frame,
+                                    detection_type, &response_body_length, rc);
 
                         } else if (data_type == MPFDetectionDataType::AUDIO) {
                             vector <MPFAudioTrack> tracks;
@@ -400,7 +402,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack audio response
                             detection_response_body = detection_buf.PackAudioResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    tracks, msg_metadata, data_type,
+                                    audio_request.start_time, audio_request.stop_time,
+                                    detection_type, &response_body_length, rc);
 
                         } else if (data_type == MPFDetectionDataType::IMAGE) {
                             vector <MPFImageLocation> locations;
@@ -437,16 +441,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                     locations, msg_metadata, data_type, detection_type, &response_body_length, rc);
 
                         } else {
-                            /*
-                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Invalid detection data_type of " << data_type);
-
-                            msg_metadata->time_elapsed = time.elapsed();
-
-                            // Pack error response
-                            detection_response_body = detection_buf.PackErrorResponse(
-                                    msg_metadata, data_type, &response_body_length, MPF_UNRECOGNIZED_DATA_TYPE);
-                            */
-
                             vector <MPFGenericTrack> tracks;
                             if (generic_request.has_feed_forward_track) {
                                 // Invoke the detection component

@@ -29,8 +29,6 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
-// import org.hamcrest.BaseMatcher;
-// import org.hamcrest.Description;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,19 +48,15 @@ import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mockito.InjectMocks; 
-import org.mockito.Matchers; 
-import org.mockito.ArgumentMatcher; 
-import org.mockito.Mock; 
-import org.mockito.MockitoAnnotations;
+import org.mitre.mpf.wfm.util.*;
+import org.mockito.*;
+
 import static org.mockito.Mockito.*;
 
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -86,8 +80,10 @@ public class TestDetectionResponseProcessor {
     @Mock
     private InProgressBatchJobsService inProgressJobs;
 
+    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
+
     @Mock
-    private JsonUtils mockJsonUtils;
+    private AggregateJobPropertiesUtil mockAggregateJobPropertiesUtil;
 
     @InjectMocks
     private DetectionResponseProcessor detectionResponseProcessor;
@@ -133,7 +129,7 @@ public class TestDetectionResponseProcessor {
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
 
         MediaImpl media = new MediaImpl(
-                234234, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Collections.emptyMap(), null);
         media.addMetadata("DURATION", "3004");
         media.addMetadata("FPS", "29.97");
@@ -157,11 +153,8 @@ public class TestDetectionResponseProcessor {
         when(inProgressJobs.getJob(JOB_ID)) 
                 .thenReturn(job); 
 
-        when(mockJsonUtils.serialize(any())) 
-                .thenCallRealMethod(); 
-
-        when(mockJsonUtils.deserialize(any(), any())) 
-                .thenCallRealMethod(); 
+        when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
+                .thenReturn(String.valueOf(0.1));
 
     }
 
@@ -207,7 +200,7 @@ public class TestDetectionResponseProcessor {
         detectionResponseProcessor.wfmProcess(exchange); 
         Object responseBody = exchange.getOut().getBody(); 
         TrackMergingContext processorResponse = 
-                mockJsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class); 
+                jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
 
         Assert.assertEquals(JOB_ID, processorResponse.getJobId()); 
         Assert.assertEquals(1, processorResponse.getTaskIndex()); 
@@ -270,7 +263,7 @@ public class TestDetectionResponseProcessor {
     }
 
     private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
-        return Matchers.argThat(new ArgumentMatcher<DetectionProcessingError>() {
+        return ArgumentMatchers.argThat(new ArgumentMatcher<DetectionProcessingError>() {
 
             public String toString() {
                 String description = "DetectionProcessingError { jobId = " + jobId;
@@ -289,7 +282,7 @@ public class TestDetectionResponseProcessor {
     }
 
     private static Track track(long jobId, int startFrame) {
-        return Matchers.argThat(new ArgumentMatcher<Track>() {
+        return ArgumentMatchers.argThat(new ArgumentMatcher<Track>() {
             public String toString() {
                 String description = "Track { jobId = " + jobId + ", startFrame = " + startFrame + " }";
                 return description;

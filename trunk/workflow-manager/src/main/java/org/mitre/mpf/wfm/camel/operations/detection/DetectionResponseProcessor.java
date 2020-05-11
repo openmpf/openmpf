@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,8 +64,7 @@ public class DetectionResponseProcessor
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
@@ -151,7 +151,6 @@ public class DetectionResponseProcessor
             processImageResponses(jobId, detectionResponse, confidenceThreshold);
             processGenericResponses(jobId, detectionResponse, confidenceThreshold);
         }
-
         return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
 

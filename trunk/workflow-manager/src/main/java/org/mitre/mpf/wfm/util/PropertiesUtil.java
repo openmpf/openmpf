@@ -290,11 +290,6 @@ public class PropertiesUtil {
         Files.createDirectories(path);
         return path.toFile();
     }
-    public Path createArtifactFile(long jobId, long mediaId, int taskIndex, int actionIndex, int trackIndex, String name) throws IOException {
-        Path path = Paths.get(artifactsDirectory.toURI()).resolve(String.format("%d/%d/%d/%d/%d/%s", jobId, mediaId, taskIndex, actionIndex, trackIndex, name)).normalize().toAbsolutePath();
-        Files.createDirectories(path.getParent());
-        return path;
-    }
 
     private File outputObjectsDirectory;
     /** Gets the path to the top level output object directory

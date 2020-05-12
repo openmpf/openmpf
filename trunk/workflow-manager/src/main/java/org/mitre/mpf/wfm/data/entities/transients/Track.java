@@ -65,9 +65,9 @@ public class Track implements Comparable<Track> {
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
     
-    private int artifactExtractionTrackId;
-    public int getArtifactExtractionTrackId() {return artifactExtractionTrackId; }
-    public void setArtifactExtractionTrackId(int trackNumber) { artifactExtractionTrackId = trackNumber; }
+    private int artifactExtractionTrackIndex;
+    public int getArtifactExtractionTrackIndex() {return artifactExtractionTrackIndex; }
+    public void setArtifactExtractionTrackIndex(int trackNumber) { artifactExtractionTrackIndex = trackNumber; }
 
     /** The zero-based index where the track begins in the medium, given in frames. */
     private final int _startOffsetFrameInclusive;

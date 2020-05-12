@@ -116,7 +116,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
         MPFVideoCapture src(videoPath);
         if (!src.IsOpened()) {
-            throw std::runtime_error("Unable to open input video file: " + videoPath);
+            throw std::runtime_error("Unable to open input media file: " + videoPath);
         }
 
         // Get the set of frames to be extracted and an iterator for it.
@@ -170,11 +170,11 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                                                              thisFrameNumObj, thisTrackObj);
 
                     // Create the bounding box.
-                    jint X = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetX);
-                    jint Y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
+                    jint x = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetX);
+                    jint y = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetY);
                     jint width = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetWidth);
                     jint height = jni.CallIntMethod(detection, clzJsonDetectionOutputObject_fnGetHeight);
-                    Rect detectionBox(X, Y, width, height);
+                    Rect detectionBox(x, y, width, height);
 
                     // Get the rotation property.
                     jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
@@ -184,7 +184,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     double rotation = 0.0;
                     if (jPropValue != nullptr) {
                         std::string rotationPropValue = jni.ToStdString(jPropValue);
-                        rotation = atof(rotationPropValue.c_str());
+                        rotation = std::stod(rotationPropValue);
                     }
 
                     Mat transformFrame = frame.clone();

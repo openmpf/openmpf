@@ -65,20 +65,19 @@ public class FrameExtractor {
     }
 
     private boolean croppingFlag = true;
-    public boolean getCroppingFlag() { return croppingFlag; }
-    public void setCroppingFlag(boolean flag) { croppingFlag = flag; }
 
     private String prefix = "frame";
 
 
-    public FrameExtractor(URI media, URI extractionDirectory) {
-        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator);
+    public FrameExtractor(URI media, URI extractionDirectory, boolean croppingFlag) {
+        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag);
     }
 
-    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator) {
+    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator, boolean croppingFlag) {
         this.media = media;
         this.extractionDirectory = extractionDirectory;
         this.fileNameGenerator = fileNameGenerator;
+        this.croppingFlag = croppingFlag;
     }
 
 
@@ -125,7 +124,7 @@ public class FrameExtractor {
         return fileNameGenerator.generateFileName(path, trackNumber, frameNumber, prefix);
     }
 
-    private native int executeNative(String sourceMedia, String ExtractionDestination,
+    private native int executeNative(String sourceMedia, String extractionDestination,
                                      boolean croppingFlag, List<FrameExtractionResult> results);
 
     public String getPrefix() {
@@ -150,8 +149,7 @@ public class FrameExtractor {
 
     private static String defaultFileNameGenerator(String path, int trackNumber, int frameNumber, String prefix) {
         try {
-            String trackPath = path + "/" + Integer.toString(trackNumber);
-            File outputFile = new File(trackPath, String.format("%s-%d.png", prefix, frameNumber));
+            File outputFile = new File(String.format("%s/%d", path, trackNumber), String.format("%s-%d.png", prefix, frameNumber));
             outputFile.getParentFile().mkdirs();
             return outputFile.getAbsolutePath();
         } catch(Exception exception) {

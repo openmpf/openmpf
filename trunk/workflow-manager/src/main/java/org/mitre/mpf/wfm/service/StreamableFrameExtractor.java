@@ -68,10 +68,10 @@ public class StreamableFrameExtractor {
             FrameExtractor frameExtractor = new FrameExtractor(
                     Paths.get(request.getPath()).toUri(),
                     tempDirectory.toUri(),
-                    filenameGenerator(pipePath.toString(), queue));
+                    filenameGenerator(pipePath.toString(), queue),
+                    request.getCroppingFlag());
 
             frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
-            frameExtractor.setCroppingFlag(request.getCroppingFlag());
 
             ThreadUtil.runAsync(() -> {
                 try {

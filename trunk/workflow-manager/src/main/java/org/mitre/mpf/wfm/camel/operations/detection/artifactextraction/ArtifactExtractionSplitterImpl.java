@@ -159,60 +159,57 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         return messages;
     }
 
-    private void putInExtractionsMap(Integer trackId, JsonDetectionOutputObject detection,
+    private void putInExtractableDetectionsMap(Integer trackId, SortedSet<JsonDetectionOutputObject> detections,
                                      SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> map) {
-        Integer frameNumber = detection.getOffsetFrame();
-        if (map.get(frameNumber) == null) {
-            map.put(frameNumber, new TreeMap<Integer, JsonDetectionOutputObject>());
+        for (JsonDetectionOutputObject detection : detections) {
+            Integer frameNumber = detection.getOffsetFrame();
+            map.computeIfAbsent(frameNumber, k -> new TreeMap<Integer, JsonDetectionOutputObject>());
+            map.get(frameNumber).put(trackId, detection);
         }
-        map.get(frameNumber).put(trackId, detection);
     }
 
     private void processTracks(ArtifactExtractionRequest request, Collection<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
 
-        Integer trackId = 0;
-        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = request.getExtractionsMap();
+        Integer trackIndex = 0;
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractableDetectionsMap = request.getExtractionsMap();
         for (Track track : tracks) {
 
             switch (policy) {
-            case ALL_DETECTIONS:
-                SortedSet<JsonDetectionOutputObject> outputDetections = track.getDetections().stream()
-                .map(d -> { d.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED); return d;})
-                .map(d -> createDetectionOutputObject(d))
-                .collect(Collectors.toCollection(TreeSet::new));
+                case ALL_DETECTIONS: {
+                    SortedSet<JsonDetectionOutputObject> extractableDetections = track.getDetections().stream()
+                            .map(d -> createExtractableDetection(d))
+                            .collect(Collectors.toCollection(TreeSet::new));
 
-                track.setArtifactExtractionTrackId(trackId);
-                for (JsonDetectionOutputObject detection : outputDetections) {
-                    putInExtractionsMap(trackId, detection, extractionsMap);
-                }
-                break;
-            case VISUAL_TYPES_ONLY:
-                if (isNonVisualObjectType(track.getType())) {
+                    track.setArtifactExtractionTrackIndex(trackIndex);
+                    putInExtractableDetectionsMap(trackIndex, extractableDetections, extractableDetectionsMap);
                     break;
                 }
-                // fall through
-            case ALL_TYPES:
-                SortedSet<JsonDetectionOutputObject> processedDetections = processExtractionsInTrack(job, track, trackId, media, action,
-                      actionIndex);
+                case VISUAL_TYPES_ONLY:
+                    if (isNonVisualObjectType(track.getType())) {
+                        break;
+                    }
+                    // fall through
+                case ALL_TYPES: {
+                    SortedSet<JsonDetectionOutputObject> extractableDetections = processExtractionsInTrack(job, track, media, action,
+                            actionIndex);
 
-                track.setArtifactExtractionTrackId(trackId);
-                for (JsonDetectionOutputObject detection : processedDetections) {
-                    putInExtractionsMap(trackId, detection, extractionsMap);
+                    track.setArtifactExtractionTrackIndex(trackIndex);
+                    putInExtractableDetectionsMap(trackIndex, extractableDetections, extractableDetectionsMap);
+                    break;
                 }
-                break;
-            default:
+                default:
             }
-            trackId++;
+            trackIndex++;
         }
         _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(), request.getActionIndex(), tracks);
 
     }
 
-    private SortedSet<JsonDetectionOutputObject> processExtractionsInTrack(BatchJob job, Track track, int trackId, Media media,
+    private SortedSet<JsonDetectionOutputObject> processExtractionsInTrack(BatchJob job, Track track, Media media,
             Action action, int actionIndex) {
 
-        LOG.debug("Processing extractions for action {}", actionIndex);
+        LOG.debug("Preparing extractions for action {}", actionIndex);
         List<Detection> sortedDetections = new ArrayList<>(track.getDetections());
         SortedSet<Integer> framesToExtract = new TreeSet<>();
 
@@ -232,7 +229,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         if (exemplarPlusCount >= 0) {
             Detection exemplar = track.getExemplar();
             int exemplarFrame = exemplar.getMediaOffsetFrame();
-            LOG.debug("Extracting exemplar frame {}", exemplarFrame);
+            LOG.debug("Will extract exemplar frame {}", exemplarFrame);
             framesToExtract.add(exemplarFrame);
             int exemplarIndex = sortedDetections.indexOf(exemplar);
             while (exemplarPlusCount > 0) {
@@ -241,14 +238,14 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 int beforeIndex = exemplarIndex - exemplarPlusCount;
                 if (beforeIndex >= 0) {
                     int beforeFrame = sortedDetections.get(beforeIndex).getMediaOffsetFrame();
-                    LOG.debug("Extracting before-frame {}", beforeFrame);
+                    LOG.debug("Will extract before-frame {}", beforeFrame);
                     framesToExtract.add(beforeFrame);
                 }
                 // after frame: Find the detections in this track that are after the exemplar.
                 int afterIndex = exemplarIndex + exemplarPlusCount;
                 if (afterIndex < sortedDetections.size()) {
                     int afterFrame = sortedDetections.get(afterIndex).getMediaOffsetFrame();
-                    LOG.debug("Extracting after-frame {}", afterFrame);
+                    LOG.debug("Will extract after-frame {}", afterFrame);
                     framesToExtract.add(afterFrame);
                 }
                 exemplarPlusCount--;
@@ -259,13 +256,13 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         int lastDetectionFrame = track.getDetections().last().getMediaOffsetFrame();
         if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
                 .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME_PROPERTY, job, media, action))) {
-            LOG.debug("Extracting first frame {}", firstDetectionFrame);
+            LOG.debug("Will extract first frame {}", firstDetectionFrame);
             framesToExtract.add(firstDetectionFrame);
         }
 
         if (Boolean.parseBoolean(_aggregateJobPropertiesUtil
                 .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_LAST_FRAME_PROPERTY, job, media, action))) {
-            LOG.debug("Extracting last frame {}", lastDetectionFrame);
+            LOG.debug("Will extract last frame {}", lastDetectionFrame);
             framesToExtract.add(lastDetectionFrame);
         }
 
@@ -291,7 +288,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     break;
                 }
             }
-            LOG.debug("Extracting middle frame {}", middleFrame);
+            LOG.debug("Will extract middle frame {}", middleFrame);
             framesToExtract.add(middleFrame);
         }
 
@@ -313,7 +310,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     Comparator.comparing(Detection::getConfidence).reversed().thenComparing(Comparator.naturalOrder()));
             int extractCount = Math.min(topConfidenceCount, sortedDetections.size());
             for (int i = 0; i < extractCount; i++) {
-                LOG.debug("Extracting frame #{} with confidence = {}", sortedDetections.get(i).getMediaOffsetFrame(),
+                LOG.debug("Will extract frame #{} with confidence = {}", sortedDetections.get(i).getMediaOffsetFrame(),
                         sortedDetections.get(i).getConfidence());
                 framesToExtract.add(sortedDetections.get(i).getMediaOffsetFrame());
             }
@@ -321,9 +318,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a 
         // JsonDetectionOutputObject
         SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()
-                                                     .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))
-                                                     .map(d -> CreateExtractableDetection(d))
-                                                      .collect(Collectors.toCollection(TreeSet::new));
+                .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))
+                .map(d -> createExtractableDetection(d))
+                .collect(Collectors.toCollection(TreeSet::new));
         return detections;
 
     }
@@ -349,7 +346,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                                              detection.getArtifactPath());
     }
 
-    private static JsonDetectionOutputObject CreateExtractableDetection(Detection detection) {
+    private static JsonDetectionOutputObject createExtractableDetection(Detection detection) {
         detection.setArtifactExtractionStatus(ArtifactExtractionStatus.REQUESTED);
         return createDetectionOutputObject(detection);
     }

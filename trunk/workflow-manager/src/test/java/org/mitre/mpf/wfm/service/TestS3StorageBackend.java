@@ -28,7 +28,6 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import com.google.common.io.ByteStreams;

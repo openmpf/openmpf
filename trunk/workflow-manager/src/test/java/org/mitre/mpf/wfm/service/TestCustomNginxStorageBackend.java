@@ -40,7 +40,6 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;

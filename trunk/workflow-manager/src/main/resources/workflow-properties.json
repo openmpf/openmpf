@@ -43,7 +43,7 @@
     },
     {
         "name": "ARTIFACT_EXTRACTION_POLICY_CROPPING",
-        "description": "If true, an artifact will be extracted for each detection in each frame selected according to the artifact extraction policy properties that follow. The extracted artifact will be cropped to the width and height of the detection bounding box, instead of extracting the entire frame. If false, the entire frame will be extracted.",
+        "description": "If true, an artifact will be extracted for each detection in each frame selected according to the ARTIFACT_EXTRACTION_POLICY* properties. The extracted artifact will be cropped to the width and height of the detection bounding box, instead of extracting the entire frame. If false, the entire frame will be extracted.",
         "type": "BOOLEAN",
         "propertiesKey": "detection.artifact.extraction.policy.cropping",
         "mediaTypes": ["VIDEO","IMAGE"]

@@ -63,7 +63,7 @@ public class ArtifactExtractionRequest {
     /** If the cropping flag is set to true, then each extraction will be cropped according to
      * the bounding box in the corresponding detection. If false, then the entire frame
      * will be extracted. */
-    private boolean _croppingFlag = true;
+    private final boolean _croppingFlag;
     public boolean getCroppingFlag() { return _croppingFlag; }
 
     /** Maps frame numbers to pairs of trackId and detection to be extracted. */

@@ -41,15 +41,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -67,7 +59,9 @@ public class TestFrameExtractor {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-
+    // These tests determine whether the dimensions of the extracted artifact are the same as the
+    // detection bounding box dimensions in the extraction request. The bounding boxes used in each test are arbitrary;
+    // they do not necessarily correspond to actual detections in the test media.
     @Test
     public void testFrameExtractorOnVideo() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
@@ -128,7 +122,7 @@ public class TestFrameExtractor {
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIds, 50, 50, 100, 150, 0.0, requestedExtractions));
-        List<Integer> nextTrackIds = Arrays.asList(1, 2);
+        List<Integer> nextTrackIds = Arrays.asList(3, 4);
         frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, nextTrackIds,0, 0, 90, 125, 0.0, requestedExtractions));
@@ -143,9 +137,8 @@ public class TestFrameExtractor {
             SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) throws IOException {
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
-        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri());
+        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri(), cropFlag);
         extractor.getExtractionsMap().putAll(requestedExtractions);
-        extractor.setCroppingFlag(cropFlag);
         Table<Integer, Integer, String> results = extractor.execute();
 
         Set<Integer> frames = requestedExtractions.keySet();
@@ -158,8 +151,7 @@ public class TestFrameExtractor {
         }
         else {
             Set<String> fileNames = new TreeSet<>();
-            Integer track = 0;
-            Path trackPath = outputDirectory.resolve(track.toString());
+            Path trackPath = outputDirectory.resolve("0");
             try(Stream<Path> paths = Files.list(trackPath)) {
                 Set<String> tmpNames = paths.map(p -> p.getFileName().toString())
                         .collect(toSet());
@@ -190,28 +182,27 @@ public class TestFrameExtractor {
         }
     }
 
-    private void assertSizesMatch(JsonDetectionOutputObject extractedDetection, String artifactFilePath) {
+    private void assertSizesMatch(JsonDetectionOutputObject extractedDetection, String artifactFilePath) throws IOException {
         int expectedWidth = extractedDetection.getWidth();
         int expectedHeight = extractedDetection.getHeight();
         int actualWidth = 0;
         int actualHeight = 0;
         File file = new File(artifactFilePath);
-        try {
-            ImageInputStream imageStream = ImageIO.createImageInputStream(file);
-            Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
-            if (readers.hasNext()) {
-                ImageReader reader = readers.next();
-                reader.setInput(imageStream);
-                actualWidth = reader.getWidth(0);
-                actualHeight = reader.getHeight(0);
-            }
-            else {
-                throw new IOException("Could not read " + file.getAbsolutePath() + " to get width and height");
-            }
-        } catch (IOException e) {
-            Assert.fail(e.getMessage());
+
+        ImageInputStream imageStream = ImageIO.createImageInputStream(file);
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
+        if (readers.hasNext()) {
+            ImageReader reader = readers.next();
+            reader.setInput(imageStream);
+            actualWidth = reader.getWidth(0);
+            actualHeight = reader.getHeight(0);
         }
-        assertTrue((actualWidth == expectedWidth) && (actualHeight == expectedHeight));
+        else {
+            Assert.fail("Could not read " + file.getAbsolutePath() + " to get width and height");
+        }
+
+        assertTrue(actualWidth == expectedWidth);
+        assertTrue(actualHeight == expectedHeight);
     }
 
 

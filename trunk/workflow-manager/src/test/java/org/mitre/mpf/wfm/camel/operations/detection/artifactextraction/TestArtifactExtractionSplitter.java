@@ -49,7 +49,6 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

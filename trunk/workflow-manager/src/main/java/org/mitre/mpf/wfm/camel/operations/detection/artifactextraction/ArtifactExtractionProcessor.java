@@ -79,22 +79,15 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
     public void wfmProcess(Exchange exchange) {
         ArtifactExtractionRequest request = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
                 ArtifactExtractionRequest.class);
-        Table<Integer, Integer, URI> trackAndFrameToUri;
         switch (request.getMediaType()) {
-        case IMAGE:
-        case VIDEO:
-            try {
-                trackAndFrameToUri = _storageService.storeArtifacts(request);
-            } catch (IOException e) {
-                handleException(request, e);
-                return;
-            }
-            processCompletedExtractionRequest(request, trackAndFrameToUri);
-            break;
-        default:
-            _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-            _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting frame(s): Unsupported media type" + request.getMediaType().name());
+            case IMAGE:
+            case VIDEO:
+                processExtractionRequest(request);
+                break;
+            default:
+                _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+                _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
+                    "Error extracting artifacts9s) from frame(s): Unsupported media type" + request.getMediaType().name());
         }
 
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
@@ -113,14 +106,20 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
     }
 
 
-    private void processCompletedExtractionRequest(ArtifactExtractionRequest request,
-                                                   Table<Integer, Integer, URI> trackAndFrameToUri) {
+    private void processExtractionRequest(ArtifactExtractionRequest request) {
+        Table<Integer, Integer, URI> trackAndFrameToUri;
+        try {
+            trackAndFrameToUri = _storageService.storeArtifacts(request);
+        } catch (IOException e) {
+            handleException(request, e);
+            return;
+        }
         SortedSet<Track> jobTracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                 request.getTaskIndex(), request.getActionIndex());
         for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
             URI uri = entry.getValue();
             if (request.getCroppingFlag()) {
-                jobTracks.stream().filter(t -> t.getArtifactExtractionTrackId() == entry.getRowKey())
+                jobTracks.stream().filter(t -> t.getArtifactExtractionTrackIndex() == entry.getRowKey())
                                   .flatMap(t -> t.getDetections().stream())
                                   .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
                                   .forEach( d -> setStatus(d, uri));
@@ -138,7 +137,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         if (!missingFrames.isEmpty()) {
             _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
             _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting frame(s): " + missingFrames);
+                    "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
         _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(),
                                        request.getTaskIndex(), request.getActionIndex(), jobTracks);
@@ -163,7 +162,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         SortedSet<Integer> missingFrames = findMissingFrames(request);
         if (!missingFrames.isEmpty()) {
             _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting frame(s): " + missingFrames);
+                    "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
     }
 }

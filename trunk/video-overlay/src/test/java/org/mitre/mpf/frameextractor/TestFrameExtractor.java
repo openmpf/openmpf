@@ -27,7 +27,6 @@
 package org.mitre.mpf.frameextractor;
 
 import org.junit.Assert;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,10 +65,10 @@ public class TestFrameExtractor {
     @Test
     public void testFrameExtractorOnVideo() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        List<Integer> trackIds = Arrays.asList(1, 2);
+        List<Integer> trackIndices = Arrays.asList(1, 2);
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-                .forEach(n -> putInExtractionMap(n, trackIds, 20, 30, 100, 150, 0.0, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, trackIndices, 20, 30, 100, 150, 0.0, requestedExtractions));
         URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
         // test first with cropping, then without.
         extractFrames(media, true, requestedExtractions);
@@ -79,10 +78,10 @@ public class TestFrameExtractor {
     @Test
     public void testFrameExtractorOnGif() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        List<Integer> trackIds = Arrays.asList(1);
+        List<Integer> trackIndices = Arrays.asList(1);
         List<Integer> frameNumbers = Arrays.asList(2, 4, 8);
         frameNumbers.stream()
-                .forEach(n -> putInExtractionMap(n, trackIds, 100, 100, 150, 100, 0.0, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, trackIndices, 100, 100, 150, 100, 0.0, requestedExtractions));
         URI media = JniTestUtils.getFileResource("samples/face-morphing.gif");
         extractFrames(media, true, requestedExtractions);
         extractFrames(media, false, requestedExtractions);
@@ -119,14 +118,14 @@ public class TestFrameExtractor {
     @Test
     public void testFrameExtractorMultipleTracks() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        List<Integer> trackIds = Arrays.asList(1, 2);
+        List<Integer> trackIndices = Arrays.asList(1, 2);
         List<Integer> frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-                .forEach(n -> putInExtractionMap(n, trackIds, 50, 50, 100, 150, 0.0, requestedExtractions));
-        List<Integer> nextTrackIds = Arrays.asList(3, 4);
+                .forEach(n -> putInExtractionMap(n, trackIndices, 50, 50, 100, 150, 0.0, requestedExtractions));
+        List<Integer> nextTrackIndices = Arrays.asList(3, 4);
         frameNumbers = Arrays.asList(0, 1, 2, 4, 8, 100, 1000, 1500, 1998, 1999);
         frameNumbers.stream()
-                .forEach(n -> putInExtractionMap(n, nextTrackIds,0, 0, 90, 125, 0.0, requestedExtractions));
+                .forEach(n -> putInExtractionMap(n, nextTrackIndices,0, 0, 90, 125, 0.0, requestedExtractions));
 
         URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
         extractFrames(media, true, requestedExtractions);
@@ -145,8 +144,8 @@ public class TestFrameExtractor {
         Set<Integer> frames = requestedExtractions.keySet();
         if (cropFlag) {
             for (Integer frame : frames) {
-                for (Integer trackId : requestedExtractions.get(frame).keySet()) {
-                    assertSizesMatch(requestedExtractions.get(frame).get(trackId), results.get(trackId, frame));
+                for (Integer trackIndex : requestedExtractions.get(frame).keySet()) {
+                    assertSizesMatch(requestedExtractions.get(frame).get(trackIndex), results.get(trackIndex, frame));
                 }
             }
         }
@@ -165,7 +164,7 @@ public class TestFrameExtractor {
     }
 
 
-    private void putInExtractionMap(Integer frameNumber, List<Integer> trackIds,
+    private void putInExtractionMap(Integer frameNumber, List<Integer> trackIndices,
                                     int x, int y, int width, int height, double rotation,
                                     SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) {
 
@@ -176,8 +175,8 @@ public class TestFrameExtractor {
         SortedMap<String, String> props = new TreeMap<>();
         props.put("ROTATION", Double.toString(rotation));
 
-        for (Integer trackId : trackIds) {
-            requestedExtractions.get(frameNumber).put(trackId, new JsonDetectionOutputObject(x, y, width, height,
+        for (Integer trackIndex : trackIndices) {
+            requestedExtractions.get(frameNumber).put(trackIndex, new JsonDetectionOutputObject(x, y, width, height,
                     (float)0.0, props, frameNumber.intValue(),
                     0, "NOT_ATTEMPTED", ""));
         }

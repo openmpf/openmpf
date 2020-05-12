@@ -63,7 +63,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
     JniHelper jni(env);
 
     try {
-        // Methods to get frame numbers, track ids, and detections.
+        // Methods to get frame numbers, track indices, and detections.
         jclass clzFrameExtractor = jni.GetObjectClass(frameExtractorInstance);
         jmethodID clzFrameExtractor_fnGetFrames = jni.GetMethodID(clzFrameExtractor,
                                                            "getFrameNumbers", "()Ljava/util/Set;");

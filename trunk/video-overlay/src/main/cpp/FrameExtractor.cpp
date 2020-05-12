@@ -67,8 +67,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jclass clzFrameExtractor = jni.GetObjectClass(frameExtractorInstance);
         jmethodID clzFrameExtractor_fnGetFrames = jni.GetMethodID(clzFrameExtractor,
                                                            "getFrameNumbers", "()Ljava/util/Set;");
-        jmethodID clzFrameExtractor_fnGetTrackIds = jni.GetMethodID(clzFrameExtractor,
-                                                           "getTrackIds", "(Ljava/lang/Integer;)Ljava/util/Set;");
+        jmethodID clzFrameExtractor_fnGetTrackIndices = jni.GetMethodID(clzFrameExtractor,
+                                                           "getTrackIndices", "(Ljava/lang/Integer;)Ljava/util/Set;");
         jmethodID clzFrameExtractor_fnGetDetection = jni.GetMethodID(clzFrameExtractor, "getDetection",
                                                            "(Ljava/lang/Integer;Ljava/lang/Integer;)Lorg/mitre/mpf/interop/JsonDetectionOutputObject;");
         jmethodID clzFrameExtractor_fnMakeFilename = jni.GetMethodID(clzFrameExtractor,
@@ -110,13 +110,13 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jmethodID clzJsonDetectionOutputObject_fnGetProperties = jni.GetMethodID(clzJsonDetectionOutputObject,
                 "getDetectionProperties", "()Ljava/util/SortedMap;");
 
-        // Begin processing: open the video, and then process one frame at a time,
+        // Begin processing: open the media, and then process one frame at a time,
         // completing all extractions before going to the next frame.
-        std::string videoPath = jni.ToStdString(video);
+        std::string mediaPath = jni.ToStdString(video);
 
-        MPFVideoCapture src(videoPath);
+        MPFVideoCapture src(mediaPath);
         if (!src.IsOpened()) {
-            throw std::runtime_error("Unable to open input media file: " + videoPath);
+            throw std::runtime_error("Unable to open input media file: " + mediaPath);
         }
 
         // Get the set of frames to be extracted and an iterator for it.
@@ -158,8 +158,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                 }
             }
             else {
-                jobject trackIdSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIds, thisFrameNumObj);
-                jobject trackIterator = jni.CallObjectMethod(trackIdSet, clzSet_fnIterator);
+                jobject trackIndexSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIndices, thisFrameNumObj);
+                jobject trackIterator = jni.CallObjectMethod(trackIndexSet, clzSet_fnIterator);
 
                 // For each track, perform the extraction for the associated detection object.
                 while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {

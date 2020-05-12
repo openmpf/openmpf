@@ -66,7 +66,7 @@ public class ArtifactExtractionRequest {
     private final boolean _croppingFlag;
     public boolean getCroppingFlag() { return _croppingFlag; }
 
-    /** Maps frame numbers to pairs of trackId and detection to be extracted. */
+    /** Maps frame numbers to pairs of trackIndex and detection to be extracted. */
     private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
     public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
         return extractionsMap;

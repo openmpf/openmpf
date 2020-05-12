@@ -159,12 +159,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         return messages;
     }
 
-    private void putInExtractableDetectionsMap(Integer trackId, SortedSet<JsonDetectionOutputObject> detections,
+    private void putInExtractableDetectionsMap(Integer trackIndex, SortedSet<JsonDetectionOutputObject> detections,
                                      SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> map) {
         for (JsonDetectionOutputObject detection : detections) {
             Integer frameNumber = detection.getOffsetFrame();
-            map.computeIfAbsent(frameNumber, k -> new TreeMap<Integer, JsonDetectionOutputObject>());
-            map.get(frameNumber).put(trackId, detection);
+            map.computeIfAbsent(frameNumber, k -> new TreeMap<>());
+            map.get(frameNumber).put(trackIndex, detection);
         }
     }
 

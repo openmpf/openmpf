@@ -52,16 +52,16 @@ public class FrameExtractor {
     private final URI extractionDirectory;
     private final FileNameGenerator fileNameGenerator;
 
-    // Maps frame numbers to pairs of trackId and detection to be extracted.
+    // Maps frame numbers to pairs of trackIndex and detection to be extracted.
     private SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
     public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
         return extractionsMap;
     }
     // Access methods for the extractions map.
     public Set<Integer> getFrameNumbers() { return extractionsMap.keySet(); }
-    public Set<Integer> getTrackIds(Integer frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
-    public JsonDetectionOutputObject getDetection(Integer frameNumber, Integer trackId) {
-        return extractionsMap.get(frameNumber).get(trackId);
+    public Set<Integer> getTrackIndices(Integer frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
+    public JsonDetectionOutputObject getDetection(Integer frameNumber, Integer trackIndex) {
+        return extractionsMap.get(frameNumber).get(trackIndex);
     }
 
     private boolean croppingFlag = true;

@@ -87,7 +87,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             default:
                 _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
                 _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting artifacts9s) from frame(s): Unsupported media type" + request.getMediaType().name());
+                    "Error extracting artifacts(s) from frame(s): Unsupported media type" + request.getMediaType().name());
         }
 
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));

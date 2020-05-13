@@ -28,7 +28,8 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.*;
@@ -317,37 +318,23 @@ public class TestS3StorageBackend {
 
 
     @Test
-    public void canStoreImageArtifacts() throws IOException, StorageException {
-        ArtifactExtractionRequest request = createArtifactExtractionRequest();
-
-        Path filePath = getTestFileCopy();
-        when(_mockLocalStorageBackend.storeImageArtifact(request))
-                .thenReturn(filePath.toUri());
-
-        assertTrue(_s3StorageBackend.canStore(request));
-
-        URI remoteUri = _s3StorageBackend.storeImageArtifact(request);
-        assertEquals(EXPECTED_URI, remoteUri);
-        assertFalse(Files.exists(filePath));
-        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
-    }
-
-
-
-    @Test
-    public void canStoreVideoArtifacts() throws IOException, StorageException {
+    public void canStoreArtifacts() throws IOException, StorageException {
         ArtifactExtractionRequest request = createArtifactExtractionRequest();
 
         Path filePath0 = getTestFileCopy();
         Path filePath1 = copyTestFile("/samples/meds1.jpg");
-        when(_mockLocalStorageBackend.storeVideoArtifacts(request))
-                .thenReturn(ImmutableSortedMap.of(0, filePath0.toUri(), 1, filePath1.toUri()));
+        when(_mockLocalStorageBackend.storeArtifacts(request))
+                .thenReturn(new ImmutableTable.Builder<Integer, Integer, URI>()
+                        .put(0, 2, filePath0.toUri())
+                        .put(1, 3, filePath1.toUri())
+                        .build());
 
         assertTrue(_s3StorageBackend.canStore(request));
-        Map<Integer, URI> results = _s3StorageBackend.storeVideoArtifacts(request);
-        Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, EXPECTED_URI,
-                1, filePath1.toUri());
+        Table<Integer, Integer, URI> results = _s3StorageBackend.storeArtifacts(request);
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                                                       .put(0, 2, EXPECTED_URI)
+                                                       .put(1, 3, filePath1.toUri())
+                                                       .build();
 
         assertEquals(expectedResults, results);
         assertFalse(Files.exists(filePath0));

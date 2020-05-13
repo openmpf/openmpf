@@ -38,6 +38,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -63,8 +66,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 @Service
@@ -114,42 +115,28 @@ public class S3StorageBackend implements StorageBackend {
 
 
     @Override
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException {
-        URI localUri = _localStorageBackend.storeImageArtifact(request);
-        BatchJob job = _inProgressJobs.getJob(request.getJobId());
-        Media media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
-        return putInS3IfAbsent(Paths.get(localUri), combinedProperties);
-    }
-
-
-
-    @Override
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
         BatchJob job = _inProgressJobs.getJob(request.getJobId());
         Media media = job.getMedia(request.getMediaId());
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
-        Map<Integer, URI> localResults = _localStorageBackend.storeVideoArtifacts(request);
-        Map<Integer, URI> remoteResults = new HashMap<>();
+        Table<Integer, Integer, URI> localResults = _localStorageBackend.storeArtifacts(request);
+        Table<Integer, Integer, URI> remoteResults = HashBasedTable.create();
 
         try {
-            for (Map.Entry<Integer, URI> localEntry : localResults.entrySet()) {
-                URI remoteUri = putInS3IfAbsent(Paths.get(localEntry.getValue()), combinedProperties);
-                remoteResults.put(localEntry.getKey(), remoteUri);
+            for (Table.Cell<Integer, Integer, URI> entry : localResults.cellSet()) {
+                URI remoteUri = putInS3IfAbsent(Paths.get(entry.getValue()), combinedProperties);
+                remoteResults.put(entry.getRowKey(), entry.getColumnKey(), remoteUri);
             }
-
-        }
-        catch (StorageException | IOException e) {
-            LOG.error(String.format(
-                    "An error occurred while uploading artifacts for job %d and media %d. " +
-                            "They will be stored locally instead.",
-                    request.getJobId(), request.getMediaId()), e);
-            _inProgressJobs.addJobWarning(
-                    request.getJobId(),
+        } catch (StorageException | IOException e) {
+            LOG.error(String.format("An error occurred while uploading artifacts for job %d and media %d. "
+                    + "They will be stored locally instead.", request.getJobId(), request.getMediaId()), e);
+            _inProgressJobs.addJobWarning(request.getJobId(),
                     "Some artifacts were stored locally because storing them remotely failed due to: " + e);
-            for (Map.Entry<Integer, URI> localEntry : localResults.entrySet()) {
-                remoteResults.putIfAbsent(localEntry.getKey(), localEntry.getValue());
+            for (Table.Cell<Integer, Integer, URI> localEntry : localResults.cellSet()) {
+                if (!remoteResults.contains(localEntry.getRowKey(), localEntry.getColumnKey())) {
+                    remoteResults.put(localEntry.getRowKey(), localEntry.getColumnKey(), localEntry.getValue());
+                }
             }
         }
         return remoteResults;
@@ -167,7 +154,6 @@ public class S3StorageBackend implements StorageBackend {
         return requiresS3ResultUpload(combinedProperties);
     }
 
-
     @Override
     public void store(MarkupResult markupResult) throws StorageException, IOException {
         _localStorageBackend.store(markupResult);
@@ -182,7 +168,6 @@ public class S3StorageBackend implements StorageBackend {
         URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
         markupResult.setMarkupUri(uploadedUri.toString());
     }
-
 
     /**
      * Ensures that the S3-related properties are valid.
@@ -318,8 +303,8 @@ public class S3StorageBackend implements StorageBackend {
             AmazonS3 s3Client = getS3UploadClient(properties);
             boolean alreadyExists = s3Client.doesObjectExist(resultsBucket, objectName);
             if (alreadyExists) {
-                LOG.info("Did not to upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" " +
-                                 "because a file with the same SHA-256 hash was already there.",
+                LOG.info("Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" " +
+                               "because a file with the same SHA-256 hash was already there.",
                          path, bucketUri, objectName);
             }
             else {

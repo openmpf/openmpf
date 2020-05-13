@@ -47,6 +47,7 @@ import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -577,6 +578,8 @@ public class TestArtifactExtractionSplitter {
                 .thenReturn(MediaType.VIDEO);
         when(media.getLength())
                 .thenReturn(1000);
+        when(media.getLocalPath())
+        .thenReturn(Paths.get("/test/path"));
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 
@@ -625,13 +628,13 @@ public class TestArtifactExtractionSplitter {
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);
+
         ImmutableSet<Integer> actualFrameNumbers = resultMessages.stream()
                 .map(m -> _jsonUtils.deserialize(m.getBody(byte[].class), ArtifactExtractionRequest.class))
-                .flatMap(req -> req.getFrameNumbers().stream())
+                .flatMap(req -> req.getExtractionsMap().keySet().stream())
                 .collect(ImmutableSet.toImmutableSet());
 
         assertEquals(ImmutableSet.copyOf(expectedFrames), actualFrameNumbers);
-
     }
 
 

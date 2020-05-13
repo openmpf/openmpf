@@ -26,35 +26,31 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.camel.Exchange;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.Detection;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Table;
+
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toCollection;
 
 /**
- * Extracts artifacts from a media file based on the contents of the {@link ArtifactExtractionRequest}
- * contained in the incoming message body.
+ * Extracts artifacts from a media file based on the contents of the
+ * {@link ArtifactExtractionRequest} contained in the incoming message body.
  */
 @Component(ArtifactExtractionProcessor.REF)
 public class ArtifactExtractionProcessor extends WfmProcessor {
@@ -79,20 +75,19 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         _storageService = storageService;
     }
 
-
     @Override
     public void wfmProcess(Exchange exchange) {
         ArtifactExtractionRequest request = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
-                                                                   ArtifactExtractionRequest.class);
+                ArtifactExtractionRequest.class);
         switch (request.getMediaType()) {
             case IMAGE:
-                processImageRequest(request);
-                break;
             case VIDEO:
-                processVideoRequest(request);
+                processExtractionRequest(request);
                 break;
             default:
-                processUnsupportedMediaRequest(request);
+                _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+                _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
+                    "Error extracting artifacts(s) from frame(s): Unsupported media type" + request.getMediaType().name());
         }
 
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
@@ -100,88 +95,74 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
     }
 
 
-    private void processImageRequest(ArtifactExtractionRequest request) {
-        URI uri;
-        try {
-            uri = _storageService.storeImageArtifact(request);
+    private void setStatus(Detection detection, URI uri) {
+        if (uri == null) {
+            detection.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
         }
-        catch (IOException e) {
-            handleException(request, e);
-            return;
+        else {
+            detection.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
+            detection.setArtifactPath(uri.toString());
         }
-
-        processDetections(request, d -> {
-            d.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
-            d.setArtifactPath(uri.toString());
-        });
     }
 
 
-    private void processVideoRequest(ArtifactExtractionRequest request) {
-        Map<Integer, URI> frameToUri;
+    private void processExtractionRequest(ArtifactExtractionRequest request) {
+        Table<Integer, Integer, URI> trackAndFrameToUri;
         try {
-            frameToUri = _storageService.storeVideoArtifacts(request);
-        }
-        catch (IOException e) {
+            trackAndFrameToUri = _storageService.storeArtifacts(request);
+        } catch (IOException e) {
             handleException(request, e);
             return;
         }
-
-        processDetections(request, d -> {
-            URI uri = frameToUri.get(d.getMediaOffsetFrame());
-            if (uri == null) {
-                d.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED);
+        SortedSet<Track> jobTracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
+                request.getTaskIndex(), request.getActionIndex());
+        for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
+            URI uri = entry.getValue();
+            if (request.getCroppingFlag()) {
+                jobTracks.stream().filter(t -> t.getArtifactExtractionTrackIndex() == entry.getRowKey())
+                                  .flatMap(t -> t.getDetections().stream())
+                                  .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
+                                  .forEach( d -> setStatus(d, uri));
             }
             else {
-                d.setArtifactPath(uri.toString());
-                d.setArtifactExtractionStatus(ArtifactExtractionStatus.COMPLETED);
+                for (Integer frame : trackAndFrameToUri.columnKeySet()) {
+                    jobTracks.stream().flatMap(t -> t.getDetections().stream())
+                                      .filter(d -> frame.equals(d.getMediaOffsetFrame()))
+                                      .forEach(d -> setStatus(d, uri));
+                }
             }
-        });
+        }
+
+        SortedSet<Integer> missingFrames = findMissingFrames(request);
+        if (!missingFrames.isEmpty()) {
+            _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+            _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
+                    "Error extracting artifact(s) from frame(s): " + missingFrames);
+        }
+        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(),
+                                       request.getTaskIndex(), request.getActionIndex(), jobTracks);
     }
 
+    private SortedSet<Integer> findMissingFrames(ArtifactExtractionRequest request) {
 
-    private void processUnsupportedMediaRequest(ArtifactExtractionRequest request) {
-        processDetections(
-                request,
-                d -> d.setArtifactExtractionStatus(ArtifactExtractionStatus.UNSUPPORTED_MEDIA_TYPE));
+        return request.getExtractionsMap().values().stream()
+                                   .flatMap(v -> v.values().stream())
+                                   .filter(d ->(d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED.name()) ||
+                                    (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.REQUESTED.name()))
+                                   .map(JsonDetectionOutputObject::getOffsetFrame).collect(toCollection(TreeSet::new));
     }
-
 
     private void handleException(ArtifactExtractionRequest request, IOException e) {
-        LOG.warn("[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract the artifacts from Media #{} due to an " +
-                         "exception. All detections (including exemplars) produced in this task " +
-                         "for this medium will NOT have an associated artifact.",
-                 request.getJobId(), request.getTaskIndex(), request.getMediaId(), e);
-        processDetections(request, d -> d.setArtifactExtractionStatus(ArtifactExtractionStatus.FAILED));
-    }
-
-
-    private void processDetections(ArtifactExtractionRequest request, Consumer<Detection> detectionHandler) {
-        for (Map.Entry<Integer, ImmutableSet<Integer>> entry : request.getActionToFrameNumbers().entrySet()) {
-            int actionIndex = entry.getKey();
-            Set<Integer> artifactFrames = entry.getValue();
-            Set<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
-                                                               request.getTaskIndex(), actionIndex);
-
-            tracks.stream()
-                    .flatMap(t -> t.getDetections().stream())
-                    .filter(d -> artifactFrames.contains(d.getMediaOffsetFrame()))
-                    .forEach(detectionHandler);
-
-            _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(),
-                                           actionIndex, tracks);
-
-            SortedSet<Integer> missingFrames = tracks.stream()
-                    .flatMap(t -> t.getDetections().stream())
-                    .filter(d -> d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED)
-                    .map(Detection::getMediaOffsetFrame)
-                    .collect(toCollection(TreeSet::new));
-
-            if (!missingFrames.isEmpty()) {
-                _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                                                   "Error extracting frame(s): " + missingFrames);
-            }
+        LOG.warn(
+                "[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract the artifacts from Media #{} due to an "
+                        + "exception. All detections (including exemplars) produced in this task "
+                        + "for this medium will NOT have an associated artifact.",
+                request.getJobId(), request.getTaskIndex(), request.getMediaId(), e);
+        _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+        SortedSet<Integer> missingFrames = findMissingFrames(request);
+        if (!missingFrames.isEmpty()) {
+            _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
+                    "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
     }
 }

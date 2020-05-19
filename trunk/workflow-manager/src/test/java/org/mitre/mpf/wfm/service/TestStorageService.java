@@ -27,7 +27,9 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
@@ -45,7 +47,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -238,11 +239,13 @@ public class TestStorageService {
 
         when(_mockNginxBackend.canStore(request))
                 .thenReturn(true);
-        when(_mockNginxBackend.storeImageArtifact(request))
-                .thenReturn(TEST_REMOTE_URI);
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                                                           .put(0, 0, TEST_REMOTE_URI).build();
+        when(_mockNginxBackend.storeArtifacts(request))
+                .thenReturn(expectedResults);
 
-        URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_REMOTE_URI, result);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
+        assertEquals(expectedResults, result);
 
         verifyZeroInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
@@ -255,12 +258,13 @@ public class TestStorageService {
         when(request.getMediaType())
                 .thenReturn(MediaType.IMAGE);
 
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(0, 0, TEST_LOCAL_URI).build();
+        when(_mockLocalBackend.storeArtifacts(request))
+                .thenReturn(expectedResults);
 
-        when(_mockLocalBackend.storeImageArtifact(request))
-                .thenReturn(TEST_LOCAL_URI);
-
-        URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_LOCAL_URI, result);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
+        assertEquals(expectedResults, result);
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
@@ -281,13 +285,15 @@ public class TestStorageService {
         when(_mockNginxBackend.canStore(request))
                 .thenReturn(true);
         doThrow(StorageException.class)
-                .when(_mockNginxBackend).storeImageArtifact(request);
+                .when(_mockNginxBackend).storeArtifacts(request);
 
-        when(_mockLocalBackend.storeImageArtifact(request))
-                .thenReturn(TEST_LOCAL_URI);
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(0, 0, TEST_LOCAL_URI).build();
+        when(_mockLocalBackend.storeArtifacts(request))
+                .thenReturn(expectedResults);
 
-        URI result = _storageService.storeImageArtifact(request);
-        assertEquals(TEST_LOCAL_URI, result);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
+        assertEquals(expectedResults, result);
 
         verifyJobWarning(jobId);
     }
@@ -299,16 +305,17 @@ public class TestStorageService {
         when(request.getMediaType())
                 .thenReturn(MediaType.VIDEO);
 
-        Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_REMOTE_URI,
-                5, URI.create("http://example"));
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(0, 2, TEST_REMOTE_URI)
+                .put(5, 6, URI.create("http://example"))
+                .build();
 
         when(_mockS3Backend.canStore(request))
                 .thenReturn(true);
-        when(_mockS3Backend.storeVideoArtifacts(request))
+        when(_mockS3Backend.storeArtifacts(request))
                 .thenReturn(expectedResults);
 
-        Map<Integer, URI> result = _storageService.storeVideoArtifacts(request);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
         verifyZeroInteractions(_mockLocalBackend);
@@ -322,14 +329,15 @@ public class TestStorageService {
         when(request.getMediaType())
                 .thenReturn(MediaType.VIDEO);
 
-        Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_LOCAL_URI,
-                5, URI.create("file:///example"));
+        ImmutableTable<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(0, 2, TEST_LOCAL_URI)
+                .put(5, 10, URI.create("file:///example"))
+                .build();
 
-        when(_mockLocalBackend.storeVideoArtifacts(request))
+        when(_mockLocalBackend.storeArtifacts(request))
                 .thenReturn(expectedResults);
 
-        Map<Integer, URI> result = _storageService.storeVideoArtifacts(request);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
         verifyNoInProgressJobWarnings();
@@ -352,16 +360,17 @@ public class TestStorageService {
         when(_mockNginxBackend.canStore(request))
                 .thenReturn(true);
         doThrow(StorageException.class)
-                .when(_mockNginxBackend).storeVideoArtifacts(request);
+                .when(_mockNginxBackend).storeArtifacts(request);
 
-        Map<Integer, URI> expectedResults = ImmutableMap.of(
-                0, TEST_LOCAL_URI,
-                5, URI.create("file:///example"));
+        ImmutableTable<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(0, 5, TEST_LOCAL_URI)
+                .put(5, 14, URI.create("file:///example"))
+                .build();
 
-        when(_mockLocalBackend.storeVideoArtifacts(request))
+        when(_mockLocalBackend.storeArtifacts(request))
                 .thenReturn(expectedResults);
 
-        Map<Integer, URI> result = _storageService.storeVideoArtifacts(request);
+        Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
         verifyJobWarning(jobId);

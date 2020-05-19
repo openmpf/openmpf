@@ -27,15 +27,13 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import org.mitre.mpf.wfm.enums.MediaType;
 
-import java.util.Collection;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.wfm.enums.MediaType;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class ArtifactExtractionRequest {
     /** The identifier of the medium associated with this request. */
@@ -54,22 +52,25 @@ public class ArtifactExtractionRequest {
     private final long _jobId;
     public long getJobId() { return _jobId; }
 
-    /** The task index in the pipeline. This information is necessary to map an artifact back to a track. */
-    private final int _taskIndex;
-    public int getTaskIndex() { return _taskIndex; }
+    /** The index of the task from which this request was derived. */
+    private final Integer _taskIndex;
+    public Integer getTaskIndex() { return _taskIndex; }
 
-    /** A mapping of actionIndexes to frame numbers which should be extracted for that action. */
-    private final ImmutableMap<Integer, ImmutableSet<Integer>> _actionToFrameNumbers;
-    public ImmutableMap<Integer, ImmutableSet<Integer>> getActionToFrameNumbers() {
-        return _actionToFrameNumbers;
+    /** The index of the action from which this request was derived. */
+    private final Integer _actionIndex;
+    public Integer getActionIndex() {  return _actionIndex; }
+
+    /** If the cropping flag is set to true, then each extraction will be cropped according to
+     * the bounding box in the corresponding detection. If false, then the entire frame
+     * will be extracted. */
+    private final boolean _croppingFlag;
+    public boolean getCroppingFlag() { return _croppingFlag; }
+
+    /** Maps frame numbers to pairs of trackIndex and detection to be extracted. */
+    private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+    public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
+        return extractionsMap;
     }
-
-    private final ImmutableSet<Integer> _frameNumbers;
-    @JsonIgnore
-    public ImmutableSet<Integer> getFrameNumbers() {
-        return _frameNumbers;
-    }
-
 
     @JsonCreator
     public ArtifactExtractionRequest(
@@ -78,19 +79,14 @@ public class ArtifactExtractionRequest {
             @JsonProperty("path") String path,
             @JsonProperty("mediaType") MediaType mediaType,
             @JsonProperty("taskIndex") int taskIndex,
-            @JsonProperty("actionToFrameNumbers") Map<Integer, Set<Integer>> actionToFrameNumbers) {
+            @JsonProperty("actionIndex") int actionIndex,
+            @JsonProperty("croppingFlag") boolean flag) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;
         _mediaType = mediaType;
         _taskIndex = taskIndex;
-
-        _actionToFrameNumbers = actionToFrameNumbers.entrySet()
-                .stream()
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableSet.copyOf(e.getValue())));
-
-        _frameNumbers = _actionToFrameNumbers.values().stream()
-                .flatMap(Collection::stream)
-                .collect(ImmutableSet.toImmutableSet());
+        _actionIndex = actionIndex;
+        _croppingFlag = flag;
     }
 }

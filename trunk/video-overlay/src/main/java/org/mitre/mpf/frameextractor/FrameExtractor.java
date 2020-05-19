@@ -28,84 +28,104 @@ package org.mitre.mpf.frameextractor;
 
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
 
-    private final URI video;
+    private final URI media;
     private final URI extractionDirectory;
-    private final Set<Integer> frames = new TreeSet<Integer>();
     private final FileNameGenerator fileNameGenerator;
+
+    // Maps frame numbers to pairs of trackIndex and detection to be extracted.
+    private SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+    public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
+        return extractionsMap;
+    }
+    // Access methods for the extractions map.
+    public Set<Integer> getFrameNumbers() { return extractionsMap.keySet(); }
+    public Set<Integer> getTrackIndices(Integer frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
+    public JsonDetectionOutputObject getDetection(Integer frameNumber, Integer trackIndex) {
+        return extractionsMap.get(frameNumber).get(trackIndex);
+    }
+
+    private boolean croppingFlag = true;
+
     private String prefix = "frame";
 
 
-    public FrameExtractor(URI video, URI extractionDirectory) {
-        this(video, extractionDirectory, FrameExtractor::defaultFileNameGenerator);
+    public FrameExtractor(URI media, URI extractionDirectory, boolean croppingFlag) {
+        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag);
     }
 
-    public FrameExtractor(URI video, URI extractionDirectory, FileNameGenerator fileNameGenerator) {
-        this.video = video;
+    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator, boolean croppingFlag) {
+        this.media = media;
         this.extractionDirectory = extractionDirectory;
         this.fileNameGenerator = fileNameGenerator;
+        this.croppingFlag = croppingFlag;
     }
 
 
-    public Map<Integer, String> execute() throws IOException {
+    public Table<Integer, Integer, String> execute() throws IOException {
         Split split = SimonManager.getStopwatch("org.mitre.mpf.frameextractor.FrameExtractor.execute").start();
         try {
-            if (video == null) {
-                throw new IllegalStateException("video must not be null");
+            if (media == null) {
+                throw new IllegalStateException("media URI must not be null");
             }
 
             if (extractionDirectory == null) {
                 throw new IllegalStateException("extractionDirectory must not be null");
             }
 
-            Map<Integer, String> paths = new HashMap<Integer, String>();
+            Table<Integer, Integer, String> extractedPathTable = HashBasedTable.create();
+            List<FrameExtractionResult> results = new ArrayList<>();
 
             Split nativeSplit = SimonManager.getStopwatch("org.mitre.mpf.frameextractor.FrameExtractor.execute->native").start();
             int response = -1;
             try {
-                if(frames.size() == 0) {
-                    log.debug("The collection of frames to extract was empty.");
+                if(extractionsMap.size() == 0) {
+                    log.debug("extractionsMap is empty -- nothing to extract.");
                     response = 0;
-                } else {
-                    response = executeNative(new File(video).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), paths);
+                }
+                else {
+                    response = executeNative(new File(media).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), croppingFlag, results);
                 }
             } finally {
                 nativeSplit.stop();
             }
 
-
             if (response != 0) {
                 throw new FrameExtractorJniException(response);
             }
+            results.stream().forEach(e -> extractedPathTable.put(e.trackNumber, e.frameNumber, e.filePath));
 
-            return paths;
+            return extractedPathTable;
         } finally {
             split.stop();
         }
     }
 
-    public Set<Integer> getFrames() {
-        return frames;
+    private String makeFilename(String path, int trackNumber, int frameNumber) {
+        return fileNameGenerator.generateFileName(path, trackNumber, frameNumber, prefix);
     }
 
-    private String makeFilename(String path, int frameNumber) {
-        return fileNameGenerator.generateFileName(path, frameNumber, prefix);
-    }
-
-    private native int executeNative(String sourceVideo, String destinationVideo, Map<Integer, String> paths);
+    private native int executeNative(String sourceMedia, String extractionDestination,
+                                     boolean croppingFlag, List<FrameExtractionResult> results);
 
     public String getPrefix() {
         return prefix;
@@ -120,16 +140,16 @@ public class FrameExtractor {
 
     @Override
     public String toString() {
-        return String.format("%s#<video='%s', extractionDirectory='%s', frames=%d>",
-                this.getClass().getSimpleName(),
-                video,
-                extractionDirectory,
-                frames.size());
+        return String.format("%s#<media='%s', extractionDirectory='%s', frames=%d>",
+                             this.getClass().getSimpleName(),
+                             media,
+                             extractionDirectory,
+                             extractionsMap.keySet().size());
     }
 
-    private static String defaultFileNameGenerator(String path, int frameNumber, String prefix) {
+    private static String defaultFileNameGenerator(String path, int trackNumber, int frameNumber, String prefix) {
         try {
-            File outputFile = new File(path, String.format("%s-%d.png", prefix, frameNumber));
+            File outputFile = new File(String.format("%s/%d", path, trackNumber), String.format("%s-%d.png", prefix, frameNumber));
             outputFile.getParentFile().mkdirs();
             return outputFile.getAbsolutePath();
         } catch(Exception exception) {
@@ -141,6 +161,6 @@ public class FrameExtractor {
 
     @FunctionalInterface
     public static interface FileNameGenerator {
-        public String generateFileName(String path, int frameNumber, String prefix);
+        public String generateFileName(String path, int trackNumber, int frameNumber, String prefix);
     }
 }

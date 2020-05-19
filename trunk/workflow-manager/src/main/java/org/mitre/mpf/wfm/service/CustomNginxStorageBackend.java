@@ -30,6 +30,8 @@ package org.mitre.mpf.wfm.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Table;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
@@ -145,17 +147,7 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException {
-        URI serviceUri = getServiceUri(request.getJobId());
-        Path requestPath = Paths.get(request.getPath());
-        try (InputStream inputStream = Files.newInputStream(requestPath)) {
-            return store(serviceUri, inputStream);
-        }
-    }
-
-
-    @Override
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException {
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException {
         URI serviceUri = getServiceUri(request.getJobId());
         return StreamableFrameExtractor.run(request, inStream -> store(serviceUri, inStream));
     }

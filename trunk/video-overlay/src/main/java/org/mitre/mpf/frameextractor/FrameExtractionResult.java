@@ -24,74 +24,17 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "JniHelper.h"
+package org.mitre.mpf.frameextractor;
 
+public class FrameExtractionResult {
 
-JniHelper::JniHelper(JNIEnv *env)
-    : env_(env) {
-}
-
-jclass JniHelper::FindClass(const char *name) {
-    return callJni(&JNIEnv::FindClass, name);
-}
-
-
-jclass JniHelper::GetObjectClass(jobject obj) {
-    return callJni(&JNIEnv::GetObjectClass, obj);
-}
-
-
-jmethodID JniHelper::GetMethodID(jclass clz, const char *name, const char *signature) {
-    return callJni(&JNIEnv::GetMethodID, clz, name, signature);
-}
-
-jmethodID JniHelper::GetStaticMethodID(jclass clz, const char *name, const char *signature) {
-    return callJni(&JNIEnv::GetStaticMethodID, clz, name, signature);
-}
-
-jfieldID JniHelper::GetStaticFieldID(jclass clz, const char *name, const char *signature) {
-    return callJni(&JNIEnv::GetStaticFieldID, clz, name, signature);
-}
-
-jint JniHelper::GetStaticIntField(jclass clz, jfieldID fieldId) {
-    return callJni(&JNIEnv::GetStaticIntField, clz, fieldId);
-}
-
-jint JniHelper::ThrowNew(jclass clz, const char *msg) {
-    return env_->ThrowNew(clz, msg);
-}
-
-
-std::string JniHelper::ToStdString(jstring jString) {
-    const char* chars = callJni(&JNIEnv::GetStringUTFChars, jString, nullptr);
-    std::string result(chars);
-    callJniVoid(&JNIEnv::ReleaseStringUTFChars, jString, chars);
-    return result;
-}
-
-jstring JniHelper::ToJString(std::string inString) {
-	return callJni(&JNIEnv::NewStringUTF,inString.c_str());
-}
-
-void JniHelper::CheckException() {
-    if (env_->ExceptionCheck()) {
-        throw JniException();
+    public int frameNumber;
+    public int trackNumber;
+    public String filePath;
+    
+    public FrameExtractionResult(int frameNum, int trackNum, String path) {
+        frameNumber = frameNum;
+        trackNumber = trackNum;
+        filePath = path;
     }
 }
-
-
-void JniHelper::ReportCppException(const char * msg) {
-    if (env_->ExceptionCheck()) {
-        // There is already a pending JVM exception that will be thrown when JNI call returns,
-        // so we don't want to replace that exception.
-        return;
-    }
-
-    if (msg == nullptr) {
-        msg = "An unexpected error occurred in JNI code.";
-    }
-
-    jclass exceptionClz = env_->FindClass("java/lang/IllegalStateException");
-    ThrowNew(exceptionClz, msg);
-}
-

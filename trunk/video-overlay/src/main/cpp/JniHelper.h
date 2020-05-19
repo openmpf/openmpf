@@ -74,6 +74,11 @@ public:
         return callJni(&JNIEnv::CallDoubleMethod, obj, method, args...);
     }
 
+    template <typename ...Args>
+    jobject CallConstructorMethod(jclass clz, jmethodID method, Args... args) {
+        return callJni(&JNIEnv::NewObject, clz, method, args...);
+    }
+
     jfieldID GetStaticFieldID(jclass clz, const char * name, const char * signature);
 
     jint GetStaticIntField(jclass clz, jfieldID fieldId);
@@ -84,6 +89,7 @@ public:
     void ReportCppException(const char * msg = nullptr);
 
     std::string ToStdString(jstring jString);
+    jstring ToJString(std::string StdString);
 
 
 private:

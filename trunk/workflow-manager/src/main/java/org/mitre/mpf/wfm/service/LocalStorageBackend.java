@@ -27,6 +27,8 @@
 
 package org.mitre.mpf.wfm.service;
 
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -38,13 +40,8 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toMap;
 
 
 @Component
@@ -93,30 +90,13 @@ public class LocalStorageBackend implements StorageBackend {
 
 
     @Override
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException {
-        Path inputMediaPath = Paths.get(request.getPath());
-        Path artifactFile = _propertiesUtil.createArtifactFile(request.getJobId(),
-                                                               request.getMediaId(),
-                                                               request.getTaskIndex(),
-                                                               inputMediaPath.getFileName().toString());
-        Files.copy(inputMediaPath, artifactFile, StandardCopyOption.REPLACE_EXISTING);
-        return artifactFile.toUri();
-    }
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
 
-
-    @Override
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
-        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(),
-                                                                         request.getMediaId(),
-                                                                         request.getTaskIndex()).toURI();
-        FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(),
-                                                           artifactsDirectory);
-        frameExtractor.getFrames().addAll(request.getFrameNumbers());
-        Map<Integer, String> extractionResults = frameExtractor.execute();
-
-        return extractionResults.entrySet()
-                .stream()
-                .collect(toMap(Map.Entry::getKey,
-                               e -> Paths.get(e.getValue()).toUri()));
+        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(), request.getMediaId(),
+                request.getTaskIndex(), request.getActionIndex()).toURI();
+        FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(), artifactsDirectory, request.getCroppingFlag());
+        frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
+        Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
+        return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
     }
 }

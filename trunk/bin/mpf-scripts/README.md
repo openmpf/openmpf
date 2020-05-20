@@ -1,8 +1,7 @@
 Install
 ==================
-* The installation requires pip, a Python package manager. If you don't have pip installed you can
-run `yum -y install python-pip`
-* Run `sudo pip install path/to/mpf-scripts`
+* Install [Python 3.8](https://www.python.org/downloads).
+* Run `sudo pip3 install path/to/mpf-scripts`
 
 Tab Completion (optional)
 -------------------
@@ -33,4 +32,4 @@ your path. For more info run `mpf <command> --help`
 
 Uninstall
 =====================
-Run `sudo pip uninstall mpf`
+Run `sudo pip3 uninstall mpf`

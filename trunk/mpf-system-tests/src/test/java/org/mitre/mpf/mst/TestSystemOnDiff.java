@@ -79,6 +79,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         Map<String, String> jobProperties = new HashMap<>();
         jobProperties.put("OUTPUT_ARTIFACTS_AND_EXEMPLARS_ONLY", "true");
         jobProperties.put("ARTIFACT_EXTRACTION_POLICY", "ALL_DETECTIONS");
+        jobProperties.put("ARTIFACT_EXTRACTION_POLICY_CROPPING", "false");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
         long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", jobProperties, media);

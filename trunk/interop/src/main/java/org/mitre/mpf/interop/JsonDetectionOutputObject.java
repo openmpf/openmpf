@@ -88,8 +88,9 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	@JsonProperty("artifactExtractionStatus")
 	@JsonPropertyDescription("A status code indicating if an artifact was created for this detection.")
-	private final String artifactExtractionStatus;
+	private String artifactExtractionStatus;
 	public String getArtifactExtractionStatus() { return artifactExtractionStatus; }
+	public void setArtifactExtractionStatus(String status) { artifactExtractionStatus = status; }
 
 
 	@JsonCreator

@@ -27,8 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import org.apache.camel.Exchange;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;

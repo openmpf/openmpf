@@ -31,9 +31,10 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 
+import com.google.common.collect.Table;
+
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 
 public interface StorageBackend {
 
@@ -42,9 +43,7 @@ public interface StorageBackend {
 
 
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException;
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException, StorageException;
-
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
 
     public boolean canStore(MarkupResult markupResult) throws StorageException;
     public void store(MarkupResult markupResult) throws IOException, StorageException;

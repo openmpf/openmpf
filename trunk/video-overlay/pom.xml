@@ -55,9 +55,20 @@
         </dependency>
 
         <dependency>
+            <groupId>org.mitre.mpf</groupId>
+            <artifactId>mpf-interop</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.javasimon</groupId>
             <artifactId>javasimon-spring</artifactId>
             <version>${javasimon.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
     </dependencies>
 

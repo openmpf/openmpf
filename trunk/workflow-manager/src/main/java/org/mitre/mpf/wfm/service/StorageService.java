@@ -28,6 +28,8 @@
 package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Table;
+
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.JobStatusCalculator;
@@ -45,7 +47,6 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class StorageService {
@@ -104,16 +105,16 @@ public class StorageService {
     }
 
 
-    public Map<Integer, URI> storeVideoArtifacts(ArtifactExtractionRequest request) throws IOException {
-        if (request.getMediaType() != MediaType.VIDEO) {
-            throw new IllegalArgumentException("Expected media type of VIDEO, but it was " + request.getMediaType());
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
+        if ((request.getMediaType() != MediaType.VIDEO) && (request.getMediaType() !=MediaType.IMAGE)) {
+            throw new IllegalArgumentException("Expected media type of IMAGE or VIDEO, but it was " + request.getMediaType());
         }
 
         Exception remoteException = null;
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
                 if (remoteBackend.canStore(request)) {
-                    return remoteBackend.storeVideoArtifacts(request);
+                    return remoteBackend.storeArtifacts(request);
                 }
             }
         }
@@ -123,37 +124,7 @@ public class StorageService {
         }
 
         try {
-            return _localBackend.storeVideoArtifacts(request);
-        }
-        catch (IOException localException) {
-            if (remoteException != null) {
-                localException.addSuppressed(remoteException);
-            }
-            throw localException;
-        }
-    }
-
-
-    public URI storeImageArtifact(ArtifactExtractionRequest request) throws IOException {
-        if (request.getMediaType() != MediaType.IMAGE) {
-            throw new IllegalArgumentException("Expected media type of IMAGE, but it was " + request.getMediaType());
-        }
-
-        Exception remoteException = null;
-        try {
-            for (StorageBackend remoteBackend : _remoteBackends) {
-                if (remoteBackend.canStore(request)) {
-                    return remoteBackend.storeImageArtifact(request);
-                }
-            }
-        }
-        catch (IOException | StorageException ex) {
-            remoteException = ex;
-            handleRemoteStorageFailure(request, remoteException);
-        }
-
-        try {
-            return _localBackend.storeImageArtifact(request);
+            return _localBackend.storeArtifacts(request);
         }
         catch (IOException localException) {
             if (remoteException != null) {

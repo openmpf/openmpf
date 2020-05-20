@@ -38,6 +38,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -272,12 +273,23 @@ public class TestCustomNginxStorageBackend {
     @Test
     public void canStoreVideoArtifactRemotely() throws IOException, StorageException, URISyntaxException {
         assertTrue(JniLoader.isLoaded());
-        ImmutableMap<Integer, URI> expectedResults = ImmutableMap.of(
-                0, getExpectedUri("29373037d0551330acbde76c797cf6b2dadf635dc8c73b09b77ec7dec256abf6"),
-                5, getExpectedUri("759574570cf9741a55cb2509ea117d01d42d3d7a01cacc3d5db6541f9730f657"),
-                9, getExpectedUri("6036ecde5fe96e9fba9a56593d5bb64605dbc8f1c6ce07f7126b5efda63c05d3"));
+        Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
+                .put(1, 0, getExpectedUri("f97dd04f771f00ff8230964b41ee8bb9f0a494c95d8266eb3797233fa62b2a0c"))
+                .put(6, 5, getExpectedUri("6f40abbb266b4b75623901850be789f151f1a2b7c10468e952acc2758533d231"))
+                .put(10, 9, getExpectedUri("e42964a776a29b3e7be02761d6723c467bd336e7d5b7a4bdd3131f8ae26db3c2"))
+                .build();
 
         Path testFile = getTestFileCopy();
+
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
+        List<Integer> frames = Arrays.asList(0, 5, 9);
+        for (Integer frame : frames) {
+            Map<Integer, JsonDetectionOutputObject> trackAndDetection = new TreeMap<>();
+            trackAndDetection.put(frame+1, new JsonDetectionOutputObject(10, 20, 100, 200, (float)0.1,
+                    Collections.emptySortedMap(), frame.intValue(),
+                    0, "REQUESTED", ""));
+            extractionsMap.put(frame, trackAndDetection);
+        }
 
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(
                 TEST_JOB_ID,
@@ -285,11 +297,10 @@ public class TestCustomNginxStorageBackend {
                 testFile.toString(),
                 MediaType.VIDEO,
                 0,
-                ImmutableMap.of(
-                        0, ImmutableSet.of(0, 5),
-                        1, ImmutableSet.of(5, 9)
-                ));
-        Map<Integer, URI> results = _nginxStorageService.storeVideoArtifacts(request);
+                0,
+                true);
+        request.getExtractionsMap().putAll(extractionsMap);
+        Table<Integer, Integer, URI> results = _nginxStorageService.storeArtifacts(request);
         assertEquals(expectedResults, results);
     }
 

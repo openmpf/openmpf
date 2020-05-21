@@ -33,10 +33,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.junit.runner.RunWith;
-import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -57,14 +54,6 @@ import org.mockito.*;
 
 import static org.mockito.Mockito.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -223,7 +212,7 @@ public class TestDetectionResponseProcessor {
 
 
     @Test
-    public void testDetectionProcessingError() {
+    public void testVideoResponseError() {
         DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
 
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
@@ -255,11 +244,108 @@ public class TestDetectionResponseProcessor {
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
 
-        // TODO: https://github.com/openmpf/openmpf/issues/780
-        /*
-        verify(mockRedis, times(1))
-                .addJobError(eq(JOB_ID), any());
-        */
+    }
+
+
+    @Test
+    public void testAudioResponseError() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.COULD_NOT_READ_DATAFILE;
+
+        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setError(error)
+                .setMediaId(MEDIA_ID)
+                .addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+                        .setDetectionType("TEST")
+                        .setStartTime(0)
+                        .setStopTime(100))
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
+                .setTaskIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
+
+        detectionResponseProcessor.wfmProcess(exchange);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+
+    }
+
+    @Test
+    public void testImageResponseError() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.IMAGE_READ_ERROR;
+
+        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setError(error)
+                .setMediaId(MEDIA_ID)
+                .addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
+                        .setDetectionType("TEST"))
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
+                .setTaskIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
+
+        detectionResponseProcessor.wfmProcess(exchange);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+
+    }
+
+    @Test
+    public void testGenericResponseError() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.INVALID_ROTATION;
+
+        DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
+                .setError(error)
+                .setMediaId(MEDIA_ID)
+                .addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
+                        .setDetectionType("TEST"))
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
+                .setTaskIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
+
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
+
+        detectionResponseProcessor.wfmProcess(exchange);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+
     }
 
     private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
@@ -284,8 +370,7 @@ public class TestDetectionResponseProcessor {
     private static Track track(long jobId, int startFrame) {
         return ArgumentMatchers.argThat(new ArgumentMatcher<Track>() {
             public String toString() {
-                String description = "Track { jobId = " + jobId + ", startFrame = " + startFrame + " }";
-                return description;
+                return "Track { jobId = " + jobId + ", startFrame = " + startFrame + " }";
             }
 
             public boolean matches(Track obj) {

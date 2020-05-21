@@ -33,6 +33,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Comparator;
+import java.util.Objects;
+
+
 @JsonTypeName("DetectionProcessingError")
 public class JsonDetectionProcessingError implements Comparable<JsonDetectionProcessingError> {
 
@@ -75,43 +79,28 @@ public class JsonDetectionProcessingError implements Comparable<JsonDetectionPro
 		this.message = message;
 	}
 
+	@Override
 	public int hashCode() {
-		int result = 37;
-		result = (37 * result) + startOffsetFrame;
-		result = (37 * result) + stopOffsetFrame;
-		result = (37 * result) + startOffsetTime;
-		result = (37 * result) + stopOffsetTime;
-		result = (37 * result) + (message == null ? 0 : message.hashCode());
-		return result;
-	}
-
-
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof JsonDetectionProcessingError)) {
-			return false;
-		} else {
-			JsonDetectionProcessingError casted = (JsonDetectionProcessingError)other;
-			return startOffsetFrame == casted.startOffsetFrame &&
-					stopOffsetFrame == casted.stopOffsetFrame &&
-					startOffsetTime == casted.startOffsetTime &&
-					stopOffsetTime == casted.stopOffsetTime &&
-					StringUtils.equals(message, casted.message);
-		}
+		return Objects.hash(startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, message);
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof JsonDetectionProcessingError && compareTo((JsonDetectionProcessingError) obj) == 0;
+	}
+
+	private static final Comparator<JsonDetectionProcessingError> COMPARATOR = Comparator.nullsFirst(
+			Comparator.comparingInt(JsonDetectionProcessingError::getStartOffsetFrame)
+					.thenComparingInt(JsonDetectionProcessingError::getStopOffsetFrame)
+					.thenComparingInt(JsonDetectionProcessingError::getStartOffsetTime)
+					.thenComparingInt(JsonDetectionProcessingError::getStopOffsetTime)
+					.thenComparing(JsonDetectionProcessingError::getMessage, StringUtils::compare));
+
+	@Override
 	public int compareTo(JsonDetectionProcessingError other) {
-		int result = 0;
-		if (other == null) {
-			return 1;
-		} else if ((result = Integer.compare(startOffsetFrame, other.startOffsetFrame)) != 0
-				|| (result = Integer.compare(stopOffsetFrame, other.stopOffsetFrame)) != 0
-				|| (result = Integer.compare(startOffsetTime, other.startOffsetTime)) != 0
-				|| (result = Integer.compare(stopOffsetTime, other.stopOffsetTime)) != 0
-				|| (result = ObjectUtils.compare(message, other.message)) != 0) {
-			return result;
-		} else {
-			return result;
+		if (this == other) {
+			return 0;
 		}
+		return COMPARATOR.compare(this, other);
 	}
 }

@@ -113,7 +113,7 @@ public class DetectionResponseProcessor
         }
         else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
-            log.info("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+            log.debug("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
 
@@ -148,14 +148,14 @@ public class DetectionResponseProcessor
         int startTime = convertFrameToTime(startFrame, fps);
         int stopTime = convertFrameToTime(stopFrame, fps);
 
-        String mediaLabel = String.format("Media #%d, Frames: %d-%d. Stage: '%s', Action: '%s'",
+        String mediaLabel = String.format("Media #%d, Frames: %d-%d, Stage: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
                 startFrame,
                 stopFrame,
                 detectionResponse.getTaskName(),
                 detectionResponse.getActionName());
 
-        log.info("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
 
         // Begin iterating through the tracks that were found by the detector.
@@ -196,6 +196,19 @@ public class DetectionResponseProcessor
     private void processAudioResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
                                       double confidenceThreshold) {
+
+        int startTime = audioResponse.getStartTime();
+        int stopTime = audioResponse.getStartTime();
+        String mediaLabel = String.format("Media #%d, Time: %d-%d, Stage: '%s', Action: '%s'",
+                detectionResponse.getMediaId(),
+                startTime,
+                stopTime,
+                detectionResponse.getTaskName(),
+                detectionResponse.getActionName());
+
+        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
+
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
             if (objectTrack.getConfidence() >= confidenceThreshold) {
@@ -231,6 +244,10 @@ public class DetectionResponseProcessor
     private void processImageResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
                                       double confidenceThreshold) {
+        String mediaLabel = getBasicMediaLabel(detectionResponse);
+        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+
+        checkErrors(jobId, mediaLabel, detectionResponse, 0, 1, 0, 0);
 
         // Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
         for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
@@ -256,6 +273,11 @@ public class DetectionResponseProcessor
     private void processGenericResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                         DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
                                         double confidenceThreshold) {
+        String mediaLabel = getBasicMediaLabel(detectionResponse);
+        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+
+        checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
+
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
             if (objectTrack.getConfidence() >= confidenceThreshold) {

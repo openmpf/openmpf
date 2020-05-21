@@ -69,23 +69,23 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
 
         if (detectionRequest.hasVideoRequest()) {
             builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
-                                      .setDetectionType(error.toString())
-                                      .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
-                                      .setStopFrame(detectionRequest.getVideoRequest().getStartFrame()));
+                    .setDetectionType(error.toString())
+                    .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
+                    .setStopFrame(detectionRequest.getVideoRequest().getStartFrame()));
 
         } else if (detectionRequest.hasAudioRequest()) {
             builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
-                                      .setDetectionType(error.toString())
-                                      .setStartTime(detectionRequest.getAudioRequest().getStartTime())
-                                      .setStopTime(detectionRequest.getAudioRequest().getStartTime()));
+                    .setDetectionType(error.toString())
+                    .setStartTime(detectionRequest.getAudioRequest().getStartTime())
+                    .setStopTime(detectionRequest.getAudioRequest().getStartTime()));
 
         } else if (detectionRequest.hasImageRequest()) {
             builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
-                                      .setDetectionType(error.toString()));
+                    .setDetectionType(error.toString()));
 
         } else if (detectionRequest.hasGenericRequest()) {
             builder.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
-					.setDetectionType(error.toString()));
+                    .setDetectionType(error.toString()));
         }
 
         exchange.getOut().setBody(builder.build().toByteArray());

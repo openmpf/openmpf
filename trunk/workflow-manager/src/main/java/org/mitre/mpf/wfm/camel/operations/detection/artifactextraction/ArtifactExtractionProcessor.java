@@ -116,40 +116,56 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         }
         SortedSet<Track> jobTracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                 request.getTaskIndex(), request.getActionIndex());
-        for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
-            URI uri = entry.getValue();
-            if (request.getCroppingFlag()) {
+        // Set the status for the requested detections. If any were requested, but were not included in the extraction output,
+        // they will be reported as missing frames.
+        trackAndFrameToUri.cellSet().stream()
+                .forEach(e -> request.getExtractionsMap().get(e.getColumnKey()).get(e.getRowKey()).setArtifactExtractionStatus("COMPLETED"));
+
+        if (request.getCroppingFlag()) {
+            for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
+                URI uri = entry.getValue();
                 jobTracks.stream().filter(t -> t.getArtifactExtractionTrackIndex() == entry.getRowKey())
-                                  .flatMap(t -> t.getDetections().stream())
-                                  .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
-                                  .forEach( d -> setStatus(d, uri));
+                        .flatMap(t -> t.getDetections().stream())
+                        .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
+                        .forEach(d -> setStatus(d, uri));
             }
-            else {
-                for (Integer frame : trackAndFrameToUri.columnKeySet()) {
-                    jobTracks.stream().flatMap(t -> t.getDetections().stream())
-                                      .filter(d -> frame.equals(d.getMediaOffsetFrame()))
-                                      .forEach(d -> setStatus(d, uri));
-                }
+        }
+        else {
+            for (Integer frame : trackAndFrameToUri.columnKeySet()) {
+                // When we are not cropping, the track number is a don't care; it is set to 0 in the frame extraction code.
+                URI uri = trackAndFrameToUri.get(0, frame);
+                jobTracks.stream().flatMap(t -> t.getDetections().stream())
+                        .filter(d -> d.getMediaOffsetFrame() == frame)
+                        .forEach(d -> setStatus(d, uri));
             }
         }
 
-        SortedSet<Integer> missingFrames = findMissingFrames(request);
+        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(),
+                                       request.getTaskIndex(), request.getActionIndex(), jobTracks);
+
+        SortedSet<Integer> missingFrames = findMissingFrames(jobTracks, request);
         if (!missingFrames.isEmpty()) {
             _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
             _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
                     "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
-        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(),
-                                       request.getTaskIndex(), request.getActionIndex(), jobTracks);
     }
 
-    private SortedSet<Integer> findMissingFrames(ArtifactExtractionRequest request) {
+    private SortedSet<Integer> findMissingFrames(SortedSet<Track> jobTracks, ArtifactExtractionRequest request) {
 
-        return request.getExtractionsMap().values().stream()
-                                   .flatMap(v -> v.values().stream())
-                                   .filter(d ->(d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED.name()) ||
-                                    (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.REQUESTED.name()))
-                                   .map(JsonDetectionOutputObject::getOffsetFrame).collect(toCollection(TreeSet::new));
+        // Check for frames in the tracks that failed.
+        SortedSet<Integer> missingFrames = jobTracks.stream()
+                                   .flatMap(t -> t.getDetections().stream())
+                                   .filter(d ->(d.getArtifactExtractionStatus() == ArtifactExtractionStatus.FAILED))
+                                   .map(Detection::getMediaOffsetFrame).collect(toCollection(TreeSet::new));
+        // Check for frames that were supposed to be extracted but weren't
+        SortedSet<Integer> missingRequestFrames = request.getExtractionsMap().values().stream()
+                .flatMap(v -> v.values().stream())
+                .filter(d -> d.getArtifactExtractionStatus().equals(ArtifactExtractionStatus.REQUESTED.name()))
+                .map(JsonDetectionOutputObject::getOffsetFrame).collect(toCollection(TreeSet::new));
+        missingFrames.addAll(missingRequestFrames);
+
+        return missingFrames;
     }
 
     private void handleException(ArtifactExtractionRequest request, IOException e) {
@@ -159,7 +175,8 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
                         + "for this medium will NOT have an associated artifact.",
                 request.getJobId(), request.getTaskIndex(), request.getMediaId(), e);
         _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-        SortedSet<Integer> missingFrames = findMissingFrames(request);
+        SortedSet<Integer> missingFrames = findMissingFrames(_inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
+                request.getTaskIndex(), request.getActionIndex()), request);
         if (!missingFrames.isEmpty()) {
             _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
                     "Error extracting artifact(s) from frame(s): " + missingFrames);

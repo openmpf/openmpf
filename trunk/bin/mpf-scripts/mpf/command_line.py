@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -30,11 +30,11 @@ import sys
 import argh
 import argh.utils
 
-import mpf_clean
-import mpf_nodes
-import mpf_sys
-import mpf_users
-import mpf_util
+from . import mpf_clean
+from . import mpf_nodes
+from . import mpf_sys
+from . import mpf_users
+from . import mpf_util
 
 
 def main():
@@ -48,10 +48,13 @@ def main():
     subs.help = 'For command specific arguments and help run: %(prog)s <command> --help\n'
     subs.metavar = 'Commands'
 
+    if len(sys.argv) < 2:
+        parser.error('too few arguments')
+
     try:
         parser.dispatch()
     except mpf_util.MpfError as err:
-        parser.exit(mpf_util.MsgUtil.red('Error: %s' % err.message))
+        parser.exit(mpf_util.MsgUtil.red('Error: %s' % err))
 
 
 class PrintHelpOnErrorParser(argh.ArghParser):

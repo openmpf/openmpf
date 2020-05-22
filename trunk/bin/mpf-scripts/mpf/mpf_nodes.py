@@ -29,16 +29,17 @@ import base64
 import getpass
 import json
 import os
-import urllib2
+import urllib.error
+import urllib.request
 
-import mpf_util
+from . import mpf_util
 
 @argh.arg('-w', '--workflow-manager-url', help='Url to Workflow Manager')
 def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
     """ List JGroups membership for nodes in the OpenMPF cluster """
 
     if not is_wfm_running(workflow_manager_url):
-        print mpf_util.MsgUtil.yellow('Cannot determine live JGroups membership.')
+        print(mpf_util.MsgUtil.yellow('Cannot determine live JGroups membership.'))
 
         core_mpf_nodes_str = os.environ.get(CORE_MPF_NODES_ENV_VAR, '').strip(', ')
 
@@ -48,25 +49,25 @@ def list_nodes(workflow_manager_url='http://localhost:8080/workflow-manager'):
         nodes_list = core_mpf_nodes_str.split(',')
         nodes_set = set(node.strip() for node in nodes_list if node and not node.isspace())
 
-        print 'Core nodes listed by ' + CORE_MPF_NODES_ENV_VAR + ' environment variable:\n' + '\n'.join(nodes_set)
+        print('Core nodes listed by ' + CORE_MPF_NODES_ENV_VAR + ' environment variable:\n' + '\n'.join(nodes_set))
         return
 
     username, password = get_username_and_password()
     core_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, 'core')
     spare_nodes_list = get_all_wfm_nodes(workflow_manager_url, username, password, 'spare')
 
-    print 'Core nodes: ' + str(core_nodes_list)
+    print('Core nodes: ' + str(core_nodes_list))
 
     if spare_nodes_list:
-        print 'Spare nodes: ' + str(spare_nodes_list)
+        print('Spare nodes: ' + str(spare_nodes_list))
     else:
-        print 'No spare nodes'
+        print('No spare nodes')
 
 
 def get_username_and_password():
-    print 'Enter the credentials for a Workflow Manager user:'
+    print('Enter the credentials for a Workflow Manager user:')
 
-    username = raw_input('Username: ')
+    username = input('Username: ')
     password = getpass.getpass('Password: ')
 
     return username, password
@@ -74,13 +75,13 @@ def get_username_and_password():
 
 def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = 'all'):
     endpoint_url = wfm_manager_url.rstrip('/') + '/rest/nodes/all?type=' + node_type
-    request = urllib2.Request(endpoint_url)
+    request = urllib.request.Request(endpoint_url)
 
     base64string = base64.b64encode('%s:%s' % (username, password))
     request.add_header('Authorization', 'Basic %s' % base64string)
 
     try:
-        response = urllib2.urlopen(request)
+        response = urllib.request.urlopen(request)
     except IOError as err:
         raise mpf_util.MpfError('Problem connecting to ' + endpoint_url + ':\n' + str(err))
 
@@ -88,14 +89,14 @@ def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = 'all'):
 
 
 def is_wfm_running(wfm_manager_url):
-    request = urllib2.Request(wfm_manager_url)
+    request = urllib.request.Request(wfm_manager_url)
     request.get_method = lambda: 'HEAD'
     try:
-        urllib2.urlopen(request)
-        print 'Detected that the Workflow Manager is running.'
+        urllib.request.urlopen(request)
+        print('Detected that the Workflow Manager is running.')
         return True
-    except urllib2.URLError:
-        print mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running.')
+    except urllib.error.URLError:
+        print(mpf_util.MsgUtil.yellow('Detected that the Workflow Manager is not running.'))
         return False
 
 

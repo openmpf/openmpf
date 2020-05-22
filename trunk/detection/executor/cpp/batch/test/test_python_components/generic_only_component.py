@@ -43,7 +43,7 @@ class GenericTestComponent(object):
             return generic_job.feed_forward_track,
 
         echo_job, echo_media = GenericTestComponent.get_echo_msgs(generic_job)
-        properties = mpf.Properties(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
+        properties = dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
         return mpf.GenericTrack(1, properties), mpf.GenericTrack(2, properties)
 
 

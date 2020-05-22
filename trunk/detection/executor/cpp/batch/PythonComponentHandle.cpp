@@ -37,7 +37,7 @@ namespace MPF { namespace COMPONENT {
 
     namespace {
         py::object get_builtin(const char *name) {
-            py::module builtin = py::module::import("__builtin__");
+            py::module builtin = py::module::import("builtins");
             return builtin.attr(name);
         }
 
@@ -83,15 +83,10 @@ namespace MPF { namespace COMPONENT {
         }
 
 
-        void activate_virtualenv(const std::string &venv_activate_path) {
-            get_builtin("execfile")(venv_activate_path, py::dict(py::arg("__file__")=venv_activate_path));
-        }
-
-        void initialize_python(const std::string &venv_activate_path) {
+        void initialize_python() {
             static bool initialized = false;
             if (!initialized) {
                 py::initialize_interpreter();
-                activate_virtualenv(venv_activate_path);
                 initialized = true;
             }
         }
@@ -271,7 +266,7 @@ namespace MPF { namespace COMPONENT {
 
         Properties get_properties(py::handle obj, const char * field) {
             Properties result;
-            py::object iter_items = obj.attr(field).attr("iteritems")();
+            py::object iter_items = obj.attr(field).attr("items")();
             for (auto &pair : iter_items) {
                 result.insert(to_std_pair<py::str, py::str>(pair));
             }
@@ -302,7 +297,6 @@ namespace MPF { namespace COMPONENT {
             py::object audio_track_ctor_;
             py::object generic_track_ctor_;
 
-            py::object frame_location_map_ctor_;
             py::object detection_exception_ctor_;
 
         public:
@@ -320,15 +314,14 @@ namespace MPF { namespace COMPONENT {
                     , video_track_ctor_(component_api_module.attr("VideoTrack"))
                     , audio_track_ctor_(component_api_module.attr("AudioTrack"))
                     , generic_track_ctor_(component_api_module.attr("GenericTrack"))
-                    , frame_location_map_ctor_(component_api_module.attr("FrameLocationMap"))
                     , detection_exception_ctor_(component_api_module.attr("DetectionException"))
             {
 
             }
 
             MPFDetectionError get_error_code(const py::error_already_set &ex) {
-                if (py::isinstance(ex.value, detection_exception_ctor_)) {
-                    int error_code = ex.value.attr("error_code").cast<py::int_>();
+                if (py::isinstance(ex.value(), detection_exception_ctor_)) {
+                    int error_code = ex.value().attr("error_code").cast<py::int_>();
                     return static_cast<MPFDetectionError>(error_code);
                 }
                 return MPFDetectionError::MPF_OTHER_DETECTION_ERROR_TYPE;
@@ -361,7 +354,7 @@ namespace MPF { namespace COMPONENT {
 
 
             py::object to_python(const MPFVideoTrack &track) {
-                py::object frame_loc_map = frame_location_map_ctor_();
+                py::dict frame_loc_map;
                 py::object flm_set = frame_loc_map.attr("__setitem__");
                 for (const auto &pair : track.frame_locations) {
                     flm_set(pair.first, to_python(pair.second));
@@ -499,10 +492,10 @@ namespace MPF { namespace COMPONENT {
         ComponentAttrs component_;
 
     public:
-        impl(const log4cxx::LoggerPtr &logger, const std::string &lib_path, const std::string &venv_activate_path)
+        impl(const log4cxx::LoggerPtr &logger, const std::string &lib_path)
             : logger_((
                   // Use comma operator so that initialize_python gets called before any fields are initialized.
-                  initialize_python(venv_activate_path), // result is discarded
+                  initialize_python(), // result is discarded
                   logger))
             , component_api_()
             , component_(lib_path)
@@ -547,7 +540,7 @@ namespace MPF { namespace COMPONENT {
                             get_properties(py_track, "detection_properties"));
                     auto &frame_locations = tracks.back().frame_locations;
 
-                    py::object iter_items = py_track.attr("frame_locations").attr("iteritems")();
+                    py::object iter_items = py_track.attr("frame_locations").attr("items")();
                     for (auto &pair : iter_items) {
                         auto std_pair = to_std_pair<py::int_, py::object>(pair);
                         frame_locations.emplace(std_pair.first, convert_image_location(std_pair.second));
@@ -660,9 +653,8 @@ namespace MPF { namespace COMPONENT {
 
 
 
-    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path,
-                                                 const std::string &venv_activate_path)
-            : impl_(new impl(logger, lib_path, venv_activate_path))
+    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path)
+            : impl_(new impl(logger, lib_path))
     {
     }
 

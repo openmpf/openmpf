@@ -200,7 +200,10 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 }
                 default:
             }
-            trackIndex++;
+
+            // If we are not going to crop extracted artifacts, then all we need to do is collect frame numbers; the trackIndex is
+            // a don't care. This simplifies the process of setting the artifact extraction status later.
+            if (request.getCroppingFlag()) trackIndex++;
         }
         _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(), request.getActionIndex(), tracks);
 

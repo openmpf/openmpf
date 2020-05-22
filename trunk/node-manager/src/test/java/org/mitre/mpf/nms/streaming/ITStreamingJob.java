@@ -98,7 +98,7 @@ public class ITStreamingJob {
 		return invocation -> {
 			Path iniPath = invocation.getArgument(1);
 			String[] cmdline = {
-					"python", StreamingJobTestUtil.TEST_PROCESS_PATH, name, iniPath.toString() };
+					"python3", StreamingJobTestUtil.TEST_PROCESS_PATH, name, iniPath.toString() };
 			ProcessBuilder builder = new ProcessBuilder(cmdline)
 					.redirectErrorStream(true);
 			return new StreamingProcess(name, builder, 1);

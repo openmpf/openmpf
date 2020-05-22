@@ -66,7 +66,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python</executable>
+                            <executable>python3</executable>
                             <arguments>
                                 <argument>${components.build.script}</argument>
                                 <argument>--build-dir=${components.build.dir}</argument>
@@ -88,7 +88,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python</executable>
+                            <executable>python3</executable>
                             <arguments>
                                 <argument>${components.build.script}</argument>
                                 <argument>--build-dir=${components.build.dir}</argument>
@@ -205,10 +205,16 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python</executable>
+                            <executable>python3</executable>
                             <arguments>
+                                <argument>-m</argument>
+                                <argument>unittest</argument>
+                                <argument>discover</argument>
+                                <argument>--verbose</argument>
+                                <argument>--buffer</argument>
+                                <argument>--start-directory</argument>
                                 <argument>
-                                    ${components.build.sdks.python}/detection/component_util/tests/__main__.py
+                                    ${components.build.sdks.python}/detection/component_util
                                 </argument>
                             </arguments>
                             <environmentVariables>

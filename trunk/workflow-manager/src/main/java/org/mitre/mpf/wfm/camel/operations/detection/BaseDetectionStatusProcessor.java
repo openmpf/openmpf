@@ -71,13 +71,13 @@ public abstract class BaseDetectionStatusProcessor implements Processor {
             builder.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                     .setDetectionType(error.toString())
                     .setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
-                    .setStopFrame(detectionRequest.getVideoRequest().getStartFrame()));
+                    .setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
 
         } else if (detectionRequest.hasAudioRequest()) {
             builder.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
                     .setDetectionType(error.toString())
                     .setStartTime(detectionRequest.getAudioRequest().getStartTime())
-                    .setStopTime(detectionRequest.getAudioRequest().getStartTime()));
+                    .setStopTime(detectionRequest.getAudioRequest().getStopTime()));
 
         } else if (detectionRequest.hasImageRequest()) {
             builder.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()

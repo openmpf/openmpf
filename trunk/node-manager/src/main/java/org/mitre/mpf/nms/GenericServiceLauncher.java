@@ -53,7 +53,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
      * @param pb
      */
     @Override
-    public void additionalProcessPreconfig(ProcessBuilder pb) {}
+    public void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor) {}
 
     @Override
     public void sendShutdownToApp() {

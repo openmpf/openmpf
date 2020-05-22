@@ -96,7 +96,7 @@ public class TestStreamingProcess {
 	@Test
 	public void throwsExitException() throws Throwable {
 		// 76 is exit code for terminated due to stall.
-		ProcessBuilder builder = new ProcessBuilder("python", "-c", "import sys; sys.exit(76)");
+		ProcessBuilder builder = new ProcessBuilder("python3", "-c", "import sys; sys.exit(76)");
 		StreamingProcess process = new StreamingProcess("StallTest", builder, 3);
 
 		try {
@@ -123,7 +123,7 @@ public class TestStreamingProcess {
 	private void testRestartCount(int restartLimit) throws IOException, InterruptedException, TimeoutException {
 		Path countFile = _tempDir.newFile().toPath();
 
-		String[] cmdline = {"python", StreamingJobTestUtil.TEST_PROCESS_PATH, "MyComponent", "fake-path", "0",
+		String[] cmdline = {"python3", StreamingJobTestUtil.TEST_PROCESS_PATH, "MyComponent", "fake-path", "0",
 				countFile.toAbsolutePath().toString()};
 		ProcessBuilder builder = new ProcessBuilder(cmdline)
 				.redirectErrorStream(true);
@@ -157,7 +157,7 @@ public class TestStreamingProcess {
 	private StreamingProcess createProcess(String name, double stopDelay) throws IOException {
 		File file = _tempDir.newFile("test.ini");
 
-		String[] cmdline = {"python", StreamingJobTestUtil.TEST_PROCESS_PATH, name,
+		String[] cmdline = {"python3", StreamingJobTestUtil.TEST_PROCESS_PATH, name,
 				file.getAbsolutePath(), String.valueOf(stopDelay)};
 
 		ProcessBuilder builder = new ProcessBuilder(cmdline)

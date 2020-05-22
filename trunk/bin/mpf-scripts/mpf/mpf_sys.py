@@ -24,25 +24,27 @@
 # limitations under the License.                                            #
 #############################################################################
 
-import time
-import subprocess
-import urllib2
+import abc
 import errno
 import os
-import abc
-import urlparse
 import signal
-import mpf_util
-import argh
 import socket
+import subprocess
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+import argh
+
+from . import mpf_util
 
 
 def start_up_order():
     return ActiveMqManager, PostgresManager, RedisManager, NodeManagerManager, TomcatManager
 
 
-class BaseMpfSystemDependencyManager(object):
-    __metaclass__ = abc.ABCMeta  # Make this class abstract
+class BaseMpfSystemDependencyManager(abc.ABC):
 
     def __init__(self, mpf_config):
         if isinstance(mpf_config, bool):
@@ -82,7 +84,7 @@ class BaseMpfSystemDependencyManager(object):
         """ Starts the component if it isn't already running.
         """
         if self.status():
-            print Messages.running(self.dependency_name())
+            print(Messages.running(self.dependency_name()))
             return
 
         try:
@@ -97,7 +99,7 @@ class BaseMpfSystemDependencyManager(object):
         time.sleep(.2)
 
         if self.status():
-            print Messages.started(self.dependency_name())
+            print(Messages.started(self.dependency_name()))
         else:
             raise FailedToStartError(self.dependency_name())
 
@@ -105,7 +107,7 @@ class BaseMpfSystemDependencyManager(object):
         """ Stops the component if it is running
         """
         if not self.status(is_stopping=True):
-            print Messages.not_running(self.dependency_name())
+            print(Messages.not_running(self.dependency_name()))
             return
 
         try:
@@ -122,7 +124,7 @@ class BaseMpfSystemDependencyManager(object):
         if self.status(is_stopping=True):
             raise FailedToStopError(self.dependency_name())
         else:
-            print Messages.stopped(self.dependency_name())
+            print(Messages.stopped(self.dependency_name()))
 
     @abc.abstractmethod
     def dependency_name(self):
@@ -293,7 +295,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
             return ('', True),
         except subprocess.CalledProcessError as err:
             if 'Loaded: not-found (Reason: No such file or directory)' in err.output:
-                print NodeManagerManager.SERVICE_NAME, 'does not appear to be installed'
+                print(NodeManagerManager.SERVICE_NAME, 'does not appear to be installed')
                 raise
             lines = (l.split() for l in err.output.splitlines())
             statuses = ((lps[0], lps[2] == 'SUCCESS') for lps in lines)
@@ -306,7 +308,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
 
         statuses = self._remote_status()
         if all(s for h, s in statuses):
-            print Messages.running(self.dependency_name())
+            print(Messages.running(self.dependency_name()))
             return
 
         try:
@@ -321,7 +323,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
         time.sleep(.2)
 
         if all(s for h, s in self._remote_status()):
-            print Messages.started(self.dependency_name())
+            print(Messages.started(self.dependency_name()))
         else:
             raise FailedToStartError(self.dependency_name())
 
@@ -345,7 +347,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
         # Node manager wasn't started through the service command
         pid = self._shell.get_pid_bound_to_port(self._config.node_manager_port)
         os.kill(pid, signal.SIGINT)
-        for i in xrange(self.RETRIES):
+        for i in range(self.RETRIES):
             if not self._shell.process_is_running(pid):
                 return
             time.sleep(self.DELAY)
@@ -374,15 +376,15 @@ class TomcatManager(BaseMpfSystemDependencyManager):
         return 'Tomcat'
 
     def status(self, is_stopping=False):
-        request = urllib2.Request(self._config.wfm_url)
+        request = urllib.request.Request(self._config.wfm_url)
         request.get_method = lambda: 'HEAD'
         try:
             # While Tomcat is starting or stopping this call will block until it finishes.
             # When Tomcat finishes deploying the request will receive a success response.
             # When Tomcat finishes shutting down the request will fail with ECONNRESET
-            urllib2.urlopen(request)
+            urllib.request.urlopen(request)
             return True
-        except urllib2.HTTPError as err:
+        except urllib.error.HTTPError as err:
             if err.code != 404:
                 raise
             if is_stopping:
@@ -390,7 +392,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
             else:
                 raise FailedToStartError(self.dependency_name(),
                                          'Tomcat is running but the Workflow Manager is not.')
-        except urllib2.URLError as err:
+        except urllib.error.URLError as err:
             # ECONNREFUSED occurs when Tomcat isn't running
             # ECONNRESET occurs when Tomcat shuts down
             if err.reason.errno in (errno.ECONNREFUSED, errno.ECONNRESET):
@@ -420,7 +422,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
                 self._create_pid_file()
                 self._run_with_catalina_pid([self._config.catalina, 'stop', '120'])
 
-        print 'Waiting for Node Manager to clean up...'
+        print('Waiting for Node Manager to clean up...')
         time.sleep(15)
 
     def _run_with_catalina_pid(self, cmd_args):
@@ -437,7 +439,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
         raise NotImplementedError()
 
     def _get_listening_port(self):
-        parse_result = urlparse.urlparse(self._config.wfm_url)
+        parse_result = urllib.parse.urlparse(self._config.wfm_url)
         if parse_result.port:
             return parse_result.port
         elif parse_result.scheme == 'http':
@@ -530,7 +532,7 @@ class MpfConfig:
         cmd_output = self._shell.check_output(['ansible', 'mpf-child', '--list-hosts'])
         lines = (l.strip() for l in cmd_output.splitlines() if l.strip())
         # Discard the first line because it is the host count. The rest are the hosts
-        lines.next()
+        next(lines)
         return tuple(lines)
 
 
@@ -619,9 +621,9 @@ class ShellHelper:
 
     def check_output(self, args):
         if self._verbose:
-            return subprocess.check_output(args)
+            return subprocess.check_output(args, text=True)
         else:
-            return subprocess.check_output(args, stderr=self._devNull)
+            return subprocess.check_output(args, text=True, stderr=self._devNull)
 
     def is_on_path(self, executable):
         return self.call(['which', executable]) == 0
@@ -706,13 +708,13 @@ def status(**opt_args):
     """ Displays the status of each MPF dependency """
     config = MpfConfig(**opt_args)
     for manager in filtered_start_up_order(**opt_args):
-        print manager(config).status_string()
+        print(manager(config).status_string())
 
 
 @sys_args
 def start(**opt_args):
     """ Starts each MPF dependency """
-    print 'Starting MPF system dependencies...'
+    print('Starting MPF system dependencies...')
     config = MpfConfig(**opt_args)
     for manager in filtered_start_up_order(**opt_args):
         manager(config).start()
@@ -721,7 +723,7 @@ def start(**opt_args):
 @sys_args
 def stop(**opt_args):
     """ Stops each MPF dependency """
-    print 'Stopping MPF system dependencies...'
+    print('Stopping MPF system dependencies...')
     config = MpfConfig(**opt_args)
     for manager in reversed(tuple(filtered_start_up_order(**opt_args))):
         manager(config).stop()

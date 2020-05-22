@@ -31,12 +31,12 @@ import itertools
 import argh
 import bcrypt
 
-import mpf_sys
-import mpf_util
+from . import mpf_sys
+from . import mpf_util
 
 
 def hash_password(password):
-    return bcrypt.hashpw(password, bcrypt.gensalt(12, prefix='2a'))
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(12, prefix=b'2a')).decode()
 
 
 class UserManager(object):
@@ -44,9 +44,9 @@ class UserManager(object):
         if not skip_sql_start:
             sql_manager = mpf_sys.PostgresManager(False)
             if not sql_manager.status():
-                print 'Starting PostgreSQL service...'
+                print('Starting PostgreSQL service...')
                 sql_manager.start()
-                print
+                print()
 
         self._connection = mpf_util.sql_connection(sql_host, sql_user, sql_password)
         self._cursor = self._connection.cursor()
@@ -66,18 +66,18 @@ class UserManager(object):
         results = self._cursor.fetchall()
 
         if not results:
-            print 'No users found'
+            print('No users found')
             return
 
         max_username_len = max(len(u) for u, r in results)
         justify_len = max(10, max_username_len + 3)
 
-        print 'Username'.ljust(justify_len), 'Role'
-        print '--------'.ljust(justify_len), '----'
+        print('Username'.ljust(justify_len), 'Role')
+        print('--------'.ljust(justify_len), '----')
 
         for user, user_roles_pair in itertools.groupby(sorted(results), key=lambda x: x[0]):
             sorted_roles = sorted(r for u, r in user_roles_pair)
-            print user.ljust(justify_len), ', '.join(sorted_roles)
+            print(user.ljust(justify_len), ', '.join(sorted_roles))
 
 
     def add_user(self, username, password, role):
@@ -212,7 +212,7 @@ def add_user(username, role, password=None, **kwargs):
     """ Adds a new user to the Workflow Manager """
     with contextlib.closing(UserManager(**kwargs)) as um:
         um.add_user(username, password, role)
-        print mpf_util.MsgUtil.green('User: %s with role: %s has been added' % (username, role))
+        print(mpf_util.MsgUtil.green('User: %s with role: %s has been added' % (username, role)))
 
 
 @mpf_util.sql_args
@@ -221,8 +221,8 @@ def remove_user(username, **kwargs):
     """ Removes a user from the Workflow Manager """
     with contextlib.closing(UserManager(**kwargs)) as um:
         um.remove_user(username)
-        print USER_MODIFICATION_NOTICE
-        print mpf_util.MsgUtil.green('User: %s has been removed' % username)
+        print(USER_MODIFICATION_NOTICE)
+        print(mpf_util.MsgUtil.green('User: %s has been removed' % username))
 
 
 @mpf_util.sql_args
@@ -232,8 +232,8 @@ def change_password(username, password=None, **kwargs):
     """ Changes a Workflow Manager user's password """
     with contextlib.closing(UserManager(**kwargs)) as um:
         um.change_password(username, password)
-        print USER_MODIFICATION_NOTICE
-        print mpf_util.MsgUtil.green('Password has been changed for user: %s' % username)
+        print(USER_MODIFICATION_NOTICE)
+        print(mpf_util.MsgUtil.green('Password has been changed for user: %s' % username))
 
 
 @mpf_util.sql_args
@@ -243,8 +243,8 @@ def change_role(username, role, **kwargs):
     """ Changes a Workflow Manager user's role """
     with contextlib.closing(UserManager(**kwargs)) as um:
         um.set_role(username, role)
-        print USER_MODIFICATION_NOTICE
-        print mpf_util.MsgUtil.green('User: %s now has role: %s' % (username, role))
+        print(USER_MODIFICATION_NOTICE)
+        print(mpf_util.MsgUtil.green('User: %s now has role: %s' % (username, role)))
 
 
 COMMANDS = (list_users, add_user, remove_user, change_password, change_role)

@@ -47,13 +47,12 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
      *
      * @param pb
      */
-    @Override public void additionalProcessPreconfig(ProcessBuilder pb) {
+    @Override public void additionalProcessPreconfig(ProcessBuilder pb, ServiceDescriptor serviceDescriptor) {
         // Add $MPF_HOME/lib to the end of ld library path for the C++ component executor process so that it can link
         // with QT, AMQ, and protobuf libs. If ld library path is specified in a component descriptor file's
         // "environmentVariables", it will already be in LD_LIBRARY_PATH before this method is invoked.
 
         String mpfHomeKey = "MPF_HOME";
-        String ldLibPathKey = "LD_LIBRARY_PATH";
         Map<String, String> env = pb.environment();
 
         String mpfHomeVal = env.get(mpfHomeKey);
@@ -61,11 +60,21 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
             throw new IllegalStateException("Missing environment variable: " + mpfHomeKey);
         }
 
+        String ldLibPathKey = "LD_LIBRARY_PATH";
         String ldLibPathVal = env.get(ldLibPathKey);
         if (ldLibPathVal != null) {
             env.put(ldLibPathKey, ldLibPathVal + System.getProperty("path.separator") + mpfHomeVal + "/lib");
         } else {
             env.put(ldLibPathKey, mpfHomeVal + "/lib");
+        }
+
+        String pythonPathKey = "PYTHONPATH";
+        String pythonPathVal = env.get(pythonPathKey);
+        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().getName() + "/venv/lib/python3.8/site-packages";
+        if (pythonPathVal != null) {
+            env.put(pythonPathKey, pythonPathVal + System.getProperty("path.separator") + venvSitePackages);
+        } else {
+            env.put(pythonPathKey, venvSitePackages);
         }
     }
 

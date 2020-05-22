@@ -71,8 +71,6 @@ public class DetectionResponseProcessor
 
     @Override
     public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
-        String logLabel = String.format("Job %d|%d|%d", jobId, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
-
         int totalResponses = detectionResponse.getVideoResponsesCount() +
                 detectionResponse.getAudioResponsesCount() +
                 detectionResponse.getImageResponsesCount() +
@@ -84,7 +82,7 @@ public class DetectionResponseProcessor
                     String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
         }
 
-        if (totalResponses > 0) {
+        if (totalResponses != 0) {
             BatchJob job = inProgressJobs.getJob(jobId);
             Media media = job.getMedia()
                     .stream()
@@ -94,12 +92,6 @@ public class DetectionResponseProcessor
                             detectionResponse.getMediaId()));
             Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
             double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
-
-            log.info("[{}] Response received for Media #{}. Task: '{}'. Action: '{}'.",
-                    logLabel,
-                    detectionResponse.getMediaId(),
-                    detectionResponse.getTaskName(),
-                    detectionResponse.getActionName());
 
             if (detectionResponse.getVideoResponsesCount() != 0) {
                 processVideoResponse(jobId, detectionResponse, detectionResponse.getVideoResponses(0), confidenceThreshold, media);
@@ -113,13 +105,12 @@ public class DetectionResponseProcessor
         }
         else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
-            log.debug("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+            log.warn("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
 
         return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
-
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {
         String confidenceThresholdProperty = aggregateJobPropertiesUtil.getValue(
@@ -127,16 +118,13 @@ public class DetectionResponseProcessor
 
         try {
             return Double.parseDouble(confidenceThresholdProperty);
-
         }
         catch (NumberFormatException e) {
             log.warn("Invalid confidence threshold specified: value should be numeric. Provided value was: "
                              + confidenceThresholdProperty);
             return job.getSystemPropertiesSnapshot().getConfidenceThreshold();
-
         }
     }
-
 
     private void processVideoResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
@@ -148,7 +136,7 @@ public class DetectionResponseProcessor
         int startTime = convertFrameToTime(startFrame, fps);
         int stopTime = convertFrameToTime(stopFrame, fps);
 
-        String mediaLabel = String.format("Media #%d, Frames: %d-%d, Stage: '%s', Action: '%s'",
+        String mediaLabel = String.format("Media #%d, Frames: %d-%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
                 startFrame,
                 stopFrame,
@@ -199,7 +187,7 @@ public class DetectionResponseProcessor
 
         int startTime = audioResponse.getStartTime();
         int stopTime = audioResponse.getStartTime();
-        String mediaLabel = String.format("Media #%d, Time: %d-%d, Stage: '%s', Action: '%s'",
+        String mediaLabel = String.format("Media #%d, Time: %d-%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
                 startTime,
                 stopTime,
@@ -236,6 +224,7 @@ public class DetectionResponseProcessor
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         properties);
+
                 inProgressJobs.addTrack(track);
             }
         }
@@ -293,7 +282,7 @@ public class DetectionResponseProcessor
                         0,
                         properties);
 
-                Track track1 = new Track(
+                Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
                         detectionResponse.getTaskIndex(),
@@ -306,12 +295,11 @@ public class DetectionResponseProcessor
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
                         properties);
-                inProgressJobs.addTrack(track1);
 
+                inProgressJobs.addTrack(track);
             }
         }
     }
-
 
     private void checkErrors(long jobId, String mediaLabel, DetectionProtobuf.DetectionResponse detectionResponse,
                              int startFrame, int stopFrame, int startTime, int stopTime) {
@@ -320,13 +308,13 @@ public class DetectionResponseProcessor
             String errorMessage;
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-                log.warn("[{}] Encountered a detection error while processing {}: {}",
+                log.warn("[{}] Job cancelled while processing {}: {}",
                         getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorMessage = MpfConstants.REQUEST_CANCELLED;
             }
             else {
-                log.warn("[{}] Encountered a detection error while processing {}: {}",
+                log.error("[{}] Encountered a detection error while processing {}: {}",
                         getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
                 errorMessage = Objects.toString(detectionResponse.getError());
@@ -349,7 +337,6 @@ public class DetectionResponseProcessor
         return toDetection(frameLocationMap.getImageLocation(), frameLocationMap.getFrame(), time);
     }
 
-
     private static Detection toDetection(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
         SortedMap<String, String> detectionProperties = toMap(location.getDetectionPropertiesList());
         return new Detection(
@@ -363,7 +350,6 @@ public class DetectionResponseProcessor
                 detectionProperties);
     }
 
-
     private static SortedMap<String, String> toMap(Collection<DetectionProtobuf.PropertyMap> properties) {
         return properties.stream()
                 .collect(ImmutableSortedMap.toImmutableSortedMap(
@@ -372,22 +358,16 @@ public class DetectionResponseProcessor
                         DetectionProtobuf.PropertyMap::getValue));
     }
 
-
-
     private static String getLogLabel(long jobId, DetectionProtobuf.DetectionResponse detectionResponse) {
         return String.format("Job %d|%d|%d", jobId, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
     }
 
-
-
     private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
-        return String.format("Media #%d, Stage: '%s', Action: '%s'",
+        return String.format("Media #%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
     private static int convertFrameToTime(int frame, Float fps) {
         return fps == null ? 0 : Math.round(frame * 1000 / fps); // in milliseconds
-
     }
-
 }

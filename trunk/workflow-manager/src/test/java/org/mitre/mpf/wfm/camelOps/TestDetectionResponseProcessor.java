@@ -208,11 +208,39 @@ public class TestDetectionResponseProcessor {
                 .addTrack(track(JOB_ID, 5)); 
     }
 
-
     @Test
     public void testVideoResponseError() {
         DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
 
+        processVideoJob(error);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+    }
+
+    @Test
+    public void testVideoResponseCancelled() {
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.REQUEST_CANCELLED;
+
+        processVideoJob(error);
+
+        verify(inProgressJobs, times(1))
+                .setJobStatus(JOB_ID, BatchJobStatusType.CANCELLING);
+
+        verify(inProgressJobs, times(1))
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
+
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any());
+    }
+
+    private void processVideoJob(DetectionProtobuf.DetectionError error) {
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
                 .setMediaId(MEDIA_ID)
@@ -232,18 +260,7 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().setBody(detectionResponse);
 
         detectionResponseProcessor.wfmProcess(exchange);
-
-        verify(inProgressJobs, times(1))
-                .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
-
-        verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
-        verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
-
     }
-
 
     @Test
     public void testAudioResponseError() {
@@ -277,7 +294,6 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
-
     }
 
     @Test
@@ -310,12 +326,11 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
-
     }
 
     @Test
     public void testGenericResponseError() {
-        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.INVALID_ROTATION;
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.COULD_NOT_OPEN_DATAFILE;
 
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)
@@ -343,11 +358,10 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
-
     }
 
     private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
-        return ArgumentMatchers.argThat(new ArgumentMatcher<DetectionProcessingError>() {
+        return ArgumentMatchers.argThat(new ArgumentMatcher<>() {
 
             public String toString() {
                 String description = "DetectionProcessingError { jobId = " + jobId;
@@ -366,7 +380,7 @@ public class TestDetectionResponseProcessor {
     }
 
     private static Track track(long jobId, int startFrame) {
-        return ArgumentMatchers.argThat(new ArgumentMatcher<Track>() {
+        return ArgumentMatchers.argThat(new ArgumentMatcher<>() {
             public String toString() {
                 return "Track { jobId = " + jobId + ", startFrame = " + startFrame + " }";
             }

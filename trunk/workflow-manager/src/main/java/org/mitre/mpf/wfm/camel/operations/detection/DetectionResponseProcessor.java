@@ -308,8 +308,7 @@ public class DetectionResponseProcessor
             String errorMessage;
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-                log.warn("[{}] Job cancelled while processing {}: {}",
-                        getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
+                log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorMessage = MpfConstants.REQUEST_CANCELLED;
             }

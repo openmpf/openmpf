@@ -186,7 +186,7 @@ public class DetectionResponseProcessor
                                       double confidenceThreshold) {
 
         int startTime = audioResponse.getStartTime();
-        int stopTime = audioResponse.getStartTime();
+        int stopTime = audioResponse.getStopTime();
         String mediaLabel = String.format("Media #%d, Time: %d-%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
                 startTime,
@@ -366,7 +366,7 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    private static int convertFrameToTime(int frame, Float fps) {
+    public static int convertFrameToTime(int frame, Float fps) {
         return fps == null ? 0 : Math.round(frame * 1000 / fps); // in milliseconds
     }
 }

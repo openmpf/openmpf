@@ -79,6 +79,16 @@ public class TestDetectionResponseProcessor {
 
     private static final long JOB_ID = 111;
     private static final long MEDIA_ID = 222;
+
+    private static final float FPS = 29.97f;
+    private static final int DURATION = 300_000_000;
+
+    private static final int START_FRAME = 10;
+    private static final int STOP_FRAME = 30;
+
+    private static final int START_TIME = DetectionResponseProcessor.convertFrameToTime(START_FRAME, FPS);
+    private static final int STOP_TIME  = DetectionResponseProcessor.convertFrameToTime(STOP_FRAME, FPS);
+
     private static final String DETECTION_RESPONSE_ALG_NAME = "TEST_DETECTION_RESPONSE_ALG";
     private static final String DETECTION_RESPONSE_ACTION_NAME = "TEST_DETECTION_RESPONSE_ACTION";
     private static final String DETECTION_RESPONSE_PIPELINE_NAME = "TEST_DETECTION_RESPONSE_PIPELINE";
@@ -118,8 +128,8 @@ public class TestDetectionResponseProcessor {
         MediaImpl media = new MediaImpl(
                 MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
                 Collections.emptyMap(), null);
-        media.addMetadata("DURATION", "3004");
-        media.addMetadata("FPS", "29.97");
+        media.addMetadata("FPS", String.valueOf(FPS));
+        media.addMetadata("DURATION", String.valueOf(DURATION));
 
         BatchJobImpl job = new BatchJobImpl(
             JOB_ID,
@@ -153,8 +163,8 @@ public class TestDetectionResponseProcessor {
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                                    .setDetectionType("TEST")
-                                   .setStartFrame(0)
-                                   .setStopFrame(10)
+                                   .setStartFrame(START_FRAME)
+                                   .setStopFrame(STOP_FRAME)
                                    .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
                                                    .setStartFrame(5) 
                                                    .setStopFrame(5) 
@@ -193,17 +203,13 @@ public class TestDetectionResponseProcessor {
         Assert.assertEquals(1, processorResponse.getTaskIndex()); 
 
         verify(inProgressJobs, never()) 
-                .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point 
-
+                .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
         verify(inProgressJobs, never()) 
-                .addDetectionProcessingError(any()); 
-
+                .addDetectionProcessingError(any());
         verify(inProgressJobs, never()) 
-                .addJobError(eq(JOB_ID), any()); 
-
+                .addJobError(eq(JOB_ID), any());
         verify(inProgressJobs, never()) 
-                .addJobWarning(eq(JOB_ID), any()); 
-
+                .addJobWarning(eq(JOB_ID), any());
         verify(inProgressJobs, times(1)) 
                 .addTrack(track(JOB_ID, 5)); 
     }
@@ -216,10 +222,9 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
-
         verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
+                        START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
     }
@@ -232,10 +237,9 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.CANCELLING);
-
         verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
+                        START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
     }
@@ -246,8 +250,8 @@ public class TestDetectionResponseProcessor {
                 .setMediaId(MEDIA_ID)
                 .addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
                         .setDetectionType("TEST")
-                        .setStartFrame(0)
-                        .setStopFrame(10))
+                        .setStartFrame(START_FRAME)
+                        .setStopFrame(STOP_FRAME))
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
                 .setTaskIndex(1)
                 .setActionName(DETECTION_RESPONSE_ACTION_NAME)
@@ -271,8 +275,8 @@ public class TestDetectionResponseProcessor {
                 .setMediaId(MEDIA_ID)
                 .addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
                         .setDetectionType("TEST")
-                        .setStartTime(0)
-                        .setStopTime(100))
+                        .setStartTime(START_TIME)
+                        .setStopTime(STOP_TIME))
                 .setTaskName(DETECTION_RESPONSE_TASK_NAME)
                 .setTaskIndex(1)
                 .setActionName(DETECTION_RESPONSE_ACTION_NAME)
@@ -288,10 +292,8 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
-
         verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
     }
@@ -320,10 +322,8 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
-
         verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 1, 0 ,0));
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
     }
@@ -352,15 +352,15 @@ public class TestDetectionResponseProcessor {
 
         verify(inProgressJobs, times(1))
                 .setJobStatus(JOB_ID, BatchJobStatusType.IN_PROGRESS_ERRORS);
-
         verify(inProgressJobs, times(1))
-                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error));
-
+                .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, 0, 0));
         verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any());
     }
 
-    private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error) {
+    private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error,
+                                                                     int startFrame, int stopFrame,
+                                                                     int startTime, int stopTime) {
         return ArgumentMatchers.argThat(new ArgumentMatcher<>() {
 
             public String toString() {
@@ -368,13 +368,22 @@ public class TestDetectionResponseProcessor {
                 if (error != null) {
                     description += ", error = " + error.toString();
                 }
+                description += ", startFrame = " + startFrame;
+                description += ", stopFrame = " + stopFrame;
+                description += ", startTime = " + startTime;
+                description += ", stopTime = " + stopTime;
                 description += " }";
                 return description;
             }
 
             @Override
             public boolean matches(DetectionProcessingError obj) {
-                return jobId == obj.getJobId() && (error == null || error.toString().equals(obj.getError()));
+                return jobId == obj.getJobId()
+                        && (error == null || error.toString().equals(obj.getError()))
+                        && startFrame == obj.getStartFrame()
+                        && stopFrame == obj.getStopFrame()
+                        && startTime == obj.getStartTime()
+                        && stopTime == obj.getStopTime();
             }
         });
     }

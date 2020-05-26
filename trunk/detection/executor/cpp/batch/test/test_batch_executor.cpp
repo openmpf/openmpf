@@ -82,6 +82,7 @@ void init_python_path() {
 
     setenv("PYTHONPATH", python_path.c_str(), true);
     std::cout << "Setting PYTHONPATH to: \"" << python_path << "\"" << std::endl;
+    std::cout.flush();
 
     initialized = true;
 }

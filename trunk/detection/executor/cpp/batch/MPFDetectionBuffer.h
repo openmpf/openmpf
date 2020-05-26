@@ -138,6 +138,8 @@ public:
             const vector<MPFVideoTrack> &tracks,
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
+            const int start_frame,
+            const int stop_frame,
             const string detection_type,
             int *packed_length,
             const MPFDetectionError error) const;
@@ -146,6 +148,8 @@ public:
             const vector<MPFAudioTrack> &tracks,
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
+            const int start_time,
+            const int stop_time,
             const string detection_type,
             int *packed_length,
             const MPFDetectionError error) const;

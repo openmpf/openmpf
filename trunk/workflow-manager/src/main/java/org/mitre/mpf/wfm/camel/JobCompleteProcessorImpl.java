@@ -361,6 +361,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         markupResult.getMarkupUri(), markupResult.getMarkupStatus().name(), markupResult.getMessage()));
             }
 
+
             Set<Integer> suppressedTasks = getSuppressedTasks(media, job);
 
             for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
@@ -372,11 +373,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
                              job, media.getId(), taskIndex, actionIndex)) {
                         hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
-                        JsonDetectionProcessingError jsonDetectionProcessingError
-                                = new JsonDetectionProcessingError(
-                                    detectionProcessingError.getStartOffset(),
-                                    detectionProcessingError.getEndOffset(),
-                                    detectionProcessingError.getError());
+                        JsonDetectionProcessingError jsonDetectionProcessingError =
+                                 new JsonDetectionProcessingError(detectionProcessingError.getStartFrame(),
+                                                                     detectionProcessingError.getStopFrame(),
+                                                                     detectionProcessingError.getStartTime(),
+                                                                     detectionProcessingError.getStopTime(),
+                                                                   detectionProcessingError.getError());
                         if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
                             mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
                         }

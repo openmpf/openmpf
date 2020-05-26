@@ -61,30 +61,45 @@ public class MockDetectionComponent implements Processor {
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 
-		DetectionProtobuf.DetectionRequest extractionRequest = exchange.getIn().getBody(DetectionProtobuf.DetectionRequest.class);
+		DetectionProtobuf.DetectionRequest detectionRequest = exchange.getIn().getBody(DetectionProtobuf.DetectionRequest.class);
 
 		DetectionProtobuf.DetectionResponse.Builder response = DetectionProtobuf.DetectionResponse.newBuilder()
-				.setActionIndex(extractionRequest.getActionIndex())
-				.setActionName(extractionRequest.getActionName())
-				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(extractionRequest.getDataType().name()))
-				.setError(reportError(extractionRequest) ? DetectionProtobuf.DetectionError.DETECTION_TRACKING_FAILED : DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
-				.setMediaId(extractionRequest.getMediaId())
+				.setActionIndex(detectionRequest.getActionIndex())
+				.setActionName(detectionRequest.getActionName())
+				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(detectionRequest.getDataType().name()))
+				.setError(reportError(detectionRequest) ? DetectionProtobuf.DetectionError.DETECTION_TRACKING_FAILED : DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
+				.setMediaId(detectionRequest.getMediaId())
 				.setMetrics(
 						Metrics.MetricsMessage.newBuilder()
 								.setNodeId("MOCK DETECTION COMPONENT")
 								.setProcessingTime(1000))
-				.setRequestId(extractionRequest.getRequestId())
-				.setTaskIndex(extractionRequest.getTaskIndex())
-				.setTaskName(extractionRequest.getTaskName());
 
-		if (extractionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.AUDIO) {
-			response.setStartIndex(extractionRequest.getAudioRequest().getStartTime())
-					.setStopIndex(extractionRequest.getAudioRequest().getStopTime());
-		} else if (extractionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.IMAGE) {
-			response.setStartIndex(0).setStopIndex(1);
-		} else if (extractionRequest.getDataType()== DetectionProtobuf.DetectionRequest.DataType.VIDEO) {
-			response.setStartIndex(extractionRequest.getVideoRequest().getStartFrame())
-					.setStopIndex(extractionRequest.getVideoRequest().getStopFrame());
+				.setRequestId(detectionRequest.getRequestId())
+				.setTaskIndex(detectionRequest.getTaskIndex())
+				.setTaskName(detectionRequest.getTaskName());
+
+		switch (detectionRequest.getDataType()) {
+			case AUDIO:
+				response.addAudioResponses(DetectionProtobuf.DetectionResponse.AudioResponse.newBuilder()
+						.setDetectionType("MOCK")
+						.setStartTime(detectionRequest.getAudioRequest().getStartTime())
+						.setStopTime(detectionRequest.getAudioRequest().getStopTime()));
+				break;
+			case VIDEO:
+				response.addVideoResponses(DetectionProtobuf.DetectionResponse.VideoResponse.newBuilder()
+						.setDetectionType("MOCK")
+						.setStartFrame(detectionRequest.getVideoRequest().getStartFrame())
+						.setStopFrame(detectionRequest.getVideoRequest().getStopFrame()));
+				break;
+			case IMAGE:
+				response.addImageResponses(DetectionProtobuf.DetectionResponse.ImageResponse.newBuilder()
+						.setDetectionType("MOCK"));
+				break;
+			case UNKNOWN:
+			default:
+				response.addGenericResponses(DetectionProtobuf.DetectionResponse.GenericResponse.newBuilder()
+						.setDetectionType("MOCK"));
+				break;
 		}
 
 		exchange.getOut().setBody(
@@ -94,6 +109,6 @@ public class MockDetectionComponent implements Processor {
 				// ...then convert it to a byte array.
 				.toByteArray());
 
-		log.info("Sent mock response for mock request {}.", extractionRequest.getRequestId());
+		log.info("Sent mock response for mock request {}.", detectionRequest.getRequestId());
 	}
 }

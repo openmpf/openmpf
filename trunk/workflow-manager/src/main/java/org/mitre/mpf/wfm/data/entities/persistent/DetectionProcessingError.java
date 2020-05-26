@@ -46,11 +46,17 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
 
-    private final int _startOffset;
-    public int getStartOffset() { return _startOffset; }
+    private final int _startFrame;
+    public int getStartFrame() { return _startFrame; }
 
-    private final int _endOffset;
-    public int getEndOffset() { return _endOffset; }
+    private final int _stopFrame;
+    public int getStopFrame() { return _stopFrame; }
+
+    private final int _startTime;
+    public int getStartTime() { return _startTime; }
+
+    private final int _stopTime;
+    public int getStopTime() { return _stopTime; }
 
     private final String _error;
     public String getError() { return _error; }
@@ -61,33 +67,38 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
             @JsonProperty("mediaId") long mediaId,
             @JsonProperty("taskIndex") int taskIndex,
             @JsonProperty("actionIndex") int actionIndex,
-            @JsonProperty("startOffset") int startOffset,
-            @JsonProperty("endOffset") int endOffset,
+            @JsonProperty("startFrame") int startFrame,
+            @JsonProperty("stopFrame") int stopFrame,
+            @JsonProperty("startTime") int startTime,
+            @JsonProperty("stopTime") int stopTime,
             @JsonProperty("error") String error) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
         _actionIndex = actionIndex;
-        _startOffset = startOffset;
-        _endOffset = endOffset;
+        _startFrame = startFrame;
+        _stopFrame = stopFrame;
+        _startTime = startTime;
+        _stopTime = stopTime;
         _error = error;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startOffset, _endOffset, _error);
+        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime, _error);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof DetectionProcessingError && compareTo((DetectionProcessingError) obj) == 0;
+        return (this == obj) ||
+                ((obj instanceof DetectionProcessingError) && (compareTo((DetectionProcessingError) obj) == 0));
     }
 
     @Override
     public String toString() {
         return String.format(
-                "%s#<jobId=%d, mediaId=%d, taskIndex=%d, actionIndex=%d, startOffset=%d, endOffset=%d, error='%s'>",
-                getClass().getSimpleName(), _jobId, _mediaId, _taskIndex, _actionIndex, _startOffset, _endOffset,
+                "%s#<jobId=%d, mediaId=%d, taskIndex=%d, actionIndex=%d, startFrame=%d, stopFrame=%d, startTime=%d, stopTime=%d, error='%s'>",
+                getClass().getSimpleName(), _jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime,
                 _error);
     }
 
@@ -96,8 +107,10 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
             .thenComparingLong(DetectionProcessingError::getMediaId)
             .thenComparingInt(DetectionProcessingError::getTaskIndex)
             .thenComparingInt(DetectionProcessingError::getActionIndex)
-            .thenComparingInt(DetectionProcessingError::getStartOffset)
-            .thenComparingInt(DetectionProcessingError::getEndOffset)
+            .thenComparingInt(DetectionProcessingError::getStartFrame)
+            .thenComparingInt(DetectionProcessingError::getStopFrame)
+            .thenComparingInt(DetectionProcessingError::getStartTime)
+            .thenComparingInt(DetectionProcessingError::getStopTime)
             .thenComparing(DetectionProcessingError::getError, TextUtils::nullSafeCompare));
 
     @Override
@@ -108,3 +121,4 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
         return COMPARATOR.compare(this, other);
     }
 }
+

@@ -70,13 +70,18 @@ void init_python_path() {
 
     std::string mpf_sdk_install = get_env_default("MPF_SDK_INSTALL_PATH");
     if (!mpf_sdk_install.empty()) {
+        std::cout << "MPF_SDK_INSTALL_PATH was set to \"" << mpf_sdk_install << "\"" << std::endl;
         python_path += mpf_sdk_install + "/python/site-packages:";
+    }
+    else {
+        std::cout << "MPF_SDK_INSTALL_PATH was not set!" << std::endl;
     }
 
     std::string mpf_home = get_env_default("MPF_HOME", "/opt/mpf");
     python_path += mpf_home + "/python/site-packages";
 
     setenv("PYTHONPATH", python_path.c_str(), true);
+    std::cout << "Setting PYTHONPATH to: \"" << python_path << "\"" << std::endl;
 
     initialized = true;
 }

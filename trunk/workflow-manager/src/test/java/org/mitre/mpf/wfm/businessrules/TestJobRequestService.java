@@ -238,7 +238,7 @@ public class TestJobRequestService {
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
         originalJob.addDetectionProcessingError(
-                new DetectionProcessingError(321, 1, 1, 1, 1, 1,
+            new DetectionProcessingError(321, 1, 1, 1, 0, 10, 0, 10,
                                              "error"));
         originalJob.addWarning("warning");
 

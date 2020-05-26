@@ -68,7 +68,7 @@ void init_python_path() {
     python_path += home_dir + "/openmpf-projects/openmpf-python-component-sdk/detection/api:";
     python_path += home_dir + "/mpf-sdk-install/python/site-packages:";
 
-    std::string mpf_sdk_install = get_env_default("MPF_SDK_INSTALL");
+    std::string mpf_sdk_install = get_env_default("MPF_SDK_INSTALL_PATH");
     if (!mpf_sdk_install.empty()) {
         python_path += mpf_sdk_install + "/python/site-packages:";
     }

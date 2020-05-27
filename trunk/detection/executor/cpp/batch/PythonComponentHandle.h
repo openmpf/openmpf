@@ -62,13 +62,13 @@ namespace MPF { namespace COMPONENT {
 
         bool Supports(MPFDetectionDataType data_type);
 
-        MPFDetectionError GetDetections(const MPFVideoJob &job, std::vector<MPFVideoTrack> &tracks);
+        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job);
 
-        MPFDetectionError GetDetections(const MPFImageJob &job, std::vector<MPFImageLocation> &locations);
+        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job);
 
-        MPFDetectionError GetDetections(const MPFAudioJob &job, std::vector<MPFAudioTrack> &tracks);
+        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job);
 
-        MPFDetectionError GetDetections(const MPFGenericJob &job, std::vector<MPFGenericTrack> &tracks);
+        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job);
 
         bool Close();
 

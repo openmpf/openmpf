@@ -101,13 +101,17 @@ public class MPFDetectionMessenger {
                                                                             audioRequest.getStartTime(),
                                                                             audioRequest.getStopTime(),
                                                                             audioRequest.getFeedForwardTrack()));
-                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata,
+                            responseBytes = detectionBuffer.createAudioResponseMessage(
+                            		msgMetadata,
 									audioRequest.getStartTime(), audioRequest.getStopTime(),
-									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+		                            "");
                         } catch (MPFComponentDetectionError e) {
-                            responseBytes = detectionBuffer.createAudioResponseMessage(msgMetadata,
+                            responseBytes = detectionBuffer.createAudioResponseMessage(
+                            		msgMetadata,
 									audioRequest.getStartTime(), audioRequest.getStopTime(),
-									detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError());
+									detectionType, Collections.<MPFAudioTrack>emptyList(), e.getDetectionError(),
+		                            e.getMessage());
                         }
                     } else if (MPFDataType.IMAGE == msgMetadata.getDataType()) {
                         MPFDetectionImageRequest imageRequest = detectionBuffer.getImageRequest();
@@ -118,9 +122,12 @@ public class MPFDetectionMessenger {
                                                                                msgMetadata.getAlgorithmProperties(),
                                                                                msgMetadata.getMediaProperties(),
                                                                                imageRequest.getFeedForwardLocation()));
-                            responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS);
+                            responseBytes = detectionBuffer.createImageResponseMessage(
+                            		msgMetadata, detectionType, locations, MPFDetectionError.MPF_DETECTION_SUCCESS,
+		                            "");
                         } catch (MPFComponentDetectionError e) {
-                            responseBytes = detectionBuffer.createImageResponseMessage(msgMetadata, detectionType, locations, e.getDetectionError());
+                            responseBytes = detectionBuffer.createImageResponseMessage(
+                            		msgMetadata, detectionType, locations, e.getDetectionError(), e.getMessage());
                         }
 
                     } else if (MPFDataType.VIDEO == msgMetadata.getDataType()) {
@@ -134,13 +141,16 @@ public class MPFDetectionMessenger {
                                                                             videoRequest.getStartFrame(),
                                                                             videoRequest.getStopFrame(),
                                                                             videoRequest.getFeedForwardTrack()));
-                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata,
+                            responseBytes = detectionBuffer.createVideoResponseMessage(
+                            		msgMetadata,
 									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
-									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+									detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+		                            "");
                         } catch (MPFComponentDetectionError e) {
-                            responseBytes = detectionBuffer.createVideoResponseMessage(msgMetadata,
+                            responseBytes = detectionBuffer.createVideoResponseMessage(
+                            		msgMetadata,
 									videoRequest.getStartFrame(), videoRequest.getStopFrame(),
-									detectionType, tracks, e.getDetectionError());
+									detectionType, tracks, e.getDetectionError(), e.getMessage());
                         }
                     } else if (MPFDataType.UNKNOWN == msgMetadata.getDataType()) {
 						MPFDetectionGenericRequest genericRequest = detectionBuffer.getGenericRequest();
@@ -151,9 +161,13 @@ public class MPFDetectionMessenger {
 									msgMetadata.getAlgorithmProperties(),
 									msgMetadata.getMediaProperties(),
 									genericRequest.getFeedForwardTrack()));
-							responseBytes = detectionBuffer.createGenericResponseMessage(msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS);
+							responseBytes = detectionBuffer.createGenericResponseMessage(
+									msgMetadata, detectionType, tracks, MPFDetectionError.MPF_DETECTION_SUCCESS,
+									"");
 						} catch (MPFComponentDetectionError e) {
-							responseBytes = detectionBuffer.createGenericResponseMessage(msgMetadata, detectionType, Collections.<MPFGenericTrack>emptyList(), e.getDetectionError());
+							responseBytes = detectionBuffer.createGenericResponseMessage(
+									msgMetadata, detectionType, Collections.<MPFGenericTrack>emptyList(), e.getDetectionError(),
+									e.getMessage());
 						}
 					}
                     // for debugging purposes

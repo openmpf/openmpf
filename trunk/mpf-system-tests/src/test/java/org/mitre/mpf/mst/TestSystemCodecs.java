@@ -51,9 +51,9 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
                 .findAny()
                 .isPresent();
 
-        if (!detectionFound && outputObject.getJobErrors() != null) {
+        if (!detectionFound && outputObject.getErrors() != null) {
             System.out.println(outputObject.getStatus());
-            System.err.println(outputObject.getJobErrors());
+            System.err.println(outputObject.getErrors());
             System.out.println(outputObject.getMedia());
         }
         Assert.assertTrue(detectionFound);

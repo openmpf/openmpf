@@ -68,7 +68,7 @@ public class MediaTestUtil {
             media.setFailed(true);
             return null;
         }).when(mockInProgressJobs)
-                .addMediaError(eq(jobId), eq(media.getId()), nonBlank());
+                .addError(eq(jobId), eq(media.getId()), any(), nonBlank());
 
         return exchange;
     }

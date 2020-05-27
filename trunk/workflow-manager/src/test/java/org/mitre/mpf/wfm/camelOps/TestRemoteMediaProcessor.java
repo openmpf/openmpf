@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.ErrorCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -169,7 +170,7 @@ public class TestRemoteMediaProcessor {
         verify(_mockInProgressJobs)
                 .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
         verify(_mockInProgressJobs)
-                .addMediaError(eq(jobId), eq(mediaId), nonBlank());
+                .addError(eq(jobId), eq(mediaId), eq(ErrorCodes.REMOTE_STORAGE_ERROR), nonBlank());
 
         LOG.info("Remote invalid image retrieval request passed.");
     }

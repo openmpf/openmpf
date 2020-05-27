@@ -48,6 +48,7 @@
 #include "PythonComponentHandle.h"
 
 #include <MPFDetectionComponent.h>
+#include <MPFDetectionException.h>
 
 using std::exception;
 using std::string;
@@ -182,6 +183,21 @@ bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
 }
 
 
+void handle_component_exception(std::string& error_message, MPFDetectionError &error_code) {
+    try {
+        throw;
+    }
+    catch (const MPFDetectionException &ex) {
+        error_message = ex.what();
+        error_code = ex.error_code;
+    }
+    catch (std::exception &ex) {
+        error_message = ex.what();
+        error_code = MPF_OTHER_DETECTION_ERROR_TYPE;
+    }
+}
+
+
 template <typename ComponentHandle>
 int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
             const std::string &app_dir, ComponentHandle &detection_engine) {
@@ -256,7 +272,8 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     // Pack error response
                     detection_response_body = detection_buf.PackErrorResponse(
                             msg_metadata, MPFDetectionDataType::UNKNOWN, &response_body_length,
-                            MPF_DETECTION_NOT_INITIALIZED); // TODO: consider using a more descriptive error
+                            MPF_DETECTION_NOT_INITIALIZED, // TODO: consider using a more descriptive error
+                            "Failed while unpacking the detection request.");
 
                 } else {
                     detection_buf.GetMessageMetadata(msg_metadata);
@@ -308,7 +325,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     string detection_type = detection_engine.GetDetectionType();
 
                     if (detection_engine.Supports(data_type)) {
-                        MPFDetectionError rc;
+                        MPFDetectionError rc = MPF_DETECTION_SUCCESS;
+                        std::string error_message;
+
                         if (data_type == MPFDetectionDataType::VIDEO) {
                             vector <MPFVideoTrack> tracks;
 
@@ -323,8 +342,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       video_request.feed_forward_track,
                                                       algorithm_properties,
                                                       media_properties);
-
-                                rc = detection_engine.GetDetections(video_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(video_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             else {
                                 // Invoke the detection component
@@ -336,7 +359,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine.GetDetections(video_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(video_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
 
                             msg_metadata->time_elapsed = time.elapsed();
@@ -349,7 +377,8 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                             detection_response_body = detection_buf.PackVideoResponse(
                                     tracks, msg_metadata, data_type,
                                     video_request.start_frame, video_request.stop_frame,
-                                    detection_type, &response_body_length, rc);
+                                    detection_type, &response_body_length, rc,
+                                    error_message);
 
                         } else if (data_type == MPFDetectionDataType::AUDIO) {
                             vector <MPFAudioTrack> tracks;
@@ -365,7 +394,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine.GetDetections(audio_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(audio_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             else {
                                 // Invoke the detection component
@@ -377,7 +411,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine.GetDetections(audio_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(audio_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -389,7 +428,8 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                             detection_response_body = detection_buf.PackAudioResponse(
                                     tracks, msg_metadata, data_type,
                                     audio_request.start_time, audio_request.stop_time,
-                                    detection_type, &response_body_length, rc);
+                                    detection_type, &response_body_length, rc,
+                                    error_message);
 
                         } else if (data_type == MPFDetectionDataType::IMAGE) {
                             vector <MPFImageLocation> locations;
@@ -403,7 +443,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine.GetDetections(image_job, locations);
+                                try {
+                                    locations = detection_engine.GetDetections(image_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             else {
                                 // Invoke the detection component
@@ -413,7 +458,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                       algorithm_properties,
                                                       media_properties);
 
-                                rc = detection_engine.GetDetections(image_job, locations);
+                                try {
+                                    locations = detection_engine.GetDetections(image_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -423,7 +473,8 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack image response
                             detection_response_body = detection_buf.PackImageResponse(
-                                    locations, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    locations, msg_metadata, data_type, detection_type, &response_body_length, rc,
+                                    error_message);
 
                         } else {
                             vector <MPFGenericTrack> tracks;
@@ -437,7 +488,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                           algorithm_properties,
                                                           media_properties);
 
-                                rc = detection_engine.GetDetections(generic_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(generic_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             else {
                                 // Invoke the detection component
@@ -447,7 +503,12 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                                                           algorithm_properties,
                                                           media_properties);
 
-                                rc = detection_engine.GetDetections(generic_job, tracks);
+                                try {
+                                    tracks = detection_engine.GetDetections(generic_job);
+                                }
+                                catch (...) {
+                                    handle_component_exception(error_message, rc);
+                                }
                             }
                             msg_metadata->time_elapsed = time.elapsed();
 
@@ -457,7 +518,8 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                             // Pack generic response
                             detection_response_body = detection_buf.PackGenericResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc);
+                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc,
+                                    error_message);
                         }
 
                     } else {
@@ -478,15 +540,16 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                             default:
                                 data_type_str = "INVALID_TYPE";
                         }
-                        LOG4CXX_WARN(logger, "[" << job_name.str()
-                                << "] The detection component does not support detection data type of "
-                                << data_type_str);
+                        std::string error_message = "The detection component does not support detection data type of "
+                                                    + data_type_str;
+                        LOG4CXX_WARN(logger, "[" << job_name.str() << "] " << error_message);
 
                         msg_metadata->time_elapsed = time.elapsed();
 
                         // Pack error response
                         detection_response_body = detection_buf.PackErrorResponse(
-                                msg_metadata, data_type, &response_body_length, MPF_UNSUPPORTED_DATA_TYPE);
+                                msg_metadata, data_type, &response_body_length, MPF_UNSUPPORTED_DATA_TYPE,
+                                error_message);
                     }
                 }
 

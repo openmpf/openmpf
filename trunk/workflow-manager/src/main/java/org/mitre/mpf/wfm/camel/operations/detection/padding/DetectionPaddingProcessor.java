@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.ErrorCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -119,7 +120,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                         trackMergingContext.getTaskIndex(), actionIndex);
 
                 Collection<Track> newTracks = processTracks(
-                        job.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
+                        job.getId(), media.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
 
                 _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex, newTracks);
@@ -180,8 +181,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    private Collection<Track> processTracks(long jobId, String xPadding, String yPadding,
-                                                   int frameWidth, int frameHeight, Iterable<Track> tracks) {
+    private Collection<Track> processTracks(long jobId, long mediaId, String xPadding, String yPadding,
+                                            int frameWidth, int frameHeight, Iterable<Track> tracks) {
         boolean shrunkToNothing = false;
         SortedSet<Track> newTracks = new TreeSet<>();
 
@@ -214,8 +215,10 @@ public class DetectionPaddingProcessor extends WfmProcessor {
         if (shrunkToNothing) {
             _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
                     "1-pixel detection regions used instead.", jobId));
-            _inProgressBatchJobs.addJobWarning(jobId, "Shrunk one or more detection regions to nothing. " +
-                    "1-pixel detection regions used instead.");
+            _inProgressBatchJobs.addWarning(
+                    jobId, mediaId, ErrorCodes.PADDING_ERROR,
+                    "Shrunk one or more detection regions to nothing. " +
+                            "1-pixel detection regions used instead.");
         }
 
         return newTracks;

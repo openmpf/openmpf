@@ -29,8 +29,11 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
 
@@ -113,23 +116,25 @@ public class BatchJobImpl implements BatchJob {
     public Optional<String> getCallbackMethod() { return Optional.ofNullable(_callbackMethod); }
 
 
-    private final Set<String> _errors;
+    private final Map<Long, Set<JsonIssueDetails>> _errors;
     @Override
-    public Set<String> getErrors() {
-        return Collections.unmodifiableSet(_errors);
+    public Map<Long, Set<JsonIssueDetails>> getErrors() {
+        return Collections.unmodifiableMap(_errors);
     }
-    public void addError(String errorMsg) {
-        _errors.add(errorMsg);
+    public void addError(long mediaId, String source, String code, String message) {
+        var details = new JsonIssueDetails(source, code, message);
+        _errors.computeIfAbsent(mediaId, k -> new HashSet<>()).add(details);
     }
 
 
-    private final Set<String> _warnings;
+    private final Map<Long, Set<JsonIssueDetails>> _warnings;
     @Override
-    public Set<String> getWarnings() {
-        return Collections.unmodifiableSet(_warnings);
+    public Map<Long, Set<JsonIssueDetails>> getWarnings() {
+        return Collections.unmodifiableMap(_warnings);
     }
-    public void addWarning(String warningMsg) {
-        _warnings.add(warningMsg);
+    public void addWarning(long mediaId, String source, String code, String message) {
+        var details = new JsonIssueDetails(source, code, message);
+        _warnings.computeIfAbsent(mediaId, k -> new HashSet<>()).add(details);
     }
 
 
@@ -163,7 +168,7 @@ public class BatchJobImpl implements BatchJob {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, outputEnabled, callbackUrl,
-             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), List.of(), List.of());
+             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), Map.of(), Map.of());
     }
 
 
@@ -182,8 +187,8 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
-            @JsonProperty("errors") Collection<String> errors,
-            @JsonProperty("warnings") Collection<String> warnings) {
+            @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
+            @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
@@ -206,7 +211,13 @@ public class BatchJobImpl implements BatchJob {
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
-        _errors = new HashSet<>(errors);
-        _warnings = new HashSet<>(warnings);
+
+        _errors = new HashMap<>();
+        // Can't just pass errors to HashMap constructor because we also want to copy the sets.
+        errors.forEach((k, v) -> _errors.put(k, new HashSet<>(v)));
+
+        _warnings = new HashMap<>();
+        // Can't just pass warnings to HashMap constructor because we also want to copy the sets.
+        warnings.forEach((k, v) -> _warnings.put(k, new HashSet<>(v)));
     }
 }

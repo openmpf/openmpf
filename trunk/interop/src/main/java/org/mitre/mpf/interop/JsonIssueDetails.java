@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2020 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2019 The MITRE Corporation                                       *
+ * Copyright 2020 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,57 +24,61 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "CppComponentHandle.h"
-#include "ComponentLoadError.h"
+
+package org.mitre.mpf.interop;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Comparator;
+import java.util.Objects;
+
+import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
+
+public class JsonIssueDetails implements Comparable<JsonIssueDetails> {
+
+    private final String _source;
+    public String getSource() { return _source; }
+
+    private final String _code;
+    public String getCode() { return _code; }
+
+    private final String _message;
+    public String getMessage() { return _message; }
 
 
-namespace MPF { namespace COMPONENT {
-
-
-    CppComponentHandle::CppComponentHandle(const std::string &lib_path)
-    try : component_(lib_path, "component_creator", "component_deleter")
-    {
-
-    }
-    catch (const std::exception &ex) {
-        throw ComponentLoadError(ex.what());
-    }
-
-    void CppComponentHandle::SetRunDirectory(const std::string &run_dir) {
-        component_->SetRunDirectory(run_dir);
-    }
-
-    bool CppComponentHandle::Init() {
-        return component_->Init();
-    }
-
-    std::string CppComponentHandle::GetDetectionType() {
-        return component_->GetDetectionType();
-    }
-
-    bool CppComponentHandle::Supports(MPFDetectionDataType data_type) {
-        return component_->Supports(data_type);
-    }
-
-    std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFVideoJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFImageLocation> CppComponentHandle::GetDetections(const MPFImageJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFAudioTrack> CppComponentHandle::GetDetections(const MPFAudioJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFGenericTrack> CppComponentHandle::GetDetections(const MPFGenericJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    bool CppComponentHandle::Close() {
-        return component_->Close();
+    public JsonIssueDetails(
+            @JsonProperty("source") String source,
+            @JsonProperty("code") String code,
+            @JsonProperty("message") String message) {
+        _source = source;
+        _code = code;
+        _message = message;
     }
 
 
-}}
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof JsonIssueDetails
+                && compareTo((JsonIssueDetails) other) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_source, _code, _message);
+    }
+
+
+    private static final Comparator<JsonIssueDetails> DEFAULT_COMPARATOR = Comparator
+            .nullsFirst(
+                stringCompare(JsonIssueDetails::getSource)
+                .thenComparing(stringCompare(JsonIssueDetails::getCode))
+                .thenComparing(stringCompare(JsonIssueDetails::getMessage)));
+
+    @Override
+    public int compareTo(JsonIssueDetails other) {
+        //noinspection ObjectEquality - False positive
+        return this == other
+                ? 0
+                : DEFAULT_COMPARATOR.compare(this, other);
+    }
+}

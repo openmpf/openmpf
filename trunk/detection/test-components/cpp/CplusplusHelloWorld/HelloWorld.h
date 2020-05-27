@@ -44,21 +44,13 @@ public:
 
     bool Close() override;
 
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFVideoJob &job,
-            std::vector<MPF::COMPONENT::MPFVideoTrack> &tracks) override;
+    std::vector<MPF::COMPONENT::MPFVideoTrack> GetDetections(const MPF::COMPONENT::MPFVideoJob &job) override;
 
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFImageJob &job,
-            std::vector<MPF::COMPONENT::MPFImageLocation> &locations) override;
+    std::vector<MPF::COMPONENT::MPFImageLocation> GetDetections(const MPF::COMPONENT::MPFImageJob &job) override;
 
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFAudioJob &job,
-            std::vector<MPF::COMPONENT::MPFAudioTrack> &tracks) override;
+    std::vector<MPF::COMPONENT::MPFAudioTrack> GetDetections(const MPF::COMPONENT::MPFAudioJob &job) override;
 
-    MPF::COMPONENT::MPFDetectionError GetDetections(
-            const MPF::COMPONENT::MPFGenericJob &job,
-            std::vector<MPF::COMPONENT::MPFGenericTrack> &tracks) override;
+    std::vector<MPF::COMPONENT::MPFGenericTrack> GetDetections(const MPF::COMPONENT::MPFGenericJob &job) override;
 
     bool Supports(MPF::COMPONENT::MPFDetectionDataType data_type) override;
 

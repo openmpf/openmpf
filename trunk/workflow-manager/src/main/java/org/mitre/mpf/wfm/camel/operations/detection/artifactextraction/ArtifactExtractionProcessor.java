@@ -31,6 +31,7 @@ import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.enums.ErrorCodes;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -86,8 +87,10 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
                 break;
             default:
                 _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting artifacts(s) from frame(s): Unsupported media type" + request.getMediaType().name());
+                _inProgressBatchJobs.addError(
+                        request.getJobId(), request.getMediaId(), ErrorCodes.ARTIFACT_EXTRACTION_ERROR,
+                        "Error extracting artifacts(s) from frame(s): Unsupported media type"
+                                    + request.getMediaType().name());
         }
 
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
@@ -146,7 +149,8 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         SortedSet<Integer> missingFrames = findMissingFrames(jobTracks, request);
         if (!missingFrames.isEmpty()) {
             _inProgressBatchJobs.setJobStatus(request.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-            _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
+            _inProgressBatchJobs.addError(
+                    request.getJobId(), request.getMediaId(), ErrorCodes.ARTIFACT_EXTRACTION_ERROR,
                     "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
     }
@@ -178,8 +182,9 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         SortedSet<Integer> missingFrames = findMissingFrames(_inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                 request.getTaskIndex(), request.getActionIndex()), request);
         if (!missingFrames.isEmpty()) {
-            _inProgressBatchJobs.addMediaError(request.getJobId(), request.getMediaId(),
-                    "Error extracting artifact(s) from frame(s): " + missingFrames);
+            _inProgressBatchJobs.addError(
+                        request.getJobId(), request.getMediaId(), ErrorCodes.ARTIFACT_EXTRACTION_ERROR,
+                        "Error extracting artifact(s) from frame(s): " + missingFrames);
         }
     }
 }

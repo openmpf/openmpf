@@ -178,6 +178,7 @@ void MPFDetectionBuffer::PackCommonFields(
         const MPFMessageMetadata *const msg_metadata,
         const MPFDetectionDataType data_type,
         const MPFDetectionError error,
+        const std::string &error_message,
         DetectionResponse &detection_response) const {
     // Caller has to delete returned data
 
@@ -189,6 +190,7 @@ void MPFDetectionBuffer::PackCommonFields(
     detection_response.set_action_index(msg_metadata->action_index);
     detection_response.set_action_name(msg_metadata->action_name);
     detection_response.set_error(translateMPFDetectionError(error));
+    detection_response.set_error_message(error_message);
 }
 
 unsigned char *MPFDetectionBuffer::FinalizeDetectionResponse(
@@ -218,11 +220,12 @@ unsigned char *MPFDetectionBuffer::PackErrorResponse(
         const MPFMessageMetadata *const msg_metadata,
         const MPFDetectionDataType data_type,
         int *packed_length,
-        const MPFDetectionError error) const {
+        const MPFDetectionError error,
+        const std::string &error_message) const {
     // Caller has to delete returned data
 
     DetectionResponse detection_response;
-    PackCommonFields(msg_metadata, data_type, error, detection_response);
+    PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
     return FinalizeDetectionResponse(detection_response, packed_length);
 }
 
@@ -234,11 +237,12 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
         const int stop_frame,
         const string detection_type,
         int *packed_length,
-        const MPFDetectionError error) const {
+        const MPFDetectionError error,
+        const std::string &error_message) const {
     // Caller has to delete returned data
 
     DetectionResponse detection_response;
-    PackCommonFields(msg_metadata, data_type, error, detection_response);
+    PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_VideoResponse *video_response = detection_response.add_video_responses();
     video_response->set_start_frame(start_frame);
@@ -291,11 +295,12 @@ unsigned char *MPFDetectionBuffer::PackAudioResponse(
         const int stop_time,
         const string detection_type,
         int *packed_length,
-        const MPFDetectionError error) const {
+        const MPFDetectionError error,
+        const std::string &error_message) const {
     // Caller has to delete returned data
 
     DetectionResponse detection_response;
-    PackCommonFields(msg_metadata, data_type, error, detection_response);
+    PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_AudioResponse *audio_response = detection_response.add_audio_responses();
     audio_response->set_start_time(start_time);
@@ -324,11 +329,12 @@ unsigned char *MPFDetectionBuffer::PackImageResponse(
         const MPFDetectionDataType data_type,
         const string detection_type,
         int *packed_length,
-        const MPFDetectionError error) const {
+        const MPFDetectionError error,
+        const std::string &error_message) const {
     // Caller has to delete returned data
 
     DetectionResponse detection_response;
-    PackCommonFields(msg_metadata, data_type, error, detection_response);
+    PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_ImageResponse *image_response = detection_response.add_image_responses();
     image_response->set_detection_type(detection_type);
@@ -358,11 +364,12 @@ unsigned char *MPFDetectionBuffer::PackGenericResponse(
         const MPFDetectionDataType data_type,
         const string detection_type,
         int *packed_length,
-        const MPFDetectionError error) const {
+        const MPFDetectionError error,
+        const std::string &error_message) const {
     // Caller has to delete returned data
 
     DetectionResponse detection_response;
-    PackCommonFields(msg_metadata, data_type, error, detection_response);
+    PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
 
     DetectionResponse_GenericResponse *generic_response = detection_response.add_generic_responses();
     generic_response->set_detection_type(detection_type);

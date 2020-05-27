@@ -34,24 +34,24 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.interop.JsonMediaIssue;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MarkupStatus;
-import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
 import static org.mockito.Mockito.*;
 
 public class TestStorageService {
@@ -143,10 +143,7 @@ public class TestStorageService {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
                 .thenReturn(jobId);
-
-        SortedSet<String> warnings = new TreeSet<>();
-        when(outputObject.getJobWarnings())
-                .thenReturn(warnings);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
 
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
@@ -162,8 +159,7 @@ public class TestStorageService {
         assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
         verifyJobWarning(jobId);
-        assertEquals(1, warnings.size());
-        assertFalse(StringUtils.isBlank(warnings.first()));
+        verifySingleWarningAddedToOutputObject(0, warnings);
     }
 
 
@@ -174,9 +170,7 @@ public class TestStorageService {
         when(outputObject.getJobId())
                 .thenReturn(jobId);
 
-        SortedSet<String> warnings = new TreeSet<>();
-        when(outputObject.getJobWarnings())
-                .thenReturn(warnings);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
 
         doThrow(StorageException.class)
                 .when(_mockNginxBackend).canStore(outputObject);
@@ -190,8 +184,7 @@ public class TestStorageService {
         assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
         verifyJobWarning(jobId);
-        assertEquals(1, warnings.size());
-        assertFalse(StringUtils.isBlank(warnings.first()));
+        verifySingleWarningAddedToOutputObject(0, warnings);
 
         verify(_mockNginxBackend, never())
                 .store(any(JsonOutputObject.class));
@@ -201,10 +194,7 @@ public class TestStorageService {
     @Test
     public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
-
-        SortedSet<String> warnings = new TreeSet<>();
-        when(outputObject.getJobWarnings())
-                .thenReturn(warnings);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
 
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
@@ -225,8 +215,7 @@ public class TestStorageService {
             // The code that calls _storageService.store() will catch the exception and set the final status to ERROR.
             // Until then, the status is COMPLETE_WITH_WARNINGS.
             assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
-            assertEquals(1, warnings.size());
-            assertFalse(StringUtils.isBlank(warnings.first()));
+            verifySingleWarningAddedToOutputObject(0, warnings);
         }
     }
 
@@ -276,11 +265,14 @@ public class TestStorageService {
     @Test
     public void imageArtifactGetStoredLocallyWhenBackendException() throws IOException, StorageException {
         long jobId = 4231;
+        long mediaId = 456;
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getJobId())
                 .thenReturn(jobId);
         when(request.getMediaType())
                 .thenReturn(MediaType.IMAGE);
+        when(request.getMediaId())
+                .thenReturn(mediaId);
 
         when(_mockNginxBackend.canStore(request))
                 .thenReturn(true);
@@ -295,7 +287,7 @@ public class TestStorageService {
         Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
-        verifyJobWarning(jobId);
+        verifyWarning(jobId, request.getMediaId());
     }
 
 
@@ -351,9 +343,12 @@ public class TestStorageService {
     @Test
     public void videoArtifactsGetStoredLocallyWhenBackendException() throws IOException, StorageException {
         long jobId = 4233;
+        long mediaId = 548;
         ArtifactExtractionRequest request = mock(ArtifactExtractionRequest.class);
         when(request.getJobId())
                 .thenReturn(jobId);
+        when(request.getMediaId())
+                .thenReturn(mediaId);
         when(request.getMediaType())
                 .thenReturn(MediaType.VIDEO);
 
@@ -373,7 +368,7 @@ public class TestStorageService {
         Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
-        verifyJobWarning(jobId);
+        verifyWarning(jobId, mediaId);
     }
 
 
@@ -409,9 +404,12 @@ public class TestStorageService {
     @Test
     public void markupStoredLocallyWhenBackendException() throws IOException, StorageException {
         long jobId = 5134;
+        long mediaId = 975;
         MarkupResult markup = mock(MarkupResult.class);
         when(markup.getJobId())
                 .thenReturn(jobId);
+        when(markup.getMediaId())
+                .thenReturn(mediaId);
 
         when(_mockS3Backend.canStore(markup))
                 .thenReturn(true);
@@ -424,11 +422,25 @@ public class TestStorageService {
         verify(_mockLocalBackend)
                 .store(markup);
 
-        verifyJobWarning(jobId);
+        verifyWarning(jobId, mediaId);
         verify(markup)
                 .setMessage(nonBlank());
         verify(markup)
                 .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+    }
+
+
+    private static SortedSet<JsonMediaIssue> setupWarnings(JsonOutputObject outputObject) {
+        SortedSet<JsonMediaIssue> warnings = new TreeSet<>();
+        when(outputObject.getWarnings())
+                .thenReturn(warnings);
+
+        doAnswer(a -> warnings.add(new JsonMediaIssue(
+                a.getArgument(0),
+                (Collection<JsonIssueDetails>) a.getArgument(1))))
+                .when(outputObject).addWarnings(anyLong(), nonEmptyCollection());
+
+        return warnings;
     }
 
     private static void verifyNoMarkupError(MarkupResult markup) {
@@ -440,11 +452,33 @@ public class TestStorageService {
 
     private void verifyNoInProgressJobWarnings() {
         verify(_mockInProgressJobs, never())
-                .addJobWarning(anyLong(), any());
+                .addJobWarning(anyLong(), any(), any());
+
+        verify(_mockInProgressJobs, never())
+                .addWarning(anyLong(), anyLong(), any(), any());
     }
 
     private void verifyJobWarning(long jobId) {
         verify(_mockInProgressJobs)
-                .addJobWarning(eq(jobId), nonBlank());
+                .addJobWarning(eq(jobId), eq(ErrorCodes.REMOTE_STORAGE_ERROR), nonBlank());
+    }
+
+    private void verifyWarning(long jobId, long mediaId) {
+        verify(_mockInProgressJobs)
+                .addWarning(eq(jobId), eq(mediaId), eq(ErrorCodes.REMOTE_STORAGE_ERROR), nonBlank());
+    }
+
+    private static void verifySingleWarningAddedToOutputObject(long mediaId, SortedSet<JsonMediaIssue> warnings) {
+        assertEquals(1, warnings.size());
+
+        JsonMediaIssue warning = warnings.first();
+        assertEquals(mediaId, warning.getMediaId());
+        assertEquals(1, warning.getDetails().size());
+
+        JsonIssueDetails details = warning.getDetails().first();
+        assertFalse(StringUtils.isBlank(details.getMessage()));
+        assertEquals(ErrorSources.WORKFLOW_MANAGER.toString(), details.getSource());
+        assertEquals(ErrorCodes.REMOTE_STORAGE_ERROR.toString(), details.getCode());
+
     }
 }

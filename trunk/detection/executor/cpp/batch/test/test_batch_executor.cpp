@@ -34,6 +34,7 @@
 #include <gtest/gtest.h>
 #include <MPFDetectionObjects.h>
 #include <MPFDetectionComponent.h>
+#include <MPFDetectionException.h>
 
 #include "../PythonComponentHandle.h"
 #include "../MPFMessenger.h"
@@ -117,9 +118,13 @@ TEST(PythonComponentHandleTest, TestUnsupportedJobType) {
     ASSERT_FALSE(py_component.Supports(UNKNOWN));
     MPFGenericJob job("Test", "fake/path", {}, {});
 
-    std::vector<MPFGenericTrack> results;
-    ASSERT_EQ(MPF_UNSUPPORTED_DATA_TYPE, py_component.GetDetections(job, results));
-    ASSERT_TRUE(results.empty());
+    try {
+        py_component.GetDetections(job);
+        FAIL() << "Expected MPFDetectionException to be thrown.";
+    }
+    catch (const MPFDetectionException &ex) {
+        ASSERT_EQ(MPF_UNSUPPORTED_DATA_TYPE, ex.error_code);
+    }
 }
 
 
@@ -142,10 +147,7 @@ TEST(PythonComponentHandleTest, TestImageJob) {
                     { { "job prop 1" , "job val 1" }, job_echo_pair },
                     { { "media prop 1" , "media val 1" }, media_echo_pair });
 
-    std::vector<MPFImageLocation> results;
-    auto rc = py_component.GetDetections(job, results);
-
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFImageLocation> results = py_component.GetDetections(job);
 
     ASSERT_EQ(results.size(), 2);
 
@@ -163,10 +165,7 @@ TEST(PythonComponentHandleTest, TestVideoJob) {
     MPFVideoJob job("Test Job", "path/to/media", 0, 10,
                     { job_echo_pair }, { media_echo_pair });
 
-    std::vector<MPFVideoTrack> results;
-    auto rc = py_component.GetDetections(job, results);
-
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
 
     ASSERT_EQ(results.size(), 2);
 
@@ -186,10 +185,7 @@ TEST(PythonComponentHandleTest, TestAudioJob) {
     MPFAudioJob job("Test Job", "path/to/media", 0, -1,
                     { job_echo_pair }, { media_echo_pair });
 
-    std::vector<MPFAudioTrack> results;
-    auto rc = py_component.GetDetections(job, results);
-
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFAudioTrack> results = py_component.GetDetections(job);
 
     ASSERT_EQ(results.size(), 2);
 
@@ -213,10 +209,7 @@ TEST(PythonComponentHandleTest, TestGenericJob) {
     MPFGenericJob job("Test Job", "path/to/media",
                       { job_echo_pair }, { media_echo_pair });
 
-    std::vector<MPFGenericTrack> results;
-    auto rc = py_component.GetDetections(job, results);
-
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFGenericTrack> results = py_component.GetDetections(job);
 
     ASSERT_EQ(results.size(), 2);
 
@@ -237,10 +230,8 @@ TEST(PythonComponentHandleTest, TestAudioFeedForward) {
     MPFAudioTrack ff_track(1, 2, .75, { {"prop1", "val1"}, {"prop2", "val2"} });
     MPFAudioJob job("Test Job", "path/to/media", 0, 100, ff_track, { }, {});
 
-    std::vector<MPFAudioTrack> results;
-    auto rc = py_component.GetDetections(job, results);
+    std::vector<MPFAudioTrack> results = py_component.GetDetections(job);
 
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
     ASSERT_EQ(results.size(), 1);
 
     const auto &returned_track = results.at(0);
@@ -268,9 +259,7 @@ TEST(PythonComponentHandleTest, TestImageFeedForward) {
     MPFImageLocation ff_location(1, 2, 3, 4, .5, { {"prop1", "val1"}, {"prop2", "val2"} });
     MPFImageJob job("Test Job", "path/to/media", ff_location, {}, {});
 
-    std::vector<MPFImageLocation> results;
-    auto rc = py_component.GetDetections(job, results);
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFImageLocation> results = py_component.GetDetections(job);
     ASSERT_EQ(results.size(), 1);
 
     assert_image_locations_equal(ff_location, results.at(0));
@@ -286,9 +275,7 @@ TEST(PythonComponentHandleTest, TestVideoFeedForward) {
 
     MPFVideoJob job("Test Job", "path/to/media", 0, 20, ff_track, {}, {});
 
-    std::vector<MPFVideoTrack> results;
-    auto rc = py_component.GetDetections(job, results);
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFVideoTrack> results = py_component.GetDetections(job);
     ASSERT_EQ(results.size(), 1);
 
     const auto &returned_track = results.at(0);
@@ -310,9 +297,7 @@ TEST(PythonComponentHandleTest, TestGenericFeedForward) {
     MPFGenericTrack ff_track(1, { {"prop1", "val1"}, {"prop2", "val2"} });
     MPFGenericJob job("Test Job", "path/to/media", ff_track, {}, {});
 
-    std::vector<MPFGenericTrack> results;
-    auto rc = py_component.GetDetections(job, results);
-    ASSERT_EQ(rc, MPF_DETECTION_SUCCESS);
+    std::vector<MPFGenericTrack> results = py_component.GetDetections(job);
     ASSERT_EQ(results.size(), 1);
 
     const auto &returned_track = results.at(0);
@@ -328,10 +313,13 @@ TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
 
     MPFImageJob job("Test", "path/to/data", { {"raise_exception", std::to_string(test_error)} }, {});
 
-    std::vector<MPFImageLocation> results;
-    auto rc = py_component.GetDetections(job, results);
-
-    ASSERT_EQ(rc, test_error);
+    try {
+        std::vector<MPFImageLocation> results = py_component.GetDetections(job);
+        FAIL() << "Expected MPFDetectionException to be thrown.";
+    }
+    catch (const MPFDetectionException &ex) {
+        ASSERT_EQ(ex.error_code, test_error);
+    }
 }
 
 

@@ -61,24 +61,6 @@ find_package(JNI)
 add_subdirectory(protobuf)
 
 
-# The qmake program needs to be on the path in order for find_package to work for
-# the Qt package.
-set(ENV{PATH} "$ENV{PATH}:/usr/local/Trolltech/Qt-4.8.5/bin")
-find_package(Qt4 COMPONENTS QtCore REQUIRED)
-
-
-# Find and install the QtCore libs
-include(${QT_USE_FILE})
-set(QT_LIBS ${QT_LIBRARIES})
-add_definitions(${QT_DEFINITIONS})
-
-foreach(module QtCore)
-   file(GLOB_RECURSE MATCHING_FILES
-      ${QT_LIBRARY_DIR}/*${module}${CMAKE_SHARED_LIBRARY_SUFFIX}*)
-      install(FILES ${MATCHING_FILES} DESTINATION "lib")
-   endforeach(module)
-
-
 find_package(PkgConfig)
 pkg_search_module(LOG4CXX REQUIRED liblog4cxx)
 

@@ -27,6 +27,7 @@
 #ifndef MPF_MESSENGER_H_
 #define MPF_MESSENGER_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <log4cxx/logger.h>
@@ -46,12 +47,10 @@ using std::string;
 struct MPFMessageMetadata {
 
   /* Content from the incoming headers that must be returned in the outgoing headers. */
-
   string correlation_id;
   string bread_crumb_id;
   int split_size;
   long job_id;
-  long time_elapsed;
 
   /* Content from the protocol buffer that will be returned in the response. */
 
@@ -63,46 +62,34 @@ struct MPFMessageMetadata {
   string action_name;        /* 404 optional */
 };
 
+// Need to use a base class for this so that the destructors for MPFMessenger's fields get called before
+// AmqLibraryManager's destructor. If ActiveMQCPP::shutdownLibrary(); was in ~MPFMessenger, then it would be
+// called before MPFMessenger's ActiveMQ-related fields were destroyed. This is because in C++ the destructor body
+// runs, then the destructors for each of the fields runs, then the base class destructor runs.
+class AmqLibraryManager {
+public:
+    AmqLibraryManager();
+    ~AmqLibraryManager();
+};
+
 /**
  * The MPFMessenger class encapsulates ActiveMQ and Google Protocol Buffer
  * functionality associated with the MPF Tracking Component.  It utilizes
  * version 3.8.1 of the ActiveMQ C++ API and protobufs v2.5.0.
  */
-class MPFMessenger {
+class MPFMessenger : private AmqLibraryManager {
 
  public:
 
   /**
    * Constructor
+   * Establishes an ActiveMQ session and creates a consumer for DetectionRequest messages.
    * @param logger log4cxx Logger pointer passed in from the calling
    * program to enable this class to log to the same log file
+   * @param broker_uri The remote address used to connect to the message * provider
+   * @param request_queue The name of the queue that will be queried for * messages
    */
-  explicit MPFMessenger(
-    const log4cxx::LoggerPtr &logger);
-
-  /**
-   * Destructor
-   */
-  ~MPFMessenger();
-
-  /**
-   * The Startup method establishes an ActiveMQ session and creates a consumer
-   * for DetectionRequest messages.  This method must be called once after the
-   * constructor but before any other methods are invoked.
-   * @param broker_uri The remote address used to connect to the message
-   * provider
-   * @param request_queue The name of the queue that will be queried for
-   * messages
-   */
-  void Startup(
-    const string& broker_uri,
-    const string& request_queue);
-
-  /**
-    * The Shutdown method frees memory used by ActiveMQ during program
-    * execution. It is called by the destructor.
-    */
-  void Shutdown();
+  explicit MPFMessenger(const log4cxx::LoggerPtr &logger, const string& broker_uri, const string& request_queue);
 
   /**
    * The ReceiveMessage method is invoked to receive the next available
@@ -111,15 +98,13 @@ class MPFMessenger {
    * the ReplyTo value contained in the received message header.  As
    * currently implemented, this method blocks until a message is received.
    * The calling program is responsible for deleting the returned byte array.
-   * @param msg_metadata Pointer to a MPFMessageMetadata struct to hold message header data
+   * @param msg_metadata MPFMessageMetadata struct to hold message header data
    * @param msg_body_length Pointer to an integer to hold the size in bytes of
    * the returned message body
    * @return A byte array containing the message body in protobuf form or
    * NULL if an error occurs
    */
-  unsigned char* ReceiveMessage(
-    MPFMessageMetadata* msg_metadata,
-    int* msg_body_length);
+  std::vector<unsigned char> ReceiveMessage(MPFMessageMetadata& msg_metadata);
 
   /**
    * The SendMessage method is invoked to send a DetectionResponse message.
@@ -128,13 +113,12 @@ class MPFMessenger {
    * message.
    * @param packed_msg A byte array containing the message body in protobuf
    * form
-   * @param msg_metadata A pointer to a MPFMessageMetadata struct containing data needed for the
-   * message header
+   * @param msg_metadata MPFMessageMetadata struct containing data needed for the message header
    * @param packed_length An integer containing the size in bytes of the
    * message body
    */
-  void SendMessage(const unsigned char* const packed_msg, const MPFMessageMetadata* const msg_metadata,
-                   const int packed_length, const string job_name);
+  void SendMessage(const std::vector<unsigned char> &packed_msg, const MPFMessageMetadata &msg_metadata,
+                   const string &job_name);
 
   static constexpr const char* RESTRICT_MEDIA_TYPES_ENV_NAME = "RESTRICT_MEDIA_TYPES";
 
@@ -142,14 +126,13 @@ class MPFMessenger {
 
  private:
 
-  bool initialized;
-  activemq::core::ActiveMQConnectionFactory* connection_factory_; /**< Pointer to the created ActiveMQ Connection Factory*/
-  cms::Connection* connection_;                                   /**< Pointer to the created ActiveMQ Connection */
-  cms::Session* session_;                                         /**< Pointer to the created ActiveMQ Session */
-  cms::Destination* request_destination_;                         /**< Pointer to the ActiveMQ DetectionRequest Destination */
-  cms::MessageConsumer* request_consumer_;                        /**< Pointer to the created ActiveMQ DetectionRequest Consumer */
-  cms::MessageProducer* response_producer_;                       /**< Pointer to the created ActiveMQ DetectionResponse Producer */
-  const log4cxx::LoggerPtr &main_logger_;                         /**< log4cxx Logger pointer passed in from the calling program */
+  std::unique_ptr<activemq::core::ActiveMQConnectionFactory> connection_factory_;
+  std::unique_ptr<cms::Connection> connection_;
+  std::unique_ptr<cms::Session> session_;
+  std::unique_ptr<cms::Destination> request_destination_;
+  std::unique_ptr<cms::MessageConsumer> request_consumer_;
+  std::unique_ptr<cms::MessageProducer> response_producer_;
+  const log4cxx::LoggerPtr main_logger_;
 
 };
 

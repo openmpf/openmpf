@@ -27,10 +27,6 @@ cmake_minimum_required(VERSION 3.6)
 
 project(amq_detection_common)
 
-## Find Qt
-include(${QT_USE_FILE})
-add_definitions(${QT_DEFINITIONS})
-
 ## Find and install activemq-cpp
 find_package(PkgConfig REQUIRED)
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig")

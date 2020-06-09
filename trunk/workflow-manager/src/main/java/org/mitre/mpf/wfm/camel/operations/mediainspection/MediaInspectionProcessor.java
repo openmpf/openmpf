@@ -256,8 +256,21 @@ public class MediaInspectionProcessor extends WfmProcessor {
             throws IOException, TikaException, SAXException {
         Metadata imageMetadata = generateExifMetadata(localPath);
 
-        String widthStr = imageMetadata.get("tiff:ImageWidth");
-        String heightStr = imageMetadata.get("tiff:ImageLength");
+        String widthStr = imageMetadata.get("tiff:ImageWidth"); // jpeg, png
+        if (widthStr == null) {
+            widthStr = imageMetadata.get("Image Width"); // jpeg, webp
+        }
+        if (widthStr == null) {
+            widthStr = imageMetadata.get("width"); // png
+        }
+
+        String heightStr = imageMetadata.get("tiff:ImageLength"); // jpeg, png
+        if (heightStr == null) {
+            heightStr = imageMetadata.get("Image Height"); // jpeg, webp
+        }
+        if (heightStr == null) {
+            heightStr = imageMetadata.get("height"); // png
+        }
 
         if (widthStr == null || heightStr == null) {
             // As a last resort, load the whole image into memory.

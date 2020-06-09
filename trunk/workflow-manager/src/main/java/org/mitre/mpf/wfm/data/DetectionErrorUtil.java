@@ -131,6 +131,10 @@ public class DetectionErrorUtil {
                 ? range.upperEndpoint()
                 : range.upperEndpoint() - 1;
 
+        if (start == end) {
+            return String.valueOf(start);
+        }
+
         return String.format("%s - %s", start, end);
     }
 }

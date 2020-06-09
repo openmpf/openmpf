@@ -38,7 +38,9 @@ import static org.mitre.mpf.interop.util.CompareUtils.sortedSetCompare;
 public class JsonMediaIssue implements Comparable<JsonMediaIssue> {
 
     private final long _mediaId;
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT) // Don't show mediaId when set to 0.
+    // When mediaId is 0, that means the warning applies to the entire job, rather than a specific piece of media.
+    // The following annotation hides the mediaId field when it is 0.
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public long getMediaId() { return _mediaId; }
 
     private final SortedSet<JsonIssueDetails> _details;

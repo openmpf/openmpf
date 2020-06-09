@@ -298,7 +298,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         if (failedMediaCount == media.size()) {
             String mediaErrors = media.stream()
-                    .map(m -> m.getUri() + ": " + m.getMessage())
+                    .map(m -> m.getUri() + ": " + m.getErrorMessage())
                     .collect(joining("\n"));
 
             throw new WfmProcessingException("Could not start job because all media have errors: " + mediaErrors);

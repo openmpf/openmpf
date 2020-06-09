@@ -272,7 +272,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     // Pack error response
                     detection_response_body = detection_buf.PackErrorResponse(
                             msg_metadata, MPFDetectionDataType::UNKNOWN, &response_body_length,
-                            MPF_DETECTION_NOT_INITIALIZED, // TODO: consider using a more descriptive error
+                            MPF_DETECTION_NOT_INITIALIZED,
                             "Failed while unpacking the detection request.");
 
                 } else {

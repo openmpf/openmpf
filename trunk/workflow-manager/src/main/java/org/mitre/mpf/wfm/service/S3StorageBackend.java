@@ -51,7 +51,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.ErrorCodes;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -132,8 +132,8 @@ public class S3StorageBackend implements StorageBackend {
         } catch (StorageException | IOException e) {
             LOG.error(String.format("An error occurred while uploading artifacts for job %d and media %d. "
                     + "They will be stored locally instead.", request.getJobId(), request.getMediaId()), e);
-            _inProgressJobs.addWarning(request.getJobId(), request.getMediaId(), ErrorCodes.REMOTE_STORAGE_ERROR,
-                    "Some artifacts were stored locally because storing them remotely failed due to: " + e);
+            _inProgressJobs.addWarning(request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE,
+                                       "Some artifacts were stored locally because storing them remotely failed due to: " + e);
             for (Table.Cell<Integer, Integer, URI> localEntry : localResults.cellSet()) {
                 if (!remoteResults.contains(localEntry.getRowKey(), localEntry.getColumnKey())) {
                     remoteResults.put(localEntry.getRowKey(), localEntry.getColumnKey(), localEntry.getValue());

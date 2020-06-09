@@ -40,7 +40,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.ErrorCodes;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -55,6 +55,9 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.joining;
 
 @Component(DetectionPaddingProcessor.REF)
 public class DetectionPaddingProcessor extends WfmProcessor {
@@ -183,17 +186,17 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
     private Collection<Track> processTracks(long jobId, long mediaId, String xPadding, String yPadding,
                                             int frameWidth, int frameHeight, Iterable<Track> tracks) {
-        boolean shrunkToNothing = false;
         SortedSet<Track> newTracks = new TreeSet<>();
+        var shrunkToNothingFrames = IntStream.builder();
 
         for (Track track : tracks) {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
                 Detection newDetection = padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
-
-                shrunkToNothing = shrunkToNothing ||
-                        newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
+                if (newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING")) {
+                    shrunkToNothingFrames.add(newDetection.getMediaOffsetFrame());
+                }
                 newDetections.add(newDetection);
             }
 
@@ -212,13 +215,21 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                     track.getTrackProperties()));
         }
 
-        if (shrunkToNothing) {
+        var shrunkToNothingString = shrunkToNothingFrames.build()
+                .distinct()
+                .sorted()
+                .mapToObj(String::valueOf)
+                .collect(joining(", "));
+
+        if (!shrunkToNothingString.isEmpty()) {
             _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
-                    "1-pixel detection regions used instead.", jobId));
+                                            "1-pixel detection regions used instead. (Frames %s)",
+                                    jobId, shrunkToNothingFrames));
+
             _inProgressBatchJobs.addWarning(
-                    jobId, mediaId, ErrorCodes.PADDING_ERROR,
+                    jobId, mediaId, IssueCodes.PADDING, String.format(
                     "Shrunk one or more detection regions to nothing. " +
-                            "1-pixel detection regions used instead.");
+                            "1-pixel detection regions used instead. (Frames %s)", shrunkToNothingString));
         }
 
         return newTracks;

@@ -64,11 +64,6 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public String getStatus() { return status; }
 	public void setStatus(String status) { this.status = status; }
 
-	@JsonProperty("message")
-	@JsonPropertyDescription("A brief message which may include additional details regarding the system's ability to process this medium.")
-	private String message;
-	public String getMessage() { return message; }
-
 	@JsonProperty("sha256")
 	@JsonPropertyDescription("The SHA-256 cryptographic hash value for this medium.")
 	private String sha256;
@@ -100,14 +95,12 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors;
 	public SortedMap<String, SortedSet<JsonDetectionProcessingError>> getDetectionProcessingErrors() { return detectionProcessingErrors; }
 
-	public JsonMediaOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String message,
-								 String status) {
+	public JsonMediaOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String status) {
 		this.mediaId = mediaId;
 		this.path = path;
 		this.mimeType = mimeType;
 		this.length = length;
 		this.sha256 = sha256;
-		this.message = message;
 		this.status = status;
 		this.types = new TreeMap<>();
 		this.detectionProcessingErrors = new TreeMap<>();
@@ -123,14 +116,13 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 												@JsonProperty("mimeType") String mimeType,
 												@JsonProperty("length") int length,
 												@JsonProperty("sha256") String sha256,
-												@JsonProperty("message") String message,
 												@JsonProperty("status") String status,
 												@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
 												@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
 												@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
 												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
 												@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
-		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(mediaId, path, mimeType, length, sha256, message, status);
+		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(mediaId, path, mimeType, length, sha256, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
 		if(mediaMetadata != null) {
@@ -165,7 +157,6 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 					StringUtils.equals(path, casted.path) &&
 					length == casted.length &&
 					StringUtils.equals(sha256, casted.sha256) &&
-					StringUtils.equals(message, casted.message) &&
 					StringUtils.equals(status, casted.status) &&
 					StringUtils.equals(mimeType, casted.mimeType);
 		}
@@ -180,7 +171,6 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 				|| (result = ObjectUtils.compare(mediaId, other.mediaId)) != 0
 				|| (result = ObjectUtils.compare(sha256, other.sha256)) != 0
 				|| (result = ObjectUtils.compare(length, other.length)) != 0
-				|| (result = ObjectUtils.compare(message, other.message)) != 0
 				|| (result = ObjectUtils.compare(status, other.status)) != 0
 				|| (result = ObjectUtils.compare(mimeType, other.mimeType)) != 0) {
 			return result;

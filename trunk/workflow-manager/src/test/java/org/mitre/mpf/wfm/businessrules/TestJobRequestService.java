@@ -337,7 +337,7 @@ public class TestJobRequestService {
         Media originalMedia = originalJob.getMedia().asList().get(0);
         assertEquals(newMedia.getUri(), originalMedia.getUri());
         assertEquals(newMedia.getMediaSpecificProperties(), originalMedia.getMediaSpecificProperties());
-        assertNull(newMedia.getMessage());
+        assertNull(newMedia.getErrorMessage());
 
         assertFalse(Files.exists(artifactsDir.toPath()));
         assertFalse(Files.exists(outputObjectsDir.toPath()));

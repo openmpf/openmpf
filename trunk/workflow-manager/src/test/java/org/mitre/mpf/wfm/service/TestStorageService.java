@@ -460,12 +460,12 @@ public class TestStorageService {
 
     private void verifyJobWarning(long jobId) {
         verify(_mockInProgressJobs)
-                .addJobWarning(eq(jobId), eq(ErrorCodes.REMOTE_STORAGE_ERROR), nonBlank());
+                .addJobWarning(eq(jobId), eq(IssueCodes.REMOTE_STORAGE), nonBlank());
     }
 
     private void verifyWarning(long jobId, long mediaId) {
         verify(_mockInProgressJobs)
-                .addWarning(eq(jobId), eq(mediaId), eq(ErrorCodes.REMOTE_STORAGE_ERROR), nonBlank());
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.REMOTE_STORAGE), nonBlank());
     }
 
     private static void verifySingleWarningAddedToOutputObject(long mediaId, SortedSet<JsonMediaIssue> warnings) {
@@ -477,8 +477,8 @@ public class TestStorageService {
 
         JsonIssueDetails details = warning.getDetails().first();
         assertFalse(StringUtils.isBlank(details.getMessage()));
-        assertEquals(ErrorSources.WORKFLOW_MANAGER.toString(), details.getSource());
-        assertEquals(ErrorCodes.REMOTE_STORAGE_ERROR.toString(), details.getCode());
+        assertEquals(IssueSources.WORKFLOW_MANAGER.toString(), details.getSource());
+        assertEquals(IssueCodes.REMOTE_STORAGE.toString(), details.getCode());
 
     }
 }

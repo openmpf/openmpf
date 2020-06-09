@@ -34,8 +34,8 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.ErrorCodes;
-import org.mitre.mpf.wfm.enums.ErrorSources;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -108,6 +108,11 @@ public class InProgressBatchJobsService {
                 jobProperties,
                 algorithmProperties);
         _jobs.put(jobId, job);
+
+        media.stream()
+                .filter(Media::isFailed)
+                .forEach(m -> addError(jobId, m.getId(), IssueCodes.MEDIA_INITIALIZATION, m.getErrorMessage()));
+
         return job;
     }
 
@@ -172,42 +177,40 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void addJobWarning(long jobId, ErrorCodes code, String message) {
+    public synchronized void addJobWarning(long jobId, IssueCodes code, String message) {
         addWarning(jobId, 0, code, message);
     }
 
-    public synchronized void addWarning(long jobId, long mediaId, ErrorCodes code, String message) {
-        addWarning(jobId, mediaId, code, message, ErrorSources.WORKFLOW_MANAGER);
+    public synchronized void addWarning(long jobId, long mediaId, IssueCodes code, String message) {
+        addWarning(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
     }
 
-    public synchronized void addWarning(long jobId, long mediaId, ErrorCodes code, String message,
-                                        ErrorSources source) {
-        var codeString = ErrorCodes.toString(code);
+    public synchronized void addWarning(long jobId, long mediaId, IssueCodes code, String message,
+                                        IssueSources source) {
+        var codeString = IssueCodes.toString(code);
         LOG.info("Adding the following warning to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
 
-        getJobImpl(jobId).addWarning(mediaId, ErrorSources.toString(source), codeString, message);
+        getJobImpl(jobId).addWarning(mediaId, IssueSources.toString(source), codeString, message);
     }
 
 
-    public synchronized void addJobError(long jobId, ErrorCodes code, String message) {
+    public synchronized void addJobError(long jobId, IssueCodes code, String message) {
         addError(jobId, 0, code, message);
     }
 
-    public synchronized void addError(long jobId, long mediaId, ErrorCodes code, String message) {
-        addError(jobId, mediaId, code, message, ErrorSources.WORKFLOW_MANAGER);
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message) {
+        addError(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
     }
 
-    public synchronized void addError(long jobId, long mediaId, ErrorCodes code, String message, ErrorSources source) {
-        var codeString = ErrorCodes.toString(code);
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message, IssueSources source) {
+        var codeString = IssueCodes.toString(code);
 
         LOG.info("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
 
-        getJobImpl(jobId).addError(mediaId, ErrorSources.toString(source), codeString, message);
+        getJobImpl(jobId).addError(mediaId, IssueSources.toString(source), codeString, message);
 
-        if (source != ErrorSources.MARKUP) {
-            var media = getMediaImpl(jobId, mediaId);
-            media.setFailed(true);
-            media.setMessage(message);
+        if (source != IssueSources.MARKUP && mediaId != 0) {
+            getMediaImpl(jobId, mediaId).setFailed(true);
         }
     }
 
@@ -219,7 +222,6 @@ public class InProgressBatchJobsService {
 
         var media = getMediaImpl(error.getJobId(), error.getMediaId());
         media.setFailed(true);
-        media.setMessage(error.getErrorMessage());
     }
 
 

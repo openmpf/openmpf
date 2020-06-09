@@ -145,7 +145,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             } catch (Exception exception) {
                 log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId),
                           exception);
-                inProgressBatchJobs.addJobError(jobId, ErrorCodes.OTHER_ERROR,
+                inProgressBatchJobs.addJobError(jobId, IssueCodes.OTHER,
                                                 "Failed to create the output object due to: " + exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
             }
@@ -220,7 +220,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         String warningMessage = String.format("Sending HTTP %s callback to %s failed due to: %s",
                                               callbackMethod, callbackUrl, callbackError);
         log.warn(warningMessage, callbackError);
-        inProgressBatchJobs.addJobWarning(job.getId(), ErrorCodes.FAILED_CALLBACK, warningMessage);
+        inProgressBatchJobs.addJobWarning(job.getId(), IssueCodes.FAILED_CALLBACK, warningMessage);
 
         JobRequest jobRequest = jobRequestDao.findById(job.getId());
         BatchJobStatusType initialStatus = jobStatus.getValue();
@@ -348,9 +348,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(), media.getType(),
-                                                                                media.getLength(), media.getSha256(), media.getMessage(),
-                                                                                media.isFailed() ? "ERROR" : "COMPLETE");
+            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
+                    media.getId(), media.getUri(), media.getType(),
+                    media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
             mediaOutputObject.getMediaProperties().putAll(media.getMediaSpecificProperties());

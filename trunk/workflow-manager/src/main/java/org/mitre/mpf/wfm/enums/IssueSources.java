@@ -29,18 +29,13 @@ package org.mitre.mpf.wfm.enums;
 
 import java.util.Objects;
 
-public enum ErrorCodes {
-    OTHER_ERROR,
-    FAILED_CALLBACK,
-    REMOTE_STORAGE_ERROR,
-    ARTIFACT_EXTRACTION_ERROR,
-    MEDIA_INSPECTION_ERROR,
-    MARKUP_ERROR,
-    PADDING_ERROR;
+public enum IssueSources {
+    WORKFLOW_MANAGER,
+    MARKUP;
 
-    public static final ErrorCodes DEFAULT = OTHER_ERROR;
+    public static final IssueSources DEFAULT = WORKFLOW_MANAGER;
 
-    public static String toString(ErrorCodes errorCode) {
-        return Objects.requireNonNullElse(errorCode, DEFAULT).toString();
+    public static String toString(IssueSources errorSource) {
+        return Objects.requireNonNullElse(errorSource, DEFAULT).toString();
     }
 }

@@ -180,7 +180,7 @@ public class DetectionTaskSplitter {
                 }
             } catch (WfmProcessingException e) {
                 inProgressBatchJobs.setJobStatus(job.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                inProgressBatchJobs.addError(job.getId(), media.getId(), ErrorCodes.OTHER_ERROR, e.getMessage());
+                inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER, e.getMessage());
             }
         }
 

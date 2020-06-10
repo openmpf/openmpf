@@ -50,10 +50,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -146,8 +143,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.setOutputObjectPath(outputObjectUri.toString());
                 jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
             } catch (Exception exception) {
-                log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId), exception);
-                inProgressBatchJobs.addJobError(jobId, "Failed to create the output object due to: " + exception);
+                log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId),
+                          exception);
+                inProgressBatchJobs.addJobError(jobId, IssueCodes.OTHER,
+                                                "Failed to create the output object due to: " + exception);
                 jobStatus.setValue(BatchJobStatusType.ERROR);
             }
 
@@ -221,7 +220,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         String warningMessage = String.format("Sending HTTP %s callback to %s failed due to: %s",
                                               callbackMethod, callbackUrl, callbackError);
         log.warn(warningMessage, callbackError);
-        inProgressBatchJobs.addJobWarning(job.getId(), warningMessage);
+        inProgressBatchJobs.addJobWarning(job.getId(), IssueCodes.FAILED_CALLBACK, warningMessage);
 
         JobRequest jobRequest = jobRequestDao.findById(job.getId());
         BatchJobStatusType initialStatus = jobStatus.getValue();
@@ -339,18 +338,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         if (job.getOverriddenAlgorithmProperties() != null) {
             jsonOutputObject.getAlgorithmProperties().putAll(job.getOverriddenAlgorithmProperties());
         }
-        jsonOutputObject.getJobWarnings().addAll(job.getWarnings());
-        jsonOutputObject.getJobErrors().addAll(job.getErrors());
-
-        boolean hasDetectionProcessingError = false;
+        job.getWarnings().forEach(jsonOutputObject::addWarnings);
+        job.getErrors().forEach(jsonOutputObject::addErrors);
+        inProgressBatchJobs.getMergedDetectionErrors(job.getId())
+                .asMap()
+                .forEach(jsonOutputObject::addErrors);
 
         int mediaIndex = 0;
         for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(), media.getType(),
-                                                                                media.getLength(), media.getSha256(), media.getMessage(),
-                                                                                media.isFailed() ? "ERROR" : "COMPLETE");
+            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
+                    media.getId(), media.getUri(), media.getType(),
+                    media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
             mediaOutputObject.getMediaProperties().putAll(media.getMediaSpecificProperties());
@@ -372,13 +372,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
                              job, media.getId(), taskIndex, actionIndex)) {
-                        hasDetectionProcessingError = !MpfConstants.REQUEST_CANCELLED.equals(detectionProcessingError.getError());
                         JsonDetectionProcessingError jsonDetectionProcessingError =
-                                 new JsonDetectionProcessingError(detectionProcessingError.getStartFrame(),
-                                                                     detectionProcessingError.getStopFrame(),
-                                                                     detectionProcessingError.getStartTime(),
-                                                                     detectionProcessingError.getStopTime(),
-                                                                   detectionProcessingError.getError());
+                                 new JsonDetectionProcessingError(
+                                         detectionProcessingError.getStartFrame(),
+                                         detectionProcessingError.getStopFrame(),
+                                         detectionProcessingError.getStartTime(),
+                                         detectionProcessingError.getStopTime(),
+                                         detectionProcessingError.getErrorCode(),
+                                         detectionProcessingError.getErrorMessage());
                         if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
                             mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
                         }
@@ -433,11 +434,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
             jsonOutputObject.getMedia().add(mediaOutputObject);
             mediaIndex++;
-        }
-
-        if (hasDetectionProcessingError) {
-            jsonOutputObject.getJobErrors()
-                    .add("Some components had errors for some media. Refer to the detectionProcessingErrors fields.");
         }
 
         JobStatusCalculator.checkErrorMessages(jsonOutputObject, jobStatus);

@@ -198,9 +198,10 @@ public class MPFDetectionBuffer {
     }
 
 
-    private DetectionResponse.Builder packCommonFields(
+    private static DetectionResponse.Builder packCommonFields(
             final MPFMessageMetadata msgMetadata,
-            final MPFDetectionError msgError) {
+            final MPFDetectionError errorCode,
+            final String errorMessage) {
 
         DetectionProtobuf.DetectionResponse.Builder detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder();
         detectionResponse.setMediaId(msgMetadata.getMediaId());
@@ -212,7 +213,8 @@ public class MPFDetectionBuffer {
         detectionResponse.setTaskIndex(msgMetadata.getTaskIndex());
         detectionResponse.setActionName(msgMetadata.getActionName());
         detectionResponse.setActionIndex(msgMetadata.getActionIndex());
-        detectionResponse.setError(translateMPFDetectionError(msgError));
+        detectionResponse.setError(translateMPFDetectionError(errorCode));
+        detectionResponse.setErrorMessage(errorMessage);
 
         return detectionResponse;
     }
@@ -222,10 +224,12 @@ public class MPFDetectionBuffer {
                                              final int stopTime,
                                              final String detectionType,
                                              final List<MPFAudioTrack> tracks,
-                                             final MPFDetectionError msgError) {
+                                             final MPFDetectionError errorCode,
+                                             final String errorMessage) {
         byte[] responseContents = null;
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
+                = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.AudioResponse.Builder audioResponseBuilder = detectionResponseBuilder.addAudioResponsesBuilder();
         audioResponseBuilder.setStartTime(startTime);
@@ -261,10 +265,12 @@ public class MPFDetectionBuffer {
                                              final int stopFrame,
                                              final String detectionType,
                                              final List<MPFVideoTrack> tracks,
-                                             final MPFDetectionError msgError) {
+                                             final MPFDetectionError errorCode,
+                                             final String errorMessage) {
         byte[] responseContents = null;
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
+                = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.VideoResponse.Builder videoResponseBuilder =
                 detectionResponseBuilder.addVideoResponsesBuilder();
@@ -317,10 +323,12 @@ public class MPFDetectionBuffer {
     public byte[] createImageResponseMessage(final MPFMessageMetadata msgMetadata,
                                              final String detectionType,
                                              final List<MPFImageLocation> locations,
-                                             final MPFDetectionError msgError) {
+                                             final MPFDetectionError errorCode,
+                                             final String errorMessage) {
         byte[] responseContents = null;
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
+                = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.ImageResponse.Builder imageResponseBuilder = detectionResponseBuilder.addImageResponsesBuilder();
         imageResponseBuilder.setDetectionType(detectionType);
@@ -354,10 +362,12 @@ public class MPFDetectionBuffer {
     public byte[] createGenericResponseMessage(final MPFMessageMetadata msgMetadata,
                                                final String detectionType,
                                                final List<MPFGenericTrack> tracks,
-                                               final MPFDetectionError msgError) {
+                                               final MPFDetectionError errorCode,
+                                               final String errorMessage) {
         byte[] responseContents = null;
 
-        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder = packCommonFields(msgMetadata, msgError);
+        DetectionProtobuf.DetectionResponse.Builder detectionResponseBuilder
+                = packCommonFields(msgMetadata, errorCode, errorMessage);
 
         DetectionProtobuf.DetectionResponse.GenericResponse.Builder genericResponseBuilder = detectionResponseBuilder.addGenericResponsesBuilder();
         genericResponseBuilder.setDetectionType(detectionType);

@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -111,7 +112,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 break;
             default:
                 log.warn("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
-                _inProgressJobs.addMediaError(jobId, mediaId, String.format(
+                _inProgressJobs.addError(jobId, mediaId, IssueCodes.REMOTE_STORAGE, String.format(
                         "The scheme '%s' was not expected or does not have a handler associated with it.",
                         media.getUriScheme()));
                 break;
@@ -132,7 +133,6 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 localFile = media.getLocalPath().toFile();
                 FileUtils.copyURLToFile(new URL(media.getUri()), localFile);
                 log.debug("Successfully retrieved {} and saved it to '{}'.", media.getUri(), media.getLocalPath());
-                _inProgressJobs.clearMediaError(jobId, media.getId());
                 break;
             } catch (IOException e) { // "javax.net.ssl.SSLException: SSL peer shut down incorrectly" has been observed.
                 errorMessage = handleMediaRetrievalException(media, localFile, e);
@@ -178,8 +178,8 @@ public class RemoteMediaProcessor extends WfmProcessor {
 
     private void handleMediaRetrievalFailure(long jobId, Media media,
                                              String errorMessage) {
-        _inProgressJobs.addMediaError(jobId, media.getId(),
-                                     "Error retrieving media and saving it to temp file: " + errorMessage);
+        _inProgressJobs.addError(jobId, media.getId(), IssueCodes.REMOTE_STORAGE,
+                                 "Error retrieving media and saving it to temp file: " + errorMessage);
         _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
     }
 }

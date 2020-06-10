@@ -31,14 +31,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
 
 import org.apache.commons.lang3.mutable.Mutable;
+import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.JobStatusCalculator;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MarkupStatus;
-import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -86,10 +85,15 @@ public class StorageService {
             LOG.warn(String.format(
                     "Failed to remotely store output object for job id %d. It will be stored locally instead.",
                     outputObject.getJobId()), ex);
-            _inProgressJobs.addJobWarning(outputObject.getJobId(),
+
+            _inProgressJobs.addJobWarning(
+                    outputObject.getJobId(), IssueCodes.REMOTE_STORAGE,
                     "The output object was stored locally because storing it remotely failed due to: " + ex);
-            outputObject.getJobWarnings().add(
-                    "This output object was stored locally because storing it remotely failed due to: " + ex);
+
+            outputObject.addWarnings(0, List.of(new JsonIssueDetails(
+                    IssueSources.WORKFLOW_MANAGER.toString(), IssueCodes.REMOTE_STORAGE.toString(),
+                    "This output object was stored locally because storing it remotely failed due to: " + ex)));
+
             JobStatusCalculator.checkErrorMessages(outputObject, jobStatus);
         }
 
@@ -138,8 +142,8 @@ public class StorageService {
     private void handleRemoteStorageFailure(ArtifactExtractionRequest request, Exception e) {
         LOG.warn(String.format("Failed to store artifact for job id %d. It will be stored locally instead.",
                                request.getJobId()), e);
-        _inProgressJobs.addJobWarning(
-                request.getJobId(),
+        _inProgressJobs.addWarning(
+                request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE,
                 "Artifacts were stored locally because storing them remotely failed due to: " + e);
     }
 
@@ -166,7 +170,8 @@ public class StorageService {
             }
             markupResult.setMessage(message);
             markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
-            _inProgressJobs.addJobWarning(markupResult.getJobId(), message);
+            _inProgressJobs.addWarning(markupResult.getJobId(), markupResult.getMediaId(),
+                                       IssueCodes.REMOTE_STORAGE, message);
         }
         _localBackend.store(markupResult);
     }

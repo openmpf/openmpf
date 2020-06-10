@@ -188,6 +188,8 @@ message DetectionResponse {
 
     optional DetectionError error = 3;
 
+    optional string error_message = 4 [ default = "" ];
+
     // Copied from the request.
     optional int64 media_id = 400 [default = -1];
 

@@ -305,18 +305,21 @@ public class DetectionResponseProcessor
                              int startFrame, int stopFrame, int startTime, int stopTime) {
 
         if (detectionResponse.getError() != DetectionProtobuf.DetectionError.NO_DETECTION_ERROR) {
+            String errorCode;
             String errorMessage;
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
                 log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
-                errorMessage = MpfConstants.REQUEST_CANCELLED;
+                errorCode = MpfConstants.REQUEST_CANCELLED;
+                errorMessage = "Successfully cancelled.";
             }
             else {
                 log.error("[{}] Encountered a detection error while processing {}: {}",
                         getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-                errorMessage = Objects.toString(detectionResponse.getError());
+                errorCode = Objects.toString(detectionResponse.getError());
+                errorMessage = detectionResponse.getErrorMessage();
             }
             inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
                     jobId,
@@ -327,6 +330,7 @@ public class DetectionResponseProcessor
                     stopFrame,
                     startTime,
                     stopTime,
+                    errorCode,
                     errorMessage));
         }
     }

@@ -28,46 +28,98 @@
 package org.mitre.mpf.interop.util;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class CompareUtils {
 
-	private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =
-			Map.Entry.<String, String>comparingByKey()
-					.thenComparing(Map.Entry.comparingByValue());
+    private static final Comparator<Map.Entry<String, String>> MAP_ENTRY_COMPARATOR =
+            Map.Entry.<String, String>comparingByKey()
+                    .thenComparing(Map.Entry.comparingByValue());
 
 
-	public static final Comparator<Map<String, String>> MAP_COMPARATOR = Comparator
-			.nullsFirst(Comparator
-				.<Map<String, String>>comparingInt(Map::size)
-				.thenComparing((m1, m2) -> {
-				    if (m1 == m2) {
-				    	return 0;
-				    }
-					Set<Map.Entry<String, String>> entrySet1 = new TreeSet<>(MAP_ENTRY_COMPARATOR);
-				    entrySet1.addAll(m1.entrySet());
+    public static final Comparator<Map<String, String>> MAP_COMPARATOR = Comparator
+            .nullsFirst(Comparator
+                .<Map<String, String>>comparingInt(Map::size)
+                .thenComparing((m1, m2) -> {
+                    //noinspection ObjectEquality - False positive
+                    if (m1 == m2) {
+                        return 0;
+                    }
+                    SortedSet<Map.Entry<String, String>> entrySet1 = new TreeSet<>(MAP_ENTRY_COMPARATOR);
+                    entrySet1.addAll(m1.entrySet());
 
-					Set<Map.Entry<String, String>> entrySet2 = new TreeSet<>(MAP_ENTRY_COMPARATOR);
-					entrySet2.addAll(m2.entrySet());
+                    SortedSet<Map.Entry<String, String>> entrySet2 = new TreeSet<>(MAP_ENTRY_COMPARATOR);
+                    entrySet2.addAll(m2.entrySet());
 
-					Iterator<Map.Entry<String, String>> iter1 = entrySet1.iterator();
-					Iterator<Map.Entry<String, String>> iter2 = entrySet2.iterator();
-					while (iter1.hasNext()) {
-						int entryCompare = MAP_ENTRY_COMPARATOR.compare(iter1.next(), iter2.next());
-						if (entryCompare != 0) {
-							return entryCompare;
-						}
-					}
-					return 0;
-				}));
+                    return doSortedSetCompare(entrySet1, entrySet2);
+                }));
 
 
 
-	public static <T extends Comparable<T>> Comparator<T> nullsFirst() {
-		return Comparator.nullsFirst(Comparator.naturalOrder());
-	}
+    public static <T extends Comparable<T>> Comparator<T> nullsFirst() {
+        return Comparator.nullsFirst(Comparator.naturalOrder());
+    }
+
+    public static Comparator<String> stringCompare() {
+        return Comparator.nullsFirst(
+                String.CASE_INSENSITIVE_ORDER
+                    .thenComparing(Comparator.naturalOrder()));
+    }
+
+
+    public static <T> Comparator<T> stringCompare(Function<T, String> toStringFunc) {
+        return Comparator.comparing(toStringFunc, stringCompare());
+    }
+
+
+    public static <T, U> Comparator<T> sortedSetCompare(Function<T, SortedSet<U>> toSortedSetFunc) {
+        return Comparator.nullsFirst(Comparator.comparing(toSortedSetFunc, CompareUtils::doSortedSetCompare));
+    }
+
+
+    private static <T> int doSortedSetCompare(SortedSet<T> s1, SortedSet<T> s2) {
+        //noinspection ObjectEquality - False positive
+        if (s1 == s2) {
+            return 0;
+        }
+
+        Comparator<? super T> comparator = s1.comparator();
+        if (comparator == null) {
+            comparator = (a, b) -> ((Comparable<T>) a).compareTo(b) ;
+        }
+
+        var iter1 = s1.iterator();
+        var iter2 = s2.iterator();
+
+        while (true) {
+            var hasNext1 = iter1.hasNext();
+            var hasNext2 = iter2.hasNext();
+            if (!hasNext1 && !hasNext2) {
+                return 0;
+            }
+
+            var item1 = hasNext1 ? iter1.next() : null;
+            var item2 = hasNext2 ? iter2.next() : null;
+            if (item1 == null && item2 == null) {
+                continue;
+            }
+
+            if (item1 == null) {
+                return -1;
+            }
+            if (item2 == null) {
+                return 1;
+            }
+
+            int itemCompare = comparator.compare(item1, item2);
+            if (itemCompare != 0) {
+                return itemCompare;
+            }
+        }
+    }
 
 
 
-	private CompareUtils() {
-	}
+    private CompareUtils() {
+    }
 }

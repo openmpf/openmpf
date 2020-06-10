@@ -27,8 +27,10 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
-#include "PythonComponentHandle.h"
+#include <MPFDetectionException.h>
+
 #include "ComponentLoadError.h"
+#include "PythonComponentHandle.h"
 
 namespace py = pybind11;
 
@@ -517,22 +519,23 @@ namespace MPF { namespace COMPONENT {
             }
         }
 
-        std::string GetDetectionType() {
+        std::string GetDetectionType() const {
             return component_.detection_type;
         }
 
 
-        MPFDetectionError GetDetections(const MPFVideoJob &job, std::vector<MPFVideoTrack> &tracks) {
+        std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job) {
             try {
                 if (component_.get_detections_from_video_method.is_none()) {
-                    return MPF_UNSUPPORTED_DATA_TYPE;
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
                 }
 
                 py::object py_video_job = component_api_.to_python(job);
 
                 py::iterable py_results = component_.get_detections_from_video_method(py_video_job);
 
-                for (auto &py_track : py_results) {
+                std::vector<MPFVideoTrack> tracks;
+                for (const auto &py_track : py_results) {
                     tracks.emplace_back(
                             get_int(py_track, "start_frame"),
                             get_int(py_track, "stop_frame"),
@@ -541,52 +544,54 @@ namespace MPF { namespace COMPONENT {
                     auto &frame_locations = tracks.back().frame_locations;
 
                     py::object iter_items = py_track.attr("frame_locations").attr("items")();
-                    for (auto &pair : iter_items) {
+                    for (const auto &pair : iter_items) {
                         auto std_pair = to_std_pair<py::int_, py::object>(pair);
                         frame_locations.emplace(std_pair.first, convert_image_location(std_pair.second));
                     }
                 }
 
-                return MPF_DETECTION_SUCCESS;
+                return tracks;
             }
             catch (...) {
-                return HandleComponentException("get_detections_from_video");
+                HandleComponentException("get_detections_from_video");
             }
         }
 
 
-        MPFDetectionError GetDetections(const MPFImageJob &job, std::vector<MPFImageLocation> &locations) {
+        std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job) {
             try {
                 if (component_.get_detections_from_image_method.is_none()) {
-                    return MPF_UNSUPPORTED_DATA_TYPE;
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
                 }
 
                 py::object py_image_job = component_api_.to_python(job);
 
                 py::iterable py_results = component_.get_detections_from_image_method(py_image_job);
 
-                for (auto &py_img_loc : py_results) {
+                std::vector<MPFImageLocation> locations;
+                for (const auto &py_img_loc : py_results) {
                     locations.push_back(convert_image_location(py_img_loc));
                 }
 
-                return MPF_DETECTION_SUCCESS;
+                return locations;
             }
             catch (...) {
-                return HandleComponentException("get_detections_from_image");
+                HandleComponentException("get_detections_from_image");
             }
         }
 
 
-        MPFDetectionError GetDetections(const MPFAudioJob &job, std::vector<MPFAudioTrack> &tracks) {
+        std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job) {
             try {
                 if (component_.get_detections_from_audio_method.is_none()) {
-                    return MPF_UNSUPPORTED_DATA_TYPE;
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
                 }
 
                 py::object py_audio_job = component_api_.to_python(job);
 
                 py::iterable py_results = component_.get_detections_from_audio_method(py_audio_job);
-                for (auto &py_track : py_results) {
+                std::vector<MPFAudioTrack> tracks;
+                for (const auto &py_track : py_results) {
                     tracks.emplace_back(
                         get_int(py_track, "start_time"),
                         get_int(py_track, "stop_time"),
@@ -594,57 +599,68 @@ namespace MPF { namespace COMPONENT {
                         get_properties(py_track, "detection_properties"));
                 }
 
-                return MPF_DETECTION_SUCCESS;
+                return tracks;
             }
             catch (...) {
-                return HandleComponentException("get_detections_from_audio");
+                HandleComponentException("get_detections_from_audio");
             }
         }
 
 
-        MPFDetectionError GetDetections(const MPFGenericJob &job, std::vector<MPFGenericTrack> &tracks) {
+        std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job) {
             try {
                 if (component_.get_detections_from_generic_method.is_none()) {
-                    return MPF_UNSUPPORTED_DATA_TYPE;
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
                 }
 
                 py::object py_generic_job = component_api_.to_python(job);
 
                 py::iterable py_results = component_.get_detections_from_generic_method(py_generic_job);
-                for (auto &py_track : py_results) {
+                std::vector<MPFGenericTrack> tracks;
+                for (const auto &py_track : py_results) {
                     tracks.emplace_back(
                             get_float(py_track, "confidence"),
                             get_properties(py_track, "detection_properties"));
                 }
 
-                return MPF_DETECTION_SUCCESS;
+                return tracks;
             }
             catch (...) {
-                return HandleComponentException("get_detections_from_generic");
+                HandleComponentException("get_detections_from_generic");
             }
         }
 
 
     private:
 
-        MPFDetectionError HandleComponentException(const std::string &component_method) {
+        void HandleComponentException(const std::string &component_method) {
+            std::string base_message = "An error occurred while invoking the \"" + component_method
+                    + "\" method on the Python component";
             try {
                 throw;
             }
+            catch (const MPFDetectionException &ex) {
+                std::string message = base_message + ": " + ex.what();
+                LOG4CXX_ERROR(logger_, message)
+                throw MPFDetectionException(ex.error_code, message);
+            }
             catch (const py::error_already_set &ex) {
-                LOG4CXX_ERROR(logger_, "An error occurred while invoking the \""
-                        << component_method << "\" method on the Python component: " << ex.what());
-                return component_api_.get_error_code(ex);
+                // ex.what() includes the stack trace so we log ex.what(),
+                // but throw with to_std_string(ex.value()) so the stack trace
+                // doesn't appear in the error message sent to Workflow Manager.
+                LOG4CXX_ERROR(logger_, base_message << ": " << ex.what());
+                throw MPFDetectionException(
+                        component_api_.get_error_code(ex),
+                        base_message + ": " + to_std_string(ex.value()));
             }
             catch (const std::exception &ex) {
-                LOG4CXX_ERROR(logger_, "An error occurred while invoking the \""
-                        << component_method << "\" method on the Python component: " << ex.what());
-                return MPF_OTHER_DETECTION_ERROR_TYPE;
+                std::string message = base_message + ": " + ex.what();
+                LOG4CXX_ERROR(logger_, message)
+                throw MPFDetectionException(MPF_OTHER_DETECTION_ERROR_TYPE, message);
             }
             catch (...) {
-                LOG4CXX_ERROR(logger_, "An error occurred while invoking the \""
-                        << component_method << "\" method on the Python component.");
-                return MPF_OTHER_DETECTION_ERROR_TYPE;
+                LOG4CXX_ERROR(logger_, base_message)
+                throw MPFDetectionException(MPF_OTHER_DETECTION_ERROR_TYPE, base_message);
             }
         }
     };
@@ -686,27 +702,23 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    MPFDetectionError PythonComponentHandle::GetDetections(const MPFVideoJob &job,
-                                                           std::vector<MPFVideoTrack> &tracks) {
-        return impl_->GetDetections(job, tracks);
+    std::vector<MPFVideoTrack> PythonComponentHandle::GetDetections(const MPFVideoJob &job) {
+        return impl_->GetDetections(job);
     }
 
 
-    MPFDetectionError PythonComponentHandle::GetDetections(const MPFImageJob &job,
-                                                           std::vector<MPFImageLocation> &locations) {
-        return impl_->GetDetections(job, locations);
+    std::vector<MPFImageLocation> PythonComponentHandle::GetDetections(const MPFImageJob &job) {
+        return impl_->GetDetections(job);
     }
 
 
-    MPFDetectionError PythonComponentHandle::GetDetections(const MPFAudioJob &job,
-                                                           std::vector<MPFAudioTrack> &tracks) {
-        return impl_->GetDetections(job, tracks);
+    std::vector<MPFAudioTrack> PythonComponentHandle::GetDetections(const MPFAudioJob &job) {
+        return impl_->GetDetections(job);
     }
 
 
-    MPFDetectionError PythonComponentHandle::GetDetections(const MPFGenericJob &job,
-                                                           std::vector<MPFGenericTrack> &tracks) {
-        return impl_->GetDetections(job, tracks);
+    std::vector<MPFGenericTrack> PythonComponentHandle::GetDetections(const MPFGenericJob &job) {
+        return impl_->GetDetections(job);
     }
 
     bool PythonComponentHandle::Close() {

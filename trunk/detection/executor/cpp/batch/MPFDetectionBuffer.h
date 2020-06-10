@@ -97,6 +97,7 @@ private:
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
             const MPFDetectionError error,
+            const std::string &error_message,
             DetectionResponse &detection_response) const;
 
     unsigned char *FinalizeDetectionResponse(
@@ -132,7 +133,8 @@ public:
             const MPFMessageMetadata *const msg_metadata,
             const MPFDetectionDataType data_type,
             int *packed_length,
-            const MPFDetectionError error) const;
+            const MPFDetectionError error,
+            const std::string &error_message) const;
 
     unsigned char *PackVideoResponse(
             const vector<MPFVideoTrack> &tracks,
@@ -142,7 +144,8 @@ public:
             const int stop_frame,
             const string detection_type,
             int *packed_length,
-            const MPFDetectionError error) const;
+            const MPFDetectionError error,
+            const std::string &error_message) const;
 
     unsigned char *PackAudioResponse(
             const vector<MPFAudioTrack> &tracks,
@@ -152,7 +155,8 @@ public:
             const int stop_time,
             const string detection_type,
             int *packed_length,
-            const MPFDetectionError error) const;
+            const MPFDetectionError error,
+            const std::string &error_message) const;
 
     unsigned char *PackImageResponse(
             const vector<MPFImageLocation> &locations,
@@ -160,7 +164,8 @@ public:
             const MPFDetectionDataType data_type,
             const string detection_type,
             int *packed_length,
-            const MPFDetectionError error) const;
+            const MPFDetectionError error,
+            const std::string &error_message) const;
 
     unsigned char *PackGenericResponse(
             const vector<MPFGenericTrack> &tracks,
@@ -168,7 +173,8 @@ public:
             const MPFDetectionDataType data_type,
             const string detection_type,
             int *packed_length,
-            const MPFDetectionError error) const;
+            const MPFDetectionError error,
+            const std::string &error_message) const;
 
 };
 

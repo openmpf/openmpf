@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2020 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2019 The MITRE Corporation                                       *
+ * Copyright 2020 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -24,57 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include "CppComponentHandle.h"
-#include "ComponentLoadError.h"
 
+package org.mitre.mpf.wfm.enums;
 
-namespace MPF { namespace COMPONENT {
+import java.util.Objects;
 
+public enum IssueSources {
+    WORKFLOW_MANAGER,
+    MARKUP;
 
-    CppComponentHandle::CppComponentHandle(const std::string &lib_path)
-    try : component_(lib_path, "component_creator", "component_deleter")
-    {
+    public static final IssueSources DEFAULT = WORKFLOW_MANAGER;
 
+    public static String toString(IssueSources errorSource) {
+        return Objects.requireNonNullElse(errorSource, DEFAULT).toString();
     }
-    catch (const std::exception &ex) {
-        throw ComponentLoadError(ex.what());
-    }
-
-    void CppComponentHandle::SetRunDirectory(const std::string &run_dir) {
-        component_->SetRunDirectory(run_dir);
-    }
-
-    bool CppComponentHandle::Init() {
-        return component_->Init();
-    }
-
-    std::string CppComponentHandle::GetDetectionType() {
-        return component_->GetDetectionType();
-    }
-
-    bool CppComponentHandle::Supports(MPFDetectionDataType data_type) {
-        return component_->Supports(data_type);
-    }
-
-    std::vector<MPFVideoTrack> CppComponentHandle::GetDetections(const MPFVideoJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFImageLocation> CppComponentHandle::GetDetections(const MPFImageJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFAudioTrack> CppComponentHandle::GetDetections(const MPFAudioJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    std::vector<MPFGenericTrack> CppComponentHandle::GetDetections(const MPFGenericJob &job) {
-        return component_->GetDetections(job);
-    }
-
-    bool CppComponentHandle::Close() {
-        return component_->Close();
-    }
-
-
-}}
+}

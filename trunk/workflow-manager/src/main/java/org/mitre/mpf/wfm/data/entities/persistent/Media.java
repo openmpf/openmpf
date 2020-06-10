@@ -54,7 +54,7 @@ public interface Media {
     public boolean isFailed();
 
     /** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
-    public String getMessage();
+    public String getErrorMessage();
 
     /** The MIME type of the medium. */
     public String getType();

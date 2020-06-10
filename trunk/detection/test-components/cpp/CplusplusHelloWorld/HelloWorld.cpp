@@ -57,8 +57,7 @@ using namespace MPF::COMPONENT;
 
 //-----------------------------------------------------------------------------
 // Video case
-MPFDetectionError HelloWorld::GetDetections(const MPFVideoJob &job,
-                                            std::vector <MPFVideoTrack> &tracks) {
+std::vector<MPFVideoTrack> HelloWorld::GetDetections(const MPFVideoJob &job) {
 
     // The MPFVideoJob structure contains all of the details needed to
     // process a video.
@@ -108,18 +107,15 @@ MPFDetectionError HelloWorld::GetDetections(const MPFVideoJob &job,
 
     video_track.frame_locations.insert(std::pair<int, MPFImageLocation>(job.start_frame, image_location));
 
-    tracks.push_back(video_track);
-
+    std::vector<MPFVideoTrack> tracks { video_track };
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Generated " << tracks.size()
                                  << " dummy video tracks.");
-
-    return MPF_DETECTION_SUCCESS;
+    return tracks;
 }
 
 //-----------------------------------------------------------------------------
 // Audio case
-MPFDetectionError HelloWorld::GetDetections(const MPFAudioJob &job,
-                                            std::vector <MPFAudioTrack> &tracks) {
+std::vector<MPFAudioTrack> HelloWorld::GetDetections(const MPFAudioJob &job) {
 
     // The MPFAudioJob structure contains all of the details needed to
     // process an audio file.
@@ -144,18 +140,15 @@ MPFDetectionError HelloWorld::GetDetections(const MPFAudioJob &job,
         audio_track.detection_properties["FEED_FORWARD_COUNT"] = std::to_string(feed_forward_count+1);
     }
 
-    tracks.push_back(audio_track);
-
+    std::vector<MPFAudioTrack> tracks { audio_track };
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Generated " << tracks.size()
                                  << " dummy audio tracks.");
-
-    return MPF_DETECTION_SUCCESS;
+    return tracks;
 }
 
 //-----------------------------------------------------------------------------
 // Image case
-MPFDetectionError HelloWorld::GetDetections(const MPFImageJob &job,
-                                            std::vector <MPFImageLocation> &locations)
+std::vector<MPFImageLocation> HelloWorld::GetDetections(const MPFImageJob &job)
 {
 
     // The MPFImageJob structure contains all of the details needed to
@@ -178,18 +171,15 @@ MPFDetectionError HelloWorld::GetDetections(const MPFImageJob &job,
         image_location.detection_properties["FEED_FORWARD_COUNT"] = std::to_string(feed_forward_count+1);
     }
 
-    locations.push_back(image_location);
-
+    std::vector<MPFImageLocation> locations { image_location };
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Generated " << locations.size()
                                  << " dummy image locations.");
-
-    return MPF_DETECTION_SUCCESS;
+    return locations;
 }
 
 //-----------------------------------------------------------------------------
 // Generic case
-MPFDetectionError HelloWorld::GetDetections(const MPFGenericJob &job,
-                                            std::vector <MPFGenericTrack> &tracks)
+std::vector<MPFGenericTrack> HelloWorld::GetDetections(const MPFGenericJob &job)
 {
 
     // The MPFGenericJob structure contains all of the details needed to
@@ -212,12 +202,10 @@ MPFDetectionError HelloWorld::GetDetections(const MPFGenericJob &job,
         generic_track.detection_properties["FEED_FORWARD_COUNT"] = std::to_string(feed_forward_count+1);
     }
 
-    tracks.push_back(generic_track);
-
+    std::vector<MPFGenericTrack> tracks { generic_track };
     LOG4CXX_INFO(hw_logger_, "[" << job.job_name << "] Processing complete. Generated " << tracks.size()
                                  << " dummy tracks.")
-
-    return MPF_DETECTION_SUCCESS;
+    return tracks;
 }
 
 //-----------------------------------------------------------------------------

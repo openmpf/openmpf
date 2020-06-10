@@ -28,10 +28,14 @@
 package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
+import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -104,6 +108,11 @@ public class InProgressBatchJobsService {
                 jobProperties,
                 algorithmProperties);
         _jobs.put(jobId, job);
+
+        media.stream()
+                .filter(Media::isFailed)
+                .forEach(m -> addError(jobId, m.getId(), IssueCodes.MEDIA_INITIALIZATION, m.getErrorMessage()));
+
         return job;
     }
 
@@ -168,23 +177,57 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void addJobWarning(long jobId, String message) {
-        LOG.info("Adding the following warning to job {}: {}", jobId, message);
-        getJobImpl(jobId).addWarning(message);
+    public synchronized void addJobWarning(long jobId, IssueCodes code, String message) {
+        addWarning(jobId, 0, code, message);
+    }
+
+    public synchronized void addWarning(long jobId, long mediaId, IssueCodes code, String message) {
+        addWarning(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
+    }
+
+    public synchronized void addWarning(long jobId, long mediaId, IssueCodes code, String message,
+                                        IssueSources source) {
+        var codeString = IssueCodes.toString(code);
+        LOG.info("Adding the following warning to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
+
+        getJobImpl(jobId).addWarning(mediaId, IssueSources.toString(source), codeString, message);
     }
 
 
-    public synchronized void addJobError(long jobId, String message) {
-        LOG.info("Adding the following error to job {}: {}", jobId, message);
-        getJobImpl(jobId).addError(message);
+    public synchronized void addJobError(long jobId, IssueCodes code, String message) {
+        addError(jobId, 0, code, message);
     }
+
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message) {
+        addError(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
+    }
+
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message, IssueSources source) {
+        var codeString = IssueCodes.toString(code);
+
+        LOG.info("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
+
+        getJobImpl(jobId).addError(mediaId, IssueSources.toString(source), codeString, message);
+
+        if (source != IssueSources.MARKUP && mediaId != 0) {
+            getMediaImpl(jobId, mediaId).setFailed(true);
+        }
+    }
+
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
-        LOG.info("Adding detection processing error for job {}'s media {} with message: {}",
-                 error.getJobId(), error.getMediaId(), error.getError());
+        LOG.info("Adding detection processing error for job {}'s media {}: {} - {}",
+                 error.getJobId(), error.getMediaId(), error.getErrorCode(), error.getErrorMessage());
         getJobImpl(error.getJobId()).addDetectionProcessingError(error);
+
+        var media = getMediaImpl(error.getJobId(), error.getMediaId());
+        media.setFailed(true);
     }
 
+
+    public synchronized Multimap<Long, JsonIssueDetails> getMergedDetectionErrors(long jobId) {
+        return DetectionErrorUtil.getMergedDetectionErrors(getJob(jobId));
+    }
 
 
     public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) {
@@ -268,20 +311,6 @@ public class InProgressBatchJobsService {
         media.setLength(length);
         media.addMetadata(metadata);
     }
-
-
-    public synchronized void addMediaError(long jobId, long mediaId, String message) {
-        LOG.info("Adding the following error message to job {}'s media {}: {}", jobId, mediaId, message);
-        MediaImpl media = getMediaImpl(jobId, mediaId);
-        media.setFailed(true);
-        media.setMessage(message);
-    }
-
-    public synchronized void clearMediaError(long jobId, long mediaId) {
-        LOG.info("Clearing error from job {}'s media {}", jobId, mediaId);
-        getMediaImpl(jobId, mediaId).setFailed(false);
-    }
-
 
     private MediaImpl getMediaImpl(long jobId, long mediaId) {
         MediaImpl media = getJobImpl(jobId).getMedia(mediaId);

@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
@@ -100,7 +101,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 } catch(IOException ioe) {
                     String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                             + ioe;
-                    inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
+                    inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
                     log.error(errorMessage, ioe);
                 }
 
@@ -109,7 +110,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 } catch(IOException ioe) {
                     String errorMessage = "Could not determine the MIME type for the media due to IOException: "
                             + ioe;
-                    inProgressJobs.addMediaError(jobId, mediaId, errorMessage);
+                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, errorMessage);
                     log.error(errorMessage, ioe);
                 }
 
@@ -130,9 +131,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
 
                     default:
-                        // DEBUG
-                        //media.setFailed(true);
-                        //media.setMessage("Unsupported file format.");
                         log.error("transientMedia.getMediaType() = {} is undefined. ", media.getMediaType());
                         break;
                 }
@@ -140,13 +138,15 @@ public class MediaInspectionProcessor extends WfmProcessor {
             } catch (Exception exception) {
                 log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), media.getLocalPath(), exception);
                 if (exception instanceof TikaException) {
-                    inProgressJobs.addMediaError(jobId, mediaId, "Tika media inspection error: " + exception.getMessage());
+                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                            "Tika media inspection error: " + exception.getMessage());
                 } else {
-                    inProgressJobs.addMediaError(jobId, mediaId, exception.getMessage());
+                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, exception.getMessage());
                 }
             }
         } else {
-            log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", media.getId());
+            log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.",
+                      jobId, media.getId());
         }
 
         // Copy these headers to the output exchange.
@@ -167,7 +167,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         String durationStr = audioMetadata.get("xmpDM:duration");
         if (durationStr == null) {
-            inProgressJobs.addMediaError(jobId, mediaId, "Cannot detect audio file duration.");
+            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                    "Cannot detect audio file duration.");
             return -1;
         }
 
@@ -195,7 +196,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
         int retval = new FrameCounter(localPath.toFile()).count(isGif);
 
         if (retval <= 0) {
-            inProgressJobs.addMediaError(jobId, mediaId, "Cannot detect video file length.");
+            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                    "Cannot detect video file length.");
             return -1;
         }
 
@@ -208,7 +210,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         String resolutionStr = videoMetadata.get("videoResolution");
         if (resolutionStr == null) {
-            inProgressJobs.addMediaError(jobId, mediaId, "Cannot detect video file resolution.");
+            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                    "Cannot detect video file resolution.");
             return -1;
         }
 
@@ -270,8 +273,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
             // As a last resort, load the whole image into memory.
             BufferedImage bimg = ImageIO.read(localPath.toFile());
             if (bimg == null) {
-                inProgressJobs.addMediaError(jobId, mediaId,
-                        "Cannot detect image file frame size. Cannot read image file.");
+                inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                        "Cannot detect image file frame size. Cannot read image file.");
                 return -1;
             }
             widthStr = Integer.toString(bimg.getWidth());

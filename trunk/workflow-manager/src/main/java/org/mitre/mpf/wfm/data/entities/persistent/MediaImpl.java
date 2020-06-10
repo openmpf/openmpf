@@ -74,10 +74,9 @@ public class MediaImpl implements Media {
 
 
     /** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
-    private String _message;
+    private String _errorMessage;
     @Override
-    public String getMessage() { return _message; }
-    public void setMessage(String message) { _message = message; }
+    public String getErrorMessage() { return _errorMessage; }
 
     /** The MIME type of the medium. */
     private String _type;
@@ -140,7 +139,7 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         if (StringUtils.isNotEmpty(errorMessage)) {
-            _message = createErrorMessage(id, uri, errorMessage);
+            _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
         }
     }
@@ -170,7 +169,7 @@ public class MediaImpl implements Media {
         MediaImpl result = new MediaImpl(
                 originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
                 originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getMessage());
+                originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());
@@ -188,14 +187,14 @@ public class MediaImpl implements Media {
 
     @Override
     public String toString() {
-        return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, message='%s', type='%s', length=%d, sha256='%s'>",
+        return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%d, sha256='%s'>",
                              getClass().getSimpleName(),
                              _id,
                              _uri,
                              _uriScheme,
                              _localPath,
                              _failed,
-                             _message,
+                             _errorMessage,
                              _type,
                              _length,
                              _sha256);

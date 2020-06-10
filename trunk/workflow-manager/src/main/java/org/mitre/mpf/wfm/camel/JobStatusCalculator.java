@@ -86,13 +86,13 @@ public class JobStatusCalculator {
                 || jobStatus.getValue() == BatchJobStatusType.COMPLETE
                 || jobStatus.getValue() == BatchJobStatusType.COMPLETE_WITH_WARNINGS) {
 
-            if (!outputObject.getJobErrors().isEmpty()) {
+            if (!outputObject.getErrors().isEmpty()) {
                 jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_ERRORS);
                 outputObject.setStatus(BatchJobStatusType.COMPLETE_WITH_ERRORS.toString());
                 return;
             }
 
-            if (!outputObject.getJobWarnings().isEmpty()) {
+            if (!outputObject.getWarnings().isEmpty()) {
                 jobStatus.setValue(BatchJobStatusType.COMPLETE_WITH_WARNINGS);
                 outputObject.setStatus(BatchJobStatusType.COMPLETE_WITH_WARNINGS.toString());
             }

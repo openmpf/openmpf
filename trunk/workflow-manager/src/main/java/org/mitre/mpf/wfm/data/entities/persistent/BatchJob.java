@@ -29,9 +29,11 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -70,9 +72,9 @@ public interface BatchJob {
 
     public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
 
-    public Set<String> getWarnings();
+    public Map<Long, Set<JsonIssueDetails>> getWarnings();
 
-    public Set<String> getErrors();
+    public Map<Long, Set<JsonIssueDetails>> getErrors();
 
     public List<DetectionProcessingError> getDetectionProcessingErrors();
 }

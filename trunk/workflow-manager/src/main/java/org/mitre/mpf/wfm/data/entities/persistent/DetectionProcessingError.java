@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.interop.util.CompareUtils;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -58,8 +58,11 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
     private final int _stopTime;
     public int getStopTime() { return _stopTime; }
 
-    private final String _error;
-    public String getError() { return _error; }
+    private final String _errorCode;
+    public String getErrorCode() { return _errorCode; }
+
+    private final String _errorMessage;
+    public String getErrorMessage() { return _errorMessage; }
 
     @JsonCreator
     public DetectionProcessingError(
@@ -71,7 +74,8 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
             @JsonProperty("stopFrame") int stopFrame,
             @JsonProperty("startTime") int startTime,
             @JsonProperty("stopTime") int stopTime,
-            @JsonProperty("error") String error) {
+            @JsonProperty("errorCode") String errorCode,
+            @JsonProperty("errorMessage") String errorMessage) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -80,26 +84,27 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
         _stopFrame = stopFrame;
         _startTime = startTime;
         _stopTime = stopTime;
-        _error = error;
+        _errorCode = errorCode;
+        _errorMessage = errorMessage;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime, _error);
+        return Objects.hash(_jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime,
+                            _errorCode, _errorMessage);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (this == obj) ||
-                ((obj instanceof DetectionProcessingError) && (compareTo((DetectionProcessingError) obj) == 0));
+        return (obj instanceof DetectionProcessingError) && compareTo((DetectionProcessingError) obj) == 0;
     }
 
     @Override
     public String toString() {
         return String.format(
-                "%s#<jobId=%d, mediaId=%d, taskIndex=%d, actionIndex=%d, startFrame=%d, stopFrame=%d, startTime=%d, stopTime=%d, error='%s'>",
-                getClass().getSimpleName(), _jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime,
-                _error);
+            "%s#<jobId=%d, mediaId=%d, taskIndex=%d, actionIndex=%d, startFrame=%d, stopFrame=%d, startTime=%d, stopTime=%d, errorCode='%s', errorMessage='%s'>",
+            getClass().getSimpleName(), _jobId, _mediaId, _taskIndex, _actionIndex, _startFrame, _stopFrame, _startTime, _stopTime,
+            _errorCode, _errorMessage);
     }
 
     private static final Comparator<DetectionProcessingError> COMPARATOR = Comparator.nullsFirst(
@@ -111,7 +116,8 @@ public class DetectionProcessingError implements Comparable<DetectionProcessingE
             .thenComparingInt(DetectionProcessingError::getStopFrame)
             .thenComparingInt(DetectionProcessingError::getStartTime)
             .thenComparingInt(DetectionProcessingError::getStopTime)
-            .thenComparing(DetectionProcessingError::getError, TextUtils::nullSafeCompare));
+            .thenComparing(CompareUtils.stringCompare(DetectionProcessingError::getErrorCode))
+            .thenComparing(CompareUtils.stringCompare(DetectionProcessingError::getErrorMessage)));
 
     @Override
     public int compareTo(DetectionProcessingError other) {

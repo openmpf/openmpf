@@ -35,11 +35,13 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.data.DetectionErrorUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -54,6 +56,7 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 @Component(DetectionPaddingProcessor.REF)
 public class DetectionPaddingProcessor extends WfmProcessor {
@@ -119,7 +122,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                         trackMergingContext.getTaskIndex(), actionIndex);
 
                 Collection<Track> newTracks = processTracks(
-                        job.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
+                        job.getId(), media.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
 
                 _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex, newTracks);
@@ -180,19 +183,19 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     }
 
 
-    private Collection<Track> processTracks(long jobId, String xPadding, String yPadding,
-                                                   int frameWidth, int frameHeight, Iterable<Track> tracks) {
-        boolean shrunkToNothing = false;
-        SortedSet<Track> newTracks = new TreeSet<>();
+    private Collection<Track> processTracks(long jobId, long mediaId, String xPadding, String yPadding,
+                                            int frameWidth, int frameHeight, Iterable<Track> tracks) {
+        var newTracks = new TreeSet<Track>();
+        var shrunkToNothingFrames = IntStream.builder();
 
         for (Track track : tracks) {
             SortedSet<Detection> newDetections = new TreeSet<>();
 
             for (Detection detection : track.getDetections()) {
                 Detection newDetection = padDetection(xPadding, yPadding, frameWidth, frameHeight, detection);
-
-                shrunkToNothing = shrunkToNothing ||
-                        newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING");
+                if (newDetection.getDetectionProperties().containsKey("SHRUNK_TO_NOTHING")) {
+                    shrunkToNothingFrames.add(newDetection.getMediaOffsetFrame());
+                }
                 newDetections.add(newDetection);
             }
 
@@ -211,11 +214,19 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                     track.getTrackProperties()));
         }
 
-        if (shrunkToNothing) {
+        Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()
+                .boxed()
+                .collect(DetectionErrorUtil.toFrameRangesString());
+
+        if (shrunkToNothingString.isPresent()) {
             _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
-                    "1-pixel detection regions used instead.", jobId));
-            _inProgressBatchJobs.addJobWarning(jobId, "Shrunk one or more detection regions to nothing. " +
-                    "1-pixel detection regions used instead.");
+                                            "1-pixel detection regions used instead. %s",
+                                    jobId, shrunkToNothingString.get()));
+
+            _inProgressBatchJobs.addWarning(
+                    jobId, mediaId, IssueCodes.PADDING, String.format(
+                    "Shrunk one or more detection regions to nothing. " +
+                            "1-pixel detection regions used instead. %s", shrunkToNothingString.get()));
         }
 
         return newTracks;

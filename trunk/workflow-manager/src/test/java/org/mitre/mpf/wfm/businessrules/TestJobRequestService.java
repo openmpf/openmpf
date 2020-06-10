@@ -238,9 +238,9 @@ public class TestJobRequestService {
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
         originalJob.addDetectionProcessingError(
-            new DetectionProcessingError(321, 1, 1, 1, 0, 10, 0, 10,
-                                             "error"));
-        originalJob.addWarning("warning");
+            new DetectionProcessingError(321, 1, 0, 0, 0, 10, 0, 10,
+                                             "error", "errorMessage"));
+        originalJob.addWarning(1, "TEST ALGO", null, "warning");
 
 
         var existingJobRequestEntity = new JobRequest() {
@@ -337,7 +337,7 @@ public class TestJobRequestService {
         Media originalMedia = originalJob.getMedia().asList().get(0);
         assertEquals(newMedia.getUri(), originalMedia.getUri());
         assertEquals(newMedia.getMediaSpecificProperties(), originalMedia.getMediaSpecificProperties());
-        assertNull(newMedia.getMessage());
+        assertNull(newMedia.getErrorMessage());
 
         assertFalse(Files.exists(artifactsDir.toPath()));
         assertFalse(Files.exists(outputObjectsDir.toPath()));

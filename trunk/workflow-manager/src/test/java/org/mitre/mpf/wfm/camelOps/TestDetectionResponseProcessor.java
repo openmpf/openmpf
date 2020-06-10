@@ -97,7 +97,7 @@ public class TestDetectionResponseProcessor {
     @Before
     public void init() {
 
-        MockitoAnnotations.initMocks(this); 
+        MockitoAnnotations.initMocks(this);
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
@@ -105,12 +105,12 @@ public class TestDetectionResponseProcessor {
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
 
-        when(mockPipelineService.getAlgorithm(algorithm.getName())) 
+        when(mockPipelineService.getAlgorithm(algorithm.getName()))
                 .thenReturn(algorithm);
 
         Action action = new Action(DETECTION_RESPONSE_ACTION_NAME, "action description", algorithm.getName(),
                                    Collections.emptyList());
-        when(mockPipelineService.getAction(action.getName())) 
+        when(mockPipelineService.getAction(action.getName()))
                 .thenReturn(action);
 
         Task task = new Task(DETECTION_RESPONSE_TASK_NAME, "task description", Collections.singleton(action.getName()));
@@ -120,8 +120,8 @@ public class TestDetectionResponseProcessor {
                 pipeline, Collections.singleton(task), Collections.singleton(action),
                 Collections.singleton(algorithm));
 
-        Map<String, String> propertiesMap = new HashMap<>(); 
-        propertiesMap.put("detection.confidence.threshold", "-1"); 
+        Map<String, String> propertiesMap = new HashMap<>();
+        propertiesMap.put("detection.confidence.threshold", "-1");
         SystemPropertiesSnapshot systemPropertiesSnapshot = new SystemPropertiesSnapshot(propertiesMap);
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
 
@@ -144,11 +144,11 @@ public class TestDetectionResponseProcessor {
             Collections.emptyMap(),
             Collections.emptyMap());
 
-        when(inProgressJobs.containsJob(JOB_ID)) 
-                .thenReturn(true); 
+        when(inProgressJobs.containsJob(JOB_ID))
+                .thenReturn(true);
 
-        when(inProgressJobs.getJob(JOB_ID)) 
-                .thenReturn(job); 
+        when(inProgressJobs.getJob(JOB_ID))
+                .thenReturn(job);
 
         when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
@@ -156,7 +156,7 @@ public class TestDetectionResponseProcessor {
     }
 
     @Test
-    public void testHappyPath() { 
+    public void testHappyPath() {
 
         DetectionProtobuf.DetectionResponse detectionResponse =
                 DetectionProtobuf.DetectionResponse.newBuilder()
@@ -166,52 +166,52 @@ public class TestDetectionResponseProcessor {
                                    .setStartFrame(START_FRAME)
                                    .setStopFrame(STOP_FRAME)
                                    .addVideoTracks(DetectionProtobuf.VideoTrack.newBuilder()
-                                                   .setStartFrame(5) 
-                                                   .setStopFrame(5) 
-                                                   .setConfidence(0.5f) 
-                                                   .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder() 
-                                                                           .setKey("TRACK_TEST_PROP_KEY") 
-                                                                           .setValue("TRACK_TEST_PROP_VALUE")) 
-                                                   .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder() 
-                                                                      .setFrame(5) 
-                                                                      .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder() 
-                                                                                        .setConfidence(0.5f) 
-                                                                                        .setXLeftUpper(0) 
-                                                                                        .setYLeftUpper(10) 
-                                                                                        .setHeight(10) 
-                                                                                        .setWidth(10) 
+                                                   .setStartFrame(5)
+                                                   .setStopFrame(5)
+                                                   .setConfidence(0.5f)
+                                                   .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
+                                                                           .setKey("TRACK_TEST_PROP_KEY")
+                                                                           .setValue("TRACK_TEST_PROP_VALUE"))
+                                                   .addFrameLocations(DetectionProtobuf.VideoTrack.FrameLocationMap.newBuilder()
+                                                                      .setFrame(5)
+                                                                      .setImageLocation(DetectionProtobuf.ImageLocation.newBuilder()
+                                                                                        .setConfidence(0.5f)
+                                                                                        .setXLeftUpper(0)
+                                                                                        .setYLeftUpper(10)
+                                                                                        .setHeight(10)
+                                                                                        .setWidth(10)
                                                                                         .addDetectionProperties(DetectionProtobuf.PropertyMap.newBuilder()
-                                                                                                                .setKey("DETECTION_TEST_PROP_KEY") 
+                                                                                                                .setKey("DETECTION_TEST_PROP_KEY")
                                                                                                                 .setValue("DETECTION_TEST_PROP_VALUE"))))))
-                .setTaskName(DETECTION_RESPONSE_TASK_NAME) 
-                .setTaskIndex(1) 
-                .setActionName(DETECTION_RESPONSE_ACTION_NAME) 
-                .setActionIndex(1) 
-                .setRequestId(123456) 
-                .build(); 
+                .setTaskName(DETECTION_RESPONSE_TASK_NAME)
+                .setTaskIndex(1)
+                .setActionName(DETECTION_RESPONSE_ACTION_NAME)
+                .setActionIndex(1)
+                .setRequestId(123456)
+                .build();
 
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext()); 
-        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID); 
-        exchange.getIn().setBody(detectionResponse); 
+        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
+        exchange.getIn().getHeaders().put(MpfHeaders.JOB_ID, JOB_ID);
+        exchange.getIn().setBody(detectionResponse);
 
-        detectionResponseProcessor.wfmProcess(exchange); 
-        Object responseBody = exchange.getOut().getBody(); 
-        TrackMergingContext processorResponse = 
+        detectionResponseProcessor.wfmProcess(exchange);
+        Object responseBody = exchange.getOut().getBody();
+        TrackMergingContext processorResponse =
                 jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
 
-        Assert.assertEquals(JOB_ID, processorResponse.getJobId()); 
-        Assert.assertEquals(1, processorResponse.getTaskIndex()); 
+        Assert.assertEquals(JOB_ID, processorResponse.getJobId());
+        Assert.assertEquals(1, processorResponse.getTaskIndex());
 
-        verify(inProgressJobs, never()) 
+        verify(inProgressJobs, never())
                 .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
-        verify(inProgressJobs, never()) 
+        verify(inProgressJobs, never())
                 .addDetectionProcessingError(any());
-        verify(inProgressJobs, never()) 
-                .addJobError(eq(JOB_ID), any());
-        verify(inProgressJobs, never()) 
-                .addJobWarning(eq(JOB_ID), any());
-        verify(inProgressJobs, times(1)) 
-                .addTrack(track(JOB_ID, 5)); 
+        verify(inProgressJobs, never())
+                .addJobError(eq(JOB_ID), any(), any());
+        verify(inProgressJobs, never())
+                .addJobWarning(eq(JOB_ID), any(), any());
+        verify(inProgressJobs, times(1))
+                .addTrack(track(JOB_ID, 5));
     }
 
     @Test
@@ -226,7 +226,7 @@ public class TestDetectionResponseProcessor {
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
                         START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
+                .addJobWarning(eq(JOB_ID), any(), any());
     }
 
     @Test
@@ -241,7 +241,7 @@ public class TestDetectionResponseProcessor {
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
                         START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
+                .addJobWarning(eq(JOB_ID), any(), any());
     }
 
     private void processVideoJob(DetectionProtobuf.DetectionError error) {
@@ -295,7 +295,7 @@ public class TestDetectionResponseProcessor {
         verify(inProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, START_TIME, STOP_TIME));
         verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
+                .addJobWarning(eq(JOB_ID), any(), any());
     }
 
     @Test
@@ -325,7 +325,7 @@ public class TestDetectionResponseProcessor {
         verify(inProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 1, 0 ,0));
         verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
+                .addJobWarning(eq(JOB_ID), any(), any());
     }
 
     @Test
@@ -355,7 +355,7 @@ public class TestDetectionResponseProcessor {
         verify(inProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, 0, 0));
         verify(inProgressJobs, never())
-                .addJobWarning(eq(JOB_ID), any());
+                .addJobWarning(eq(JOB_ID), any(), any());
     }
 
     private static DetectionProcessingError detectionProcessingError(long jobId, DetectionProtobuf.DetectionError error,
@@ -379,7 +379,7 @@ public class TestDetectionResponseProcessor {
             @Override
             public boolean matches(DetectionProcessingError obj) {
                 return jobId == obj.getJobId()
-                        && (error == null || error.toString().equals(obj.getError()))
+                        && (error == null || error.toString().equals(obj.getErrorCode()))
                         && startFrame == obj.getStartFrame()
                         && stopFrame == obj.getStopFrame()
                         && startTime == obj.getStartTime()

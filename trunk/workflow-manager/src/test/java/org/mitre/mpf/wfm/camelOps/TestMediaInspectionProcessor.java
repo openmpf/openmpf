@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcess
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -89,7 +90,7 @@ public class TestMediaInspectionProcessor {
 
 		assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
 				Boolean.toString(media.isFailed()),
-				media.getMessage()),
+				media.getErrorMessage()),
 				media.isFailed());
 
 		String targetType = "image";
@@ -123,7 +124,7 @@ public class TestMediaInspectionProcessor {
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
                         Boolean.toString(media.isFailed()),
-                                        media.getMessage()),
+                                        media.getErrorMessage()),
                     media.isFailed());
 
         String targetType = "video";
@@ -182,7 +183,7 @@ public class TestMediaInspectionProcessor {
 
         assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
                         Boolean.toString(media.isFailed()),
-                                 media.getMessage()),
+                                 media.getErrorMessage()),
                 media.isFailed());
 
         String targetType = "audio";
@@ -225,14 +226,14 @@ public class TestMediaInspectionProcessor {
 
 	private void verifyNoJobOrMediaError() {
 	    verify(mockInProgressJobs, never())
-                .addMediaError(anyLong(), anyLong(), any());
+                .addError(anyLong(), anyLong(), any(), any());
 	    verify(mockInProgressJobs, never())
                 .setJobStatus(anyLong(), eq(BatchJobStatusType.ERROR));
     }
 
     private void verifyMediaError(long jobId, long mediaId) {
-	    verify(mockInProgressJobs, atLeastOnce())
-                .addMediaError(eq(jobId), eq(mediaId), nonBlank());
+        verify(mockInProgressJobs, atLeastOnce())
+                .addError(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), nonBlank());
 
 	    verify(mockInProgressJobs)
                 .setJobStatus(jobId, BatchJobStatusType.ERROR);

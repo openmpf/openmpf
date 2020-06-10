@@ -35,9 +35,9 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.util.*;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -308,16 +308,15 @@ public class TestDetectionErrorUtil {
 
     @Test
     public void canMergeSetOfFrames() {
-        SortedSet<Integer> frames = new TreeSet(Set.of(15, 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 99));
-        var frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
-        assertEquals("(Frames: 0 - 5, 7 - 10, 15, 99)", frameRangeString);
+        var frameRangeString = Stream.of(15, 5, 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 99, 17, 18)
+                .collect(DetectionErrorUtil.toFrameRangesString());
+        assertEquals("(Frames: 0 - 5, 7 - 10, 15, 17, 18, 99)", frameRangeString.get());
 
-        frames = new TreeSet(Set.of(99));
-        frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
-        assertEquals("(Frames: 99)", frameRangeString);
 
-        frames = new TreeSet<>();
-        frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
-        assertNull(frameRangeString);
+        frameRangeString = Stream.of(99).collect(DetectionErrorUtil.toFrameRangesString());
+        assertEquals("(Frames: 99)", frameRangeString.get());
+
+        frameRangeString = Stream.<Integer>empty().collect(DetectionErrorUtil.toFrameRangesString());
+        assertTrue(frameRangeString.isEmpty());
     }
 }

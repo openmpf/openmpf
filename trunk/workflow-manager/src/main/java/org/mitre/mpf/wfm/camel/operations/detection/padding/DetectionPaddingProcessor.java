@@ -56,6 +56,7 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 @Component(DetectionPaddingProcessor.REF)
 public class DetectionPaddingProcessor extends WfmProcessor {
@@ -184,8 +185,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
     private Collection<Track> processTracks(long jobId, long mediaId, String xPadding, String yPadding,
                                             int frameWidth, int frameHeight, Iterable<Track> tracks) {
-        SortedSet<Track> newTracks = new TreeSet<>();
-        SortedSet<Integer> shrunkToNothingFrames = new TreeSet<>();
+        var newTracks = new TreeSet<Track>();
+        var shrunkToNothingFrames = IntStream.builder();
 
         for (Track track : tracks) {
             SortedSet<Detection> newDetections = new TreeSet<>();
@@ -213,17 +214,19 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                     track.getTrackProperties()));
         }
 
-        String shrunkToNothingString = DetectionErrorUtil.createFrameRangeString(shrunkToNothingFrames);
+        Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()
+                .boxed()
+                .collect(DetectionErrorUtil.toFrameRangesString());
 
-        if (shrunkToNothingString != null) {
+        if (shrunkToNothingString.isPresent()) {
             _log.warn(String.format("Shrunk one or more detection regions for job id %s to nothing. " +
                                             "1-pixel detection regions used instead. %s",
-                                    jobId, shrunkToNothingString));
+                                    jobId, shrunkToNothingString.get()));
 
             _inProgressBatchJobs.addWarning(
                     jobId, mediaId, IssueCodes.PADDING, String.format(
                     "Shrunk one or more detection regions to nothing. " +
-                            "1-pixel detection regions used instead. %s", shrunkToNothingString));
+                            "1-pixel detection regions used instead. %s", shrunkToNothingString.get()));
         }
 
         return newTracks;

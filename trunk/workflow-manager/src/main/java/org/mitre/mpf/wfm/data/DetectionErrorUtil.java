@@ -28,7 +28,6 @@
 package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.*;
-import one.util.streamex.IntStreamEx;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
@@ -36,10 +35,10 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.util.*;
-import java.util.function.IntUnaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collector;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 public class DetectionErrorUtil {
 
@@ -78,21 +77,19 @@ public class DetectionErrorUtil {
     }
 
 
-    private static List<JsonIssueDetails> mergeErrors(BatchJob job, Iterable<DetectionProcessingError> errors) {
+    private static List<JsonIssueDetails> mergeErrors(BatchJob job, Collection<DetectionProcessingError> errors) {
         // Using JsonIssueDetails as the key ensures that issues with the same source, code, and message strings get
-        // grouped together. Using RangeSet as the value ensures that adjacent segments get merged in to a
-        // larger segment.
-        var issueRanges = new HashMap<JsonIssueDetails, RangeSet<Integer>>();
-        for (var detectionError : errors) {
-            var jsonIssue = convertDetectionErrorToIssue(job, detectionError);
-            issueRanges.computeIfAbsent(jsonIssue, k -> TreeRangeSet.create())
-                    .add(toRange(detectionError));
-        }
+        // grouped together.
+        Map<JsonIssueDetails, Optional<String>> issueRangeStrings = errors.stream()
+                .collect(groupingBy(d -> convertDetectionErrorToIssue(job, d),
+                                    toFrameRangesString(DetectionErrorUtil::toRange)));
 
         var mergedIssues = new ArrayList<JsonIssueDetails>();
-        for (Map.Entry<JsonIssueDetails, RangeSet<Integer>> entry : issueRanges.entrySet()) {
+        for (var entry : issueRangeStrings.entrySet()) {
             var initialIssue = entry.getKey();
-            var msgWithFrames = initialIssue.getMessage() + ' ' + createFrameRangeString(entry.getValue());
+            var msgWithFrames = entry.getValue()
+                    .map(frames -> initialIssue.getMessage() + ' ' + frames)
+                    .orElseGet(initialIssue::getMessage);
             mergedIssues.add(new JsonIssueDetails(initialIssue.getSource(), initialIssue.getCode(), msgWithFrames));
         }
         return mergedIssues;
@@ -109,18 +106,41 @@ public class DetectionErrorUtil {
 
 
     private static Range<Integer> toRange(DetectionProcessingError error) {
-        return Range.closed(error.getStartFrame(), error.getStopFrame())
-                .canonical(DiscreteDomain.integers());
+        return toInclusiveRange(error.getStartFrame(), error.getStopFrame());
+    }
+
+    private static Range<Integer> toInclusiveRange(int lowInclusive, int highInclusive) {
+        return Range.closed(lowInclusive, highInclusive).canonical(DiscreteDomain.integers());
     }
 
 
-    private static String createFrameRangeString(RangeSet<Integer> frameRanges) {
+    private static <T> Collector<T, ?, Optional<String>> toFrameRangesString(Function<T, Range<Integer>> toRangeFn) {
+        return Collector.of(
+                TreeRangeSet::create,
+                (rs, el) -> rs.add(toRangeFn.apply(el)),
+                (rs1, rs2) -> { rs1.addAll(rs2); return rs1; },
+                DetectionErrorUtil::createFrameRangeString
+        );
+    }
+
+
+    public static Collector<Integer, ?, Optional<String>> toFrameRangesString() {
+        return toFrameRangesString(i -> toInclusiveRange(i, i));
+    }
+
+
+    private static Optional<String> createFrameRangeString(RangeSet<Integer> frameRangeSet) {
+        if (frameRangeSet.isEmpty()) {
+            return Optional.empty();
+        }
+
         // Create a string like "(Frames: 0 - 19)" or "(Frames: 0 - 19, 50 - 59)".
         // The RangeSet class takes care of merging adjacent ranges.
-        return frameRanges.asRanges()
+        var frameRangesString = frameRangeSet.asRanges()
                 .stream()
                 .map(DetectionErrorUtil::toString)
                 .collect(joining(", ", "(Frames: ", ")"));
+        return Optional.of(frameRangesString);
     }
 
 
@@ -137,22 +157,10 @@ public class DetectionErrorUtil {
             return String.valueOf(start);
         }
 
-        return String.format("%s - %s", start, end);
-    }
-
-
-    public static String createFrameRangeString(SortedSet<Integer> frames) {
-        IntUnaryOperator next = i -> i + 1;
-        var frameRanges = IntStreamEx.of(frames)
-                .boxed()
-                .groupRuns((f1, f2) -> next.applyAsInt(f1) == f2)
-                .map(g -> Range.closed(g.get(0), g.get(g.size()-1)))
-                .toList();
-
-        if (frameRanges.isEmpty()) {
-            return null;
+        if (start + 1 == end) {
+            return String.format("%s, %s", start, end);
         }
 
-        return createFrameRangeString(TreeRangeSet.create(frameRanges));
+        return String.format("%s - %s", start, end);
     }
 }

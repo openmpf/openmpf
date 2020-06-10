@@ -312,7 +312,7 @@ public class DetectionResponseProcessor
                 log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
                 inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorCode = MpfConstants.REQUEST_CANCELLED;
-                errorMessage = "Successfully cancelled";
+                errorMessage = "Successfully cancelled.";
             }
             else {
                 log.error("[{}] Encountered a detection error while processing {}: {}",

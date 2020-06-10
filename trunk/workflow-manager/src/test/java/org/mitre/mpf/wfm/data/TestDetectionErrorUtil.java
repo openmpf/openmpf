@@ -34,10 +34,10 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -303,5 +303,21 @@ public class TestDetectionErrorUtil {
         assertEquals("ec1", issue.getCode());
         assertEquals(_TEST_ALGO1_NAME, issue.getSource());
         assertEquals("em1", issue.getMessage());
+    }
+
+
+    @Test
+    public void canMergeSetOfFrames() {
+        SortedSet<Integer> frames = new TreeSet(Set.of(15, 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 99));
+        var frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
+        assertEquals("(Frames: 0 - 5, 7 - 10, 15, 99)", frameRangeString);
+
+        frames = new TreeSet(Set.of(99));
+        frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
+        assertEquals("(Frames: 99)", frameRangeString);
+
+        frames = new TreeSet<>();
+        frameRangeString = DetectionErrorUtil.createFrameRangeString(frames);
+        assertNull(frameRangeString);
     }
 }

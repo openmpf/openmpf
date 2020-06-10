@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.*;
+import one.util.streamex.IntStreamEx;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
@@ -35,6 +36,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -136,5 +138,21 @@ public class DetectionErrorUtil {
         }
 
         return String.format("%s - %s", start, end);
+    }
+
+
+    public static String createFrameRangeString(SortedSet<Integer> frames) {
+        IntUnaryOperator next = i -> i + 1;
+        var frameRanges = IntStreamEx.of(frames)
+                .boxed()
+                .groupRuns((f1, f2) -> next.applyAsInt(f1) == f2)
+                .map(g -> Range.closed(g.get(0), g.get(g.size()-1)))
+                .toList();
+
+        if (frameRanges.isEmpty()) {
+            return null;
+        }
+
+        return createFrameRangeString(TreeRangeSet.create(frameRanges));
     }
 }

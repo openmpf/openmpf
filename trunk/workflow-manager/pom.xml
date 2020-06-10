@@ -915,6 +915,12 @@
             <artifactId>javasimon-spring</artifactId>
             <version>${javasimon.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>one.util</groupId>
+            <artifactId>streamex</artifactId>
+            <version>0.7.2</version>
+        </dependency>
     </dependencies>
 
     <!-- NOTE: profile tags override non-profile tags -->

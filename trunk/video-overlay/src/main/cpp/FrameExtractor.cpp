@@ -191,8 +191,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                     // Create the transformation for this frame and apply it.
                     FeedForwardExactRegionAffineTransformer transformer(
-                        { std::make_tuple(detectionBox, rotation, false) },
-                        IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
+                            { MPFRotatedRect(x, y, width, height, rotation, false) },
+                            IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
 
                     transformer.TransformFrame(transformFrame, 0);
 

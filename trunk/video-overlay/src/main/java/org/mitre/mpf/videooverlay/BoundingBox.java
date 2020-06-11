@@ -77,6 +77,12 @@ public class BoundingBox {
     }
 
 
+    private final boolean flip;
+    public boolean getFlip() {
+        return flip;
+    }
+
+
     private final int red;
     public int getRed() {
         return red;
@@ -94,7 +100,8 @@ public class BoundingBox {
 
 
 
-    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, int red, int green, int blue) {
+    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip, int red, int green,
+                       int blue) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -110,6 +117,7 @@ public class BoundingBox {
         this.width = width;
         this.height = height;
         this.rotationDegrees = rotationDegrees;
+        this.flip = flip;
         this.red = red;
         this.green = green;
         this.blue = blue;
@@ -135,6 +143,7 @@ public class BoundingBox {
                 && height == casted.height
                 && width == casted.width
                 && Double.compare(rotationDegrees, casted.rotationDegrees) == 0
+                && flip == casted.flip
                 && red == casted.red
                 && green == casted.green
                 && blue == casted.blue;
@@ -145,7 +154,7 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(x, y, height, width, rotationDegrees, red, green, blue);
+        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -155,6 +164,7 @@ public class BoundingBox {
                 .setWidth(width)
                 .setHeight(height)
                 .setRotationDegrees(rotationDegrees)
+                .setFlip(flip)
                 .setRed(red)
                 .setBlue(blue)
                 .setGreen(green)

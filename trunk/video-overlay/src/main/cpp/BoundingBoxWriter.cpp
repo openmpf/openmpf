@@ -30,6 +30,7 @@
 #include <jni.h>
 #include <stdlib.h>
 #include <cmath>
+#include <array>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -38,6 +39,7 @@
 
 #include <MPFVideoCapture.h>
 #include <MPFImageReader.h>
+#include <MPFRotatedRect.h>
 #include "JniHelper.h"
 
 
@@ -49,7 +51,8 @@ using namespace cv;
 
 #endif
 
-void drawBoundingBox(int x, int y, int width, int height, double rotation, int red, int green, int blue, Mat *image);
+void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
+                     Mat *image);
 
 /*
  * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
@@ -95,6 +98,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
+        jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
 
         jclass clzInteger = jni.FindClass("java/lang/Integer");
         jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
@@ -160,8 +164,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                     jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                     jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
+                    jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
-                    drawBoundingBox(x, y, width, height, rotation, red, green, blue, &frame);
+                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &frame);
                 }
             }
 
@@ -195,8 +200,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                     jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                     jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
+                    jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
-                    drawBoundingBox(x, y, width, height, rotation, red, green, blue, &frame);
+                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &frame);
                 }
             }
 
@@ -255,6 +261,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
+        jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
 
         jclass clzInteger = jni.FindClass("java/lang/Integer");
         jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
@@ -304,8 +311,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
                 jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                 jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
+                jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
-                drawBoundingBox(x, y, width, height, rotation, red, green, blue, &image);
+                drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &image);
             }
         }
 
@@ -323,35 +331,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 }
 
 
-void getCorners(int x, int y, int width, int height, double rotation, Point2f *corners) {
-    corners[0] = cv::Point2f(x, y);
-
-    double radians = rotation * M_PI / 180.0;
-    double sinVal = std::sin(radians);
-    double cosVal = std::cos(radians);
-
-    // Need to subtract one because if you have a Rect(x=0, y=0, width=10, height=10),
-    // the bottom right corner is (9, 9) not (10, 10)
-    double w = width - 1;
-    double h = height - 1;
-
-    double corner2X = x + w * cosVal;
-    double corner2Y = y - w * sinVal;
-    corners[1] = cv::Point2f(corner2X, corner2Y);
-
-    double corner3X = corner2X + h * sinVal;
-    double corner3Y = corner2Y + h * cosVal;
-    corners[2] = cv::Point2f(corner3X, corner3Y);
-
-    double corner4X = x + h * sinVal;
-    double corner4Y = y + h * cosVal;
-    corners[3] = cv::Point2f(corner4X, corner4Y);
-}
-
-
-void drawBoundingBox(int x, int y, int width, int height, double rotation, int red, int green, int blue, Mat *image) {
-    Point2f corners[4];
-    getCorners(x, y, width, height, rotation, corners);
+void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
+                     Mat *image) {
+    std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
     Scalar lineColor(blue, green, red);
 
@@ -371,7 +353,6 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, int r
     int filledInCircleCode = -1;
     circle(*image, Point(x, y), radius, lineColor, filledInCircleCode, cv::LineTypes::LINE_AA);
 }
-
 
 #ifdef __cplusplus
 }

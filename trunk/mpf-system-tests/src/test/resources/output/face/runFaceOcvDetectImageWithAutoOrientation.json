@@ -69,7 +69,7 @@
                 "confidence": 60,
                 "trackProperties": {
                   "HORIZONTAL_FLIP": "true",
-                  "ROTATION": "90.000000"
+                  "ROTATION": "270.000000"
                 },
                 "exemplar": {
                   "offsetFrame": 0,

@@ -167,8 +167,6 @@ void MPFDetectionBuffer::PackCommonFields(
         const MPFDetectionError error,
         const std::string &error_message,
         DetectionResponse &detection_response) const {
-    // Caller has to delete returned data
-
     detection_response.set_request_id(msg_metadata.request_id);
     detection_response.set_data_type(translateMPFDetectionDataType(data_type));
     detection_response.set_media_id(msg_metadata.media_id);

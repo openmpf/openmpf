@@ -97,12 +97,8 @@ class MPFMessenger : private AmqLibraryManager {
    * producer for sending a corresponding DetectionResponse message, based on
    * the ReplyTo value contained in the received message header.  As
    * currently implemented, this method blocks until a message is received.
-   * The calling program is responsible for deleting the returned byte array.
    * @param msg_metadata MPFMessageMetadata struct to hold message header data
-   * @param msg_body_length Pointer to an integer to hold the size in bytes of
-   * the returned message body
-   * @return A byte array containing the message body in protobuf form or
-   * NULL if an error occurs
+   * @return A byte vector containing the message body in protobuf form or an empty vector if no message is available.
    */
   std::vector<unsigned char> ReceiveMessage(MPFMessageMetadata& msg_metadata);
 
@@ -111,11 +107,9 @@ class MPFMessenger : private AmqLibraryManager {
    * Note that undefined behavior may occur if this method is invoked
    * without having received and successfully unpacked a DetectionRequest
    * message.
-   * @param packed_msg A byte array containing the message body in protobuf
-   * form
+   * @param packed_msg A byte vector containing the message body in protobuf form
    * @param msg_metadata MPFMessageMetadata struct containing data needed for the message header
-   * @param packed_length An integer containing the size in bytes of the
-   * message body
+   * @param job_name A string containing the job name
    */
   void SendMessage(const std::vector<unsigned char> &packed_msg, const MPFMessageMetadata &msg_metadata,
                    const string &job_name);

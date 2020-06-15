@@ -33,76 +33,63 @@ using std::map;
 using std::pair;
 using std::string;
 
-MPFDetectionBuffer::~MPFDetectionBuffer() { }
 
-bool MPFDetectionBuffer::UnpackRequest(const unsigned char *const request_contents, const int request_body_length) {
-    try {
-        detection_request.ParseFromArray(static_cast<const void *> (request_contents), request_body_length);
-
-        LOG4CXX_DEBUG(logger, "Detection request_id: " << detection_request.request_id() << " data_uri: " << detection_request.data_uri() <<
-                      " data_type: " << detection_request.data_type());
-    } catch (exception &e) {
-        // When thrown, this will be caught and logged by the main program
-        throw;
-    } catch (...) {
-        LOG4CXX_ERROR(logger, "Unknown Exception occurred");
-        throw;
-    }
-    return true;
+MPFDetectionBuffer::MPFDetectionBuffer(const std::vector<unsigned char> &request_contents) {
+    detection_request_.ParseFromArray(request_contents.data(), request_contents.size());
 }
 
 void MPFDetectionBuffer::GetMessageMetadata(MPFMessageMetadata* msg_metadata) {
-    msg_metadata->request_id   = detection_request.request_id();
-    msg_metadata->media_id     = detection_request.media_id();
-    msg_metadata->task_index   = detection_request.task_index();
-    msg_metadata->task_name    = detection_request.task_name();
-    msg_metadata->action_index = detection_request.action_index();
-    msg_metadata->action_name  = detection_request.action_name();
+    msg_metadata->request_id   = detection_request_.request_id();
+    msg_metadata->media_id     = detection_request_.media_id();
+    msg_metadata->task_index   = detection_request_.task_index();
+    msg_metadata->task_name    = detection_request_.task_name();
+    msg_metadata->action_index = detection_request_.action_index();
+    msg_metadata->action_name  = detection_request_.action_name();
 }
 
 MPFDetectionDataType MPFDetectionBuffer::GetDataType() {
-    return translateProtobufDataType(detection_request.data_type());
+    return translateProtobufDataType(detection_request_.data_type());
 }
 
 string MPFDetectionBuffer::GetDataUri() {
-    return detection_request.data_uri();
+    return detection_request_.data_uri();
 }
 
 void MPFDetectionBuffer::GetAlgorithmProperties(map<string, string> &algorithm_properties) {
-    for (int i = 0; i < detection_request.algorithm_property_size(); i++) {
+    for (int i = 0; i < detection_request_.algorithm_property_size(); i++) {
         algorithm_properties.insert(
                 pair<string, string>(
-                        detection_request.algorithm_property(i).property_name(),
-                        detection_request.algorithm_property(i).property_value()));
+                        detection_request_.algorithm_property(i).property_name(),
+                        detection_request_.algorithm_property(i).property_value()));
     }
 }
 
 
 void MPFDetectionBuffer::GetMediaProperties(map<string, string> &media_properties) {
-    for (const auto &prop : detection_request.media_metadata()) {
+    for (const auto &prop : detection_request_.media_metadata()) {
         media_properties[prop.key()] = prop.value();
     }
 }
 
 void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request) {
-    video_request.start_frame = detection_request.video_request().start_frame();
-    video_request.stop_frame = detection_request.video_request().stop_frame();
+    video_request.start_frame = detection_request_.video_request().start_frame();
+    video_request.stop_frame = detection_request_.video_request().stop_frame();
     video_request.has_feed_forward_track = false;
     //If there is a feed-forward track in the request, copy it into an
     //MPFVideoTrack
-    if (detection_request.video_request().has_feed_forward_track()) {
+    if (detection_request_.video_request().has_feed_forward_track()) {
         video_request.has_feed_forward_track = true;
         video_request.feed_forward_track.start_frame =
-                detection_request.video_request().feed_forward_track().start_frame();
+                detection_request_.video_request().feed_forward_track().start_frame();
         video_request.feed_forward_track.stop_frame =
-                detection_request.video_request().feed_forward_track().stop_frame();
+                detection_request_.video_request().feed_forward_track().stop_frame();
         video_request.feed_forward_track.confidence =
-                detection_request.video_request().feed_forward_track().confidence();
+                detection_request_.video_request().feed_forward_track().confidence();
         // Copy the track properties
-        for (auto prop : detection_request.video_request().feed_forward_track().detection_properties()) {
+        for (auto prop : detection_request_.video_request().feed_forward_track().detection_properties()) {
             video_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
         }
-        for (auto loc : detection_request.video_request().feed_forward_track().frame_locations()) {
+        for (auto loc : detection_request_.video_request().feed_forward_track().frame_locations()) {
             Properties tmp_props;
             for (auto prop : loc.image_location().detection_properties()) {
                 tmp_props[prop.key()] = prop.value();
@@ -119,20 +106,20 @@ void MPFDetectionBuffer::GetVideoRequest(MPFDetectionVideoRequest &video_request
 }
 
 void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request) {
-    audio_request.start_time = detection_request.audio_request().start_time();
-    audio_request.stop_time = detection_request.audio_request().stop_time();
+    audio_request.start_time = detection_request_.audio_request().start_time();
+    audio_request.stop_time = detection_request_.audio_request().stop_time();
     audio_request.has_feed_forward_track = false;
     // If there is a feed-forward track in the request, copy it into an MPFAudioTrack
-    if (detection_request.audio_request().has_feed_forward_track()) {
+    if (detection_request_.audio_request().has_feed_forward_track()) {
         audio_request.has_feed_forward_track = true;
         audio_request.feed_forward_track.start_time =
-                detection_request.audio_request().feed_forward_track().start_time();
+                detection_request_.audio_request().feed_forward_track().start_time();
         audio_request.feed_forward_track.stop_time =
-                detection_request.audio_request().feed_forward_track().stop_time();
+                detection_request_.audio_request().feed_forward_track().stop_time();
         audio_request.feed_forward_track.confidence =
-                detection_request.audio_request().feed_forward_track().confidence();
+                detection_request_.audio_request().feed_forward_track().confidence();
         // Copy the track properties
-        for (auto prop : detection_request.audio_request().feed_forward_track().detection_properties()) {
+        for (auto prop : detection_request_.audio_request().feed_forward_track().detection_properties()) {
             audio_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
         }
     }
@@ -141,21 +128,21 @@ void MPFDetectionBuffer::GetAudioRequest(MPFDetectionAudioRequest &audio_request
 void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request) {
     image_request.has_feed_forward_location = false;
     // If there is a feed-forward location in the request, copy it into an MPFImageLocation
-    if (detection_request.image_request().has_feed_forward_location()) {
+    if (detection_request_.image_request().has_feed_forward_location()) {
         image_request.has_feed_forward_location = true;
         image_request.feed_forward_location.x_left_upper =
-                detection_request.image_request().feed_forward_location().x_left_upper();
+                detection_request_.image_request().feed_forward_location().x_left_upper();
         image_request.feed_forward_location.y_left_upper =
-                detection_request.image_request().feed_forward_location().y_left_upper();
+                detection_request_.image_request().feed_forward_location().y_left_upper();
         image_request.feed_forward_location.width =
-                detection_request.image_request().feed_forward_location().width();
+                detection_request_.image_request().feed_forward_location().width();
         image_request.feed_forward_location.height =
-                detection_request.image_request().feed_forward_location().height();
+                detection_request_.image_request().feed_forward_location().height();
         image_request.feed_forward_location.confidence =
-                detection_request.image_request().feed_forward_location().confidence();
+                detection_request_.image_request().feed_forward_location().confidence();
     }
     // Copy the image location properties
-    for (auto prop : detection_request.image_request().feed_forward_location().detection_properties()) {
+    for (auto prop : detection_request_.image_request().feed_forward_location().detection_properties()) {
         image_request.feed_forward_location.detection_properties[prop.key()] = prop.value();
     }
 }
@@ -163,83 +150,61 @@ void MPFDetectionBuffer::GetImageRequest(MPFDetectionImageRequest &image_request
 void MPFDetectionBuffer::GetGenericRequest(MPFDetectionGenericRequest &generic_request) {
     generic_request.has_feed_forward_track = false;
     // If there is a feed-forward track in the request, copy it into an MPFGenericTrack
-    if (detection_request.generic_request().has_feed_forward_track()) {
+    if (detection_request_.generic_request().has_feed_forward_track()) {
         generic_request.has_feed_forward_track = true;
         generic_request.feed_forward_track.confidence =
-                detection_request.audio_request().feed_forward_track().confidence();
+                detection_request_.audio_request().feed_forward_track().confidence();
         // Copy the track properties
-        for (auto prop : detection_request.generic_request().feed_forward_track().detection_properties()) {
+        for (auto prop : detection_request_.generic_request().feed_forward_track().detection_properties()) {
             generic_request.feed_forward_track.detection_properties[prop.key()] = prop.value();
         }
     }
 }
 
 void MPFDetectionBuffer::PackCommonFields(
-        const MPFMessageMetadata *const msg_metadata,
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
         const MPFDetectionError error,
         const std::string &error_message,
         DetectionResponse &detection_response) const {
-    // Caller has to delete returned data
-
-    detection_response.set_request_id(msg_metadata->request_id);
+    detection_response.set_request_id(msg_metadata.request_id);
     detection_response.set_data_type(translateMPFDetectionDataType(data_type));
-    detection_response.set_media_id(msg_metadata->media_id);
-    detection_response.set_task_index(msg_metadata->task_index);
-    detection_response.set_task_name(msg_metadata->task_name);
-    detection_response.set_action_index(msg_metadata->action_index);
-    detection_response.set_action_name(msg_metadata->action_name);
+    detection_response.set_media_id(msg_metadata.media_id);
+    detection_response.set_task_index(msg_metadata.task_index);
+    detection_response.set_task_name(msg_metadata.task_name);
+    detection_response.set_action_index(msg_metadata.action_index);
+    detection_response.set_action_name(msg_metadata.action_name);
     detection_response.set_error(translateMPFDetectionError(error));
     detection_response.set_error_message(error_message);
 }
 
-unsigned char *MPFDetectionBuffer::FinalizeDetectionResponse(
-        const DetectionResponse &detection_response,
-        int *packed_length) const {
+std::vector<unsigned char> MPFDetectionBuffer::FinalizeDetectionResponse(
+        const DetectionResponse &detection_response) const {
 
-    unsigned char *response_contents = NULL;
-
-    try {
-        response_contents = new unsigned char[detection_response.ByteSize()];
-        detection_response.SerializeToArray(response_contents, detection_response.ByteSize());
-        *packed_length = detection_response.ByteSize();
-    } catch (exception &e) {
-        // When thrown, this will be caught and logged by the main program
-        if (response_contents) delete[] response_contents;
-        throw;
-    } catch (...) {
-        if (response_contents) delete[] response_contents;
-        LOG4CXX_ERROR(logger, "Unknown Exception occurred");
-        throw;
-    }
-
+    std::vector<unsigned char> response_contents(detection_response.ByteSize());
+    detection_response.SerializeToArray(response_contents.data(), response_contents.size());
     return response_contents;
 }
 
-unsigned char *MPFDetectionBuffer::PackErrorResponse(
-        const MPFMessageMetadata *const msg_metadata,
+std::vector<unsigned char> MPFDetectionBuffer::PackErrorResponse(
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
-        int *packed_length,
         const MPFDetectionError error,
         const std::string &error_message) const {
-    // Caller has to delete returned data
-
     DetectionResponse detection_response;
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
-    return FinalizeDetectionResponse(detection_response, packed_length);
+    return FinalizeDetectionResponse(detection_response);
 }
 
-unsigned char *MPFDetectionBuffer::PackVideoResponse(
+std::vector<unsigned char> MPFDetectionBuffer::PackVideoResponse(
         const vector<MPFVideoTrack> &tracks,
-        const MPFMessageMetadata *const msg_metadata,
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
         const int start_frame,
         const int stop_frame,
-        const string detection_type,
-        int *packed_length,
+        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
-    // Caller has to delete returned data
 
     DetectionResponse detection_response;
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
@@ -284,20 +249,18 @@ unsigned char *MPFDetectionBuffer::PackVideoResponse(
         }
     }
 
-    return FinalizeDetectionResponse(detection_response, packed_length);
+    return FinalizeDetectionResponse(detection_response);
 }
 
-unsigned char *MPFDetectionBuffer::PackAudioResponse(
+std::vector<unsigned char> MPFDetectionBuffer::PackAudioResponse(
         const vector<MPFAudioTrack> &tracks,
-        const MPFMessageMetadata *const msg_metadata,
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
         const int start_time,
         const int stop_time,
-        const string detection_type,
-        int *packed_length,
+        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
-    // Caller has to delete returned data
 
     DetectionResponse detection_response;
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
@@ -320,18 +283,16 @@ unsigned char *MPFDetectionBuffer::PackAudioResponse(
         }
     }
 
-    return FinalizeDetectionResponse(detection_response, packed_length);
+    return FinalizeDetectionResponse(detection_response);
 }
 
-unsigned char *MPFDetectionBuffer::PackImageResponse(
+std::vector<unsigned char> MPFDetectionBuffer::PackImageResponse(
         const vector<MPFImageLocation> &locations,
-        const MPFMessageMetadata *const msg_metadata,
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
-        const string detection_type,
-        int *packed_length,
+        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
-    // Caller has to delete returned data
 
     DetectionResponse detection_response;
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
@@ -355,18 +316,16 @@ unsigned char *MPFDetectionBuffer::PackImageResponse(
         }
     }
 
-    return FinalizeDetectionResponse(detection_response, packed_length);
+    return FinalizeDetectionResponse(detection_response);
 }
 
-unsigned char *MPFDetectionBuffer::PackGenericResponse(
+std::vector<unsigned char> MPFDetectionBuffer::PackGenericResponse(
         const vector<MPFGenericTrack> &tracks,
-        const MPFMessageMetadata *const msg_metadata,
+        const MPFMessageMetadata &msg_metadata,
         const MPFDetectionDataType data_type,
-        const string detection_type,
-        int *packed_length,
+        const string &detection_type,
         const MPFDetectionError error,
         const std::string &error_message) const {
-    // Caller has to delete returned data
 
     DetectionResponse detection_response;
     PackCommonFields(msg_metadata, data_type, error, error_message, detection_response);
@@ -385,6 +344,6 @@ unsigned char *MPFDetectionBuffer::PackGenericResponse(
         }
     }
 
-    return FinalizeDetectionResponse(detection_response, packed_length);
+    return FinalizeDetectionResponse(detection_response);
 }
 

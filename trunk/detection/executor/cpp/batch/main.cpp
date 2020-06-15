@@ -24,31 +24,34 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <cstdlib>
+#include <libgen.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <exception>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include <log4cxx/logger.h>
-#include <log4cxx/xml/domconfigurator.h>
-#include <log4cxx/simplelayout.h>
-#include <log4cxx/consoleappender.h>
-#include <log4cxx/fileappender.h>
 #include <log4cxx/logmanager.h>
-#include <log4cxx/level.h>
-
-#include <QCoreApplication>
-#include <QTime>
-
-#include "MPFMessenger.h"
-#include "MPFDetectionBuffer.h"
-#include "CppComponentHandle.h"
-#include "ComponentLoadError.h"
-#include "PythonComponentHandle.h"
+#include <log4cxx/xml/domconfigurator.h>
 
 #include <MPFDetectionComponent.h>
 #include <MPFDetectionException.h>
+
+#include "ComponentLoadError.h"
+#include "CppComponentHandle.h"
+#include "MPFDetectionBuffer.h"
+#include "MPFMessenger.h"
+#include "PythonComponentHandle.h"
+
 
 using std::exception;
 using std::string;
@@ -58,19 +61,14 @@ using std::vector;
 using namespace MPF;
 using namespace COMPONENT;
 
-string GetFileName(const string& s) {
-    size_t i = s.rfind('/', s.length());
-    if (i != std::string::npos) {
-        return s.substr(i+1, s.length()-i);
-    }
-    return s;
-}
 
 bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]);
 
 template <typename ComponentHandle>
 int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine);
+
+std::string get_app_dir(const char * argv0);
 
 /**
  * This is the main program for the Detection Component.  It accepts two
@@ -84,11 +82,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
  * @return An integer representing the exit status of the program
  */
 int main(int argc, char* argv[]) {
-    // Create a Core Application so that we can access the path to the executable,
+    // Determine the directory containing this executable
     // since the config and log files are found relative to that path.
-    QCoreApplication *this_app = new QCoreApplication(argc, argv);
-    string app_dir = (this_app->applicationDirPath()).toStdString();
-    delete this_app;
+    string app_dir = get_app_dir(argv[0]);
 
     log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
     log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection");
@@ -132,6 +128,30 @@ int main(int argc, char* argv[]) {
     }
 }
 
+std::string get_app_dir(const char * const argv0) {
+    std::unique_ptr<char, decltype(&std::free)> this_exe(canonicalize_file_name("/proc/self/exe"), std::free);
+    if (this_exe != nullptr) {
+        // The dirname documentation says the returned pointer must not be freed.
+        std::string app_dir = dirname(this_exe.get());
+        if (!app_dir.empty()) {
+            return app_dir;
+        }
+    }
+
+    std::unique_ptr<char[]> argv0_copy(new char[strlen(argv0) + 1]);
+    std::strcpy(argv0_copy.get(), argv0);
+    std::string app_dir = dirname(argv0_copy.get());
+    if (!app_dir.empty()) {
+        return app_dir;
+    }
+
+    std::unique_ptr<char, decltype(&std::free)> cwd(get_current_dir_name(), std::free);
+    if (cwd != nullptr) {
+        return std::string(cwd.get());
+    }
+
+    return ".";
+}
 
 std::string get_extension(const std::string &path) {
     size_t last_slash_pos = path.rfind('/');
@@ -197,14 +217,19 @@ void handle_component_exception(std::string& error_message, MPFDetectionError &e
     }
 }
 
+string get_file_name(const string& s) {
+    size_t i = s.rfind('/', s.length());
+    if (i != std::string::npos) {
+        return s.substr(i+1, s.length()-i);
+    }
+    return s;
+}
+
 
 template <typename ComponentHandle>
 int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
             const std::string &app_dir, ComponentHandle &detection_engine) {
     int pollingInterval = 1;
-
-    // Instantiate AMQ interface
-    MPFMessenger messenger(logger);
 
     // Remain in loop handling job request messages
     // until 'q\n' is received on stdin
@@ -224,7 +249,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
-        messenger.Startup(broker_uri, request_queue);
+        MPFMessenger messenger(logger, broker_uri, request_queue);
 
         detection_engine.SetRunDirectory(app_dir + "/../plugins");
 
@@ -245,343 +270,304 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
             gotMessageOnLastPull = false;
 
             // Receive job request
-            MPFMessageMetadata *msg_metadata = new MPFMessageMetadata;
-            int request_body_length;
-            unsigned char *request_contents = messenger.ReceiveMessage(msg_metadata, &request_body_length);
+            MPFMessageMetadata msg_metadata;
+            std::vector<unsigned char> request_contents = messenger.ReceiveMessage(msg_metadata);
 
-            if (request_contents != NULL) {
-                QTime time;
-                time.start();
-
+            if (!request_contents.empty()) {
                 //  Set not to sleep flag.
                 gotMessageOnLastPull = true;
 
                 std::stringstream job_name; // Empty; need to unpack detection request to determine name
 
-                MPFDetectionBuffer detection_buf(logger);
-                bool success = detection_buf.UnpackRequest(request_contents, request_body_length);
+                MPFDetectionBuffer detection_buf(request_contents);
 
-                unsigned char* detection_response_body = NULL;
-                int response_body_length;
+                std::vector<unsigned char> detection_response_body;
 
-                if (!success) {
-                    LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Failed while unpacking the detection request");
+                detection_buf.GetMessageMetadata(&msg_metadata);
+                MPFDetectionDataType data_type = detection_buf.GetDataType();
+                string data_uri = detection_buf.GetDataUri();
 
-                    msg_metadata->time_elapsed = time.elapsed();
+                map<string, string> algorithm_properties;
+                detection_buf.GetAlgorithmProperties(algorithm_properties);
+
+                map<string, string> media_properties;
+                detection_buf.GetMediaProperties(media_properties);
+
+
+                MPFDetectionVideoRequest video_request;
+                MPFDetectionAudioRequest audio_request;
+                MPFDetectionImageRequest image_request;
+                MPFDetectionGenericRequest generic_request;
+
+                job_name << "Job " << msg_metadata.job_id << ":" << get_file_name(data_uri);
+
+                if (data_type == MPFDetectionDataType::VIDEO) {
+                    detection_buf.GetVideoRequest(video_request);
+
+                    // Identify segment
+                    job_name << "(";
+                    job_name << video_request.start_frame;
+                    job_name << "-";
+                    job_name << video_request.stop_frame;
+                    job_name << ")";
+
+                } else if (data_type == MPFDetectionDataType::AUDIO) {
+                    detection_buf.GetAudioRequest(audio_request);
+
+                    // Identify segment
+                    job_name << "(";
+                    job_name << audio_request.start_time;
+                    job_name << "-";
+                    job_name << audio_request.stop_time;
+                    job_name << ")";
+
+                } else if (data_type == MPFDetectionDataType::IMAGE) {
+                    detection_buf.GetImageRequest(image_request);
+                } else {
+                    detection_buf.GetGenericRequest(generic_request);
+                }
+
+                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing message on " << service_name << ".");
+
+                string detection_type = detection_engine.GetDetectionType();
+
+                if (detection_engine.Supports(data_type)) {
+                    MPFDetectionError rc = MPF_DETECTION_SUCCESS;
+                    std::string error_message;
+
+                    if (data_type == MPFDetectionDataType::VIDEO) {
+                        vector <MPFVideoTrack> tracks;
+
+                        if (video_request.has_feed_forward_track) {
+                            // Invoke the detection component with
+                            // a feed-forward track
+                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
+                            MPFVideoJob video_job(job_name.str(),
+                                                  data_uri,
+                                                  video_request.start_frame,
+                                                  video_request.stop_frame,
+                                                  video_request.feed_forward_track,
+                                                  algorithm_properties,
+                                                  media_properties);
+                            try {
+                                tracks = detection_engine.GetDetections(video_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+                        else {
+                            // Invoke the detection component
+                            // without a feed-forward track
+                            MPFVideoJob video_job(job_name.str(),
+                                                  data_uri,
+                                                  video_request.start_frame,
+                                                  video_request.stop_frame,
+                                                  algorithm_properties,
+                                                  media_properties);
+
+                            try {
+                                tracks = detection_engine.GetDetections(video_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+
+                        if (rc != MPF_DETECTION_SUCCESS) {
+                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Video detection method returned an error for " << data_uri);
+                        }
+
+                        // Pack video response
+                        detection_response_body = detection_buf.PackVideoResponse(
+                                tracks, msg_metadata, data_type,
+                                video_request.start_frame, video_request.stop_frame,
+                                detection_type, rc, error_message);
+
+                    } else if (data_type == MPFDetectionDataType::AUDIO) {
+                        vector <MPFAudioTrack> tracks;
+                        if (audio_request.has_feed_forward_track) {
+                            // Invoke the detection component with
+                            // a feed-forward track
+                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
+                            MPFAudioJob audio_job(job_name.str(),
+                                                  data_uri,
+                                                  audio_request.start_time,
+                                                  audio_request.stop_time,
+                                                  audio_request.feed_forward_track,
+                                                  algorithm_properties,
+                                                  media_properties);
+
+                            try {
+                                tracks = detection_engine.GetDetections(audio_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+                        else {
+                            // Invoke the detection component
+                            // without a feed-forward track
+                            MPFAudioJob audio_job(job_name.str(),
+                                                  data_uri,
+                                                  audio_request.start_time,
+                                                  audio_request.stop_time,
+                                                  algorithm_properties,
+                                                  media_properties);
+
+                            try {
+                                tracks = detection_engine.GetDetections(audio_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+
+                        if (rc != MPF_DETECTION_SUCCESS) {
+                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Audio detection method returned an error for " << data_uri);
+                        }
+
+                        // Pack audio response
+                        detection_response_body = detection_buf.PackAudioResponse(
+                                tracks, msg_metadata, data_type,
+                                audio_request.start_time, audio_request.stop_time,
+                                detection_type, rc, error_message);
+
+                    } else if (data_type == MPFDetectionDataType::IMAGE) {
+                        vector <MPFImageLocation> locations;
+                        if (image_request.has_feed_forward_location) {
+                            // Invoke the detection component with
+                            // a feed-forward location
+                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward location on " << service_name << ".");
+                            MPFImageJob image_job(job_name.str(),
+                                                  data_uri,
+                                                  image_request.feed_forward_location,
+                                                  algorithm_properties,
+                                                  media_properties);
+
+                            try {
+                                locations = detection_engine.GetDetections(image_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+                        else {
+                            // Invoke the detection component
+                            // without a feed-forward location
+                            MPFImageJob image_job(job_name.str(),
+                                                  data_uri,
+                                                  algorithm_properties,
+                                                  media_properties);
+
+                            try {
+                                locations = detection_engine.GetDetections(image_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+
+                        if (rc != MPF_DETECTION_SUCCESS) {
+                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Image detection method returned an error for " << data_uri);
+                        }
+
+                        // Pack image response
+                        detection_response_body = detection_buf.PackImageResponse(
+                                locations, msg_metadata, data_type, detection_type, rc, error_message);
+
+                    } else {
+                        vector <MPFGenericTrack> tracks;
+                        if (generic_request.has_feed_forward_track) {
+                            // Invoke the detection component
+                            // with a feed-forward track
+                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
+                            MPFGenericJob generic_job(job_name.str(),
+                                                      data_uri,
+                                                      generic_request.feed_forward_track,
+                                                      algorithm_properties,
+                                                      media_properties);
+
+                            try {
+                                tracks = detection_engine.GetDetections(generic_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+                        else {
+                            // Invoke the detection component
+                            // without a feed-forward track
+                            MPFGenericJob generic_job(job_name.str(),
+                                                      data_uri,
+                                                      algorithm_properties,
+                                                      media_properties);
+
+                            try {
+                                tracks = detection_engine.GetDetections(generic_job);
+                            }
+                            catch (...) {
+                                handle_component_exception(error_message, rc);
+                            }
+                        }
+
+                        if (rc != MPF_DETECTION_SUCCESS) {
+                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Generic detection method returned an error for " << data_uri);
+                        }
+
+                        // Pack generic response
+                        detection_response_body = detection_buf.PackGenericResponse(
+                                tracks, msg_metadata, data_type, detection_type, rc, error_message);
+                    }
+
+                } else {
+                    std::string data_type_str;
+                    switch (data_type) {
+                        case UNKNOWN:
+                            data_type_str = "UNKNOWN";
+                            break;
+                        case VIDEO:
+                            data_type_str = "VIDEO";
+                            break;
+                        case IMAGE:
+                            data_type_str = "IMAGE";
+                            break;
+                        case AUDIO:
+                            data_type_str = "AUDIO";
+                            break;
+                        default:
+                            data_type_str = "INVALID_TYPE";
+                    }
+                    std::string error_message = "The detection component does not support detection data type of "
+                                                + data_type_str;
+                    LOG4CXX_WARN(logger, "[" << job_name.str() << "] " << error_message);
 
                     // Pack error response
                     detection_response_body = detection_buf.PackErrorResponse(
-                            msg_metadata, MPFDetectionDataType::UNKNOWN, &response_body_length,
-                            MPF_DETECTION_NOT_INITIALIZED,
-                            "Failed while unpacking the detection request.");
-
-                } else {
-                    detection_buf.GetMessageMetadata(msg_metadata);
-                    MPFDetectionDataType data_type = detection_buf.GetDataType();
-                    string data_uri = detection_buf.GetDataUri();
-
-                    map<string, string> algorithm_properties;
-                    detection_buf.GetAlgorithmProperties(algorithm_properties);
-
-                    map<string, string> media_properties;
-                    detection_buf.GetMediaProperties(media_properties);
-
-
-                    MPFDetectionVideoRequest video_request;
-                    MPFDetectionAudioRequest audio_request;
-                    MPFDetectionImageRequest image_request;
-                    MPFDetectionGenericRequest generic_request;
-
-                    job_name << "Job " << msg_metadata->job_id << ":" << GetFileName(data_uri);
-
-                    if (data_type == MPFDetectionDataType::VIDEO) {
-                        detection_buf.GetVideoRequest(video_request);
-
-                        // Identify segment
-                        job_name << "(";
-                        job_name << video_request.start_frame;
-                        job_name << "-";
-                        job_name << video_request.stop_frame;
-                        job_name << ")";
-
-                    } else if (data_type == MPFDetectionDataType::AUDIO) {
-                        detection_buf.GetAudioRequest(audio_request);
-
-                        // Identify segment
-                        job_name << "(";
-                        job_name << audio_request.start_time;
-                        job_name << "-";
-                        job_name << audio_request.stop_time;
-                        job_name << ")";
-
-                    } else if (data_type == MPFDetectionDataType::IMAGE) {
-                        detection_buf.GetImageRequest(image_request);
-                    } else {
-                        detection_buf.GetGenericRequest(generic_request);
-                    }
-
-                    LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing message on " << service_name << ".");
-
-                    string detection_type = detection_engine.GetDetectionType();
-
-                    if (detection_engine.Supports(data_type)) {
-                        MPFDetectionError rc = MPF_DETECTION_SUCCESS;
-                        std::string error_message;
-
-                        if (data_type == MPFDetectionDataType::VIDEO) {
-                            vector <MPFVideoTrack> tracks;
-
-                            if (video_request.has_feed_forward_track) {
-                                // Invoke the detection component with
-                                // a feed-forward track
-                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                                MPFVideoJob video_job(job_name.str(),
-                                                      data_uri,
-                                                      video_request.start_frame,
-                                                      video_request.stop_frame,
-                                                      video_request.feed_forward_track,
-                                                      algorithm_properties,
-                                                      media_properties);
-                                try {
-                                    tracks = detection_engine.GetDetections(video_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            else {
-                                // Invoke the detection component
-                                // without a feed-forward track
-                                MPFVideoJob video_job(job_name.str(),
-                                                      data_uri,
-                                                      video_request.start_frame,
-                                                      video_request.stop_frame,
-                                                      algorithm_properties,
-                                                      media_properties);
-
-                                try {
-                                    tracks = detection_engine.GetDetections(video_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-
-                            msg_metadata->time_elapsed = time.elapsed();
-
-                            if (rc != MPF_DETECTION_SUCCESS) {
-                                LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Video detection method returned an error for " << data_uri);
-                            }
-
-                            // Pack video response
-                            detection_response_body = detection_buf.PackVideoResponse(
-                                    tracks, msg_metadata, data_type,
-                                    video_request.start_frame, video_request.stop_frame,
-                                    detection_type, &response_body_length, rc,
-                                    error_message);
-
-                        } else if (data_type == MPFDetectionDataType::AUDIO) {
-                            vector <MPFAudioTrack> tracks;
-                            if (audio_request.has_feed_forward_track) {
-                                // Invoke the detection component with
-                                // a feed-forward track
-                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                                MPFAudioJob audio_job(job_name.str(),
-                                                      data_uri,
-                                                      audio_request.start_time,
-                                                      audio_request.stop_time,
-                                                      audio_request.feed_forward_track,
-                                                      algorithm_properties,
-                                                      media_properties);
-
-                                try {
-                                    tracks = detection_engine.GetDetections(audio_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            else {
-                                // Invoke the detection component
-                                // without a feed-forward track
-                                MPFAudioJob audio_job(job_name.str(),
-                                                      data_uri,
-                                                      audio_request.start_time,
-                                                      audio_request.stop_time,
-                                                      algorithm_properties,
-                                                      media_properties);
-
-                                try {
-                                    tracks = detection_engine.GetDetections(audio_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            msg_metadata->time_elapsed = time.elapsed();
-
-                            if (rc != MPF_DETECTION_SUCCESS) {
-                                LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Audio detection method returned an error for " << data_uri);
-                            }
-
-                            // Pack audio response
-                            detection_response_body = detection_buf.PackAudioResponse(
-                                    tracks, msg_metadata, data_type,
-                                    audio_request.start_time, audio_request.stop_time,
-                                    detection_type, &response_body_length, rc,
-                                    error_message);
-
-                        } else if (data_type == MPFDetectionDataType::IMAGE) {
-                            vector <MPFImageLocation> locations;
-                            if (image_request.has_feed_forward_location) {
-                                // Invoke the detection component with
-                                // a feed-forward location
-                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward location on " << service_name << ".");
-                                MPFImageJob image_job(job_name.str(),
-                                                      data_uri,
-                                                      image_request.feed_forward_location,
-                                                      algorithm_properties,
-                                                      media_properties);
-
-                                try {
-                                    locations = detection_engine.GetDetections(image_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            else {
-                                // Invoke the detection component
-                                // without a feed-forward location
-                                MPFImageJob image_job(job_name.str(),
-                                                      data_uri,
-                                                      algorithm_properties,
-                                                      media_properties);
-
-                                try {
-                                    locations = detection_engine.GetDetections(image_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            msg_metadata->time_elapsed = time.elapsed();
-
-                            if (rc != MPF_DETECTION_SUCCESS) {
-                                LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Image detection method returned an error for " << data_uri);
-                            }
-
-                            // Pack image response
-                            detection_response_body = detection_buf.PackImageResponse(
-                                    locations, msg_metadata, data_type, detection_type, &response_body_length, rc,
-                                    error_message);
-
-                        } else {
-                            vector <MPFGenericTrack> tracks;
-                            if (generic_request.has_feed_forward_track) {
-                                // Invoke the detection component
-                                // with a feed-forward track
-                                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                                MPFGenericJob generic_job(job_name.str(),
-                                                          data_uri,
-                                                          generic_request.feed_forward_track,
-                                                          algorithm_properties,
-                                                          media_properties);
-
-                                try {
-                                    tracks = detection_engine.GetDetections(generic_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            else {
-                                // Invoke the detection component
-                                // without a feed-forward track
-                                MPFGenericJob generic_job(job_name.str(),
-                                                          data_uri,
-                                                          algorithm_properties,
-                                                          media_properties);
-
-                                try {
-                                    tracks = detection_engine.GetDetections(generic_job);
-                                }
-                                catch (...) {
-                                    handle_component_exception(error_message, rc);
-                                }
-                            }
-                            msg_metadata->time_elapsed = time.elapsed();
-
-                            if (rc != MPF_DETECTION_SUCCESS) {
-                                LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Generic detection method returned an error for " << data_uri);
-                            }
-
-                            // Pack generic response
-                            detection_response_body = detection_buf.PackGenericResponse(
-                                    tracks, msg_metadata, data_type, detection_type, &response_body_length, rc,
-                                    error_message);
-                        }
-
-                    } else {
-                        std::string data_type_str;
-                        switch (data_type) {
-                            case UNKNOWN:
-                                data_type_str = "UNKNOWN";
-                                break;
-                            case VIDEO:
-                                data_type_str = "VIDEO";
-                                break;
-                            case IMAGE:
-                                data_type_str = "IMAGE";
-                                break;
-                            case AUDIO:
-                                data_type_str = "AUDIO";
-                                break;
-                            default:
-                                data_type_str = "INVALID_TYPE";
-                        }
-                        std::string error_message = "The detection component does not support detection data type of "
-                                                    + data_type_str;
-                        LOG4CXX_WARN(logger, "[" << job_name.str() << "] " << error_message);
-
-                        msg_metadata->time_elapsed = time.elapsed();
-
-                        // Pack error response
-                        detection_response_body = detection_buf.PackErrorResponse(
-                                msg_metadata, data_type, &response_body_length, MPF_UNSUPPORTED_DATA_TYPE,
-                                error_message);
-                    }
+                            msg_metadata, data_type, MPF_UNSUPPORTED_DATA_TYPE,
+                            error_message);
                 }
 
                 // Sanity check
-                if (NULL != detection_response_body) {
+                if (!detection_response_body.empty()) {
                     // Send response
                     LOG4CXX_DEBUG(logger, "[" << job_name.str() << "] Sending response message on " <<
                                           service_name << ".");
 
-                    messenger.SendMessage(detection_response_body,
-                                                  msg_metadata,
-                                                  response_body_length,
-                                                  job_name.str());
-
-                    delete[] detection_response_body;
+                    messenger.SendMessage(detection_response_body, msg_metadata, job_name.str());
 
                 } else {
                     LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Failed to generate a detection response");
                 }
             }
 
-            delete msg_metadata;
-
             // Check for 'q\n' input
             // Read from file descriptor 0 (stdin)
             FD_ZERO(&readfds);
             FD_SET(0, &readfds);
             nfds = select(1, &readfds, NULL, NULL, &tv);
-            if (nfds != 0) {
-                if (FD_ISSET(0, &readfds)) {
-                    bytes_read = read(0, input_buf, input_buf_size);
-                }
+            if (nfds != 0 && FD_ISSET(0, &readfds)) {
+                bytes_read = read(0, input_buf, input_buf_size);
                 string std_input(input_buf);
                 std_input.resize(input_buf_size);
                 if ((bytes_read > 0) && (std_input == quit_string)) {
@@ -589,7 +575,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     keep_running = false;
                 }
             }
-
         } // end while
     } catch (std::exception &e) {
         error_occurred = true;
@@ -605,26 +590,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
     if (!detection_engine.Close()) {
         error_occurred = true;
         LOG4CXX_ERROR(logger, "Detection engine failed to close... ");
-    }
-
-    // Shut down the message interface
-    try {
-        messenger.Shutdown();
-    } catch (cms::CMSException &e) {
-        error_occurred = true;
-        LOG4CXX_ERROR(logger, "CMS Exception caught during message interface shutdown: "
-                              << request_queue << ": "
-                              << e.what());
-    } catch (exception &e) {
-        error_occurred = true;
-        LOG4CXX_ERROR(logger, "Standard Exception caught during message interface shutdown: "
-                              << request_queue << ": "
-                              << e.what());
-    } catch (...) {
-        error_occurred = true;
-        // Swallow any other unknown exceptions
-        LOG4CXX_ERROR(logger, "Unknown Exception caught during message interface shutdown: "
-                              << request_queue);
     }
 
     // Close the logger

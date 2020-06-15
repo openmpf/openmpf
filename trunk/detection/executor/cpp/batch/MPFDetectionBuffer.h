@@ -90,26 +90,20 @@ struct MPFDetectionGenericRequest {
 
 class MPFDetectionBuffer {
 private:
-    const log4cxx::LoggerPtr &logger;
-    DetectionRequest detection_request;
+    DetectionRequest detection_request_;
 
     void PackCommonFields(
-            const MPFMessageMetadata *const msg_metadata,
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
             const MPFDetectionError error,
             const std::string &error_message,
             DetectionResponse &detection_response) const;
 
-    unsigned char *FinalizeDetectionResponse(
-            const DetectionResponse &detection_response,
-            int *packed_length) const;
+    std::vector<unsigned char> FinalizeDetectionResponse(
+            const DetectionResponse &detection_response) const;
 
 public:
-    explicit MPFDetectionBuffer(const log4cxx::LoggerPtr &logger):logger(logger) {};
-
-    ~MPFDetectionBuffer();
-
-    bool UnpackRequest(const unsigned char *const request_contents, const int request_body_length);
+    explicit MPFDetectionBuffer(const std::vector<unsigned char> &request_contents);
 
     void GetMessageMetadata(MPFMessageMetadata* msg_metadata);
 
@@ -129,50 +123,45 @@ public:
 
     void GetGenericRequest(MPFDetectionGenericRequest &generic_request);
 
-    unsigned char *PackErrorResponse(
-            const MPFMessageMetadata *const msg_metadata,
+    std::vector<unsigned char> PackErrorResponse(
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
-            int *packed_length,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
-    unsigned char *PackVideoResponse(
+    std::vector<unsigned char> PackVideoResponse(
             const vector<MPFVideoTrack> &tracks,
-            const MPFMessageMetadata *const msg_metadata,
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
             const int start_frame,
             const int stop_frame,
-            const string detection_type,
-            int *packed_length,
+            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
-    unsigned char *PackAudioResponse(
+    std::vector<unsigned char> PackAudioResponse(
             const vector<MPFAudioTrack> &tracks,
-            const MPFMessageMetadata *const msg_metadata,
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
             const int start_time,
             const int stop_time,
-            const string detection_type,
-            int *packed_length,
+            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
-    unsigned char *PackImageResponse(
+    std::vector<unsigned char> PackImageResponse(
             const vector<MPFImageLocation> &locations,
-            const MPFMessageMetadata *const msg_metadata,
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
-            const string detection_type,
-            int *packed_length,
+            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 
-    unsigned char *PackGenericResponse(
+    std::vector<unsigned char> PackGenericResponse(
             const vector<MPFGenericTrack> &tracks,
-            const MPFMessageMetadata *const msg_metadata,
+            const MPFMessageMetadata &msg_metadata,
             const MPFDetectionDataType data_type,
-            const string detection_type,
-            int *packed_length,
+            const string &detection_type,
             const MPFDetectionError error,
             const std::string &error_message) const;
 

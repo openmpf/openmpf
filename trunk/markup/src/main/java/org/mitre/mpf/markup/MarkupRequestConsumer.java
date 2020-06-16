@@ -102,6 +102,7 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getWidth(),
                     boundingBoxMapEntry.getBoundingBox().getHeight(),
                     boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
+                    boundingBoxMapEntry.getBoundingBox().getFlip(),
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
                     boundingBoxMapEntry.getBoundingBox().getBlue());
@@ -134,6 +135,7 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getWidth(),
                     boundingBoxMapEntry.getBoundingBox().getHeight(),
                     boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
+                    boundingBoxMapEntry.getBoundingBox().getFlip(),
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
                     boundingBoxMapEntry.getBoundingBox().getBlue());

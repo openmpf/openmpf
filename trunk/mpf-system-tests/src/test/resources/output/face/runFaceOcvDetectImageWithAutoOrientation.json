@@ -69,19 +69,19 @@
                 "confidence": 60,
                 "trackProperties": {
                   "HORIZONTAL_FLIP": "true",
-                  "ROTATION": "90.000000"
+                  "ROTATION": "270.000000"
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
                   "x": 211,
-                  "y": 368,
+                  "y": 83,
                   "width": 286,
                   "height": 286,
                   "confidence": 60,
                   "detectionProperties": {
                     "HORIZONTAL_FLIP": "true",
-                    "ROTATION": "90.000000"
+                    "ROTATION": "270.000000"
                   },
                   "artifactExtractionStatus": "COMPLETED",
                   "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg"
@@ -91,13 +91,13 @@
                     "offsetFrame": 0,
                     "offsetTime": 0,
                     "x": 211,
-                    "y": 368,
+                    "y": 83,
                     "width": 286,
                     "height": 286,
                     "confidence": 60,
                     "detectionProperties": {
                       "HORIZONTAL_FLIP": "true",
-                      "ROTATION": "90.000000"
+                      "ROTATION": "270.000000"
                     },
                     "artifactExtractionStatus": "COMPLETED",
                     "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg"

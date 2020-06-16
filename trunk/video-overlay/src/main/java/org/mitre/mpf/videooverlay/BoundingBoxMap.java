@@ -165,6 +165,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     (int) Math.round(origin.getWidth() + dWidth * frameOffset),
                     (int) Math.round(origin.getHeight() + dHeight * frameOffset),
                     origin.getRotationDegrees(),
+                    origin.getFlip(),
                     origin.getRed(),
                     origin.getGreen(),
                     origin.getBlue());

@@ -163,12 +163,18 @@ public class MarkupSplitter {
         if (rotationString == null) {
             return OptionalDouble.empty();
         }
-        return OptionalDouble.of(Double.valueOf(rotationString));
+        return OptionalDouble.of(Double.parseDouble(rotationString));
     }
 
 
+    private static Optional<Boolean> getFlip(Map<String, String> properties) {
+        return Optional.ofNullable(properties.get("HORIZONTAL_FLIP"))
+                .map(s -> Boolean.parseBoolean(s.strip()));
+    }
+
     private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
+        Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
         Collections.sort(orderedDetections);
@@ -177,6 +183,7 @@ public class MarkupSplitter {
             int currentFrame = detection.getMediaOffsetFrame();
 
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
+            Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
             // Create a bounding box at the location.
             BoundingBox boundingBox = new BoundingBox(
@@ -185,6 +192,7 @@ public class MarkupSplitter {
                     detection.getWidth(),
                     detection.getHeight(),
                     detectionRotation.orElse(trackRotation.orElse(0)),
+                    detectionFlip.orElse(trackFlip.orElse(false)),
                     trackColor.getRed(),
                     trackColor.getGreen(),
                     trackColor.getBlue());
@@ -218,6 +226,7 @@ public class MarkupSplitter {
                 // and translate to the position and size of the next result's bounding box.
 
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
+                Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
                 BoundingBox nextBoundingBox = new BoundingBox(
                         nextDetection.getX(),
@@ -225,6 +234,7 @@ public class MarkupSplitter {
                         nextDetection.getWidth(),
                         nextDetection.getHeight(),
                         nextDetectionRotation.orElse(trackRotation.orElse(0)),
+                        nextDetectionFlip.orElse(trackFlip.orElse(false)),
                         boundingBox.getRed(),
                         boundingBox.getBlue(),
                         boundingBox.getGreen());

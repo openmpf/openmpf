@@ -89,7 +89,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
         return getCurrentSession().createQuery(
                 selectClause
                         + " from JobRequest"
-                        + " where lower(pipeline) like :searchTerm"
+                        + " where cast(id as string) like :searchTerm"
+                        + " or lower(pipeline) like :searchTerm"
                         + " or lower(status) like :searchTerm"
                         + " or to_char(timeReceived, 'YYYY-MM-DD HH24:MI:SS') like :searchTerm"
                         + " or to_char(timeCompleted, 'YYYY-MM-DD HH24:MI:SS') like :searchTerm "

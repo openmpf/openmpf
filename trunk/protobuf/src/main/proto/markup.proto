@@ -62,9 +62,10 @@ message BoundingBox {
     required int32 width            = 3; // The width of the bounding box.
     required int32 height           = 4; // The height of the bounding box.
     required double rotationDegrees = 5; // Rotation of bounding box in counter-clockwise direction.
-    required uint32 red             = 6; // Red channel of bounding box color.
-    required uint32 green           = 7; // Green channel of bounding box color.
-    required uint32 blue            = 8; // Blue channel of bounding box color.
+    required bool flip              = 6; // Whether or not the bounding box is horizontally flipped.
+    required uint32 red             = 7; // Red channel of bounding box color.
+    required uint32 green           = 8; // Green channel of bounding box color.
+    required uint32 blue            = 9; // Blue channel of bounding box color.
 
 
 }

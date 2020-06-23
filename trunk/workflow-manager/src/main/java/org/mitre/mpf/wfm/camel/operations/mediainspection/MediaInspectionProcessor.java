@@ -41,11 +41,13 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -84,6 +86,75 @@ public class MediaInspectionProcessor extends WfmProcessor {
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
+
+
+        // Check if user has provided the required metadata.
+        boolean needsInspection = true;
+
+        // During testing make "inProgressJobs.getJob(jobId);" a mock call.
+        // Using the when method
+        // and make sure that getMedia never gets called.
+        BatchJob currentJob = inProgressJobs.getJob(jobId);
+
+        // Mocked job object, can set this jobProperties directly.
+        // Unless this is final, which means it should be created directly.
+        Map<String, String> jobProperties = currentJob.getJobProperties();
+        if (jobProperties.containsKey("MIME_TYPE") && jobProperties.containsKey("MEDIA_SHA")) {
+
+            int length = -1;
+            String sha = jobProperties.get("MEDIA_SHA");
+            String mimeType = TextUtils.trim(jobProperties.get("MIME_TYPE"));
+
+            Map<String, String> mediaMetadata = new HashMap<>();
+            mediaMetadata.put("MIME_TYPE", mimeType);
+
+            switch (MediaTypeUtils.parse(mimeType)) {
+                case AUDIO:
+                    // Return a boolean.
+                    needsInspection = inspectAudioMetadata(mediaMetadata, jobProperties);
+                    break;
+                case VIDEO:
+                    // Return length of video. Negative implies failure reading metadata.
+                    length = inspectVideoMetadata(mediaMetadata, jobProperties);
+                    needsInspection = (length < 0);
+                    break;
+                case IMAGE:
+                    needsInspection = inspectImageMetadata(mediaMetadata, jobProperties);
+                    // If inspection successful, set media length to 1 for images.
+                    if (!needsInspection) {
+                        length = 1;
+                    }
+                    break;
+                default:
+                    // If unknown mimetype specified, automatically allow media inspection to be skipped.
+                    needsInspection = false;
+                    // Check if unknown mime type is set to generic or application.
+                    // Allow these types to be skipped during media inspection as well.
+                    //if (StringUtils.startsWithIgnoreCase(trimmedMimeType, "APPLICATION") ||
+                    //        StringUtils.startsWithIgnoreCase(trimmedMimeType, "APP") ||
+                    //        StringUtils.startsWithIgnoreCase(trimmedMimeType, "GENERIC")) {
+                    //    needsInspection = false;
+                    //} else {
+                    //    log.warn("User specified media type {} is undefined.", jobProperties.get("MIME_TYPE"));
+                    // }
+                    break;
+            }
+
+            if (!needsInspection) {
+                // Copy these headers to the output exchange.
+                inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
+                exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
+                exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
+                exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
+                exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
+                exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
+                return;
+            } else {
+                log.warn("User specified media metadata not recognized. Proceeding to media inspection.");
+            }
+
+        }
+
         Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
 
         if(!media.isFailed()) {
@@ -158,6 +229,101 @@ public class MediaInspectionProcessor extends WfmProcessor {
         if (media.isFailed()) {
             inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
         }
+    }
+
+    private boolean checkRequiredMediaMetadata(Map<String, String> mediaMetadata,
+                                               Map<String, String> properties, String[] requiredProperties) {
+        for (String property : requiredProperties) {
+            if (!properties.containsKey(property)) {
+                return true;
+            }
+            mediaMetadata.put(property, properties.get(property));
+        }
+        return false;
+    }
+
+
+    private boolean inspectAudioMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
+        if (!jobProperties.containsKey("DURATION")) {
+            return true;
+        }
+        try {
+            // Confirm that metadata values are valid.
+            String duration = mediaMetadata.get("DURATION");
+            int check = Integer.parseInt(duration.trim());
+            if (check < 0) {
+                return true;
+            }
+            mediaMetadata.put("DURATION", duration);
+        } catch (NumberFormatException ex) {
+            log.warn("Formatting error for audio duration. \nException : {}", ex.toString());
+            return true;
+        } catch (NullPointerException ex) {
+            log.warn("Formatting error for audio file metadata: {}", ex.toString());
+            return true;
+        }
+        return false;
+    }
+
+    private int inspectVideoMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
+        String[] required = {"LENGTH", "FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION", "ROTATION"};
+
+        int length = -1;
+        if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
+            return -1;
+        }
+
+        // Confirm that metadata values are valid.
+        try {
+            length = Integer.parseInt(jobProperties.get("LENGTH"));
+            int frameWidth = Integer.parseInt(jobProperties.get("FRAME_WIDTH"));
+            int frameHeight = Integer.parseInt(jobProperties.get("FRAME_HEIGHT"));
+            int frameCount = Integer.parseInt(jobProperties.get("FRAME_COUNT"));
+            int duration = Integer.parseInt(jobProperties.get("DURATION"));
+            int rotation = Integer.parseInt(jobProperties.get("ROTATION"));
+            double fps = Double.parseDouble(jobProperties.get("FPS"));
+
+
+            if (length < 0 || frameWidth < 0 || frameHeight < 0 || frameCount < 0 || duration < 0 || fps < 0) {
+                return -1;
+            }
+
+        } catch (NumberFormatException ex) {
+            log.warn("Formatting error for video file metadata: {}", ex.toString());
+            return -1;
+        } catch (NullPointerException ex) {
+            log.warn("Formatting error for video file metadata: {}", ex.toString());
+            return -1;
+        }
+        return length;
+    }
+
+    private boolean inspectImageMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
+        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT", "EXIF_ORIENTATION", "ROTATION", "HORIZONTAL_FLIP"};
+
+        if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
+            return true;
+        }
+
+        // Confirm that metadata values are valid.
+        try {
+            int frameWidth = Integer.parseInt(jobProperties.get("FRAME_WIDTH"));
+            int frameHeight = Integer.parseInt(jobProperties.get("FRAME_HEIGHT"));
+            int exif = Integer.parseInt(jobProperties.get("EXIF_ORIENTATION"));
+            int rotation = Integer.parseInt(jobProperties.get("ROTATION"));
+
+            if (frameWidth < 0 || frameHeight < 0) {
+                return true;
+            }
+
+        } catch (NumberFormatException ex) {
+            log.warn("Formatting error for video file metadata: {}", ex.toString());
+            return true;
+        } catch (NullPointerException ex) {
+            log.warn("Formatting error for video file metadata: {}", ex.toString());
+            return true;
+        }
+        return false;
     }
 
     private int inspectAudio(Path localPath,  long jobId, long mediaId, Map<String, String> mediaMetadata)

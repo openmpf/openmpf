@@ -240,7 +240,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         }
         try {
             // Confirm that metadata values are valid.
-            String duration = mediaMetadata.get("DURATION");
+            String duration = jobProperties.get("DURATION");
             int check = Integer.parseInt(duration.trim());
             if (check < 0) {
                 return true;

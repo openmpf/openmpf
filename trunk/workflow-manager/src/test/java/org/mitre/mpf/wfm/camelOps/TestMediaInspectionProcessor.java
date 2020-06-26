@@ -243,10 +243,12 @@ public class TestMediaInspectionProcessor {
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
         Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+
+        mediaInspectionProcessor.process(exchange);
+
         verify(mockJob, never()).getMedia(mediaId);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
@@ -289,10 +291,12 @@ public class TestMediaInspectionProcessor {
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
         Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+
+        mediaInspectionProcessor.process(exchange);
+
         verify(mockJob, never()).getMedia(mediaId);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
@@ -339,10 +343,12 @@ public class TestMediaInspectionProcessor {
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
         Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+
+        mediaInspectionProcessor.process(exchange);
+
         verify(mockJob, never()).getMedia(mediaId);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
@@ -392,10 +398,12 @@ public class TestMediaInspectionProcessor {
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
                 null);
         Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+
+        mediaInspectionProcessor.process(exchange);
+
         verify(mockJob, never()).getMedia(mediaId);
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));

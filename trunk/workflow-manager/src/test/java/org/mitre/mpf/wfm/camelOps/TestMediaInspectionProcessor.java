@@ -26,12 +26,14 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Exchange;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -222,6 +225,198 @@ public class TestMediaInspectionProcessor {
 
 		log.info("Inaccessible file inspection passed.");
 	}
+
+    /** Tests that media inspection is properly skipped when given valid audio metadata. */
+    @Test(timeout = 5 * MINUTES)
+    public void testSkipAudioInspection() {
+        log.info("Starting audio inspection test.");
+        BatchJob mockJob = mock(BatchJob.class);
+        long jobId = next();
+        long mediaId = next();
+
+        URI mediaUri = TestUtil.findFile("/samples/green.wav");
+        Map<String, String> mediaMetadata = Map.of(
+                "MIME_TYPE", "audio/green.wav",
+                "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
+                "DURATION", "10");
+        MediaImpl media = new MediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, media);
+        mediaInspectionProcessor.process(exchange);
+
+        when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
+        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        verify(mockJob, never()).getMedia(mediaId);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+
+        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                Boolean.toString(media.isFailed()),
+                media.getErrorMessage()),
+                media.isFailed());*/
+
+        String targetType = "audio";
+        int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
+        String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                        eq(targetLength), nonEmptyMap());
+
+        verifyNoJobOrMediaError();
+
+        log.info("Skip audio media inspection passed.");
+    }
+
+    /**
+     * Tests that media inspection is properly skipped when given valid generic metadata.
+     */
+    @Test(timeout = 5 * MINUTES)
+    public void testSkipGenericInspection() {
+        log.info("Starting generic inspection test.");
+        BatchJob mockJob = mock(BatchJob.class);
+        long jobId = next();
+        long mediaId = next();
+
+        URI mediaUri = TestUtil.findFile("/samples/green.wav");
+        Map<String, String> mediaMetadata = Map.of(
+                "MIME_TYPE", "application/green.wav",
+                "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0");
+
+        MediaImpl media = new MediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, media);
+        mediaInspectionProcessor.process(exchange);
+
+        when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
+        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        verify(mockJob, never()).getMedia(mediaId);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+
+        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                Boolean.toString(media.isFailed()),
+                media.getErrorMessage()),
+                media.isFailed());*/
+
+        String targetType = "application";
+        int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
+        String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                        eq(targetLength), nonEmptyMap());
+
+        verifyNoJobOrMediaError();
+
+        log.info("Skip generic media inspection passed.");
+    }
+
+
+    /** Tests that media inspection is properly skipped when given valid image metadata. */
+    @Test(timeout = 5 * MINUTES)
+    public void testSkipImageInspection() {
+        log.info("Starting skip image media inspection test.");
+        BatchJob mockJob = mock(BatchJob.class);
+        long jobId = next();
+        long mediaId = next();
+
+        URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
+        Map<String, String> mediaMetadata = Map.of(
+                "MIME_TYPE", "image/meds1.jpg",
+                "MEDIA_HASH", "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10",
+                "EXIF_ORIENTATION", "0",
+                "ROTATION", "0",
+                "HORIZONTAL_FLIP", "FALSE");
+
+        MediaImpl media = new MediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, media);
+        mediaInspectionProcessor.process(exchange);
+
+        when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
+        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        verify(mockJob, never()).getMedia(mediaId);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+
+        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                Boolean.toString(media.isFailed()),
+                media.getErrorMessage()),
+                media.isFailed());*/
+
+        String targetType = "image";
+        int targetLength = 1;
+        String targetHash = "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713";//`sha256sum meds1.jpg`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                        eq(targetLength), notNull());
+        verifyNoJobOrMediaError();
+
+        log.info("Skip image media inspection passed.");
+    }
+
+
+    /** Tests that media inspection is properly skipped when given valid video metadata. */
+    @Test(timeout = 5 * MINUTES)
+    public void testSkipVideoInspection() {
+        log.info("Starting skip video inspection test.");
+        BatchJob mockJob = mock(BatchJob.class);
+        long jobId = next();
+        long mediaId = next();
+
+        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+
+        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT"};
+        String[] optional = {"FPS", "DURATION", "ROTATION"};
+
+        Map<String, String> mediaMetadata = Map.of(
+                "MIME_TYPE", "video/video_01.mp4",
+                "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10",
+                "FRAME_COUNT", "90",
+                "FPS", "30",
+                "DURATION", "3",
+                "ROTATION", "0");
+        MediaImpl media = new MediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                null);
+        Exchange exchange = setupExchange(jobId, media);
+        mediaInspectionProcessor.process(exchange);
+
+        when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
+        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        verify(mockJob, never()).getMedia(mediaId);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
+                Boolean.toString(media.isFailed()),
+                media.getErrorMessage()),
+                media.isFailed());*/
+
+        String targetType = "video";
+        int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
+        String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                        eq(targetLength), nonEmptyMap());
+
+        verifyNoJobOrMediaError();
+
+        log.info("Video inspection passed.");
+    }
 
 
 	private void verifyNoJobOrMediaError() {

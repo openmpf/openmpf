@@ -99,10 +99,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
         // Mocked job object, can set this jobProperties directly.
         // Unless this is final, which means it should be created directly.
         Map<String, String> jobProperties = currentJob.getJobProperties();
-        if (jobProperties.containsKey("MIME_TYPE") && jobProperties.containsKey("MEDIA_SHA")) {
+        if (jobProperties.containsKey("MIME_TYPE") && jobProperties.containsKey("MEDIA_HASH")) {
 
             int length = -1;
-            String sha = jobProperties.get("MEDIA_SHA");
+            String sha = jobProperties.get("MEDIA_HASH");
             String mimeType = TextUtils.trim(jobProperties.get("MIME_TYPE"));
 
             Map<String, String> mediaMetadata = new HashMap<>();
@@ -128,15 +128,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 default:
                     // If unknown mimetype specified, automatically allow media inspection to be skipped.
                     needsInspection = false;
-                    // Check if unknown mime type is set to generic or application.
-                    // Allow these types to be skipped during media inspection as well.
-                    //if (StringUtils.startsWithIgnoreCase(trimmedMimeType, "APPLICATION") ||
-                    //        StringUtils.startsWithIgnoreCase(trimmedMimeType, "APP") ||
-                    //        StringUtils.startsWithIgnoreCase(trimmedMimeType, "GENERIC")) {
-                    //    needsInspection = false;
-                    //} else {
-                    //    log.warn("User specified media type {} is undefined.", jobProperties.get("MIME_TYPE"));
-                    // }
                     break;
             }
 
@@ -266,25 +257,27 @@ public class MediaInspectionProcessor extends WfmProcessor {
     }
 
     private int inspectVideoMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
-        String[] required = {"LENGTH", "FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION", "ROTATION"};
+        String[] required = { "FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION", "ROTATION"};
+        // Double check if these properties below can be optional as well.
+        //String[] optional = { "FPS", "DURATION", "ROTATION"};
 
-        int length = -1;
+        int frameCount = -1;
         if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
             return -1;
         }
+        //checkRequiredMediaMetadata(mediaMetadata, jobProperties, optional);
 
         // Confirm that metadata values are valid.
         try {
-            length = Integer.parseInt(jobProperties.get("LENGTH"));
             int frameWidth = Integer.parseInt(jobProperties.get("FRAME_WIDTH"));
             int frameHeight = Integer.parseInt(jobProperties.get("FRAME_HEIGHT"));
-            int frameCount = Integer.parseInt(jobProperties.get("FRAME_COUNT"));
+            frameCount = Integer.parseInt(jobProperties.get("FRAME_COUNT"));
             int duration = Integer.parseInt(jobProperties.get("DURATION"));
             int rotation = Integer.parseInt(jobProperties.get("ROTATION"));
             double fps = Double.parseDouble(jobProperties.get("FPS"));
 
 
-            if (length < 0 || frameWidth < 0 || frameHeight < 0 || frameCount < 0 || duration < 0 || fps < 0) {
+            if (frameCount < 0 || frameWidth < 0 || frameHeight < 0 || duration < 0 || fps < 0) {
                 return -1;
             }
 
@@ -295,15 +288,21 @@ public class MediaInspectionProcessor extends WfmProcessor {
             log.warn("Formatting error for video file metadata: {}", ex.toString());
             return -1;
         }
-        return length;
+        return frameCount;
     }
 
     private boolean inspectImageMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
-        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT", "EXIF_ORIENTATION", "ROTATION", "HORIZONTAL_FLIP"};
+        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT", "ROTATION", "HORIZONTAL_FLIP"};
+
+        // Appears to be an optional metadata output.
+        // Double check: if rotation and horizontal flip can be specified without the other present.
+        // Also check if rotation and horizontal flip can be optional.
+        String[] optional = {"EXIF_ORIENTATION"}; //, "ROTATION", "HORIZONTAL_FLIP"};
 
         if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
             return true;
         }
+        checkRequiredMediaMetadata(mediaMetadata, jobProperties, optional);
 
         // Confirm that metadata values are valid.
         try {

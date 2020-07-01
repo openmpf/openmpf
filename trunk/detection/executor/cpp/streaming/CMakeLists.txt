@@ -45,7 +45,7 @@ include_directories(${APR_INCLUDEDIR})
 file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
-find_package(OpenCV 3.4.7 EXACT REQUIRED PATHS /opt/opencv-3.4.7
+find_package(OpenCV 4.3.0 EXACT REQUIRED PATHS /opt/opencv-4.3.0
     COMPONENTS opencv_core opencv_imgcodecs opencv_imgproc opencv_videoio)
 
 

@@ -64,7 +64,8 @@ OpenMPF includes open-source algorithms for detecting and tracking:
 - People - HOG-Based OpenCV
 - Objects - OpenCV DNN
 - Scene Changes - OpenCV
-- Text - OpenALPR
+- License Plates - OpenALPR
+- Text - Tesseract
 - Speech - Sphinx
 - And more
 

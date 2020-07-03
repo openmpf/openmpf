@@ -94,16 +94,20 @@ public class MediaInspectionProcessor extends WfmProcessor {
         // During testing make "inProgressJobs.getJob(jobId);" a mock call.
         // Using the when method
         // and make sure that getMedia never gets called.
-        BatchJob currentJob = inProgressJobs.getJob(jobId);
+        // Updated: switch to getMedia().getMediaProperties()
+        //BatchJob currentJob = inProgressJobs.getJob(jobId);
 
+        Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
         // Mocked job object, can set this jobProperties directly.
         // Unless this is final, which means it should be created directly.
-        Map<String, String> jobProperties = currentJob.getJobProperties();
-        if (jobProperties.containsKey("MIME_TYPE") && jobProperties.containsKey("MEDIA_HASH")) {
+        //Map<String, String> jobProperties = currentJob.getJobProperties();
+        Map<String, String> mediaProperties = media.getMediaSpecificProperties();
+
+        if (mediaProperties.containsKey("MIME_TYPE") && mediaProperties.containsKey("MEDIA_HASH")) {
 
             int length = -1;
-            String sha = jobProperties.get("MEDIA_HASH");
-            String mimeType = TextUtils.trim(jobProperties.get("MIME_TYPE"));
+            String sha = mediaProperties.get("MEDIA_HASH");
+            String mimeType = TextUtils.trim(mediaProperties.get("MIME_TYPE"));
 
             Map<String, String> mediaMetadata = new HashMap<>();
             mediaMetadata.put("MIME_TYPE", mimeType);
@@ -111,15 +115,15 @@ public class MediaInspectionProcessor extends WfmProcessor {
             switch (MediaTypeUtils.parse(mimeType)) {
                 case AUDIO:
                     // Return a boolean.
-                    needsInspection = inspectAudioMetadata(mediaMetadata, jobProperties);
+                    needsInspection = inspectAudioMetadata(mediaMetadata, mediaProperties);
                     break;
                 case VIDEO:
                     // Return length of video. Negative implies failure reading metadata.
-                    length = inspectVideoMetadata(mediaMetadata, jobProperties);
+                    length = inspectVideoMetadata(mediaMetadata, mediaProperties);
                     needsInspection = (length < 0);
                     break;
                 case IMAGE:
-                    needsInspection = inspectImageMetadata(mediaMetadata, jobProperties);
+                    needsInspection = inspectImageMetadata(mediaMetadata, mediaProperties);
                     // If inspection successful, set media length to 1 for images.
                     if (!needsInspection) {
                         length = 1;
@@ -146,7 +150,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         }
 
-        Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
 
         if(!media.isFailed()) {
             // Any request to pull a remote file should have already populated the local uri.
@@ -234,13 +237,13 @@ public class MediaInspectionProcessor extends WfmProcessor {
     }
 
 
-    private boolean inspectAudioMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
-        if (!jobProperties.containsKey("DURATION")) {
+    private boolean inspectAudioMetadata(Map<String, String> mediaMetadata, Map<String, String> mediaProperties) {
+        if (!mediaProperties.containsKey("DURATION")) {
             return true;
         }
         try {
             // Confirm that metadata values are valid.
-            String duration = jobProperties.get("DURATION");
+            String duration = mediaProperties.get("DURATION");
             int check = Integer.parseInt(duration.trim());
             if (check < 0) {
                 return true;
@@ -256,28 +259,33 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return false;
     }
 
-    private int inspectVideoMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
-        String[] required = { "FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION", "ROTATION"};
+    private int inspectVideoMetadata(Map<String, String> mediaMetadata, Map<String, String> mediaProperties) {
+        String[] required = { "FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION"};
         // Double check if these properties below can be optional as well.
-        //String[] optional = { "FPS", "DURATION", "ROTATION"};
+        // Optional parameter: rotation only.
+        String[] optional = {"ROTATION"};
 
         int frameCount = -1;
-        if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
+        if (checkRequiredMediaMetadata(mediaMetadata, mediaProperties, required)) {
             return -1;
         }
-        //checkRequiredMediaMetadata(mediaMetadata, jobProperties, optional);
+        checkRequiredMediaMetadata(mediaMetadata, mediaProperties, optional);
 
         // Confirm that metadata values are valid.
         try {
-            int frameWidth = Integer.parseInt(jobProperties.get("FRAME_WIDTH"));
-            int frameHeight = Integer.parseInt(jobProperties.get("FRAME_HEIGHT"));
-            frameCount = Integer.parseInt(jobProperties.get("FRAME_COUNT"));
-            int duration = Integer.parseInt(jobProperties.get("DURATION"));
-            int rotation = Integer.parseInt(jobProperties.get("ROTATION"));
-            double fps = Double.parseDouble(jobProperties.get("FPS"));
+            int frameWidth = Integer.parseInt(mediaProperties.get("FRAME_WIDTH"));
+            int frameHeight = Integer.parseInt(mediaProperties.get("FRAME_HEIGHT"));
+            frameCount = Integer.parseInt(mediaProperties.get("FRAME_COUNT"));
+            int duration = Integer.parseInt(mediaProperties.get("DURATION"));
+            if (mediaProperties.containsKey("ROTATION")) {
+                int rotation = Integer.parseInt(mediaProperties.get("ROTATION"));
+            }
+            double fps = Double.parseDouble(mediaProperties.get("FPS"));
 
-
+            // Double check if this inspection is needed or should be removed. Not sure if negative values are ever allowed.
             if (frameCount < 0 || frameWidth < 0 || frameHeight < 0 || duration < 0 || fps < 0) {
+                log.warn("Formatting error for video file metadata. Negative frame count, frame size, fps, and/or duration.",
+                        mediaProperties.get("FRAME_WIDTH"), mediaProperties.get("FRAME_HEIGHT"));
                 return -1;
             }
 
@@ -291,27 +299,33 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return frameCount;
     }
 
-    private boolean inspectImageMetadata(Map<String, String> mediaMetadata, Map<String, String> jobProperties) {
-        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT", "ROTATION", "HORIZONTAL_FLIP"};
+    private boolean inspectImageMetadata(Map<String, String> mediaMetadata, Map<String, String> mediaProperties) {
+        String[] required = {"FRAME_WIDTH", "FRAME_HEIGHT"};
 
         // Appears to be an optional metadata output.
         // Double check: if rotation and horizontal flip can be specified without the other present.
         // Also check if rotation and horizontal flip can be optional.
-        String[] optional = {"EXIF_ORIENTATION"}; //, "ROTATION", "HORIZONTAL_FLIP"};
+        String[] optional = {"EXIF_ORIENTATION", "ROTATION", "HORIZONTAL_FLIP"};
 
-        if (checkRequiredMediaMetadata(mediaMetadata, jobProperties, required)) {
+        if (checkRequiredMediaMetadata(mediaMetadata, mediaProperties, required)) {
             return true;
         }
-        checkRequiredMediaMetadata(mediaMetadata, jobProperties, optional);
+        checkRequiredMediaMetadata(mediaMetadata, mediaProperties, optional);
 
         // Confirm that metadata values are valid.
         try {
-            int frameWidth = Integer.parseInt(jobProperties.get("FRAME_WIDTH"));
-            int frameHeight = Integer.parseInt(jobProperties.get("FRAME_HEIGHT"));
-            int exif = Integer.parseInt(jobProperties.get("EXIF_ORIENTATION"));
-            int rotation = Integer.parseInt(jobProperties.get("ROTATION"));
+            int frameWidth = Integer.parseInt(mediaProperties.get("FRAME_WIDTH"));
+            int frameHeight = Integer.parseInt(mediaProperties.get("FRAME_HEIGHT"));
+            if (mediaProperties.containsKey("EXIF_ORIENTATION")) {
+                int exif = Integer.parseInt(mediaProperties.get("EXIF_ORIENTATION"));
+            }
+            if (mediaProperties.containsKey("ROTATION")) {
+                int rotation = Integer.parseInt(mediaProperties.get("ROTATION"));
+            }
 
             if (frameWidth < 0 || frameHeight < 0) {
+                log.warn("Formatting error for video file metadata. Invalid image dimensions ({}, {})",
+                        mediaProperties.get("FRAME_WIDTH"), mediaProperties.get("FRAME_HEIGHT"));
                 return true;
             }
 

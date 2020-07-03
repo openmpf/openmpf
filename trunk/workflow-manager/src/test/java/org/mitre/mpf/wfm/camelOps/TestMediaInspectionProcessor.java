@@ -231,6 +231,7 @@ public class TestMediaInspectionProcessor {
     public void testSkipAudioInspection() {
         log.info("Starting audio inspection test.");
         BatchJob mockJob = mock(BatchJob.class);
+        MediaImpl mockMedia = mock(MediaImpl.class);
         long jobId = next();
         long mediaId = next();
 
@@ -245,22 +246,18 @@ public class TestMediaInspectionProcessor {
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
-        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
+        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
-        verify(mockJob, never()).getMedia(mediaId);
+        verify(mockMedia, never()).isFailed();
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                Boolean.toString(media.isFailed()),
-                media.getErrorMessage()),
-                media.isFailed());*/
-
         String targetType = "audio";
-        int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
+        int targetLength = -1;
         String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
 
         verify(mockInProgressJobs)
@@ -279,6 +276,7 @@ public class TestMediaInspectionProcessor {
     public void testSkipGenericInspection() {
         log.info("Starting generic inspection test.");
         BatchJob mockJob = mock(BatchJob.class);
+        MediaImpl mockMedia = mock(MediaImpl.class);
         long jobId = next();
         long mediaId = next();
 
@@ -293,22 +291,18 @@ public class TestMediaInspectionProcessor {
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
-        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
+        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
-        verify(mockJob, never()).getMedia(mediaId);
+        verify(mockMedia, never()).isFailed();
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                Boolean.toString(media.isFailed()),
-                media.getErrorMessage()),
-                media.isFailed());*/
-
         String targetType = "application";
-        int targetLength = -1; //`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 green.wav` - actually produces 2.200000
+        int targetLength = -1;
         String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
 
         verify(mockInProgressJobs)
@@ -326,6 +320,7 @@ public class TestMediaInspectionProcessor {
     public void testSkipImageInspection() {
         log.info("Starting skip image media inspection test.");
         BatchJob mockJob = mock(BatchJob.class);
+        MediaImpl mockMedia = mock(MediaImpl.class);
         long jobId = next();
         long mediaId = next();
 
@@ -345,19 +340,15 @@ public class TestMediaInspectionProcessor {
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
-        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
+        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
-        verify(mockJob, never()).getMedia(mediaId);
+        verify(mockMedia, never()).isFailed();
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
-
-        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                Boolean.toString(media.isFailed()),
-                media.getErrorMessage()),
-                media.isFailed());*/
 
         String targetType = "image";
         int targetLength = 1;
@@ -377,6 +368,7 @@ public class TestMediaInspectionProcessor {
     public void testSkipVideoInspection() {
         log.info("Starting skip video inspection test.");
         BatchJob mockJob = mock(BatchJob.class);
+        MediaImpl mockMedia = mock(MediaImpl.class);
         long jobId = next();
         long mediaId = next();
 
@@ -400,11 +392,12 @@ public class TestMediaInspectionProcessor {
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
-        when(mockJob.getJobProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
+        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
-        verify(mockJob, never()).getMedia(mediaId);
+        verify(mockMedia, never()).isFailed();
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));

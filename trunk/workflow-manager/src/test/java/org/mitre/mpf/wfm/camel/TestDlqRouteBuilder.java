@@ -49,8 +49,6 @@ import java.util.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-// Keeps failing with: javax.jms.JMSException: Destination still has an active subscription: queue://MPF.TEST.ActiveMQ.DLQ
-@Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestDlqRouteBuilder {
 
@@ -132,24 +130,32 @@ public class TestDlqRouteBuilder {
     public void cleanup() throws Exception {
         if (camelContext != null) {
             camelContext.stop();
+            camelContext = null;
         }
 
         if (connection != null) {
             removeQueues();
             connection.stop();
+            connection = null;
         }
     }
 
-    private void removeQueues() throws JMSException {
-        removeQueue(ENTRY_POINT);
-        removeQueue(EXIT_POINT);
-        removeQueue(AUDIT_EXIT_POINT);
-        removeQueue(INVALID_EXIT_POINT);
+    private void removeQueues() {
+        removeQueueQuietly(ENTRY_POINT);
+        removeQueueQuietly(EXIT_POINT);
+        removeQueueQuietly(AUDIT_EXIT_POINT);
+        removeQueueQuietly(INVALID_EXIT_POINT);
     }
 
-    private void removeQueue(String longName) throws JMSException {
-        javax.jms.Queue queue = session.createQueue(getQueueShortName(longName));
-        connection.destroyDestination((ActiveMQDestination) queue);
+    private void removeQueueQuietly(String longName) {
+        try {
+            javax.jms.Queue queue = session.createQueue(getQueueShortName(longName));
+            connection.destroyDestination((ActiveMQDestination) queue);
+        } catch (Exception e) {
+            // Sometimes destroying a destination can cause an exception like this:
+            //   "javax.jms.JMSException: Destination still has an active subscription: queue://MPF.TEST.ActiveMQ.DLQ"
+            // Ignore these exceptions since they are not what's being tested.
+        }
     }
 
     private String getQueueShortName(String fullName) {

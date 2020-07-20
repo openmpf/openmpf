@@ -26,19 +26,13 @@
 
 package org.mitre.mpf.mst;
 
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
-
+import com.google.common.collect.*;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -1196,7 +1190,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 15 * MINUTES)
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
         String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK 2";
-        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
+        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
 
         String pipelineName = "TEST MULTIPLE FACE DETECTION PIPELINE 2";
         addPipeline(pipelineName, multipleTaskName);

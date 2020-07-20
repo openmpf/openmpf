@@ -52,10 +52,20 @@ public class JobCreationMediaData {
         return properties;
     }
 
+    public Map<String, String> getMetadata() {
+        return metadata;
+    }
+
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
 
-    private Map<String,String> properties = new HashMap<>();
+    public void setMetadata(Map<String, String> metadata) {
+        this.metadata = metadata;
+    }
+
+    private Map<String, String> properties = new HashMap<>();
+
+    private Map<String, String> metadata = new HashMap<>();
 
 }

@@ -101,7 +101,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         // Mocked job object, can set this jobProperties directly.
         // Unless this is final, which means it should be created directly.
         //Map<String, String> jobProperties = currentJob.getJobProperties();
-        Map<String, String> mediaProperties = media.getMediaSpecificProperties();
+        Map<String, String> mediaProperties = media.getUserProvidedMetadata();
 
         if (mediaProperties.containsKey("MIME_TYPE") && mediaProperties.containsKey("MEDIA_HASH")) {
 

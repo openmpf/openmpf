@@ -190,7 +190,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
+        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap(), Collections.emptyMap());
         long mediaId = media.getId();
 
         inProgressJobs.addJob(

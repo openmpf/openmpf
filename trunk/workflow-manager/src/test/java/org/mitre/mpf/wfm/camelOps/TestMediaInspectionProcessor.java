@@ -247,7 +247,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -292,7 +292,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -341,7 +341,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -393,7 +393,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getMediaSpecificProperties()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 

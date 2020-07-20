@@ -114,7 +114,7 @@ public class JobRequestServiceImpl implements JobRequestService {
     public JobRequest run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties()))
+                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties(), m.getMetadata()))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
@@ -157,7 +157,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties()))
+                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties(), m.getUserProvidedMetadata()))
                 .collect(ImmutableList.toImmutableList());
 
 

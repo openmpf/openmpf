@@ -254,7 +254,8 @@ public class InProgressBatchJobsService {
     private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
 
-    public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties) {
+    public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties,
+                                        Map<String, String> userProvidedMetadataProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -282,11 +283,11 @@ public class InProgressBatchJobsService {
             }
 
             return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                                 errorMessage);
+                                 userProvidedMetadataProperties, errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                                 mediaSpecificProperties, e.getMessage());
+                                 mediaSpecificProperties, userProvidedMetadataProperties, e.getMessage());
         }
     }
 

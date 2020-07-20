@@ -51,20 +51,23 @@ Additionally, the REST API exposes the same core functionality as the Web UI and
 
 ### Component Plugin Architecture
 
-The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms in both C++ and Java.
+The OpenMPF Plugin Architecture provides the ability to seamlessly integrate **detection**, **tracking**, and **classification** algorithms in C++, Python, and Java.
 
 New processing nodes can easily be added to increase processing throughput and new algorithms can be dynamically loaded and scaled to meet user needs.
 
-![Component Architecture](README-images/component-architecture.png)
+![Component Architecture](README-images/plugins.png)
 
 OpenMPF includes open-source algorithms for detecting and tracking:
 
-- Objects - Caffe
 - Faces - Dlib, LBP-Based OpenCV
+- Motion - MOG, SuBSENSE
 - People - HOG-Based OpenCV
-- Text - OpenALPR
+- Objects - OpenCV DNN
+- Scene Changes - OpenCV
+- License Plates - OpenALPR
+- Text - Tesseract
 - Speech - Sphinx
-- Motion - STRUCK, MOG, SuBSENSE
+- And more
 
 ### Tailored Framework for Media Analytics
 
@@ -133,12 +136,11 @@ This repository is divided into various maven modules, including the node manage
 
 ### To start using OpenMPF
 
-1. Download and build the source using the [OpenMPF Build Guide](https://openmpf.github.io/docs/site/Build-Environment-Setup-Guide/)
-2. Follow the OpenMPF [Installation Guide](https://openmpf.github.io/docs/site/Installation-Guide/)
+Follow the OpenMPF [Install Guide](https://openmpf.github.io/docs/site/Install-Guide/index.html).
 
 ### Project Website
 
-For more information about OpenMPF, including documentation, guides, and other material, visit our [website](https://openmpf.github.io/)
+For more information about OpenMPF, including documentation, guides, and other material, visit our [website](https://openmpf.github.io/).
 
 ### Project Workboard
 

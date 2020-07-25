@@ -65,7 +65,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                 }
 
                 // Check if the first frame of the source image is not empty.
-                count = 0
+                count = 0;
                 Mat placeholder;
                 if (!src.read(placeholder)) {
                     // Frame read failed.

@@ -84,7 +84,7 @@ public class TestMediaInspectionProcessor {
         URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
@@ -119,7 +119,7 @@ public class TestMediaInspectionProcessor {
         URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
@@ -154,7 +154,7 @@ public class TestMediaInspectionProcessor {
         URI mediaUri = TestUtil.findFile("/samples/video_01_invalid.mp4");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
@@ -177,7 +177,7 @@ public class TestMediaInspectionProcessor {
         URI mediaUri = TestUtil.findFile("/samples/green.wav");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
@@ -212,7 +212,7 @@ public class TestMediaInspectionProcessor {
         URI mediaUri = URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin");
 		MediaImpl media = new MediaImpl(
 		        mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
         mediaInspectionProcessor.process(exchange);
 
@@ -242,7 +242,7 @@ public class TestMediaInspectionProcessor {
                 "DURATION", "10");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
@@ -287,7 +287,7 @@ public class TestMediaInspectionProcessor {
 
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
@@ -336,7 +336,7 @@ public class TestMediaInspectionProcessor {
 
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
@@ -388,7 +388,7 @@ public class TestMediaInspectionProcessor {
                 "ROTATION", "0");
         MediaImpl media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
         Exchange exchange = setupExchange(jobId, media);
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);

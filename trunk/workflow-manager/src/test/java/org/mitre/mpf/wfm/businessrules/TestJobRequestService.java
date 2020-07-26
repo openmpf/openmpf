@@ -234,7 +234,7 @@ public class TestJobRequestService {
                 "http://callback",
                 "POST",
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
-                                      Map.of("media_prop1", "media_val1"), "error")),
+                                      Map.of("media_prop1", "media_val1"), Map.of(), "error")),
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
         originalJob.addDetectionProcessingError(
@@ -360,7 +360,7 @@ public class TestJobRequestService {
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, true, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"), Map.of(),
-                                      null)),
+                                      Map.of(), null)),
                 Map.of(), Map.of());
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);

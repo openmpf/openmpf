@@ -278,7 +278,7 @@ public class TestTrackMergingProcessor {
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         Media media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,

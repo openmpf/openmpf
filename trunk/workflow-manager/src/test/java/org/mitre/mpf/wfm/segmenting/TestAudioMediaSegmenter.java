@@ -156,7 +156,7 @@ public class TestAudioMediaSegmenter {
 		URI mediaUri = URI.create("file:///example.wav");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-				null);
+				Collections.emptyMap(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

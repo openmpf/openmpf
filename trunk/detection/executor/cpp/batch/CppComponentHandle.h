@@ -28,7 +28,13 @@
 #define MPF_CPPCOMPONENTHANDLE_H
 
 #include <string>
+#include <vector>
+
+#include <log4cxx/logger.h>
+
 #include <DlClassLoader.h>
+#include <MPFDetectionComponent.h>
+#include <MPFDetectionObjects.h>
 
 
 namespace MPF { namespace COMPONENT {
@@ -57,6 +63,25 @@ namespace MPF { namespace COMPONENT {
 
     private:
         DlClassLoader<MPFDetectionComponent> component_;
+    };
+
+
+    class CppLogger {
+    public:
+        explicit CppLogger(const std::string &app_dir);
+
+        void Debug(const std::string &message);
+
+        void Info(const std::string &message);
+
+        void Warn(const std::string &message);
+
+        void Error(const std::string &message);
+
+        void Fatal(const std::string &message);
+
+    private:
+        log4cxx::LoggerPtr logger_;
     };
 }}
 

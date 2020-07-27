@@ -32,6 +32,10 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include "PythonComponentHandle.h"
+#include "CppComponentHandle.h"
+#include "LazyLoggerWrapper.h"
+
 using std::string;
 using cms::Session;
 using cms::Destination;
@@ -60,8 +64,10 @@ AmqLibraryManager::~AmqLibraryManager() {
 }
 
 //-----------------------------------------------------------------------------
-MPFMessenger::MPFMessenger(const log4cxx::LoggerPtr &logger, const string& broker_uri, const string& request_queue)
-        : main_logger_(logger) {
+
+template <typename Logger>
+MPFMessenger<Logger>::MPFMessenger(Logger &logger, const string& broker_uri, const string& request_queue)
+        : logger_(logger) {
 
     try {
         // Create an ActiveMQ ConnectionFactory
@@ -94,35 +100,38 @@ MPFMessenger::MPFMessenger(const log4cxx::LoggerPtr &logger, const string& broke
         // Create an ActiveMQ MessageConsumer for requests
         std::string media_type_selector = GetMediaTypeSelector();
         if (media_type_selector.empty()) {
-            LOG4CXX_INFO(main_logger_, "Creating ActiveMQ consumer for queue: " << request_queue)
+            logger_.Info("Creating ActiveMQ consumer for queue: ", request_queue);
             request_consumer_.reset(session_->createConsumer(request_destination_.get()));
         }
         else {
-            LOG4CXX_INFO(main_logger_, "Creating ActiveMQ consumer for queue " << request_queue
-                           << " with selector: " << media_type_selector);
+            logger_.Info("Creating ActiveMQ consumer for queue ", request_queue, " with selector: ",
+                         media_type_selector);
             request_consumer_.reset(session_->createConsumer(
                     request_destination_.get(), media_type_selector));
         }
 
         connection_->start();
     } catch (InvalidDestinationException& e) {
-        LOG4CXX_ERROR(main_logger_, "InvalidDestinationException in MPFMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
+        logger_.Error("InvalidDestinationException in MPFMessenger::Startup: ",
+                      e.getMessage(), '\n', e.getStackTraceString());
         throw;
     } catch (CMSException& e) {
-        LOG4CXX_ERROR(main_logger_, "CMSException in MPFMessenger::Startup: " << e.getMessage() << "\n" << e.getStackTraceString());
+        logger_.Error("CMSException in MPFMessenger::Startup: ", e.getMessage(), '\n',
+                      e.getStackTraceString());
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
         throw;
     } catch (...) {
-        LOG4CXX_ERROR(main_logger_, "Unknown Exception occurred in MPFMessenger::Startup");
+        logger_.Error("Unknown Exception occurred in MPFMessenger::Startup");
         throw;
     }
 }
 
 
 //-----------------------------------------------------------------------------
-std::vector<unsigned char> MPFMessenger::ReceiveMessage(MPFMessageMetadata& msg_metadata) {
+template <typename Logger>
+std::vector<unsigned char> MPFMessenger<Logger>::ReceiveMessage(MPFMessageMetadata& msg_metadata) {
     try {
         // Pull a message off of the request queue
         // The call to receiveNoWait()  does not block
@@ -152,22 +161,24 @@ std::vector<unsigned char> MPFMessenger::ReceiveMessage(MPFMessageMetadata& msg_
             msg_metadata.bread_crumb_id = request_bytes_message->getStringProperty("breadcrumbId");
             msg_metadata.split_size = request_bytes_message->getIntProperty("SplitSize");
         } catch (MessageFormatException& e) {
-            LOG4CXX_ERROR(main_logger_, "MessageFormatException in MPFMessenger::ReceiveMessage: " << e.getMessage() << "\n"
-                          << e.getStackTraceString());
+            logger_.Error("MessageFormatException in MPFMessenger::ReceiveMessage: ",
+                          e.getMessage(), '\n', e.getStackTraceString());
         } catch (CMSException& e) {
-            LOG4CXX_ERROR(main_logger_, "CMSException in MPFMessenger::ReceiveMessage: " << e.getMessage() << "\n" << e.getStackTraceString());
+            logger_.Error("CMSException in MPFMessenger::ReceiveMessage: ", e.getMessage(), '\n',
+                          e.getStackTraceString());
         }
-        LOG4CXX_DEBUG(main_logger_, "Received request message with CorrelationId: " << msg_metadata.correlation_id);
-        LOG4CXX_DEBUG(main_logger_, "SplitSize: " << msg_metadata.split_size);
-        LOG4CXX_DEBUG(main_logger_, "JobId: " << msg_metadata.job_id);
-        LOG4CXX_DEBUG(main_logger_, "breadcrumbId: " << msg_metadata.bread_crumb_id);
+        logger_.Debug("Received request message with CorrelationId: ", msg_metadata.correlation_id);
+        logger_.Debug("SplitSize: ", msg_metadata.split_size);
+        logger_.Debug("JobId: ", msg_metadata.job_id);
+        logger_.Debug("breadcrumbId: ", msg_metadata.bread_crumb_id);
         // Get message body
         std::vector<unsigned char> request_contents(request_bytes_message->getBodyLength());
         request_bytes_message->readBytes(request_contents);
         return request_contents;
     } catch (CMSException& e) {
         response_producer_ = nullptr;
-        LOG4CXX_ERROR(main_logger_, "CMSException in MPFMessenger::ReceiveMessage: " << e.getMessage() << "\n" << e.getStackTraceString());
+        logger_.Error("CMSException in MPFMessenger::ReceiveMessage: ", e.getMessage(), '\n',
+                      e.getStackTraceString());
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
@@ -175,13 +186,14 @@ std::vector<unsigned char> MPFMessenger::ReceiveMessage(MPFMessageMetadata& msg_
         throw;
     } catch (...) {
         response_producer_ = nullptr;
-        LOG4CXX_ERROR(main_logger_, "Unknown Exception occurred in MPFMessenger::ReceiveMessage");
+        logger_.Error("Unknown Exception occurred in MPFMessenger::ReceiveMessage");
         throw;
     }
 }
 
 //-----------------------------------------------------------------------------
-void MPFMessenger::SendMessage(
+template <typename Logger>
+void MPFMessenger<Logger>::SendMessage(
         const std::vector<unsigned char> &packed_msg, const MPFMessageMetadata &msg_metadata,
         const std::string &job_name) {
     try {
@@ -193,27 +205,27 @@ void MPFMessenger::SendMessage(
             response_bytes->setStringProperty("breadcrumbId", msg_metadata.bread_crumb_id);
             response_bytes->setIntProperty("SplitSize", msg_metadata.split_size);
         } catch (MessageNotWriteableException& e) {
-            LOG4CXX_ERROR(main_logger_, "[" << job_name << "] MessageNotWriteableException: " << e.getMessage());
+            logger_.Error('[', job_name, "] MessageNotWriteableException: ", e.getMessage());
         } catch (CMSException& e) {
-            LOG4CXX_ERROR(main_logger_, "[" << job_name << "] CMSException: " << e.getMessage());
+            logger_.Error('[', job_name, "] CMSException: ", e.getMessage());
         }
         response_bytes->writeBytes(packed_msg);
         response_producer_->send(response_bytes.get());
         session_->commit();
-        LOG4CXX_DEBUG(main_logger_, "[" << job_name << "] Sent response message for CamelCorrelationId: "
-                << msg_metadata.correlation_id);
-        LOG4CXX_DEBUG(main_logger_, "[" << job_name << "] SplitSize " << msg_metadata.split_size);
-        LOG4CXX_DEBUG(main_logger_, "[" << job_name << "] JobId " << msg_metadata.job_id);
-        LOG4CXX_DEBUG(main_logger_, "[" << job_name << "] BreadcrumbId: " << msg_metadata.bread_crumb_id);
+        logger_.Debug('[', job_name, "] Sent response message for CamelCorrelationId: ",
+                      msg_metadata.correlation_id);
+        logger_.Debug('[', job_name, "] SplitSize ", msg_metadata.split_size);
+        logger_.Debug('[', job_name, "] JobId ", msg_metadata.job_id);
+        logger_.Debug('[', job_name, "] BreadcrumbId: ", msg_metadata.bread_crumb_id);
 
         response_producer_ = nullptr;
     } catch (cms::IllegalStateException& e) {  // Only applies to session->commit() call
         response_producer_ = nullptr;
-        LOG4CXX_ERROR(main_logger_, "[" << job_name << "] IllegalStateException: " << e.getMessage());
+        logger_.Error('[', job_name, "] IllegalStateException: ", e.getMessage());
         throw;
     } catch (CMSException& e) {
         response_producer_ = nullptr;
-        LOG4CXX_ERROR(main_logger_,  "[" << job_name << "] CMSException:" << e.getMessage());
+        logger_.Error('[', job_name, "] CMSException:", e.getMessage());
         throw;
     } catch (std::exception& e) {
         // When thrown, this will be caught and logged by the main program
@@ -221,7 +233,7 @@ void MPFMessenger::SendMessage(
         throw;
     } catch (...) {
         response_producer_ = nullptr;
-        LOG4CXX_ERROR(main_logger_, "[" << job_name << "] Unknown Exception occurred");
+        logger_.Error('[', job_name, "] Unknown Exception occurred");
         throw;
     }
 }
@@ -229,7 +241,8 @@ void MPFMessenger::SendMessage(
 
 // Converts "VIDEO, IMAGE" to "MediaType in ('VIDEO', 'IMAGE')"
 // Converts "VIDEO" to "MediaType in ('VIDEO')"
-std::string MPFMessenger::GetMediaTypeSelector() {
+template <typename Logger>
+std::string MPFMessenger<Logger>::GetMediaTypeSelector() {
     const char * const env_val = std::getenv(MPFMessenger::RESTRICT_MEDIA_TYPES_ENV_NAME);
     if (env_val == nullptr || env_val[0] == '\0') {
         return "";
@@ -263,3 +276,6 @@ std::string MPFMessenger::GetMediaTypeSelector() {
     return "MediaType in (" + joined_tokens + ')';
 }
 
+// Explicitly instantiate the only two possible template parameters.
+template class MPFMessenger<LazyLoggerWrapper<MPF::COMPONENT::PythonLogger>>;
+template class MPFMessenger<LazyLoggerWrapper<MPF::COMPONENT::CppLogger>>;

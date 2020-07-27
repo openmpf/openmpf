@@ -31,18 +31,20 @@
 #include <vector>
 #include <memory>
 
-#include <log4cxx/logger.h>
-
 #include <MPFDetectionObjects.h>
 #include <MPFDetectionComponent.h>
+
+#include "LazyLoggerWrapper.h"
 
 
 namespace MPF { namespace COMPONENT {
 
+    class PythonLogger;
 
     class PythonComponentHandle {
     public:
-        PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path);
+        PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
+                              const std::string &lib_path);
 
         PythonComponentHandle(PythonComponentHandle &&other) noexcept;
 
@@ -79,6 +81,37 @@ namespace MPF { namespace COMPONENT {
         // this header, won't cause all of the Python headers to be included.
         class impl;
         std::unique_ptr<impl> impl_;
+    };
+
+
+    class PythonLogger {
+    public:
+        PythonLogger(const std::string &log_level,  const std::string &component_name);
+
+        PythonLogger(const PythonLogger& other);
+
+        PythonLogger(PythonLogger &&other) noexcept;
+
+        ~PythonLogger();
+
+        void Debug(const std::string &message);
+
+        void Info(const std::string &message);
+
+        void Warn(const std::string &message);
+
+        void Error(const std::string &message);
+
+        void Fatal(const std::string &message);
+
+    private:
+        class logger_impl;
+        std::unique_ptr<logger_impl> impl_;
+
+        static void ConfigureLogging(const std::string &log_level,
+                                     const std::string &component_name);
+
+        static std::string GetLogFilePath(const std::string &component_name);
     };
 }}
 

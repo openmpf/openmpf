@@ -200,24 +200,24 @@ public class MasterNode {
                     ServiceDescriptor descriptorFromConfig = new ServiceDescriptor(serviceFromConfig, manager.getTarget(), rank);
                     descriptorFromConfig.setActiveMqHost(activeMqBrokerUri);
 
-                    serviceNamesFromConfig.add(descriptorFromConfig.getName());
+                    serviceNamesFromConfig.add(descriptorFromConfig.getFullyQualifiedName());
 
                     // We note it immediately and then tell the world
                     synchronized (nodeStateManager.getServiceTable()) {
-                        ServiceDescriptor serviceTableDescriptor = nodeStateManager.getServiceTable().get(descriptorFromConfig.getName());
+                        ServiceDescriptor serviceTableDescriptor = nodeStateManager.getServiceTable().get(descriptorFromConfig.getFullyQualifiedName());
                         if (serviceTableDescriptor == null) {
-                            log.debug("Updating config for {}", descriptorFromConfig.getName());
+                            log.debug("Updating config for {}", descriptorFromConfig.getFullyQualifiedName());
                             nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                         } else {
                             //TODO: might want to consider more states here
                             if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.InactiveNoStart) {
-                                log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getName(), serviceTableDescriptor.getLastKnownState());
+                                log.debug("Will not update the existing config for {} because the state is {}", descriptorFromConfig.getFullyQualifiedName(), serviceTableDescriptor.getLastKnownState());
                             } else if(serviceTableDescriptor.getLastKnownState() == NodeManagerConstants.States.Running) {
-                                log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getName());
+                                log.debug("Not updating existing config for {} because it is already running", descriptorFromConfig.getFullyQualifiedName());
                             } else {
                                 //If service was DeleteInactive it should still be set back to configured because the config
                                 //needs to overwrite existing service table information
-                                log.debug("Updating existing config for {}", descriptorFromConfig.getName());
+                                log.debug("Updating existing config for {}", descriptorFromConfig.getFullyQualifiedName());
                                 nodeStateManager.updateState(descriptorFromConfig, States.Configured);
                             }
                         }
@@ -247,12 +247,12 @@ public class MasterNode {
             Iterator<ServiceDescriptor> servicesIter = nodeStateManager.getServiceTable().values().iterator();
             while (servicesIter.hasNext()) {
                 ServiceDescriptor service = servicesIter.next();
-                if (!serviceNamesFromConfig.contains(service.getName())
+                if (!serviceNamesFromConfig.contains(service.getFullyQualifiedName())
                         && service.getLastKnownState() != States.DeleteInactive) {
                     log.debug("Service with name '{}' is part of the service table, but no longer part of the node manager config.",
-                            service.getName());
+                            service.getFullyQualifiedName());
                     nodeStateManager.updateState(service, States.Delete);
-                    log.debug("removing service with name '{}' from the service table", service.getName());
+                    log.debug("removing service with name '{}' from the service table", service.getFullyQualifiedName());
                     servicesIter.remove();
                 }
             }

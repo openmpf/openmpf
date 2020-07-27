@@ -46,10 +46,6 @@ include_directories(${APR_INCLUDEDIR})
 file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
-set(PYBIND11_CPP_STANDARD -std=c++11)
-set(PYBIND11_PYTHON_VERSION 3.8)
-add_subdirectory(pybind11)
-
 
 if(DEFINED ENV{MPF_SDK_INSTALL_PATH})
 	list(APPEND CMAKE_PREFIX_PATH $ENV{MPF_SDK_INSTALL_PATH}/lib/cmake)
@@ -65,20 +61,20 @@ set(batch_executor_lib_files
 	CppComponentHandle.cpp CppComponentHandle.h
 	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
 	MPFMessenger.cpp MPFMessenger.h
-	PythonComponentHandle.cpp PythonComponentHandle.h)
+	PythonComponentHandle.cpp PythonComponentHandle.h
+	LazyLoggerWrapper.h)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC
-	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:pybind11::embed,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:mpfProtobufs,INTERFACE_INCLUDE_DIRECTORIES>
-	)
+	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
+
+target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs
+	pybind11::embed ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
 
 
-add_executable(amq_detection_component main.cpp $<TARGET_OBJECTS:batch_executor_lib>)
+add_executable(amq_detection_component main.cpp)
+target_link_libraries(amq_detection_component PUBLIC batch_executor_lib)
 
-target_link_libraries(amq_detection_component mpfComponentInterface mpfProtobufs
-	${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed)
 
 
 install(TARGETS amq_detection_component

@@ -98,7 +98,8 @@ namespace MPF { namespace COMPONENT {
 
         static std::string GetAppDir();
 
-        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir);
+        static log4cxx::LoggerPtr GetLogger(const std::string &app_dir,
+                                            const std::string &component_name);
     };
 
 }}

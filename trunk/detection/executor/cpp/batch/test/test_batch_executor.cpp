@@ -38,6 +38,7 @@
 
 #include "../PythonComponentHandle.h"
 #include "../MPFMessenger.h"
+#include "../LazyLoggerWrapper.h"
 
 using namespace MPF::COMPONENT;
 
@@ -85,7 +86,9 @@ void init_python_path() {
 
 PythonComponentHandle get_component(const std::string &file_name) {
     init_python_path();
-    return PythonComponentHandle(get_logger(), "test_python_components/" + file_name);
+    return PythonComponentHandle(
+            LazyLoggerWrapper<PythonLogger>("DEBUG", "DEBUG", "TestComponent"),
+            "test_python_components/" + file_name);
 }
 
 PythonComponentHandle get_test_component() {
@@ -324,35 +327,36 @@ TEST(PythonComponentHandleTest, TestDetectionExceptionTranslation) {
 
 
 TEST(TestRestrictMediaTypes, CanCreateRestrictMediaTypeSelector) {
-    auto restrict_media_types = MPFMessenger::RESTRICT_MEDIA_TYPES_ENV_NAME;
+    using messenger_t = MPFMessenger<LazyLoggerWrapper<PythonLogger>>;
+    auto restrict_media_types = messenger_t::RESTRICT_MEDIA_TYPES_ENV_NAME;
     auto initial_value =  std::getenv("RESTRICT_MEDIA_TYPES");
 
     unsetenv(restrict_media_types);
-    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "", true);
-    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, ",", true);
-    ASSERT_EQ("", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO", true);
-    ASSERT_EQ("MediaType in ('VIDEO')", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO')", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO, IMAGE", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "VIDEO,,IMAGE", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE')", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, " VIDEO,  IMaGe ,  audio,", true);
-    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE', 'AUDIO')", MPFMessenger::GetMediaTypeSelector());
+    ASSERT_EQ("MediaType in ('VIDEO', 'IMAGE', 'AUDIO')", messenger_t::GetMediaTypeSelector());
 
     setenv(restrict_media_types, "HELLO", true);
-    ASSERT_THROW(MPFMessenger::GetMediaTypeSelector(), std::invalid_argument);
+    ASSERT_THROW(messenger_t::GetMediaTypeSelector(), std::invalid_argument);
 
     setenv(restrict_media_types, "VIDEO, HELLO", true);
-    ASSERT_THROW(MPFMessenger::GetMediaTypeSelector(), std::invalid_argument);
+    ASSERT_THROW(messenger_t::GetMediaTypeSelector(), std::invalid_argument);
 
     if (initial_value == nullptr) {
         unsetenv(restrict_media_types);

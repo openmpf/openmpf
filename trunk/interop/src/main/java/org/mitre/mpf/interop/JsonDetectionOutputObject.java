@@ -121,8 +121,8 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(x, y, width, height, confidence, offsetTime, offsetFrame, artifactPath,
-		                    detectionProperties);
+		return Objects.hash(offsetFrame, offsetTime, confidence, x, y, width, height, detectionProperties);
+
 	}
 
 	@Override
@@ -137,6 +137,7 @@ public class JsonDetectionOutputObject implements Comparable<JsonDetectionOutput
 			.nullsFirst(Comparator
                 .comparingInt(JsonDetectionOutputObject::getOffsetFrame)
                 .thenComparingLong(JsonDetectionOutputObject::getOffsetTime)
+				.thenComparingDouble(JsonDetectionOutputObject::getConfidence)
                 .thenComparingInt(JsonDetectionOutputObject::getX)
                 .thenComparingInt(JsonDetectionOutputObject::getY)
                 .thenComparingInt(JsonDetectionOutputObject::getWidth)

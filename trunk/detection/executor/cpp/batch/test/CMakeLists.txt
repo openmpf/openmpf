@@ -35,11 +35,8 @@ find_package(GTest)
 if (${GTEST_FOUND})
     enable_testing()
 
-    add_executable(BatchExecutorTest test_batch_executor.cpp $<TARGET_OBJECTS:batch_executor_lib>)
-
-    target_link_libraries(BatchExecutorTest GTest::GTest GTest::Main mpfComponentInterface mpfProtobufs
-        ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES} pybind11::embed)
-
+    add_executable(BatchExecutorTest test_batch_executor.cpp)
+    target_link_libraries(BatchExecutorTest GTest::GTest GTest::Main batch_executor_lib)
 
     add_test(NAME BatchExecutorTest COMMAND BatchExecutorTest)
     file(COPY test_python_components/ DESTINATION test_python_components)

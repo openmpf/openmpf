@@ -35,7 +35,24 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <ini_path>" << std::endl;
         return static_cast<int>(MPF::COMPONENT::ExitCode::INVALID_COMMAND_LINE_ARGUMENTS);
     }
-    return static_cast<int>(MPF::COMPONENT::StreamingComponentExecutor::RunJob(argv[1]));
+    try {
+        return static_cast<int>(
+                MPF::COMPONENT::StreamingComponentExecutor::RunJob(argv[1]));
+    }
+    // There is a similar catch clause in RunJob, but that outputs the error using LOG4CXX so it
+    // can't log errors that occur prior to or during the configuration of LOG4CXX.
+    catch (const MPF::COMPONENT::FatalError &ex) {
+        std::cerr << "Exiting due to error: " << ex.what() << std::endl;
+        return static_cast<int>(ex.GetExitCode());
+    }
+    catch (const std::exception &ex) {
+        std::cerr << "Exiting due to error: " << ex.what() << std::endl;
+        return static_cast<int>(MPF::COMPONENT::ExitCode::UNEXPECTED_ERROR);
+    }
+    catch (...) {
+        std::cerr << "Exiting due to error." << std::endl;
+        return static_cast<int>(MPF::COMPONENT::ExitCode::UNEXPECTED_ERROR);
+    }
 }
 
 

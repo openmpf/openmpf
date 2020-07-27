@@ -24,13 +24,11 @@
 # limitations under the License.                                            #
 #############################################################################
 
+import logging
 
 import mpf_component_api as mpf
 
-
-# logger = mpf.configure_logging('python-test.log', __name__ == '__main__')
-logger = mpf.configure_logging('python-test.log', True)
-
+logger = logging.getLogger('TestComponent')
 
 class TestComponent(object):
     detection_type = 'TEST DETECTION TYPE'

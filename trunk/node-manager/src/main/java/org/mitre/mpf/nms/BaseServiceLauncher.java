@@ -82,7 +82,7 @@ public abstract class BaseServiceLauncher implements Runnable {
     private boolean isRunning = false;
     private boolean mRunToCompletion = false;
     private boolean mIsShutdown = false;
-    private boolean restartOnFailure = true; 	
+    private boolean restartOnFailure = true;
     private int mExitStatus = 0;
 
     // class thread that starts and watches child app
@@ -100,7 +100,7 @@ public abstract class BaseServiceLauncher implements Runnable {
     private OutputReceiver errReceiver = null;
 
     public static BaseServiceLauncher getLauncher(ServiceDescriptor desc) {
-    	
+
         final String launcher = desc.getService().getLauncher();
         if (null == launcher || launcher.isEmpty() || "generic".equals(launcher)) {
             // default
@@ -116,13 +116,13 @@ public abstract class BaseServiceLauncher implements Runnable {
      * Launch Service.
      * <p/>
      * STDOUT and STDERR are not redirected unless Logging level is DEBUG.
-     * 
+     *
      * @param desc Service Descriptor to launch
      */
     public BaseServiceLauncher(ServiceDescriptor desc) {
     	LOG.debug("Base Service Launcher '{}' created", desc.getService().getName());
     	restarts = desc.getRestarts();
-    	
+
         this.mServiceDesc = desc;
 
         if (LOG.isDebugEnabled()) {
@@ -135,16 +135,18 @@ public abstract class BaseServiceLauncher implements Runnable {
                 }
 
             };
+        } // else don't waste time and drop any input from the service (see OutputShredder)
 
+        if (LOG.isWarnEnabled()) {
             this.errReceiver = new OutputReceiver() {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.debug("Node Error [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.warn("Node stderr [{}]: {}", mServiceDesc.getService().getName(), output);
                 }
 
             };
-        } // else don't waste time and drop any input from the service (see OutputShredder)
+        }
     }
 
     /**
@@ -208,25 +210,25 @@ public abstract class BaseServiceLauncher implements Runnable {
         }
 
         if (!tester.exists()) {
-            LOG.error("Node service command '{}' for '{}' does not exist or is not reachable.", fullPath, this.mServiceDesc.getName());
+            LOG.error("Node service command '{}' for '{}' does not exist or is not reachable.", fullPath, this.mServiceDesc.getFullyQualifiedName());
             mRunToCompletion = true;
             return false;
         } else if (!tester.canExecute()) {
-            LOG.error("Node service command '{}' for '{}' exists but is not executable.  Check permissions!", fullPath, this.mServiceDesc.getName());
+            LOG.error("Node service command '{}' for '{}' exists but is not executable.  Check permissions!", fullPath, this.mServiceDesc.getFullyQualifiedName());
             mRunToCompletion = true;
             return false;
         }
 
         thread = new Thread(this);
-        thread.start();        
-        
+        thread.start();
+
         return true;
     }
 
     public void shutdown() {
         if (!isRunning) {
             return;
-        } 
+        }
         mIsShutdown = true;
         //if called to shutdown we don't want to allow a restart! - only restart on failure
         restartOnFailure = false;
@@ -273,7 +275,7 @@ public abstract class BaseServiceLauncher implements Runnable {
     }
 
     public String getServiceName() {
-        return this.mServiceDesc.getName();
+        return this.mServiceDesc.getFullyQualifiedName();
     }
 
     // provide access to the I/O of the app
@@ -368,7 +370,8 @@ public abstract class BaseServiceLauncher implements Runnable {
                 // add base env var
                 Map<String, String> env = pb.environment();
                 env.put("ACTIVE_MQ_BROKER_URI", this.mServiceDesc.getActiveMqHost());
-                env.put("SERVICE_NAME", this.mServiceDesc.getName());
+                env.put("SERVICE_NAME", this.mServiceDesc.getFullyQualifiedName());
+                env.put("COMPONENT_NAME", this.mServiceDesc.getComponentName());
                 // add any given by the service
                 for (EnvironmentVariable envVar : s.getEnvVars()) {
                     if (null != envVar.getSep() && !envVar.getSep().isEmpty()) {
@@ -409,7 +412,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 //store the time started to check time up when service shuts down with an exit code
                 this.getService().setStartTimeMillis(System.currentTimeMillis());
-                LOG.debug("Node service {} started", this.mServiceDesc.getName());
+                LOG.debug("Node service {} started", this.mServiceDesc.getFullyQualifiedName());
 
                 // capture I/O streams
                 stdOut = child.getInputStream();
@@ -440,36 +443,36 @@ public abstract class BaseServiceLauncher implements Runnable {
                 switch (mExitStatus) {
                     case 0:
                     	normalShutdown = true;
-                        LOG.debug("Service {} exited normally", this.mServiceDesc.getName());
+                        LOG.debug("Service {} exited normally", this.mServiceDesc.getFullyQualifiedName());
                         break;
                     case 143:
-                        LOG.warn("Service {} exited with error {} (SIGTERM)", this.mServiceDesc.getName(), mExitStatus);
+                        LOG.warn("Service {} exited with error {} (SIGTERM)", this.mServiceDesc.getFullyQualifiedName(), mExitStatus);
                         break;
                     default:
-                        LOG.warn("Service {} exited with error {}", this.mServiceDesc.getName(), mExitStatus);
+                        LOG.warn("Service {} exited with error {}", this.mServiceDesc.getFullyQualifiedName(), mExitStatus);
                 }
-                
+
                 //should only be trying to restart if not a normal shutdown and not sent a command to stop. restartOnFailure = false when command set!
                 if(!normalShutdown && restartOnFailure) {
                 	if(restarts > 0) {
 	                    long diffMillis = System.currentTimeMillis() - this.getService().getStartTimeMillis();
-	                    LOG.warn("Service {} has been running for {} milliseconds before an exit error.", this.mServiceDesc.getName(), diffMillis);
+	                    LOG.warn("Service {} has been running for {} milliseconds before an exit error.", this.mServiceDesc.getFullyQualifiedName(), diffMillis);
 	                    if(diffMillis < minTimeUpMilliSeconds) {
 	                    	//will no longer let this service restart automatically
 	                    	restartOnFailure = false;
-	                    	LOG.warn("Service {} has failed too quickly and will no longer restart automatically.", this.mServiceDesc.getName());
+	                    	LOG.warn("Service {} has failed too quickly and will no longer restart automatically.", this.mServiceDesc.getFullyQualifiedName());
 	                    	//we want the m_fatalProblemFlag set to true to allow the node manager to prevent the service from starting
 	                    	//when a new config is saved or the workflow manager restarts
 	                    	this.m_fatalProblemFlag = true;
 	                    } else {
-	                    	LOG.info("Service {} has been running long enough to attempt a restart.", this.mServiceDesc.getName());
+	                    	LOG.info("Service {} has been running long enough to attempt a restart.", this.mServiceDesc.getFullyQualifiedName());
 	                    }
                 	} else {
-                		LOG.warn("Service {} has not been restarted, attempting to restart.", this.mServiceDesc.getName());
+                		LOG.warn("Service {} has not been restarted, attempting to restart.", this.mServiceDesc.getFullyQualifiedName());
                 	}
-                }	
-                
-                //restarts can now be incremented after they are used in the if statement above 
+                }
+
+                //restarts can now be incremented after they are used in the if statement above
                 if (restartOnFailure) {
                     restarts++;
                 }
@@ -490,30 +493,30 @@ public abstract class BaseServiceLauncher implements Runnable {
             // we crashed or failed to start
             if (null != child) {
                 if (0 != this.mExitStatus) {
-                    LOG.warn("Service {} exited abnormally with exit status of {}!", this.mServiceDesc.getName(), this.mExitStatus);
+                    LOG.warn("Service {} exited abnormally with exit status of {}!", this.mServiceDesc.getFullyQualifiedName(), this.mExitStatus);
                 } else {
-                    LOG.warn("Service {} exited normally but was not issued a shutdown commmand", this.mServiceDesc.getName());
+                    LOG.warn("Service {} exited normally but was not issued a shutdown commmand", this.mServiceDesc.getFullyQualifiedName());
                 }
             } else {
-                LOG.warn("Failed to start service {}! Check logs", this.mServiceDesc.getName());
+                LOG.warn("Failed to start service {}! Check logs", this.mServiceDesc.getFullyQualifiedName());
             }
         } else {
-            LOG.debug("Service {} is now fully terminated", this.mServiceDesc.getName());
+            LOG.debug("Service {} is now fully terminated", this.mServiceDesc.getFullyQualifiedName());
         }
         child = null;
 
         isRunning = false;
         mRunToCompletion = true;
-        LOG.debug("RUN method for service {} ending", this.mServiceDesc.getName());
+        LOG.debug("RUN method for service {} ending", this.mServiceDesc.getFullyQualifiedName());
     }
 
     public String substituteVariables(String str) {
         return EnvironmentVariableExpander.expand(str);
     }
-    
+
     /**
      * Do variable (string) substitution using environmental variables on the command path
-     * @return 
+     * @return
      */
     public String getCommandPath() {
         return EnvironmentVariableExpander.expand(mServiceDesc.getService().getCmdPath());

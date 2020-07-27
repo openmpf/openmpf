@@ -262,7 +262,7 @@ public class TestNodeService {
         for (Map.Entry<String, ServiceDescriptor> entry : nodeManagerStatus.getServiceDescriptorMap().entrySet()) {
             ServiceDescriptor sd = entry.getValue();
 
-            if (sd.getName().contains(serviceName)) {
+            if (sd.getFullyQualifiedName().contains(serviceName)) {
                 //Assert.assertTrue(sd.isAlive());
                 serviceCount++;
             }

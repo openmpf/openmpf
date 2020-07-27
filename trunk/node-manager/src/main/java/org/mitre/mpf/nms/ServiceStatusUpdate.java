@@ -40,7 +40,7 @@ public class ServiceStatusUpdate implements Serializable {
     }
 
     public String getServiceName() {
-        return serviceDescriptor.getName();
+        return serviceDescriptor.getFullyQualifiedName();
     }
 
     public  NodeManagerConstants.States getLastKnownState() { return serviceDescriptor.getLastKnownState(); }

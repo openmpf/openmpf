@@ -42,7 +42,7 @@ public class DeployedServiceModel {
 
 	public DeployedServiceModel(ServiceDescriptor sd /*String name, Integer rank, States lastKnownState*/) {
 		//serviceName
-		this.name = sd.getName();
+		this.name = sd.getFullyQualifiedName();
 		this.rank = sd.getRank();
 		this.lastKnownState = sd.getLastKnownState().name();
 		this.unlaunchable = sd.getFatalIssueFlag();

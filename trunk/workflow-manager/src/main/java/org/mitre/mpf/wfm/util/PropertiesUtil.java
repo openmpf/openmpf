@@ -744,5 +744,12 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 
+    public int getHttpCallbackTimeoutMs() {
+        return mpfPropertiesConfig.getInt("http.callback.timeout.ms");
+    }
+
+    public int getHttpCallbackRetryCount() {
+        return mpfPropertiesConfig.getInt("http.callback.retries");
+    }
 }
 

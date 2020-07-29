@@ -273,9 +273,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             request.getMethod(), request.getURI(), jobId), e);
                 }
                 else{
+                    // +2 because we are referring to the next attempt
+                    // and we want to include the first non-retry attempt.
+                    int nextAttempt = retryCtx.getRetryCount() + 2;
                     log.warn(String.format(
-                            "Failed to issue %s callback to '%s' for job id %s. Callback wil be retried soon.",
-                            request.getMethod(), request.getURI(), jobId), e);
+                                "Failed to issue %s callback to '%s' for job id %s." +
+                                        " Callback attempt %s out of %s will begin soon.",
+                                request.getMethod(), request.getURI(), jobId,
+                                nextAttempt, propertiesUtil.getHttpCallbackRetryCount()),
+                             e);
                 }
                 throw e;
             }

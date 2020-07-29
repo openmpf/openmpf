@@ -255,7 +255,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         retryPolicy.setMaxAttempts(propertiesUtil.getHttpCallbackRetryCount());
         retryTemplate.setRetryPolicy(retryPolicy);
 
-        retryTemplate.execute(retry_ctx -> {
+        retryTemplate.execute(retryCtx -> {
             log.info("Starting {} callback to {} for job id {}.", request.getMethod(), request.getURI(), jobId);
 
             try (CloseableHttpClient client = HttpClientBuilder.create().build();
@@ -265,7 +265,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 return null;
             }
             catch (Exception e) {
-                boolean isLastAttempt = retry_ctx.getRetryCount() == propertiesUtil.getHttpCallbackRetryCount() - 1;
+                // +1 because this attempt does not fail until the exception is re-thrown.
+                boolean isLastAttempt = retryCtx.getRetryCount() + 1 == propertiesUtil.getHttpCallbackRetryCount();
                 if (isLastAttempt) {
                     log.error(String.format(
                             "Failed to issue %s callback to '%s' for job id %s. All retry attempts exhausted.",

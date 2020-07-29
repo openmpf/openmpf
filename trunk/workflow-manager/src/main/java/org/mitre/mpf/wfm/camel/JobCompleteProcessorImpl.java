@@ -30,10 +30,8 @@ import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -62,6 +60,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -179,7 +180,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private void callback(TransientJob transientJob, URI outputObjectUri) throws WfmProcessingException {
+
+
+    private void callback(TransientJob transientJob, URI outputObjectUri) {
         long jobId = transientJob.getId();
         String jsonCallbackURL = transientJob.getCallbackUrl().orElse(null);
         if (jsonCallbackURL == null) {
@@ -192,31 +195,28 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             return;
         }
 
-        log.debug("Starting {} callback to {} for job id {}.", jsonCallbackMethod, jsonCallbackURL, jobId);
+        HttpRequestBase request;
         try {
-            HttpRequestBase request = createCallbackRequest(jsonCallbackMethod, jsonCallbackURL,
-                                                            transientJob, outputObjectUri);
-            ThreadUtil.runAsync(() -> {
-                try (CloseableHttpClient client = HttpClientBuilder.create().build();
-                     CloseableHttpResponse response = client.execute(request)) {
-                    log.info("{} callback issued to '{}' for job id {}. (Response={})",
-                             jsonCallbackMethod, jsonCallbackURL, jobId, response);
-                }
-                catch (Exception e) {
-                    log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                           jsonCallbackMethod, jsonCallbackURL, jobId), e);
-                }
-            });
+            request = createCallbackRequest(jsonCallbackMethod, jsonCallbackURL, transientJob, outputObjectUri);
         }
         catch (IOException | URISyntaxException e) {
-            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
+            log.warn(String.format("Failed to initialize %s callback to '%s' for job id %s.",
                                    jsonCallbackMethod, jsonCallbackURL, jobId), e);
+            return;
         }
+
+        ThreadUtil.runAsync(() -> sendCallbackWithRetry(request, jobId));
     }
+
 
     private HttpRequestBase createCallbackRequest(
             String jsonCallbackMethod, String jsonCallbackURL, TransientJob transientJob, URI outputObjectUri)
                 throws URISyntaxException, UnsupportedEncodingException {
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setSocketTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
+                .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
+                .build();
 
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
@@ -228,7 +228,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             if (outputObjectUri != null) {
                 callbackUriWithParamsBuilder.setParameter("outputobjecturi", outputObjectUri.toString());
             }
-            return new HttpGet(callbackUriWithParamsBuilder.build());
+            HttpGet getRequest = new HttpGet(callbackUriWithParamsBuilder.build());
+            getRequest.setConfig(requestConfig);
+            return getRequest;
         }
 
         HttpPost post = new HttpPost(jsonCallbackURL);
@@ -241,8 +243,51 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonCallbackBody jsonBody = new JsonCallbackBody(
                 transientJob.getId(), transientJob.getExternalId().orElse(null), outputObjectUriString);
         post.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody)));
+        post.setConfig(requestConfig);
         return post;
     }
+
+
+    private void sendCallbackWithRetry(HttpUriRequest request, long jobId) throws IOException {
+        RetryTemplate retryTemplate = new RetryTemplate();
+        retryTemplate.setBackOffPolicy(new ExponentialBackOffPolicy());
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(propertiesUtil.getHttpCallbackRetryCount());
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        retryTemplate.execute(retryCtx -> {
+            log.info("Starting {} callback to {} for job id {}.", request.getMethod(), request.getURI(), jobId);
+
+            try (CloseableHttpClient client = HttpClientBuilder.create().build();
+                 CloseableHttpResponse response = client.execute(request)) {
+                log.info("{} callback issued to '{}' for job id {}. (Response={})",
+                         request.getMethod(), request.getURI(), jobId, response);
+                return null;
+            }
+            catch (Exception e) {
+                // +1 because this attempt does not fail until the exception is re-thrown.
+                boolean isLastAttempt = retryCtx.getRetryCount() + 1 == propertiesUtil.getHttpCallbackRetryCount();
+                if (isLastAttempt) {
+                    log.error(String.format(
+                            "Failed to issue %s callback to '%s' for job id %s. All retry attempts exhausted.",
+                            request.getMethod(), request.getURI(), jobId), e);
+                }
+                else{
+                    // +2 because we are referring to the next attempt
+                    // and we want to include the first non-retry attempt.
+                    int nextAttempt = retryCtx.getRetryCount() + 2;
+                    log.warn(String.format(
+                                "Failed to issue %s callback to '%s' for job id %s." +
+                                        " Callback attempt %s out of %s will begin soon.",
+                                request.getMethod(), request.getURI(), jobId,
+                                nextAttempt, propertiesUtil.getHttpCallbackRetryCount()),
+                             e);
+                }
+                throw e;
+            }
+        });
+    }
+
 
     private void markJobStatus(long jobId, BatchJobStatusType jobStatus) {
         log.debug("Marking Job {} as '{}'.", jobId, jobStatus);

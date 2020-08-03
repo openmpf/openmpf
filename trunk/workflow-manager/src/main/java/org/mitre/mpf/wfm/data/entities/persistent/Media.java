@@ -67,8 +67,8 @@ public interface Media {
     public ImmutableMap<String, String> getMediaSpecificProperties();
     public String getMediaSpecificProperty(String key);
 
-    /** The user provided Metadata properties to override for the medium. */
-    public ImmutableMap<String, String> getUserProvidedMetadata();
+    /** The provided Metadata properties to override for the medium. */
+    public ImmutableMap<String, String> getProvidedMetadata();
 
     public MediaType getMediaType();
 

@@ -91,9 +91,7 @@ public class TestMediaInspectionProcessor {
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-		assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-				Boolean.toString(media.isFailed()),
-				media.getErrorMessage()),
+		assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
 				media.isFailed());
 
 		String targetType = "image";
@@ -125,10 +123,8 @@ public class TestMediaInspectionProcessor {
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
-        assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(media.isFailed()),
-                                        media.getErrorMessage()),
-                    media.isFailed());
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
@@ -184,9 +180,7 @@ public class TestMediaInspectionProcessor {
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
-        assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                        Boolean.toString(media.isFailed()),
-                                 media.getErrorMessage()),
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
                 media.isFailed());
 
         String targetType = "audio";
@@ -247,7 +241,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -292,7 +286,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -341,7 +335,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -393,7 +387,7 @@ public class TestMediaInspectionProcessor {
 
         when(mockInProgressJobs.getJob(jobId)).thenReturn(mockJob);
         when(mockJob.getMedia(mediaId)).thenReturn(mockMedia);
-        when(mockMedia.getUserProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
+        when(mockMedia.getProvidedMetadata()).thenReturn(ImmutableMap.copyOf(mediaMetadata));
 
         mediaInspectionProcessor.process(exchange);
 
@@ -401,10 +395,6 @@ public class TestMediaInspectionProcessor {
 
         assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
-        /*assertFalse(String.format("The response entity must not fail. Actual: %s. Message: %s.",
-                Boolean.toString(media.isFailed()),
-                media.getErrorMessage()),
-                media.isFailed());*/
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`

@@ -188,7 +188,7 @@ public class InProgressBatchJobsService {
     public synchronized void addWarning(long jobId, long mediaId, IssueCodes code, String message,
                                         IssueSources source) {
         var codeString = IssueCodes.toString(code);
-        LOG.info("Adding the following warning to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
+        LOG.warn("Adding the following warning to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
 
         getJobImpl(jobId).addWarning(mediaId, IssueSources.toString(source), codeString, message);
     }
@@ -205,7 +205,7 @@ public class InProgressBatchJobsService {
     public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message, IssueSources source) {
         var codeString = IssueCodes.toString(code);
 
-        LOG.info("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
+        LOG.error("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
 
         getJobImpl(jobId).addError(mediaId, IssueSources.toString(source), codeString, message);
 
@@ -255,7 +255,7 @@ public class InProgressBatchJobsService {
 
 
     public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties,
-                                        Map<String, String> userProvidedMetadataProperties) {
+                                        Map<String, String> providedMetadataProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -283,11 +283,11 @@ public class InProgressBatchJobsService {
             }
 
             return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                                 userProvidedMetadataProperties, errorMessage);
+                                 providedMetadataProperties, errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                                 mediaSpecificProperties, userProvidedMetadataProperties, e.getMessage());
+                                 mediaSpecificProperties, providedMetadataProperties, e.getMessage());
         }
     }
 
@@ -305,7 +305,7 @@ public class InProgressBatchJobsService {
     public synchronized void addMediaInspectionInfo(
             long jobId, long mediaId, String sha256, String mimeType, int length,
             Map<String, String> metadata) {
-        LOG.info("Adding media inspections results to job {}'s media {}.", jobId, mediaId);
+        LOG.info("Adding media metadata to job {}'s media {}.", jobId, mediaId);
         MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
         media.setType(mimeType);

@@ -112,11 +112,11 @@ public class MediaImpl implements Media {
     @Override
     public String getMediaSpecificProperty(String key) { return _mediaSpecificProperties.get(key); }
 
-    /** The user provided Metadata properties to override for the medium. */
-    private final ImmutableMap<String, String> _userProvidedMetadata;
+    /** The provided Metadata properties to override for the medium. */
+    private final ImmutableMap<String, String> _providedMetadata;
 
     @Override
-    public ImmutableMap<String, String> getUserProvidedMetadata() { return _userProvidedMetadata; }
+    public ImmutableMap<String, String> getProvidedMetadata() { return _providedMetadata; }
 
     /** The _length of the medium in frames (for images and videos) or milliseconds (for audio). */
     private int _length;
@@ -137,14 +137,14 @@ public class MediaImpl implements Media {
             UriScheme uriScheme,
             Path localPath,
             Map<String, String> mediaSpecificProperties,
-            Map<String, String> userProvidedMetadata,
+            Map<String, String> providedMetadata,
             String errorMessage) {
         _id = id;
         _uri = IoUtils.normalizeUri(uri);
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _userProvidedMetadata = ImmutableMap.copyOf(userProvidedMetadata);
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
@@ -159,10 +159,10 @@ public class MediaImpl implements Media {
             @JsonProperty("uriScheme") UriScheme uriScheme,
             @JsonProperty("localPath") Path localPath,
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
-            @JsonProperty("userProvidedMetadata") Map<String, String> userProvidedMetadata,
+            @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, uri, uriScheme, localPath, mediaSpecificProperties, userProvidedMetadata, errorMessage);
+        this(id, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -177,7 +177,7 @@ public class MediaImpl implements Media {
         MediaImpl result = new MediaImpl(
                 originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
                 originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getUserProvidedMetadata(), originalMedia.getErrorMessage());
+                originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());

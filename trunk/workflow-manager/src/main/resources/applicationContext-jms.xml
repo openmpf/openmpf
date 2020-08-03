@@ -37,6 +37,7 @@
     </bean>
 
     <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="acknowledgementModeName" value="CLIENT_ACKNOWLEDGE"/>
         <property name="connectionFactory" ref="jmsProxyFactory"/>
         <property name="concurrentConsumers" value="2" />
         <property name="transacted" value="false" />

@@ -53,7 +53,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 //mvn -Dtest=ITWebREST test if running tomcat before
@@ -1037,6 +1039,8 @@ public class ITWebREST {
 			Assert.assertTrue(getCallbackContent.getOutputObjectUri().endsWith(
 					String.format("output-objects/%s/detection.json", jobId)));
 
+			// The getCallbackResult future is resolved slightly before WFM marks the job as COMPLETE_WITH_WARNINGS.
+			Thread.sleep(200);
 			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
 			                                                         WebRESTUtils.MPF_AUTHORIZATION));
 			var jobStatus = jobResponseObj.getString("jobStatus");
@@ -1049,8 +1053,18 @@ public class ITWebREST {
 		}
 	}
 
-	private void setupSpark(){
+	private void setupSpark() throws IOException {
 		Spark.port(20159);
+		Properties props = new Properties();
+		try (var is = getClass().getResourceAsStream("/properties/mpf.properties")) {
+		    props.load(is);
+		}
+		int numRetries = Integer.parseInt(props.getProperty("http.callback.retries", "10"));
+		// +1 for the initial attempts
+		int maxNumAttempts = numRetries + 1;
+
+		AtomicInteger numAttempts = new AtomicInteger(0);
+
 		Spark.get("/callback", (request, resp) -> {
 			try {
 			    long jobId = Long.parseLong(request.queryParams("jobid"));
@@ -1058,7 +1072,10 @@ public class ITWebREST {
 
 				JsonCallbackBody callbackBody = new JsonCallbackBody(
 						jobId, request.queryParams("externalid"), request.queryParams("outputobjecturi"));
-				getCallbackResult.complete(callbackBody);
+
+				if (numAttempts.incrementAndGet() == maxNumAttempts) {
+					getCallbackResult.complete(callbackBody);
+				}
 				resp.status(404);
 				return "";
 			}

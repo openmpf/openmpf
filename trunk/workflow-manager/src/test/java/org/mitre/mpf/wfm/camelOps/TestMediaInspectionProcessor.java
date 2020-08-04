@@ -76,22 +76,12 @@ public class TestMediaInspectionProcessor {
         assertTrue(JniLoader.isLoaded());
     }
 
-
 	@Test(timeout = 5 * MINUTES)
 	public void testImageInspection() {
-		log.info("Starting image inspection test.");
-		long jobId = next();
-		long mediaId = next();
+		log.info("Starting image media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
-        Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/meds1.jpg", Collections.emptyMap());
 
 		assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
 				media.isFailed());
@@ -105,26 +95,17 @@ public class TestMediaInspectionProcessor {
                                         eq(targetLength), notNull());
 		verifyNoJobOrMediaError();
 
-		log.info("Image inspection passed.");
+		log.info("Image media inspection test passed.");
 	}
-
 
 	/** Tests that the results from a video file are sane. */
 	@Test(timeout = 5 * MINUTES)
-	public void testVideoInspection() throws Exception {
-		log.info("Starting video inspection test.");
-        long jobId = next();
-        long mediaId = next();
+	public void testVideoInspection() {
+		log.info("Starting video media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
-        Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01.mp4", Collections.emptyMap());
 
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
         assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
                 media.isFailed());
 
@@ -137,49 +118,29 @@ public class TestMediaInspectionProcessor {
                                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Video inspection passed.");
+        log.info("Video media inspection test passed.");
     }
-
 
     /** Tests that the results from a video file are sane. */
     @Test(timeout = 5 * MINUTES)
     public void testVideoInspectionInvalid() {
-        log.info("Starting invalid video inspection test.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting invalid video media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/video_01_invalid.mp4");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
-        Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        long jobId = next(), mediaId = next();
+        inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
 
         verifyMediaError(jobId, mediaId);
 
-        log.info("Media Inspection correctly handled error on invalid video file.");
+        log.info("Invalid video media inspection test passed.");
     }
-
 
 	/** Tests that the results from an audio file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testAudioInspection() {
-		log.info("Starting audio inspection test.");
-        long jobId = next();
-        long mediaId = next();
+		log.info("Starting audio media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/green.wav");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
-        Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/green.wav", Collections.emptyMap());
 
         assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
                 media.isFailed());
@@ -189,58 +150,41 @@ public class TestMediaInspectionProcessor {
         String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
 
         verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
+                .addMediaInspectionInfo(eq(jobId), eq(media.getId()), eq(targetHash), startsWith(targetType),
                                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-		log.info("Audio inspection passed.");
+		log.info("Audio media inspection test passed.");
 	}
 
 	/** Tests that the results from a file which is not accessible is sane. */
 	@Test(timeout = 5 * MINUTES)
-	public void testInaccessibleFileInspection() throws Exception {
-		log.info("Starting inaccessible file inspection test.");
-        long jobId = next();
-        long mediaId = next();
+	public void testInaccessibleFileInspection()  {
+		log.info("Starting inaccessible file media inspection test.");
 
-        URI mediaUri = URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin");
-		MediaImpl media = new MediaImpl(
-		        mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
-        Exchange exchange = setupExchange(jobId, media);
-        mediaInspectionProcessor.process(exchange);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin"),
+                Collections.emptyMap());
 
         assertTrue(media.isFailed());
         verifyMediaError(jobId, mediaId);
 
-		log.info("Inaccessible file inspection passed.");
+		log.info("Inaccessible file media inspection test passed.");
 	}
 
     /** Tests that media inspection is properly skipped when given valid audio metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipAudioInspection() {
-        log.info("Starting audio inspection test.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting skip audio media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/green.wav");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "audio/green.wav",
                 "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
                 "DURATION", "10");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/green.wav", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyNoMediaWarning();
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "audio";
         int targetLength = -1;
@@ -251,32 +195,21 @@ public class TestMediaInspectionProcessor {
                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip audio media inspection passed.");
+        log.info("Skip audio media inspection test passed.");
     }
 
-    /**
-     * Tests that media inspection is properly skipped when given valid generic metadata.
-     */
+    /** Tests that media inspection is properly skipped when given valid generic metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipGenericInspection() {
-        log.info("Starting generic inspection test.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting skip generic media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/green.wav");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "application/green.wav",
                 "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/green.wav", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyNoMediaWarning();
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "application";
         int targetLength = -1;
@@ -287,17 +220,15 @@ public class TestMediaInspectionProcessor {
                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip generic media inspection passed.");
+        log.info("Skip generic media inspection test passed.");
     }
 
     /** Tests that media inspection is properly skipped when given valid image metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipImageInspection() {
         log.info("Starting skip image media inspection test.");
-        long jobId = next();
-        long mediaId = next();
 
-        URI mediaUri = TestUtil.findFile("/samples/meds1.jpg");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "image/meds1.jpg",
                 "MEDIA_HASH", "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
@@ -306,16 +237,9 @@ public class TestMediaInspectionProcessor {
                 "EXIF_ORIENTATION", "0",
                 "ROTATION", "0",
                 "HORIZONTAL_FLIP", "FALSE");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/meds1.jpg", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyNoMediaWarning();
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "image";
         int targetLength = 1;
@@ -326,17 +250,15 @@ public class TestMediaInspectionProcessor {
                         eq(targetLength), notNull());
         verifyNoJobOrMediaError();
 
-        log.info("Skip image media inspection passed.");
+        log.info("Skip image media inspection test passed.");
     }
 
     /** Tests that media inspection is properly skipped when given valid video metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipVideoInspection() {
-        log.info("Starting skip video inspection test.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting skip video media inspection test.");
 
-        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "video/video_01.mp4",
                 "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
@@ -346,16 +268,9 @@ public class TestMediaInspectionProcessor {
                 "FPS", "30",
                 "DURATION", "3",
                 "ROTATION", "0");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyNoMediaWarning();
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
@@ -367,17 +282,15 @@ public class TestMediaInspectionProcessor {
 
         verifyNoJobOrMediaError();
 
-        log.info("Video inspection passed.");
+        log.info("Skip video media inspection test passed.");
     }
 
     /** Tests that media inspection is not skipped when missing required metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipInspectionWithMissingMetadata() {
-        log.info("Starting skip inspection test with missing metadata.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting skip media inspection test with missing metadata.");
 
-        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "video/video_01.mp4",
                 "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
@@ -387,16 +300,9 @@ public class TestMediaInspectionProcessor {
                 "FPS", "30",
                 "DURATION", "3",
                 "ROTATION", "0");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyMediaWarning(jobId, mediaId);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
@@ -407,17 +313,15 @@ public class TestMediaInspectionProcessor {
                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip inspection test with missing metadata passed.");
+        log.info("Skip media inspection test with missing metadata passed.");
     }
 
     /** Tests that media inspection is not skipped when invalid metadata is provided. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipInspectionWithInvalidMetadata() {
-        log.info("Starting skip inspection test with invalid metadata.");
-        long jobId = next();
-        long mediaId = next();
+        log.info("Starting skip media inspection test with invalid metadata.");
 
-        URI mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+        long jobId = next(), mediaId = next();
         Map<String, String> mediaMetadata = Map.of(
                 "MIME_TYPE", "video/video_01.mp4",
                 "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
@@ -427,16 +331,9 @@ public class TestMediaInspectionProcessor {
                 "FPS", "0", // value should be non-zero
                 "DURATION", "3",
                 "ROTATION", "0");
-        MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
-        Exchange exchange = setupExchange(jobId, media);
+        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
-        mediaInspectionProcessor.process(exchange);
         verifyMediaWarning(jobId, mediaId);
-
-        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
-        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         String targetType = "video";
         int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
@@ -447,7 +344,7 @@ public class TestMediaInspectionProcessor {
                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip inspection test with invalid metadata passed.");
+        log.info("Skip media inspection test with invalid metadata passed.");
     }
 
 	private void verifyNoJobOrMediaError() {
@@ -476,5 +373,23 @@ public class TestMediaInspectionProcessor {
 
 	private Exchange setupExchange(long jobId, MediaImpl media) {
 	    return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
+    }
+
+    private MediaImpl inspectMedia(long jobId, long mediaId, String filePath, Map<String, String> mediaMetadata) {
+        URI mediaUri = TestUtil.findFile(filePath);
+        return inspectMedia(jobId, mediaId, mediaUri, mediaMetadata);
+    }
+
+    private MediaImpl inspectMedia(long jobId, long mediaId, URI mediaUri, Map<String, String> mediaMetadata) {
+        MediaImpl media = new MediaImpl(
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+                mediaMetadata, null);
+        Exchange exchange = setupExchange(jobId, media);
+        mediaInspectionProcessor.process(exchange);
+
+        assertEquals("Media ID headers must be set.", mediaId, exchange.getOut().getHeader(MpfHeaders.MEDIA_ID));
+        assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+
+        return media;
     }
 }

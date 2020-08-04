@@ -126,7 +126,7 @@ public class MediaMetadataValidator {
                 .map(key -> key + "=" + mediaMetadata.get(key))
                 .collect(Collectors.joining(", "));
         if (!numericError.isEmpty()) {
-            invalidError += " The following must be valid numbers > 0: " + numericError + ".";
+            invalidError += " The following must be a valid number > 0: " + numericError + ".";
         }
 
         if (validateOrientation) {

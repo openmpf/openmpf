@@ -89,16 +89,15 @@ public class MediaInspectionProcessor extends WfmProcessor {
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
         Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
-        Map<String, String> providedMediaMetadata = media.getProvidedMetadata();
-
-        if (mediaMetadataValidator.skipInspection(jobId, mediaId, providedMediaMetadata)) {
-            setHeaders(exchange, jobId, mediaId);
-            return;
-        }
 
         if(!media.isFailed()) {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
+
+            if (mediaMetadataValidator.skipInspection(jobId, mediaId, media.getProvidedMetadata())) {
+                setHeaders(exchange, jobId, mediaId);
+                return;
+            }
 
             try {
                 Path localPath = media.getLocalPath();

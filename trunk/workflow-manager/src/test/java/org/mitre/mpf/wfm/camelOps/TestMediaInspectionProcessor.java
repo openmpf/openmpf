@@ -150,7 +150,7 @@ public class TestMediaInspectionProcessor {
         String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
 
         verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(media.getId()), eq(targetHash), startsWith(targetType),
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
                                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 

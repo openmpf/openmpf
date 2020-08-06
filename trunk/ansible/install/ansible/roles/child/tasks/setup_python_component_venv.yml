@@ -31,6 +31,15 @@
   register: comp_wheelhouse_dir
 
 
+
+- name: Upgrade pip for Python component virtualenv
+  pip:
+    name: pip
+    virtualenv: "{{ component_path }}/venv"
+    virtualenv_command: python3.8 -m venv {{ component_path }}/venv
+    extra_args: --upgrade
+
+
 - name: Setup virtualenv for Python setuptools-based component
   pip:
     name: "{{ descriptor.batchLibrary | default('') }} {{ descriptor.streamLibrary | default('') }}"

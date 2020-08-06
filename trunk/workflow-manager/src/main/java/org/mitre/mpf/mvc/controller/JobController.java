@@ -102,28 +102,31 @@ public class JobController {
     @RequestMapping(value = {"/rest/jobs"}, method = RequestMethod.POST)
     @ApiOperation(value = "Creates and submits a job using a JSON JobCreationRequest object as the request body.",
             notes = "The pipelineName should be one of the values in 'rest/pipelines'. The media array should" +
-                    " contain objects with a valid mediaUri. For example: http://localhost/images/image.png. " +
-                    " Another example: file:///home/user/images/image.jpg. A callbackURL (optional) and" +
+                    " contain objects with a valid mediaUri. \n\nFor example: http://localhost/images/image.png. " +
+                    " \nAnother example: file:///home/user/images/image.jpg. \n\nA callbackURL (optional) and" +
                     " callbackMethod (GET or POST) may be added. When the job completes, the callback will perform" +
                     " a GET or POST to the callbackURL with the jobId, externalId, and outputObjectUri parameters." +
-                    " For example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1'," +
+                    " \n\nFor example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1'," +
                     " and the externalId is 'someid', then a GET callback will be: " +
                     " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
-                    " If callbackURL ends in 'foo?someparam=something', then a GET callback will be:" +
+                    " \n\nIf callbackURL ends in 'foo?someparam=something', then a GET callback will be:" +
                     " http://api.example.com/foo?someparam=something&jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json. " +
-                    " If no externalId is provided, then a GET callback will be:" +
+                    " \nIf no externalId is provided, then a GET callback will be:" +
                     " http://api.example.com/foo?jobid=1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
-                    " The body of a POST callback will always include the 'jobId', 'externalId', and" +
+                    " \n\nThe body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +
-                    " An optional jobProperties object contains String key-value pairs which override the pipeline's" +
+                    " \n\nAn optional jobProperties object contains String key-value pairs which override the pipeline's" +
                     " job properties for this job." +
-                    " An optional algorithmProperties object containing <String,Map> key-value pairs can override" +
+                    " \n\nAn optional algorithmProperties object containing <String,Map> key-value pairs can override" +
                     " jobProperties for a specific algorithm defined in the pipeline." +
-                    " For algorithmProperties, the key should be the algorithm name, and the value should be a" +
+                    " \nFor algorithmProperties, the key should be the algorithm name, and the value should be a" +
                     " Map of String key-value pairs representing properties specific to the named algorithm." +
-                    " Note that the batch jobs and streaming jobs share a range of valid job ids. " +
+                    " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
+                    " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
+                    " \n For media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided." +
+                    " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
-                    " Also, note that all provided URIs must be properly encoded.",
+                    " \nAlso, note that all provided URIs must be properly encoded.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),

@@ -111,7 +111,7 @@ public class JobController {
                     " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nIf callbackURL ends in 'foo?someparam=something', then a GET callback will be:" +
                     " http://api.example.com/foo?someparam=something&jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json. " +
-                    " \nIf no externalId is provided, then a GET callback will be:" +
+                    " \n\nIf no externalId is provided, then a GET callback will be:" +
                     " http://api.example.com/foo?jobid=1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nThe body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +

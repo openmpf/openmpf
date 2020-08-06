@@ -121,12 +121,12 @@ public class JobController {
                     " jobProperties for a specific algorithm defined in the pipeline." +
                     " \nFor algorithmProperties, the key should be the algorithm name, and the value should be a" +
                     " Map of String key-value pairs representing properties specific to the named algorithm." +
-                    " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
-                    " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
-                    " \n For media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided." +
                     " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
-                    " \nAlso, note that all provided URIs must be properly encoded.",
+                    " \nAlso, note that all provided URIs must be properly encoded." +
+                    " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
+                    " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
+                    " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),

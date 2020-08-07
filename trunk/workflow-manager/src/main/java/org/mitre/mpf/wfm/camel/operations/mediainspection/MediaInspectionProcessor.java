@@ -73,22 +73,31 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private final IoUtils ioUtils;
 
+    private final MediaMetadataValidator mediaMetadataValidator;
+
     @Inject
-    public MediaInspectionProcessor(InProgressBatchJobsService inProgressJobs, IoUtils ioUtils) {
+    public MediaInspectionProcessor(InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
+                                    MediaMetadataValidator mediaMetadataValidator) {
         this.inProgressJobs = inProgressJobs;
         this.ioUtils = ioUtils;
+        this.mediaMetadataValidator = mediaMetadataValidator;
     }
-
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
+
         Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
 
         if(!media.isFailed()) {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
+
+            if (mediaMetadataValidator.skipInspection(jobId, mediaId, media.getProvidedMetadata())) {
+                setHeaders(exchange, jobId, mediaId);
+                return;
+            }
 
             try {
                 Path localPath = media.getLocalPath();
@@ -149,15 +158,19 @@ public class MediaInspectionProcessor extends WfmProcessor {
                       jobId, media.getId());
         }
 
+        setHeaders(exchange, jobId, mediaId);
+
+        if (media.isFailed()) {
+            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
+        }
+    }
+    private void setHeaders(Exchange exchange, long jobId, long mediaId) {
         // Copy these headers to the output exchange.
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
         exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
         exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
         exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
         exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
-        if (media.isFailed()) {
-            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
-        }
     }
 
     private int inspectAudio(Path localPath,  long jobId, long mediaId, Map<String, String> mediaMetadata)
@@ -178,7 +191,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
         }
         return -1;
     }
-
 
     // inspectVideo may add the following properties to the transientMedias metadata:
     // FRAME_COUNT, FRAME_HEIGHT, FRAME_WIDTH, FPS, DURATION, ROTATION.

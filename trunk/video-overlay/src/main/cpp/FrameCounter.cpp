@@ -64,8 +64,19 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                     return -8701;
                 }
 
+                // Check if the first frame of the source image is not empty.
+                count = 0;
+                Mat placeholder;
+                if (!src.read(placeholder)) {
+                    // Frame read failed.
+                    src.release();
+                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
+                    return -8702;
+                }
+
                 if (bruteForce) {
-                    count = 0;
+                    // The first frame was already processed.
+                    count = 1;
                     while (src.grab()) {
                         count++;
                     }
@@ -76,13 +87,13 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
                 src.release();
                 env->ReleaseStringUTFChars(sourceVideoPath, inChars);
             } catch (cv::Exception) {
-                return -8702;
+                return -8703;
             }
         } else {
-            return -8703;
+            return -8704;
         }
     } else {
-        return -8704;
+        return -8705;
     }
     return (jint)count;
 }

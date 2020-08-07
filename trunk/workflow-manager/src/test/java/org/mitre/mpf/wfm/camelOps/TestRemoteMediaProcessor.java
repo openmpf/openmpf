@@ -134,7 +134,7 @@ public class TestRemoteMediaProcessor {
 
         MediaImpl media = new MediaImpl(
                 mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
-                Collections.emptyMap(), null);
+                Collections.emptyMap(), Collections.emptyMap(), null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -158,7 +158,7 @@ public class TestRemoteMediaProcessor {
 
         MediaImpl media = new MediaImpl(
                 mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
-                _tempFolder.newFile().toPath(), Collections.emptyMap(), null);
+                _tempFolder.newFile().toPath(), Collections.emptyMap(), Collections.emptyMap(), null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -183,9 +183,10 @@ public class TestRemoteMediaProcessor {
         long mediaId2 = 458;
         ImmutableCollection<MediaImpl> media = ImmutableList.of(
                 new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
-                              Paths.get("/some/local/path.jpg"), Collections.emptyMap(), null),
+                              Paths.get("/some/local/path.jpg"), Collections.emptyMap(), Collections.emptyMap(),
+                              null),
                 new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
-                              _tempFolder.newFile().toPath(), Collections.emptyMap(), null));
+                              _tempFolder.newFile().toPath(), Collections.emptyMap(), Collections.emptyMap(), null));
 
         var job = mock(BatchJob.class);
         when(job.isCancelled())

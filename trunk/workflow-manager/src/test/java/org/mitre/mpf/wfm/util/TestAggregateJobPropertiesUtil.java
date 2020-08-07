@@ -162,7 +162,8 @@ public class TestAggregateJobPropertiesUtil {
         // Test with batch job
         {
             var media = new MediaImpl(2, "file:/example.mp4", UriScheme.FILE,
-                                      Path.of("remote-media", "example.mp4"), mediaProperties, null);
+                                      Path.of("remote-media", "example.mp4"), mediaProperties, Map.of(),
+                                      null);
             media.setType("VIDEO");
 
 

@@ -141,7 +141,7 @@ public class TestImageMediaSegmenter {
 	private static Media createTestMedia() {
 		URI uri = URI.create("file:///example.jpg");
 		MediaImpl media = new MediaImpl(1, uri.toString(), UriScheme.get(uri),
-                                        Paths.get(uri), Collections.emptyMap(), null);
+                                        Paths.get(uri), Collections.emptyMap(), Collections.emptyMap(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

@@ -67,6 +67,9 @@ public interface Media {
     public ImmutableMap<String, String> getMediaSpecificProperties();
     public String getMediaSpecificProperty(String key);
 
+    /** The provided Metadata properties to override for the medium. */
+    public ImmutableMap<String, String> getProvidedMetadata();
+
     public MediaType getMediaType();
 
     /** The length of the medium in frames (for images and videos) or milliseconds (for audio). */

@@ -175,14 +175,13 @@ public class JsonOutputObject {
 
     private static void addIssues(long mediaId, Collection<JsonIssueDetails> details,
                                   Collection<JsonMediaIssue> existingIssueGroups) {
-
         JsonMediaIssue existingIssueGroup = existingIssueGroups.stream()
                 .filter(j -> j.getMediaId() == mediaId)
                 .findAny()
                 .orElse(null);
 
         if (existingIssueGroup != null) {
-            for (var issueDetail : details) {
+            for (JsonIssueDetails issueDetail : details) {
                 existingIssueGroup.addDetails(issueDetail);
             }
             return;

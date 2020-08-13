@@ -88,18 +88,18 @@ public class CompareUtils {
             comparator = (a, b) -> ((Comparable<T>) a).compareTo(b) ;
         }
 
-        var iter1 = s1.iterator();
-        var iter2 = s2.iterator();
+        Iterator<T> iter1 = s1.iterator();
+        Iterator<T> iter2 = s2.iterator();
 
         while (true) {
-            var hasNext1 = iter1.hasNext();
-            var hasNext2 = iter2.hasNext();
+            boolean hasNext1 = iter1.hasNext();
+            boolean hasNext2 = iter2.hasNext();
             if (!hasNext1 && !hasNext2) {
                 return 0;
             }
 
-            var item1 = hasNext1 ? iter1.next() : null;
-            var item2 = hasNext2 ? iter2.next() : null;
+            T item1 = hasNext1 ? iter1.next() : null;
+            T item2 = hasNext2 ? iter2.next() : null;
             if (item1 == null && item2 == null) {
                 continue;
             }

@@ -139,6 +139,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .setStopFrame(frameSummaryStats.getMax())
                 .setConfidence(track.getExemplar().getConfidence());
 
+        for (Map.Entry<String, String> entry : track.getTrackProperties().entrySet()) {
+            videoTrackBuilder.addDetectionPropertiesBuilder()
+                    .setKey(entry.getKey())
+                    .setValue(entry.getValue());
+        }
+
         for (Detection detection : topDetections) {
             videoTrackBuilder.addFrameLocationsBuilder()
                     .setFrame(detection.getMediaOffsetFrame())

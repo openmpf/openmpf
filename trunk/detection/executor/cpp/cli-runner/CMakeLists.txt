@@ -32,8 +32,6 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
-find_package(OpenCV 3.4.7 EXACT REQUIRED PATHS /opt/opencv-3.4.7 COMPONENTS opencv_core)
-
 
 pybind11_add_module(mpf_cpp_sdk MpfCppSdkPythonBindings.cpp)
 target_include_directories(mpf_cpp_sdk PUBLIC

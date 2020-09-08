@@ -813,7 +813,6 @@ namespace MPF { namespace COMPONENT {
 
         py::module logging_module = py::module::import("logging");
         // Change default level names to match what WFM expects
-        // Add TRACE level
         // Change default level name for logger.warn and logger.warning from 'WARNING' to 'WARN'
         logging_module.attr("addLevelName")(logging_module.attr("WARN"), "WARN");
         //Change default level name for logger.fatal and logger.critical from 'CRITICAL' to 'FATAL'

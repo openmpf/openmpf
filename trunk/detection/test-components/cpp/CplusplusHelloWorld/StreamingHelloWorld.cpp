@@ -25,7 +25,6 @@
  ******************************************************************************/
 
 
-#include <log4cxx/xml/domconfigurator.h>
 #include <detectionComponentUtils.h>
 
 #include "StreamingHelloWorld.h"
@@ -35,17 +34,11 @@ using namespace MPF::COMPONENT;
 
 StreamingHelloWorld::StreamingHelloWorld(const MPFStreamingVideoJob &job)
         : MPFStreamingDetectionComponent(job)
-        , hw_logger_(GetLogger(job.run_directory))
+        , hw_logger_(log4cxx::Logger::getLogger("StreamingHelloWorldTest"))
         , job_name_(job.job_name)
         , confidence_threshold_(DetectionComponentUtils::GetProperty(job.job_properties, "CONFIDENCE_THRESHOLD", -1.0))
 {
     LOG4CXX_INFO(hw_logger_, "[" << job_name_ << "] Initialized StreamingHelloWorld component.")
-}
-
-
-log4cxx::LoggerPtr StreamingHelloWorld::GetLogger(const std::string &run_directory) {
-    log4cxx::xml::DOMConfigurator::configure(run_directory + "/CplusplusHelloWorld/config/Log4cxxConfig.xml");
-    return log4cxx::Logger::getLogger("StreamingHelloWorldTest");
 }
 
 

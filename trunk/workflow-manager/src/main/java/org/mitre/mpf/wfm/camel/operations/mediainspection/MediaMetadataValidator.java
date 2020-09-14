@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
@@ -50,6 +51,11 @@ public class MediaMetadataValidator {
 
     private final InProgressBatchJobsService inProgressJobs;
 
+    // MIME_TYPE and MEDIA_HASH are common and checked separately
+    private Set requiredAudioMetadata = Set.of("DURATION");
+    private Set requiredVideoMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION");
+    private Set requiredImageMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT");
+
     @Inject
     public MediaMetadataValidator(InProgressBatchJobsService inProgressJobs) {
         this.inProgressJobs = inProgressJobs;
@@ -58,32 +64,50 @@ public class MediaMetadataValidator {
     public boolean skipInspection(long jobId, long mediaId, Map<String, String> mediaMetadata) {
         if (!mediaMetadata.isEmpty()) {
             try {
-                var requiredMetadata = Set.of("MIME_TYPE", "MEDIA_HASH");
-                validateMetadata(mediaMetadata, requiredMetadata, Set.of(), false);
+                checkForMissingMetadata(mediaMetadata, Set.of("MIME_TYPE", "MEDIA_HASH"));
 
                 int length = -1;
                 String sha = mediaMetadata.get("MEDIA_HASH");
                 String mimeType = TextUtils.trim(mediaMetadata.get("MIME_TYPE"));
+                MediaType mediaType = MediaTypeUtils.parse(mimeType);
 
-                switch (MediaTypeUtils.parse(mimeType)) {
-                    case AUDIO:
-                        validateAudioMetadata(mediaMetadata);
-                        break;
-                    case VIDEO:
-                        validateVideoMetadata(mediaMetadata);
-                        length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
-                        break;
+                switch (mediaType) {
                     case IMAGE:
-                        validateImageMetadata(mediaMetadata);
+                        checkForMissingMetadata(mediaMetadata, requiredImageMetadata);
+                        checkMetadataTypes(mediaMetadata, requiredImageMetadata, false);
                         length = 1;
                         break;
+
+                    case VIDEO:
+                        // In MediaInspectionProcessor we check if the media has a video stream.
+                        // Here we rely on the provided metadata to determine the data type.
+                        boolean missingVideoMetadata = false;
+                        try {
+                            checkForMissingMetadata(mediaMetadata, requiredVideoMetadata);
+                        } catch (WfmProcessingException e) {
+                            log.warn(e.getMessage() + " Treating {} as AUDIO data type.", mimeType);
+                            missingVideoMetadata = true;
+                            mediaType = MediaType.AUDIO;
+                        }
+                        if (!missingVideoMetadata) {
+                            checkMetadataTypes(mediaMetadata, requiredVideoMetadata, true);
+                            length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
+                            break;
+                        }
+                        // fall through
+
+                    case AUDIO:
+                        checkForMissingMetadata(mediaMetadata, requiredAudioMetadata);
+                        checkMetadataTypes(mediaMetadata, requiredAudioMetadata, false);
+                        break;
+
                     default:
                         // UNKNOWN data type processed generically
                         break;
                 }
 
                 log.info("Skipping media inspection for job {}'s media {}.", jobId, mediaId);
-                inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
+                inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
                 return true;
             } catch (WfmProcessingException e) {
                 inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
@@ -94,23 +118,7 @@ public class MediaMetadataValidator {
         return false;
     }
 
-    private void validateAudioMetadata(Map<String, String> mediaMetadata) {
-        var requiredMetadata = Set.of("DURATION");
-        validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, false);
-    }
-
-    private void validateVideoMetadata(Map<String, String> mediaMetadata) {
-        var requiredMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION");
-        validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, true);
-    }
-
-    private void validateImageMetadata(Map<String, String> mediaMetadata) {
-        var requiredMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT");
-        validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, true);
-    }
-
-    private static void validateMetadata(Map<String, String> mediaMetadata, Set<String> requiredMetadata,
-                                         Set<String> numericMetadata, boolean validateOrientation) {
+    private static void checkForMissingMetadata(Map<String, String> mediaMetadata, Set<String> requiredMetadata) {
         String missingError = requiredMetadata.stream()
                 .filter(key -> !mediaMetadata.containsKey(key) || mediaMetadata.get(key).isBlank())
                 .collect(Collectors.joining(", "));
@@ -118,7 +126,10 @@ public class MediaMetadataValidator {
         if (!missingError.isEmpty()) {
             throw new WfmProcessingException("Missing required metadata: " + missingError + ".");
         }
+    }
 
+    private static void checkMetadataTypes(Map<String, String> mediaMetadata, Set<String> numericMetadata,
+                                           boolean validateOrientation) {
         String invalidError = "";
 
         String numericError = numericMetadata.stream()

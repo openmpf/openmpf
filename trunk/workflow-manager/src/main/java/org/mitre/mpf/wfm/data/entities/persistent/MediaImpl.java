@@ -27,14 +27,12 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -78,17 +76,17 @@ public class MediaImpl implements Media {
     @Override
     public String getErrorMessage() { return _errorMessage; }
 
-    /** The MIME type of the medium. */
-    private String _type;
+    /** The data type of the medium. For example, VIDEO. */
+    private MediaType _type;
     @Override
-    public String getType() { return _type; }
-    public void setType(String type) { _type = type; }
+    public MediaType getType() { return _type; }
+    public void setType(MediaType type) { _type = type; }
 
+    /** The MIME type of the medium. */
+    private String _mimeType;
     @Override
-    @JsonIgnore
-    public MediaType getMediaType() {
-        return MediaTypeUtils.parse(_type);
-    }
+    public String getMimeType() { return _mimeType; }
+    public void setMimeType(String mimeType) { _mimeType = mimeType; }
 
 
     /** The Metadata for the medium. */

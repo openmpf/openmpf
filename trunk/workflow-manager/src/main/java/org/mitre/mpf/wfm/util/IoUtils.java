@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.tika.Tika;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,41 +121,6 @@ public class IoUtils {
      */
     public String getMimeType(InputStream inputStream) throws IOException {
         return tikaInstance.detect(inputStream);
-    }
-
-    /**
-     * Gets the MediaType associated with the given MIME type. Throws an exception if the MIME type does not map to a
-     * MediaType. Never returns null.
-     * @param mimeType A String MIME type (generally from {@link #getMimeType(java.net.URL)}. Must not be null.
-     * @return A value from {@link org.mitre.mpf.wfm.enums.MediaType}. Never returns null
-     * @throws WfmProcessingException
-     */
-    public MediaType getMediaTypeFromMimeType(String mimeType) throws WfmProcessingException {
-        Validate.notNull(mimeType, "The mimeType parameter must not be null.");
-        String type = StringUtils.lowerCase(mimeType);
-
-        if (type.startsWith("image")) {
-            return MediaType.IMAGE;
-        } else if (type.startsWith("video")) {
-            return MediaType.VIDEO;
-        } else if (type.startsWith("audio")) {
-            return MediaType.AUDIO;
-        } else {
-            log.warn(String.format("The MIME type '%s' does not map to a MediaType.", mimeType));
-            return MediaType.UNKNOWN;
-        }
-    }
-
-    /**
-     * Gets the media type associated with the URL by checking if the MIME type starts with image or video. If no
-     * MediaType matches the url's contents, an IOException is thrown.
-     * @param url The file to check. Must not be null.
-     * @return The MediaType which best fits the input. Never returns null.
-     * @throws WfmProcessingException If the url's contents do not map to a MediaType.
-     */
-    public MediaType getMediaType(URL url) throws WfmProcessingException {
-        Validate.notNull(url);
-        return getMediaTypeFromMimeType(getMimeType(url));
     }
 
     /**

@@ -349,7 +349,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
             JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
-                    media.getId(), media.getUri(), media.getType(),
+                    media.getId(), media.getUri(), media.getType().toString(), media.getMimeType(),
                     media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());

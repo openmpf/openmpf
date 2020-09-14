@@ -27,14 +27,12 @@
 package org.mitre.mpf.interop;
 
 import com.fasterxml.jackson.annotation.*;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
+import java.util.*;
 
-@JsonTypeName("MarkupOutputObject")
+import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
+
+@JsonTypeName("MediaOutputObject")
 @JsonPropertyOrder({"mediaId", "path", "detectionProcessingErrors"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
@@ -47,6 +45,11 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonPropertyDescription("The URI to this media file.")
 	private String path;
 	public String getPath() { return path; }
+
+	@JsonProperty("type")
+	@JsonPropertyDescription("The type associated with this media file. For example, \"VIDEO\".")
+	private String type;
+	public String getType() { return type; }
 
 	@JsonProperty("mimeType")
 	@JsonPropertyDescription("The MIME type associated with this media file.")
@@ -95,9 +98,11 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors;
 	public SortedMap<String, SortedSet<JsonDetectionProcessingError>> getDetectionProcessingErrors() { return detectionProcessingErrors; }
 
-	public JsonMediaOutputObject(long mediaId, String path, String mimeType, int length, String sha256, String status) {
+	public JsonMediaOutputObject(long mediaId, String path, String mediaType, String mimeType, int length,
+								 String sha256, String status) {
 		this.mediaId = mediaId;
 		this.path = path;
+		this.type = mediaType;
 		this.mimeType = mimeType;
 		this.length = length;
 		this.sha256 = sha256;
@@ -113,6 +118,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonCreator
 	public static JsonMediaOutputObject factory(@JsonProperty("mediaId") long mediaId,
 												@JsonProperty("path") String path,
+												@JsonProperty("type") String mediaType,
 												@JsonProperty("mimeType") String mimeType,
 												@JsonProperty("length") int length,
 												@JsonProperty("sha256") String sha256,
@@ -122,7 +128,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 												@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
 												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
 												@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
-		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(mediaId, path, mimeType, length, sha256, status);
+		JsonMediaOutputObject jsonMediaOutputObject =
+				new JsonMediaOutputObject(mediaId, path, mediaType, mimeType, length, sha256, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
 		if(mediaMetadata != null) {
@@ -144,38 +151,32 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		return jsonMediaOutputObject;
 	}
 
+	@Override
 	public int hashCode() {
-		return (int)(mediaId * 37);
-	}
-
-	public boolean equals(Object other) {
-		if(other == null || !(other instanceof JsonMediaOutputObject)) {
-			return false;
-		} else {
-			JsonMediaOutputObject casted = (JsonMediaOutputObject)other;
-			return mediaId == casted.mediaId &&
-					StringUtils.equals(path, casted.path) &&
-					length == casted.length &&
-					StringUtils.equals(sha256, casted.sha256) &&
-					StringUtils.equals(status, casted.status) &&
-					StringUtils.equals(mimeType, casted.mimeType);
-		}
+		return Objects.hash(path, mediaId, sha256, length, status, type, mimeType);
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof JsonMediaOutputObject && compareTo((JsonMediaOutputObject) obj) == 0;
+	}
+
+	private static final Comparator<JsonMediaOutputObject> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(
+					stringCompare(JsonMediaOutputObject::getPath)
+					.thenComparingLong(JsonMediaOutputObject::getMediaId)
+					.thenComparing(stringCompare(JsonMediaOutputObject::getSha256))
+					.thenComparingInt(JsonMediaOutputObject::getLength)
+					.thenComparing(stringCompare(JsonMediaOutputObject::getStatus))
+					.thenComparing(stringCompare(JsonMediaOutputObject::getType))
+					.thenComparing(stringCompare(JsonMediaOutputObject::getMimeType)));
+
+	@Override
 	public int compareTo(JsonMediaOutputObject other) {
-		int result = 0;
-		if(other == null) {
-			return 1;
-		} else if ((result = ObjectUtils.compare(path, other.path)) != 0
-				|| (result = ObjectUtils.compare(mediaId, other.mediaId)) != 0
-				|| (result = ObjectUtils.compare(sha256, other.sha256)) != 0
-				|| (result = ObjectUtils.compare(length, other.length)) != 0
-				|| (result = ObjectUtils.compare(status, other.status)) != 0
-				|| (result = ObjectUtils.compare(mimeType, other.mimeType)) != 0) {
-			return result;
-		} else {
+		//noinspection ObjectEquality - False positive
+		if (this == other) {
 			return 0;
 		}
+		return DEFAULT_COMPARATOR.compare(this, other);
 	}
 }

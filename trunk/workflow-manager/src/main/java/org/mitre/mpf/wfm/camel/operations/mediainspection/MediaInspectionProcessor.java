@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
@@ -99,10 +100,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 return;
             }
 
+            String sha = null;
+            String mimeType = null;
+            Map<String, String> mediaMetadata = new HashMap<>();
+            int length = -1;
+            MediaType mediaType = MediaType.UNKNOWN;
+
             try {
                 Path localPath = media.getLocalPath();
-                String sha = null;
-                String mimeType = null;
 
                 try (InputStream inputStream = Files.newInputStream(localPath)) {
                     log.debug("Calculating hash for '{}'.", localPath);
@@ -123,27 +128,38 @@ public class MediaInspectionProcessor extends WfmProcessor {
                     log.error(errorMessage, ioe);
                 }
 
-                Map<String, String> mediaMetadata = new HashMap<>();
                 mediaMetadata.put("MIME_TYPE", mimeType);
-                int length = -1;
-                switch(MediaTypeUtils.parse(mimeType)) {
-                    case AUDIO:
-                        length = inspectAudio(localPath, jobId, mediaId, mediaMetadata);
-                        break;
+                mediaType = MediaTypeUtils.parse(mimeType);
+                Metadata ffmpegMetadata = null;
 
-                    case VIDEO:
-                        length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata);
-                        break;
-
+                switch(mediaType) {
                     case IMAGE:
                         length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
                         break;
 
+                    case VIDEO:
+                        ffmpegMetadata = generateFfmpegMetadata(localPath);
+                        String resolutionStr = ffmpegMetadata.get("videoResolution");
+                        if (resolutionStr != null) {
+                            length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata, ffmpegMetadata);
+                            break;
+                        }
+                        log.warn("Cannot determine video resolution. Media may be missing video stream." +
+                                " Treating {} as AUDIO data type.", mimeType);
+                        mediaType = MediaType.AUDIO;
+                        // fall through
+
+                    case AUDIO:
+                        if (ffmpegMetadata == null) {
+                            ffmpegMetadata = generateFfmpegMetadata(localPath);
+                        }
+                        length = inspectAudio(jobId, mediaId, mediaMetadata, ffmpegMetadata);
+                        break;
+
                     default:
-                        log.error("transientMedia.getMediaType() = {} is undefined. ", media.getMediaType());
+                        log.warn("Treating {} as UNKNOWN data type.", mimeType);
                         break;
                 }
-                inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
             } catch (Exception exception) {
                 log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), media.getLocalPath(), exception);
                 if (exception instanceof TikaException) {
@@ -153,6 +169,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
                     inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, exception.getMessage());
                 }
             }
+
+            inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
         } else {
             log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.",
                       jobId, media.getId());
@@ -173,12 +191,15 @@ public class MediaInspectionProcessor extends WfmProcessor {
         exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
     }
 
-    private int inspectAudio(Path localPath,  long jobId, long mediaId, Map<String, String> mediaMetadata)
-            throws IOException, TikaException, SAXException {
-        // We do not fetch the length of audio files.
-        Metadata audioMetadata = generateFFMPEGMetadata(localPath);
+    private int inspectAudio(long jobId, long mediaId, Map<String, String> mediaMetadata, Metadata ffmpegMetadata) {
+        String sampleRate = ffmpegMetadata.get("xmpDM:audioSampleRate");
+        if (sampleRate == null) {
+            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, // TODO: Test me!
+                                    "Cannot detect audio file sample rate.");
+            return -1;
+        }
 
-        String durationStr = audioMetadata.get("xmpDM:duration");
+        String durationStr = ffmpegMetadata.get("xmpDM:duration");
         if (durationStr == null) {
             inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                     "Cannot detect audio file duration.");
@@ -192,11 +213,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return -1;
     }
 
-    // inspectVideo may add the following properties to the transientMedias metadata:
-    // FRAME_COUNT, FRAME_HEIGHT, FRAME_WIDTH, FPS, DURATION, ROTATION.
-    // The Media's length will be set to FRAME_COUNT.
-    private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType, Map<String, String> mediaMetadata)
-            throws IOException, TikaException, SAXException {
+    private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
+                             Map<String, String> mediaMetadata, Metadata ffmpegMetadata) throws IOException {
         // FRAME_COUNT
 
         // Use the frame counter native library to calculate the length of videos.
@@ -218,9 +236,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         // FRAME_WIDTH and FRAME_HEIGHT
 
-        Metadata videoMetadata = generateFFMPEGMetadata(localPath);
-
-        String resolutionStr = videoMetadata.get("videoResolution");
+        String resolutionStr = ffmpegMetadata.get("videoResolution");
         if (resolutionStr == null) {
             inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                     "Cannot detect video file resolution.");
@@ -233,18 +249,15 @@ public class MediaInspectionProcessor extends WfmProcessor {
         mediaMetadata.put("FRAME_WIDTH", Integer.toString(frameWidth));
         mediaMetadata.put("FRAME_HEIGHT", Integer.toString(frameHeight));
 
-        // FPS
+        // FPS, DURATION, ROTATION, etc.
 
-        String fpsStr = videoMetadata.get("xmpDM:videoFrameRate");
+        String fpsStr = ffmpegMetadata.get("xmpDM:videoFrameRate");
         double fps = 0;
         if (fpsStr != null) {
             fps = Double.parseDouble(fpsStr);
             mediaMetadata.put("FPS", Double.toString(fps));
         }
-
-        // DURATION
-
-        int duration = this.calculateDurationMilliseconds(videoMetadata.get("xmpDM:duration"));
+        int duration = this.calculateDurationMilliseconds(ffmpegMetadata.get("xmpDM:duration"));
         if (duration <= 0 && fps > 0) {
             duration = (int) ((frameCount / fps) * 1000);
         }
@@ -252,9 +265,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             mediaMetadata.put("DURATION", Integer.toString(duration));
         }
 
-        // ROTATION
-
-        String rotation = videoMetadata.get("rotation");
+        String rotation = ffmpegMetadata.get("rotation");
         if (rotation != null) {
             mediaMetadata.put("ROTATION", rotation);
         }
@@ -337,7 +348,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return 1;
     }
 
-    private Metadata generateFFMPEGMetadata(Path path) throws IOException, TikaException, SAXException {
+    private Metadata generateFfmpegMetadata(Path path) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {

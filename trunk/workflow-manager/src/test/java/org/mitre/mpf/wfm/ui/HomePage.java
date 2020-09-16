@@ -52,9 +52,7 @@ public class HomePage {
 	/**
 	 * Login as valid user
 	 *
-	 * @param userName
-	 * @param password
-	 * @return HomePage object
+	 * @return LoginPage object
 	 */
 	public LoginPage logout(WebDriver driver) {
 		if (!ValidPage(driver)) {

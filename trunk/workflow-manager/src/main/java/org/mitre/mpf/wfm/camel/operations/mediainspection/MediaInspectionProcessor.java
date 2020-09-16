@@ -95,7 +95,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
 
-            if (mediaMetadataValidator.skipInspection(jobId, mediaId, media.getProvidedMetadata())) {
+            if (mediaMetadataValidator.skipInspection(jobId, media)) {
                 setHeaders(exchange, jobId, mediaId);
                 return;
             }
@@ -112,7 +112,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 try (InputStream inputStream = Files.newInputStream(localPath)) {
                     log.debug("Calculating hash for '{}'.", localPath);
                     sha = DigestUtils.sha256Hex(inputStream);
-                } catch(IOException ioe) {
+                } catch (IOException ioe) {
                     String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                             + ioe;
                     inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
@@ -121,7 +121,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
                 try {
                     mimeType = ioUtils.getMimeType(localPath);
-                } catch(IOException ioe) {
+                } catch (IOException ioe) {
                     String errorMessage = "Could not determine the MIME type for the media due to IOException: "
                             + ioe;
                     inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, errorMessage);
@@ -132,7 +132,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 mediaType = MediaTypeUtils.parse(mimeType);
                 Metadata ffmpegMetadata = null;
 
-                switch(mediaType) {
+                switch (mediaType) {
                     case IMAGE:
                         length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
                         break;
@@ -144,8 +144,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
                             length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata, ffmpegMetadata);
                             break;
                         }
-                        log.warn("Cannot determine video resolution. Media may be missing video stream." +
-                                " Treating {} as AUDIO data type.", mimeType);
+                        inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_VIDEO_STREAM,
+                                "Cannot detect video resolution. Media may be missing video stream.");
                         mediaType = MediaType.AUDIO;
                         // fall through
 
@@ -153,15 +153,22 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         if (ffmpegMetadata == null) {
                             ffmpegMetadata = generateFfmpegMetadata(localPath);
                         }
-                        length = inspectAudio(jobId, mediaId, mediaMetadata, ffmpegMetadata);
-                        break;
+                        String sampleRate = ffmpegMetadata.get("xmpDM:audioSampleRate");
+                        if (sampleRate != null) {
+                            length = inspectAudio(jobId, mediaId, mediaMetadata, ffmpegMetadata);
+                            break;
+                        }
+                        inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_AUDIO_STREAM,
+                                "Cannot detect audio file sample rate. Media may be missing audio stream.");
+                        mediaType = MediaType.UNKNOWN;
+                        // fall through
 
                     default:
-                        log.warn("Treating {} as UNKNOWN data type.", mimeType);
+                        log.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
                         break;
                 }
             } catch (Exception exception) {
-                log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", exchange.getIn().getHeader(MpfHeaders.JOB_ID), media.getLocalPath(), exception);
+                log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getLocalPath(), exception);
                 if (exception instanceof TikaException) {
                     inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                             "Tika media inspection error: " + exception.getMessage());
@@ -172,8 +179,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
             inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
         } else {
-            log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.",
-                      jobId, media.getId());
+            log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId, mediaId);
         }
 
         setHeaders(exchange, jobId, mediaId);
@@ -192,13 +198,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
     }
 
     private int inspectAudio(long jobId, long mediaId, Map<String, String> mediaMetadata, Metadata ffmpegMetadata) {
-        String sampleRate = ffmpegMetadata.get("xmpDM:audioSampleRate");
-        if (sampleRate == null) {
-            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, // TODO: Test me!
-                                    "Cannot detect audio file sample rate.");
-            return -1;
-        }
-
         String durationStr = ffmpegMetadata.get("xmpDM:duration");
         if (durationStr == null) {
             inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,

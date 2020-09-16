@@ -26,19 +26,13 @@
 
 package org.mitre.mpf.mst;
 
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
-
+import com.google.common.collect.*;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -48,7 +42,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
 /**
- *
  * NOTE: Please keep the tests in this class in alphabetical order.  While they will automatically run that way regardless
  * of the order in the source code, keeping them in that order helps when correlating jenkins-produced output, which is
  * by job number, with named output, e.g., .../share/output-objects/5/detection.json and motion/runMotionMogDetectVideo.json
@@ -87,7 +80,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get("FACE");
 
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
@@ -130,7 +123,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get("FACE");
 
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
@@ -177,13 +170,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         // Check that the first action (MOTION) was suppressed
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> suppressedActionOutput = outputMedia.getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
+        SortedSet<JsonActionOutputObject> suppressedActionOutput =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
 
         assertNotNull("Output object did not contain TRACKS_SUPPRESSED_TYPE", suppressedActionOutput);
         // Make sure that only one task was suppressed
         assertEquals("Output contained more than one suppressed task", 1, suppressedActionOutput.size());
         // Make sure that the suppressed task was MOTION
-        assertEquals("Tracks suppressed for task other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION", suppressedActionOutput.first().getSource());
+        assertEquals("Tracks suppressed for task other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+                suppressedActionOutput.first().getSource());
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -206,7 +201,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get("FACE");
 
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
@@ -245,7 +240,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 5 * MINUTES)
     public void runArtifactExtractionWithMediaProperty() {
         List<JobCreationMediaData> media = toMediaObjectList(
-            ioUtils.findFile("/samples/face/ff-region-motion-face.avi"), ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
+                ioUtils.findFile("/samples/face/ff-region-motion-face.avi"),
+                ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
         media.get(0).getProperties().put("OUTPUT_LAST_TASK_ONLY", "true");
         String pipelineName = "OCV FACE DETECTION (WITH MOG MOTION PREPROCESSOR) PIPELINE";
         long jobId = runPipelineOnMedia(pipelineName, media);
@@ -254,15 +250,18 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         // Check that the first task (MOTION) was suppressed for the first media
         List<JsonMediaOutputObject> mediaOutput = outputObject.getMedia().stream().collect(toList());
         assertEquals(2, mediaOutput.size());
-        SortedSet<JsonActionOutputObject> firstMediaSuppressed = mediaOutput.get(0).getTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
+        SortedSet<JsonActionOutputObject> firstMediaSuppressed =
+                mediaOutput.get(0).getDetectionTypes().get(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE);
         assertNotNull("Output object did not contain TRACKS_SUPPRESSED_TYPE", firstMediaSuppressed);
         // Make sure that only one action was suppressed
         assertEquals("Output contained more than one suppressed action", 1, firstMediaSuppressed.size());
         // Make sure that the suppressed action was MOTION
-        assertEquals("Tracks suppressed for action other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION", firstMediaSuppressed.first().getSource());
+        assertEquals("Tracks suppressed for action other than MOTION", "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+                firstMediaSuppressed.first().getSource());
 
         // Check that the second media did not have a suppressed action
-        assertFalse("Found an incorrectly suppressed action", mediaOutput.get(1).getTypes().containsKey(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
+        assertFalse("Found an incorrectly suppressed action",
+                mediaOutput.get(1).getDetectionTypes().containsKey(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -276,7 +275,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
 
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get("FACE");
 
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
@@ -416,7 +415,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get("FACE");
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get("FACE");
         assertNotNull("Output object did not contain expected detection type: FACE", actionOutputObjects);
 
         List<JsonDetectionOutputObject> detections = actionOutputObjects.stream()
@@ -472,7 +471,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                                                         Predicate<JsonDetectionOutputObject> pred) {
         List<JsonDetectionOutputObject> detections = outputObject.getMedia()
                 .stream()
-                .flatMap(m -> m.getTypes().values().stream())
+                .flatMap(m -> m.getDetectionTypes().values().stream())
                 .flatMap(Collection::stream)
                 .flatMap(a -> a.getTracks().stream())
                 .flatMap(t -> t.getDetections().stream())
@@ -732,10 +731,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getDetectionTypes().get("CLASS");
         assertNotNull(ocvDnnOutputObjects);
 
-        SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
+        SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getDetectionTypes().get("MOTION");
         assertNotNull(motionOutputObjects);
 
         List<JsonTrackOutputObject> ocvDnnTracks = ocvDnnOutputObjects.stream()
@@ -798,10 +797,10 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getDetectionTypes().get("CLASS");
         assertNotNull(ocvDnnOutputObjects);
 
-        SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getTypes().get("MOTION");
+        SortedSet<JsonActionOutputObject> motionOutputObjects = outputMedia.getDetectionTypes().get("MOTION");
         assertNotNull(motionOutputObjects);
 
         List<JsonTrackOutputObject> ocvDnnTracks = ocvDnnOutputObjects.stream()
@@ -864,7 +863,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
 
-        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getTypes().get("CLASS");
+        SortedSet<JsonActionOutputObject> ocvDnnOutputObjects = outputMedia.getDetectionTypes().get("CLASS");
         assertNotNull(ocvDnnOutputObjects);
 
 
@@ -1142,7 +1141,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         assertEquals(1, outputObject.getMedia().size());
         JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
 
-        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getTypes().get(detectionType);
+        SortedSet<JsonActionOutputObject> actionOutputObjects = outputMedia.getDetectionTypes().get(detectionType);
         assertNotNull("Output object did not contain expected detection type: " + detectionType,
                       actionOutputObjects);
 

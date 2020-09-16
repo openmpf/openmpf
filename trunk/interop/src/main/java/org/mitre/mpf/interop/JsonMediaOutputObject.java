@@ -33,7 +33,8 @@ import java.util.*;
 import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 @JsonTypeName("MediaOutputObject")
-@JsonPropertyOrder({"mediaId", "path", "detectionProcessingErrors"})
+@JsonPropertyOrder({"mediaId", "path", "sha256", "mimeType", "mediaType", "length", "mediaMetadata", "mediaProperties",
+		            "status", "detectionProcessingErrors", "markupResult", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -46,7 +47,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private String path;
 	public String getPath() { return path; }
 
-	@JsonProperty("type")
+	@JsonProperty("mediaType")
 	@JsonPropertyDescription("The type associated with this media file. For example, \"VIDEO\".")
 	private String type;
 	public String getType() { return type; }
@@ -89,9 +90,9 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public SortedMap<String, String> getMediaProperties() { return mediaProperties; }
 
 	@JsonProperty("output")
-	@JsonPropertyDescription("The mapping of action type keys to a set of actions performed on the given medium.")
-	private SortedMap<String, SortedSet<JsonActionOutputObject>> types;
-	public SortedMap<String, SortedSet<JsonActionOutputObject>> getTypes() { return types; }
+	@JsonPropertyDescription("The mapping of detection types to a set of actions performed on the given medium.")
+	private SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes;
+	public SortedMap<String, SortedSet<JsonActionOutputObject>> getDetectionTypes() { return detectionTypes; }
 
 	@JsonProperty("detectionProcessingErrors")
 	@JsonPropertyDescription("The mapping of action state keys to detection errors produced in that action for the given medium.")
@@ -107,7 +108,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.length = length;
 		this.sha256 = sha256;
 		this.status = status;
-		this.types = new TreeMap<>();
+		this.detectionTypes = new TreeMap<>();
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
 		this.mediaProperties = new TreeMap<>();
@@ -118,7 +119,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonCreator
 	public static JsonMediaOutputObject factory(@JsonProperty("mediaId") long mediaId,
 												@JsonProperty("path") String path,
-												@JsonProperty("type") String mediaType,
+												@JsonProperty("mediaType") String mediaType,
 												@JsonProperty("mimeType") String mimeType,
 												@JsonProperty("length") int length,
 												@JsonProperty("sha256") String sha256,
@@ -126,7 +127,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 												@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
 												@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
 												@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
-												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> types,
+												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
 												@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject =
 				new JsonMediaOutputObject(mediaId, path, mediaType, mimeType, length, sha256, status);
@@ -140,8 +141,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			jsonMediaOutputObject.mediaProperties.putAll(mediaProperties);
 		}
 
-		if(types != null) {
-			jsonMediaOutputObject.types.putAll(types);
+		if(detectionTypes != null) {
+			jsonMediaOutputObject.detectionTypes.putAll(detectionTypes);
 		}
 
 		if(detectionProcessingErrors != null) {

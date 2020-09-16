@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
@@ -61,10 +62,12 @@ public class MediaMetadataValidator {
         this.inProgressJobs = inProgressJobs;
     }
 
-    public boolean skipInspection(long jobId, long mediaId, Map<String, String> mediaMetadata) {
+    public boolean skipInspection(long jobId, Media media) {
+        long mediaId = media.getId();
+        var mediaMetadata = media.getProvidedMetadata();
         if (!mediaMetadata.isEmpty()) {
             try {
-                checkForMissingMetadata(mediaMetadata, Set.of("MIME_TYPE", "MEDIA_HASH"));
+                checkForMissingMetadata(mediaMetadata, Set.of("MIME_TYPE", "MEDIA_HASH"), null);
 
                 int length = -1;
                 String sha = mediaMetadata.get("MEDIA_HASH");
@@ -73,19 +76,17 @@ public class MediaMetadataValidator {
 
                 switch (mediaType) {
                     case IMAGE:
-                        checkForMissingMetadata(mediaMetadata, requiredImageMetadata);
+                        checkForMissingMetadata(mediaMetadata, requiredImageMetadata, "image");
                         checkMetadataTypes(mediaMetadata, requiredImageMetadata, false);
                         length = 1;
                         break;
 
                     case VIDEO:
-                        // In MediaInspectionProcessor we check if the media has a video stream.
-                        // Here we rely on the provided metadata to determine the data type.
                         boolean missingVideoMetadata = false;
                         try {
-                            checkForMissingMetadata(mediaMetadata, requiredVideoMetadata);
+                            checkForMissingMetadata(mediaMetadata, requiredVideoMetadata, "video");
                         } catch (WfmProcessingException e) {
-                            log.warn(e.getMessage() + " Treating {} as AUDIO data type.", mimeType);
+                            inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
                             missingVideoMetadata = true;
                             mediaType = MediaType.AUDIO;
                         }
@@ -97,12 +98,23 @@ public class MediaMetadataValidator {
                         // fall through
 
                     case AUDIO:
-                        checkForMissingMetadata(mediaMetadata, requiredAudioMetadata);
-                        checkMetadataTypes(mediaMetadata, requiredAudioMetadata, false);
-                        break;
+                        boolean missingAudioMetadata = false;
+                        try {
+                            checkForMissingMetadata(mediaMetadata, requiredAudioMetadata, "audio");
+                        } catch (WfmProcessingException e) {
+                            inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
+                            missingAudioMetadata = true;
+                            mediaType = MediaType.UNKNOWN;
+                        }
+                        if (!missingAudioMetadata) {
+                            checkMetadataTypes(mediaMetadata, requiredAudioMetadata, true);
+                            length = -1;
+                            break;
+                        }
+                        // fall through
 
                     default:
-                        // UNKNOWN data type processed generically
+                        log.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
                         break;
                 }
 
@@ -111,20 +123,22 @@ public class MediaMetadataValidator {
                 return true;
             } catch (WfmProcessingException e) {
                 inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                        "Provided media metadata not valid: " + e.getMessage() + " Cannot skip media inspection.");
+                        e.getMessage() + " Cannot skip media inspection.");
             }
         }
 
         return false;
     }
 
-    private static void checkForMissingMetadata(Map<String, String> mediaMetadata, Set<String> requiredMetadata) {
+    private static void checkForMissingMetadata(Map<String, String> mediaMetadata, Set<String> requiredMetadata,
+                                                String type) {
         String missingError = requiredMetadata.stream()
                 .filter(key -> !mediaMetadata.containsKey(key) || mediaMetadata.get(key).isBlank())
                 .collect(Collectors.joining(", "));
 
         if (!missingError.isEmpty()) {
-            throw new WfmProcessingException("Missing required metadata: " + missingError + ".");
+            throw new WfmProcessingException("Missing required " + (type != null ? type + " " : "" ) + "metadata: " +
+                    missingError + ".");
         }
     }
 
@@ -155,7 +169,7 @@ public class MediaMetadataValidator {
         }
 
         if (!invalidError.isEmpty()) {
-            throw new WfmProcessingException(invalidError.trim());
+            throw new WfmProcessingException("Provided media metadata not valid: " + invalidError.trim());
         }
     }
 

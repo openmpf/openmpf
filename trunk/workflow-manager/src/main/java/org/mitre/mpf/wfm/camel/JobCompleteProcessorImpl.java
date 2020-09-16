@@ -406,11 +406,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                               job);
 
                             String type = jsonTrackOutputObject.getType();
-                            if (!mediaOutputObject.getTypes().containsKey(type)) {
-                                mediaOutputObject.getTypes().put(type, new TreeSet<>());
+                            if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
+                                mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
                             }
 
-                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);
+                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getDetectionTypes().get(type);
                             boolean stateFound = false;
                             for (JsonActionOutputObject jsonAction : actionSet) {
                                 if (stateKey.equals(jsonAction.getSource())) {
@@ -544,7 +544,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private static void addMissingTrackInfo(String missingTrackKey, String stateKey,
                                             JsonMediaOutputObject mediaOutputObject) {
-        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getTypes().computeIfAbsent(
+        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getDetectionTypes().computeIfAbsent(
             missingTrackKey, k -> new TreeSet<>());
         boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
         if (stateMissing) {

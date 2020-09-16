@@ -92,7 +92,6 @@ public class TestMediaInspectionProcessor {
 		log.info("Image media inspection test passed.");
 	}
 
-	/** Tests that the results from a video file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testVideoInspection() {
 		log.info("Starting video media inspection test.");
@@ -114,20 +113,31 @@ public class TestMediaInspectionProcessor {
         log.info("Video media inspection test passed.");
     }
 
-    /** Tests that the results from a video file are sane. */
     @Test(timeout = 5 * MINUTES)
-    public void testVideoInspectionInvalid() {
+    public void testInvalidVideoInspection() {
         log.info("Starting invalid video media inspection test.");
 
         long jobId = next(), mediaId = next();
-        inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
 
-        verifyMediaError(jobId, mediaId);
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_AUDIO_STREAM), nonBlank());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "239dbbbe6faf66af7eb471ad54b993526221043ced333723a4fd450d107f272c"; // `sha256sum video_01_invalid.mp4`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq("video/mp4"),
+                        eq(-1), nonEmptyMap());
+        verifyNoJobOrMediaError();
 
         log.info("Invalid video media inspection test passed.");
     }
 
-	/** Tests that the results from an audio file are sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testAudioInspection() {
 		log.info("Starting audio media inspection test.");
@@ -148,7 +158,6 @@ public class TestMediaInspectionProcessor {
 		log.info("Audio media inspection test passed.");
 	}
 
-	/** Tests that the results from a file which is not accessible is sane. */
 	@Test(timeout = 5 * MINUTES)
 	public void testInaccessibleFileInspection()  {
 		log.info("Starting inaccessible file media inspection test.");
@@ -163,7 +172,6 @@ public class TestMediaInspectionProcessor {
 		log.info("Inaccessible file media inspection test passed.");
 	}
 
-    /** Tests that media inspection is properly skipped when given valid audio metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipAudioInspection() {
         log.info("Starting skip audio media inspection test.");
@@ -187,7 +195,6 @@ public class TestMediaInspectionProcessor {
         log.info("Skip audio media inspection test passed.");
     }
 
-    /** Tests that media inspection is properly skipped when given valid generic metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipGenericInspection() {
         log.info("Starting skip generic media inspection test.");
@@ -210,7 +217,6 @@ public class TestMediaInspectionProcessor {
         log.info("Skip generic media inspection test passed.");
     }
 
-    /** Tests that media inspection is properly skipped when given valid image metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipImageInspection() {
         log.info("Starting skip image media inspection test.");
@@ -238,7 +244,6 @@ public class TestMediaInspectionProcessor {
         log.info("Skip image media inspection test passed.");
     }
 
-    /** Tests that media inspection is properly skipped when given valid video metadata. */
     @Test(timeout = 5 * MINUTES)
     public void testSkipVideoInspection() {
         log.info("Starting skip video media inspection test.");
@@ -269,10 +274,9 @@ public class TestMediaInspectionProcessor {
         log.info("Skip video media inspection test passed.");
     }
 
-    /** Tests that media inspection is not skipped when missing required metadata. */
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionWithMissingMetadata() {
-        log.info("Starting skip media inspection test with missing metadata.");
+    public void testNotSkipInspectionWithMissingMetadata() {
+        log.info("Starting not skip media inspection test with missing metadata.");
 
         long jobId = next(), mediaId = next();
         String mimeType = "video/mp4";
@@ -289,20 +293,22 @@ public class TestMediaInspectionProcessor {
                 "ROTATION", "0");
         inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
-        verifyMediaWarning(jobId, mediaId);
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("video metadata"));
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("audio metadata"));
 
         verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO), eq(mimeType),
-                        eq(frameCount), nonEmptyMap());
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq(mimeType),
+                        eq(-1), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip media inspection test with missing metadata passed.");
+        log.info("Not skip media inspection test with missing metadata passed.");
     }
 
-    /** Tests that media inspection is not skipped when invalid metadata is provided. */
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionWithInvalidMetadata() {
-        log.info("Starting skip media inspection test with invalid metadata.");
+    public void testNotSkipInspectionWithInvalidMetadata() {
+        log.info("Starting not skip media inspection test with invalid metadata.");
 
         long jobId = next(), mediaId = next();
         String mimeType = "video/mp4";
@@ -326,13 +332,12 @@ public class TestMediaInspectionProcessor {
                         eq(frameCount), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip media inspection test with invalid metadata passed.");
+        log.info("Not skip media inspection test with invalid metadata passed.");
     }
 
-    /** Tests that media inspection is not skipped when invalid metadata is provided. */
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionVideoToAudioFallback() {
-        log.info("Starting skip media inspection test with video to audio fallback.");
+    public void testNotSkipInspectionVideoToAudioFallback() {
+        log.info("Starting not skip media inspection test with video to audio fallback.");
 
         long jobId = next(), mediaId = next();
         String mimeType = "video/mp4";
@@ -348,12 +353,15 @@ public class TestMediaInspectionProcessor {
                 "ROTATION", "0");
         inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("video metadata"));
+
         verify(mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO), eq(mimeType),
                         eq(-1), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip media inspection test with video to audio fallback passed.");
+        log.info("Not skip media inspection test with video to audio fallback passed.");
     }
 
 	private void verifyNoJobOrMediaError() {

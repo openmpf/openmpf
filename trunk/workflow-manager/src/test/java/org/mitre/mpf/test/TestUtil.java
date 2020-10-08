@@ -40,6 +40,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -89,6 +90,10 @@ public class TestUtil {
         catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static Path findFilePath(String path) {
+        return Paths.get(findFile(path));
     }
 
     public interface ThrowingRunnable {

@@ -46,6 +46,8 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.PngDefry;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -69,6 +71,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private static final Logger log = LoggerFactory.getLogger(MediaInspectionProcessor.class);
     public static final String REF = "mediaInspectionProcessor";
 
+    private final PropertiesUtil propertiesUtil;
+
     private final InProgressBatchJobsService inProgressJobs;
 
     private final IoUtils ioUtils;
@@ -76,8 +80,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private final MediaMetadataValidator mediaMetadataValidator;
 
     @Inject
-    public MediaInspectionProcessor(InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
-                                    MediaMetadataValidator mediaMetadataValidator) {
+    public MediaInspectionProcessor(
+            PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
+            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator) {
+        this.propertiesUtil = propertiesUtil;
         this.inProgressJobs = inProgressJobs;
         this.ioUtils = ioUtils;
         this.mediaMetadataValidator = mediaMetadataValidator;
@@ -261,9 +267,29 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return frameCount;
     }
 
-    private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
+    private int inspectImage(Path localPath, long jobId, long mediaId,
+                             Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
-        Metadata imageMetadata = generateExifMetadata(localPath);
+
+        Metadata imageMetadata;
+        Path mediaPath;
+        try {
+            imageMetadata = generateExifMetadata(localPath);
+            mediaPath = localPath;
+        }
+        catch (TikaException e) {
+            if (!e.getMessage().contains("image/png parse error")
+                    || !PngDefry.isCrushed(localPath)) {
+                throw e;
+            }
+            var defriedPath = PngDefry.defry(localPath,
+                                             propertiesUtil.getTemporaryMediaDirectory().toPath());
+            imageMetadata = generateExifMetadata(defriedPath);
+            inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
+//            localPath = defriedPath;
+            mediaPath = defriedPath;
+        }
+
 
         String widthStr = imageMetadata.get("tiff:ImageWidth"); // jpeg, png
         if (widthStr == null) {
@@ -283,7 +309,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         if (widthStr == null || heightStr == null) {
             // As a last resort, load the whole image into memory.
-            BufferedImage bimg = ImageIO.read(localPath.toFile());
+            BufferedImage bimg = ImageIO.read(mediaPath.toFile());
             if (bimg == null) {
                 inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                         "Cannot detect image file frame size. Cannot read image file.");
@@ -292,45 +318,45 @@ public class MediaInspectionProcessor extends WfmProcessor {
             widthStr = Integer.toString(bimg.getWidth());
             heightStr = Integer.toString(bimg.getHeight());
         }
-        mediaMetdata.put("FRAME_WIDTH", widthStr);
-        mediaMetdata.put("FRAME_HEIGHT", heightStr);
+        mediaMetadata.put("FRAME_WIDTH", widthStr);
+        mediaMetadata.put("FRAME_HEIGHT", heightStr);
 
         String orientationStr = imageMetadata.get("tiff:Orientation");
         if (orientationStr != null) {
-            mediaMetdata.put("EXIF_ORIENTATION", orientationStr);
+            mediaMetadata.put("EXIF_ORIENTATION", orientationStr);
             int orientation = Integer.valueOf(orientationStr);
             switch (orientation) {
                 case 1:
-                    mediaMetdata.put("ROTATION", "0");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "0");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 2:
-                    mediaMetdata.put("ROTATION", "0");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "0");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 3:
-                    mediaMetdata.put("ROTATION", "180");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "180");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 4:
-                    mediaMetdata.put("ROTATION", "180");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "180");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 5:
-                    mediaMetdata.put("ROTATION", "90");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "90");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 6:
-                    mediaMetdata.put("ROTATION", "90");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "90");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 7:
-                    mediaMetdata.put("ROTATION", "270");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "270");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 8:
-                    mediaMetdata.put("ROTATION", "270");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "270");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
             }
         }

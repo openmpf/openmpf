@@ -28,7 +28,9 @@ package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
@@ -40,10 +42,14 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JniLoader;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
@@ -58,18 +64,25 @@ public class TestMediaInspectionProcessor {
 	private static final Logger log = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
 	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
+    private final PropertiesUtil mockPropertiesUtil = mock(PropertiesUtil.class);
+
     private final InProgressBatchJobsService mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final MediaMetadataValidator mediaMetadataValidator = new MediaMetadataValidator(mockInProgressJobs);
 
     private final MediaInspectionProcessor mediaInspectionProcessor
-            = new MediaInspectionProcessor(mockInProgressJobs, new IoUtils(), mediaMetadataValidator);
+            = new MediaInspectionProcessor(mockPropertiesUtil, mockInProgressJobs, new IoUtils(),
+                                           mediaMetadataValidator);
+
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
 
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
     private static int next() {
         return SEQUENCE.incrementAndGet();
     }
+
 
     @BeforeClass
     public static void initClass() {
@@ -171,6 +184,39 @@ public class TestMediaInspectionProcessor {
 
 		log.info("Inaccessible file media inspection test passed.");
 	}
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testCrushedPngInspection() {
+        when(mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(tempFolder.getRoot());
+
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/pngdefry/lenna-crushed.png",
+                                       Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+
+        //`sha256sum lenna-crushed.png`
+        String targetHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash),
+                                        eq("image/png"), eq(1), notNull());
+        verifyNoJobOrMediaError();
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+        var defriedPath = pathCaptor.getValue();
+        assertTrue(defriedPath.startsWith(tempFolder.getRoot().toPath()));
+        assertTrue(defriedPath.getFileName().toString().startsWith("lenna-crushed_defried"));
+        assertTrue(defriedPath.getFileName().toString().endsWith(".png"));
+        assertTrue(Files.exists(defriedPath));
+    }
+
 
     /** Tests that media inspection is properly skipped when given valid audio metadata. */
     @Test(timeout = 5 * MINUTES)

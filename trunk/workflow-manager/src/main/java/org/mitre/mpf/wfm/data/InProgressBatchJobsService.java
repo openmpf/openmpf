@@ -143,7 +143,20 @@ public class InProgressBatchJobsService {
                 }
                 catch (IOException e) {
                     LOG.warn(String.format(
-                            "Failed to delete the local file '%s' which was created retrieved from a remote location - it must be manually deleted.",
+                            "Failed to delete the local file '%s' which was retrieved " +
+                                    "from a remote location - it must be manually deleted.",
+                            media.getLocalPath()), e);
+                }
+            }
+
+            if (media.getConvertedMediaPath().isPresent()) {
+                try {
+                    Files.deleteIfExists(media.getConvertedMediaPath().get());
+                }
+                catch (IOException e) {
+                    LOG.warn(String.format(
+                            "Failed to delete the converted media file '%s' - " +
+                                    "it must be manually deleted.",
                             media.getLocalPath()), e);
                 }
             }
@@ -311,6 +324,13 @@ public class InProgressBatchJobsService {
         media.setType(mimeType);
         media.setLength(length);
         media.addMetadata(metadata);
+    }
+
+    public synchronized void addConvertedMediaPath(long jobId, long mediaId,
+                                                   Path convertedMediaPath) {
+        LOG.info("Setting job {}'s media {}'s converted media path to {}",
+                 jobId, mediaId, convertedMediaPath);
+        getMediaImpl(jobId, mediaId).setConvertedMediaPath(convertedMediaPath);
     }
 
     private MediaImpl getMediaImpl(long jobId, long mediaId) {

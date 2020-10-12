@@ -68,7 +68,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public TransientJob addJob(
+    public synchronized TransientJob addJob(
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,

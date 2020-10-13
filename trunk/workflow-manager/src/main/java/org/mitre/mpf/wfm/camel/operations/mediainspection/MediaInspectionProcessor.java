@@ -37,6 +37,7 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.external.ExternalParsersConfigReader;
 import org.mitre.mpf.framecounter.FrameCounter;
+import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -64,6 +65,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /** This processor extracts metadata about the input medium. */
 @Component(MediaInspectionProcessor.REF)
@@ -270,23 +272,34 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private int inspectImage(Path localPath, long jobId, long mediaId,
                              Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
+        Path mediaPath;
+        if (mediaMetadata.get("MIME_TYPE").equals("image/heic")) {
+            var tempDir = propertiesUtil.getTemporaryMediaDirectory().toPath();
+            mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
+            log.info("{} is HEIC image. It will be converted to PNG.", localPath);
+            HeicConverter.convert(localPath, mediaPath);
+            inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+        }
+        else {
+            mediaPath = localPath;
+        }
 
         Metadata imageMetadata;
-        Path mediaPath;
         try {
             imageMetadata = generateExifMetadata(localPath);
-            mediaPath = localPath;
         }
         catch (TikaException e) {
             if (!e.getMessage().contains("image/png parse error")
                     || !PngDefry.isCrushed(localPath)) {
                 throw e;
             }
+            log.info("Detected that \"{}\" is an Apple-optimized PNG. It will be converted to a " +
+                             "regular PNG.",
+                     localPath);
             var defriedPath = PngDefry.defry(localPath,
                                              propertiesUtil.getTemporaryMediaDirectory().toPath());
             imageMetadata = generateExifMetadata(defriedPath);
             inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
-//            localPath = defriedPath;
             mediaPath = defriedPath;
         }
 

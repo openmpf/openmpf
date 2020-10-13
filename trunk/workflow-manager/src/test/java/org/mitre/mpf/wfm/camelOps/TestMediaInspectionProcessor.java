@@ -200,12 +200,20 @@ public class TestMediaInspectionProcessor {
                                   media.getErrorMessage()),
                     media.isFailed());
 
-        //`sha256sum lenna-crushed.png`
+        verifyNoJobOrMediaError();
+
+        // `sha256sum lenna-crushed.png`
         String targetHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash),
-                                        eq("image/png"), eq(1), notNull());
-        verifyNoJobOrMediaError();
+                                        eq("image/png"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("512", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("512", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+
+
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(mockInProgressJobs)
@@ -216,6 +224,44 @@ public class TestMediaInspectionProcessor {
         assertTrue(defriedPath.getFileName().toString().endsWith(".png"));
         assertTrue(Files.exists(defriedPath));
     }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testHeicInspection() {
+        when(mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(tempFolder.getRoot());
+
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/IMG_5355.HEIC",
+                                       Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+
+        verifyNoJobOrMediaError();
+
+        // `sha256sum IMG_5355.HEIC`
+        String targetHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2";
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash),
+                                        eq("image/heic"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("4032", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+        var heicPath = pathCaptor.getValue();
+        assertTrue(heicPath.startsWith(tempFolder.getRoot().toPath()));
+        assertTrue(heicPath.getFileName().toString().endsWith(".png"));
+        assertTrue(Files.exists(heicPath));
+    }
+
 
 
     /** Tests that media inspection is properly skipped when given valid audio metadata. */

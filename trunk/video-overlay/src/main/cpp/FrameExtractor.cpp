@@ -161,6 +161,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                 jobject trackIndexSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIndices, thisFrameNumObj);
                 jobject trackIterator = jni.CallObjectMethod(trackIndexSet, clzSet_fnIterator);
 
+                auto rotationJStringPtr = jni.ToJString("ROTATION");
+
                 // For each track, perform the extraction for the associated detection object.
                 while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
                     // Get the detection associated with this track
@@ -178,9 +180,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                     // Get the rotation property.
                     jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
-                    std::string rotationPropName("ROTATION");
-                    jstring jPropName = jni.ToJString(rotationPropName);
-                    jstring jPropValue = (jstring)jni.CallObjectMethod(properties, clzMap_fnGet, jPropName);
+                    jstring jPropValue = (jstring) jni.CallObjectMethod(properties, clzMap_fnGet,
+                                                                        *rotationJStringPtr);
                     double rotation = 0.0;
                     if (jPropValue != nullptr) {
                         std::string rotationPropValue = jni.ToStdString(jPropValue);

@@ -202,7 +202,6 @@ public class MediaImpl implements Media {
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
-
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
         return result;
     }

@@ -99,7 +99,6 @@ public class PngDefry {
             else {
                 throw new IllegalStateException("pngdefry failed to defry: " + inputMedia);
             }
-
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -28,11 +28,15 @@
 #define MPF_JNIHELPER_H
 
 #include <exception>
+#include <memory>
 #include <string>
 
 #include <jni.h>
 
 class JniException : public std::exception { };
+
+class JStringDeleter;
+
 
 class JniHelper {
 
@@ -88,9 +92,11 @@ public:
 
     void ReportCppException(const char * msg = nullptr);
 
-    std::string ToStdString(jstring jString);
-    jstring ToJString(std::string StdString);
+    void ReportCppException(const std::string& msg);
 
+    std::string ToStdString(jstring jString);
+
+    std::unique_ptr<jstring, JStringDeleter> ToJString(const std::string &stdString);
 
 private:
     JNIEnv * const env_;
@@ -114,5 +120,15 @@ private:
     }
 };
 
+
+class JStringDeleter {
+public:
+    explicit JStringDeleter(JNIEnv * env);
+
+    void operator()(jstring* str);
+
+private:
+    JNIEnv * env_;
+};
 
 #endif //MPF_JNIHELPER_H

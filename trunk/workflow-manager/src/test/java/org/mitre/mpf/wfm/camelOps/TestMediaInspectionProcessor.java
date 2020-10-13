@@ -424,6 +424,26 @@ public class TestMediaInspectionProcessor {
         log.info("Apple png file test passed.");
     }
 
+    @Test(timeout = 5 * MINUTES)
+    public void testTsFile() {
+        log.info("Starting ts file test.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/bbb24p_00_short.ts", Collections.emptyMap());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "06f1c94140f06f763d7ba3e2f899541de7966e693a16554e26a7f2c5caee56c6"; // `sha256sum bbb24p_00_short.ts`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
+                        eq("video/vnd.dlna.mpeg-tts"), eq(121), nonEmptyMap());
+        verifyNoJobOrMediaError();
+
+        log.info("ts file test passed.");
+    }
+
 	private void verifyNoJobOrMediaError() {
 	    verify(mockInProgressJobs, never())
                 .addError(anyLong(), anyLong(), any(), any());

@@ -434,11 +434,11 @@ public class TestMediaInspectionProcessor {
         assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
                 media.isFailed());
 
-        String mediaHash = "06f1c94140f06f763d7ba3e2f899541de7966e693a16554e26a7f2c5caee56c6"; // `sha256sum bbb24p_00_short.ts`
+        String mediaHash = "06091f89bfa66d0f882f1a71f68858a8ec1ffaa96919b9f87b30a14795f0189f"; // `sha256sum bbb24p_00_short.ts`
 
         verify(mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
-                        eq("video/vnd.dlna.mpeg-tts"), eq(121), nonEmptyMap());
+                        eq("video/vnd.dlna.mpeg-tts"), eq(27), nonEmptyMap());
         verifyNoJobOrMediaError();
 
         log.info("ts file test passed.");

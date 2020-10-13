@@ -110,8 +110,29 @@ public class IoUtils {
     }
 
 
-    public String getMimeType(Path path) throws IOException {
-        return tikaInstance.detect(path);
+    public String getMimeType(Path path) throws WfmProcessingException {
+        try {
+            String mimeType = tikaInstance.detect(path);
+
+            if (mimeType == null || mimeType.equals("application/octet-stream")) {
+                String command = "file --mime-type -b " + path;
+                Process process = Runtime.getRuntime().exec(command);
+                int exitCode = process.waitFor();
+                String error = IOUtils.toString(process.getErrorStream(), "UTF-8").trim();
+                String output = IOUtils.toString(process.getInputStream(), "UTF-8").trim();
+                if (exitCode != 0 || !error.isEmpty()) {
+                    throw new WfmProcessingException(
+                            "\"file\" command returned an exit code of " + exitCode + ": "+ error);
+                }
+                if (!output.isEmpty()) {
+                    mimeType = output;
+                }
+            }
+
+            return mimeType;
+        } catch (Exception e) {
+            throw new WfmProcessingException("Could not determine the MIME type for the media.", e);
+        }
     }
 
     /**

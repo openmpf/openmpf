@@ -364,6 +364,66 @@ public class TestMediaInspectionProcessor {
         log.info("Not skip media inspection test with video to audio fallback passed.");
     }
 
+    @Test(timeout = 5 * MINUTES)
+    public void testAdtsFile() {
+        log.info("Starting adts file test.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/green.adts", Collections.emptyMap());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "b587735773acb39e7d092305dc47db14c568c446dee63786c58cd4e7711b6739"; // `sha256sum green.adts`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO),
+                        eq("audio/x-hx-aac-adts"), eq(-1), nonEmptyMap());
+        verifyNoJobOrMediaError();
+
+        log.info("adts file test passed.");
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testHeicFile() {
+        log.info("Starting heic file test.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/IMG_5355.HEIC", Collections.emptyMap());
+
+        assertTrue(String.format("The response entity will fail until we implement heic file support. Message: %s.",
+                media.getErrorMessage()), media.isFailed());
+
+        String mediaHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2"; // `sha256sum IMG_5355.HEIC`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
+                        eq("image/heic"), eq(-1), nonEmptyMap());
+        verifyMediaError(jobId, mediaId); // heic files are not currently supported
+
+        log.info("heic file test passed.");
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testApplePngFile() {
+        log.info("Starting Apple png file test.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/Lenna-crushed.png", Collections.emptyMap());
+
+        assertTrue(String.format("The response entity will fail until we implement Apple png file support. Message: %s.",
+                media.getErrorMessage()), media.isFailed());
+
+        String mediaHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89"; // `sha256sum Lenna-crushed.png`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
+                        eq("image/png"), eq(-1), nonEmptyMap());
+        verifyMediaError(jobId, mediaId); // Apple png files are not currently supported
+
+        log.info("Apple png file test passed.");
+    }
+
 	private void verifyNoJobOrMediaError() {
 	    verify(mockInProgressJobs, never())
                 .addError(anyLong(), anyLong(), any(), any());

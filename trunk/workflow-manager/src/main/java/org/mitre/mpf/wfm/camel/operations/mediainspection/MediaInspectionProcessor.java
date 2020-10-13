@@ -119,14 +119,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                     log.error(errorMessage, ioe);
                 }
 
-                try {
-                    mimeType = ioUtils.getMimeType(localPath);
-                } catch (IOException ioe) {
-                    String errorMessage = "Could not determine the MIME type for the media due to IOException: "
-                            + ioe;
-                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, errorMessage);
-                    log.error(errorMessage, ioe);
-                }
+                mimeType = ioUtils.getMimeType(localPath);
 
                 mediaMetadata.put("MIME_TYPE", mimeType);
                 mediaType = MediaTypeUtils.parse(mimeType);
@@ -138,7 +131,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
 
                     case VIDEO:
-                        ffmpegMetadata = generateFfmpegMetadata(localPath);
+                        ffmpegMetadata = generateFfmpegMetadata(localPath, mimeType);
                         String resolutionStr = ffmpegMetadata.get("videoResolution");
                         if (resolutionStr != null) {
                             length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata, ffmpegMetadata);
@@ -151,7 +144,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
                     case AUDIO:
                         if (ffmpegMetadata == null) {
-                            ffmpegMetadata = generateFfmpegMetadata(localPath);
+                            ffmpegMetadata = generateFfmpegMetadata(localPath, mimeType);
                         }
                         String sampleRate = ffmpegMetadata.get("xmpDM:audioSampleRate");
                         if (sampleRate != null) {
@@ -167,13 +160,13 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         log.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
                         break;
                 }
-            } catch (Exception exception) {
-                log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getLocalPath(), exception);
-                if (exception instanceof TikaException) {
+            } catch (Exception e) {
+                log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getUri(), e);
+                if (e instanceof TikaException) {
                     inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                            "Tika media inspection error: " + exception.getMessage());
+                                            "Tika media inspection error: " + e.getMessage());
                 } else {
-                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, exception.getMessage());
+                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
                 }
             }
 
@@ -347,11 +340,12 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return 1;
     }
 
-    private Metadata generateFfmpegMetadata(Path path) throws IOException, TikaException, SAXException {
+    private Metadata generateFfmpegMetadata(Path path, String mimeType) throws IOException, TikaException,
+            SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(path));
+            metadata.set(Metadata.CONTENT_TYPE, mimeType);
             URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
             Parser parser = ExternalParsersConfigReader.read(url.openStream()).get(0);
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());

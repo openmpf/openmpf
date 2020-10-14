@@ -1,0 +1,347 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2020 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Custom Magic Numbers
+#   compile with `file -C -m custom-magic`
+#       use with `file    -m custom-magic.mgc`
+#------------------------------------------------------------------------------
+0	string	\x53\x51\x4c\x69\x74\x65\x20\x66\x6f\x72\x6d\x61\x74\x20\x33\x00	SQLITE 3
+!:mime	application/x-sqlite3
+
+#------------------------------------------------------------------------------
+0   string  RIFF  RIFF-WebP
+>4  long    x     (size: %d)
+>>8 string  WEBP WEBP
+!:mime	image/webp
+
+#------------------------------------------------------------------------------
+
+0 string 	EVF
+>3 string \x09\x0d\x0a\xff	Expert Witness Compression Format (EWF)
+!:mime  application/x-encase
+>3 string \x32\x0d\x0a\x81	EnCase Evidence File Version 2 (Ex01)
+!:mime  application/x-encase2
+
+#------------------------------------------------------------------------------
+# adapted from mail.news by fapertl 2018-11-19
+# $File: mail.news,v 1.22 2013/01/04 14:22:07 christos Exp $
+# mail.news:  file(1) magic for mail and news
+#
+# Unfortunately, saved netnews also has From line added in some news software.
+#0	string		From 		mail text
+0 string From\x20
+# NOTE: "1l" is not valid in file-5.11 on CentOS.
+#>5 regex/1l \^[a-zA-Z0-9_\.-]+@[a-zA-Z0-9_\.-]+\.[a-zA-Z]{2,5}.*$ mail text
+!:mime	message/rfc822
+0	string/t		Relay-Version: 	old news text
+!:mime	message/rfc822
+0	string/t		#!\ rnews	batched news text
+!:mime	message/rfc822
+0	string/t		N#!\ rnews	mailed, batched news text
+!:mime	message/rfc822
+0	string/t		Forward\ to 	mail forwarding text
+!:mime	message/rfc822
+0	string/t		Pipe\ to 	mail piping text
+!:mime	message/rfc822
+0	string/tc		delivered-to:	SMTP mail text
+!:mime	message/rfc822
+0	string/tc		return-path:	SMTP mail text
+!:mime	message/rfc822
+0	string/t		Path:		news text
+!:mime	message/news
+0	string/t		Xref:		news text
+!:mime	message/news
+0	string/t		From:		news or mail text
+!:mime	message/rfc822
+0	string/t		Article 	saved news text
+!:mime	message/news
+0	string/t		BABYL		Emacs RMAIL text
+0	string/t		Received:	RFC 822 mail text
+!:mime	message/rfc822
+0	string/t		MIME-Version:	MIME entity text
+#0	string/t		Content-	MIME entity text
+
+# TNEF files...
+0	lelong		0x223E9F78	Transport Neutral Encapsulation Format
+!:mime	application/vnd.ms-tnef
+
+# From: Kevin Sullivan <ksulliva@psc.edu>
+0	string		*mbx*		MBX mail folder
+
+# From: Simon Matter <simon.matter@invoca.ch>
+0	string		\241\002\213\015skiplist\ file\0\0\0	Cyrus skiplist DB
+0	string		\241\002\213\015twoskip\ file\0\0\0\0	Cyrus twoskip DB
+
+# JAM(mbp) Fidonet message area databases
+# JHR file
+0	string	JAM\0			JAM message area header file
+>12	leshort >0			(%d messages)
+
+# Squish Fidonet message area databases
+# SQD file (requires at least one message in the area)
+# XXX: Weak magic
+#256	leshort	0xAFAE4453		Squish message area data file
+#>4	leshort	>0			(%d messages)
+
+#0	string		\<!--\ MHonArc		text/html; x-type=mhonarc
+
+# Cyrus: file(1) magic for compiled Cyrus sieve scripts
+# URL: http://www.cyrusimap.org/docs/cyrus-imapd/2.4.6/internal/bytecode.php
+# URL: http://git.cyrusimap.org/cyrus-imapd/tree/sieve/bytecode.h?h=master
+# From: Philipp Hahn <hahn@univention.de>
+
+# Compiled Cyrus sieve script
+0       string CyrSBytecode     Cyrus sieve bytecode data,
+>12     belong =1       version 1, big-endian
+>12     lelong =1       version 1, little-endian
+>12     belong x        version %d, network-endian
+
+# From: https://github.com/strukturag/libheif/issues/83
+4 string   \x66\x74\x79\x70\x68\x65\x69\x63	High Efficiency Image File (HEIC)
+!:mime	image/heic
+
+# From: http://fileformats.archiveteam.org/wiki/CgBI
+0 string \211PNG
+>12 string CgBI         Apple CgBI PNG
+!:mime image/png-CgBI
+
+# From: https://github.com/file/file/blob/master/magic/Magdir/animation
+# SGI and Apple formats
+0	string		MOVI		Silicon Graphics movie file
+!:mime	video/x-sgi-movie
+4       string          moov            Apple QuickTime
+!:mime	video/quicktime
+>12     string          mvhd            \b movie (fast start)
+>12     string          mdra            \b URL
+>12     string          cmov            \b movie (fast start, compressed header)
+>12     string          rmra            \b multiple URLs
+4       string          mdat            Apple QuickTime movie (unoptimized)
+!:mime	video/quicktime
+#4       string          wide            Apple QuickTime movie (unoptimized)
+#!:mime	video/quicktime
+#4       string          skip            Apple QuickTime movie (modified)
+#!:mime	video/quicktime
+#4       string          free            Apple QuickTime movie (modified)
+#!:mime	video/quicktime
+4       string          idsc            Apple QuickTime image (fast start)
+!:mime	image/x-quicktime
+#4       string          idat            Apple QuickTime image (unoptimized)
+#!:mime	image/x-quicktime
+4       string          pckg            Apple QuickTime compressed archive
+!:mime	application/x-quicktime-player
+4	string/W	jP		JPEG 2000 image
+!:mime	image/jp2
+# http://www.ftyps.com/ with local additions
+4	string		ftyp		ISO Media
+# http://aeroquartet.com/wordpress/2016/03/05/3-xavc-s/
+>8	string		XAVC		\b, MPEG v4 system, Sony XAVC Codec
+>>96	string		x		\b, Audio "%.4s"
+>>118	beshort		x		at %dHz
+>>140	string		x		\b, Video "%.4s"
+>>168	beshort		x		%d
+>>170	beshort		x		\bx%d
+>8	string		3g2		\b, MPEG v4 system, 3GPP2
+!:mime	video/3gpp2
+>>11	byte		4		\b v4 (H.263/AMR GSM 6.10)
+>>11	byte		5		\b v5 (H.263/AMR GSM 6.10)
+>>11	byte		6		\b v6 (ITU H.264/AMR GSM 6.10)
+# http://www.3gpp2.org/Public_html/Specs/C.S0050-B_v1.0_070521.pdf
+# Section 8.1.1, corresponds to a, b, c
+>>11	byte		0x61		\b C.S0050-0 V1.0
+>>11	byte		0x62		\b C.S0050-0-A V1.0.0
+>>11	byte		0x63		\b C.S0050-0-B V1.0
+>8	string		3ge		\b, MPEG v4 system, 3GPP
+!:mime	video/3gpp
+>>11	byte		6		\b, Release 6 MBMS Extended Presentations
+>>11	byte		7		\b, Release 7 MBMS Extended Presentations
+>8	string		3gg		\b, MPEG v4 system, 3GPP
+!:mime	video/3gpp
+>>11	byte		6		\b, Release 6 General Profile
+>8	string		3gp		\b, MPEG v4 system, 3GPP
+!:mime	video/3gpp
+>>11	byte		1		\b, Release %d (non existent)
+>>11	byte		2		\b, Release %d (non existent)
+>>11	byte		3		\b, Release %d (non existent)
+>>11	byte		4		\b, Release %d
+>>11	byte		5		\b, Release %d
+>>11	byte		6		\b, Release %d
+>>11	byte		7		\b, Release %d Streaming Servers
+>8	string		3gs		\b, MPEG v4 system, 3GPP
+!:mime	video/3gpp
+>>11	byte		7		\b, Release %d Streaming Servers
+>8	string		avc1		\b, MPEG v4 system, 3GPP JVT AVC [ISO 14496-12:2005]
+!:mime	video/mp4
+>8	string/W	qt		\b, Apple QuickTime movie
+!:mime	video/quicktime
+>8	string		CAEP		\b, Canon Digital Camera
+>8	string		caqv		\b, Casio Digital Camera
+>8	string		CDes		\b, Convergent Design
+>8	string		da0a		\b, DMB MAF w/ MPEG Layer II aud, MOT slides, DLS, JPG/PNG/MNG
+>8	string		da0b		\b, DMB MAF, ext DA0A, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		da1a		\b, DMB MAF audio with ER-BSAC audio, JPG/PNG/MNG images
+>8	string		da1b		\b, DMB MAF, ext da1a, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		da2a		\b, DMB MAF aud w/ HE-AAC v2 aud, MOT slides, DLS, JPG/PNG/MNG
+>8	string		da2b		\b, DMB MAF, ext da2a, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		da3a		\b, DMB MAF aud with HE-AAC aud, JPG/PNG/MNG images
+>8	string		da3b		\b, DMB MAF, ext da3a w/ BIFS, 3GPP, DID, TVA, REL, IPMP
+>8	string		dash		\b, MPEG v4 system, Dynamic Adaptive Streaming over HTTP
+!:mime	video/mp4
+>8	string		dmb1		\b, DMB MAF supporting all the components defined in the spec
+>8	string		dmpf		\b, Digital Media Project
+>8	string		drc1		\b, Dirac (wavelet compression), encap in ISO base media (MP4)
+>8	string		dv1a		\b, DMB MAF vid w/ AVC vid, ER-BSAC aud, BIFS, JPG/PNG/MNG, TS
+>8	string		dv1b		\b, DMB MAF, ext dv1a, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		dv2a		\b, DMB MAF vid w/ AVC vid, HE-AAC v2 aud, BIFS, JPG/PNG/MNG, TS
+>8	string		dv2b		\b, DMB MAF, ext dv2a, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		dv3a		\b, DMB MAF vid w/ AVC vid, HE-AAC aud, BIFS, JPG/PNG/MNG, TS
+>8	string		dv3b		\b, DMB MAF, ext dv3a, with 3GPP timed text, DID, TVA, REL, IPMP
+>8	string		dvr1		\b, DVB (.DVB) over RTP
+!:mime	video/vnd.dvb.file
+>8	string		dvt1		\b, DVB (.DVB) over MPEG-2 Transport Stream
+!:mime	video/vnd.dvb.file
+>8	string		F4V		\b, Video for Adobe Flash Player 9+ (.F4V)
+!:mime	video/mp4
+>8	string		F4P		\b, Protected Video for Adobe Flash Player 9+ (.F4P)
+!:mime	video/mp4
+>8	string		F4A		\b, Audio for Adobe Flash Player 9+ (.F4A)
+!:mime	audio/mp4
+>8	string		F4B		\b, Audio Book for Adobe Flash Player 9+ (.F4B)
+!:mime	audio/mp4
+>8	string		isc2		\b, ISMACryp 2.0 Encrypted File
+#	?/enc-isoff-generic
+>8	string		iso2		\b, MP4 Base Media v2 [ISO 14496-12:2005]
+!:mime	video/mp4
+>8	string		isom		\b, MP4 Base Media v1 [IS0 14496-12:2003]
+!:mime	video/mp4
+>8	string/W	jp2		\b, JPEG 2000
+!:mime	image/jp2
+>8	string		JP2		\b, JPEG 2000 Image (.JP2) [ISO 15444-1 ?]
+!:mime	image/jp2
+>8	string		JP20		\b, Unknown, from GPAC samples (prob non-existent)
+>8	string		jpm		\b, JPEG 2000 Compound Image (.JPM) [ISO 15444-6]
+!:mime	image/jpm
+>8	string		jpx		\b, JPEG 2000 w/ extensions (.JPX) [ISO 15444-2]
+!:mime	image/jpx
+>8	string		KDDI		\b, 3GPP2 EZmovie for KDDI 3G cellphones
+!:mime	video/3gpp2
+>8	string		M4A 		\b, Apple iTunes ALAC/AAC-LC (.M4A) Audio
+!:mime	audio/x-m4a
+>8	string		M4B 		\b, Apple iTunes ALAC/AAC-LC (.M4B) Audio Book
+!:mime	audio/mp4
+>8	string		M4P 		\b, Apple iTunes ALAC/AAC-LC (.M4P) AES Protected Audio
+!:mime	video/mp4
+>8	string		M4V 		\b, Apple iTunes Video (.M4V) Video
+!:mime	video/x-m4v
+>8	string		M4VH		\b, Apple TV (.M4V)
+!:mime	video/x-m4v
+>8	string		M4VP		\b, Apple iPhone (.M4V)
+!:mime	video/x-m4v
+>8	string		mj2s		\b, Motion JPEG 2000 [ISO 15444-3] Simple Profile
+!:mime	video/mj2
+>8	string		mjp2		\b, Motion JPEG 2000 [ISO 15444-3] General Profile
+!:mime	video/mj2
+>8	string		mmp4		\b, MPEG-4/3GPP Mobile Profile (.MP4 / .3GP) (for NTT)
+!:mime	video/mp4
+>8	string		mobi		\b, MPEG-4, MOBI format
+!:mime	video/mp4
+>8	string		mp21		\b, MPEG-21 [ISO/IEC 21000-9]
+>8	string		mp41		\b, MP4 v1 [ISO 14496-1:ch13]
+!:mime	video/mp4
+>8	string		mp42		\b, MP4 v2 [ISO 14496-14]
+!:mime	video/mp4
+>8	string		mp71		\b, MP4 w/ MPEG-7 Metadata [per ISO 14496-12]
+>8	string		mp7t		\b, MPEG v4 system, MPEG v7 XML
+>8	string		mp7b		\b, MPEG v4 system, MPEG v7 binary XML
+>8	string		mmp4		\b, MPEG v4 system, 3GPP Mobile
+!:mime	video/mp4
+>8	string		MPPI		\b, Photo Player, MAF [ISO/IEC 23000-3]
+>8	string		mqt		\b, Sony / Mobile QuickTime (.MQV) US Pat 7,477,830
+!:mime	video/quicktime
+>8	string		MSNV		\b, MPEG-4 (.MP4) for SonyPSP
+!:mime	audio/mp4
+>8	string		NDAS		\b, MP4 v2 [ISO 14496-14] Nero Digital AAC Audio
+!:mime	audio/mp4
+>8	string		NDSC		\b, MPEG-4 (.MP4) Nero Cinema Profile
+!:mime	video/mp4
+>8	string		NDSH		\b, MPEG-4 (.MP4) Nero HDTV Profile
+!:mime	video/mp4
+>8	string		NDSM		\b, MPEG-4 (.MP4) Nero Mobile Profile
+!:mime	video/mp4
+>8	string		NDSP		\b, MPEG-4 (.MP4) Nero Portable Profile
+!:mime	video/mp4
+>8	string		NDSS		\b, MPEG-4 (.MP4) Nero Standard Profile
+!:mime	video/mp4
+>8	string		NDXC		\b, H.264/MPEG-4 AVC (.MP4) Nero Cinema Profile
+!:mime	video/mp4
+>8	string		NDXH		\b, H.264/MPEG-4 AVC (.MP4) Nero HDTV Profile
+!:mime	video/mp4
+>8	string		NDXM		\b, H.264/MPEG-4 AVC (.MP4) Nero Mobile Profile
+!:mime	video/mp4
+>8	string		NDXP		\b, H.264/MPEG-4 AVC (.MP4) Nero Portable Profile
+!:mime	video/mp4
+>8	string		NDXS		\b, H.264/MPEG-4 AVC (.MP4) Nero Standard Profile
+!:mime	video/mp4
+>8	string		odcf  		\b, OMA DCF DRM Format 2.0 (OMA-TS-DRM-DCF-V2_0-20060303-A)
+>8	string		opf2 		\b, OMA PDCF DRM Format 2.1 (OMA-TS-DRM-DCF-V2_1-20070724-C)
+>8	string		opx2  		\b, OMA PDCF DRM + XBS ext (OMA-TS-DRM_XBS-V1_0-20070529-C)
+>8	string		pana		\b, Panasonic Digital Camera
+>8	string		qt  		\b, Apple QuickTime (.MOV/QT)
+!:mime	video/quicktime
+# HEIF image format
+# see https://nokiatech.github.io/heif/technical.html
+>8	string		mif1		\b, HEIF Image
+!:mime image/heif
+>8	string		msf1		\b, HEIF Image Sequence
+!:mime image/heif-sequence
+>8	string		heic		\b, HEIF Image HEVC Main or Main Still Picture Profile
+!:mime image/heic
+>8	string		heix		\b, HEIF Image HEVC Main 10 Profile
+!:mime image/heic
+>8	string		hevc		\b, HEIF Image Sequenz HEVC Main or Main Still Picture Profile
+!:mime image/heic-sequence
+>8	string		hevx		\b, HEIF Image Sequence HEVC Main 10 Profile
+!:mime image/heic-sequence
+# following HEIF brands are not mentioned in the heif technical info currently (Oct 2017)
+# but used in the reference implementation:
+# https://github.com/nokiatech/heif/blob/d5e9a21c8ba8df712bdf643021dd9f6518134776/Srcs/reader/hevcimagefilereader.cpp
+>8	string		heim		\b, HEIF Image L-HEVC
+!:mime image/heif
+>8	string		heis		\b, HEIF Image L-HEVC
+!:mime image/heif
+>8	string		avic		\b, HEIF Image AVC
+!:mime image/heif
+>8	string		hevm		\b, HEIF Image Sequence L-HEVC
+!:mime image/heif-sequence
+>8	string		hevs		\b, HEIF Image Sequence L-HEVC
+!:mime image/heif-sequence
+>8	string		avcs		\b, HEIF Image Sequence AVC
+!:mime image/heif-sequence
+
+>8	string		ROSS		\b, Ross Video
+>8	string		sdv		\b, SD Memory Card Video
+>8	string		ssc1		\b, Samsung stereo, single stream (patent pending)
+>8	string		ssc2		\b, Samsung stereo, dual stream (patent pending)

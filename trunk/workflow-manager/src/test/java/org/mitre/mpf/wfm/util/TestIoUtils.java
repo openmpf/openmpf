@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.util;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -35,6 +36,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
@@ -46,6 +48,11 @@ public class TestIoUtils {
     private Path _tempRoot;
 
     private final IoUtils _ioUtils = new IoUtils();
+
+    @BeforeClass
+    public static void initClass() {
+        assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
+    }
 
     @Before
     public void init() {

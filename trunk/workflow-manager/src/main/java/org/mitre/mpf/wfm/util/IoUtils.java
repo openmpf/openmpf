@@ -64,6 +64,9 @@ public class IoUtils {
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
     private final Tika tikaInstance = new Tika();
 
+    public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
+    public final String customMagicPath = this.getClass().getResource("/magic/custom-magic.mgc").getPath();
+
     /**
      * Gets the MIME type associated with the file located at {@code url}. This method never returns null.
      * @param url The location of the file to analyze. Must not be null.
@@ -110,12 +113,12 @@ public class IoUtils {
     }
 
 
-    public String getMimeType(Path path) throws WfmProcessingException {
+    public String getMimeType(Path filePath) throws WfmProcessingException {
         try {
-            String mimeType = tikaInstance.detect(path);
+            String mimeType = tikaInstance.detect(filePath);
 
             if (mimeType == null || mimeType.equals("application/octet-stream")) {
-                String command = "file --mime-type -b " + path;
+                String command = "file -m " + LINUX_MAGIC_PATH + ":" + customMagicPath + " --mime-type -b " + filePath;
                 Process process = Runtime.getRuntime().exec(command);
                 int exitCode = process.waitFor();
                 String error = IOUtils.toString(process.getErrorStream(), "UTF-8").trim();

@@ -113,31 +113,6 @@ public class TestMediaInspectionProcessor {
         log.info("Video media inspection test passed.");
     }
 
-    @Test(timeout = 5 * MINUTES)
-    public void testInvalidVideoInspection() {
-        log.info("Starting invalid video media inspection test.");
-
-        long jobId = next(), mediaId = next();
-        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
-
-        verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
-        verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_AUDIO_STREAM), nonBlank());
-
-        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
-                media.isFailed());
-
-        String mediaHash = "239dbbbe6faf66af7eb471ad54b993526221043ced333723a4fd450d107f272c"; // `sha256sum video_01_invalid.mp4`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq("video/mp4"),
-                        eq(-1), nonEmptyMap());
-        verifyNoJobOrMediaError();
-
-        log.info("Invalid video media inspection test passed.");
-    }
-
 	@Test(timeout = 5 * MINUTES)
 	public void testAudioInspection() {
 		log.info("Starting audio media inspection test.");
@@ -157,6 +132,54 @@ public class TestMediaInspectionProcessor {
 
 		log.info("Audio media inspection test passed.");
 	}
+
+    @Test(timeout = 5 * MINUTES)
+    public void testVideoToAudioFallback() {
+        log.info("Starting media inspection test with video to audio fallback.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_02_audio_only.mp4", Collections.emptyMap());
+
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "5891ecaf9423b58526e5a11f0409c329ceec95551357f424ba8a19a3578327ba"; // `sha256sum video_02_audio_only`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO), eq("video/mp4"),
+                        eq(-1), nonEmptyMap());
+        verifyNoJobOrMediaError();
+
+        log.info("Media inspection test with video to audio fallback passed.");
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testVideoToUnknownFallback() {
+        log.info("Starting media inspection test with video to unknown fallback.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
+
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_AUDIO_STREAM), nonBlank());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "239dbbbe6faf66af7eb471ad54b993526221043ced333723a4fd450d107f272c"; // `sha256sum video_01_invalid.mp4`
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq("video/mp4"),
+                        eq(-1), nonEmptyMap());
+        verifyNoJobOrMediaError();
+
+        log.info("Media inspection test with video to unknown fallback passed..");
+    }
 
 	@Test(timeout = 5 * MINUTES)
 	public void testInaccessibleFileInspection()  {
@@ -275,38 +298,6 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionWithMissingMetadata() {
-        log.info("Starting skip media inspection test with missing metadata.");
-
-        long jobId = next(), mediaId = next();
-        String mimeType = "video/mp4";
-        String mediaHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
-        int frameCount = 90;
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", mimeType,
-                "MEDIA_HASH", mediaHash,
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                "FRAME_COUNT", Integer.toString(frameCount),
-                "FPS", "30",
-                // missing DURATION
-                "ROTATION", "0");
-        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
-
-        verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("video metadata"));
-        verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("audio metadata"));
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq(mimeType),
-                        eq(-1), nonEmptyMap());
-        verifyNoJobOrMediaError();
-
-        log.info("Skip media inspection test with missing metadata passed.");
-    }
-
-    @Test(timeout = 5 * MINUTES)
     public void testNotSkipInspectionWithInvalidMetadata() {
         log.info("Starting not skip media inspection test with invalid metadata.");
 
@@ -354,7 +345,8 @@ public class TestMediaInspectionProcessor {
         inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
 
         verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), contains("video metadata"));
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION),
+                        contains("Missing required video metadata"));
 
         verify(mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO), eq(mimeType),
@@ -362,6 +354,40 @@ public class TestMediaInspectionProcessor {
         verifyNoJobOrMediaError();
 
         log.info("Skip media inspection test with video to audio fallback passed.");
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void testSkipInspectionVideoToUnknownFallback() {
+        log.info("Starting skip media inspection test with video to unknown fallback.");
+
+        long jobId = next(), mediaId = next();
+        String mimeType = "video/mp4";
+        String mediaHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
+        int frameCount = 90;
+        Map<String, String> mediaMetadata = Map.of(
+                "MIME_TYPE", mimeType,
+                "MEDIA_HASH", mediaHash,
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10",
+                "FRAME_COUNT", Integer.toString(frameCount),
+                "FPS", "30",
+                // missing DURATION
+                "ROTATION", "0");
+        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
+
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION),
+                        contains("Missing required video metadata"));
+        verify(mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION),
+                        contains("Missing required audio metadata"));
+
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq(mimeType),
+                        eq(-1), nonEmptyMap());
+        verifyNoJobOrMediaError();
+
+        log.info("Skip media inspection test with video to unknown fallback.");
     }
 
     @Test(timeout = 5 * MINUTES)

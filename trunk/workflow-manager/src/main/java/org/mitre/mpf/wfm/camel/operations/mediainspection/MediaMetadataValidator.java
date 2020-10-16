@@ -52,8 +52,8 @@ import java.util.stream.Collectors;
  *
  * There is no fallback for the IMAGE data type. "image/*" MIME types are not containers like "video/*" MIME types.
  *
- * If one invalid media metadata property is identified then we cannot trust any of the properties. In that case
- * fallback is not performed and media inspection cannot be skipped.
+ * If one invalid media metadata property is identified then we do trust any of the properties. In that case fallback
+ * is not performed and media inspection cannot be skipped.
  */
 @Component
 public class MediaMetadataValidator {
@@ -61,7 +61,7 @@ public class MediaMetadataValidator {
 
     private final InProgressBatchJobsService inProgressJobs;
 
-    // MIME_TYPE and MEDIA_HASH are common and checked separately
+    // MIME_TYPE and MEDIA_HASH are common and checked first
     private Set requiredAudioMetadata = Set.of("DURATION");
     private Set requiredVideoMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION");
     private Set requiredImageMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT");

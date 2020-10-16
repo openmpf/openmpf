@@ -101,7 +101,7 @@ public class IoUtils {
         String output = IOUtils.toString(process.getInputStream(), "UTF-8").trim();
         if (exitCode != 0 || !error.isEmpty()) {
             throw new WfmProcessingException(
-                    "\"file\" command returned an exit code of " + exitCode + ": "+ error);
+                    "\"file\" command returned an exit code of " + exitCode + ": " + error);
         }
         if (!output.isEmpty()) {
             mimeType = output;

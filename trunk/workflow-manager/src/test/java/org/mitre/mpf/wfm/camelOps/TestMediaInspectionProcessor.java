@@ -275,8 +275,8 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testNotSkipInspectionWithMissingMetadata() {
-        log.info("Starting not skip media inspection test with missing metadata.");
+    public void testSkipInspectionWithMissingMetadata() {
+        log.info("Starting skip media inspection test with missing metadata.");
 
         long jobId = next(), mediaId = next();
         String mimeType = "video/mp4";
@@ -303,7 +303,7 @@ public class TestMediaInspectionProcessor {
                         eq(-1), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Not skip media inspection test with missing metadata passed.");
+        log.info("Skip media inspection test with missing metadata passed.");
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -336,8 +336,8 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testNotSkipInspectionVideoToAudioFallback() {
-        log.info("Starting not skip media inspection test with video to audio fallback.");
+    public void testSkipInspectionVideoToAudioFallback() {
+        log.info("Starting skip media inspection test with video to audio fallback.");
 
         long jobId = next(), mediaId = next();
         String mimeType = "video/mp4";
@@ -361,7 +361,7 @@ public class TestMediaInspectionProcessor {
                         eq(-1), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Not skip media inspection test with video to audio fallback passed.");
+        log.info("Skip media inspection test with video to audio fallback passed.");
     }
 
     @Test(timeout = 5 * MINUTES)

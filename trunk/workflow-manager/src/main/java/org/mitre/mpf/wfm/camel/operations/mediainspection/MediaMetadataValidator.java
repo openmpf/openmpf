@@ -45,6 +45,15 @@ import java.util.stream.Collectors;
 /**
  * Class used to determine if media inspection should be skipped when media metadata properties are provided in the
  * job request. Performs some basic property validation.
+ *
+ * Every attempt is made to avoid performing media inspection. When one or more required media metadata properties are
+ * missing we fall back to another data type in this order: VIDEO --> AUDIO --> UNKNOWN. This is to handle cases where
+ * a video container format can contain zero or more video/audio/subtitle/attachment/data streams.
+ *
+ * There is no fallback for the IMAGE data type. "image/*" MIME types are not containers like "video/*" MIME types.
+ *
+ * If one invalid media metadata property is identified then we cannot trust any of the properties. In that case
+ * fallback is not performed and media inspection cannot be skipped.
  */
 @Component
 public class MediaMetadataValidator {

@@ -64,7 +64,21 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-/** This processor extracts metadata about the input medium. */
+/**
+ * Class used to extract metadata about a piece of media. Media inspection will be skipped if the appropriate media
+ * metadata properties are provided as job inputs.
+ *
+ * If a piece of media with a "video/*" MIME type has a video stream we will treat it as a VIDEO data type. Otherwise,
+ * we determine if we can treat it as an AUDIO data type.
+ *
+ * If a piece of media with an "audio/*" MIME type (or "video/*" MIME type without an video stream) has an audio
+ * stream we will treat it as an AUDIO data type. Otherwise, we will treat is as an UNKNOWN data type.
+ *
+ * To summarize, fallback is performed in this order: VIDEO --> AUDIO --> UNKNOWN. This is to handle cases where
+ * a video container format can contain zero or more video/audio/subtitle/attachment/data streams.
+ *
+ * There is no fallback for the IMAGE data type. "image/*" MIME types are not containers like "video/*" MIME types.
+ */
 @Component(MediaInspectionProcessor.REF)
 public class MediaInspectionProcessor extends WfmProcessor {
     private static final Logger log = LoggerFactory.getLogger(MediaInspectionProcessor.class);

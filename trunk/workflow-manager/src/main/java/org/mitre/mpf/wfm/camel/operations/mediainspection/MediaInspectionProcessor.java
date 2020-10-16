@@ -45,10 +45,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
-import org.mitre.mpf.wfm.util.PngDefry;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -144,7 +141,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
 
                     case IMAGE:
-                        length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
+                        length = inspectImage(localPath, jobId, mediaId, mimeType, mediaMetadata);
                         break;
 
                     default:
@@ -269,11 +266,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return frameCount;
     }
 
-    private int inspectImage(Path localPath, long jobId, long mediaId,
+    private int inspectImage(Path localPath, long jobId, long mediaId, String mimeType,
                              Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
         Path mediaPath;
-        if (mediaMetadata.get("MIME_TYPE").equals("image/heic")) {
+        if (mimeType.equals("image/heic")) {
             var tempDir = propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
             log.info("{} is HEIC image. It will be converted to PNG.", localPath);
@@ -286,7 +283,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         Metadata imageMetadata;
         try {
-            imageMetadata = generateExifMetadata(localPath);
+            imageMetadata = generateExifMetadata(localPath, mimeType);
         }
         catch (TikaException e) {
             if (!e.getMessage().contains("image/png parse error")
@@ -298,7 +295,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                      localPath);
             var defriedPath = PngDefry.defry(localPath,
                                              propertiesUtil.getTemporaryMediaDirectory().toPath());
-            imageMetadata = generateExifMetadata(defriedPath);
+            imageMetadata = generateExifMetadata(defriedPath, mimeType);
             inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
             mediaPath = defriedPath;
         }
@@ -388,12 +385,16 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return metadata;
     }
 
-    private Metadata generateExifMetadata(Path path) throws IOException, TikaException, SAXException {
+    private static Metadata generateExifMetadata(Path path, String mimeType)
+            throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
-            Parser parser = new AutoDetectParser();
+            metadata.set(Metadata.CONTENT_TYPE, mimeType);
+
+            Parser parser = mimeType.equals("image/jpeg")
+                    ? new CustomJpegParser()
+                    : new AutoDetectParser();
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
         }
         return metadata;

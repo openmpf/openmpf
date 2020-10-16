@@ -263,6 +263,29 @@ public class TestMediaInspectionProcessor {
     }
 
 
+    @Test(timeout = 5 * MINUTES)
+    public void canHandleInvalidExifDimensions() {
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/lp-bmw.jpg",
+                                       Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+        verifyNoJobOrMediaError();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), notNull(),
+                                        eq("image/jpeg"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("809", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("606", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+        assertEquals("1", metadataCaptor.getValue().get("EXIF_ORIENTATION"));
+    }
+
 
     /** Tests that media inspection is properly skipped when given valid audio metadata. */
     @Test(timeout = 5 * MINUTES)

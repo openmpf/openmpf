@@ -95,22 +95,10 @@ public class ServerMediaServiceImpl implements ServerMediaService {
 				}
 			}
 
-			// filter by approved list of content type
-			List<File> filesFiltered = new ArrayList<>();
-			List<File> parentsFiltered = new ArrayList<>();
-			for (int i = 0; i < files.size(); i++) {
-				if (ioUtils.isApprovedFile(files.get(i))) {
-					filesFiltered.add(files.get(i));
-					parentsFiltered.add(parents.get(i));
-				}
-			}
-			files = filesFiltered;
-			parents = parentsFiltered;
-
 			// build output
 			for (int i = 0; i < files.size(); i++) {
 				// file should have real path, parent should have absolute path
-				mediaFiles.add(new ServerMediaFile(files.get(i), parents.get(i), ioUtils.getMimeType(files.get(i).getAbsolutePath())));
+				mediaFiles.add(new ServerMediaFile(files.get(i), parents.get(i), ioUtils.getMimeType(files.get(i))));
 			}
 
 			// update cache
@@ -150,7 +138,7 @@ public class ServerMediaServiceImpl implements ServerMediaService {
 				try {
 					File realFile = file.toPath().toRealPath().toFile(); // use real path
 					File parent = file.getParentFile(); // use absolute path
-					mediaFiles.add(new ServerMediaFile(realFile, parent, ioUtils.getMimeType(realFile.getAbsolutePath())));
+					mediaFiles.add(new ServerMediaFile(realFile, parent, ioUtils.getMimeType(realFile)));
 				} catch (IOException e) {
 					log.error("Error determining real path: " + e.getMessage());
 				}

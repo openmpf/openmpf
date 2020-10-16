@@ -266,7 +266,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
             throws IOException, TikaException, SAXException {
-        Metadata imageMetadata = generateExifMetadata(localPath);
+        Metadata imageMetadata = generateExifMetadata(localPath, mediaMetdata.get("MIME_TYPE"));
 
         String widthStr = imageMetadata.get("tiff:ImageWidth"); // jpeg, png
         if (widthStr == null) {
@@ -353,11 +353,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return metadata;
     }
 
-    private Metadata generateExifMetadata(Path path) throws IOException, TikaException, SAXException {
+    private Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
+            metadata.set(Metadata.CONTENT_TYPE, mimeType);
             Parser parser = new AutoDetectParser();
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
         }

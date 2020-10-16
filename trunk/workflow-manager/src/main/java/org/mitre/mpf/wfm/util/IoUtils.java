@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.util;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 import org.apache.tika.Tika;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.slf4j.Logger;
@@ -67,68 +66,18 @@ public class IoUtils {
     public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
     public final String customMagicPath = this.getClass().getResource("/magic/custom-magic.mgc").getPath();
 
-    /**
-     * Gets the MIME type associated with the file located at {@code url}. This method never returns null.
-     * @param url The location of the file to analyze. Must not be null.
-     * @return A MIME type string value - this method never returns null.
-     * @throws WfmProcessingException
-     */
-    public String getMimeType(URL url) throws WfmProcessingException {
-        Validate.notNull(url, "The url parameter must not be null.");
-        String mimeType;
-        try {
-            mimeType = tikaInstance.detect(url);
-        } catch (IOException ioe) {
-            throw new WfmProcessingException(String.format("Exception occurred when getting mime type of %s", url), ioe);
-        }
-        return mimeType;
+    public String getMimeType(File file) {
+        return getMimeType(file.toPath());
     }
-
-    /***
-     * Gets the MIME type associated with the file located at {@code absolutePath}.
-     * @param absolutePath
-     * @return
-     */
-    public String getMimeType(String absolutePath) {
-        Validate.notNull(absolutePath, "The absolutePath parameter must not be null.");
-        return tikaInstance.detect(absolutePath);
-    }
-
-    /***
-     * Gets the MIME type associated with the bytes in the array.
-     * @param bytes
-     * @return
-     */
-    public String getMimeType(byte[] bytes) {
-        return tikaInstance.detect(bytes);
-    }
-
-    /**
-     * Gets the MIME type associated with the file.
-     * @param file
-     * @return
-     */
-    public String getMimeType(File file) throws IOException {
-        return tikaInstance.detect(file);
-    }
-
 
     public String getMimeType(Path filePath) throws WfmProcessingException {
         try {
-            String mimeType = tikaInstance.detect(filePath);
+            String mimeType = getMimeTypeUsingTika(filePath);
 
             if (mimeType == null || mimeType.equals("application/octet-stream")) {
-                String command = "file -m " + LINUX_MAGIC_PATH + ":" + customMagicPath + " --mime-type -b " + filePath;
-                Process process = Runtime.getRuntime().exec(command);
-                int exitCode = process.waitFor();
-                String error = IOUtils.toString(process.getErrorStream(), "UTF-8").trim();
-                String output = IOUtils.toString(process.getInputStream(), "UTF-8").trim();
-                if (exitCode != 0 || !error.isEmpty()) {
-                    throw new WfmProcessingException(
-                            "\"file\" command returned an exit code of " + exitCode + ": "+ error);
-                }
-                if (!output.isEmpty()) {
-                    mimeType = output;
+                String fileMimeType = getMimeTypeUsingFile(filePath);
+                if (fileMimeType != null) {
+                    mimeType = fileMimeType;
                 }
             }
 
@@ -138,13 +87,27 @@ public class IoUtils {
         }
     }
 
-    /**
-     * Gets the MIME type associated with the inputstream
-     * @param inputStream
-     * @return
-     */
-    public String getMimeType(InputStream inputStream) throws IOException {
-        return tikaInstance.detect(inputStream);
+    public String getMimeTypeUsingTika(Path filePath) throws IOException {
+        return tikaInstance.detect(filePath);
+    }
+
+    public String getMimeTypeUsingFile(Path filePath) throws IOException, InterruptedException {
+        String mimeType = null;
+
+        String command = "file -m " + LINUX_MAGIC_PATH + ":" + customMagicPath + " --mime-type -b " + filePath;
+        Process process = Runtime.getRuntime().exec(command);
+        int exitCode = process.waitFor();
+        String error = IOUtils.toString(process.getErrorStream(), "UTF-8").trim();
+        String output = IOUtils.toString(process.getInputStream(), "UTF-8").trim();
+        if (exitCode != 0 || !error.isEmpty()) {
+            throw new WfmProcessingException(
+                    "\"file\" command returned an exit code of " + exitCode + ": "+ error);
+        }
+        if (!output.isEmpty()) {
+            mimeType = output;
+        }
+
+        return mimeType;
     }
 
     /**
@@ -214,46 +177,17 @@ public class IoUtils {
             //remove and add on suffix if neccessary
             int suffixLocation = filename.indexOf(".");
             if (suffixLocation > -1) {
-                suffix = filename.substring(suffixLocation, filename.length());
+                suffix = filename.substring(suffixLocation);
                 filename = filename.substring(0, suffixLocation);
             }
             int i = 1;
             while (newFile.exists()) {
-                newFile = new File(directory + File.separator + filename + "_" + i + suffix);//add a _n to the filename
+                newFile = new File(directory + File.separator + filename + "_" + i + suffix); // add a _n to the filename
                 i++;
             }
         }
         return newFile;
     }
-
-    /***
-     * Returns true if the file passes mime and custom extension tests
-     * @param file
-     * @return
-     */
-    public boolean isApprovedFile(File file) {
-        return isApprovedContentType(getMimeType(file.getAbsolutePath()));
-    }
-
-    /***
-     * Returns true if the file passes mime and custom extension tests
-     * @param url
-     * @return
-     * @throws WfmProcessingException
-     */
-    public boolean isApprovedFile(URL url) throws WfmProcessingException {
-        return isApprovedContentType(getMimeType(url));
-    }
-
-    /***
-     * Returns true if the content type is not equal to null
-     * @param contentType
-     * @return
-     */
-    public boolean isApprovedContentType(String contentType) {
-        return mediaTypeUtils.parse(contentType) != null;
-    }
-
 
     public static void closeQuietly(Closeable closeable) {
         if (closeable == null) {
@@ -265,7 +199,6 @@ public class IoUtils {
         catch (IOException ignored) {
         }
     }
-
 
     public static Optional<Path> toLocalPath(String pathOrUri) {
         if (pathOrUri == null) {
@@ -286,7 +219,6 @@ public class IoUtils {
             return Optional.of(Paths.get(pathOrUri));
         }
     }
-
 
     public static URL toUrl(String pathOrUri) {
         MalformedURLException suppressed;
@@ -314,7 +246,6 @@ public class IoUtils {
         return new URL(pathOrUri).openStream();
     }
 
-
     public static void deleteEmptyDirectoriesRecursively(Path startDir) {
         if (!Files.exists(startDir)) {
             return;
@@ -340,7 +271,6 @@ public class IoUtils {
             return !paths.findAny().isPresent();
         }
     }
-
 
     public static void writeFileAsAttachment(Path path, HttpServletResponse response) throws IOException {
         try (InputStream inputStream = Files.newInputStream(path)) {
@@ -370,7 +300,6 @@ public class IoUtils {
         IOUtils.copy(inputStream, response.getOutputStream());
         response.flushBuffer();
     }
-
 
     public static String normalizeUri(String uriString) {
         if (uriString.startsWith("file:/") && !uriString.startsWith("file:///")) {

@@ -51,6 +51,8 @@ public class TestIoUtils {
 
     @BeforeClass
     public static void initClass() {
+        // The "file" command will silently ignore missing files as long as one of the files provided when using the
+        // -m option is available. It's assumed that the default Linux magic file is always installed.
         assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
     }
 
@@ -89,14 +91,27 @@ public class TestIoUtils {
     }
 
     @Test
-    public void canDetectMimeType() throws IOException {
-        String imageType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
-        assertNotNull("The detected audioType must not be null.", imageType);
+    public void canDetectMimeType() {
+        assertEquals("image/jpeg", _ioUtils.getMimeType(getResourcePath("/samples/meds1.jpg")));
 
-        String videoType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/mpeg_vid.mpg"));
-        assertNotNull("The detected audioType must not be null.", videoType);
+        assertEquals("video/mp4", _ioUtils.getMimeType(getResourcePath("/samples/video_01.mp4")));
 
-        String audioType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/green.wav"));
-        assertNotNull("The detected audioType must not be null.", audioType);
+        assertEquals("audio/vnd.wave", _ioUtils.getMimeType(getResourcePath("/samples/green.wav")));
+
+        assertEquals("text/plain", _ioUtils.getMimeType(getResourcePath("/samples/NOTICE")));
+    }
+
+    @Test
+    public void canDetectMimeTypeUsingTika() throws IOException {
+        assertEquals("video/vnd.dlna.mpeg-tts", _ioUtils.getMimeTypeUsingTika(getResourcePath("/samples/bbb24p_00_short.ts")));
+    }
+
+    @Test
+    public void canDetectMimeTypeUsingFile() throws IOException, InterruptedException {
+        assertEquals("audio/x-hx-aac-adts", _ioUtils.getMimeTypeUsingFile(getResourcePath("/samples/green.adts")));
+    }
+
+    private Path getResourcePath(String subpath) {
+        return Paths.get(this.getClass().getResource(subpath).getPath());
     }
 }

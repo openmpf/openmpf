@@ -24,6 +24,42 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# Most of this file content is taken from
+# https://github.com/file/file/tree/master/magic/Magdir, which has the
+# following copyright:
+
+#------------------------------------------------------------------------------
+# $File: COPYING,v 1.2 2018/09/09 20:33:28 christos Exp $
+# Copyright (c) Ian F. Darwin 1986, 1987, 1989, 1990, 1991, 1992, 1994, 1995.
+# Software written by Ian F. Darwin and others;
+# maintained 1994- Christos Zoulas.
+#
+# This software is not subject to any export provision of the United States
+# Department of Commerce, and may be exported to any country or planet.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice immediately at the beginning of the file, without modification,
+#    this list of conditions, and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#------------------------------------------------------------------------------
+
 #------------------------------------------------------------------------------
 # Custom Magic Numbers
 #   compile with `file -C -m custom-magic`
@@ -37,14 +73,6 @@
 >4  long    x     (size: %d)
 >>8 string  WEBP WEBP
 !:mime	image/webp
-
-#------------------------------------------------------------------------------
-
-0 string 	EVF
->3 string \x09\x0d\x0a\xff	Expert Witness Compression Format (EWF)
-!:mime  application/x-encase
->3 string \x32\x0d\x0a\x81	EnCase Evidence File Version 2 (Ex01)
-!:mime  application/x-encase2
 
 #------------------------------------------------------------------------------
 # adapted from mail.news by fapertl 2018-11-19

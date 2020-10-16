@@ -52,7 +52,7 @@ public class TestIoUtils {
     @BeforeClass
     public static void initClass() {
         // The "file" command will silently ignore missing files as long as one of the files provided when using the
-        // -m option is available. It's assumed that the default Linux magic file is always installed.
+        // -m option is available. Ensure that the default Linux magic file is installed.
         assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
     }
 

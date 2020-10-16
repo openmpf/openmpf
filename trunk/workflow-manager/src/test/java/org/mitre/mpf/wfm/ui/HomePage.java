@@ -49,11 +49,6 @@ public class HomePage {
 		return driver.getTitle().startsWith(PAGE_TITLE);
 	}
 
-	/**
-	 * Login as valid user
-	 *
-	 * @return LoginPage object
-	 */
 	public LoginPage logout(WebDriver driver) {
 		if (!ValidPage(driver)) {
 			throw new IllegalStateException(

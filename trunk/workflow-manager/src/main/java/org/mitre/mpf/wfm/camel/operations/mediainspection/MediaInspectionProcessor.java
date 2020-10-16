@@ -72,7 +72,7 @@ import java.util.Map;
  * we determine if we can treat it as an AUDIO data type.
  *
  * If a piece of media with an "audio/*" MIME type (or "video/*" MIME type without an video stream) has an audio
- * stream we will treat it as an AUDIO data type. Otherwise, we will treat is as an UNKNOWN data type.
+ * stream we will treat it as an AUDIO data type. Otherwise, we will treat it as an UNKNOWN data type.
  *
  * To summarize, fallback is performed in this order: VIDEO --> AUDIO --> UNKNOWN. This is to handle cases where
  * a video container format can contain zero or more video/audio/subtitle/attachment/data streams.

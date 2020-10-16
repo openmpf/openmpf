@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Class used to determine if media inspection should be skipped when media metadata properties are provided in the
+ * Class used to determine if media inspection can be skipped when media metadata properties are provided in the
  * job request. Performs some basic property validation.
  *
  * Every attempt is made to avoid performing media inspection. When one or more required media metadata properties are

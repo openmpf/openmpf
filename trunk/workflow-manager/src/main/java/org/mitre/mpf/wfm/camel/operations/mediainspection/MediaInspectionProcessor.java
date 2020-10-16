@@ -99,7 +99,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
 
-            if (mediaMetadataValidator.skipInspection(jobId, mediaId, media.getProvidedMetadata())) {
+            if (mediaMetadataValidator.skipInspection(jobId, media)) {
                 setHeaders(exchange, jobId, mediaId);
                 return;
             }
@@ -270,7 +270,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                              Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
         Path mediaPath;
-        if (mimeType.equals("image/heic")) {
+        if (mimeType.equalsIgnoreCase("image/heic")) {
             var tempDir = propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
             log.info("{} is HEIC image. It will be converted to PNG.", localPath);

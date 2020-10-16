@@ -27,6 +27,9 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +37,8 @@ import java.util.Arrays;
 import java.util.UUID;
 
 public class PngDefry {
+    private static final Logger LOG = LoggerFactory.getLogger(PngDefry.class);
+
 
     // From https://en.wikipedia.org/wiki/Portable_Network_Graphics#File_format
     private static final byte[] PNG_HEADER = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
@@ -43,7 +48,7 @@ public class PngDefry {
     private static final byte[] CGBI_CHUNK_TYPE = { 'C', 'g', 'B', 'I'};
 
 
-    public static boolean isCrushed(Path imgPath) throws IOException {
+    public static boolean isCrushed(Path imgPath) {
         try (var inputStream = Files.newInputStream(imgPath)) {
             var header = inputStream.readNBytes(PNG_HEADER.length);
             if (!Arrays.equals(header, PNG_HEADER)) {
@@ -56,6 +61,12 @@ public class PngDefry {
             // Regular PNGs require IHDR to be the first chunk.
             var chunkType = inputStream.readNBytes(CGBI_CHUNK_TYPE.length);
             return Arrays.equals(chunkType, CGBI_CHUNK_TYPE);
+        }
+        catch (IOException e) {
+            LOG.warn(String.format(
+                    "Could not determine if %s is an Apple-optimized PNG due to: %s",
+                    imgPath, e.getMessage()), e);
+            return false;
         }
     }
 

@@ -486,8 +486,9 @@ public class TestDetectionTaskSplitter {
     // overrides at various category levels (system, action, job, algorithm, and media, with media properties being the highest ranking).
 
     private BatchJob createSimpleJobForFrameRateCapTest(
-        Map<String, String> actionProperties, Map<String, String> jobProperties,
-        Map<String, Map<String, String>> algorithmProperties, Map<String,String> mediaProperties) {
+            Map<String, String> systemProperties, Map<String, String> actionProperties,
+            Map<String, String> jobProperties, Map<String, Map<String, String>> algorithmProperties,
+            Map<String,String> mediaProperties) {
 
         URI mediaUri = URI.create("file:///path/to/dummy/media");
         MediaImpl testMedia = new MediaImpl(
@@ -519,7 +520,10 @@ public class TestDetectionTaskSplitter {
                 Collections.singletonList(algorithm));
 
         // Capture a snapshot of the detection system property settings when the job is created.
-        SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
+        Map<String, String> allSystemProperties =
+                new HashMap<>(propertiesUtil.createSystemPropertiesSnapshot().getProperties());
+        allSystemProperties.putAll(systemProperties);
+        SystemPropertiesSnapshot systemPropertiesSnapshot = new SystemPropertiesSnapshot(allSystemProperties);
 
         return new BatchJobImpl(
                 nextId(),
@@ -549,6 +553,10 @@ public class TestDetectionTaskSplitter {
                                     Integer frameIntervalMediaPropVal, Integer frameRateCapMediaPropVal,
                                     double mediaFPS, Integer expectedFrameInterval) {
 
+        Map<String, String> systemProps = new HashMap<>();
+        putStringInMapIfNotNull(systemProps, "detection.sampling.interval", frameIntervalSystemPropVal);
+        putStringInMapIfNotNull(systemProps, "detection.frame.rate.cap", frameRateCapSystemPropVal);
+
         Map<String, String> actionProps = new HashMap<>();
         putStringInMapIfNotNull(actionProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalActionPropVal);
         putStringInMapIfNotNull(actionProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapActionPropVal);
@@ -568,7 +576,7 @@ public class TestDetectionTaskSplitter {
         putStringInMapIfNotNull(mediaProps, MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, frameIntervalMediaPropVal);
         putStringInMapIfNotNull(mediaProps, MpfConstants.FRAME_RATE_CAP_PROPERTY, frameRateCapMediaPropVal);
 
-        BatchJob testJob = createSimpleJobForFrameRateCapTest(actionProps, jobProps, metaAlgProps, mediaProps);
+        BatchJob testJob = createSimpleJobForFrameRateCapTest(systemProps, actionProps, jobProps, metaAlgProps, mediaProps);
 
         String calcFrameInterval = aggregateJobPropertiesUtil.calculateFrameInterval(
                 testJob.getPipelineElements().getAction(0, 0),

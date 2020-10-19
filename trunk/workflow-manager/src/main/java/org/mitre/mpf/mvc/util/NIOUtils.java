@@ -26,33 +26,16 @@
 
 package org.mitre.mpf.mvc.util;
 
-import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class NIOUtils {
 	
 	private static final Logger log = LoggerFactory.getLogger(NIOUtils.class);
-	
-	public static long getSubFilesAndDirsCount(final Path p) {
-		long count = 0;
-		//help from http://stackoverflow.com/questions/18300105/number-of-subfolders-in-a-folder-directory
-		try {
-			count = Files.walk(p, 1, FileVisitOption.FOLLOW_LINKS).count() - 1; // '-1' because the Path param (p) is also counted in
-		} catch (IOException e) {
-			log.error("Error determing the count of sub files and directories.", e);
-		}
-		
-		return count;
-	}
 	
 	public static String getPathContentType(Path path) {
 		String contentType = null;
@@ -67,42 +50,4 @@ public class NIOUtils {
 		}
 		return contentType;
 	}
-	
-	//if returned null, the file should not be added to the tree
-    public static String getFileTreeNodeIconString(final Path path, final List<String> customExtensions) {
-		//photo ?
-		// glyphicon glyphicon-picture
-		//audio ?
-		// glyphicon glyphicon-music	
-		//video ?
-		// glyphicon glyphicon-film
-		//other extensions
-    	// glyphicon glyphicon-file
-    	
-    	String iconStr = null;
-		if(path != null && Files.isRegularFile(path)) {
-	    	String contentType = getPathContentType(path);			
-	    	
-			if(contentType != null) {
-				if(StringUtils.startsWithIgnoreCase(contentType, "AUDIO")) {
-					iconStr = "glyphicon glyphicon-music";
-				} 
-				else if(StringUtils.startsWithIgnoreCase(contentType, "IMAGE")) {
-					iconStr = "glyphicon glyphicon-picture";
-				}
-				else if(StringUtils.startsWithIgnoreCase(contentType, "VIDEO")) {
-					iconStr = "glyphicon glyphicon-film";
-				}
-				else if(customExtensions != null && !customExtensions.isEmpty()){
-					//java NIO does not have an implemented solution for getting the extension - makes sense
-					String ext = FilenameUtils.getExtension(path.getFileName().toString());
-					if(customExtensions.contains(ext)) {
-						iconStr = "glyphicon glyphicon-file";
-					}
-				}
-			}
-    	}
-    	
-    	return iconStr;
-    }
 }

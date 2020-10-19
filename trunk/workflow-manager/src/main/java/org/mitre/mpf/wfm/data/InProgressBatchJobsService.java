@@ -70,7 +70,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public BatchJob addJob(
+    public synchronized BatchJob addJob(
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,

@@ -29,7 +29,6 @@ package org.mitre.mpf.mvc.controller;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
-import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
@@ -61,9 +60,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -186,17 +185,26 @@ public class ServerMediaController {
      * @param response
      * @param nodeFullPath
      * @throws IOException
-     * @throws URISyntaxException
      */
     @RequestMapping(value = "/server/node-image", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
-    public void serve(HttpServletResponse response, @RequestParam(value = "nodeFullPath", required = true) String nodeFullPath) throws IOException, URISyntaxException {
-        //TODO: this set of lines is also used in the MarkupController - create a single method
-        File f = new File(nodeFullPath);
-        if(f.canRead()) {
-            FileUtils.copyFile(f, response.getOutputStream());
-            response.flushBuffer();
-        } else {
+    public void serve(HttpServletResponse response,
+                      @RequestParam(value = "nodeFullPath", required = true) String nodeFullPath)
+            throws IOException {
+
+        var path = Paths.get(nodeFullPath);
+        if (Files.isReadable(path)) {
+            try {
+                Files.copy(path, response.getOutputStream());
+                response.flushBuffer();
+            }
+            catch (IOException e) {
+                if (!e.getMessage().contains("Connection reset by peer")) {
+                    throw e;
+                }
+            }
+        }
+        else {
             response.setStatus(404);
         }
 

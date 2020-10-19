@@ -32,7 +32,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.mvc.util.NIOUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
@@ -90,6 +89,9 @@ public class MarkupController {
     private JobRequestDao jobRequestDao;
 
     @Autowired
+    private IoUtils ioUtils;
+
+    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
@@ -99,14 +101,13 @@ public class MarkupController {
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
-        //all MarkupResult objects
-        List<MarkupResultModel> markupResultModels = new ArrayList<MarkupResultModel>();
-        for (MarkupResult markupResult : markupResultDao.findAll()) {
-            if (jobId != null) {
-                if (markupResult.getJobId() == jobId) {
-                    markupResultModels.add(convertMarkupResult(markupResult));
-                }
-            } else {
+        List<MarkupResultModel> markupResultModels = new ArrayList<>();
+        if (jobId != null) {
+            for (MarkupResult markupResult : markupResultDao.findByJobId(jobId)) {
+                markupResultModels.add(convertMarkupResult(markupResult));
+            }
+        } else {
+            for (MarkupResult markupResult : markupResultDao.findAll()) {
                 markupResultModels.add(convertMarkupResult(markupResult));
             }
         }
@@ -167,7 +168,7 @@ public class MarkupController {
                         model.setSourceFileAvailable(true);
                     }
                     if (path != null && Files.exists(path)) {
-                        model.setSourceURIContentType(NIOUtils.getPathContentType(path));
+                        model.setSourceURIContentType(IoUtils.getPathContentType(med.getMimeType()));
                         model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
                     }
                 }
@@ -232,30 +233,53 @@ public class MarkupController {
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
     public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
-        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
-        if (mediaMarkupResult == null) {
-            log.debug("server download file failed for markup id = " +id);
+        MarkupResult markupResult = markupResultDao.findById(id);
+        if (markupResult == null) {
+            log.error("Markup with id " + id + " download failed. Invalid id.");
             response.setStatus(404);
             response.flushBuffer();
             return;
         }
 
-        Path localPath = IoUtils.toLocalPath(mediaMarkupResult.getMarkupUri()).orElse(null);
+        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
+                .map(JobRequest::getJob)
+                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
+                .orElse(null);
+        if (job == null) {
+            log.error("Markup with id " + id + " download failed. Invalid job with id " + markupResult.getJobId() + ".");
+            response.setStatus(404);
+            response.flushBuffer();
+            return;
+        }
+
+        var media = job.getMedia()
+                .stream()
+                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .findAny()
+                .orElse(null);
+        if (media == null) {
+            log.error("Markup with id " + id + " download failed. Invalid media: " + markupResult.getSourceUri());
+            response.setStatus(404);
+            response.flushBuffer();
+            return;
+        }
+
+        Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
         if (localPath != null) {
             if (!Files.exists(localPath)) {
-                log.debug("server download file failed for markup id = " + id);
+                log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
                 response.setStatus(404);
                 response.flushBuffer();
                 return;
             }
-            IoUtils.writeFileAsAttachment(localPath, response);
+            ioUtils.writeFileAsAttachment(localPath, response);
             return;
         }
 
-        Function<String, String> combinedProperties = getProperties(mediaMarkupResult);
+        Function<String, String> combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(mediaMarkupResult.getMarkupUri(), combinedProperties);
+            S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();
                 IoUtils.writeContentAsAttachment(inputStream, response, s3Object.getKey(), metadata.getContentType(),
@@ -264,7 +288,7 @@ public class MarkupController {
             return;
         }
 
-        URL mediaUrl = IoUtils.toUrl(mediaMarkupResult.getMarkupUri());
+        URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
         int slashPos = mediaUrl.getPath().lastIndexOf('/');
         String fileName = mediaUrl.getPath().substring(1 + slashPos);
         if (fileName.isEmpty()) {
@@ -277,35 +301,17 @@ public class MarkupController {
         }
     }
 
-    private Function<String, String> getProperties(MarkupResult markupResult) {
-        BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
-                .map(JobRequest::getJob)
-                .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
-                .orElse(null);
-
-        if (job == null) {
-            return x -> null;
-        }
-
-        var media = job.getMedia()
-                .stream()
-                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
-                .findAny()
-                .orElse(null);
-
+    private Function<String, String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
-
         return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }
 
-
-    private static MarkupResultModel convertMarkupResult(
-            MarkupResult markupResult) {
+    private MarkupResultModel convertMarkupResult(MarkupResult markupResult) {
         boolean isImage = false;
         boolean fileExists = true;
         if(markupResult.getMarkupUri() != null) {
             String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
-            String markupContentType = NIOUtils.getPathContentType(Paths.get(nonUrlPath));
+            String markupContentType = ioUtils.getPathContentType(Paths.get(nonUrlPath));
             isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
             fileExists = new File(nonUrlPath).exists();
         }
@@ -315,7 +321,7 @@ public class MarkupController {
                                      markupResult.getSourceUri(), isImage, fileExists);
     }
 
-    private static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
+    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
         String markupUriContentType = "";
         String markupImgUrl = "";
         String markupDownloadUrl ="";
@@ -328,7 +334,7 @@ public class MarkupController {
         if (markupResult.getMarkupUri() != null) {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
             if (path != null && Files.exists(path)) {
-                markupUriContentType = NIOUtils.getPathContentType(path);
+                markupUriContentType = ioUtils.getPathContentType(path);
                 markupFileAvailable = true;
                 markupImgUrl = "markup/content?id=" + markupResult.getId();
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
@@ -350,7 +356,7 @@ public class MarkupController {
                 sourceFileAvailable = true;
             }
             if (path != null && Files.exists(path))  {
-                sourceUriContentType = NIOUtils.getPathContentType(path);
+                sourceUriContentType = ioUtils.getPathContentType(path);
                 sourceImgUrl = "server/node-image?nodeFullPath=" + path;
             }
         }

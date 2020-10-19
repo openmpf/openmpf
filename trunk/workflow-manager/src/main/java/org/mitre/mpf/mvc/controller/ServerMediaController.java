@@ -91,6 +91,9 @@ public class ServerMediaController {
     private JobRequestDao jobRequestDao;
 
     @Autowired
+    private IoUtils ioUtils;
+
+    @Autowired
     private JsonUtils jsonUtils;
 
     @Autowired
@@ -216,7 +219,7 @@ public class ServerMediaController {
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
 
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            IoUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
+            ioUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
         }
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);

@@ -54,9 +54,6 @@ public class IoUtils {
     private static final Logger log = LoggerFactory.getLogger(IoUtils.class);
 
     @Autowired
-    private MediaTypeUtils mediaTypeUtils;
-
-    @Autowired
     private PropertiesUtil propertiesUtil;
 
     // Detect is thread safe, so only one instance is needed.
@@ -65,10 +62,6 @@ public class IoUtils {
 
     public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
     public final String customMagicPath = this.getClass().getResource("/magic/custom-magic.mgc").getPath();
-
-    public String getMimeType(File file) {
-        return getMimeType(file.toPath());
-    }
 
     public String getMimeType(Path filePath) throws WfmProcessingException {
         try {
@@ -107,6 +100,18 @@ public class IoUtils {
             mimeType = output;
         }
 
+        return mimeType;
+    }
+
+    public String getPathContentType(Path filePath) {
+        return getPathContentType(getMimeType(filePath));
+    }
+
+    public static String getPathContentType(String mimeType) {
+        if (mimeType.equals("image/heic")) {
+            // Avoid "java.io.IOException: Broken pipe"
+            return "application/octet-stream";
+        }
         return mimeType;
     }
 
@@ -272,10 +277,11 @@ public class IoUtils {
         }
     }
 
-    public static void writeFileAsAttachment(Path path, HttpServletResponse response) throws IOException {
+    public void writeFileAsAttachment(Path path, HttpServletResponse response)
+            throws IOException {
         try (InputStream inputStream = Files.newInputStream(path)) {
-            writeContentAsAttachment(inputStream, response, path.getFileName().toString(),
-                                     Files.probeContentType(path), Files.size(path));
+            writeContentAsAttachment(inputStream, response, path.getFileName().toString(), getMimeType(path),
+                    Files.size(path));
         }
     }
 

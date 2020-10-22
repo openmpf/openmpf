@@ -93,3 +93,15 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 # lp-bmw.jpg
 Public Domain
+
+
+# IMG_5355.HEIC
+Public Domain
+
+
+# pngdefry/lenna-crushed.png, pngdefry/lenna-normal.png
+Created by running the following command on a MacBook Pro:
+"xcrun --sdk iphoneos pngcrush -iphone -force lenna-normal.png lenna-crushed.png"
+
+Original lenna-normal.png image taken from https://en.wikipedia.org/wiki/File:Lenna_(test_image).png, which states:
+"Use of this 512x512 scan is 'overlooked' and by implication permitted by Playboy."

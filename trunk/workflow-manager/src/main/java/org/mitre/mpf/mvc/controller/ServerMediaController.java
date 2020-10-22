@@ -47,7 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -64,10 +66,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 @Api(value = "Server Media",description = "Server media retrieval")
@@ -180,39 +179,24 @@ public class ServerMediaController {
         return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
     }
 
-    /***
-     *
-     * @param response
-     * @param nodeFullPath
-     * @throws IOException
-     */
-    @RequestMapping(value = "/server/node-image", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
-    @ResponseBody
-    public void serve(HttpServletResponse response,
-                      @RequestParam(value = "nodeFullPath", required = true) String nodeFullPath)
-            throws IOException {
 
+    @RequestMapping(value = "/server/node-image", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> serve(@RequestParam("nodeFullPath") String nodeFullPath)
+            throws IOException {
         var path = Paths.get(nodeFullPath);
         if (Files.isReadable(path)) {
-            try {
-                Files.copy(path, response.getOutputStream());
-                response.flushBuffer();
-            }
-            catch (IOException e) {
-                if (!e.getMessage().contains("Connection reset by peer")) {
-                    throw e;
-                }
-            }
+            var contentType= Optional.ofNullable(Files.probeContentType(path))
+                    .map(MediaType::parseMediaType)
+                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+            return ResponseEntity.ok()
+                    .contentType(contentType)
+                    .body(new PathResource(path));
         }
         else {
-            response.setStatus(404);
+            return ResponseEntity.notFound().build();
         }
-
-        //TODO: add an image to return that is file not available and error retrieving file
-        //to resources to use when there are issues
-
-        //TODO: adjust the content type based on the image type
-        //response.setContentLength(MediaType.);
     }
 
 

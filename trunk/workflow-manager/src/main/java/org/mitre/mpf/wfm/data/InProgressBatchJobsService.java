@@ -157,7 +157,7 @@ public class InProgressBatchJobsService {
                     LOG.warn(String.format(
                             "Failed to delete the converted media file '%s' - " +
                                     "it must be manually deleted.",
-                            media.getLocalPath()), e);
+                            media.getConvertedMediaPath().get()), e);
                 }
             }
         }

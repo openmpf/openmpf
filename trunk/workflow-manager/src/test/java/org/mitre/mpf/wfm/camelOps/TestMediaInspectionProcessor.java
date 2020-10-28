@@ -27,8 +27,11 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
@@ -40,10 +43,14 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JniLoader;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
@@ -55,15 +62,23 @@ import static org.mitre.mpf.test.TestUtil.nonEmptyMap;
 import static org.mockito.Mockito.*;
 
 public class TestMediaInspectionProcessor {
-	private static final Logger log = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
-	private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
+    private static final Logger log = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
+    private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
-    private final InProgressBatchJobsService mockInProgressJobs = mock(InProgressBatchJobsService.class);
+    private final PropertiesUtil mockPropertiesUtil = mock(PropertiesUtil.class);
 
-    private final MediaMetadataValidator mediaMetadataValidator = new MediaMetadataValidator(mockInProgressJobs);
+    private final InProgressBatchJobsService mockInProgressJobs
+            = mock(InProgressBatchJobsService.class);
+
+    private final MediaMetadataValidator mockMediaMetadataValidator
+            = mock(MediaMetadataValidator.class);
 
     private final MediaInspectionProcessor mediaInspectionProcessor
-            = new MediaInspectionProcessor(mockInProgressJobs, new IoUtils(), mediaMetadataValidator);
+            = new MediaInspectionProcessor(mockPropertiesUtil, mockInProgressJobs, new IoUtils(),
+                                           mockMediaMetadataValidator);
+
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
 
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
@@ -71,37 +86,45 @@ public class TestMediaInspectionProcessor {
         return SEQUENCE.incrementAndGet();
     }
 
+
     @BeforeClass
     public static void initClass() {
         assertTrue(JniLoader.isLoaded());
     }
 
-	@Test(timeout = 5 * MINUTES)
-	public void testImageInspection() {
-		log.info("Starting image media inspection test.");
+    @Before
+    public void init() {
+        when(mockMediaMetadataValidator.skipInspection(anyLong(), any()))
+                .thenReturn(false);
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testImageInspection() {
+        log.info("Starting image media inspection test.");
 
         long jobId = next(), mediaId = next();
         MediaImpl media = inspectMedia(jobId, mediaId, "/samples/meds1.jpg", Collections.emptyMap());
 
-		assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
-				media.isFailed());
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
 
-		String targetType = "image";
-		int targetLength = 1;
-		String targetHash = "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713";//`sha256sum meds1.jpg`
+        String targetType = "image";
+        int targetLength = 1;
+        String targetHash = "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713";//`sha256sum meds1.jpg`
 
-		verify(mockInProgressJobs)
+        verify(mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
                                         eq(targetLength), notNull());
-		verifyNoJobOrMediaError();
+        verifyNoJobOrMediaError();
 
-		log.info("Image media inspection test passed.");
-	}
+        log.info("Image media inspection test passed.");
+    }
 
-	/** Tests that the results from a video file are sane. */
-	@Test(timeout = 5 * MINUTES)
-	public void testVideoInspection() {
-		log.info("Starting video media inspection test.");
+    /** Tests that the results from a video file are sane. */
+    @Test(timeout = 5 * MINUTES)
+    public void testVideoInspection() {
+        log.info("Starting video media inspection test.");
 
         long jobId = next(), mediaId = next();
         MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01.mp4", Collections.emptyMap());
@@ -134,10 +157,10 @@ public class TestMediaInspectionProcessor {
         log.info("Invalid video media inspection test passed.");
     }
 
-	/** Tests that the results from an audio file are sane. */
-	@Test(timeout = 5 * MINUTES)
-	public void testAudioInspection() {
-		log.info("Starting audio media inspection test.");
+    /** Tests that the results from an audio file are sane. */
+    @Test(timeout = 5 * MINUTES)
+    public void testAudioInspection() {
+        log.info("Starting audio media inspection test.");
 
         long jobId = next(), mediaId = next();
         MediaImpl media = inspectMedia(jobId, mediaId, "/samples/green.wav", Collections.emptyMap());
@@ -154,13 +177,13 @@ public class TestMediaInspectionProcessor {
                                         eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-		log.info("Audio media inspection test passed.");
-	}
+        log.info("Audio media inspection test passed.");
+    }
 
-	/** Tests that the results from a file which is not accessible is sane. */
-	@Test(timeout = 5 * MINUTES)
-	public void testInaccessibleFileInspection()  {
-		log.info("Starting inaccessible file media inspection test.");
+    /** Tests that the results from a file which is not accessible is sane. */
+    @Test(timeout = 5 * MINUTES)
+    public void testInaccessibleFileInspection()  {
+        log.info("Starting inaccessible file media inspection test.");
 
         long jobId = next(), mediaId = next();
         MediaImpl media = inspectMedia(jobId, mediaId, URI.create("file:/asdfasfdasdf124124sadfasdfasdf.bin"),
@@ -169,210 +192,145 @@ public class TestMediaInspectionProcessor {
         assertTrue(media.isFailed());
         verifyMediaError(jobId, mediaId);
 
-		log.info("Inaccessible file media inspection test passed.");
-	}
-
-    /** Tests that media inspection is properly skipped when given valid audio metadata. */
-    @Test(timeout = 5 * MINUTES)
-    public void testSkipAudioInspection() {
-        log.info("Starting skip audio media inspection test.");
-
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "audio/green.wav",
-                "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
-                "DURATION", "10");
-        inspectMedia(jobId, mediaId, "/samples/green.wav", mediaMetadata);
-
-        verifyNoMediaWarning();
-
-        String targetType = "audio";
-        int targetLength = -1;
-        String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), nonEmptyMap());
-        verifyNoJobOrMediaError();
-
-        log.info("Skip audio media inspection test passed.");
+        log.info("Inaccessible file media inspection test passed.");
     }
 
-    /** Tests that media inspection is properly skipped when given valid generic metadata. */
+
     @Test(timeout = 5 * MINUTES)
-    public void testSkipGenericInspection() {
-        log.info("Starting skip generic media inspection test.");
+    public void testCrushedPngInspection() {
+        when(mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(tempFolder.getRoot());
 
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "application/green.wav",
-                "MEDIA_HASH", "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0");
-        inspectMedia(jobId, mediaId, "/samples/green.wav", mediaMetadata);
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/pngdefry/lenna-crushed.png",
+                                       Map.of());
 
-        verifyNoMediaWarning();
-
-        String targetType = "application";
-        int targetLength = -1;
-        String targetHash = "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0"; //`sha256sum green.wav`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), nonEmptyMap());
-        verifyNoJobOrMediaError();
-
-        log.info("Skip generic media inspection test passed.");
-    }
-
-    /** Tests that media inspection is properly skipped when given valid image metadata. */
-    @Test(timeout = 5 * MINUTES)
-    public void testSkipImageInspection() {
-        log.info("Starting skip image media inspection test.");
-
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "image/meds1.jpg",
-                "MEDIA_HASH", "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                "EXIF_ORIENTATION", "0",
-                "ROTATION", "0",
-                "HORIZONTAL_FLIP", "FALSE");
-        inspectMedia(jobId, mediaId, "/samples/meds1.jpg", mediaMetadata);
-
-        verifyNoMediaWarning();
-
-        String targetType = "image";
-        int targetLength = 1;
-        String targetHash = "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713";//`sha256sum meds1.jpg`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), notNull());
-        verifyNoJobOrMediaError();
-
-        log.info("Skip image media inspection test passed.");
-    }
-
-    /** Tests that media inspection is properly skipped when given valid video metadata. */
-    @Test(timeout = 5 * MINUTES)
-    public void testSkipVideoInspection() {
-        log.info("Starting skip video media inspection test.");
-
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "video/video_01.mp4",
-                "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                "FRAME_COUNT", "90",
-                "FPS", "30",
-                "DURATION", "3",
-                "ROTATION", "0");
-        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
-
-        verifyNoMediaWarning();
-
-        String targetType = "video";
-        int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
-        String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), nonEmptyMap());
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
 
         verifyNoJobOrMediaError();
 
-        log.info("Skip video media inspection test passed.");
+        // `sha256sum lenna-crushed.png`
+        String targetHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash),
+                                        eq("image/png"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("512", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("512", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+
+
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+        var defriedPath = pathCaptor.getValue();
+        assertTrue(defriedPath.startsWith(tempFolder.getRoot().toPath()));
+        assertTrue(defriedPath.getFileName().toString().startsWith("lenna-crushed_defried"));
+        assertTrue(defriedPath.getFileName().toString().endsWith(".png"));
+        assertTrue(Files.exists(defriedPath));
     }
 
-    /** Tests that media inspection is not skipped when missing required metadata. */
+
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionWithMissingMetadata() {
-        log.info("Starting skip media inspection test with missing metadata.");
+    public void testHeicInspection() {
+        when(mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(tempFolder.getRoot());
 
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "video/video_01.mp4",
-                "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                // missing FRAME_COUNT
-                "FPS", "30",
-                "DURATION", "3",
-                "ROTATION", "0");
-        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/IMG_5355.HEIC",
+                                       Map.of());
 
-        verifyMediaWarning(jobId, mediaId);
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
 
-        String targetType = "video";
-        int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
-        String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), nonEmptyMap());
         verifyNoJobOrMediaError();
 
-        log.info("Skip media inspection test with missing metadata passed.");
+        // `sha256sum IMG_5355.HEIC`
+        String targetHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2";
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash),
+                                        eq("image/heic"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("4032", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+        var heicPath = pathCaptor.getValue();
+        assertTrue(heicPath.startsWith(tempFolder.getRoot().toPath()));
+        assertTrue(heicPath.getFileName().toString().endsWith(".png"));
+        assertTrue(Files.exists(heicPath));
     }
 
-    /** Tests that media inspection is not skipped when invalid metadata is provided. */
+
     @Test(timeout = 5 * MINUTES)
-    public void testSkipInspectionWithInvalidMetadata() {
-        log.info("Starting skip media inspection test with invalid metadata.");
+    public void canHandleInvalidExifDimensions() {
+        long jobId = next();
+        long mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/lp-bmw.jpg",
+                                       Map.of());
 
-        long jobId = next(), mediaId = next();
-        Map<String, String> mediaMetadata = Map.of(
-                "MIME_TYPE", "video/video_01.mp4",
-                "MEDIA_HASH", "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea",
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                "FRAME_COUNT", "90",
-                "FPS", "0", // value should be non-zero
-                "DURATION", "3",
-                "ROTATION", "0");
-        inspectMedia(jobId, mediaId, "/samples/video_01.mp4", mediaMetadata);
-
-        verifyMediaWarning(jobId, mediaId);
-
-        String targetType = "video";
-        int targetLength = 90; //`ffprobe -show_packets video_01.mp4 | grep video | wc -l`
-        String targetHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; //`sha256sum video_01.mp4`
-
-        verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), startsWith(targetType),
-                        eq(targetLength), nonEmptyMap());
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
         verifyNoJobOrMediaError();
 
-        log.info("Skip media inspection test with invalid metadata passed.");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), notNull(),
+                                        eq("image/jpeg"), eq(1),
+                                        metadataCaptor.capture());
+        assertEquals("809", metadataCaptor.getValue().get("FRAME_WIDTH"));
+        assertEquals("606", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+        assertEquals("1", metadataCaptor.getValue().get("EXIF_ORIENTATION"));
     }
 
-	private void verifyNoJobOrMediaError() {
-	    verify(mockInProgressJobs, never())
+
+    @Test
+    // No need to explicitly test when skipInspection is false because all other
+    // tests in this class have it set to false.
+    public void canSkipMediaInspection() {
+        long jobId = next();
+        long mediaId = next();
+
+        when(mockMediaMetadataValidator
+                     .skipInspection(eq(jobId), argThat(m -> m.getId() == mediaId)))
+                .thenReturn(true);
+
+        inspectMedia(jobId, mediaId, URI.create("file:///fake"), Map.of());
+        verify(mockInProgressJobs, never())
+                .addMediaInspectionInfo(anyLong(), anyLong(), any(), any(), anyInt(), anyMap());
+        verifyNoJobOrMediaError();
+    }
+
+
+    private void verifyNoJobOrMediaError() {
+        verify(mockInProgressJobs, never())
                 .addError(anyLong(), anyLong(), any(), any());
-	    verify(mockInProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .setJobStatus(anyLong(), eq(BatchJobStatusType.ERROR));
     }
 
     private void verifyMediaError(long jobId, long mediaId) {
         verify(mockInProgressJobs, atLeastOnce())
                 .addError(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), nonBlank());
-	    verify(mockInProgressJobs)
+        verify(mockInProgressJobs)
                 .setJobStatus(jobId, BatchJobStatusType.ERROR);
     }
 
-    private void verifyNoMediaWarning() {
-        verify(mockInProgressJobs, never())
-                .addWarning(anyLong(), anyLong(), any(), any());
-    }
-
-    private void verifyMediaWarning(long jobId, long mediaId) {
-        verify(mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), nonBlank());
-    }
-
-	private Exchange setupExchange(long jobId, MediaImpl media) {
-	    return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
+    private Exchange setupExchange(long jobId, MediaImpl media) {
+        return MediaTestUtil.setupExchange(jobId, media, mockInProgressJobs);
     }
 
     private MediaImpl inspectMedia(long jobId, long mediaId, String filePath, Map<String, String> mediaMetadata) {

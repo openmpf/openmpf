@@ -37,6 +37,7 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.external.ExternalParsersConfigReader;
 import org.mitre.mpf.framecounter.FrameCounter;
+import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -44,8 +45,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -62,12 +62,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /** This processor extracts metadata about the input medium. */
 @Component(MediaInspectionProcessor.REF)
 public class MediaInspectionProcessor extends WfmProcessor {
     private static final Logger log = LoggerFactory.getLogger(MediaInspectionProcessor.class);
     public static final String REF = "mediaInspectionProcessor";
+
+    private final PropertiesUtil propertiesUtil;
 
     private final InProgressBatchJobsService inProgressJobs;
 
@@ -76,8 +79,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private final MediaMetadataValidator mediaMetadataValidator;
 
     @Inject
-    public MediaInspectionProcessor(InProgressBatchJobsService inProgressJobs, IoUtils ioUtils,
-                                    MediaMetadataValidator mediaMetadataValidator) {
+    public MediaInspectionProcessor(
+            PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
+            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator) {
+        this.propertiesUtil = propertiesUtil;
         this.inProgressJobs = inProgressJobs;
         this.ioUtils = ioUtils;
         this.mediaMetadataValidator = mediaMetadataValidator;
@@ -94,7 +99,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
 
-            if (mediaMetadataValidator.skipInspection(jobId, mediaId, media.getProvidedMetadata())) {
+            if (mediaMetadataValidator.skipInspection(jobId, media)) {
                 setHeaders(exchange, jobId, mediaId);
                 return;
             }
@@ -136,7 +141,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
 
                     case IMAGE:
-                        length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
+                        length = inspectImage(localPath, jobId, mediaId, mimeType, mediaMetadata);
                         break;
 
                     default:
@@ -261,9 +266,40 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return frameCount;
     }
 
-    private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetdata)
+    private int inspectImage(Path localPath, long jobId, long mediaId, String mimeType,
+                             Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
-        Metadata imageMetadata = generateExifMetadata(localPath);
+        Path mediaPath;
+        if (mimeType.equalsIgnoreCase("image/heic")) {
+            var tempDir = propertiesUtil.getTemporaryMediaDirectory().toPath();
+            mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
+            log.info("{} is HEIC image. It will be converted to PNG.", localPath);
+            HeicConverter.convert(localPath, mediaPath);
+            inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+        }
+        else {
+            mediaPath = localPath;
+        }
+
+        Metadata imageMetadata;
+        try {
+            imageMetadata = generateExifMetadata(localPath, mimeType);
+        }
+        catch (TikaException e) {
+            if (!e.getMessage().contains("image/png parse error")
+                    || !PngDefry.isCrushed(localPath)) {
+                throw e;
+            }
+            log.info("Detected that \"{}\" is an Apple-optimized PNG. It will be converted to a " +
+                             "regular PNG.",
+                     localPath);
+            var defriedPath = PngDefry.defry(localPath,
+                                             propertiesUtil.getTemporaryMediaDirectory().toPath());
+            imageMetadata = generateExifMetadata(defriedPath, mimeType);
+            inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
+            mediaPath = defriedPath;
+        }
+
 
         String widthStr = imageMetadata.get("tiff:ImageWidth"); // jpeg, png
         if (widthStr == null) {
@@ -283,7 +319,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         if (widthStr == null || heightStr == null) {
             // As a last resort, load the whole image into memory.
-            BufferedImage bimg = ImageIO.read(localPath.toFile());
+            BufferedImage bimg = ImageIO.read(mediaPath.toFile());
             if (bimg == null) {
                 inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                         "Cannot detect image file frame size. Cannot read image file.");
@@ -292,45 +328,45 @@ public class MediaInspectionProcessor extends WfmProcessor {
             widthStr = Integer.toString(bimg.getWidth());
             heightStr = Integer.toString(bimg.getHeight());
         }
-        mediaMetdata.put("FRAME_WIDTH", widthStr);
-        mediaMetdata.put("FRAME_HEIGHT", heightStr);
+        mediaMetadata.put("FRAME_WIDTH", widthStr);
+        mediaMetadata.put("FRAME_HEIGHT", heightStr);
 
         String orientationStr = imageMetadata.get("tiff:Orientation");
         if (orientationStr != null) {
-            mediaMetdata.put("EXIF_ORIENTATION", orientationStr);
+            mediaMetadata.put("EXIF_ORIENTATION", orientationStr);
             int orientation = Integer.valueOf(orientationStr);
             switch (orientation) {
                 case 1:
-                    mediaMetdata.put("ROTATION", "0");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "0");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 2:
-                    mediaMetdata.put("ROTATION", "0");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "0");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 3:
-                    mediaMetdata.put("ROTATION", "180");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "180");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 4:
-                    mediaMetdata.put("ROTATION", "180");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "180");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 5:
-                    mediaMetdata.put("ROTATION", "90");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "90");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 6:
-                    mediaMetdata.put("ROTATION", "90");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "90");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
                 case 7:
-                    mediaMetdata.put("ROTATION", "270");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "TRUE");
+                    mediaMetadata.put("ROTATION", "270");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "TRUE");
                     break;
                 case 8:
-                    mediaMetdata.put("ROTATION", "270");
-                    mediaMetdata.put("HORIZONTAL_FLIP", "FALSE");
+                    mediaMetadata.put("ROTATION", "270");
+                    mediaMetadata.put("HORIZONTAL_FLIP", "FALSE");
                     break;
             }
         }
@@ -349,12 +385,16 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return metadata;
     }
 
-    private Metadata generateExifMetadata(Path path) throws IOException, TikaException, SAXException {
+    private static Metadata generateExifMetadata(Path path, String mimeType)
+            throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, ioUtils.getMimeType(stream));
-            Parser parser = new AutoDetectParser();
+            metadata.set(Metadata.CONTENT_TYPE, mimeType);
+
+            Parser parser = mimeType.equals("image/jpeg")
+                    ? new CustomJpegParser()
+                    : new AutoDetectParser();
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
         }
         return metadata;

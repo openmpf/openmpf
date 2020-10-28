@@ -143,7 +143,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
                                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
                 ArtifactExtractionRequest request = new ArtifactExtractionRequest(job.getId(), media.getId(),
-                         media.getLocalPath().toString(), media.getMediaType(), taskIndex, actionIndex, cropping);
+                         media.getProcessingPath().toString(), media.getMediaType(), taskIndex, actionIndex, cropping);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());
@@ -318,7 +318,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 framesToExtract.add(sortedDetections.get(i).getMediaOffsetFrame());
             }
         }
-        // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a 
+        // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a
         // JsonDetectionOutputObject
         SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()
                 .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))

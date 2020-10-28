@@ -28,8 +28,10 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.PngDefry;
 import org.mitre.mpf.wfm.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,56 +57,83 @@ public class MediaMetadataValidator {
         this.inProgressJobs = inProgressJobs;
     }
 
-    public boolean skipInspection(long jobId, long mediaId, Map<String, String> mediaMetadata) {
-        if (!mediaMetadata.isEmpty()) {
-            try {
-                var requiredMetadata = Set.of("MIME_TYPE", "MEDIA_HASH");
-                validateMetadata(mediaMetadata, requiredMetadata, Set.of(), false);
+    public boolean skipInspection(long jobId, Media media) {
+        var mediaId = media.getId();
+        var providedMetadata = media.getProvidedMetadata();
 
-                int length = -1;
-                String sha = mediaMetadata.get("MEDIA_HASH");
-                String mimeType = TextUtils.trim(mediaMetadata.get("MIME_TYPE"));
-
-                switch (MediaTypeUtils.parse(mimeType)) {
-                    case AUDIO:
-                        validateAudioMetadata(mediaMetadata);
-                        break;
-                    case VIDEO:
-                        validateVideoMetadata(mediaMetadata);
-                        length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
-                        break;
-                    case IMAGE:
-                        validateImageMetadata(mediaMetadata);
-                        length = 1;
-                        break;
-                    default:
-                        // UNKNOWN data type processed generically
-                        break;
-                }
-
-                log.info("Skipping media inspection for job {}'s media {}.", jobId, mediaId);
-                inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, mediaMetadata);
-                return true;
-            } catch (WfmProcessingException e) {
-                inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                        "Provided media metadata not valid: " + e.getMessage() + " Cannot skip media inspection.");
-            }
+        if (providedMetadata.isEmpty()) {
+            return false;
         }
 
+        try {
+            var requiredMetadata = Set.of("MIME_TYPE", "MEDIA_HASH");
+            validateMetadata(providedMetadata, requiredMetadata, Set.of(), false);
+
+            String sha = providedMetadata.get("MEDIA_HASH");
+            String mimeType = TextUtils.trim(providedMetadata.get("MIME_TYPE"));
+            if (isConversionNeeded(mimeType, media, jobId)) {
+                return false;
+            }
+
+            int length = -1;
+            switch (MediaTypeUtils.parse(mimeType)) {
+                case AUDIO:
+                    validateAudioMetadata(providedMetadata);
+                    break;
+                case VIDEO:
+                    validateVideoMetadata(providedMetadata);
+                    length = Integer.parseInt(providedMetadata.get("FRAME_COUNT"));
+                    break;
+                case IMAGE:
+                    validateImageMetadata(providedMetadata);
+                    length = 1;
+                    break;
+                default:
+                    // UNKNOWN data type processed generically
+                    break;
+            }
+
+            log.info("Skipping media inspection for job {}'s media {}.", jobId, mediaId);
+            inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mimeType, length, providedMetadata);
+            return true;
+        }
+        catch (WfmProcessingException e) {
+            inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                    "Provided media metadata not valid: " + e.getMessage() + " Cannot skip media inspection.");
+            return false;
+        }
+    }
+
+    private boolean isConversionNeeded(String mimeType, Media media, long jobId) {
+        if (mimeType.equalsIgnoreCase("image/heic")) {
+            inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.MEDIA_INSPECTION,
+                String.format("Cannot skip media inspection for media id %s because it is a " +
+                              "HEIC image and requires conversion before further processing.",
+                              media.getId()));
+            return true;
+        }
+
+        if (mimeType.equalsIgnoreCase("image/png") && PngDefry.isCrushed(media.getLocalPath())) {
+            inProgressJobs.addWarning(jobId, media.getId(), IssueCodes.MEDIA_INSPECTION,
+                String.format("Cannot skip media inspection for media id %s because it is " +
+                              "an Apple-optimized PNG and requires conversion before further " +
+                              "processing.", media.getId()));
+            return true;
+        }
         return false;
     }
 
-    private void validateAudioMetadata(Map<String, String> mediaMetadata) {
+    private static void validateAudioMetadata(Map<String, String> mediaMetadata) {
         var requiredMetadata = Set.of("DURATION");
         validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, false);
     }
 
-    private void validateVideoMetadata(Map<String, String> mediaMetadata) {
+    private static void validateVideoMetadata(Map<String, String> mediaMetadata) {
         var requiredMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT", "FRAME_COUNT", "FPS", "DURATION");
         validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, true);
     }
 
-    private void validateImageMetadata(Map<String, String> mediaMetadata) {
+    private static void validateImageMetadata(Map<String, String> mediaMetadata) {
         var requiredMetadata = Set.of("FRAME_WIDTH", "FRAME_HEIGHT");
         validateMetadata(mediaMetadata, requiredMetadata, requiredMetadata, true);
     }
@@ -116,23 +145,23 @@ public class MediaMetadataValidator {
                 .collect(Collectors.joining(", "));
 
         if (!missingError.isEmpty()) {
-            throw new WfmProcessingException("Missing required metadata: " + missingError + ".");
+            throw new WfmProcessingException("Missing required metadata: " + missingError + '.');
         }
 
         String invalidError = "";
 
         String numericError = numericMetadata.stream()
                 .filter(key -> mediaMetadata.containsKey(key) && !isPositive(mediaMetadata.get(key)))
-                .map(key -> key + "=" + mediaMetadata.get(key))
+                .map(key -> key + '=' + mediaMetadata.get(key))
                 .collect(Collectors.joining(", "));
         if (!numericError.isEmpty()) {
-            invalidError += " The following must be a valid number > 0: " + numericError + ".";
+            invalidError += " The following must be a valid number > 0: " + numericError + '.';
         }
 
         if (validateOrientation) {
             String horzFlip = mediaMetadata.get("HORIZONTAL_FLIP");
             if (horzFlip != null && !isBoolean(horzFlip)) {
-                invalidError += " The following must be \"TRUE\" or \"FALSE\": " + horzFlip + ".";
+                invalidError += " The following must be \"TRUE\" or \"FALSE\": " + horzFlip + '.';
             }
 
             String rotation = mediaMetadata.get("ROTATION");

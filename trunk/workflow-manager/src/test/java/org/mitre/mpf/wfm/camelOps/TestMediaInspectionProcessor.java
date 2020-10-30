@@ -277,11 +277,11 @@ public class TestMediaInspectionProcessor {
         verifyNoJobOrMediaError();
 
         // `sha256sum lenna-crushed.png`
-        String targetHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
+        String mediaHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), eq(MediaType.IMAGE),
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/png"), eq(1),
                                         metadataCaptor.capture());
         assertEquals("512", metadataCaptor.getValue().get("FRAME_WIDTH"));
@@ -314,11 +314,11 @@ public class TestMediaInspectionProcessor {
         verifyNoJobOrMediaError();
 
         // `sha256sum IMG_5355.HEIC`
-        String targetHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2";
+        String mediaHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2";
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(targetHash), eq(MediaType.IMAGE),
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/heic"), eq(1),
                                         metadataCaptor.capture());
         assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));

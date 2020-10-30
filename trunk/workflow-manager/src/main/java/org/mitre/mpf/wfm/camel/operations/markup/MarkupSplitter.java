@@ -107,7 +107,7 @@ public class MarkupSplitter {
                             .setMediaId(media.getId())
                             .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
-                            .setSourceUri(media.getLocalPath().toUri().toString())
+                            .setSourceUri(media.getProcessingPath().toUri().toString())
                             .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
                                                        propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
                                                        propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())

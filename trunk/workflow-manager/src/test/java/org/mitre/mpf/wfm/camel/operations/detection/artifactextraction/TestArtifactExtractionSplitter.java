@@ -578,8 +578,8 @@ public class TestArtifactExtractionSplitter {
                 .thenReturn(MediaType.VIDEO);
         when(media.getLength())
                 .thenReturn(1000);
-        when(media.getLocalPath())
-        .thenReturn(Paths.get("/test/path"));
+        when(media.getProcessingPath())
+                .thenReturn(Paths.get("/test/path"));
         when(job.getMedia())
                 .then(i -> ImmutableList.of(media));
 

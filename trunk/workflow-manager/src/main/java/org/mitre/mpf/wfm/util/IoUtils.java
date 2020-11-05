@@ -44,24 +44,27 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@Component(IoUtils.REF)
+@Component
 public class IoUtils {
-    public static final String REF = "ioUtils";
-    private static final Logger log = LoggerFactory.getLogger(IoUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IoUtils.class);
+
+    public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
+
+    private static final String CUSTOM_MAGIC_PATH
+            = IoUtils.class.getResource("/magic/custom-magic.mgc").getPath();
 
     @Autowired
-    private PropertiesUtil propertiesUtil;
+    private PropertiesUtil _propertiesUtil;
 
     // Detect is thread safe, so only one instance is needed.
     // See: {@link http://grokbase.com/t/tika/user/114qab9908/is-the-method-detect-of-instance-org-apache-tika-tika-thread-safe}
-    private final Tika tikaInstance = new Tika();
+    private final Tika _tikaInstance = new Tika();
 
-    public static final String LINUX_MAGIC_PATH = "/usr/share/misc/magic.mgc";
-    public final String customMagicPath = this.getClass().getResource("/magic/custom-magic.mgc").getPath();
 
     public String getMimeType(Path filePath) throws WfmProcessingException {
         try {
@@ -81,39 +84,36 @@ public class IoUtils {
     }
 
     public String getMimeTypeUsingTika(Path filePath) throws IOException {
-        return tikaInstance.detect(filePath);
+        return _tikaInstance.detect(filePath);
     }
 
     public String getMimeTypeUsingFile(Path filePath) throws IOException, InterruptedException {
-        String mimeType = null;
+        var process = new ProcessBuilder(
+                    "file", "--magic-file", LINUX_MAGIC_PATH + ':' + CUSTOM_MAGIC_PATH,
+                    "--mime-type", "--brief", filePath.toString())
+                .start();
 
-        String command = "file -m " + LINUX_MAGIC_PATH + ":" + customMagicPath + " --mime-type -b " + filePath;
-        Process process = Runtime.getRuntime().exec(command);
+        // Need to read both stdout and stderr at the same time to prevent either of them
+        // filling up their pipe buffer and causing the process to dead lock waiting for space in
+        // the pipe buffer.
+        var errorFuture = ThreadUtil.callAsync(
+                () -> IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8).trim());
+
+        String output = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8).trim();
+        String error = errorFuture.join();
+
         int exitCode = process.waitFor();
-        String error = IOUtils.toString(process.getErrorStream(), "UTF-8").trim();
-        String output = IOUtils.toString(process.getInputStream(), "UTF-8").trim();
         if (exitCode != 0 || !error.isEmpty()) {
             throw new WfmProcessingException(
                     "\"file\" command returned an exit code of " + exitCode + ": " + error);
         }
-        if (!output.isEmpty()) {
-            mimeType = output;
-        }
-
-        return mimeType;
+        return output.isEmpty() ? null : output;
     }
 
     public String getPathContentType(Path filePath) {
-        return getPathContentType(getMimeType(filePath));
+        return getMimeType(filePath);
     }
 
-    public static String getPathContentType(String mimeType) {
-        if (mimeType.equals("image/heic")) {
-            // Avoid "java.io.IOException: Broken pipe"
-            return "application/octet-stream";
-        }
-        return mimeType;
-    }
 
     /**
      * <p>
@@ -146,8 +146,8 @@ public class IoUtils {
         // Give precedence to files in to the share path so that when performing integration tests we detect a path
         // that is accessible to all of the nodes.
         String sharePath;
-        if (propertiesUtil != null) {
-            sharePath = propertiesUtil.getSharePath();
+        if (_propertiesUtil != null) {
+            sharePath = _propertiesUtil.getSharePath();
         } else {
             sharePath = System.getenv("MPF_HOME") + "/share";
         }
@@ -267,7 +267,7 @@ public class IoUtils {
             });
         }
         catch (IOException e) {
-            log.warn("IOException while deleting " + startDir, e);
+            LOG.warn("IOException while deleting " + startDir, e);
         }
     }
 

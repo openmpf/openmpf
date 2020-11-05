@@ -82,25 +82,26 @@ import java.util.UUID;
  */
 @Component(MediaInspectionProcessor.REF)
 public class MediaInspectionProcessor extends WfmProcessor {
-    private static final Logger log = LoggerFactory.getLogger(MediaInspectionProcessor.class);
     public static final String REF = "mediaInspectionProcessor";
 
-    private final PropertiesUtil propertiesUtil;
+    private static final Logger LOG = LoggerFactory.getLogger(MediaInspectionProcessor.class);
 
-    private final InProgressBatchJobsService inProgressJobs;
+    private final PropertiesUtil _propertiesUtil;
 
-    private final IoUtils ioUtils;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    private final MediaMetadataValidator mediaMetadataValidator;
+    private final IoUtils _ioUtils;
+
+    private final MediaMetadataValidator _mediaMetadataValidator;
 
     @Inject
     public MediaInspectionProcessor(
             PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
             IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator) {
-        this.propertiesUtil = propertiesUtil;
-        this.inProgressJobs = inProgressJobs;
-        this.ioUtils = ioUtils;
-        this.mediaMetadataValidator = mediaMetadataValidator;
+        _propertiesUtil = propertiesUtil;
+        _inProgressJobs = inProgressJobs;
+        _ioUtils = ioUtils;
+        _mediaMetadataValidator = mediaMetadataValidator;
     }
 
     @Override
@@ -108,13 +109,13 @@ public class MediaInspectionProcessor extends WfmProcessor {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
-        Media media = inProgressJobs.getJob(jobId).getMedia(mediaId);
+        Media media = _inProgressJobs.getJob(jobId).getMedia(mediaId);
 
         if(!media.isFailed()) {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
 
-            if (mediaMetadataValidator.skipInspection(jobId, media)) {
+            if (_mediaMetadataValidator.skipInspection(jobId, media)) {
                 setHeaders(exchange, jobId, mediaId);
                 return;
             }
@@ -129,16 +130,16 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 Path localPath = media.getLocalPath();
 
                 try (InputStream inputStream = Files.newInputStream(localPath)) {
-                    log.debug("Calculating hash for '{}'.", localPath);
+                    LOG.debug("Calculating hash for '{}'.", localPath);
                     sha = DigestUtils.sha256Hex(inputStream);
                 } catch (IOException ioe) {
                     String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                             + ioe;
-                    inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
-                    log.error(errorMessage, ioe);
+                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
+                    LOG.error(errorMessage, ioe);
                 }
 
-                mimeType = ioUtils.getMimeType(localPath);
+                mimeType = _ioUtils.getMimeType(localPath);
 
                 mediaMetadata.put("MIME_TYPE", mimeType);
                 mediaType = MediaTypeUtils.parse(mimeType);
@@ -156,8 +157,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
                             length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata, ffmpegMetadata);
                             break;
                         }
-                        inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_VIDEO_STREAM,
-                                "Cannot detect video resolution. Media may be missing video stream.");
+                        _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_VIDEO_STREAM,
+                                                   "Cannot detect video resolution. Media may be missing video stream.");
                         mediaType = MediaType.AUDIO;
                         // fall through
 
@@ -170,37 +171,37 @@ public class MediaInspectionProcessor extends WfmProcessor {
                             length = inspectAudio(jobId, mediaId, mediaMetadata, ffmpegMetadata);
                             break;
                         }
-                        inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_AUDIO_STREAM,
-                                "Cannot detect audio file sample rate. Media may be missing audio stream.");
+                        _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_AUDIO_STREAM,
+                                                   "Cannot detect audio file sample rate. Media may be missing audio stream.");
                         mediaType = MediaType.UNKNOWN;
                         // fall through
 
                     default:
-                        log.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
+                        LOG.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
                         break;
                 }
             } catch (Exception e) {
-                log.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getUri(), e);
+                LOG.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getUri(), e);
                 if (e instanceof TikaException) {
-                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                            "Tika media inspection error: " + e.getMessage());
+                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                             "Tika media inspection error: " + e.getMessage());
                 } else {
-                    inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
+                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
                 }
             }
 
-            inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
+            _inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
         } else {
-            log.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId, mediaId);
+            LOG.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId, mediaId);
         }
 
         setHeaders(exchange, jobId, mediaId);
 
         if (media.isFailed()) {
-            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
+            _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
         }
     }
-    private void setHeaders(Exchange exchange, long jobId, long mediaId) {
+    private static void setHeaders(Exchange exchange, long jobId, long mediaId) {
         // Copy these headers to the output exchange.
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
         exchange.getOut().setHeader(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
@@ -212,8 +213,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
     private int inspectAudio(long jobId, long mediaId, Map<String, String> mediaMetadata, Metadata ffmpegMetadata) {
         String durationStr = ffmpegMetadata.get("xmpDM:duration");
         if (durationStr == null) {
-            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                    "Cannot detect audio file duration.");
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                     "Cannot detect audio file duration.");
             return -1;
         }
 
@@ -229,7 +230,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         // FRAME_COUNT
 
         // Use the frame counter native library to calculate the length of videos.
-        log.debug("Counting frames in '{}'.", localPath);
+        LOG.debug("Counting frames in '{}'.", localPath);
 
         // We can't get the frame count directly from a gif,
         // so iterate over the frames and count them one by one
@@ -237,8 +238,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
         int retval = new FrameCounter(localPath.toFile()).count(isGif);
 
         if (retval <= 0) {
-            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                    "Cannot detect video file length.");
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                     "Cannot detect video file length.");
             return -1;
         }
 
@@ -249,8 +250,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         String resolutionStr = ffmpegMetadata.get("videoResolution");
         if (resolutionStr == null) {
-            inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                    "Cannot detect video file resolution.");
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                     "Cannot detect video file resolution.");
             return -1;
         }
 
@@ -268,7 +269,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             fps = Double.parseDouble(fpsStr);
             mediaMetadata.put("FPS", Double.toString(fps));
         }
-        int duration = this.calculateDurationMilliseconds(ffmpegMetadata.get("xmpDM:duration"));
+        int duration = MediaInspectionProcessor.calculateDurationMilliseconds(ffmpegMetadata.get("xmpDM:duration"));
         if (duration <= 0 && fps > 0) {
             duration = (int) ((frameCount / fps) * 1000);
         }
@@ -289,11 +290,11 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
         Path mediaPath;
         if (mimeType.equalsIgnoreCase("image/heic")) {
-            var tempDir = propertiesUtil.getTemporaryMediaDirectory().toPath();
+            var tempDir = _propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
-            log.info("{} is HEIC image. It will be converted to PNG.", localPath);
+            LOG.info("{} is HEIC image. It will be converted to PNG.", localPath);
             HeicConverter.convert(localPath, mediaPath);
-            inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+            _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
         }
         else {
             mediaPath = localPath;
@@ -308,13 +309,13 @@ public class MediaInspectionProcessor extends WfmProcessor {
                     || !PngDefry.isCrushed(localPath)) {
                 throw e;
             }
-            log.info("Detected that \"{}\" is an Apple-optimized PNG. It will be converted to a " +
+            LOG.info("Detected that \"{}\" is an Apple-optimized PNG. It will be converted to a " +
                              "regular PNG.",
                      localPath);
             var defriedPath = PngDefry.defry(localPath,
-                                             propertiesUtil.getTemporaryMediaDirectory().toPath());
+                                             _propertiesUtil.getTemporaryMediaDirectory().toPath());
             imageMetadata = generateExifMetadata(defriedPath, mimeType);
-            inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
+            _inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
             mediaPath = defriedPath;
         }
 
@@ -338,8 +339,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
             // As a last resort, load the whole image into memory.
             BufferedImage bimg = ImageIO.read(mediaPath.toFile());
             if (bimg == null) {
-                inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                        "Cannot detect image file frame size. Cannot read image file.");
+                _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                         "Cannot detect image file frame size. Cannot read image file.");
                 return -1;
             }
             widthStr = Integer.toString(bimg.getWidth());
@@ -351,7 +352,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         String orientationStr = imageMetadata.get("tiff:Orientation");
         if (orientationStr != null) {
             mediaMetadata.put("EXIF_ORIENTATION", orientationStr);
-            int orientation = Integer.valueOf(orientationStr);
+            int orientation = Integer.parseInt(orientationStr);
             switch (orientation) {
                 case 1:
                     mediaMetadata.put("ROTATION", "0");
@@ -403,7 +404,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return metadata;
     }
 
-    private Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
+    private static Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
@@ -417,7 +418,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return metadata;
     }
 
-    private int calculateDurationMilliseconds(String durationStr) {
+    private static int calculateDurationMilliseconds(String durationStr) {
         if (durationStr != null) {
             String[] durationArray = durationStr.split("\\.|:");
             int hours = Integer.parseInt(durationArray[0]);

@@ -194,7 +194,7 @@ public class TestMediaMetadataValidator {
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(123L), eq(321L), eq(providedMetadata.get("MEDIA_HASH")), eq(mediaType),
                         eq(providedMetadata.get("MIME_TYPE")), eq(length), eq(providedMetadata));
-        warnings.stream().forEach(w -> verifyWarningAdded(123, 321, w));
+        warnings.forEach(w -> verifyWarningAdded(123, 321, w));
     }
 
     private void assertInspectionNotSkipped(Map<String, String> providedMetadata) {

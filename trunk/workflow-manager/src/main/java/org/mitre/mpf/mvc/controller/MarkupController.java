@@ -168,7 +168,7 @@ public class MarkupController {
                         model.setSourceFileAvailable(true);
                     }
                     if (path != null && Files.exists(path)) {
-                        model.setSourceURIContentType(IoUtils.getPathContentType(med.getMimeType()));
+                        model.setSourceURIContentType(med.getMimeType());
                         model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
                     }
                 }

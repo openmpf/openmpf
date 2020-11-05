@@ -28,7 +28,6 @@ package org.mitre.mpf.mst;
 
 import com.google.common.collect.*;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
@@ -1251,7 +1250,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
     @Test(timeout = 5 * MINUTES)
-    @Ignore // TODO: Will be fixed in HEIC/pngdefry PR.
     public void runTextOalprDetectImage() throws Exception {
         String pipelineName = addDefaultOalprPipeline();
         runSystemTest(pipelineName, "output/text/runTextOalprDetectImage.json",

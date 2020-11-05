@@ -106,7 +106,6 @@ public abstract class TestSystem {
 
 
     @Autowired
-    @Qualifier(IoUtils.REF)
     protected IoUtils ioUtils;
 
     @Autowired

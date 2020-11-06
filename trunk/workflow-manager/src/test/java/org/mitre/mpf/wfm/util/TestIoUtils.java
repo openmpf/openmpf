@@ -27,10 +27,7 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
@@ -52,8 +49,14 @@ public class TestIoUtils {
     @BeforeClass
     public static void initClass() {
         // The "file" command will silently ignore missing files as long as one of the files provided when using the
-        // -m option is available. Ensure that the default Linux magic file is installed.
+        // --magic-file option is available. Ensure that the default Linux magic file is installed.
         assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
+        ThreadUtil.start();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        ThreadUtil.shutdown();
     }
 
     @Before

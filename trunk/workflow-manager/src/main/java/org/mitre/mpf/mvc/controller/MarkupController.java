@@ -241,6 +241,18 @@ public class MarkupController {
             return;
         }
 
+        Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
+        if (localPath != null) {
+            if (!Files.exists(localPath)) {
+                log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
+                response.setStatus(404);
+                response.flushBuffer();
+                return;
+            }
+            ioUtils.writeFileAsAttachment(localPath, response);
+            return;
+        }
+
         BatchJob job = Optional.ofNullable(jobRequestDao.findById(markupResult.getJobId()))
                 .map(JobRequest::getJob)
                 .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
@@ -261,18 +273,6 @@ public class MarkupController {
             log.error("Markup with id " + id + " download failed. Invalid media: " + markupResult.getSourceUri());
             response.setStatus(404);
             response.flushBuffer();
-            return;
-        }
-
-        Path localPath = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-        if (localPath != null) {
-            if (!Files.exists(localPath)) {
-                log.error("Markup with id " + id + " download failed. Invalid path: " + localPath);
-                response.setStatus(404);
-                response.flushBuffer();
-                return;
-            }
-            ioUtils.writeFileAsAttachment(localPath, response);
             return;
         }
 

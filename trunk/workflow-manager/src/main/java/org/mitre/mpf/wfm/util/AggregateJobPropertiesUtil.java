@@ -188,7 +188,7 @@ public class AggregateJobPropertiesUtil {
         return getPropertyMap(
                 action,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getPipelineElements(),
@@ -249,7 +249,7 @@ public class AggregateJobPropertiesUtil {
         return getPropertyInfo(
                 propertyName,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 action,
                 job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
@@ -274,7 +274,7 @@ public class AggregateJobPropertiesUtil {
         return propertyName -> getPropertyInfo(
                 propertyName,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 action,
                 pipeline,
                 overriddenAlgoProps,
@@ -295,7 +295,7 @@ public class AggregateJobPropertiesUtil {
         return propName -> getPropertyInfo(
                 propName,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 null,
                 job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
@@ -326,7 +326,7 @@ public class AggregateJobPropertiesUtil {
 
         MediaType mediaType = matchingMedia == null
                 ? null
-                : matchingMedia.getMediaType();
+                : matchingMedia.getType();
 
         return propName -> getPropertyInfo(
                 propName,
@@ -349,7 +349,7 @@ public class AggregateJobPropertiesUtil {
         PropertyInfo frameIntervalPropInfo = getPropertyInfo(
                 MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 action,
                 job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
@@ -359,7 +359,7 @@ public class AggregateJobPropertiesUtil {
         PropertyInfo frameRateCapPropInfo = getPropertyInfo(
                 MpfConstants.FRAME_RATE_CAP_PROPERTY,
                 media.getMediaSpecificProperties(),
-                media.getMediaType(),
+                media.getType(),
                 action,
                 job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),

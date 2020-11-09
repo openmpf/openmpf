@@ -46,7 +46,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tomcat.port>8080</tomcat.port>
         <cargo.spring.profiles.active>jenkins</cargo.spring.profiles.active>
-
     </properties>
 
     <dependencies>

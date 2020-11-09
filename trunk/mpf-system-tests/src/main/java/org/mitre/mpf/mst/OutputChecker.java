@@ -96,8 +96,8 @@ public class OutputChecker {
                 actMedia.getMediaMetadata().size());
         _errorCollector.checkThat("MediaMetadata", actMedia.getMediaMetadata(), is(expMedia.getMediaMetadata()));
 
-        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getTypes();
-        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
+        Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ActionOutputs size", actExtrResults.size(), is(expExtrResults.size()));
 

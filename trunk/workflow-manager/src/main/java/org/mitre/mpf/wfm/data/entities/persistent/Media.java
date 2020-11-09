@@ -63,8 +63,11 @@ public interface Media {
     /** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
     public String getErrorMessage();
 
+    /** The data type of the medium. For example, VIDEO. */
+    public MediaType getType();
+
     /** The MIME type of the medium. */
-    public String getType();
+    public String getMimeType();
 
     /** The Metadata for the medium. */
     public Map<String,String> getMetadata();
@@ -76,8 +79,6 @@ public interface Media {
 
     /** The provided Metadata properties to override for the medium. */
     public ImmutableMap<String, String> getProvidedMetadata();
-
-    public MediaType getMediaType();
 
     /** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
     public int getLength();

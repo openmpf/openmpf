@@ -113,8 +113,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
             if (media.isFailed()
-                    || (media.getMediaType() != MediaType.IMAGE
-                        && media.getMediaType() != MediaType.VIDEO)) {
+                    || (media.getType() != MediaType.IMAGE
+                        && media.getType() != MediaType.VIDEO)) {
                 continue;
             }
             // If the user has requested output objects for the last task only, and this is
@@ -143,7 +143,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
                                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
                 ArtifactExtractionRequest request = new ArtifactExtractionRequest(job.getId(), media.getId(),
-                         media.getProcessingPath().toString(), media.getMediaType(), taskIndex, actionIndex, cropping);
+                         media.getProcessingPath().toString(), media.getType(), taskIndex, actionIndex, cropping);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());

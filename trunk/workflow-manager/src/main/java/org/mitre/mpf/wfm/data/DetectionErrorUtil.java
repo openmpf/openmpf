@@ -61,7 +61,7 @@ public class DetectionErrorUtil {
             Media media = job.getMedia(entry.getKey());
             Collection<DetectionProcessingError> mediaErrors = entry.getValue();
 
-            if (media.getMediaType() == MediaType.VIDEO) {
+            if (media.getType() == MediaType.VIDEO) {
                 results.putAll(media.getId(), mergeErrors(job, mediaErrors));
             }
             else {

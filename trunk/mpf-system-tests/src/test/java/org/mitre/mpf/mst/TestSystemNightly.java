@@ -247,14 +247,17 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
      */
     private void compareMedia(JsonMediaOutputObject defaultMedia, JsonMediaOutputObject customMedia) {
 
-        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> defaultEntries = defaultMedia.getTypes().entrySet().iterator();
-        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> customEntries = customMedia.getTypes().entrySet().iterator();
+        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> defaultEntries =
+                defaultMedia.getDetectionTypes().entrySet().iterator();
+        Iterator<Map.Entry<String,SortedSet<JsonActionOutputObject>>> customEntries =
+                customMedia.getDetectionTypes().entrySet().iterator();
 
         while (defaultEntries.hasNext()) {
 
             Map.Entry<String, SortedSet<JsonActionOutputObject>> defaultAction = defaultEntries.next();
             Map.Entry<String, SortedSet<JsonActionOutputObject>> customAction = customEntries.next();
-            Assert.assertEquals(String.format("Default action type %s does not match custom action type %s", defaultAction.getKey(), customAction.getKey()),
+            Assert.assertEquals(String.format("Default action type %s does not match custom action type %s",
+                    defaultAction.getKey(), customAction.getKey()),
                     defaultAction.getKey(),
                     customAction.getKey());
 

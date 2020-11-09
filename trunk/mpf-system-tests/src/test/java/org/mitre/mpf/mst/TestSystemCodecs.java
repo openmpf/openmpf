@@ -44,7 +44,7 @@ public class TestSystemCodecs extends TestSystemWithDefaultConfig {
 
         boolean detectionFound = outputObject.getMedia()
                 .stream()
-                .flatMap(m -> m.getTypes().values().stream())
+                .flatMap(m -> m.getDetectionTypes().values().stream())
                 .flatMap(Collection::stream)
                 .flatMap(a -> a.getTracks().stream())
                 .flatMap(t -> t.getDetections().stream())

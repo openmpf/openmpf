@@ -574,7 +574,7 @@ public class TestArtifactExtractionSplitter {
         Media media = mock(Media.class);
         when(media.getId())
                 .thenReturn(mediaId);
-        when(media.getMediaType())
+        when(media.getType())
                 .thenReturn(MediaType.VIDEO);
         when(media.getLength())
                 .thenReturn(1000);

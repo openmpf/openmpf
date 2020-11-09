@@ -33,10 +33,7 @@ import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.IssueCodes;
-import org.mitre.mpf.wfm.enums.IssueSources;
-import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -316,12 +313,13 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void addMediaInspectionInfo(
-            long jobId, long mediaId, String sha256, String mimeType, int length,
+            long jobId, long mediaId, String sha256, MediaType mediaType, String mimeType, int length,
             Map<String, String> metadata) {
         LOG.info("Adding media metadata to job {}'s media {}.", jobId, mediaId);
         MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
-        media.setType(mimeType);
+        media.setType(mediaType);
+        media.setMimeType(mimeType);
         media.setLength(length);
         media.addMetadata(metadata);
     }

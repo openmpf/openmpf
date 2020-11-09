@@ -33,15 +33,16 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.Mockito.*;
 
 public class TestMediaMetadataValidator {
@@ -61,16 +62,18 @@ public class TestMediaMetadataValidator {
     @Test
     public void testSkipAudioInspection() {
         assertInspectionSkipped(Map.of(
-                "MIME_TYPE", "audio/wav",
+                "MIME_TYPE", "audio/vnd.wave",
                 "MEDIA_HASH", "SOME_HASH",
-                "DURATION", "10"));
+                "DURATION", "10"),
+                MediaType.AUDIO, -1, Set.of());
     }
 
     @Test
     public void testSkipGenericInspection() {
         assertInspectionSkipped(Map.of(
                 "MIME_TYPE", "application/pdf",
-                "MEDIA_HASH", "SOME_HASH"));
+                "MEDIA_HASH", "SOME_HASH"),
+                MediaType.UNKNOWN, -1, Set.of());
     }
 
     @Test
@@ -82,7 +85,8 @@ public class TestMediaMetadataValidator {
                 "FRAME_HEIGHT", "10",
                 "EXIF_ORIENTATION", "0",
                 "ROTATION", "0",
-                "HORIZONTAL_FLIP", "FALSE"));
+                "HORIZONTAL_FLIP", "FALSE"),
+                MediaType.IMAGE, 1, Set.of());
     }
 
     @Test
@@ -95,24 +99,12 @@ public class TestMediaMetadataValidator {
                 "FRAME_COUNT", "90",
                 "FPS", "30",
                 "DURATION", "3",
-                "ROTATION", "0"));
+                "ROTATION", "0"),
+                MediaType.VIDEO, 90, Set.of());
     }
 
     @Test
-    public void testSkipInspectionWithMissingMetadata() {
-        assertInspectionNotSkipped(Map.of(
-                "MIME_TYPE", "video/mp4",
-                "MEDIA_HASH", "SOME_HASH",
-                "FRAME_WIDTH", "10",
-                "FRAME_HEIGHT", "10",
-                // missing FRAME_COUNT
-                "FPS", "30",
-                "DURATION", "3",
-                "ROTATION", "0"));
-    }
-
-    @Test
-    public void testSkipInspectionWithInvalidMetadata() {
+    public void doesNotSkipInspectionWithInvalidMetadata() {
         assertInspectionNotSkipped(Map.of(
                 "MIME_TYPE", "video/mp4",
                 "MEDIA_HASH", "SOME_HASH",
@@ -145,7 +137,7 @@ public class TestMediaMetadataValidator {
                 56, "/samples/pngdefry/lenna-crushed.png", providedMediaMetadata);
 
         assertFalse(_mediaMetadataValidator.skipInspection(78, mockMedia));
-        verifyWarningAdded(78, 56);
+        verifyWarningAdded(78, 56, "Cannot skip media inspection");
     }
 
     @Test
@@ -163,24 +155,59 @@ public class TestMediaMetadataValidator {
         verifyNoWarningAdded();
     }
 
+    @Test
+    public void testSkipInspectionVideoToAudioFallback() {
+        assertInspectionSkipped(Map.of(
+                "MIME_TYPE", "video/mp4",
+                "MEDIA_HASH", "SOME_HASH",
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10",
+                "FRAME_COUNT", "90",
+                // missing FPS
+                "DURATION", "3",
+                "ROTATION", "0"),
+                MediaType.AUDIO, -1,
+                Set.of("Missing required video metadata"));
+    }
 
-    private void assertInspectionSkipped(Map<String, String> providedMetadata) {
+    @Test
+    public void testSkipInspectionVideoToUnknownFallback() {
+        assertInspectionSkipped(Map.of(
+                "MIME_TYPE", "video/mp4",
+                "MEDIA_HASH", "SOME_HASH",
+                "FRAME_WIDTH", "10",
+                "FRAME_HEIGHT", "10",
+                "FRAME_COUNT", "90",
+                "FPS", "30",
+                // missing DURATION
+                "ROTATION", "0"),
+                MediaType.UNKNOWN, -1,
+                Set.of("Missing required video metadata",
+                       "Missing required audio metadata"));
+    }
+
+
+    private void assertInspectionSkipped(Map<String, String> providedMetadata, MediaType mediaType, int length,
+                                         Set<String> warnings) {
         var mockMedia = createMockMedia(321, providedMetadata);
         assertTrue(_mediaMetadataValidator.skipInspection(123, mockMedia));
-        verifyNoWarningAdded();
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(eq(123L), eq(321L), eq(providedMetadata.get("MEDIA_HASH")), eq(mediaType),
+                        eq(providedMetadata.get("MIME_TYPE")), eq(length), eq(providedMetadata));
+        warnings.forEach(w -> verifyWarningAdded(123, 321, w));
     }
 
     private void assertInspectionNotSkipped(Map<String, String> providedMetadata) {
         var mockMedia = createMockMedia(321, providedMetadata);
         assertFalse(_mediaMetadataValidator.skipInspection(123, mockMedia));
-        verifyWarningAdded(123, 321);
+        verifyWarningAdded(123, 321, "Cannot skip media inspection");
     }
 
 
-    private void verifyWarningAdded(long jobId, long mediaId) {
+    private void verifyWarningAdded(long jobId, long mediaId, String warning) {
         verify(_mockInProgressJobs)
                 .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION),
-                            nonBlank());
+                        contains(warning));
     }
 
     private void verifyNoWarningAdded() {

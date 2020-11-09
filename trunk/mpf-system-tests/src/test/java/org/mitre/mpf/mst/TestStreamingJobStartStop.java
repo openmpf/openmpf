@@ -171,7 +171,7 @@ public class TestStreamingJobStartStop {
         JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
         assertEquals(jobId, summaryReport.getJobId());
 
-        boolean hasNonEmptyDetection = summaryReport.getTypes()
+        boolean hasNonEmptyDetection = summaryReport.getDetectionTypes()
                 .values()
                 .stream()
                 .flatMap(Collection::stream)
@@ -227,7 +227,7 @@ public class TestStreamingJobStartStop {
         JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
         assertEquals(jobId, summaryReport.getJobId());
 
-        List<JsonStreamingTrackOutputObject> actualTracks = summaryReport.getTypes()
+        List<JsonStreamingTrackOutputObject> actualTracks = summaryReport.getDetectionTypes()
                 .values()
                 .stream()
                 .flatMap(Collection::stream)
@@ -244,7 +244,7 @@ public class TestStreamingJobStartStop {
 
         boolean allExpectedTracksFound = expectedOutputJson.getMedia()
                 .stream()
-                .flatMap(m -> m.getTypes().values().stream())
+                .flatMap(m -> m.getDetectionTypes().values().stream())
                 .flatMap(Collection::stream)
                 .flatMap(a -> a.getTracks().stream())
                 .filter(t -> t.getStopOffsetFrame() < segmentSize)

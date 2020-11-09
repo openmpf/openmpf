@@ -229,5 +229,19 @@
         "type": "STRING",
         "propertiesKey": "detection.padding.y",
         "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION_THRESHOLD",
+        "description": "The minimum number of degrees required to actually perform frame rotation. When the amount of rotation is less than ROTATION_THRESHOLD, components will behave as if there is no rotation.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.rotation.threshold",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION_FILL_COLOR",
+        "description": "The fill color to use when doing non-orthogonal rotation. Must either be BLACK or WHITE. When doing a non-orthogonal rotation, some pixels will need to be included that were not in the original image. This property controls the color of those undefined pixels.",
+        "type": "STRING",
+        "propertiesKey": "detection.rotation.fill.color",
+        "mediaTypes": ["VIDEO", "IMAGE"]
     }
 ]

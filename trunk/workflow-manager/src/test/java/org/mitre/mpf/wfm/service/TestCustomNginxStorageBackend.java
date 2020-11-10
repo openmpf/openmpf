@@ -110,7 +110,6 @@ public class TestCustomNginxStorageBackend {
     @AfterClass
     public static void tearDownClass() {
         Spark.stop();
-        ThreadUtil.shutdown();
     }
 
     @Before

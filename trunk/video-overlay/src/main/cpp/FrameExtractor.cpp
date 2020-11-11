@@ -58,7 +58,8 @@ using namespace COMPONENT;
  * Signature: (java/lang/String;java/lang/String;Z;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
-(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jboolean croppingFlag, jobject paths)
+(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath,
+ jboolean croppingFlag, jboolean rotationFillIsBlack, jobject paths)
 {
     JniHelper jni(env);
 
@@ -118,6 +119,10 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         if (!src.IsOpened()) {
             throw std::runtime_error("Unable to open input media file: " + mediaPath);
         }
+
+        auto fillColor = rotationFillIsBlack
+                ? cv::Scalar(0, 0, 0)
+                : cv::Scalar(255, 255, 255);
 
         // Get the set of frames to be extracted and an iterator for it.
         jobject frameNumberSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
@@ -193,6 +198,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     // Create the transformation for this frame and apply it.
                     FeedForwardExactRegionAffineTransformer transformer(
                             { MPFRotatedRect(x, y, width, height, rotation, false) },
+                            fillColor,
                             IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
 
                     transformer.TransformFrame(transformFrame, 0);

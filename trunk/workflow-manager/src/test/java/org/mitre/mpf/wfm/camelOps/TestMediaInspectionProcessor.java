@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,7 @@ public class TestMediaInspectionProcessor {
     @BeforeClass
     public static void initClass() {
         assertTrue(JniLoader.isLoaded());
+        ThreadUtil.start();
     }
 
     @Before

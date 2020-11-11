@@ -54,11 +54,6 @@ public class TestIoUtils {
         ThreadUtil.start();
     }
 
-    @AfterClass
-    public static void tearDownClass() {
-        ThreadUtil.shutdown();
-    }
-
     @Before
     public void init() {
         _tempRoot = _tempFolder.getRoot().toPath();

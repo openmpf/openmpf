@@ -140,10 +140,13 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
                     continue;
                 }
+
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
                                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
-                ArtifactExtractionRequest request = new ArtifactExtractionRequest(job.getId(), media.getId(),
-                         media.getProcessingPath().toString(), media.getType(), taskIndex, actionIndex, cropping);
+                boolean isRotationFillBlack = isRotationFillBlack(job, media, action);
+                ArtifactExtractionRequest request = new ArtifactExtractionRequest(
+                        job.getId(), media.getId(), media.getProcessingPath().toString(),
+                        media.getType(), taskIndex, actionIndex, cropping, isRotationFillBlack);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());
@@ -361,5 +364,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
         ArtifactExtractionPolicy defaultPolicy = job.getSystemPropertiesSnapshot().getDefaultArtifactExtractionPolicy();
         return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);
+    }
+
+
+    private boolean isRotationFillBlack(BatchJob job, Media media, Action action) {
+        String fillColor = _aggregateJobPropertiesUtil.getValue(
+                "ROTATION_FILL_COLOR", job, media, action);
+        return !"WHITE".equalsIgnoreCase(fillColor);
     }
 }

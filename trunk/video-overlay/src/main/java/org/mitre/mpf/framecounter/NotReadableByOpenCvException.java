@@ -24,39 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.framecounter;
 
-import java.io.File;
-import java.io.IOException;
+public class NotReadableByOpenCvException extends Exception {
 
-public class FrameCounter {
-    private File file;
-    public File getFile() { return file; }
-    public void setFile(File file) { this.file = file; }
-
-    public FrameCounter(File file) { this.file = file; }
-
-    public int count(boolean bruteForce) throws IOException, NotReadableByOpenCvException {
-        if(file == null) {
-            throw new IllegalArgumentException("File must not be null.");
-        }
-
-        if(!file.exists()) {
-            throw new IllegalArgumentException(String.format("The file '%s' does not exist.", file));
-        }
-
-        if(!file.canRead()) {
-            throw new IOException(String.format("Cannot read file '%s'.", file));
-        }
-
-        int returnCode = countNative(file.getAbsolutePath(), bruteForce);
-        if(returnCode < 0) {
-            throw new FrameCounterJniException(returnCode);
-        } else {
-            return returnCode;
-        }
+    public NotReadableByOpenCvException(String message) {
+        super(message);
     }
 
-    private native int countNative(String absolutePath, boolean bruteForce)
-            throws NotReadableByOpenCvException;
+    public NotReadableByOpenCvException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

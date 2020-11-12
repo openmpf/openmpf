@@ -24,10 +24,17 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <exception>
+#include <stdexcept>
+#include <string>
+
 #include <jni.h>
-#include <stdlib.h>
+
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
+
+#include "JniHelper.h"
+
 
 #ifndef _Included_org_mitre_mpf_framecounter_FrameCounter
 #define _Included_org_mitre_mpf_framecounter_FrameCounter
@@ -46,56 +53,43 @@ using namespace cv;
 JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
   (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath, bool bruteForce)
 {
-    int count = -8700;
-
-    if (env != NULL) {
-        jclass clzFrameCounter = env->GetObjectClass(frameCounterInstance);
-
-        // Set up the video...
-        const char *inChars = env->GetStringUTFChars(sourceVideoPath, NULL);
-        if (inChars != NULL) {
-            try {
-                VideoCapture src(inChars);
-                if (!src.isOpened())
-                {
-                    // Cleanup...
-                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-
-                    return -8701;
-                }
-
-                // Check if the first frame of the source image is not empty.
-                count = 0;
-                Mat placeholder;
-                if (!src.read(placeholder)) {
-                    // Frame read failed.
-                    src.release();
-                    env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-                    return -8702;
-                }
-
-                if (bruteForce) {
-                    // The first frame was already processed.
-                    count = 1;
-                    while (src.grab()) {
-                        count++;
-                    }
-                } else {
-                    count = static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
-                }
-
-                src.release();
-                env->ReleaseStringUTFChars(sourceVideoPath, inChars);
-            } catch (cv::Exception) {
-                return -8703;
-            }
-        } else {
-            return -8704;
+    JniHelper jni(env);
+    try {
+        std::string videoPath = jni.ToStdString(sourceVideoPath);
+        VideoCapture src(videoPath);
+        if (!src.isOpened()) {
+            throw std::runtime_error("Unable to open source video: " + videoPath);
         }
-    } else {
-        return -8705;
+
+        cv::Mat placeHolder;
+        if (!src.read(placeHolder)) {
+            jclass exceptionClz = jni.FindClass(
+                    "org/mitre/mpf/framecounter/NotReadableByOpenCvException");
+            std::string errorMsg = "OpenCV Could not read first frame of " + videoPath
+                        + ". Video format is not supported by OpenCV or the video is corrupt.";
+            jni.ThrowNew(exceptionClz, errorMsg.c_str());
+            return -1;
+        }
+
+        if (bruteForce) {
+            // The first frame was already processed.
+            int count = 1;
+            while (src.grab()) {
+                count++;
+            }
+            return count;
+        }
+        else {
+            return static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
+        }
     }
-    return (jint)count;
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
+    }
+    catch (...) {
+        jni.ReportCppException();
+    }
+    return -1;
 }
 
 #ifdef __cplusplus

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 import com.google.common.base.Preconditions;
 import org.apache.camel.Exchange;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -37,6 +38,7 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.external.ExternalParsersConfigReader;
 import org.mitre.mpf.framecounter.FrameCounter;
+import org.mitre.mpf.framecounter.NotReadableByOpenCvException;
 import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
@@ -226,24 +228,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
     }
 
     private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
-                             Map<String, String> mediaMetadata, Metadata ffmpegMetadata) throws IOException {
-        // FRAME_COUNT
+                             Map<String, String> mediaMetadata, Metadata ffmpegMetadata)
+            throws NotReadableByOpenCvException {
 
-        // Use the frame counter native library to calculate the length of videos.
-        LOG.debug("Counting frames in '{}'.", localPath);
-
-        // We can't get the frame count directly from a gif,
-        // so iterate over the frames and count them one by one
-        boolean isGif = "image/gif".equals(mimeType);
-        int retval = new FrameCounter(localPath.toFile()).count(isGif);
-
-        if (retval <= 0) {
-            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                     "Cannot detect video file length.");
-            return -1;
-        }
-
-        int frameCount = retval;
+        int frameCount = getFrameCount(localPath, jobId, mediaId, mimeType, ffmpegMetadata);
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
 
         // FRAME_WIDTH and FRAME_HEIGHT
@@ -429,5 +417,75 @@ public class MediaInspectionProcessor extends WfmProcessor {
             return milliseconds;
         }
         return -1;
+    }
+
+
+    /**
+     * Gets the number of frames in the video using OpenCV and FFMpeg. If the frame counts are
+     * different, the lower of the two will be returned.
+     */
+    private int getFrameCount(Path mediaPath, long jobId, long mediaId, String mimeType,
+                              Metadata ffmpegMetadata) throws NotReadableByOpenCvException {
+        LOG.info("Counting frames in '{}'.", mediaPath);
+
+        int openCvFrameCount = -1;
+        String openCvError = "";
+        try {
+            // We can't get the frame count directly from a gif,
+            // so iterate over the frames and count them one by one
+            boolean isGif = "image/gif".equals(mimeType);
+            openCvFrameCount = new FrameCounter(mediaPath.toFile()).count(isGif);
+        }
+        catch (IOException | IllegalStateException e) {
+            openCvError = "Failed to get frame count from OpenCV due to: " + e.getMessage();
+            LOG.error(openCvError, e);
+        }
+
+        int ffmpegFrameCount = -1;
+        String ffmpegError = "";
+        try {
+            var frameCountString = ffmpegMetadata.get("frameCount");
+            if (StringUtils.isBlank(frameCountString)) {
+                ffmpegError = "FFmpeg did not output the frame count.";
+            }
+            else {
+                ffmpegFrameCount = Integer.parseInt(frameCountString);
+            }
+        }
+        catch (NumberFormatException e) {
+            ffmpegError = "Failed to get frame count from FFmpeg due to: " + e.getMessage();
+            LOG.error(ffmpegError, e);
+        }
+
+
+        if (!ffmpegError.isEmpty() && !openCvError.isEmpty()) {
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, ffmpegError);
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, openCvError);
+            return -1;
+        }
+        else if (!ffmpegError.isEmpty()) {
+            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                       String.format("%s However, OpenCV reported %s frames.",
+                                                     ffmpegError, openCvFrameCount));
+            return openCvFrameCount;
+        }
+        else if (!openCvError.isEmpty()) {
+            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                       String.format("%s However, FFmpeg reported %s frames.",
+                                                     openCvError, ffmpegFrameCount));
+            return ffmpegFrameCount;
+        }
+        else if (ffmpegFrameCount == openCvFrameCount) {
+            return ffmpegFrameCount;
+        }
+        else {
+            int frameCount = Math.min(ffmpegFrameCount, openCvFrameCount);
+            _inProgressJobs.addWarning(
+                    jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                    String.format("OpenCV reported the frame count to be %s, " +
+                                          "but FFmpeg reported it to be %s. %s will be used.",
+                                  openCvFrameCount, ffmpegFrameCount, frameCount));
+            return frameCount;
+        }
     }
 }

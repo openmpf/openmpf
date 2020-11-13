@@ -256,7 +256,12 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
-                        eq("video/vnd.dlna.mpeg-tts"), eq(27), nonEmptyMap());
+                        eq("video/vnd.dlna.mpeg-tts"), eq(10), nonEmptyMap());
+
+        verify(_mockInProgressJobs)
+                .addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
+                            "OpenCV reported the frame count to be 27, but FFmpeg reported it to be 10. 10 will be used.");
+
         verifyNoJobOrMediaError();
 
         LOG.info("ts file test passed.");

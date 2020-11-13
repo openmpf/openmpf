@@ -24,75 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <exception>
-#include <stdexcept>
-#include <string>
 
-#include <jni.h>
+package org.mitre.mpf.framecounter;
 
-#include <opencv2/core.hpp>
-#include <opencv2/videoio.hpp>
+public class NotReadableByOpenCvException extends Exception {
 
-#include "JniHelper.h"
-
-
-#ifndef _Included_org_mitre_mpf_framecounter_FrameCounter
-#define _Included_org_mitre_mpf_framecounter_FrameCounter
-#ifdef __cplusplus
-extern "C" {
-
-using namespace cv;
-
-#endif
-
-/*
- * Class:     org_mitre_mpf_framecounter_FrameCounter
- * Method:    countNative
- * Signature: (Ljava/lang/String;)V
- */
-JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
-  (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath, bool bruteForce)
-{
-    JniHelper jni(env);
-    try {
-        std::string videoPath = jni.ToStdString(sourceVideoPath);
-        VideoCapture src(videoPath);
-        if (!src.isOpened()) {
-            throw std::runtime_error("Unable to open source video: " + videoPath);
-        }
-
-        cv::Mat placeHolder;
-        if (!src.read(placeHolder)) {
-            jclass exceptionClz = jni.FindClass(
-                    "org/mitre/mpf/framecounter/NotReadableByOpenCvException");
-            std::string errorMsg = "OpenCV could not read first frame of " + videoPath
-                        + ". Video format is not supported by OpenCV or the video is corrupt.";
-            jni.ThrowNew(exceptionClz, errorMsg.c_str());
-            return -1;
-        }
-
-        if (bruteForce) {
-            // The first frame was already processed.
-            int count = 1;
-            while (src.grab()) {
-                count++;
-            }
-            return count;
-        }
-        else {
-            return static_cast<int>(src.get(cv::CAP_PROP_FRAME_COUNT));
-        }
+    public NotReadableByOpenCvException(String message) {
+        super(message);
     }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
+
+    public NotReadableByOpenCvException(String message, Throwable cause) {
+        super(message, cause);
     }
-    catch (...) {
-        jni.ReportCppException();
-    }
-    return -1;
 }
-
-#ifdef __cplusplus
-}
-#endif
-#endif

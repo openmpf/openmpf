@@ -286,7 +286,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
         // an assumption failure causes the test to be ignored;
         // only run this test on a machine where /mpfdata/datasets is mapped
-        Assume.assumeTrue("Skipping test. It should only run on Jenkins.", jenkins);
+        Assume.assumeTrue("Skipping test. It should only run when /mpfdata/datasets is mapped.",
+                           Files.exists(Paths.get("/mpfdata/datasets")));
 
         log.info("Beginning testPriorities()");
 

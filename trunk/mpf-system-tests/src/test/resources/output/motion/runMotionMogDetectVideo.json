@@ -33,14 +33,14 @@
             "mediaId": 0,
             "path": "file:/home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/five-second-marathon-clip.mkv",
             "mimeType": "video/x-matroska",
-            "length": 154,
+            "length": 138,
             "sha256": "b807f7077e7b2a845ec1a2a9bb12712a050d0c54cc5cf0faeb1660111ad78c4d",
             "message": null,
             "status": "COMPLETE",
             "mediaMetadata": {
                 "DURATION": "5013",
                 "FPS": "29.97",
-                "FRAME_COUNT": "154",
+                "FRAME_COUNT": "138",
                 "FRAME_HEIGHT": "540",
                 "FRAME_WIDTH": "960",
                 "MIME_TYPE": "video/x-matroska"

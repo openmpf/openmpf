@@ -68,6 +68,7 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -88,17 +89,18 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
+@ActiveProfiles("jenkins")
 public abstract class TestSystem {
 
     protected static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
 
 
     // is this running on Jenkins and/or is output checking desired?
-    protected static boolean jenkins = false;
+    protected static boolean DISABLE_OUTPUT_CHECKING = false;
     static {
-        String prop = System.getProperty("jenkins");
+        String prop = System.getProperty("disable.output.checking");
         if (prop != null){
-            jenkins = Boolean.valueOf(prop);
+            DISABLE_OUTPUT_CHECKING = Boolean.valueOf(prop);
         }
     }
 
@@ -306,7 +308,7 @@ public abstract class TestSystem {
 
         long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
                                         propertiesUtil.getJmsPriority());
-        if (jenkins) {
+        if (!DISABLE_OUTPUT_CHECKING) {
             URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
             log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);
 

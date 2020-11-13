@@ -42,14 +42,14 @@
       "path": "file:///opt/mpf/share/samples/face/new_face_video.avi",
       "detectionProcessingErrors": {},
       "mimeType": "video/x-msvideo",
-      "length": 511,
+      "length": 510,
       "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
       "message": null,
       "status": "COMPLETE",
       "mediaMetadata": {
         "DURATION": "17007",
         "FPS": "29.97",
-        "FRAME_COUNT": "511",
+        "FRAME_COUNT": "510",
         "FRAME_HEIGHT": "480",
         "FRAME_WIDTH": "640",
         "MIME_TYPE": "video/x-msvideo"

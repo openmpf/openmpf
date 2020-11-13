@@ -421,7 +421,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 
     /**
-     * Gets the number of frames in the video using OpenCV and FFMpeg. If the frame counts are
+     * Gets the number of frames in the video using OpenCV and FFmpeg. If the frame counts are
      * different, the lower of the two will be returned.
      */
     private int getFrameCount(Path mediaPath, long jobId, long mediaId, String mimeType,
@@ -459,18 +459,18 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
 
         if (!ffmpegError.isEmpty() && !openCvError.isEmpty()) {
-            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, ffmpegError);
-            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, openCvError);
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.FRAME_COUNT, ffmpegError);
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.FRAME_COUNT, openCvError);
             return -1;
         }
         else if (!ffmpegError.isEmpty()) {
-            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
                                        String.format("%s However, OpenCV reported %s frames.",
                                                      ffmpegError, openCvFrameCount));
             return openCvFrameCount;
         }
         else if (!openCvError.isEmpty()) {
-            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+            _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
                                        String.format("%s However, FFmpeg reported %s frames.",
                                                      openCvError, ffmpegFrameCount));
             return ffmpegFrameCount;
@@ -481,7 +481,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         else {
             int frameCount = Math.min(ffmpegFrameCount, openCvFrameCount);
             _inProgressJobs.addWarning(
-                    jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                    jobId, mediaId, IssueCodes.FRAME_COUNT,
                     String.format("OpenCV reported the frame count to be %s, " +
                                           "but FFmpeg reported it to be %s. %s will be used.",
                                   openCvFrameCount, ffmpegFrameCount, frameCount));

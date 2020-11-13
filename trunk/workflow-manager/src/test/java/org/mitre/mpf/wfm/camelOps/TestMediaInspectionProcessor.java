@@ -259,7 +259,7 @@ public class TestMediaInspectionProcessor {
                         eq("video/vnd.dlna.mpeg-tts"), eq(10), nonEmptyMap());
 
         verify(_mockInProgressJobs)
-                .addWarning(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                .addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
                             "OpenCV reported the frame count to be 27, but FFmpeg reported it to be 10. 10 will be used.");
 
         verifyNoJobOrMediaError();

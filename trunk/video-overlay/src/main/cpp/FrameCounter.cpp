@@ -65,7 +65,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
         if (!src.read(placeHolder)) {
             jclass exceptionClz = jni.FindClass(
                     "org/mitre/mpf/framecounter/NotReadableByOpenCvException");
-            std::string errorMsg = "OpenCV Could not read first frame of " + videoPath
+            std::string errorMsg = "OpenCV could not read first frame of " + videoPath
                         + ". Video format is not supported by OpenCV or the video is corrupt.";
             jni.ThrowNew(exceptionClz, errorMsg.c_str());
             return -1;

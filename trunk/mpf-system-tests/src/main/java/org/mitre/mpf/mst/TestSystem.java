@@ -98,6 +98,7 @@ public abstract class TestSystem {
     // is this running on Jenkins and/or is output checking desired?
     protected static boolean DISABLE_OUTPUT_CHECKING = false;
     static {
+        // Needs to be set on command line with: -Ddisable.output.checking=true
         String prop = System.getProperty("disable.output.checking");
         if (prop != null){
             DISABLE_OUTPUT_CHECKING = Boolean.valueOf(prop);

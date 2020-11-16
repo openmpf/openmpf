@@ -59,8 +59,8 @@ public class TestFrameCounter {
 
             FrameCounter counter = new FrameCounter(sourceFile);
             Assert.assertEquals("Did not count the expected number of frames.", expectedCount, counter.count(bruteForce));
-        } catch (IOException ioe) {
-            Assert.fail(String.format("Encountered an exception when none was expected. %s", ioe));
+        } catch (IOException | NotReadableByOpenCvException e) {
+            Assert.fail(String.format("Encountered an exception when none was expected. %s", e));
         }
     }
 }

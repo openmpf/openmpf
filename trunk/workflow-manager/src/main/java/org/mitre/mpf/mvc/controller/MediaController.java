@@ -135,14 +135,6 @@ public class MediaController {
 					continue;
 				}
 
-				if (!ioUtils.isApprovedFile(url)) {
-					String contentType = ioUtils.getMimeType(url);
-					String msg = "The media is not a supported type. Please add a whitelist."+contentType+" entry to the mediaType.properties file.";
-					log.error(msg+" URL:"+url);
-					urlResultMap.put(enteredURL,msg);
-					continue;
-				}
-
 				localName = uri.getPath();
 				//we consider no path to be malformed for our purposes
 				if (localName.isEmpty()) {
@@ -154,7 +146,7 @@ public class MediaController {
 				localName = localName.replace("/", "-");//replace the rest of the path with -
 
 				//get a new unique filename in case the name currently exists
-				newFile = ioUtils.getNewFileName(desiredpath,localName);
+				newFile = ioUtils.getNewFileName(desiredpath, localName);
 
 				//save the file
 				FileUtils.copyURLToFile(url, newFile);
@@ -208,21 +200,11 @@ public class MediaController {
 				MultipartFile file = request.getFile(uploadedFile);
 				String filename = file.getOriginalFilename();
 				byte[] bytes = file.getBytes();
-				String contentType = ioUtils.getMimeType(bytes);
-
-				log.debug("[saveMediaFileUpload] File:" + filename + "  ContentType:" + contentType + " Size:" + bytes.length);
 
 				if (filename.isEmpty()) {
 					String err = "The filename is empty during upload of the MultipartFile.";
 					log.error(err);
 					return new ResponseEntity<>("{\"error\":\"" + err + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
-				}
-
-				//return error if the file has an invalid content type
-				if(!ioUtils.isApprovedContentType(contentType)){
-					String msg = "The media is not a supported type. Please add a whitelist."+contentType+" entry to the mediaType.properties file.";
-					log.error(msg+" File:"+filename);
-					return new ResponseEntity<>("{\"error\":\"" + msg + "\"}", HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 
 				//get a new filename
@@ -232,7 +214,7 @@ public class MediaController {
 				BufferedOutputStream stream =  new BufferedOutputStream(new FileOutputStream(newFile));
 				stream.write(bytes);
 				stream.close();
-				log.info("Completed upload and write of {} to {} ContentType:{}", newFile.getPath(), newFile.getAbsolutePath(),contentType);
+				log.info("Completed upload and write of {} to {}", newFile.getPath(), newFile.getAbsolutePath());
 
 				serverMediaService.addFileToCache(desiredPathParam, newFile, request.getServletContext());
 

@@ -51,6 +51,8 @@ public class FrameExtractor {
     private final URI media;
     private final URI extractionDirectory;
     private final FileNameGenerator fileNameGenerator;
+    private final boolean croppingFlag;
+    private final boolean rotationFillIsBlack;
 
     // Maps frame numbers to pairs of trackIndex and detection to be extracted.
     private SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
@@ -64,20 +66,22 @@ public class FrameExtractor {
         return extractionsMap.get(frameNumber).get(trackIndex);
     }
 
-    private boolean croppingFlag = true;
-
     private String prefix = "frame";
 
 
-    public FrameExtractor(URI media, URI extractionDirectory, boolean croppingFlag) {
-        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag);
+    public FrameExtractor(URI media, URI extractionDirectory, boolean croppingFlag,
+                          boolean rotationFillIsBlack) {
+        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag,
+             rotationFillIsBlack);
     }
 
-    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator, boolean croppingFlag) {
+    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator,
+                          boolean croppingFlag, boolean rotationFillIsBlack) {
         this.media = media;
         this.extractionDirectory = extractionDirectory;
         this.fileNameGenerator = fileNameGenerator;
         this.croppingFlag = croppingFlag;
+        this.rotationFillIsBlack = rotationFillIsBlack;
     }
 
 
@@ -103,7 +107,12 @@ public class FrameExtractor {
                     response = 0;
                 }
                 else {
-                    response = executeNative(new File(media).getAbsolutePath(), new File(extractionDirectory).getAbsolutePath(), croppingFlag, results);
+                    response = executeNative(
+                            new File(media).getAbsolutePath(),
+                            new File(extractionDirectory).getAbsolutePath(),
+                            croppingFlag,
+                            rotationFillIsBlack,
+                            results);
                 }
             } finally {
                 nativeSplit.stop();
@@ -125,7 +134,8 @@ public class FrameExtractor {
     }
 
     private native int executeNative(String sourceMedia, String extractionDestination,
-                                     boolean croppingFlag, List<FrameExtractionResult> results);
+                                     boolean croppingFlag, boolean rotationFillIsBlack,
+                                     List<FrameExtractionResult> results);
 
     public String getPrefix() {
         return prefix;

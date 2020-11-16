@@ -54,12 +54,12 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     @Override
     public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
-        log.warn("[Job {}|{}|{}] Media {} is of the type '{}' and will be processed generically.",
+        log.warn("[Job {}|{}|{}] Media {} is of the MIME type '{}' and will be processed generically.",
                  context.getJobId(),
                  context.getTaskIndex(),
                  context.getActionIndex(),
                  media.getId(),
-                 media.getType());
+                 media.getMimeType());
 
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);

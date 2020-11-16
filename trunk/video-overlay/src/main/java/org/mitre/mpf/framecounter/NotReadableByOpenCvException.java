@@ -24,27 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.model;
 
-//to store the sate of a bootstrap treeview file tree node
-public class FileTreeNodeState {
-	boolean checked = false;
-	boolean disabled = false;
-	boolean expanded = false;
-	boolean selected = false;
-	
-	public FileTreeNodeState() {}
-	
-	public boolean isChecked() {
-		return this.checked;
-	}
-	public boolean isDisabled() {
-		return this.disabled;
-	}
-	public boolean isExpanded() {
-		return this.expanded;
-	}
-	public boolean isSelected() {
-		return this.selected;
-	}
+package org.mitre.mpf.framecounter;
+
+public class NotReadableByOpenCvException extends Exception {
+
+    public NotReadableByOpenCvException(String message) {
+        super(message);
+    }
+
+    public NotReadableByOpenCvException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

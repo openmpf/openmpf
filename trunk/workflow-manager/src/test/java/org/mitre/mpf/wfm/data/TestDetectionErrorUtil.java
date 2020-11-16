@@ -61,31 +61,31 @@ public class TestDetectionErrorUtil {
         var video1 = mock(MediaImpl.class);
         when(video1.getId())
                 .thenReturn(_VIDEO_1_ID);
-        when(video1.getMediaType())
+        when(video1.getType())
                 .thenReturn(MediaType.VIDEO);
 
         var video2 = mock(MediaImpl.class);
         when(video2.getId())
                 .thenReturn(_VIDEO_2_ID);
-        when(video2.getMediaType())
+        when(video2.getType())
                 .thenReturn(MediaType.VIDEO);
 
         var image1 = mock(MediaImpl.class);
         when(image1.getId())
                 .thenReturn(_IMAGE_1_ID);
-        when(image1.getMediaType())
+        when(image1.getType())
                 .thenReturn(MediaType.IMAGE);
 
         var audio1 = mock(MediaImpl.class);
         when(audio1.getId())
                 .thenReturn(_AUDIO_1_ID);
-        when(audio1.getMediaType())
+        when(audio1.getType())
                 .thenReturn(MediaType.AUDIO);
 
         var generic1 = mock(MediaImpl.class);
         when(generic1.getId())
                 .thenReturn(_GENERIC_1_ID);
-        when(generic1.getMediaType())
+        when(generic1.getType())
                 .thenReturn(MediaType.UNKNOWN);
 
         var mockPipelineElements = mock(JobPipelineElements.class);

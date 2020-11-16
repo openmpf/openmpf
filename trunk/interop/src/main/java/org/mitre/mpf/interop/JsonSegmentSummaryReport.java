@@ -75,8 +75,8 @@ public class JsonSegmentSummaryReport {
 
     @JsonProperty("output")
     @JsonPropertyDescription("Mapping of detection types to tracks.")
-    private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> types = new TreeMap<>();
-    public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getTypes() { return types; }
+    private SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> detectionTypes = new TreeMap<>();
+    public SortedMap<String, SortedSet<JsonStreamingTrackOutputObject>> getDetectionTypes() { return detectionTypes; }
 
     @JsonCreator
     public JsonSegmentSummaryReport(@JsonProperty("reportDate") Instant reportDate,
@@ -95,9 +95,9 @@ public class JsonSegmentSummaryReport {
         this.errorMessage = errorMessage;
 
         if (tracks == null || tracks.isEmpty()) {
-            types.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
+            detectionTypes.put(JsonActionOutputObject.NO_TRACKS_TYPE, new TreeSet<>());
         } else {
-            types.put(detectionType, new TreeSet<>(tracks));
+            detectionTypes.put(detectionType, new TreeSet<>(tracks));
         }
     }
 }

@@ -24,22 +24,32 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.model;
 
-import org.springframework.web.multipart.MultipartFile;
+package org.mitre.mpf.heic;
 
-import java.util.List;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public class FileUploadForm {
+public class HeicConverter {
 
-    private List<MultipartFile> files;
-
-    //Getter and setter methods
-    public List<MultipartFile> getFiles() {
-        return files;
+    /**
+     * Converts a HEIC image to another format.
+     * @param inputPath Path to the HEIC file
+     * @param outputPath Path to output file. The image format is determined by the file extension.
+     */
+    public static void convert(Path inputPath, Path outputPath) throws IOException {
+        if (!Files.exists(inputPath)) {
+            throw new FileNotFoundException(inputPath.toAbsolutePath() + " does not exist.");
+        }
+        Files.createDirectories(outputPath.getParent());
+        convertNative(inputPath.toString(), outputPath.toString());
     }
 
-    public void setFiles(List<MultipartFile> files) {
-        this.files = files;
+    private static native void convertNative(String inputFile, String outputFile);
+
+
+    private HeicConverter() {
     }
 }

@@ -54,6 +54,13 @@ public class ControllerUncaughtExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Object handle(HttpServletRequest request, Exception exception){
+        // In order to avoid adding a dependency on Catalina, we just check the
+        // exception class name.
+        if (exception.getClass().getSimpleName().equals("ClientAbortException")) {
+            log.info("Suppressing ClientAbortException: " + exception.getMessage());
+            return null;
+        }
+
         log.error(String.format("Request for %s raised an uncaught exception", request.getRequestURL()), exception);
         var errorMessage = StringUtils.isBlank(exception.getMessage())
                 ? "An unknown error has occurred. Check the Workflow Manager log for details."

@@ -274,9 +274,10 @@ public class ITWebREST {
 
 			//check every three seconds
 			Thread.sleep(3000);
-		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("COMPLETE")) );
+		// The warning is expected because OpenCV and FFmpeg report different frame counts.
+		} while( !(singleJobInfo!= null && singleJobInfo.isTerminal() && singleJobInfo.getJobStatus().equals("COMPLETE_WITH_WARNINGS")) );
 
-		Assert.assertTrue(singleJobInfo.getJobStatus().equals("COMPLETE"));
+		Assert.assertTrue(singleJobInfo.getJobStatus().equals("COMPLETE_WITH_WARNINGS"));
 
 		endTest();
 	}

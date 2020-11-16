@@ -29,7 +29,6 @@ package org.mitre.mpf.mvc.controller;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
-import org.apache.commons.io.FileUtils;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
 import org.mitre.mpf.mvc.model.ServerMediaFilteredListing;
@@ -48,7 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -61,14 +62,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 @Api(value = "Server Media",description = "Server media retrieval")
@@ -89,6 +87,9 @@ public class ServerMediaController {
 
     @Autowired
     private JobRequestDao jobRequestDao;
+
+    @Autowired
+    private IoUtils ioUtils;
 
     @Autowired
     private JsonUtils jsonUtils;
@@ -181,30 +182,24 @@ public class ServerMediaController {
         return new ServerMediaFilteredListing(draw, mediaFiles.size(), mediaFiles.size(), mediaFiles.subList(start, end));
     }
 
-    /***
-     *
-     * @param response
-     * @param nodeFullPath
-     * @throws IOException
-     * @throws URISyntaxException
-     */
-    @RequestMapping(value = "/server/node-image", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
+
+    @RequestMapping(value = "/server/node-image", method = RequestMethod.GET)
     @ResponseBody
-    public void serve(HttpServletResponse response, @RequestParam(value = "nodeFullPath", required = true) String nodeFullPath) throws IOException, URISyntaxException {
-        //TODO: this set of lines is also used in the MarkupController - create a single method
-        File f = new File(nodeFullPath);
-        if(f.canRead()) {
-            FileUtils.copyFile(f, response.getOutputStream());
-            response.flushBuffer();
-        } else {
-            response.setStatus(404);
+    public ResponseEntity<?> serve(@RequestParam("nodeFullPath") String nodeFullPath)
+            throws IOException {
+        var path = Paths.get(nodeFullPath);
+        if (Files.isReadable(path)) {
+            var contentType= Optional.ofNullable(Files.probeContentType(path))
+                    .map(MediaType::parseMediaType)
+                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+            return ResponseEntity.ok()
+                    .contentType(contentType)
+                    .body(new PathResource(path));
         }
-
-        //TODO: add an image to return that is file not available and error retrieving file
-        //to resources to use when there are issues
-
-        //TODO: adjust the content type based on the image type
-        //response.setContentLength(MediaType.);
+        else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
 
@@ -216,7 +211,7 @@ public class ServerMediaController {
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
 
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            IoUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
+            ioUtils.writeFileAsAttachment(Paths.get(sourceUri), response);
         }
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);

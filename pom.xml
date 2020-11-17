@@ -30,7 +30,7 @@
     <groupId>org.mitre.mpf</groupId>
     <artifactId>mpf-project</artifactId>
     <packaging>pom</packaging>
-    <version>5.0</version>
+    <version>5.1</version>
     <name>Media Processing Framework</name>
 
     <!-- poms in the following subdirectories -->

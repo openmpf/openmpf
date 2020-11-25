@@ -480,11 +480,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
         }
         else {
             int frameCount = Math.min(ffmpegFrameCount, openCvFrameCount);
-            _inProgressJobs.addWarning(
-                    jobId, mediaId, IssueCodes.FRAME_COUNT,
-                    String.format("OpenCV reported the frame count to be %s, " +
-                                          "but FFmpeg reported it to be %s. %s will be used.",
-                                  openCvFrameCount, ffmpegFrameCount, frameCount));
+            String message = String.format("OpenCV reported the frame count to be %s, " +
+                                           "but FFmpeg reported it to be %s. %s will be used.",
+                                           openCvFrameCount, ffmpegFrameCount, frameCount);
+            if (Math.abs(ffmpegFrameCount - openCvFrameCount) >= _propertiesUtil.getWarningFrameCountDiff()) {
+                _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT, message);
+            } else {
+                LOG.warn(message);
+            }
             return frameCount;
         }
     }

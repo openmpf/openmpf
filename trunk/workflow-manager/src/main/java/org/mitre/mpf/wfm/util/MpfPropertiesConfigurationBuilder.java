@@ -53,7 +53,8 @@ public class MpfPropertiesConfigurationBuilder {
             "remote.media.download.",
             "web.broadcast.job.status.enabled",
             "web.job.polling.interval",
-            "http.callback.timeout.ms"
+            "http.callback.timeout.ms",
+            "warn."
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(

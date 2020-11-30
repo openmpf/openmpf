@@ -65,7 +65,8 @@ set(batch_executor_lib_files
 	CppComponentHandle.cpp CppComponentHandle.h
 	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
 	MPFMessenger.cpp MPFMessenger.h
-	PythonComponentHandle.cpp PythonComponentHandle.h)
+	PythonComponentHandle.cpp PythonComponentHandle.h
+	BatchExecutorUtil.cpp BatchExecutorUtil.h)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})
 target_include_directories(batch_executor_lib PUBLIC

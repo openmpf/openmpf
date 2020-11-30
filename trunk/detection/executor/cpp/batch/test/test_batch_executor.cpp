@@ -38,6 +38,7 @@
 
 #include "../PythonComponentHandle.h"
 #include "../MPFMessenger.h"
+#include "../BatchExecutorUtil.h"
 
 using namespace MPF::COMPONENT;
 
@@ -360,4 +361,20 @@ TEST(TestRestrictMediaTypes, CanCreateRestrictMediaTypeSelector) {
     else {
         setenv(restrict_media_types, initial_value, true);
     }
+}
+
+
+TEST(BatchExecutorUtil, get_environment_job_properties) {
+    setenv("MPF_PROP_PROP1", "VALUE1", 1);
+    setenv("MPF_PROP_PROP2", "VALUE2", 1);
+    setenv("NOT A PROPERTY", "ASDF", 1);
+    setenv("MPF_PROP BAD_PROP", "ASDF", 1);
+    setenv("MPF_PROP_", "ASDF", 1);
+
+    std::map<std::string, std::string> expected {
+        {"PROP1", "VALUE1"},
+        {"PROP2", "VALUE2"}
+    };
+
+    ASSERT_EQ(expected, BatchExecutorUtil::get_environment_job_properties());
 }

@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.component.executor.detection;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.mitre.mpf.component.api.detection.*;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -42,6 +43,9 @@ public class MPFDetectionMessenger {
 
     private static final Logger LOG = LoggerFactory.getLogger(MPFDetectionMessenger.class);
 	private static final String usePreprocessorPropertyName = "USE_PREPROCESSOR";
+
+	private static final ImmutableMap<String, String> environmentJobProperties
+			= getEnvironmentJobProperties();
 
 	private final MPFDetectionComponentInterface component;
 	private final Session session;
@@ -61,6 +65,7 @@ public class MPFDetectionMessenger {
 
 			MPFDetectionBuffer detectionBuffer = new MPFDetectionBuffer(requestBytesMessage);
 			MPFMessageMetadata msgMetadata = detectionBuffer.getMessageMetadata(message);
+			msgMetadata.getAlgorithmProperties().putAll(environmentJobProperties);
             Destination out = message.getJMSReplyTo();
 
             if (msgMetadata != null) {
@@ -303,5 +308,22 @@ public class MPFDetectionMessenger {
 		detectionResponseBuilder.setTaskIndex(msgMetadata.getTaskIndex());
 		detectionResponseBuilder.setActionName(msgMetadata.getActionName());
 		detectionResponseBuilder.setActionIndex(msgMetadata.getActionIndex());
+	}
+
+	private static ImmutableMap<String, String> getEnvironmentJobProperties() {
+    	return getEnvironmentJobProperties(System.getenv());
+	}
+
+	public static ImmutableMap<String, String> getEnvironmentJobProperties(
+			Map<String, String> environment) {
+        var propertyPrefix = "MPF_PROP_";
+        return environment
+		        .entrySet()
+		        .stream()
+		        .filter(e -> e.getKey().length() > propertyPrefix.length()
+				        && e.getKey().startsWith(propertyPrefix))
+		        .collect(ImmutableMap.toImmutableMap(
+		        		e -> e.getKey().substring(propertyPrefix.length()),
+				        Map.Entry::getValue));
 	}
 }

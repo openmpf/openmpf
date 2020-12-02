@@ -239,13 +239,13 @@ public class ITWebStreamingReports {
         // Test to make sure the received summary reports are from the two streaming jobs.
         Assert.assertEquals(postJobId1, summaryReportPostResponseForJob1.getJobId());
         Assert.assertEquals("", summaryReportPostResponseForJob1.getErrorMessage());
-        Assert.assertTrue(summaryReportPostResponseForJob1.getTypes().containsKey(DETECTION_TYPE) ||
-                summaryReportPostResponseForJob1.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
+        Assert.assertTrue(summaryReportPostResponseForJob1.getDetectionTypes().containsKey(DETECTION_TYPE) ||
+                summaryReportPostResponseForJob1.getDetectionTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
 
         Assert.assertEquals(postJobId2, summaryReportPostResponseForJob2.getJobId());
         Assert.assertEquals("", summaryReportPostResponseForJob2.getErrorMessage());
-        Assert.assertTrue(summaryReportPostResponseForJob2.getTypes().containsKey(DETECTION_TYPE) ||
-                summaryReportPostResponseForJob2.getTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
+        Assert.assertTrue(summaryReportPostResponseForJob2.getDetectionTypes().containsKey(DETECTION_TYPE) ||
+                summaryReportPostResponseForJob2.getDetectionTypes().containsKey(JsonActionOutputObject.NO_TRACKS_TYPE));
     }
 
     private static void setupSparkPost() {

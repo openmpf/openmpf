@@ -123,7 +123,7 @@ public class DetectionTaskSplitter {
                     // Segmenting plan is only used by the VideoMediaSegmenter,
                     // so only create the DetectionContext to include the segmenting plan for jobs with video media.
                     SegmentingPlan segmentingPlan = null;
-                    if (media.getMediaType().equals(MediaType.VIDEO)) {
+                    if (media.getType() == MediaType.VIDEO) {
 
                         // Note that single-frame gifs are treated like videos, but have no native frame rate
                         double fps = 1.0;
@@ -169,7 +169,7 @@ public class DetectionTaskSplitter {
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
-                        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getMediaType().toString());
+                        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
@@ -212,7 +212,7 @@ public class DetectionTaskSplitter {
     }
 
     private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
-        MediaSegmenter segmenter = getSegmenter(media.getMediaType());
+        MediaSegmenter segmenter = getSegmenter(media.getType());
         return segmenter.createDetectionRequestMessages(media, detectionContext);
     }
 

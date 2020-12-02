@@ -71,7 +71,7 @@ public interface MediaSegmenter {
                 .setTaskName(context.getTaskName())
                 .setActionIndex(context.getActionIndex())
                 .setActionName(context.getActionName())
-                .setDataUri(media.getLocalPath().toString())
+                .setDataUri(media.getProcessingPath().toString())
                 .addAllAlgorithmProperty(getAlgoProps(context));
 
         for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {

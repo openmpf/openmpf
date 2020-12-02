@@ -70,4 +70,20 @@ public class TestMPFDetectionMain {
     private static Map<String, String> restrictMediaTypeEnv(String envValue) {
         return Map.of(MPFDetectionMain.RESTRICT_MEDIA_TYPES_ENV_NAME, envValue);
     }
+
+
+    @Test
+    public void testEnvironmentJobProperties() {
+        var environment = Map.of(
+                "MPF_PROP_PROP1", "VALUE1",
+                "MPF_PROP_PROP2", "VALUE2",
+                "NOT A PROPERTY", "ASDF",
+                "MPF_PROP BAD_PROP", "ASDF",
+                "MPF_PROP_", "ASDF"
+        );
+        var expected = Map.of(
+                "PROP1", "VALUE1",
+                "PROP2", "VALUE2");
+        assertEquals(expected, MPFDetectionMessenger.getEnvironmentJobProperties(environment));
+    }
 }

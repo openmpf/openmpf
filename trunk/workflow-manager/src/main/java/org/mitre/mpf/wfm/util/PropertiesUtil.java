@@ -735,5 +735,9 @@ public class PropertiesUtil {
     public int getHttpCallbackRetryCount() {
         return mpfPropertiesConfig.getInt("http.callback.retries");
     }
+
+    public int getWarningFrameCountDiff() {
+        return mpfPropertiesConfig.getInt("warn.frame.count.diff");
+    }
 }
 

@@ -39,7 +39,8 @@ add_library(mpfopencvjni SHARED ${SRC})
 set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
 list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS} mpfDetectionComponentApi)
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS} heif
+    mpfDetectionComponentApi)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(TARGET mpfopencvjni POST_BUILD

@@ -24,22 +24,39 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc.model;
+#include "BatchExecutorUtil.h"
 
-import org.springframework.web.multipart.MultipartFile;
+#include <algorithm>
+#include <unistd.h>
 
-import java.util.List;
 
-public class FileUploadForm {
+std::map<std::string, std::string> BatchExecutorUtil::get_environment_job_properties() {
+    static std::string property_prefix = "MPF_PROP_";
 
-    private List<MultipartFile> files;
+    std::map<std::string, std::string> properties;
+    for (int i = 0; environ[i] != nullptr; i++) {
+        std::string env_pair = environ[i];
+        // Filter out items that are too short so std::equal isn't checking past the end of the string.
+        if (env_pair.size() <= property_prefix.size()) {
+            continue;
+        }
 
-    //Getter and setter methods
-    public List<MultipartFile> getFiles() {
-        return files;
+        bool env_var_has_prefix = std::equal(property_prefix.begin(), property_prefix.end(),
+                                             env_pair.begin());
+        if (!env_var_has_prefix) {
+            continue;
+        }
+
+        size_t equals_pos = env_pair.find('=');
+        // Don't process environment variables named "MPF_PROP_".
+        if (equals_pos <= property_prefix.size()) {
+            continue;
+        }
+
+        size_t prop_name_length = equals_pos - property_prefix.size();
+        properties.emplace(
+                env_pair.substr(property_prefix.size(), prop_name_length),
+                env_pair.substr(equals_pos + 1));
     }
-
-    public void setFiles(List<MultipartFile> files) {
-        this.files = files;
-    }
+    return properties;
 }

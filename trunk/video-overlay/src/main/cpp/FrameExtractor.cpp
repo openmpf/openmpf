@@ -58,7 +58,8 @@ using namespace COMPONENT;
  * Signature: (java/lang/String;java/lang/String;Z;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
-(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath, jboolean croppingFlag, jobject paths)
+(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath,
+ jboolean croppingFlag, jboolean rotationFillIsBlack, jobject paths)
 {
     JniHelper jni(env);
 
@@ -119,6 +120,10 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             throw std::runtime_error("Unable to open input media file: " + mediaPath);
         }
 
+        auto fillColor = rotationFillIsBlack
+                ? cv::Scalar(0, 0, 0)
+                : cv::Scalar(255, 255, 255);
+
         // Get the set of frames to be extracted and an iterator for it.
         jobject frameNumberSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetFrames);
         jobject frameIterator = jni.CallObjectMethod(frameNumberSet, clzSet_fnIterator);
@@ -161,6 +166,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                 jobject trackIndexSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIndices, thisFrameNumObj);
                 jobject trackIterator = jni.CallObjectMethod(trackIndexSet, clzSet_fnIterator);
 
+                auto rotationJStringPtr = jni.ToJString("ROTATION");
+
                 // For each track, perform the extraction for the associated detection object.
                 while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
                     // Get the detection associated with this track
@@ -178,9 +185,8 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                     // Get the rotation property.
                     jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
-                    std::string rotationPropName("ROTATION");
-                    jstring jPropName = jni.ToJString(rotationPropName);
-                    jstring jPropValue = (jstring)jni.CallObjectMethod(properties, clzMap_fnGet, jPropName);
+                    jstring jPropValue = (jstring) jni.CallObjectMethod(properties, clzMap_fnGet,
+                                                                        *rotationJStringPtr);
                     double rotation = 0.0;
                     if (jPropValue != nullptr) {
                         std::string rotationPropValue = jni.ToStdString(jPropValue);
@@ -192,6 +198,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     // Create the transformation for this frame and apply it.
                     FeedForwardExactRegionAffineTransformer transformer(
                             { MPFRotatedRect(x, y, width, height, rotation, false) },
+                            fillColor,
                             IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
 
                     transformer.TransformFrame(transformFrame, 0);

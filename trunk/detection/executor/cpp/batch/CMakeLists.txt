@@ -62,6 +62,8 @@ set(batch_executor_lib_files
 	MPFDetectionBuffer.cpp MPFDetectionBuffer.h
 	MPFMessenger.cpp MPFMessenger.h
 	PythonComponentHandle.cpp PythonComponentHandle.h
+	BatchExecutorUtil.cpp BatchExecutorUtil.h
+	PythonComponentHandle.cpp PythonComponentHandle.h
 	LazyLoggerWrapper.h)
 
 add_library(batch_executor_lib OBJECT ${batch_executor_lib_files} ${MSG_UTILS_FILE})

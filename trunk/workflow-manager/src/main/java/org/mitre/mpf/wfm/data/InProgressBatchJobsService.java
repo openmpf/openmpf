@@ -33,10 +33,7 @@ import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.IssueCodes;
-import org.mitre.mpf.wfm.enums.IssueSources;
-import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +70,7 @@ public class InProgressBatchJobsService {
     }
 
 
-    public BatchJob addJob(
+    public synchronized BatchJob addJob(
             long jobId,
             String externalId,
             SystemPropertiesSnapshot propertiesSnapshot,
@@ -143,8 +140,21 @@ public class InProgressBatchJobsService {
                 }
                 catch (IOException e) {
                     LOG.warn(String.format(
-                            "Failed to delete the local file '%s' which was created retrieved from a remote location - it must be manually deleted.",
+                            "Failed to delete the local file '%s' which was retrieved " +
+                                    "from a remote location - it must be manually deleted.",
                             media.getLocalPath()), e);
+                }
+            }
+
+            if (media.getConvertedMediaPath().isPresent()) {
+                try {
+                    Files.deleteIfExists(media.getConvertedMediaPath().get());
+                }
+                catch (IOException e) {
+                    LOG.warn(String.format(
+                            "Failed to delete the converted media file '%s' - " +
+                                    "it must be manually deleted.",
+                            media.getConvertedMediaPath().get()), e);
                 }
             }
         }
@@ -303,14 +313,22 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void addMediaInspectionInfo(
-            long jobId, long mediaId, String sha256, String mimeType, int length,
+            long jobId, long mediaId, String sha256, MediaType mediaType, String mimeType, int length,
             Map<String, String> metadata) {
         LOG.info("Adding media metadata to job {}'s media {}.", jobId, mediaId);
         MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
-        media.setType(mimeType);
+        media.setType(mediaType);
+        media.setMimeType(mimeType);
         media.setLength(length);
         media.addMetadata(metadata);
+    }
+
+    public synchronized void addConvertedMediaPath(long jobId, long mediaId,
+                                                   Path convertedMediaPath) {
+        LOG.info("Setting job {}'s media {}'s converted media path to {}",
+                 jobId, mediaId, convertedMediaPath);
+        getMediaImpl(jobId, mediaId).setConvertedMediaPath(convertedMediaPath);
     }
 
     private MediaImpl getMediaImpl(long jobId, long mediaId) {

@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.framecounter;
 
-import org.mitre.mpf.framecounter.FrameCounterJniException;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -38,7 +36,7 @@ public class FrameCounter {
 
     public FrameCounter(File file) { this.file = file; }
 
-    public int count(boolean bruteForce) throws IOException {
+    public int count(boolean bruteForce) throws IOException, NotReadableByOpenCvException {
         if(file == null) {
             throw new IllegalArgumentException("File must not be null.");
         }
@@ -59,5 +57,6 @@ public class FrameCounter {
         }
     }
 
-    private native int countNative(String absolutePath, boolean bruteForce);
+    private native int countNative(String absolutePath, boolean bruteForce)
+            throws NotReadableByOpenCvException;
 }

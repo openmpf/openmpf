@@ -34,12 +34,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class MediaImpl implements Media {
 
@@ -60,10 +60,28 @@ public class MediaImpl implements Media {
     public UriScheme getUriScheme() { return _uriScheme; }
 
 
+    /** The path to the media that components should use. */
+    @Override
+    @JsonIgnore
+    public Path getProcessingPath() {
+        return getConvertedMediaPath().orElse(_localPath);
+    }
+
     /** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
     private final Path _localPath;
     @Override
     public Path getLocalPath() { return _localPath; }
+
+
+    /** If the media needed to be converted to another format, this will contain the path to converted media. */
+    private Path _convertedMediaPath;
+    @Override
+    public Optional<Path> getConvertedMediaPath() {
+        return Optional.ofNullable(_convertedMediaPath);
+    }
+    public void setConvertedMediaPath(Path path) {
+        _convertedMediaPath = path;
+    }
 
 
     /** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
@@ -78,17 +96,17 @@ public class MediaImpl implements Media {
     @Override
     public String getErrorMessage() { return _errorMessage; }
 
-    /** The MIME type of the medium. */
-    private String _type;
+    /** The data type of the medium. For example, VIDEO. */
+    private MediaType _type;
     @Override
-    public String getType() { return _type; }
-    public void setType(String type) { _type = type; }
+    public MediaType getType() { return _type; }
+    public void setType(MediaType type) { _type = type; }
 
+    /** The MIME type of the medium. */
+    private String _mimeType;
     @Override
-    @JsonIgnore
-    public MediaType getMediaType() {
-        return MediaTypeUtils.parse(_type);
-    }
+    public String getMimeType() { return _mimeType; }
+    public void setMimeType(String mimeType) { _mimeType = mimeType; }
 
 
     /** The Metadata for the medium. */
@@ -183,6 +201,7 @@ public class MediaImpl implements Media {
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
+        originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
         return result;
     }
 

@@ -46,6 +46,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
@@ -131,22 +132,22 @@ public class TestTrackMergingProcessor {
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOnImage() {
-        generateAndRunMerge("/samples/meds1.jpg", "image/jpeg", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+        generateAndRunMerge("/samples/meds1.jpg", MediaType.IMAGE, "image/jpeg", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOnAudio() {
-        generateAndRunMerge("/samples/green.wav", "audio/wave", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+        generateAndRunMerge("/samples/green.wav", MediaType.AUDIO, "audio/wave", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
     }
 
     @Test(timeout = 5 * MINUTES)
     public void testTrackMergingOnGenericMedia() {
-        generateAndRunMerge("/samples/NOTICE", "text/plain", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
+        generateAndRunMerge("/samples/NOTICE", MediaType.UNKNOWN, "text/plain", "1", "TRUE", "1000", "1000", 5); // No tracks merged or dropped
     }
 
     private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize,
                                      int expectedTracks) {
-        generateAndRunMerge("/samples/video_01.mp4", "video/mp4", samplingInterval, mergeTracks, minGap, minTrackSize,
+        generateAndRunMerge("/samples/video_01.mp4", MediaType.VIDEO, "video/mp4", samplingInterval, mergeTracks, minGap, minTrackSize,
                 expectedTracks);
     }
 
@@ -162,8 +163,8 @@ public class TestTrackMergingProcessor {
      *
      * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
      */
-    private void generateAndRunMerge(String filePath, String mediaType, String samplingInterval, String mergeTracks,
-                                     String minGap, String minTrackSize, int expectedTracks) {
+    private void generateAndRunMerge(String filePath, MediaType mediaType, String mimeType, String samplingInterval,
+                                     String mergeTracks, String minGap, String minTrackSize, int expectedTracks) {
         final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
@@ -190,7 +191,7 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap());
+        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap(), Collections.emptyMap());
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
@@ -206,7 +207,7 @@ public class TestTrackMergingProcessor {
                 Collections.emptyMap(),
                 Collections.emptyMap());
 
-        inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, 1,
+        inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, mimeType, 1,
                                               Collections.emptyMap());
 
         /*
@@ -278,7 +279,7 @@ public class TestTrackMergingProcessor {
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         Media media = new MediaImpl(
                 mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                null);
+                Collections.emptyMap(), null);
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,

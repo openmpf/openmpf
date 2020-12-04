@@ -69,7 +69,8 @@ public class StreamableFrameExtractor {
                     Paths.get(request.getPath()).toUri(),
                     tempDirectory.toUri(),
                     filenameGenerator(pipePath.toString(), queue),
-                    request.getCroppingFlag());
+                    request.getCroppingFlag(),
+                    request.getRotationFillIsBlack());
 
             frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
 

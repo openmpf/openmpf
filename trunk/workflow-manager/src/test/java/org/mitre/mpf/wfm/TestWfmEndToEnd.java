@@ -73,7 +73,6 @@ public class TestWfmEndToEnd {
 	private CamelContext camelContext;
 
 	@Autowired
-	@Qualifier(IoUtils.REF)
 	private IoUtils ioUtils;
 
 	@Autowired

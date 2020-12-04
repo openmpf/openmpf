@@ -1,7 +1,7 @@
 [
     {
         "name": "FEED_FORWARD_TYPE",
-        "description": "Applies to images and videos. The type of feed-forward behavior. Controls how this algorithm will make use of the tracks generated in the previous pipeline stage. If this algorithm is used in the first pipeline stage then this property has no effect. Instead, the default segmenting behavior is used, where tracks from the previous stage are used to generate segments based on the TARGET_SEGMENT_LENGTH and MIN_SEGMENT_LENGTH properties. Can be set to “NONE”, “FRAME”, or “SUPERSET_REGION”. If set to “NONE”, the default segmenting behavior is used. If set to “FRAME” or “SUPERSET_REGION”, then the segment length properties are ignored and instead this algorithm will process one segment per track generated in the previous stage. If set to “FRAME”, then this algorithm will ignore the regions associated with previous detections and instead process the entire frame associated with each of those detections. If set to “SUPERSET_REGION”, then this algorithm will generate a superset region for each of the previous tracks – a bounding box of constant size and position that encloses all of the track’s detection regions. This algorithm will only process the data within the superset region.",
+        "description": "The type of feed-forward behavior. Controls how this algorithm will make use of the tracks generated in the previous pipeline stage. If this algorithm is used in the first pipeline stage then this property has no effect. Instead, the default segmenting behavior is used, where tracks from the previous stage are used to generate segments based on the TARGET_SEGMENT_LENGTH and MIN_SEGMENT_LENGTH properties. Can be set to “NONE”, “FRAME”, or “SUPERSET_REGION”. If set to “NONE”, the default segmenting behavior is used. If set to “FRAME” or “SUPERSET_REGION”, then the segment length properties are ignored and instead this algorithm will process one segment per track generated in the previous stage. If set to “FRAME”, then this algorithm will ignore the regions associated with previous detections and instead process the entire frame associated with each of those detections. If set to “SUPERSET_REGION”, then this algorithm will generate a superset region for each of the previous tracks – a bounding box of constant size and position that encloses all of the track’s detection regions. This algorithm will only process the data within the superset region.",
         "type": "STRING",
         "defaultValue": "NONE",
         "mediaTypes": ["VIDEO", "IMAGE"]
@@ -228,6 +228,20 @@
         "description": "If this string contains the % sign, then its numeric value will be interpreted as a percentage of the height of the detection. If this string does not contain the % sign, then it will be interpreted as an exact number of pixels. A negative value will shrink the detection region. Percentages can include a decimal place and be > 100%, but must be > -50%. If the detection region is shrunk to nothing, the new height will be set to one pixel, and the detection properties will include SHRUNK_TO_NOTHING with a value of TRUE.",
         "type": "STRING",
         "propertiesKey": "detection.padding.y",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION_THRESHOLD",
+        "description": "The minimum number of degrees required to actually perform frame rotation. When the amount of rotation is less than ROTATION_THRESHOLD, components will behave as if there is no rotation.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.rotation.threshold",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION_FILL_COLOR",
+        "description": "The fill color to use when doing non-orthogonal rotation. Must either be BLACK or WHITE. When doing a non-orthogonal rotation, some pixels will need to be included that were not in the original image. This property controls the color of those undefined pixels.",
+        "type": "STRING",
+        "propertiesKey": "detection.rotation.fill.color",
         "mediaTypes": ["VIDEO", "IMAGE"]
     }
 ]

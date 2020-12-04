@@ -33,6 +33,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 // Suppress because it's better than having to explicitly use MediaImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
@@ -47,8 +48,14 @@ public interface Media {
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
     public UriScheme getUriScheme();
 
+    /** The path to the media that components should use. */
+    public Path getProcessingPath();
+
     /** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
     public Path getLocalPath();
+
+    /** If the media needed to be converted to another format, this will contain the path to converted media. */
+    public Optional<Path> getConvertedMediaPath();
 
     /** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
     public boolean isFailed();
@@ -56,8 +63,11 @@ public interface Media {
     /** A message indicating what error(s) a medium has encountered during processing. Will be null if no error occurred. */
     public String getErrorMessage();
 
+    /** The data type of the medium. For example, VIDEO. */
+    public MediaType getType();
+
     /** The MIME type of the medium. */
-    public String getType();
+    public String getMimeType();
 
     /** The Metadata for the medium. */
     public Map<String,String> getMetadata();
@@ -67,7 +77,8 @@ public interface Media {
     public ImmutableMap<String, String> getMediaSpecificProperties();
     public String getMediaSpecificProperty(String key);
 
-    public MediaType getMediaType();
+    /** The provided Metadata properties to override for the medium. */
+    public ImmutableMap<String, String> getProvidedMetadata();
 
     /** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
     public int getLength();

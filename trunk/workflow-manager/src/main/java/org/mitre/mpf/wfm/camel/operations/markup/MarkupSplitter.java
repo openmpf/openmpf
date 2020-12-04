@@ -93,7 +93,7 @@ public class MarkupSplitter {
                 mediaIndex++;
                 if (media.isFailed()) {
                     log.debug("Skipping '{}: {}' - it is in an error state.", media.getId(), media.getLocalPath());
-                } else if(!StringUtils.startsWith(media.getType(), "image") && !StringUtils.startsWith(media.getType(), "video")) {
+                } else if(media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
                     log.debug("Skipping Media {} - only image and video files are eligible for markup.", media.getId());
                 } else {
                     List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
@@ -105,12 +105,12 @@ public class MarkupSplitter {
                             .setTaskIndex(job.getCurrentTaskIndex())
                             .setActionIndex(actionIndex)
                             .setMediaId(media.getId())
-                            .setMediaType(Markup.MediaType.valueOf(media.getMediaType().toString().toUpperCase()))
+                            .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
-                            .setSourceUri(media.getLocalPath().toUri().toString())
+                            .setSourceUri(media.getProcessingPath().toUri().toString())
                             .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getMediaType())).toUri().toString() :
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getType())).toUri().toString())
+                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
+                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())
                             .addAllMapEntries(boundingBoxMapEntryList)
                             .build();
 

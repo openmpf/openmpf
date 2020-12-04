@@ -66,7 +66,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -114,6 +113,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private CallbackUtils callbackUtils;
+
+    @Autowired
+    private JmsUtils jmsUtils;
 
 
     @Override
@@ -182,7 +184,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private void completeJob(BatchJob job, Mutable<BatchJobStatusType> jobStatus) {
         try {
-            destroy(job);
+            inProgressBatchJobs.clearJob(job.getId());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -250,7 +252,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         try {
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
-            return callbackUtils.executeRequest(request)
+            return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(JobCompleteProcessorImpl::checkResponse);
         }
         catch (Exception e) {
@@ -349,7 +351,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
             JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
-                    media.getId(), media.getUri(), media.getType(),
+                    media.getId(), media.getUri(), media.getType().toString(), media.getMimeType(),
                     media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
@@ -406,11 +408,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                               job);
 
                             String type = jsonTrackOutputObject.getType();
-                            if (!mediaOutputObject.getTypes().containsKey(type)) {
-                                mediaOutputObject.getTypes().put(type, new TreeSet<>());
+                            if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
+                                mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
                             }
 
-                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getTypes().get(type);
+                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getDetectionTypes().get(type);
                             boolean stateFound = false;
                             for (JsonActionOutputObject jsonAction : actionSet) {
                                 if (stateKey.equals(jsonAction.getSource())) {
@@ -544,7 +546,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     private static void addMissingTrackInfo(String missingTrackKey, String stateKey,
                                             JsonMediaOutputObject mediaOutputObject) {
-        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getTypes().computeIfAbsent(
+        Set<JsonActionOutputObject> trackSet = mediaOutputObject.getDetectionTypes().computeIfAbsent(
             missingTrackKey, k -> new TreeSet<>());
         boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
         if (stateMissing) {
@@ -552,23 +554,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-
-    @Autowired
-    private JmsUtils jmsUtils;
-
-    private void destroy(BatchJob batchJob) throws WfmProcessingException {
-        for(Media media : batchJob.getMedia()) {
-            if(media.getUriScheme().isRemote() && media.getLocalPath() != null) {
-                try {
-                    Files.deleteIfExists(media.getLocalPath());
-                } catch(IOException exception) {
-                    log.warn("[{}|*|*] Failed to delete locally cached file '{}' due to an exception. This file must be manually deleted.",
-                             batchJob.getId(), media.getLocalPath());
-                }
-            }
-        }
-        inProgressBatchJobs.clearJob(batchJob.getId());
-    }
 
     @Override
     public void subscribe(NotificationConsumer<JobCompleteNotification> consumer) {

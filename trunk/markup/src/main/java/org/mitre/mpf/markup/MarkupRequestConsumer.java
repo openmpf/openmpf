@@ -28,6 +28,7 @@ package org.mitre.mpf.markup;
 
 import com.google.common.base.Stopwatch;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.videooverlay.BoundingBoxWriter;
@@ -207,10 +208,15 @@ public class MarkupRequestConsumer implements MessageListener {
 	        if(!markupResponseBuilder.getHasError()) {
 		        if (markupRequest.getMapEntriesCount() == 0) {
 			        try {
-				        FileUtils.copyFile(
-						        new File(URI.create(markupRequest.getSourceUri())),
-						        new File(URI.create(markupRequest.getDestinationUri())));
-				        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
+                        String sourceUri = markupRequest.getSourceUri();
+                        String sourceExt = FilenameUtils.getExtension(sourceUri);
+			            String destinationUri = markupRequest.getDestinationUri();
+			            String destinationExt = FilenameUtils.getExtension(destinationUri);
+			            if (destinationExt.isEmpty() && !sourceExt.isEmpty()) {
+                            destinationUri += "." + sourceExt;
+                        }
+				        FileUtils.copyFile(new File(URI.create(sourceUri)), new File(URI.create(destinationUri)));
+				        markupResponseBuilder.setOutputFileUri(destinationUri);
 			        } catch (Exception exception) {
 				        log.error("Failed to mark up the file '{}' because of an exception.", markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
@@ -231,7 +237,7 @@ public class MarkupRequestConsumer implements MessageListener {
 				        if (markupVideo(markupRequest)) {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
 				        } else {
-					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
+					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
 				        }
 			        } catch (Exception exception) {
 				        log.error("Failed to mark up the video '{}' because of an exception.", markupRequest.getSourceUri(), exception);

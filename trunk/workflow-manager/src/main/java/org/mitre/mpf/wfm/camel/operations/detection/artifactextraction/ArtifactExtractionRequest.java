@@ -66,6 +66,9 @@ public class ArtifactExtractionRequest {
     private final boolean _croppingFlag;
     public boolean getCroppingFlag() { return _croppingFlag; }
 
+    private final boolean _rotationFillIsBlack;
+    public boolean getRotationFillIsBlack() { return _rotationFillIsBlack; }
+
     /** Maps frame numbers to pairs of trackIndex and detection to be extracted. */
     private final SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> extractionsMap = new TreeMap<>();
     public SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> getExtractionsMap() {
@@ -80,13 +83,15 @@ public class ArtifactExtractionRequest {
             @JsonProperty("mediaType") MediaType mediaType,
             @JsonProperty("taskIndex") int taskIndex,
             @JsonProperty("actionIndex") int actionIndex,
-            @JsonProperty("croppingFlag") boolean flag) {
+            @JsonProperty("croppingFlag") boolean croppingFlag,
+            @JsonProperty("rotationFillIsBlack") boolean rotationFillIsBlack) {
         _jobId = jobId;
         _mediaId = mediaId;
         _path = path;
         _mediaType = mediaType;
         _taskIndex = taskIndex;
         _actionIndex = actionIndex;
-        _croppingFlag = flag;
+        _croppingFlag = croppingFlag;
+        _rotationFillIsBlack = rotationFillIsBlack;
     }
 }

@@ -147,7 +147,7 @@ public class TestMarkupResponseProcessor {
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                    Paths.get(mediaUri), Collections.emptyMap(), null);
+                                    Paths.get(mediaUri), Collections.emptyMap(), Collections.emptyMap(), null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

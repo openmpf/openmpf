@@ -69,9 +69,14 @@ std::string JniHelper::ToStdString(jstring jString) {
     return result;
 }
 
-jstring JniHelper::ToJString(std::string inString) {
-	return callJni(&JNIEnv::NewStringUTF,inString.c_str());
+
+std::unique_ptr<jstring, JStringDeleter> JniHelper::ToJString(const std::string &inString) {
+    return {
+        new jstring(callJni(&JNIEnv::NewStringUTF, inString.c_str())),
+        JStringDeleter(env_)
+    };
 }
+
 
 void JniHelper::CheckException() {
     if (env_->ExceptionCheck()) {
@@ -95,3 +100,17 @@ void JniHelper::ReportCppException(const char * msg) {
     ThrowNew(exceptionClz, msg);
 }
 
+
+void JniHelper::ReportCppException(const std::string& msg) {
+    ReportCppException(msg.c_str());
+}
+
+
+
+JStringDeleter::JStringDeleter(JNIEnv *env) : env_(env) {
+}
+
+void JStringDeleter::operator()(jstring *str) {
+    env_->DeleteLocalRef(*str);
+    delete str;
+}

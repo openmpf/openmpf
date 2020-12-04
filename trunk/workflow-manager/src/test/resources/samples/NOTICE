@@ -89,3 +89,26 @@ ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+# lp-bmw.jpg
+Public Domain
+
+
+# IMG_5355.HEIC
+Public Domain
+
+
+# pngdefry/lenna-crushed.png, pngdefry/lenna-normal.png
+Created by running the following command on a MacBook Pro:
+"xcrun --sdk iphoneos pngcrush -iphone -force lenna-normal.png lenna-crushed.png"
+
+Original lenna-normal.png image taken from https://en.wikipedia.org/wiki/File:Lenna_(test_image).png, which states:
+"Use of this 512x512 scan is 'overlooked' and by implication permitted by Playboy."
+
+
+# bbb24p_00_short.ts
+The first second of Big Buck Bunny. Shortened version of the TS file contained in https://www.w6rz.net/bbb24p_00.zip.
+
+Copyright 2008, Blender Foundation / www.bigbuckbunny.org
+Creative Commons Attribution 3.0 Generic License: https://creativecommons.org/licenses/by/3.0/

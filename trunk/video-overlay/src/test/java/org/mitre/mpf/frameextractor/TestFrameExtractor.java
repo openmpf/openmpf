@@ -137,7 +137,8 @@ public class TestFrameExtractor {
             SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) throws IOException {
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
-        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri(), cropFlag);
+        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri(), cropFlag,
+                                                      true);
         extractor.getExtractionsMap().putAll(requestedExtractions);
         Table<Integer, Integer, String> results = extractor.execute();
 

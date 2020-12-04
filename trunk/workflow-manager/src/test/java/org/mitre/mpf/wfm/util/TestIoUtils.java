@@ -27,18 +27,13 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
@@ -51,11 +46,18 @@ public class TestIoUtils {
 
     private final IoUtils _ioUtils = new IoUtils();
 
+    @BeforeClass
+    public static void initClass() {
+        // The "file" command will silently ignore missing files as long as one of the files provided when using the
+        // --magic-file option is available. Ensure that the default Linux magic file is installed.
+        assertTrue(Files.exists(Paths.get(IoUtils.LINUX_MAGIC_PATH)));
+        ThreadUtil.start();
+    }
+
     @Before
     public void init() {
         _tempRoot = _tempFolder.getRoot().toPath();
     }
-
 
     @Test
     public void canRecursivelyDeleteEmptyDirectoryTree() throws IOException {
@@ -87,29 +89,27 @@ public class TestIoUtils {
     }
 
     @Test
-    public void canDetectMimeType() throws IOException {
-        String imageType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/meds1.jpg"));
-        assertNotNull("The detected audioType must not be null.", imageType);
+    public void canDetectMimeType() {
+        assertEquals("image/jpeg", _ioUtils.getMimeType(getResourcePath("/samples/meds1.jpg")));
 
-        String videoType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/mpeg_vid.mpg"));
-        assertNotNull("The detected audioType must not be null.", videoType);
+        assertEquals("video/mp4", _ioUtils.getMimeType(getResourcePath("/samples/video_01.mp4")));
 
-        String audioType = _ioUtils.getMimeType(this.getClass().getClassLoader().getResourceAsStream("/samples/green.wav"));
-        assertNotNull("The detected audioType must not be null.", audioType);
+        assertEquals("audio/vnd.wave", _ioUtils.getMimeType(getResourcePath("/samples/green.wav")));
+
+        assertEquals("text/plain", _ioUtils.getMimeType(getResourcePath("/samples/NOTICE")));
     }
 
     @Test
-    public void canDetectMediaType() throws WfmProcessingException, MalformedURLException {
-        URI uri = _ioUtils.findFile("/samples/mpeg_vid.mpg");
-        MediaType type = _ioUtils.getMediaType(uri.toURL());
-        assertTrue(String.format("mpeg_vid.mpg was expected to be a video, but it was instead '%s'.", type), type == MediaType.VIDEO);
+    public void canDetectMimeTypeUsingTika() throws IOException {
+        assertEquals("video/vnd.dlna.mpeg-tts", _ioUtils.getMimeTypeUsingTika(getResourcePath("/samples/bbb24p_00_short.ts")));
+    }
 
-        URI uri2 = _ioUtils.findFile("/samples/meds1.jpg");
-        MediaType type2 = _ioUtils.getMediaType(uri2.toURL());
-        assertTrue(String.format("meds1.jpg was expected to be an image, but it was instead '%s'.", type2), type2 == MediaType.IMAGE);
+    @Test
+    public void canDetectMimeTypeUsingFile() throws IOException, InterruptedException {
+        assertEquals("audio/x-hx-aac-adts", _ioUtils.getMimeTypeUsingFile(getResourcePath("/samples/green.adts")));
+    }
 
-        URI uri3 = _ioUtils.findFile("/samples/green.wav");
-        MediaType type3 = _ioUtils.getMediaType(uri3.toURL());
-        assertTrue(String.format("test.wav was expected to be an audio, but it was instead '%s'.", type3), type3 == MediaType.AUDIO);
+    private Path getResourcePath(String subpath) {
+        return Paths.get(this.getClass().getResource(subpath).getPath());
     }
 }

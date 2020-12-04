@@ -91,11 +91,15 @@ public class LocalStorageBackend implements StorageBackend {
 
     @Override
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
+        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(
+                request.getJobId(), request.getMediaId(), request.getTaskIndex(),
+                request.getActionIndex()).toURI();
 
-        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(request.getJobId(), request.getMediaId(),
-                request.getTaskIndex(), request.getActionIndex()).toURI();
-        FrameExtractor frameExtractor = new FrameExtractor(Paths.get(request.getPath()).toUri(), artifactsDirectory, request.getCroppingFlag());
+        FrameExtractor frameExtractor = new FrameExtractor(
+                Paths.get(request.getPath()).toUri(), artifactsDirectory,
+                request.getCroppingFlag(), request.getRotationFillIsBlack());
         frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
+
         Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
         return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
     }

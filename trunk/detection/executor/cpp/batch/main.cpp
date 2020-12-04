@@ -51,6 +51,7 @@
 #include "MPFDetectionBuffer.h"
 #include "MPFMessenger.h"
 #include "PythonComponentHandle.h"
+#include "BatchExecutorUtil.h"
 
 
 using std::exception;
@@ -258,6 +259,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
             return -1;
         }
 
+        const std::map<std::string, std::string> env_job_props
+                = BatchExecutorUtil::get_environment_job_properties();
+
         string service_name(getenv("SERVICE_NAME"));
         LOG4CXX_INFO(logger, "Completed initialization of " << service_name << ".");
 
@@ -289,6 +293,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
 
                 map<string, string> algorithm_properties;
                 detection_buf.GetAlgorithmProperties(algorithm_properties);
+                for (auto env_prop_pair : env_job_props) {
+                    algorithm_properties[env_prop_pair.first] = env_prop_pair.second;
+                }
 
                 map<string, string> media_properties;
                 detection_buf.GetMediaProperties(media_properties);

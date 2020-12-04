@@ -127,7 +127,7 @@ public class TestDetectionResponseProcessor {
 
         MediaImpl media = new MediaImpl(
                 MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Collections.emptyMap(), null);
+                Collections.emptyMap(), Collections.emptyMap(), null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
 

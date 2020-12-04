@@ -185,7 +185,7 @@ public class TestVideoMediaSegmenter {
 		assertEquals(2, longTrack.getFrameLocationsCount());
 		assertContainsFrameLocation(20, longTrack);
 		assertContainsFrameLocation(40, longTrack);
-		assertEquals(20, longTrack.getStartFrame());
+		assertEquals(2, longTrack.getStartFrame());
 		assertEquals(40, longTrack.getStopFrame());
 
 		assertEquals(1, shortTrack.getFrameLocationsCount());
@@ -244,7 +244,7 @@ public class TestVideoMediaSegmenter {
 		URI mediaUri = URI.create("file:///example.avi");
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-				null);
+				Collections.emptyMap(), null);
 		media.setLength(50);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

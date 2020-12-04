@@ -113,8 +113,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
             if (media.isFailed()
-                    || (media.getMediaType() != MediaType.IMAGE
-                        && media.getMediaType() != MediaType.VIDEO)) {
+                    || (media.getType() != MediaType.IMAGE
+                        && media.getType() != MediaType.VIDEO)) {
                 continue;
             }
             // If the user has requested output objects for the last task only, and this is
@@ -140,10 +140,13 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 if (extractionPolicy == ArtifactExtractionPolicy.NONE) {
                     continue;
                 }
+
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
                                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
-                ArtifactExtractionRequest request = new ArtifactExtractionRequest(job.getId(), media.getId(),
-                         media.getLocalPath().toString(), media.getMediaType(), taskIndex, actionIndex, cropping);
+                boolean isRotationFillBlack = isRotationFillBlack(job, media, action);
+                ArtifactExtractionRequest request = new ArtifactExtractionRequest(
+                        job.getId(), media.getId(), media.getProcessingPath().toString(),
+                        media.getType(), taskIndex, actionIndex, cropping, isRotationFillBlack);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());
@@ -318,7 +321,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 framesToExtract.add(sortedDetections.get(i).getMediaOffsetFrame());
             }
         }
-        // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a 
+        // For each frame to be extracted, set the artifact extraction status in the original detection and convert it to a
         // JsonDetectionOutputObject
         SortedSet<JsonDetectionOutputObject> detections = track.getDetections().stream()
                 .filter(d -> framesToExtract.contains(d.getMediaOffsetFrame()))
@@ -361,5 +364,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
         ArtifactExtractionPolicy defaultPolicy = job.getSystemPropertiesSnapshot().getDefaultArtifactExtractionPolicy();
         return ArtifactExtractionPolicy.parse(extractionPolicyString, defaultPolicy);
+    }
+
+
+    private boolean isRotationFillBlack(BatchJob job, Media media, Action action) {
+        String fillColor = _aggregateJobPropertiesUtil.getValue(
+                "ROTATION_FILL_COLOR", job, media, action);
+        return !"WHITE".equalsIgnoreCase(fillColor);
     }
 }

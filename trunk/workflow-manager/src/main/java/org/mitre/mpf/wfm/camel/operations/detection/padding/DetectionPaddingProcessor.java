@@ -94,8 +94,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
             for (Media media : job.getMedia()) {
                 if (media.isFailed()
-                        || (media.getMediaType() != MediaType.IMAGE
-                        && media.getMediaType() != MediaType.VIDEO)) {
+                        || (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO)) {
                     continue;
                 }
 

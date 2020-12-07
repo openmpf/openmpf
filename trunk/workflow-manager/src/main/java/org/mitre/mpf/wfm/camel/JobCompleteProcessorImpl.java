@@ -53,6 +53,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
@@ -110,6 +111,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
+
+    @Autowired
+    private CensorPropertiesService censorPropertiesService;
 
 
     @Override
@@ -320,13 +324,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.getTimeCompleted(),
                 jobStatus.getValue().toString());
 
-        if (transientJob.getOverriddenJobProperties() != null) {
-            jsonOutputObject.getJobProperties().putAll(transientJob.getOverriddenJobProperties());
+        censorPropertiesService.copyAndCensorProperties(
+                transientJob.getOverriddenJobProperties(), jsonOutputObject.getJobProperties());
+
+        for (Map.Entry<String, Map<String, String>> algoPropsEntry
+                : transientJob.getOverriddenAlgorithmProperties().rowMap().entrySet()) {
+            jsonOutputObject.getAlgorithmProperties().put(
+                    algoPropsEntry.getKey(),
+                    censorPropertiesService.copyAndCensorProperties(algoPropsEntry.getValue()));
         }
 
-        if (transientJob.getOverriddenAlgorithmProperties() != null) {
-            jsonOutputObject.getAlgorithmProperties().putAll(transientJob.getOverriddenAlgorithmProperties().rowMap());
-        }
         jsonOutputObject.getJobWarnings().addAll(transientJob.getWarnings());
         jsonOutputObject.getJobErrors().addAll(transientJob.getErrors());
 
@@ -341,7 +348,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                                                                 transientMedia.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(transientMedia.getMetadata());
-            mediaOutputObject.getMediaProperties().putAll(transientMedia.getMediaSpecificProperties());
+            censorPropertiesService.copyAndCensorProperties(
+                    transientMedia.getMediaSpecificProperties(),
+                    mediaOutputObject.getMediaProperties());
 
             MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
             if(markupResult != null) {
@@ -445,10 +454,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
-                                                                 TransientAction transientAction,
-                                                                 TransientMedia transientMedia,
-                                                                 TransientJob transientJob) {
+    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
+                                                          TransientAction transientAction,
+                                                          TransientMedia transientMedia,
+                                                          TransientJob transientJob) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
         AggregateJobPropertiesUtil.PropertyInfo exemplarsOnlyProp = AggregateJobPropertiesUtil.calculateValue(
@@ -492,20 +501,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 track.getType(),
                 stateKey,
                 track.getConfidence(),
-                track.getTrackProperties(),
+                censorPropertiesService.copyAndCensorProperties(track.getTrackProperties()),
                 exemplar,
                 detections);
     }
 
 
-    private static JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
+    private JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
         return new JsonDetectionOutputObject(
                 detection.getX(),
                 detection.getY(),
                 detection.getWidth(),
                 detection.getHeight(),
                 detection.getConfidence(),
-                detection.getDetectionProperties(),
+                censorPropertiesService.copyAndCensorProperties(detection.getDetectionProperties(),
+                                                                new TreeMap<>()),
                 detection.getMediaOffsetFrame(),
                 detection.getMediaOffsetTime(),
                 detection.getArtifactExtractionStatus().name(),

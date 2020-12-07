@@ -316,7 +316,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobRequest.getId(),
                 UUID.randomUUID().toString(),
-                jsonUtils.convert(transientJob.getPipeline()),
+                convertPipeline(transientJob.getPipeline()),
                 transientJob.getPriority(),
                 propertiesUtil.getSiteId(),
                 transientJob.getExternalId().orElse(null),
@@ -520,6 +520,34 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 detection.getMediaOffsetTime(),
                 detection.getArtifactExtractionStatus().name(),
                 detection.getArtifactPath());
+    }
+
+
+    private JsonPipeline convertPipeline(TransientPipeline transientPipeline) {
+        if (transientPipeline == null) {
+            return null;
+        }
+
+        JsonPipeline jsonPipeline = new JsonPipeline(transientPipeline.getName(),
+                                                     transientPipeline.getDescription());
+
+        for (TransientStage transientStage : transientPipeline.getStages()) {
+            JsonStage jsonStage = new JsonStage(transientStage.getActionType().name(),
+                                                transientStage.getName(),
+                                                transientStage.getDescription());
+
+            for (TransientAction transientAction : transientStage.getActions()) {
+                JsonAction jsonAction = new JsonAction(transientAction.getAlgorithm(),
+                                                       transientAction.getName(),
+                                                       transientAction.getDescription());
+                censorPropertiesService.copyAndCensorProperties(transientAction.getProperties(),
+                                                                jsonAction.getProperties());
+                jsonStage.getActions().add(jsonAction);
+            }
+
+            jsonPipeline.getStages().add(jsonStage);
+        }
+        return jsonPipeline;
     }
 
 

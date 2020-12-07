@@ -29,14 +29,8 @@ package org.mitre.mpf.wfm.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonStage;
 import org.mitre.mpf.interop.util.InstantJsonModule;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.transients.TransientAction;
-import org.mitre.mpf.wfm.data.entities.transients.TransientPipeline;
-import org.mitre.mpf.wfm.data.entities.transients.TransientStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,26 +134,6 @@ public class JsonUtils {
             return jsonObjectMapper.writeValueAsString(object);
         } catch(IOException ioe) {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()) ,ioe);
-        }
-    }
-
-    public JsonPipeline convert(TransientPipeline transientPipeline) {
-        if(transientPipeline == null) {
-            return null;
-        } else {
-            JsonPipeline jsonPipeline = new JsonPipeline(transientPipeline.getName(), transientPipeline.getDescription());
-
-            for(TransientStage transientStage : transientPipeline.getStages()) {
-                JsonStage jsonStage = new JsonStage(transientStage.getActionType().name(), transientStage.getName(), transientStage.getDescription());
-                for(TransientAction transientAction : transientStage.getActions()) {
-                    JsonAction jsonAction = new JsonAction(transientAction.getAlgorithm(), transientAction.getName(), transientAction.getDescription());
-                    jsonAction.getProperties().putAll(transientAction.getProperties());
-                    jsonStage.getActions().add(jsonAction);
-                }
-
-                jsonPipeline.getStages().add(jsonStage);
-            }
-            return jsonPipeline;
         }
     }
 }

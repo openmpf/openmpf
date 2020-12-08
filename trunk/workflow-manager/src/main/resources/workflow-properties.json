@@ -35,6 +35,13 @@
         "mediaTypes": ["VIDEO","IMAGE"]
     },
     {
+        "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
+        "description": "The JSON output object will merge the output of this task with the previous task.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "ARTIFACT_EXTRACTION_POLICY",
         "description": "The policy for extracting artifacts (e.g., frames) from a medium. The value of this property MUST be one of the following choices. NONE: No artifact extraction will be performed. VISUAL_TYPES_ONLY: Extract artifacts only for tracks associated with a \"visual\" data type. ALL_TYPES: Extract artifacts regardless of data type. ALL_DETECTIONS: Extract artifacts for all detections in the track. With the VISUAL_TYPES_ONLY or ALL_TYPES policy, artifacts will be extracted according to the ARTIFACT_EXTRACTION_POLICY* properties. With the NONE and ALL_DETECTIONS policies, those settings are ignored.",
         "type": "STRING",

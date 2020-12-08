@@ -37,8 +37,8 @@ import java.util.TreeSet;
 public class JsonActionOutputObject implements Comparable<JsonActionOutputObject> {
 
     public static final String NO_TRACKS_TYPE = "NO TRACKS";
-
     public static final String TRACKS_SUPPRESSED_TYPE = "TRACKS SUPPRESSED";
+    public static final String TRACKS_MERGED_TYPE = "TRACKS MERGED";
 
     @JsonProperty("source")
     @JsonPropertyDescription("The action source.")

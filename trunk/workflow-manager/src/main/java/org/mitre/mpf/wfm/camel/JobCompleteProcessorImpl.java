@@ -365,7 +365,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
             Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
-            Set<Integer> tasksToMerge = getTasksToMerge(media, job);
+            Set<Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
             String prevUnmergedTaskType = null;
 
             for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
@@ -404,7 +404,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     else if (tasksToSuppress.contains(taskIndex)) {
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey, mediaOutputObject);
                     }
-                    else if (tasksToMerge.contains(taskIndex+1)) {
+                    else if (tasksToMerge.contains(taskIndex + 1)) {
                         // This task will be merged with the next one.
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey, mediaOutputObject);
                     }
@@ -540,13 +540,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private boolean shouldMergeWithPreviousTask(Action action, Media media, BatchJob job) {
-        return Boolean.parseBoolean(
-                aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY,
-                        job, media, action));
-    }
-
-
     private Set<Integer> getTasksToSuppress(Media media, BatchJob job) {
         if (!isOutputLastTaskOnly(media, job)) {
             return Set.of();
@@ -564,25 +557,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         return IntStream.range(0, lastDetectionTask)
                 .boxed()
                 .collect(toSet());
-    }
-
-
-    // Get collection of tasks that need to be merged with the tasks that come immediately before them.
-    private Set<Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new HashSet<Integer>();
-        for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
-            Task task = job.getPipelineElements().getTask(taskIndex);
-
-            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
-                ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
-
-                if (actionType == ActionType.DETECTION && shouldMergeWithPreviousTask(action, media, job)) {
-                    tasksToMerge.add(taskIndex);
-                }
-            }
-        }
-        return tasksToMerge;
     }
 
 

@@ -36,7 +36,7 @@
     },
     {
         "name": "OUTPUT_MERGE_WITH_PREVIOUS_TASK",
-        "description": "The JSON output object will merge the output of this task with the previous task.",
+        "description": "Tasks with this property set to true will replace the preceding task's tracks in the JSON output object. Those tracks will inherit the detection type from the preceding task's tracks.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

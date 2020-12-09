@@ -296,6 +296,78 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
+    @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousTextTaskTest() {
+        String pipelineName = "TESSERACT OCR TEXT DETECTION ON EAST REGIONS WITH KEYWORD TAGGING PIPELINE";
+        addPipeline(pipelineName,
+                "EAST TEXT DETECTION TASK",
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
+        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(3, outputMedia.getDetectionTypes().size());
+
+        SortedSet<JsonActionOutputObject> textRegionTracksOutput  = outputMedia.getDetectionTypes().get("TEXT REGION");
+        assertEquals(1, textRegionTracksOutput.size());
+        assertEquals("TEXT REGION tracks for task other than EAST", "+#EAST TEXT DETECTION ACTION",
+                textRegionTracksOutput.first().getSource());
+
+        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
+        assertEquals(1, mergedTracksOutput.size());
+        assertEquals("Tracks merged for task other than TESSERACT OCR",
+                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
+                mergedTracksOutput.first().getSource());
+
+        SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getDetectionTypes().get("TEXT");
+        assertEquals(1, textTracksOutput.size());
+        assertEquals("TEXT tracks for task other than KEYWORD TAGGING",
+                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION" +
+                        "#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                textTracksOutput.first().getSource());
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousSpeechTaskTest() {
+        String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
+        addPipeline(pipelineName,
+                "SPHINX SPEECH DETECTION TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "OCV GENERIC MARKUP TASK");
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));
+        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(3, outputMedia.getDetectionTypes().size());
+
+        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
+        assertEquals(1, mergedTracksOutput.size());
+        assertEquals("Tracks merged for task other than SPHINX", "+#SPHINX SPEECH DETECTION ACTION",
+                mergedTracksOutput.first().getSource());
+
+        SortedSet<JsonActionOutputObject> speechTracksOutput  = outputMedia.getDetectionTypes().get("SPEECH");
+        assertEquals(1, speechTracksOutput.size());
+        assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
+                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                speechTracksOutput.first().getSource());
+
+        SortedSet<JsonActionOutputObject> noTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);
+        assertEquals(1, noTracksOutput.size());
+        assertEquals("No tracks for task other than MARKUP",
+                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP ACTION",
+                noTracksOutput.first().getSource());
+    }
+
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImage() throws Exception {

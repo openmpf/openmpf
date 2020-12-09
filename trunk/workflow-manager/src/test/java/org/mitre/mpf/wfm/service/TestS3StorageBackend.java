@@ -233,29 +233,37 @@ public class TestS3StorageBackend {
     }
 
     private void assertCanUpload(Map<String, String> properties) throws StorageException {
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(properties);
+        JsonOutputObject outputObject = setJobProperties(properties);
         assertTrue(_s3StorageBackend.canStore(outputObject));
     }
 
     private void assertCanNotUpload(Map<String, String> properties) throws StorageException {
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(properties);
+        JsonOutputObject outputObject = setJobProperties(properties);
         assertFalse(_s3StorageBackend.canStore(outputObject));
     }
 
     private void assertThrowsWhenCallingCanStore(Map<String, String> properties) {
         try {
-            JsonOutputObject outputObject = mock(JsonOutputObject.class);
-            when(outputObject.getJobProperties())
-                    .thenReturn(properties);
+            JsonOutputObject outputObject = setJobProperties(properties);
             _s3StorageBackend.canStore(outputObject);
             fail("Expected StorageException");
         }
         catch (StorageException expected) {
         }
+    }
+
+    private JsonOutputObject setJobProperties(Map<String, String> properties) {
+        long jobId = 123;
+        JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobId())
+                .thenReturn(jobId);
+
+        var mockJob = mock(BatchJob.class);
+        when(mockJob.getJobProperties())
+                .thenReturn(ImmutableMap.copyOf(properties));
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(mockJob);
+        return outputObject;
     }
 
 
@@ -300,10 +308,7 @@ public class TestS3StorageBackend {
         Path filePath = getTestFileCopy();
 
         try {
-            JsonOutputObject outputObject = mock(JsonOutputObject.class);
-            when(outputObject.getJobProperties())
-                    .thenReturn(s3Properties);
-
+            JsonOutputObject outputObject = setJobProperties(s3Properties);
             when(_mockLocalStorageBackend.store(outputObject))
                     .thenReturn(filePath.toUri());
 
@@ -451,10 +456,7 @@ public class TestS3StorageBackend {
     public void canStoreJsonOutputObject() throws IOException, StorageException {
         Path filePath = getTestFileCopy();
 
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(getS3Properties());
-
+        JsonOutputObject outputObject = setJobProperties(getS3Properties());
         when(_mockLocalStorageBackend.store(outputObject))
                 .thenReturn(filePath.toUri());
 
@@ -472,10 +474,7 @@ public class TestS3StorageBackend {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + BUCKET_WITH_EXISTING_OBJECT);
 
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(s3Properties);
-
+        JsonOutputObject outputObject = setJobProperties(s3Properties);
         when(_mockLocalStorageBackend.store(outputObject))
                 .thenReturn(filePath.toUri());
 
@@ -492,10 +491,7 @@ public class TestS3StorageBackend {
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, "http://localhost:5001/" + RESULTS_BUCKET);
         Path filePath = getTestFileCopy();
 
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(s3Properties);
-
+        JsonOutputObject outputObject = setJobProperties(s3Properties);
         when(_mockLocalStorageBackend.store(outputObject))
                 .thenReturn(filePath.toUri());
 
@@ -520,10 +516,7 @@ public class TestS3StorageBackend {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + "BAD_BUCKET");
 
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(s3Properties);
-
+        JsonOutputObject outputObject = setJobProperties(s3Properties);
         when(_mockLocalStorageBackend.store(outputObject))
                 .thenReturn(filePath.toUri());
 
@@ -550,10 +543,7 @@ public class TestS3StorageBackend {
 
         Path filePath = getTestFileCopy();
 
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobProperties())
-                .thenReturn(getS3Properties());
-
+        JsonOutputObject outputObject = setJobProperties(getS3Properties());
         when(_mockLocalStorageBackend.store(outputObject))
                 .thenReturn(filePath.toUri());
 

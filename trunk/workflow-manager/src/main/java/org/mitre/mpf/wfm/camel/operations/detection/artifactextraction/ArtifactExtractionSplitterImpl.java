@@ -139,9 +139,8 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             Set<Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
             if (tasksToMerge.contains(taskIndex + 1)) {
                 LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to {} property.",
-                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId(),
-                        MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY);
+                                " due to being merged with the following task.",
+                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId());
                 continue;
             }
 

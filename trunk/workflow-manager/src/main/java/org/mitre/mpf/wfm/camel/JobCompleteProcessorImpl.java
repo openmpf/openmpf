@@ -413,6 +413,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             JsonTrackOutputObject jsonTrackOutputObject
                                     = createTrackOutputObject(track, stateKey, action, media, job);
 
+                            // tasksToMerge will never contain task 0, so the initial null value of
+                            // prevUnmergedTaskType is never used.
                             String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
                                     jsonTrackOutputObject.getType();
 

@@ -54,6 +54,7 @@
         "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "6b12af261dfee9abd108594f1a0f2cda272e7acb8f0dec97a22b6e5665a943e4",
@@ -2779,6 +2780,7 @@
         "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "27ea626031fe8bce1a4e800b56a4c5d00453473d475788218aa1a73aed4dc4a4",
@@ -5018,6 +5020,7 @@
         "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "8aff2bbab6da6437131052aaf5d9005b8ef9072d99718a83e8cb362708670e6e",

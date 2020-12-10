@@ -66,6 +66,7 @@
         "FACE": [
           {
             "source": "+#DLIB FACE DETECTION ACTION",
+            "algorithm": "DLIB",
             "tracks": [
               {
                 "id": "1e29884b66e8929d5a4feee1c0fb6baa81fae490c51016386346ef08323a82bf",
@@ -2210,6 +2211,7 @@
           },
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "8aff2bbab6da6437131052aaf5d9005b8ef9072d99718a83e8cb362708670e6e",
@@ -4009,6 +4011,7 @@
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "d601e6407baebd7ccb0b4c2a1b84505fa641fe06aec0d92e782d453a44003251",

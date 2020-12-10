@@ -1291,15 +1291,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                       "/samples/person/homewood-bank-robbery.jpg");
     }
 
-/*
-        @Test(timeout = 15*MINUTES)
-        public void runPersonOcvDetectVideo() throws Exception {
-        runSystemTest("OCV PERSON DETECTION PIPELINE", "output/person/runPersonOcvDetectVideo.json",
-                "/samples/person/video_02.mp4",
-                "/samples/person/obama-basketball.mp4");
-        }
-*/
-
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectAudio.json",

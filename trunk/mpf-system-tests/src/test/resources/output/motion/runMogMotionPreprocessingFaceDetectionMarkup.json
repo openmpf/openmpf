@@ -80,6 +80,7 @@
     "output": {
       "FACE": [{
         "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "8aff2bbab6da6437131052aaf5d9005b8ef9072d99718a83e8cb362708670e6e",
           "startOffsetFrame": 66,
@@ -1727,6 +1728,7 @@
       }],
       "MOTION": [{
         "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION",
+        "algorithm": "MOG",
         "tracks": [{
           "id": "94207447abe5a45dcf0749cbf6462e61462e874f649f73737883d7e1b941d166",
           "startOffsetFrame": 1,
@@ -7473,7 +7475,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#MOG MOTION DETECTION PREPROCESSOR ACTION#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }]

@@ -53,6 +53,7 @@
         "MOTION": [
           {
             "source": "+#TEST PREPROCESSOR MOTION ACTION",
+            "algorithm": "MOG",
             "tracks": [
               {
                 "id": "12c664d280f5ac3e9e6343f7abd82e59ef2a51de213ae9b325e16325899594db",
@@ -1890,6 +1891,7 @@
         "MOTION": [
           {
             "source": "+#TEST PREPROCESSOR MOTION ACTION",
+            "algorithm": "MOG",
             "tracks": [
               {
                 "id": "94207447abe5a45dcf0749cbf6462e61462e874f649f73737883d7e1b941d166",

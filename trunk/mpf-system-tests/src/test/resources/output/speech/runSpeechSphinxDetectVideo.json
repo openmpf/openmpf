@@ -51,6 +51,7 @@
         "SPEECH": [
           {
             "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "algorithm": "SPHINX",
             "tracks": [
               {
                 "id": "7ee2bb4eef4f4f544a0e1ef48e623f7fb82209382bb2c422a1a3945110b64599",
@@ -221,6 +222,7 @@
         "SPEECH": [
           {
             "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "algorithm": "SPHINX",
             "tracks": [
               {
                 "id": "27e5c801b7e5d0d8d6211dc396008216a910f9f4cfa0f167e7112f645e9a0c0f",

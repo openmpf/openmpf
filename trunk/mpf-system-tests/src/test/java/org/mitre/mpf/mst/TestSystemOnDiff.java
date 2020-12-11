@@ -1294,14 +1294,12 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectAudio.json",
-                      "/samples/speech/green.wav",
                       "/samples/speech/10001-90210-01803.wav");
     }
 
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectVideo() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectVideo.json",
-                      "/samples/speech/green.mov",
                       "/samples/speech/10001-90210-01803.mp4"
         );
     }

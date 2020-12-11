@@ -415,15 +415,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
                     else {
                         for (Track track : tracks) {
-                            JsonTrackOutputObject jsonTrackOutputObject
-                                    = createTrackOutputObject(track, stateKey, action, media, job);
-
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
                             String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
-                                    jsonTrackOutputObject.getType();
+                                    track.getType();
                             String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
                                     action.getAlgorithm();
+
+                            JsonTrackOutputObject jsonTrackOutputObject
+                                    = createTrackOutputObject(track, stateKey, type, action, media, job);
 
                             if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
                                 mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
@@ -480,7 +480,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
+    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey, String type,
                                                           Action action,
                                                           Media media,
                                                           BatchJob job) {
@@ -514,12 +514,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                    track.getExemplar().getY(),
                                    track.getExemplar().getWidth(),
                                    track.getExemplar().getHeight(),
-                                   track.getType()),
+                                   type),
             track.getStartOffsetFrameInclusive(),
             track.getEndOffsetFrameInclusive(),
             track.getStartOffsetTimeInclusive(),
             track.getEndOffsetTimeInclusive(),
-            track.getType(),
+            type,
             stateKey,
             track.getConfidence(),
             track.getTrackProperties(),

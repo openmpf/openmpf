@@ -275,6 +275,11 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
     }
 
+    public Set<String> getCensoredOutputProperties() {
+        return new HashSet<>(mpfPropertiesConfig.getList(
+                String.class, "mpf.output.objects.censored.properties"));
+    }
+
     public String getSharePath() {
         return mpfPropertiesConfig.getString("mpf.share.path");
     }

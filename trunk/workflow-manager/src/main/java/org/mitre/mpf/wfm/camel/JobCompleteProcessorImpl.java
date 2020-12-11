@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camel;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -39,9 +40,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.interop.*;
-import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -54,6 +53,7 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
+import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
@@ -107,6 +107,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
+
+    @Autowired
+    private CensorPropertiesService censorPropertiesService;
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
@@ -325,7 +328,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobId,
                 UUID.randomUUID().toString(),
-                jsonUtils.convert(job.getPipelineElements()),
+                convertPipeline(job.getPipelineElements()),
                 job.getPriority(),
                 propertiesUtil.getSiteId(),
                 job.getExternalId().orElse(null),
@@ -333,13 +336,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 timeCompleted,
                 jobStatus.getValue().toString());
 
-        if (job.getJobProperties() != null) {
-            jsonOutputObject.getJobProperties().putAll(job.getJobProperties());
+        censorPropertiesService.copyAndCensorProperties(
+                job.getJobProperties(), jsonOutputObject.getJobProperties());
+
+        for (Map.Entry<String, ImmutableMap<String, String>> algoPropsEntry
+                : job.getOverriddenAlgorithmProperties().entrySet()) {
+            jsonOutputObject.getAlgorithmProperties().put(
+                    algoPropsEntry.getKey(),
+                    censorPropertiesService.copyAndCensorProperties(algoPropsEntry.getValue()));
         }
 
-        if (job.getOverriddenAlgorithmProperties() != null) {
-            jsonOutputObject.getAlgorithmProperties().putAll(job.getOverriddenAlgorithmProperties());
-        }
         job.getWarnings().forEach(jsonOutputObject::addWarnings);
         job.getErrors().forEach(jsonOutputObject::addErrors);
         inProgressBatchJobs.getMergedDetectionErrors(job.getId())
@@ -355,7 +361,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
-            mediaOutputObject.getMediaProperties().putAll(media.getMediaSpecificProperties());
+            censorPropertiesService.copyAndCensorProperties(
+                    media.getMediaSpecificProperties(),
+                    mediaOutputObject.getMediaProperties());
 
             MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
             if(markupResult != null) {
@@ -503,7 +511,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
         else {
             detections = track.getDetections().stream()
-                         .map(JobCompleteProcessorImpl::createDetectionOutputObject)
+                         .map(this::createDetectionOutputObject)
                          .collect(toList());
         }
 
@@ -522,24 +530,58 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             type,
             stateKey,
             track.getConfidence(),
-            track.getTrackProperties(),
+            censorPropertiesService.copyAndCensorProperties(track.getTrackProperties()),
             exemplar,
             detections);
     }
 
 
-    private static JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
+    private JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {
         return new JsonDetectionOutputObject(
             detection.getX(),
             detection.getY(),
             detection.getWidth(),
             detection.getHeight(),
             detection.getConfidence(),
-            detection.getDetectionProperties(),
+            censorPropertiesService.copyAndCensorProperties(detection.getDetectionProperties(),
+                                                            new TreeMap<>()),
             detection.getMediaOffsetFrame(),
             detection.getMediaOffsetTime(),
             detection.getArtifactExtractionStatus().name(),
             detection.getArtifactPath());
+    }
+
+
+    private JsonPipeline convertPipeline(JobPipelineElements pipelineElements) {
+        Pipeline pipeline = pipelineElements.getPipeline();
+        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
+        var censorOperator = censorPropertiesService.createCensorOperator();
+
+        for (String taskName : pipeline.getTasks()) {
+            Task task = pipelineElements.getTask(taskName);
+            JsonTask jsonTask = new JsonTask(getActionType(pipelineElements, task).name(), taskName,
+                                             task.getDescription());
+
+            for (String actionName : task.getActions()) {
+                Action action = pipelineElements.getAction(actionName);
+                JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName,
+                                                       action.getDescription());
+                for (ActionProperty property : action.getProperties()) {
+                    jsonAction.getProperties().put(
+                            property.getName(),
+                            censorOperator.apply(property.getName(), property.getValue()));
+                }
+                jsonTask.getActions().add(jsonAction);
+            }
+
+            jsonPipeline.getTasks().add(jsonTask);
+        }
+        return jsonPipeline;
+    }
+
+    private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
+        Action action = pipeline.getAction(task.getActions().get(0));
+        return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
     }
 
 

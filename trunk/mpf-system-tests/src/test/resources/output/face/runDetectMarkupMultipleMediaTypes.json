@@ -60,6 +60,7 @@
     "output": {
       "FACE": [{
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "afba8b4afeb29c2d0b8453f3c1795920dd06d94c18596390a1067d706cfdb453",
           "startOffsetFrame": 0,
@@ -97,7 +98,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }, {
@@ -124,6 +126,7 @@
     "output": {
       "FACE": [{
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "5e2e782e336b39a54f6bd68ea5ee64cdec2ae651fb53454635cdfac2c1eea7b4",
           "startOffsetFrame": 0,
@@ -161,7 +164,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }, {
@@ -191,6 +195,7 @@
     "output": {
       "FACE": [{
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "6b12af261dfee9abd108594f1a0f2cda272e7acb8f0dec97a22b6e5665a943e4",
           "startOffsetFrame": 44,
@@ -2666,7 +2671,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }, {
@@ -2696,6 +2702,7 @@
     "output": {
       "FACE": [{
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "fb08e9a8e926f7ae322f64d9cad325f4795edb3fa14b9e4b714e37fa57fa4052",
           "startOffsetFrame": 1,
@@ -2777,7 +2784,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }, {
@@ -2807,6 +2815,7 @@
     "output": {
       "FACE": [{
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "8aff2bbab6da6437131052aaf5d9005b8ef9072d99718a83e8cb362708670e6e",
           "startOffsetFrame": 66,
@@ -4453,7 +4462,8 @@
         }]
       }],
       "NO TRACKS": [{
-        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION"
+        "source": "+#OCV FACE DETECTION ACTION#OCV GENERIC MARKUP ACTION",
+        "algorithm": "MARKUPCV"
       }]
     }
   }]

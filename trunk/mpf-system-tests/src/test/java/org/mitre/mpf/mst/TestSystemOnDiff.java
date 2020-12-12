@@ -296,6 +296,88 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
+    @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousTextTaskTest() {
+        String pipelineName = "TESSERACT OCR TEXT DETECTION ON EAST REGIONS WITH KEYWORD TAGGING PIPELINE";
+        addPipeline(pipelineName,
+                "EAST TEXT DETECTION TASK",
+                "TESSERACT OCR TEXT DETECTION (WITH FF REGION) TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
+        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(3, outputMedia.getDetectionTypes().size());
+
+        SortedSet<JsonActionOutputObject> textRegionTracksOutput  = outputMedia.getDetectionTypes().get("TEXT REGION");
+        assertEquals(1, textRegionTracksOutput.size());
+        assertEquals("TEXT REGION tracks for task other than EAST", "+#EAST TEXT DETECTION ACTION",
+                textRegionTracksOutput.first().getSource());
+        assertEquals("EAST", textRegionTracksOutput.first().getAlgorithm());
+        assertTrue(textRegionTracksOutput.first().getTracks().stream().allMatch(
+                t -> t.getType().equals("TEXT REGION")));
+
+        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
+        assertEquals(1, mergedTracksOutput.size());
+        assertEquals("Tracks merged for task other than TESSERACT OCR",
+                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION",
+                mergedTracksOutput.first().getSource());
+        assertEquals("TESSERACTOCR", mergedTracksOutput.first().getAlgorithm());
+
+        SortedSet<JsonActionOutputObject> textTracksOutput  = outputMedia.getDetectionTypes().get("TEXT");
+        assertEquals(1, textTracksOutput.size());
+        assertEquals("TEXT tracks for task other than KEYWORD TAGGING",
+                "+#EAST TEXT DETECTION ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) ACTION" +
+                        "#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                textTracksOutput.first().getSource());
+        assertEquals("TESSERACTOCR", textTracksOutput.first().getAlgorithm());
+        assertTrue(textTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("TEXT")));
+    }
+
+    @Test(timeout = 5 * MINUTES)
+    public void runMergeWithPreviousSpeechTaskTest() {
+        String pipelineName = "SPHINX SPEECH DETECTION WITH KEYWORD TAGGING AND MARKUP PIPELINE";
+        addPipeline(pipelineName,
+                "SPHINX SPEECH DETECTION TASK",
+                "KEYWORD TAGGING (WITH FF REGION) TASK", // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
+                "OCV GENERIC MARKUP TASK");
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));
+        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        JsonOutputObject outputObject = getJobOutputObject(jobId);
+        assertEquals(1, outputObject.getMedia().size());
+
+        JsonMediaOutputObject outputMedia = outputObject.getMedia().first();
+        assertEquals(3, outputMedia.getDetectionTypes().size());
+
+        SortedSet<JsonActionOutputObject> mergedTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.TRACKS_MERGED_TYPE);
+        assertEquals(1, mergedTracksOutput.size());
+        assertEquals("Tracks merged for task other than SPHINX", "+#SPHINX SPEECH DETECTION ACTION",
+                mergedTracksOutput.first().getSource());
+        assertEquals("SPHINX", mergedTracksOutput.first().getAlgorithm());
+
+        SortedSet<JsonActionOutputObject> speechTracksOutput  = outputMedia.getDetectionTypes().get("SPEECH");
+        assertEquals(1, speechTracksOutput.size());
+        assertEquals("SPEECH tracks for task other than KEYWORD TAGGING",
+                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                speechTracksOutput.first().getSource());
+        assertEquals("SPHINX", speechTracksOutput.first().getAlgorithm());
+        assertTrue(speechTracksOutput.first().getTracks().stream().allMatch(t -> t.getType().equals("SPEECH")));
+
+        SortedSet<JsonActionOutputObject> noTracksOutput  =
+                outputMedia.getDetectionTypes().get(JsonActionOutputObject.NO_TRACKS_TYPE);
+        assertEquals(1, noTracksOutput.size());
+        assertEquals("No tracks for task other than MARKUP",
+                "+#SPHINX SPEECH DETECTION ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP ACTION",
+                noTracksOutput.first().getSource());
+        assertEquals("MARKUPCV", noTracksOutput.first().getAlgorithm());
+    }
+
 
     @Test(timeout = 5 * MINUTES)
     public void runFaceOcvDetectImage() throws Exception {
@@ -1213,26 +1295,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                       "/samples/person/homewood-bank-robbery.jpg");
     }
 
-/*
-        @Test(timeout = 15*MINUTES)
-        public void runPersonOcvDetectVideo() throws Exception {
-        runSystemTest("OCV PERSON DETECTION PIPELINE", "output/person/runPersonOcvDetectVideo.json",
-                "/samples/person/video_02.mp4",
-                "/samples/person/obama-basketball.mp4");
-        }
-*/
-
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectAudio() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectAudio.json",
-                      "/samples/speech/green.wav",
                       "/samples/speech/10001-90210-01803.wav");
     }
 
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectVideo() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectVideo.json",
-                      "/samples/speech/green.mov",
                       "/samples/speech/10001-90210-01803.mp4"
         );
     }

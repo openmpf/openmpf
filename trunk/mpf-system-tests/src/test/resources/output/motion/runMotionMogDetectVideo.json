@@ -51,6 +51,7 @@
                 "MOTION": [
                     {
                         "source": "+#MOG MOTION DETECTION ACTION",
+                        "algorithm": "MOG",
                         "tracks": [
                             {
                                 "id": "c0ef91d43763d645a35108ec4cb6208465dda00f3b76ab12687ae61a47b585c8",
@@ -9346,6 +9347,7 @@
                 "MOTION": [
                     {
                         "source": "+#MOG MOTION DETECTION ACTION",
+                        "algorithm": "MOG",
                         "tracks": [
                             {
                                 "id": "9cc7f3a91479fb6d9a04555b4e8728f1d4bd96d3329d49958fe7c85df86e97bb",

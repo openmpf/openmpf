@@ -54,6 +54,7 @@
         "TEXT": [
           {
             "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "algorithm": "OALPR",
             "tracks": [
               {
                 "id": "233047e7363dbe9c427e3c95f81c7be02834c100ac01f43de95c4ec149ec8249",
@@ -5873,6 +5874,7 @@
         "TEXT": [
           {
             "source": "+#TEST OALPR TEXT DETECTION ACTION",
+            "algorithm": "OALPR",
             "tracks": [
               {
                 "id": "42f2ec80700147fbc66658488248e2eb888f147d3d06c419344d884cb01769e6",

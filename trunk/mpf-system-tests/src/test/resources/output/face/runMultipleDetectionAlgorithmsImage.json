@@ -62,15 +62,18 @@
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#DLIB FACE DETECTION ACTION"
+            "source": "+#DLIB FACE DETECTION ACTION",
+            "algorithm": "DLIB"
           },
           {
-            "source": "+#OCV FACE DETECTION ACTION"
+            "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV"
           }
         ],
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "1d54a3c5adbac24cedc53d6f3cfd02e575fa7f2550795e681935651211a76d39",
@@ -134,6 +137,7 @@
         "FACE": [
           {
             "source": "+#DLIB FACE DETECTION ACTION",
+            "algorithm": "DLIB",
             "tracks": [
               {
                 "id": "7644c3d4334b3393c964b42a9f078891c691ac677164d54265eab2dd4553afb4",
@@ -213,6 +217,7 @@
           },
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "1e8ef072c679177e681c09095fd0ac0c9a1fc677721be6d0e6ccf38254a32009",
@@ -257,6 +262,7 @@
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "b20f30ac5e7a095c133f2eff1154387072e91265488fcc24a309d0a436ad51a5",

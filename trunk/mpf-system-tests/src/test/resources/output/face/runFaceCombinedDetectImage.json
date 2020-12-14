@@ -50,6 +50,7 @@
     "output": {
       "FACE": [{
         "source": "+#DLIB FACE DETECTION ACTION",
+        "algorithm": "DLIB",
         "tracks": [{
           "id": "a2b623ec3d73a82702e54d75f84fe902e79842f10ef228e3cc5712b27f02b143",
           "startOffsetFrame": 0,
@@ -87,6 +88,7 @@
         }]
       }, {
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "afba8b4afeb29c2d0b8453f3c1795920dd06d94c18596390a1067d706cfdb453",
           "startOffsetFrame": 0,
@@ -143,6 +145,7 @@
     "output": {
       "FACE": [{
         "source": "+#DLIB FACE DETECTION ACTION",
+        "algorithm": "DLIB",
         "tracks": [{
           "id": "c22d1cba7099aa21690e77b126cc83a3c3317abbef800e390c87f2ae0616e98b",
           "startOffsetFrame": 0,
@@ -180,6 +183,7 @@
         }]
       }, {
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm": "FACECV",
         "tracks": [{
           "id": "5e2e782e336b39a54f6bd68ea5ee64cdec2ae651fb53454635cdfac2c1eea7b4",
           "startOffsetFrame": 0,
@@ -236,6 +240,7 @@
     "output": {
       "FACE": [{
         "source": "+#DLIB FACE DETECTION ACTION",
+        "algorithm": "DLIB",
         "tracks": [{
           "id": "954c58899a3b31381a2f7e48312a60dd6a3202712a5efa905cde703bfae62e44",
           "startOffsetFrame": 0,
@@ -273,6 +278,7 @@
         }]
       }, {
         "source": "+#OCV FACE DETECTION ACTION",
+        "algorithm" : "FACECV",
         "tracks": [{
           "id": "1f3d1be6aaafbfdd3b659514bf7f18b971bb078986888d6922c6a776f5d31e7c",
           "startOffsetFrame": 0,

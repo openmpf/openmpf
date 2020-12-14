@@ -117,6 +117,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                         && media.getType() != MediaType.VIDEO)) {
                 continue;
             }
+
             // If the user has requested output objects for the last task only, and this is
             // not the last task, then skip extraction for this media. Also return an empty
             // list if this is the second to last task, but the action type of the last task
@@ -126,13 +127,25 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             boolean lastTaskOnly = Boolean.parseBoolean(
                     _aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
             if (lastTaskOnly && notLastTask) {
-                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}.", job.getId(),
-                        pipelineElements.getTask(taskIndex).getName(), media.getId());
+                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
+                                " due to {} property.",
+                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId(),
+                        MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
 
-            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).getActions()
-                    .size(); actionIndex++) {
+            // If the user has requested that this task be merged with the next one, then skip media extraction.
+            // Media extraction will be performed for the next task this one is merged with.
+            Set<Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+            if (tasksToMerge.contains(taskIndex + 1)) {
+                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
+                                " due to being merged with the following task.",
+                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId());
+                continue;
+            }
+
+            for (int actionIndex = 0; actionIndex < pipelineElements.getTask(taskIndex).getActions().size();
+                 actionIndex++) {
 
                 Action action = pipelineElements.getAction(taskIndex, actionIndex);
                 ArtifactExtractionPolicy extractionPolicy = getExtractionPolicy(job, media, action);

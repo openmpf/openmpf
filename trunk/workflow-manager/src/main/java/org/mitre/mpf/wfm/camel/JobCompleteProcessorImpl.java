@@ -372,10 +372,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
 
-            Set<Integer> suppressedTasks = getSuppressedTasks(media, job);
+            Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
+            Set<Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+
+            String prevUnmergedTaskType = null;
+            String prevUnmergedAlgorithm = null;
 
             for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
                 Task task = job.getPipelineElements().getTask(taskIndex);
+
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
                     Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
@@ -401,26 +406,39 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
-                    if(tracks.isEmpty()) {
+
+                    if (tracks.isEmpty()) {
                         // Always include detection actions in the output object, even if they do not generate any results.
-                        addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey, mediaOutputObject);
+                        addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
+                                action.getAlgorithm(), mediaOutputObject);
                     }
-                    else if (suppressedTasks.contains(taskIndex)) {
+                    else if (tasksToSuppress.contains(taskIndex)) {
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
-                                            mediaOutputObject);
+                                action.getAlgorithm(), mediaOutputObject);
+                    }
+                    else if (tasksToMerge.contains(taskIndex + 1)) {
+                        // This task will be merged with the next one.
+                        addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
+                                action.getAlgorithm(), mediaOutputObject);
                     }
                     else {
                         for (Track track : tracks) {
-                            JsonTrackOutputObject jsonTrackOutputObject
-                                    = createTrackOutputObject(track, stateKey, action, media,
-                                                              job);
+                            // tasksToMerge will never contain task 0, so the initial null values of
+                            // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
+                            String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
+                                    track.getType();
+                            String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
+                                    action.getAlgorithm();
 
-                            String type = jsonTrackOutputObject.getType();
+                            JsonTrackOutputObject jsonTrackOutputObject
+                                    = createTrackOutputObject(track, stateKey, type, action, media, job);
+
                             if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
                                 mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
                             }
 
-                            SortedSet<JsonActionOutputObject> actionSet = mediaOutputObject.getDetectionTypes().get(type);
+                            SortedSet<JsonActionOutputObject> actionSet =
+                                    mediaOutputObject.getDetectionTypes().get(type);
                             boolean stateFound = false;
                             for (JsonActionOutputObject jsonAction : actionSet) {
                                 if (stateKey.equals(jsonAction.getSource())) {
@@ -430,11 +448,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 }
                             }
                             if (!stateFound) {
-                                JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey);
+                                JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey, algo);
                                 actionSet.add(jsonAction);
                                 jsonAction.getTracks().add(jsonTrackOutputObject);
                             }
                         }
+                    }
+
+                    if (!tasksToMerge.contains(taskIndex)) {
+                        // NOTE: If and when we support parallel actions in tasks other then the final one in a
+                        // pipeline, this code will need to be updated.
+                        prevUnmergedTaskType = tracks.isEmpty() ? JsonActionOutputObject.NO_TRACKS_TYPE :
+                                tracks.stream().findFirst().get().getType(); // all tracks from same task have same type
+                        prevUnmergedAlgorithm = action.getAlgorithm();
                     }
 
                     if (actionIndex == task.getActions().size() - 1) {
@@ -462,7 +488,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey,
+    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey, String type,
                                                           Action action,
                                                           Media media,
                                                           BatchJob job) {
@@ -496,12 +522,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                    track.getExemplar().getY(),
                                    track.getExemplar().getWidth(),
                                    track.getExemplar().getHeight(),
-                                   track.getType()),
+                                   type),
             track.getStartOffsetFrameInclusive(),
             track.getEndOffsetFrameInclusive(),
             track.getStartOffsetTimeInclusive(),
             track.getEndOffsetTimeInclusive(),
-            track.getType(),
+            type,
             stateKey,
             track.getConfidence(),
             censorPropertiesService.copyAndCensorProperties(track.getTrackProperties()),
@@ -562,11 +588,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
         // Action properties and algorithm properties are not checked because it doesn't make sense to apply
         // OUTPUT_LAST_TASK_ONLY to a single task.
-        return Boolean.parseBoolean(aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
+        return Boolean.parseBoolean(
+                aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
     }
 
 
-    private Set<Integer> getSuppressedTasks(Media media, BatchJob job) {
+    private Set<Integer> getTasksToSuppress(Media media, BatchJob job) {
         if (!isOutputLastTaskOnly(media, job)) {
             return Set.of();
         }
@@ -586,13 +613,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static void addMissingTrackInfo(String missingTrackKey, String stateKey,
+    private static void addMissingTrackInfo(String missingTrackKey, String stateKey, String algorithm,
                                             JsonMediaOutputObject mediaOutputObject) {
         Set<JsonActionOutputObject> trackSet = mediaOutputObject.getDetectionTypes().computeIfAbsent(
             missingTrackKey, k -> new TreeSet<>());
         boolean stateMissing = trackSet.stream().noneMatch(a -> stateKey.equals(a.getSource()));
         if (stateMissing) {
-            trackSet.add(new JsonActionOutputObject(stateKey));
+            trackSet.add(new JsonActionOutputObject(stateKey, algorithm));
         }
     }
 

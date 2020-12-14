@@ -51,6 +51,7 @@
         "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "b035cb7e6c0b76e542ecdd51b2c08d5ab65d9fc3ab103cf33946284b66d66373",

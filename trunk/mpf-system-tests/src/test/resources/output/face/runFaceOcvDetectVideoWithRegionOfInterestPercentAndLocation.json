@@ -60,6 +60,7 @@
         "FACE": [
           {
             "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
+            "algorithm": "FACECV",
             "tracks": [
               {
                 "id": "31872d04dd7f008b067d4e265d269ff8e2e1dd533a43b3c76e282c9842831766",

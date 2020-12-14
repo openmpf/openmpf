@@ -47,6 +47,7 @@
         "SPEECH": [
           {
             "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "algorithm": "SPHINX",
             "tracks": [
               {
                 "id": "7e611d64959f4aac62dd4d296e311e3d0145acd5ad147704d979f76434e99765",
@@ -181,78 +182,6 @@
                     },
                     "offsetFrame": 0,
                     "offsetTime": 6240,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 0
-                  }
-                ],
-                "stopOffset": 0,
-                "startOffset": 0
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
-    },
-    {
-      "mediaId": 17,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/green.wav",
-      "mimeType": "audio/vnd.wave",
-      "length": -1,
-      "sha256": "237739f8d6ff3459d747f79d272d148d156a696bad93f3ddecc2350c4ee5d9e0",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "DURATION": "2020",
-        "MIME_TYPE": "audio/vnd.wave"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "SPEECH": [
-          {
-            "source": "+#SPHINX SPEECH DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "7f2a9c612342371081d9674df3b07598ae92cb4c557e86923cf0bece76eae6fc",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 280,
-                "stopOffsetTime": 1520,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPT": "the green one right in the middle"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPT": "the green one right in the middle"
-                  },
-                  "offsetFrame": 0,
-                  "offsetTime": 280,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 0
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPT": "the green one right in the middle"
-                    },
-                    "offsetFrame": 0,
-                    "offsetTime": 280,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null,
                     "offset": 0

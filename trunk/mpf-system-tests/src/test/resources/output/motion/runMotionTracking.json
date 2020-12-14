@@ -53,6 +53,7 @@
         "MOTION": [
           {
             "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
+            "algorithm": "MOG",
             "tracks": [
               {
                 "id": "db90797e271f24102ab6cd33db1e1f4fb2d8399c80fb2ccf8988a27e5377f358",

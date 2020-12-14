@@ -1,12 +1,12 @@
 {
-  "jobId": 57,
-  "jobErrors": [],
-  "jobWarnings": [],
-  "objectId": "305a21e9-3dc6-46b5-8faa-a745f71096de",
+  "jobId": 53,
+  "errors": [],
+  "warnings": [],
+  "objectId": "49913034-9297-4bff-a444-146fe3c726b4",
   "pipeline": {
     "name": "TEST OALPR TEXT DETECTION PIPELINE",
     "description": "TEST OALPR TEXT DETECTION PIPELINE",
-    "stages": [
+    "tasks": [
       {
         "actionType": "DETECTION",
         "name": "TEST OALPR TEXT DETECTION TASK",
@@ -24,22 +24,20 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "acc56eeb-115b-44fb-9b2b-18da825d8c61",
-  "timeStart": "2019-09-25T16:55:05Z",
-  "timeStop": "2019-09-25T16:57:55Z",
+  "externalJobId": "81531f02-49db-4696-bcd0-baa8cd51d051",
+  "timeStart": "2020-12-14T17:18:28.906Z",
+  "timeStop": "2020-12-14T17:19:54.086Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
   "media": [
     {
-      "mediaId": 62,
+      "mediaId": 58,
       "path": "file:///opt/mpf/share/samples/text/lp-ferrari-texas.mp4",
-      "detectionProcessingErrors": {},
-      "mimeType": "video/mp4",
-      "length": 471,
       "sha256": "17d760e5a50b8c65d62131f23e35d97108cf7b727de7c1fd8051ba645a862b0e",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "video/mp4",
+      "mediaType": "VIDEO",
+      "length": 471,
       "mediaMetadata": {
         "DURATION": "19069",
         "FPS": "23.98",
@@ -49,6 +47,8 @@
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "TEXT": [
@@ -80,7 +80,7 @@
                     "TEXT": "HBJD"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-168.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/0/frame-168.png"
                 },
                 "detections": [
                   {
@@ -95,7 +95,7 @@
                       "TEXT": "HBJD"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-168.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/0/frame-168.png"
                   }
                 ]
               },
@@ -123,7 +123,7 @@
                     "TEXT": "HJD4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-169.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/1/frame-169.png"
                 },
                 "detections": [
                   {
@@ -138,7 +138,7 @@
                       "TEXT": "HJD4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-169.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/1/frame-169.png"
                   }
                 ]
               },
@@ -166,7 +166,7 @@
                     "TEXT": "RMJ0D4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-175.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/2/frame-175.png"
                 },
                 "detections": [
                   {
@@ -181,7 +181,7 @@
                       "TEXT": "RMJ0D4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-175.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/2/frame-175.png"
                   }
                 ]
               },
@@ -209,7 +209,7 @@
                     "TEXT": "RDJDD4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-184.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/3/frame-184.png"
                 },
                 "detections": [
                   {
@@ -224,7 +224,7 @@
                       "TEXT": "RDJDD4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-184.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/3/frame-184.png"
                   }
                 ]
               },
@@ -252,7 +252,7 @@
                     "TEXT": "DMJDD"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-185.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/4/frame-185.png"
                 },
                 "detections": [
                   {
@@ -267,7 +267,7 @@
                       "TEXT": "DMJDD"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-185.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/4/frame-185.png"
                   }
                 ]
               },
@@ -295,7 +295,7 @@
                     "TEXT": "D300"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-187.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/5/frame-187.png"
                 },
                 "detections": [
                   {
@@ -310,7 +310,7 @@
                       "TEXT": "D300"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-187.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/5/frame-187.png"
                   }
                 ]
               },
@@ -338,7 +338,7 @@
                     "TEXT": "BD3004"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-189.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/6/frame-189.png"
                 },
                 "detections": [
                   {
@@ -353,7 +353,7 @@
                       "TEXT": "BD3004"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-189.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/6/frame-189.png"
                   }
                 ]
               },
@@ -381,7 +381,7 @@
                     "TEXT": "DJD04"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-190.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/7/frame-190.png"
                 },
                 "detections": [
                   {
@@ -396,7 +396,7 @@
                       "TEXT": "DJD04"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-190.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/7/frame-190.png"
                   }
                 ]
               },
@@ -424,7 +424,7 @@
                     "TEXT": "8D3D4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-191.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/8/frame-191.png"
                 },
                 "detections": [
                   {
@@ -439,7 +439,7 @@
                       "TEXT": "8D3D4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-191.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/8/frame-191.png"
                   }
                 ]
               },
@@ -467,7 +467,7 @@
                     "TEXT": "BD30Q4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-193.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/9/frame-193.png"
                 },
                 "detections": [
                   {
@@ -482,7 +482,7 @@
                       "TEXT": "BD30Q4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-193.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/9/frame-193.png"
                   }
                 ]
               },
@@ -510,7 +510,7 @@
                     "TEXT": "DBJ0D"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-194.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/10/frame-194.png"
                 },
                 "detections": [
                   {
@@ -525,7 +525,7 @@
                       "TEXT": "DBJ0D"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-194.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/10/frame-194.png"
                   }
                 ]
               },
@@ -553,7 +553,7 @@
                     "TEXT": "DD300"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-195.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/11/frame-195.png"
                 },
                 "detections": [
                   {
@@ -568,7 +568,7 @@
                       "TEXT": "DD300"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-195.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/11/frame-195.png"
                   }
                 ]
               },
@@ -596,7 +596,7 @@
                     "TEXT": "BDB306"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-196.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/12/frame-196.png"
                 },
                 "detections": [
                   {
@@ -611,7 +611,7 @@
                       "TEXT": "BDB306"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-196.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/12/frame-196.png"
                   }
                 ]
               },
@@ -639,7 +639,7 @@
                     "TEXT": "BDBJ64"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-197.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/13/frame-197.png"
                 },
                 "detections": [
                   {
@@ -654,7 +654,7 @@
                       "TEXT": "BDBJ64"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-197.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/13/frame-197.png"
                   }
                 ]
               },
@@ -682,7 +682,7 @@
                     "TEXT": "BDB30U4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-198.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/14/frame-198.png"
                 },
                 "detections": [
                   {
@@ -697,7 +697,7 @@
                       "TEXT": "BDB30U4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-198.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/14/frame-198.png"
                   }
                 ]
               },
@@ -725,7 +725,7 @@
                     "TEXT": "3DB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-199.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/15/frame-199.png"
                 },
                 "detections": [
                   {
@@ -740,7 +740,7 @@
                       "TEXT": "3DB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-199.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/15/frame-199.png"
                   }
                 ]
               },
@@ -768,7 +768,7 @@
                     "TEXT": "BDB36U4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-201.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/16/frame-201.png"
                 },
                 "detections": [
                   {
@@ -797,7 +797,7 @@
                       "TEXT": "BDB36U4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-201.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/16/frame-201.png"
                   },
                   {
                     "offsetFrame": 202,
@@ -839,7 +839,7 @@
                     "TEXT": "BDB3U"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-203.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/17/frame-203.png"
                 },
                 "detections": [
                   {
@@ -854,7 +854,7 @@
                       "TEXT": "BDB3U"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-203.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/17/frame-203.png"
                   }
                 ]
               },
@@ -882,7 +882,7 @@
                     "TEXT": "BDB3G6"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-205.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/18/frame-205.png"
                 },
                 "detections": [
                   {
@@ -911,7 +911,7 @@
                       "TEXT": "BDB3G6"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-205.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/18/frame-205.png"
                   }
                 ]
               },
@@ -939,7 +939,7 @@
                     "TEXT": "BDB3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-207.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/19/frame-207.png"
                 },
                 "detections": [
                   {
@@ -968,7 +968,7 @@
                       "TEXT": "BDB3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-207.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/19/frame-207.png"
                   },
                   {
                     "offsetFrame": 208,
@@ -1038,7 +1038,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-219.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/20/frame-219.png"
                 },
                 "detections": [
                   {
@@ -1165,7 +1165,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-219.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/20/frame-219.png"
                   },
                   {
                     "offsetFrame": 220,
@@ -1212,30 +1212,30 @@
                 ]
               },
               {
-                "id": "fb82da1a868b77a60aa67aa3c7ad5fccad7633b15779210719ed9766dfd8db53",
+                "id": "7a3ebf4919b65b9f7690aec484c3cc90e3c4527b902271cdf5a51ed62b0198d4",
                 "startOffsetFrame": 223,
-                "stopOffsetFrame": 224,
+                "stopOffsetFrame": 223,
                 "startOffsetTime": 9299,
-                "stopOffsetTime": 9341,
+                "stopOffsetTime": 9299,
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                "confidence": 87.43221,
+                "confidence": 86.63706,
                 "trackProperties": {
-                  "TEXT": "BDB3G6"
+                  "TEXT": "BD3G6"
                 },
                 "exemplar": {
-                  "offsetFrame": 224,
-                  "offsetTime": 9341,
-                  "x": 1317,
-                  "y": 362,
-                  "width": 197,
-                  "height": 126,
-                  "confidence": 87.43221,
+                  "offsetFrame": 223,
+                  "offsetTime": 9299,
+                  "x": 1322,
+                  "y": 363,
+                  "width": 195,
+                  "height": 127,
+                  "confidence": 86.63706,
                   "detectionProperties": {
-                    "TEXT": "BDB3G6"
+                    "TEXT": "BD3G6"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-224.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/21/frame-223.png"
                 },
                 "detections": [
                   {
@@ -1249,30 +1249,16 @@
                     "detectionProperties": {
                       "TEXT": "BD3G6"
                     },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 224,
-                    "offsetTime": 9341,
-                    "x": 1317,
-                    "y": 362,
-                    "width": 197,
-                    "height": 126,
-                    "confidence": 87.43221,
-                    "detectionProperties": {
-                      "TEXT": "BDB3G6"
-                    },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-224.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/21/frame-223.png"
                   }
                 ]
               },
               {
                 "id": "3be0dc3db23eeed450618c38355c6831a21273f11ece12d8cb1685b9a3d20811",
-                "startOffsetFrame": 225,
+                "startOffsetFrame": 224,
                 "stopOffsetFrame": 226,
-                "startOffsetTime": 9383,
+                "startOffsetTime": 9341,
                 "stopOffsetTime": 9425,
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
@@ -1292,9 +1278,23 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-225.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/22/frame-225.png"
                 },
                 "detections": [
+                  {
+                    "offsetFrame": 224,
+                    "offsetTime": 9341,
+                    "x": 1307,
+                    "y": 355,
+                    "width": 207,
+                    "height": 136,
+                    "confidence": 86.450264,
+                    "detectionProperties": {
+                      "TEXT": "BDB366"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
                   {
                     "offsetFrame": 225,
                     "offsetTime": 9383,
@@ -1307,18 +1307,18 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-225.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/22/frame-225.png"
                   },
                   {
                     "offsetFrame": 226,
                     "offsetTime": 9425,
-                    "x": 1314,
-                    "y": 367,
-                    "width": 194,
-                    "height": 126,
-                    "confidence": 86.72433,
+                    "x": 1305,
+                    "y": 372,
+                    "width": 201,
+                    "height": 122,
+                    "confidence": 85.54958,
                     "detectionProperties": {
-                      "TEXT": "BDB366"
+                      "TEXT": "BDB36"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -1349,7 +1349,7 @@
                     "TEXT": "8DB3"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-227.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/23/frame-227.png"
                 },
                 "detections": [
                   {
@@ -1364,7 +1364,7 @@
                       "TEXT": "8DB3"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-227.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/23/frame-227.png"
                   }
                 ]
               },
@@ -1392,7 +1392,7 @@
                     "TEXT": "BDB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-228.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/24/frame-228.png"
                 },
                 "detections": [
                   {
@@ -1407,35 +1407,35 @@
                       "TEXT": "BDB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-228.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/24/frame-228.png"
                   }
                 ]
               },
               {
-                "id": "5cb5c10dff7eaf9ed51a7924f2ce4724b1825ba14470af2d824c50b9e2ba4cfd",
+                "id": "85543053a4dcad86dbba4b3e95b9b5ca15b666721151ee90f914fa1922899abf",
                 "startOffsetFrame": 229,
                 "stopOffsetFrame": 249,
                 "startOffsetTime": 9550,
                 "stopOffsetTime": 10384,
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                "confidence": 89.41898,
+                "confidence": 89.67278,
                 "trackProperties": {
                   "TEXT": "BDB366"
                 },
                 "exemplar": {
-                  "offsetFrame": 248,
-                  "offsetTime": 10342,
-                  "x": 1310,
+                  "offsetFrame": 243,
+                  "offsetTime": 10133,
+                  "x": 1313,
                   "y": 418,
-                  "width": 200,
-                  "height": 132,
-                  "confidence": 89.41898,
+                  "width": 201,
+                  "height": 123,
+                  "confidence": 89.67278,
                   "detectionProperties": {
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-248.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/25/frame-243.png"
                 },
                 "detections": [
                   {
@@ -1499,9 +1499,9 @@
                     "offsetTime": 9716,
                     "x": 1299,
                     "y": 385,
-                    "width": 207,
+                    "width": 203,
                     "height": 132,
-                    "confidence": 85.4933,
+                    "confidence": 85.511604,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -1637,16 +1637,16 @@
                   {
                     "offsetFrame": 243,
                     "offsetTime": 10133,
-                    "x": 1315,
-                    "y": 417,
-                    "width": 199,
-                    "height": 124,
-                    "confidence": 87.51665,
+                    "x": 1313,
+                    "y": 418,
+                    "width": 201,
+                    "height": 123,
+                    "confidence": 89.67278,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/25/frame-243.png"
                   },
                   {
                     "offsetFrame": 244,
@@ -1715,8 +1715,8 @@
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-248.png"
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
                   },
                   {
                     "offsetFrame": 249,
@@ -1758,7 +1758,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-252.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/26/frame-252.png"
                 },
                 "detections": [
                   {
@@ -1801,7 +1801,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-252.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/26/frame-252.png"
                   },
                   {
                     "offsetFrame": 253,
@@ -1843,7 +1843,7 @@
                     "TEXT": "BDB36G"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-254.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/27/frame-254.png"
                 },
                 "detections": [
                   {
@@ -1858,7 +1858,7 @@
                       "TEXT": "BDB36G"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-254.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/27/frame-254.png"
                   },
                   {
                     "offsetFrame": 255,
@@ -1914,7 +1914,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-259.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/28/frame-259.png"
                 },
                 "detections": [
                   {
@@ -1924,7 +1924,7 @@
                     "y": 426,
                     "width": 200,
                     "height": 130,
-                    "confidence": 86.32621,
+                    "confidence": 86.34756,
                     "detectionProperties": {
                       "TEXT": "BQB366"
                     },
@@ -1957,7 +1957,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-259.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/28/frame-259.png"
                   },
                   {
                     "offsetFrame": 260,
@@ -2090,9 +2090,9 @@
                     "offsetTime": 11218,
                     "x": 1307,
                     "y": 423,
-                    "width": 199,
+                    "width": 200,
                     "height": 135,
-                    "confidence": 86.71774,
+                    "confidence": 88.117714,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -2265,7 +2265,7 @@
                     "TEXT": "BUB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-280.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/29/frame-280.png"
                 },
                 "detections": [
                   {
@@ -2280,7 +2280,7 @@
                       "TEXT": "BUB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-280.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/29/frame-280.png"
                   }
                 ]
               },
@@ -2308,7 +2308,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-281.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/30/frame-281.png"
                 },
                 "detections": [
                   {
@@ -2323,7 +2323,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-281.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/30/frame-281.png"
                   },
                   {
                     "offsetFrame": 282,
@@ -2358,9 +2358,9 @@
                     "offsetTime": 11843,
                     "x": 1301,
                     "y": 384,
-                    "width": 209,
-                    "height": 125,
-                    "confidence": 83.70031,
+                    "width": 208,
+                    "height": 120,
+                    "confidence": 84.16569,
                     "detectionProperties": {
                       "TEXT": "BDB36"
                     },
@@ -2407,7 +2407,7 @@
                     "TEXT": "BUB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-286.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/31/frame-286.png"
                 },
                 "detections": [
                   {
@@ -2422,7 +2422,7 @@
                       "TEXT": "BUB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-286.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/31/frame-286.png"
                   }
                 ]
               },
@@ -2450,7 +2450,7 @@
                     "TEXT": "BDB3G6"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-289.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/32/frame-289.png"
                 },
                 "detections": [
                   {
@@ -2493,7 +2493,7 @@
                       "TEXT": "BDB3G6"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-289.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/32/frame-289.png"
                   },
                   {
                     "offsetFrame": 290,
@@ -2563,7 +2563,7 @@
                     "TEXT": "BBJ66"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-293.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/33/frame-293.png"
                 },
                 "detections": [
                   {
@@ -2578,7 +2578,7 @@
                       "TEXT": "BBJ66"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-293.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/33/frame-293.png"
                   }
                 ]
               },
@@ -2606,7 +2606,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-295.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/34/frame-295.png"
                 },
                 "detections": [
                   {
@@ -2635,7 +2635,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-295.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/34/frame-295.png"
                   },
                   {
                     "offsetFrame": 296,
@@ -2656,9 +2656,9 @@
                     "offsetTime": 12385,
                     "x": 1305,
                     "y": 369,
-                    "width": 201,
+                    "width": 206,
                     "height": 124,
-                    "confidence": 87.22531,
+                    "confidence": 87.75872,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -2795,10 +2795,10 @@
                     "offsetFrame": 307,
                     "offsetTime": 12802,
                     "x": 1311,
-                    "y": 380,
-                    "width": 205,
-                    "height": 124,
-                    "confidence": 87.83518,
+                    "y": 375,
+                    "width": 201,
+                    "height": 129,
+                    "confidence": 87.00831,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -2831,7 +2831,7 @@
                     "TEXT": "BUB36G"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-308.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/35/frame-308.png"
                 },
                 "detections": [
                   {
@@ -2846,7 +2846,7 @@
                       "TEXT": "BUB36G"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-308.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/35/frame-308.png"
                   }
                 ]
               },
@@ -2874,7 +2874,7 @@
                     "TEXT": "BDB3"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-321.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/36/frame-321.png"
                 },
                 "detections": [
                   {
@@ -2954,7 +2954,7 @@
                     "y": 390,
                     "width": 198,
                     "height": 133,
-                    "confidence": 84.70083,
+                    "confidence": 84.794395,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -3034,13 +3034,13 @@
                   {
                     "offsetFrame": 320,
                     "offsetTime": 13344,
-                    "x": 1334,
+                    "x": 1341,
                     "y": 402,
-                    "width": 200,
+                    "width": 193,
                     "height": 131,
-                    "confidence": 84.56824,
+                    "confidence": 86.94788,
                     "detectionProperties": {
-                      "TEXT": "BDB36"
+                      "TEXT": "BUB366"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -3057,7 +3057,7 @@
                       "TEXT": "BDB3"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-321.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/36/frame-321.png"
                   },
                   {
                     "offsetFrame": 322,
@@ -3146,11 +3146,11 @@
                   {
                     "offsetFrame": 328,
                     "offsetTime": 13678,
-                    "x": 1344,
-                    "y": 415,
+                    "x": 1342,
+                    "y": 406,
                     "width": 193,
-                    "height": 124,
-                    "confidence": 89.67621,
+                    "height": 130,
+                    "confidence": 89.20052,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -3189,10 +3189,10 @@
                     "offsetFrame": 331,
                     "offsetTime": 13803,
                     "x": 1344,
-                    "y": 416,
-                    "width": 195,
-                    "height": 123,
-                    "confidence": 88.9848,
+                    "y": 414,
+                    "width": 193,
+                    "height": 127,
+                    "confidence": 86.97518,
                     "detectionProperties": {
                       "TEXT": "BDB366"
                     },
@@ -3253,7 +3253,7 @@
                     "TEXT": "8D36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-334.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/37/frame-334.png"
                 },
                 "detections": [
                   {
@@ -3268,7 +3268,7 @@
                       "TEXT": "8D36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-334.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/37/frame-334.png"
                   }
                 ]
               },
@@ -3296,7 +3296,7 @@
                     "TEXT": "BDB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-336.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/38/frame-336.png"
                 },
                 "detections": [
                   {
@@ -3311,7 +3311,7 @@
                       "TEXT": "BDB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-336.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/38/frame-336.png"
                   },
                   {
                     "offsetFrame": 337,
@@ -3381,7 +3381,7 @@
                     "TEXT": "BDB3G4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-340.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/39/frame-340.png"
                 },
                 "detections": [
                   {
@@ -3396,7 +3396,7 @@
                       "TEXT": "BDB3G4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-340.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/39/frame-340.png"
                   }
                 ]
               },
@@ -3424,7 +3424,7 @@
                     "TEXT": "BDB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-341.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/40/frame-341.png"
                 },
                 "detections": [
                   {
@@ -3439,7 +3439,7 @@
                       "TEXT": "BDB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-341.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/40/frame-341.png"
                   }
                 ]
               },
@@ -3467,7 +3467,7 @@
                     "TEXT": "8DB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-343.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/41/frame-343.png"
                 },
                 "detections": [
                   {
@@ -3482,7 +3482,7 @@
                       "TEXT": "8DB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-343.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/41/frame-343.png"
                   }
                 ]
               },
@@ -3510,7 +3510,7 @@
                     "TEXT": "BDB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-345.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/42/frame-345.png"
                 },
                 "detections": [
                   {
@@ -3539,7 +3539,7 @@
                       "TEXT": "BDB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-345.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/42/frame-345.png"
                   }
                 ]
               },
@@ -3567,7 +3567,7 @@
                     "TEXT": "BDB64"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-346.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/43/frame-346.png"
                 },
                 "detections": [
                   {
@@ -3582,7 +3582,7 @@
                       "TEXT": "BDB64"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-346.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/43/frame-346.png"
                   },
                   {
                     "offsetFrame": 347,
@@ -3638,7 +3638,7 @@
                     "TEXT": "BDB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-349.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/44/frame-349.png"
                 },
                 "detections": [
                   {
@@ -3653,7 +3653,7 @@
                       "TEXT": "BDB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-349.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/44/frame-349.png"
                   }
                 ]
               },
@@ -3681,7 +3681,7 @@
                     "TEXT": "DB34"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-350.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/45/frame-350.png"
                 },
                 "detections": [
                   {
@@ -3696,7 +3696,7 @@
                       "TEXT": "DB34"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-350.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/45/frame-350.png"
                   }
                 ]
               },
@@ -3724,7 +3724,7 @@
                     "TEXT": "BDBU"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-351.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/46/frame-351.png"
                 },
                 "detections": [
                   {
@@ -3739,7 +3739,7 @@
                       "TEXT": "BDBU"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-351.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/46/frame-351.png"
                   }
                 ]
               },
@@ -3767,7 +3767,7 @@
                     "TEXT": "BDB36U4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-353.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/47/frame-353.png"
                 },
                 "detections": [
                   {
@@ -3796,7 +3796,7 @@
                       "TEXT": "BDB36U4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-353.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/47/frame-353.png"
                   }
                 ]
               },
@@ -3824,7 +3824,7 @@
                     "TEXT": "DB6U"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-354.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/48/frame-354.png"
                 },
                 "detections": [
                   {
@@ -3839,7 +3839,7 @@
                       "TEXT": "DB6U"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-354.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/48/frame-354.png"
                   }
                 ]
               },
@@ -3867,7 +3867,7 @@
                     "TEXT": "9DB36U4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-355.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/49/frame-355.png"
                 },
                 "detections": [
                   {
@@ -3882,7 +3882,7 @@
                       "TEXT": "9DB36U4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-355.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/49/frame-355.png"
                   }
                 ]
               },
@@ -3910,7 +3910,7 @@
                     "TEXT": "DB300"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-356.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/50/frame-356.png"
                 },
                 "detections": [
                   {
@@ -3925,7 +3925,7 @@
                       "TEXT": "DB300"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-356.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/50/frame-356.png"
                   }
                 ]
               },
@@ -3953,7 +3953,7 @@
                     "TEXT": "3DBJD04"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-359.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/51/frame-359.png"
                 },
                 "detections": [
                   {
@@ -3982,7 +3982,7 @@
                       "TEXT": "3DBJD04"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-359.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/51/frame-359.png"
                   }
                 ]
               },
@@ -4010,7 +4010,7 @@
                     "TEXT": "8D364"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-365.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/52/frame-365.png"
                 },
                 "detections": [
                   {
@@ -4025,7 +4025,7 @@
                       "TEXT": "8D364"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-365.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/52/frame-365.png"
                   }
                 ]
               },
@@ -4053,7 +4053,7 @@
                     "TEXT": "DJ64"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-366.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/53/frame-366.png"
                 },
                 "detections": [
                   {
@@ -4068,7 +4068,7 @@
                       "TEXT": "DJ64"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-366.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/53/frame-366.png"
                   }
                 ]
               },
@@ -4096,7 +4096,7 @@
                     "TEXT": "8DJ4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-367.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/54/frame-367.png"
                 },
                 "detections": [
                   {
@@ -4111,7 +4111,7 @@
                       "TEXT": "8DJ4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-367.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/54/frame-367.png"
                   }
                 ]
               },
@@ -4139,7 +4139,7 @@
                     "TEXT": "DH3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-368.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/55/frame-368.png"
                 },
                 "detections": [
                   {
@@ -4154,7 +4154,7 @@
                       "TEXT": "DH3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-368.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/55/frame-368.png"
                   }
                 ]
               },
@@ -4182,7 +4182,7 @@
                     "TEXT": "DB3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-371.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/56/frame-371.png"
                 },
                 "detections": [
                   {
@@ -4211,7 +4211,7 @@
                       "TEXT": "DB3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-371.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/56/frame-371.png"
                   },
                   {
                     "offsetFrame": 372,
@@ -4267,7 +4267,7 @@
                     "TEXT": "DB3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-376.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/57/frame-376.png"
                 },
                 "detections": [
                   {
@@ -4296,7 +4296,7 @@
                       "TEXT": "DB3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-376.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/57/frame-376.png"
                   }
                 ]
               },
@@ -4324,7 +4324,7 @@
                     "TEXT": "UB3664I1"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-377.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/58/frame-377.png"
                 },
                 "detections": [
                   {
@@ -4339,7 +4339,7 @@
                       "TEXT": "UB3664I1"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-377.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/58/frame-377.png"
                   }
                 ]
               },
@@ -4367,7 +4367,7 @@
                     "TEXT": "RDB3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-378.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/59/frame-378.png"
                 },
                 "detections": [
                   {
@@ -4382,7 +4382,7 @@
                       "TEXT": "RDB3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-378.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/59/frame-378.png"
                   },
                   {
                     "offsetFrame": 379,
@@ -4424,7 +4424,7 @@
                     "TEXT": "UB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-380.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/60/frame-380.png"
                 },
                 "detections": [
                   {
@@ -4439,7 +4439,7 @@
                       "TEXT": "UB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-380.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/60/frame-380.png"
                   }
                 ]
               },
@@ -4467,7 +4467,7 @@
                     "TEXT": "BB3B"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-381.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/61/frame-381.png"
                 },
                 "detections": [
                   {
@@ -4482,7 +4482,7 @@
                       "TEXT": "BB3B"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-381.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/61/frame-381.png"
                   }
                 ]
               },
@@ -4510,7 +4510,7 @@
                     "TEXT": "BU36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-383.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/62/frame-383.png"
                 },
                 "detections": [
                   {
@@ -4525,7 +4525,7 @@
                       "TEXT": "BU36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-383.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/62/frame-383.png"
                   }
                 ]
               },
@@ -4553,7 +4553,7 @@
                     "TEXT": "DB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-386.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/63/frame-386.png"
                 },
                 "detections": [
                   {
@@ -4568,7 +4568,7 @@
                       "TEXT": "DB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-386.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/63/frame-386.png"
                   }
                 ]
               },
@@ -4596,7 +4596,7 @@
                     "TEXT": "1D3B"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-389.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/64/frame-389.png"
                 },
                 "detections": [
                   {
@@ -4611,7 +4611,7 @@
                       "TEXT": "1D3B"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-389.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/64/frame-389.png"
                   }
                 ]
               },
@@ -4639,7 +4639,7 @@
                     "TEXT": "BDB34"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-390.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/65/frame-390.png"
                 },
                 "detections": [
                   {
@@ -4654,7 +4654,7 @@
                       "TEXT": "BDB34"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-390.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/65/frame-390.png"
                   }
                 ]
               },
@@ -4682,7 +4682,7 @@
                     "TEXT": "DBJD"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-391.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/66/frame-391.png"
                 },
                 "detections": [
                   {
@@ -4697,50 +4697,50 @@
                       "TEXT": "DBJD"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-391.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/66/frame-391.png"
                   }
                 ]
               },
               {
-                "id": "4675f4a015498d39e4b9dfbee36a996229a4eddf087f30a0393aa51c716dbe50",
+                "id": "559e7d0af48656b96f8ece2d169c6bb84cf33982736c48a9b89eada85030e55c",
                 "startOffsetFrame": 392,
                 "stopOffsetFrame": 392,
                 "startOffsetTime": 16347,
                 "stopOffsetTime": 16347,
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                "confidence": 80.49725,
+                "confidence": 83.186935,
                 "trackProperties": {
-                  "TEXT": "DB366"
+                  "TEXT": "RDB3664"
                 },
                 "exemplar": {
                   "offsetFrame": 392,
                   "offsetTime": 16347,
-                  "x": 1516,
-                  "y": 314,
-                  "width": 110,
-                  "height": 102,
-                  "confidence": 80.49725,
+                  "x": 1518,
+                  "y": 313,
+                  "width": 116,
+                  "height": 106,
+                  "confidence": 83.186935,
                   "detectionProperties": {
-                    "TEXT": "DB366"
+                    "TEXT": "RDB3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-392.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/67/frame-392.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 392,
                     "offsetTime": 16347,
-                    "x": 1516,
-                    "y": 314,
-                    "width": 110,
-                    "height": 102,
-                    "confidence": 80.49725,
+                    "x": 1518,
+                    "y": 313,
+                    "width": 116,
+                    "height": 106,
+                    "confidence": 83.186935,
                     "detectionProperties": {
-                      "TEXT": "DB366"
+                      "TEXT": "RDB3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-392.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/67/frame-392.png"
                   }
                 ]
               },
@@ -4768,7 +4768,7 @@
                     "TEXT": "DR3664"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-395.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/68/frame-395.png"
                 },
                 "detections": [
                   {
@@ -4797,15 +4797,15 @@
                       "TEXT": "DR3664"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-395.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/68/frame-395.png"
                   }
                 ]
               },
               {
                 "id": "10c380a71075ac56442840913612463408a3973b73124c68177b1f2c6d981567",
-                "startOffsetFrame": 398,
+                "startOffsetFrame": 397,
                 "stopOffsetFrame": 399,
-                "startOffsetTime": 16597,
+                "startOffsetTime": 16555,
                 "stopOffsetTime": 16639,
                 "type": "TEXT",
                 "source": "+#TEST OALPR TEXT DETECTION ACTION",
@@ -4825,9 +4825,23 @@
                     "TEXT": "DH36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-398.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/69/frame-398.png"
                 },
                 "detections": [
+                  {
+                    "offsetFrame": 397,
+                    "offsetTime": 16555,
+                    "x": 1489,
+                    "y": 293,
+                    "width": 112,
+                    "height": 107,
+                    "confidence": 77.59084,
+                    "detectionProperties": {
+                      "TEXT": "DB36"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
                   {
                     "offsetFrame": 398,
                     "offsetTime": 16597,
@@ -4840,7 +4854,7 @@
                       "TEXT": "DH36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-398.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/69/frame-398.png"
                   },
                   {
                     "offsetFrame": 399,
@@ -4882,7 +4896,7 @@
                     "TEXT": "QR36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-400.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/70/frame-400.png"
                 },
                 "detections": [
                   {
@@ -4897,7 +4911,7 @@
                       "TEXT": "QR36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-400.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/70/frame-400.png"
                   }
                 ]
               },
@@ -4925,7 +4939,7 @@
                     "TEXT": "DB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-401.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/71/frame-401.png"
                 },
                 "detections": [
                   {
@@ -4940,7 +4954,7 @@
                       "TEXT": "DB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-401.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/71/frame-401.png"
                   },
                   {
                     "offsetFrame": 402,
@@ -4982,7 +4996,7 @@
                     "TEXT": "DHBD"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-403.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/72/frame-403.png"
                 },
                 "detections": [
                   {
@@ -4997,7 +5011,7 @@
                       "TEXT": "DHBD"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-403.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/72/frame-403.png"
                   }
                 ]
               },
@@ -5025,7 +5039,7 @@
                     "TEXT": "0HHD"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-404.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/73/frame-404.png"
                 },
                 "detections": [
                   {
@@ -5040,7 +5054,7 @@
                       "TEXT": "0HHD"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-404.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/73/frame-404.png"
                   }
                 ]
               },
@@ -5068,7 +5082,7 @@
                     "TEXT": "BDB64"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-435.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/74/frame-435.png"
                 },
                 "detections": [
                   {
@@ -5083,7 +5097,7 @@
                       "TEXT": "BDB64"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-435.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/74/frame-435.png"
                   }
                 ]
               },
@@ -5111,7 +5125,7 @@
                     "TEXT": "8DJ64"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-437.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/75/frame-437.png"
                 },
                 "detections": [
                   {
@@ -5126,7 +5140,7 @@
                       "TEXT": "8DJ64"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-437.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/75/frame-437.png"
                   }
                 ]
               },
@@ -5154,7 +5168,7 @@
                     "TEXT": "RDMJ"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-438.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/76/frame-438.png"
                 },
                 "detections": [
                   {
@@ -5169,7 +5183,7 @@
                       "TEXT": "RDMJ"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-438.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/76/frame-438.png"
                   }
                 ]
               },
@@ -5197,7 +5211,7 @@
                     "TEXT": "3DJ4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-441.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/77/frame-441.png"
                 },
                 "detections": [
                   {
@@ -5212,50 +5226,7 @@
                       "TEXT": "3DJ4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-441.png"
-                  }
-                ]
-              },
-              {
-                "id": "c7e2bc1c304ce9fc975217209058e24d2f07d5b5de9b9829c362fa3324fa49a9",
-                "startOffsetFrame": 443,
-                "stopOffsetFrame": 443,
-                "startOffsetTime": 18474,
-                "stopOffsetTime": 18474,
-                "type": "TEXT",
-                "source": "+#TEST OALPR TEXT DETECTION ACTION",
-                "confidence": 78.76524,
-                "trackProperties": {
-                  "TEXT": "BD34"
-                },
-                "exemplar": {
-                  "offsetFrame": 443,
-                  "offsetTime": 18474,
-                  "x": 1300,
-                  "y": 444,
-                  "width": 105,
-                  "height": 76,
-                  "confidence": 78.76524,
-                  "detectionProperties": {
-                    "TEXT": "BD34"
-                  },
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-443.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 443,
-                    "offsetTime": 18474,
-                    "x": 1300,
-                    "y": 444,
-                    "width": 105,
-                    "height": 76,
-                    "confidence": 78.76524,
-                    "detectionProperties": {
-                      "TEXT": "BD34"
-                    },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-443.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/77/frame-441.png"
                   }
                 ]
               },
@@ -5283,7 +5254,7 @@
                     "TEXT": "9D66"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-444.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/78/frame-444.png"
                 },
                 "detections": [
                   {
@@ -5298,7 +5269,7 @@
                       "TEXT": "9D66"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-444.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/78/frame-444.png"
                   }
                 ]
               },
@@ -5326,7 +5297,7 @@
                     "TEXT": "BD3D"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-445.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/79/frame-445.png"
                 },
                 "detections": [
                   {
@@ -5341,7 +5312,7 @@
                       "TEXT": "BD3D"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-445.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/79/frame-445.png"
                   }
                 ]
               },
@@ -5369,7 +5340,7 @@
                     "TEXT": "9D3D4"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-447.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/80/frame-447.png"
                 },
                 "detections": [
                   {
@@ -5384,7 +5355,7 @@
                       "TEXT": "9D3D4"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-447.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/80/frame-447.png"
                   }
                 ]
               },
@@ -5412,7 +5383,7 @@
                     "TEXT": "DB3D"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-448.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/81/frame-448.png"
                 },
                 "detections": [
                   {
@@ -5427,7 +5398,7 @@
                       "TEXT": "DB3D"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-448.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/81/frame-448.png"
                   }
                 ]
               },
@@ -5455,7 +5426,7 @@
                     "TEXT": "BDJD04"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-449.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/82/frame-449.png"
                 },
                 "detections": [
                   {
@@ -5470,7 +5441,7 @@
                       "TEXT": "BDJD04"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-449.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/82/frame-449.png"
                   }
                 ]
               },
@@ -5498,7 +5469,7 @@
                     "TEXT": "D364"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-452.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/83/frame-452.png"
                 },
                 "detections": [
                   {
@@ -5541,7 +5512,7 @@
                       "TEXT": "D364"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-452.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/83/frame-452.png"
                   }
                 ]
               },
@@ -5569,7 +5540,7 @@
                     "TEXT": "DB36"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-453.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/84/frame-453.png"
                 },
                 "detections": [
                   {
@@ -5584,7 +5555,7 @@
                       "TEXT": "DB36"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-453.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/84/frame-453.png"
                   }
                 ]
               },
@@ -5612,7 +5583,7 @@
                     "TEXT": "336I"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-460.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/85/frame-460.png"
                 },
                 "detections": [
                   {
@@ -5627,7 +5598,7 @@
                       "TEXT": "336I"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-460.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/85/frame-460.png"
                   }
                 ]
               },
@@ -5655,7 +5626,7 @@
                     "TEXT": "D836"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-463.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/86/frame-463.png"
                 },
                 "detections": [
                   {
@@ -5670,7 +5641,7 @@
                       "TEXT": "D836"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-463.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/86/frame-463.png"
                   }
                 ]
               },
@@ -5698,7 +5669,7 @@
                     "TEXT": "DB366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-466.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/87/frame-466.png"
                 },
                 "detections": [
                   {
@@ -5713,7 +5684,7 @@
                       "TEXT": "DB366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-466.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/87/frame-466.png"
                   }
                 ]
               },
@@ -5741,7 +5712,7 @@
                     "TEXT": "DDJ06"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-467.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/88/frame-467.png"
                 },
                 "detections": [
                   {
@@ -5756,7 +5727,7 @@
                       "TEXT": "DDJ06"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-467.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/88/frame-467.png"
                   }
                 ]
               },
@@ -5784,7 +5755,7 @@
                     "TEXT": "DD366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-468.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/89/frame-468.png"
                 },
                 "detections": [
                   {
@@ -5799,7 +5770,7 @@
                       "TEXT": "DD366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-468.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/89/frame-468.png"
                   }
                 ]
               },
@@ -5827,7 +5798,7 @@
                     "TEXT": "D366"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-470.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/90/frame-470.png"
                 },
                 "detections": [
                   {
@@ -5842,7 +5813,7 @@
                       "TEXT": "D366"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/62/0/frame-470.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/58/0/0/90/frame-470.png"
                   }
                 ]
               }
@@ -5852,14 +5823,12 @@
       }
     },
     {
-      "mediaId": 63,
+      "mediaId": 59,
       "path": "file:///opt/mpf/share/samples/text/lp-v8-texas.mp4",
-      "detectionProcessingErrors": {},
-      "mimeType": "video/mp4",
-      "length": 486,
       "sha256": "f7043cad6618433d82e15d52a7e187f55f95b94b2e88a36b0e3042cd2a178d41",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "video/mp4",
+      "mediaType": "VIDEO",
+      "length": 486,
       "mediaMetadata": {
         "DURATION": "16025",
         "FPS": "29.97",
@@ -5869,6 +5838,8 @@
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "TEXT": [
@@ -5900,7 +5871,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-9.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/0/frame-9.png"
                 },
                 "detections": [
                   {
@@ -5924,7 +5895,7 @@
                     "y": 642,
                     "width": 98,
                     "height": 64,
-                    "confidence": 89.47015,
+                    "confidence": 89.5676,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6041,7 +6012,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-9.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/0/frame-9.png"
                   },
                   {
                     "offsetFrame": 10,
@@ -6050,7 +6021,7 @@
                     "y": 656,
                     "width": 107,
                     "height": 59,
-                    "confidence": 89.94326,
+                    "confidence": 89.8053,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6139,7 +6110,7 @@
                     "TEXT": "SR354"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-16.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/1/frame-16.png"
                 },
                 "detections": [
                   {
@@ -6154,7 +6125,7 @@
                       "TEXT": "SR354"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-16.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/1/frame-16.png"
                   }
                 ]
               },
@@ -6182,7 +6153,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-27.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/2/frame-27.png"
                 },
                 "detections": [
                   {
@@ -6197,7 +6168,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-27.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/2/frame-27.png"
                   },
                   {
                     "offsetFrame": 28,
@@ -6346,7 +6317,7 @@
                     "y": 577,
                     "width": 104,
                     "height": 66,
-                    "confidence": 90.05591,
+                    "confidence": 90.06113,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6398,11 +6369,11 @@
                   {
                     "offsetFrame": 42,
                     "offsetTime": 1401,
-                    "x": 373,
-                    "y": 566,
-                    "width": 101,
+                    "x": 371,
+                    "y": 563,
+                    "width": 102,
                     "height": 63,
-                    "confidence": 89.11597,
+                    "confidence": 89.939545,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6430,7 +6401,7 @@
                     "y": 555,
                     "width": 103,
                     "height": 65,
-                    "confidence": 89.80572,
+                    "confidence": 89.798,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6472,7 +6443,7 @@
                     "y": 549,
                     "width": 110,
                     "height": 65,
-                    "confidence": 89.09042,
+                    "confidence": 88.95457,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6659,7 +6630,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-66.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/3/frame-66.png"
                 },
                 "detections": [
                   {
@@ -6683,7 +6654,7 @@
                     "y": 488,
                     "width": 99,
                     "height": 61,
-                    "confidence": 88.870094,
+                    "confidence": 89.13706,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6739,7 +6710,7 @@
                     "y": 487,
                     "width": 100,
                     "height": 60,
-                    "confidence": 88.39144,
+                    "confidence": 88.372215,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -6772,7 +6743,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-66.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/3/frame-66.png"
                   },
                   {
                     "offsetFrame": 67,
@@ -6893,7 +6864,7 @@
                     "y": 469,
                     "width": 107,
                     "height": 62,
-                    "confidence": 88.29192,
+                    "confidence": 88.30518,
                     "detectionProperties": {
                       "TEXT": "SR35491"
                     },
@@ -6954,7 +6925,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-104.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/4/frame-104.png"
                 },
                 "detections": [
                   {
@@ -6964,7 +6935,7 @@
                     "y": 463,
                     "width": 98,
                     "height": 63,
-                    "confidence": 88.41184,
+                    "confidence": 88.5386,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7226,11 +7197,11 @@
                   {
                     "offsetFrame": 97,
                     "offsetTime": 3237,
-                    "x": 370,
-                    "y": 462,
+                    "x": 369,
+                    "y": 461,
                     "width": 100,
-                    "height": 61,
-                    "confidence": 87.676155,
+                    "height": 62,
+                    "confidence": 90.0567,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7333,7 +7304,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-104.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/4/frame-104.png"
                   },
                   {
                     "offsetFrame": 105,
@@ -7479,10 +7450,10 @@
                     "offsetFrame": 115,
                     "offsetTime": 3837,
                     "x": 374,
-                    "y": 469,
-                    "width": 99,
-                    "height": 62,
-                    "confidence": 88.75756,
+                    "y": 470,
+                    "width": 109,
+                    "height": 61,
+                    "confidence": 88.13674,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7492,11 +7463,11 @@
                   {
                     "offsetFrame": 116,
                     "offsetTime": 3871,
-                    "x": 376,
-                    "y": 468,
-                    "width": 109,
+                    "x": 377,
+                    "y": 467,
+                    "width": 108,
                     "height": 63,
-                    "confidence": 87.02875,
+                    "confidence": 85.09734,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7524,7 +7495,7 @@
                     "y": 470,
                     "width": 106,
                     "height": 60,
-                    "confidence": 88.32987,
+                    "confidence": 88.328606,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7664,7 +7635,7 @@
                     "y": 467,
                     "width": 108,
                     "height": 62,
-                    "confidence": 89.0437,
+                    "confidence": 89.039215,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -7944,7 +7915,7 @@
                     "y": 459,
                     "width": 107,
                     "height": 61,
-                    "confidence": 88.688194,
+                    "confidence": 88.68176,
                     "detectionProperties": {
                       "TEXT": "SR35491"
                     },
@@ -8042,7 +8013,7 @@
                     "y": 455,
                     "width": 100,
                     "height": 60,
-                    "confidence": 86.58947,
+                    "confidence": 86.64466,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8070,7 +8041,7 @@
                     "y": 455,
                     "width": 100,
                     "height": 60,
-                    "confidence": 88.97898,
+                    "confidence": 88.90915,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8136,11 +8107,11 @@
                   {
                     "offsetFrame": 162,
                     "offsetTime": 5405,
-                    "x": 414,
-                    "y": 454,
-                    "width": 100,
-                    "height": 59,
-                    "confidence": 86.46749,
+                    "x": 415,
+                    "y": 452,
+                    "width": 97,
+                    "height": 61,
+                    "confidence": 88.66764,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8182,7 +8153,7 @@
                     "y": 455,
                     "width": 104,
                     "height": 57,
-                    "confidence": 86.10152,
+                    "confidence": 86.205826,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8308,7 +8279,7 @@
                     "y": 445,
                     "width": 103,
                     "height": 56,
-                    "confidence": 87.22969,
+                    "confidence": 87.19895,
                     "detectionProperties": {
                       "TEXT": "SR3549I"
                     },
@@ -8390,11 +8361,11 @@
                     "offsetTime": 6006,
                     "x": 465,
                     "y": 433,
-                    "width": 94,
+                    "width": 102,
                     "height": 58,
-                    "confidence": 89.26468,
+                    "confidence": 88.82969,
                     "detectionProperties": {
-                      "TEXT": "SR3549"
+                      "TEXT": "SR35491"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -8462,7 +8433,7 @@
                     "y": 425,
                     "width": 95,
                     "height": 57,
-                    "confidence": 87.04606,
+                    "confidence": 86.96517,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8490,7 +8461,7 @@
                     "y": 424,
                     "width": 101,
                     "height": 54,
-                    "confidence": 87.43886,
+                    "confidence": 87.49707,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8504,7 +8475,7 @@
                     "y": 418,
                     "width": 97,
                     "height": 57,
-                    "confidence": 88.61292,
+                    "confidence": 88.33307,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8560,7 +8531,7 @@
                     "y": 416,
                     "width": 97,
                     "height": 51,
-                    "confidence": 86.72588,
+                    "confidence": 86.74357,
                     "detectionProperties": {
                       "TEXT": "SR35491"
                     },
@@ -8574,7 +8545,7 @@
                     "y": 420,
                     "width": 98,
                     "height": 53,
-                    "confidence": 86.61439,
+                    "confidence": 86.70391,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8607,7 +8578,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-199.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/5/frame-199.png"
                 },
                 "detections": [
                   {
@@ -8692,7 +8663,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-199.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/5/frame-199.png"
                   }
                 ]
               },
@@ -8720,17 +8691,17 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-213.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/6/frame-213.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 200,
                     "offsetTime": 6673,
-                    "x": 539,
-                    "y": 396,
-                    "width": 89,
-                    "height": 51,
-                    "confidence": 89.02109,
+                    "x": 540,
+                    "y": 399,
+                    "width": 88,
+                    "height": 49,
+                    "confidence": 89.49665,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8917,7 +8888,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-213.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/6/frame-213.png"
                   },
                   {
                     "offsetFrame": 214,
@@ -8954,7 +8925,7 @@
                     "y": 377,
                     "width": 80,
                     "height": 44,
-                    "confidence": 88.915855,
+                    "confidence": 89.002594,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -8968,7 +8939,7 @@
                     "y": 376,
                     "width": 84,
                     "height": 44,
-                    "confidence": 88.61786,
+                    "confidence": 88.62179,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -9220,7 +9191,7 @@
                     "y": 348,
                     "width": 69,
                     "height": 37,
-                    "confidence": 87.89532,
+                    "confidence": 88.114655,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -9276,7 +9247,7 @@
                     "y": 338,
                     "width": 65,
                     "height": 36,
-                    "confidence": 87.65722,
+                    "confidence": 87.6426,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -9346,7 +9317,7 @@
                     "y": 327,
                     "width": 63,
                     "height": 33,
-                    "confidence": 87.0059,
+                    "confidence": 87.064606,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -9458,7 +9429,7 @@
                     "y": 306,
                     "width": 63,
                     "height": 32,
-                    "confidence": 88.843864,
+                    "confidence": 88.84966,
                     "detectionProperties": {
                       "TEXT": "SR3549"
                     },
@@ -9603,7 +9574,7 @@
                     "TEXT": "SR3549"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-263.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/7/frame-263.png"
                 },
                 "detections": [
                   {
@@ -9618,7 +9589,7 @@
                       "TEXT": "SR3549"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-263.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/7/frame-263.png"
                   }
                 ]
               },
@@ -9646,7 +9617,7 @@
                     "TEXT": "S354"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-278.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/8/frame-278.png"
                 },
                 "detections": [
                   {
@@ -9661,7 +9632,7 @@
                       "TEXT": "S354"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/57/63/0/frame-278.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/53/59/0/0/8/frame-278.png"
                   }
                 ]
               }

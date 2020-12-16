@@ -2,7 +2,7 @@
   "jobId": 41,
   "errors": [],
   "warnings": [],
-  "objectId": "5a06afb5-0443-4f80-9eb7-a5f786e48c1d",
+  "objectId": "3f46c0e4-110b-4546-a604-04445313a7f3",
   "pipeline": {
     "name": "TEST MULTIPLE FACE DETECTION PIPELINE 2",
     "description": "TEST MULTIPLE FACE DETECTION PIPELINE 2",
@@ -19,12 +19,6 @@
             "properties": {}
           },
           {
-            "algorithm": "DLIB",
-            "name": "DLIB FACE DETECTION ACTION",
-            "description": "Executes the dlib face detection algorithm using the default parameters.",
-            "properties": {}
-          },
-          {
             "algorithm": "PERSONCV",
             "name": "OCV PERSON DETECTION ACTION",
             "description": "Executes the OpenCV person detection algorithm using the default parameters.",
@@ -36,9 +30,9 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "16fd1975-e9ff-42b1-9062-acf94319caf1",
-  "timeStart": "2020-12-14T19:22:22.363Z",
-  "timeStop": "2020-12-14T19:23:28.323Z",
+  "externalJobId": "8b679b0c-1975-4d73-8f0e-eba753450844",
+  "timeStart": "2020-12-16T12:39:12.19Z",
+  "timeStop": "2020-12-16T12:40:00.811Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -64,1948 +58,6 @@
       "markupResult": null,
       "output": {
         "FACE": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "algorithm": "DLIB",
-            "tracks": [
-              {
-                "id": "1867643e677444bf43cd5d0a8e7be877ded09d0812f20506077b2cd1f65f3fd8",
-                "startOffsetFrame": 24,
-                "stopOffsetFrame": 126,
-                "startOffsetTime": 801,
-                "stopOffsetTime": 4204,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 1.729524,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 116,
-                  "offsetTime": 3871,
-                  "x": 489,
-                  "y": 77,
-                  "width": 98,
-                  "height": 97,
-                  "confidence": 1.729524,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/0/frame-116.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 24,
-                    "offsetTime": 801,
-                    "x": 222,
-                    "y": 130,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 0.18351465,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 25,
-                    "offsetTime": 834,
-                    "x": 221,
-                    "y": 129,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 26,
-                    "offsetTime": 868,
-                    "x": 220,
-                    "y": 127,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.2832721,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 27,
-                    "offsetTime": 901,
-                    "x": 220,
-                    "y": 126,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.32464868,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 28,
-                    "offsetTime": 934,
-                    "x": 220,
-                    "y": 126,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.5530909,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 29,
-                    "offsetTime": 968,
-                    "x": 219,
-                    "y": 125,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.7638982,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 30,
-                    "offsetTime": 1001,
-                    "x": 218,
-                    "y": 127,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 31,
-                    "offsetTime": 1034,
-                    "x": 219,
-                    "y": 128,
-                    "width": 40,
-                    "height": 41,
-                    "confidence": 0.17195183,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 32,
-                    "offsetTime": 1068,
-                    "x": 220,
-                    "y": 129,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.19545561,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 33,
-                    "offsetTime": 1101,
-                    "x": 220,
-                    "y": 131,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 34,
-                    "offsetTime": 1134,
-                    "x": 221,
-                    "y": 132,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 35,
-                    "offsetTime": 1168,
-                    "x": 224,
-                    "y": 134,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.3773349,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 36,
-                    "offsetTime": 1201,
-                    "x": 225,
-                    "y": 135,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 37,
-                    "offsetTime": 1235,
-                    "x": 228,
-                    "y": 136,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 38,
-                    "offsetTime": 1268,
-                    "x": 230,
-                    "y": 135,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.311477,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 39,
-                    "offsetTime": 1301,
-                    "x": 234,
-                    "y": 134,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.4234293,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 40,
-                    "offsetTime": 1335,
-                    "x": 236,
-                    "y": 132,
-                    "width": 40,
-                    "height": 41,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 41,
-                    "offsetTime": 1368,
-                    "x": 240,
-                    "y": 130,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.13015753,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 42,
-                    "offsetTime": 1401,
-                    "x": 241,
-                    "y": 128,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 43,
-                    "offsetTime": 1435,
-                    "x": 243,
-                    "y": 127,
-                    "width": 41,
-                    "height": 41,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 44,
-                    "offsetTime": 1468,
-                    "x": 245,
-                    "y": 126,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.23829824,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 45,
-                    "offsetTime": 1502,
-                    "x": 248,
-                    "y": 126,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 46,
-                    "offsetTime": 1535,
-                    "x": 250,
-                    "y": 125,
-                    "width": 39,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 47,
-                    "offsetTime": 1568,
-                    "x": 251,
-                    "y": 126,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.6276985,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 48,
-                    "offsetTime": 1602,
-                    "x": 251,
-                    "y": 127,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.52167064,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 49,
-                    "offsetTime": 1635,
-                    "x": 252,
-                    "y": 129,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 50,
-                    "offsetTime": 1668,
-                    "x": 253,
-                    "y": 130,
-                    "width": 40,
-                    "height": 41,
-                    "confidence": 0.84709626,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 51,
-                    "offsetTime": 1702,
-                    "x": 254,
-                    "y": 133,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.5123034,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 52,
-                    "offsetTime": 1735,
-                    "x": 252,
-                    "y": 134,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.58011276,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 53,
-                    "offsetTime": 1768,
-                    "x": 252,
-                    "y": 136,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.44333225,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 54,
-                    "offsetTime": 1802,
-                    "x": 250,
-                    "y": 136,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.652643,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 55,
-                    "offsetTime": 1835,
-                    "x": 250,
-                    "y": 134,
-                    "width": 41,
-                    "height": 41,
-                    "confidence": 0.94915754,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 56,
-                    "offsetTime": 1869,
-                    "x": 249,
-                    "y": 133,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.9027608,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 57,
-                    "offsetTime": 1902,
-                    "x": 248,
-                    "y": 130,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.45486623,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 58,
-                    "offsetTime": 1935,
-                    "x": 246,
-                    "y": 127,
-                    "width": 40,
-                    "height": 41,
-                    "confidence": 0.44693047,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 59,
-                    "offsetTime": 1969,
-                    "x": 244,
-                    "y": 122,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.37253955,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 60,
-                    "offsetTime": 2002,
-                    "x": 249,
-                    "y": 122,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.47076088,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 61,
-                    "offsetTime": 2035,
-                    "x": 247,
-                    "y": 118,
-                    "width": 46,
-                    "height": 47,
-                    "confidence": 0.8007801,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 62,
-                    "offsetTime": 2069,
-                    "x": 250,
-                    "y": 118,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.77949554,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 63,
-                    "offsetTime": 2102,
-                    "x": 252,
-                    "y": 118,
-                    "width": 46,
-                    "height": 47,
-                    "confidence": 0.8979133,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 64,
-                    "offsetTime": 2135,
-                    "x": 255,
-                    "y": 119,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.44906455,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 65,
-                    "offsetTime": 2169,
-                    "x": 259,
-                    "y": 119,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 66,
-                    "offsetTime": 2202,
-                    "x": 264,
-                    "y": 121,
-                    "width": 47,
-                    "height": 46,
-                    "confidence": 0.69400936,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 67,
-                    "offsetTime": 2236,
-                    "x": 268,
-                    "y": 122,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 1.3261455,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 68,
-                    "offsetTime": 2269,
-                    "x": 274,
-                    "y": 124,
-                    "width": 46,
-                    "height": 46,
-                    "confidence": 1.0757817,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 69,
-                    "offsetTime": 2302,
-                    "x": 279,
-                    "y": 124,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.9032615,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 70,
-                    "offsetTime": 2336,
-                    "x": 285,
-                    "y": 125,
-                    "width": 46,
-                    "height": 46,
-                    "confidence": 0.86938554,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 71,
-                    "offsetTime": 2369,
-                    "x": 293,
-                    "y": 123,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 1.0317086,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 72,
-                    "offsetTime": 2402,
-                    "x": 300,
-                    "y": 122,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.74333555,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 73,
-                    "offsetTime": 2436,
-                    "x": 305,
-                    "y": 120,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.9905856,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 74,
-                    "offsetTime": 2469,
-                    "x": 312,
-                    "y": 115,
-                    "width": 47,
-                    "height": 47,
-                    "confidence": 0.77281505,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 75,
-                    "offsetTime": 2503,
-                    "x": 311,
-                    "y": 108,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 0.51653486,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 76,
-                    "offsetTime": 2536,
-                    "x": 316,
-                    "y": 106,
-                    "width": 56,
-                    "height": 58,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 77,
-                    "offsetTime": 2569,
-                    "x": 319,
-                    "y": 103,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.66292244,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 78,
-                    "offsetTime": 2603,
-                    "x": 329,
-                    "y": 106,
-                    "width": 47,
-                    "height": 46,
-                    "confidence": 1.2439188,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 79,
-                    "offsetTime": 2636,
-                    "x": 327,
-                    "y": 101,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.9546426,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 80,
-                    "offsetTime": 2669,
-                    "x": 328,
-                    "y": 101,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 0.8454173,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 81,
-                    "offsetTime": 2703,
-                    "x": 331,
-                    "y": 103,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.9034818,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 82,
-                    "offsetTime": 2736,
-                    "x": 339,
-                    "y": 109,
-                    "width": 47,
-                    "height": 46,
-                    "confidence": 0.6565457,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 83,
-                    "offsetTime": 2769,
-                    "x": 336,
-                    "y": 106,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 1.1325983,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 84,
-                    "offsetTime": 2803,
-                    "x": 337,
-                    "y": 108,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 1.3294882,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 85,
-                    "offsetTime": 2836,
-                    "x": 339,
-                    "y": 111,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 1.0889548,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 86,
-                    "offsetTime": 2870,
-                    "x": 338,
-                    "y": 113,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.8365825,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 87,
-                    "offsetTime": 2903,
-                    "x": 338,
-                    "y": 113,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.39819366,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 88,
-                    "offsetTime": 2936,
-                    "x": 339,
-                    "y": 112,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.8324874,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 89,
-                    "offsetTime": 2970,
-                    "x": 332,
-                    "y": 104,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.38433224,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 90,
-                    "offsetTime": 3003,
-                    "x": 335,
-                    "y": 108,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 1.03489,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 91,
-                    "offsetTime": 3036,
-                    "x": 332,
-                    "y": 105,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.7824729,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 92,
-                    "offsetTime": 3070,
-                    "x": 333,
-                    "y": 103,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.89601356,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 93,
-                    "offsetTime": 3103,
-                    "x": 328,
-                    "y": 96,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.800731,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 94,
-                    "offsetTime": 3136,
-                    "x": 336,
-                    "y": 103,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.7370284,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 95,
-                    "offsetTime": 3170,
-                    "x": 334,
-                    "y": 98,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.52672035,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 96,
-                    "offsetTime": 3203,
-                    "x": 337,
-                    "y": 101,
-                    "width": 67,
-                    "height": 68,
-                    "confidence": 0.57851225,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 97,
-                    "offsetTime": 3237,
-                    "x": 343,
-                    "y": 108,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 0.45156437,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 98,
-                    "offsetTime": 3270,
-                    "x": 344,
-                    "y": 108,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.46258003,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 99,
-                    "offsetTime": 3303,
-                    "x": 351,
-                    "y": 111,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 100,
-                    "offsetTime": 3337,
-                    "x": 356,
-                    "y": 112,
-                    "width": 68,
-                    "height": 69,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 101,
-                    "offsetTime": 3370,
-                    "x": 356,
-                    "y": 108,
-                    "width": 81,
-                    "height": 82,
-                    "confidence": 0.10672433,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 102,
-                    "offsetTime": 3403,
-                    "x": 364,
-                    "y": 112,
-                    "width": 81,
-                    "height": 82,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 103,
-                    "offsetTime": 3437,
-                    "x": 375,
-                    "y": 123,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.14011723,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 104,
-                    "offsetTime": 3470,
-                    "x": 388,
-                    "y": 128,
-                    "width": 67,
-                    "height": 68,
-                    "confidence": 0.22210532,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 105,
-                    "offsetTime": 3504,
-                    "x": 398,
-                    "y": 129,
-                    "width": 67,
-                    "height": 68,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 106,
-                    "offsetTime": 3537,
-                    "x": 409,
-                    "y": 129,
-                    "width": 67,
-                    "height": 68,
-                    "confidence": 0.23626977,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 107,
-                    "offsetTime": 3570,
-                    "x": 414,
-                    "y": 120,
-                    "width": 81,
-                    "height": 82,
-                    "confidence": 1.2072238,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 108,
-                    "offsetTime": 3604,
-                    "x": 425,
-                    "y": 116,
-                    "width": 83,
-                    "height": 82,
-                    "confidence": 0.1614824,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 109,
-                    "offsetTime": 3637,
-                    "x": 434,
-                    "y": 112,
-                    "width": 82,
-                    "height": 82,
-                    "confidence": 0.5072587,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 110,
-                    "offsetTime": 3670,
-                    "x": 443,
-                    "y": 107,
-                    "width": 82,
-                    "height": 82,
-                    "confidence": 0.8886393,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 111,
-                    "offsetTime": 3704,
-                    "x": 447,
-                    "y": 95,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 0.9960397,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 112,
-                    "offsetTime": 3737,
-                    "x": 461,
-                    "y": 97,
-                    "width": 82,
-                    "height": 83,
-                    "confidence": 1.0916022,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 113,
-                    "offsetTime": 3770,
-                    "x": 463,
-                    "y": 86,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 0.7866505,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 114,
-                    "offsetTime": 3804,
-                    "x": 478,
-                    "y": 89,
-                    "width": 83,
-                    "height": 82,
-                    "confidence": 1.1487683,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 115,
-                    "offsetTime": 3837,
-                    "x": 482,
-                    "y": 77,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 0.7229238,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 116,
-                    "offsetTime": 3871,
-                    "x": 489,
-                    "y": 77,
-                    "width": 98,
-                    "height": 97,
-                    "confidence": 1.729524,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/0/frame-116.png"
-                  },
-                  {
-                    "offsetFrame": 117,
-                    "offsetTime": 3904,
-                    "x": 495,
-                    "y": 77,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 1.6785282,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 118,
-                    "offsetTime": 3937,
-                    "x": 504,
-                    "y": 78,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 1.3619517,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 119,
-                    "offsetTime": 3971,
-                    "x": 513,
-                    "y": 79,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 1.3267187,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 120,
-                    "offsetTime": 4004,
-                    "x": 525,
-                    "y": 82,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 1.2074522,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 121,
-                    "offsetTime": 4037,
-                    "x": 533,
-                    "y": 84,
-                    "width": 98,
-                    "height": 97,
-                    "confidence": 1.162516,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 122,
-                    "offsetTime": 4071,
-                    "x": 542,
-                    "y": 85,
-                    "width": 97,
-                    "height": 97,
-                    "confidence": 1.153387,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 123,
-                    "offsetTime": 4104,
-                    "x": 552,
-                    "y": 86,
-                    "width": 97,
-                    "height": 98,
-                    "confidence": 1.0488433,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 124,
-                    "offsetTime": 4137,
-                    "x": 563,
-                    "y": 86,
-                    "width": 88,
-                    "height": 97,
-                    "confidence": 0.8946288,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 125,
-                    "offsetTime": 4171,
-                    "x": 561,
-                    "y": 73,
-                    "width": 97,
-                    "height": 117,
-                    "confidence": 0.42993006,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 126,
-                    "offsetTime": 4204,
-                    "x": 574,
-                    "y": 81,
-                    "width": 79,
-                    "height": 98,
-                    "confidence": 0.11971218,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "991a9fe44b6fb34385da8ac1fe1e8b21b0fe42c69c53699c2933c75cb8e50964",
-                "startOffsetFrame": 88,
-                "stopOffsetFrame": 117,
-                "startOffsetTime": 2936,
-                "stopOffsetTime": 3904,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 0.83330566,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 111,
-                  "offsetTime": 3704,
-                  "x": 567,
-                  "y": 52,
-                  "width": 56,
-                  "height": 57,
-                  "confidence": 0.83330566,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/1/frame-111.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 88,
-                    "offsetTime": 2936,
-                    "x": 554,
-                    "y": 78,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 0.16203915,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 89,
-                    "offsetTime": 2970,
-                    "x": 555,
-                    "y": 75,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 90,
-                    "offsetTime": 3003,
-                    "x": 557,
-                    "y": 73,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 91,
-                    "offsetTime": 3036,
-                    "x": 558,
-                    "y": 71,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 92,
-                    "offsetTime": 3070,
-                    "x": 560,
-                    "y": 68,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 93,
-                    "offsetTime": 3103,
-                    "x": 562,
-                    "y": 69,
-                    "width": 39,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 94,
-                    "offsetTime": 3136,
-                    "x": 563,
-                    "y": 68,
-                    "width": 40,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 95,
-                    "offsetTime": 3170,
-                    "x": 562,
-                    "y": 68,
-                    "width": 39,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 96,
-                    "offsetTime": 3203,
-                    "x": 564,
-                    "y": 68,
-                    "width": 39,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 97,
-                    "offsetTime": 3237,
-                    "x": 562,
-                    "y": 70,
-                    "width": 40,
-                    "height": 39,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 98,
-                    "offsetTime": 3270,
-                    "x": 561,
-                    "y": 72,
-                    "width": 41,
-                    "height": 41,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 99,
-                    "offsetTime": 3303,
-                    "x": 561,
-                    "y": 73,
-                    "width": 41,
-                    "height": 41,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 100,
-                    "offsetTime": 3337,
-                    "x": 563,
-                    "y": 74,
-                    "width": 41,
-                    "height": 41,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 101,
-                    "offsetTime": 3370,
-                    "x": 562,
-                    "y": 76,
-                    "width": 41,
-                    "height": 40,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 102,
-                    "offsetTime": 3403,
-                    "x": 553,
-                    "y": 69,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.37955266,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 103,
-                    "offsetTime": 3437,
-                    "x": 555,
-                    "y": 71,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 104,
-                    "offsetTime": 3470,
-                    "x": 558,
-                    "y": 71,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 105,
-                    "offsetTime": 3504,
-                    "x": 560,
-                    "y": 66,
-                    "width": 59,
-                    "height": 58,
-                    "confidence": 0.18368517,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 106,
-                    "offsetTime": 3537,
-                    "x": 560,
-                    "y": 66,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.4798773,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 107,
-                    "offsetTime": 3570,
-                    "x": 555,
-                    "y": 57,
-                    "width": 68,
-                    "height": 68,
-                    "confidence": 0.46713835,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 108,
-                    "offsetTime": 3604,
-                    "x": 562,
-                    "y": 57,
-                    "width": 58,
-                    "height": 58,
-                    "confidence": 0.52078944,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 109,
-                    "offsetTime": 3637,
-                    "x": 563,
-                    "y": 55,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.50577724,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 110,
-                    "offsetTime": 3670,
-                    "x": 565,
-                    "y": 53,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.48762947,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 111,
-                    "offsetTime": 3704,
-                    "x": 567,
-                    "y": 52,
-                    "width": 56,
-                    "height": 57,
-                    "confidence": 0.83330566,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/1/frame-111.png"
-                  },
-                  {
-                    "offsetFrame": 112,
-                    "offsetTime": 3737,
-                    "x": 565,
-                    "y": 51,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.72015744,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 113,
-                    "offsetTime": 3770,
-                    "x": 569,
-                    "y": 50,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.56204545,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 114,
-                    "offsetTime": 3804,
-                    "x": 569,
-                    "y": 50,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.5872234,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 115,
-                    "offsetTime": 3837,
-                    "x": 571,
-                    "y": 49,
-                    "width": 57,
-                    "height": 57,
-                    "confidence": 0.3805917,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 116,
-                    "offsetTime": 3871,
-                    "x": 571,
-                    "y": 49,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 117,
-                    "offsetTime": 3904,
-                    "x": 571,
-                    "y": 51,
-                    "width": 57,
-                    "height": 58,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "7be73db748457b636a853972c836b0e747779f3bfe4f36ecfdd7ef52f7772bb1",
-                "startOffsetFrame": 415,
-                "stopOffsetFrame": 426,
-                "startOffsetTime": 13847,
-                "stopOffsetTime": 14214,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 0.3989306,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 426,
-                  "offsetTime": 14214,
-                  "x": 477,
-                  "y": 83,
-                  "width": 48,
-                  "height": 48,
-                  "confidence": 0.3989306,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/2/frame-426.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 415,
-                    "offsetTime": 13847,
-                    "x": 453,
-                    "y": 84,
-                    "width": 53,
-                    "height": 54,
-                    "confidence": 0.10384137,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 416,
-                    "offsetTime": 13881,
-                    "x": 450,
-                    "y": 81,
-                    "width": 68,
-                    "height": 67,
-                    "confidence": 0.16077453,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 417,
-                    "offsetTime": 13914,
-                    "x": 453,
-                    "y": 82,
-                    "width": 67,
-                    "height": 66,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 418,
-                    "offsetTime": 13947,
-                    "x": 454,
-                    "y": 83,
-                    "width": 67,
-                    "height": 67,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 419,
-                    "offsetTime": 13981,
-                    "x": 457,
-                    "y": 84,
-                    "width": 68,
-                    "height": 67,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 420,
-                    "offsetTime": 14014,
-                    "x": 464,
-                    "y": 85,
-                    "width": 57,
-                    "height": 56,
-                    "confidence": 0.20836288,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 421,
-                    "offsetTime": 14047,
-                    "x": 468,
-                    "y": 86,
-                    "width": 56,
-                    "height": 56,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 422,
-                    "offsetTime": 14081,
-                    "x": 469,
-                    "y": 85,
-                    "width": 57,
-                    "height": 56,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 423,
-                    "offsetTime": 14114,
-                    "x": 470,
-                    "y": 84,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 424,
-                    "offsetTime": 14147,
-                    "x": 471,
-                    "y": 83,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 425,
-                    "offsetTime": 14181,
-                    "x": 471,
-                    "y": 80,
-                    "width": 58,
-                    "height": 57,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 426,
-                    "offsetTime": 14214,
-                    "x": 477,
-                    "y": 83,
-                    "width": 48,
-                    "height": 48,
-                    "confidence": 0.3989306,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/2/frame-426.png"
-                  }
-                ]
-              },
-              {
-                "id": "1463fd1d13c0f77322443378da6991f7a6043efe3e8c38d194ab0293272de00a",
-                "startOffsetFrame": 429,
-                "stopOffsetFrame": 436,
-                "startOffsetTime": 14314,
-                "stopOffsetTime": 14548,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 0.3270238,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 429,
-                  "offsetTime": 14314,
-                  "x": 483,
-                  "y": 85,
-                  "width": 45,
-                  "height": 44,
-                  "confidence": 0.3270238,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/3/frame-429.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 429,
-                    "offsetTime": 14314,
-                    "x": 483,
-                    "y": 85,
-                    "width": 45,
-                    "height": 44,
-                    "confidence": 0.3270238,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/3/frame-429.png"
-                  },
-                  {
-                    "offsetFrame": 430,
-                    "offsetTime": 14348,
-                    "x": 479,
-                    "y": 79,
-                    "width": 55,
-                    "height": 55,
-                    "confidence": 0.19282395,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 431,
-                    "offsetTime": 14381,
-                    "x": 485,
-                    "y": 81,
-                    "width": 54,
-                    "height": 55,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 432,
-                    "offsetTime": 14414,
-                    "x": 489,
-                    "y": 83,
-                    "width": 53,
-                    "height": 53,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 433,
-                    "offsetTime": 14448,
-                    "x": 494,
-                    "y": 86,
-                    "width": 52,
-                    "height": 53,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 434,
-                    "offsetTime": 14481,
-                    "x": 499,
-                    "y": 90,
-                    "width": 52,
-                    "height": 52,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 435,
-                    "offsetTime": 14515,
-                    "x": 505,
-                    "y": 92,
-                    "width": 53,
-                    "height": 53,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  },
-                  {
-                    "offsetFrame": 436,
-                    "offsetTime": 14548,
-                    "x": 511,
-                    "y": 95,
-                    "width": 52,
-                    "height": 52,
-                    "confidence": 0.0,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              }
-            ]
-          },
           {
             "source": "+#OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
@@ -3830,7 +1882,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/0/frame-4.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/0/frame-4.png"
                 },
                 "detections": [
                   {
@@ -3843,7 +1895,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/0/frame-4.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/0/frame-4.png"
                   },
                   {
                     "offsetFrame": 5,
@@ -4779,7 +2831,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/1/frame-4.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/1/frame-4.png"
                 },
                 "detections": [
                   {
@@ -4792,7 +2844,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/1/frame-4.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/1/frame-4.png"
                   },
                   {
                     "offsetFrame": 5,
@@ -6388,7 +4440,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/2/frame-15.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/2/frame-15.png"
                 },
                 "detections": [
                   {
@@ -6401,7 +4453,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/2/frame-15.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/2/frame-15.png"
                   },
                   {
                     "offsetFrame": 16,
@@ -6653,7 +4705,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/3/frame-96.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/3/frame-96.png"
                 },
                 "detections": [
                   {
@@ -6666,7 +4718,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/3/frame-96.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/3/frame-96.png"
                   },
                   {
                     "offsetFrame": 97,
@@ -7926,7 +5978,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/4/frame-110.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/4/frame-110.png"
                 },
                 "detections": [
                   {
@@ -7939,7 +5991,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/4/frame-110.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/4/frame-110.png"
                   },
                   {
                     "offsetFrame": 111,
@@ -9031,7 +7083,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/5/frame-112.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/5/frame-112.png"
                 },
                 "detections": [
                   {
@@ -9044,7 +7096,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/5/frame-112.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/5/frame-112.png"
                   },
                   {
                     "offsetFrame": 113,
@@ -9128,7 +7180,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/6/frame-112.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/6/frame-112.png"
                 },
                 "detections": [
                   {
@@ -9141,7 +7193,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/6/frame-112.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/6/frame-112.png"
                   },
                   {
                     "offsetFrame": 113,
@@ -10209,7 +8261,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/7/frame-112.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/7/frame-112.png"
                 },
                 "detections": [
                   {
@@ -10222,7 +8274,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/7/frame-112.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/7/frame-112.png"
                   },
                   {
                     "offsetFrame": 113,
@@ -11290,7 +9342,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/8/frame-116.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/8/frame-116.png"
                 },
                 "detections": [
                   {
@@ -11303,7 +9355,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/8/frame-116.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/8/frame-116.png"
                   },
                   {
                     "offsetFrame": 117,
@@ -12323,7 +10375,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/9/frame-143.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/9/frame-143.png"
                 },
                 "detections": [
                   {
@@ -12336,7 +10388,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/9/frame-143.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/9/frame-143.png"
                   },
                   {
                     "offsetFrame": 144,
@@ -12492,7 +10544,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/10/frame-204.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/10/frame-204.png"
                 },
                 "detections": [
                   {
@@ -12505,7 +10557,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/10/frame-204.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/10/frame-204.png"
                   },
                   {
                     "offsetFrame": 205,
@@ -12829,7 +10881,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/11/frame-204.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/11/frame-204.png"
                 },
                 "detections": [
                   {
@@ -12842,7 +10894,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/11/frame-204.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/11/frame-204.png"
                   },
                   {
                     "offsetFrame": 205,
@@ -14198,7 +12250,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/12/frame-204.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/12/frame-204.png"
                 },
                 "detections": [
                   {
@@ -14211,7 +12263,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/12/frame-204.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/12/frame-204.png"
                   },
                   {
                     "offsetFrame": 205,
@@ -16047,7 +14099,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/13/frame-259.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/13/frame-259.png"
                 },
                 "detections": [
                   {
@@ -16060,7 +14112,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/13/frame-259.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/13/frame-259.png"
                   },
                   {
                     "offsetFrame": 260,
@@ -17764,7 +15816,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/14/frame-281.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/14/frame-281.png"
                 },
                 "detections": [
                   {
@@ -17777,7 +15829,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/14/frame-281.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/14/frame-281.png"
                   },
                   {
                     "offsetFrame": 282,
@@ -18401,7 +16453,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/15/frame-282.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/15/frame-282.png"
                 },
                 "detections": [
                   {
@@ -18414,7 +16466,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/15/frame-282.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/15/frame-282.png"
                   },
                   {
                     "offsetFrame": 283,
@@ -19170,7 +17222,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/16/frame-312.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/16/frame-312.png"
                 },
                 "detections": [
                   {
@@ -19183,7 +17235,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/16/frame-312.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/16/frame-312.png"
                   },
                   {
                     "offsetFrame": 313,
@@ -19447,7 +17499,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/17/frame-374.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/17/frame-374.png"
                 },
                 "detections": [
                   {
@@ -19460,7 +17512,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/2/17/frame-374.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/41/42/0/1/17/frame-374.png"
                   },
                   {
                     "offsetFrame": 375,

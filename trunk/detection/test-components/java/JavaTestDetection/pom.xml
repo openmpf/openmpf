@@ -32,7 +32,7 @@
     <parent>
         <artifactId>mpf-java-test-components</artifactId>
         <groupId>org.mitre.mpf</groupId>
-        <version>5.1</version>
+        <version>6.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-java-component-api</artifactId>
-            <version>5.1</version>
+            <version>6.0</version>
         </dependency>
     </dependencies>
 

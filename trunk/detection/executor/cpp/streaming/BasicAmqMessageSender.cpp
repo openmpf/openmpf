@@ -146,7 +146,7 @@ namespace MPF { namespace COMPONENT {
         }
 
         int proto_bytes_size = protobuf_response.ByteSize();
-        std::unique_ptr<uchar[]> proto_bytes(new uchar[proto_bytes_size]);
+        std::unique_ptr<unsigned char[]> proto_bytes(new unsigned char[proto_bytes_size]);
         protobuf_response.SerializeWithCachedSizesToArray(proto_bytes.get());
 
         std::unique_ptr<cms::BytesMessage> message(session_->createBytesMessage(proto_bytes.get(), proto_bytes_size));

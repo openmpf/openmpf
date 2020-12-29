@@ -51,6 +51,7 @@
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "0716cd981943416bd8893514672d4c0f1595966a5dec77aaf052d38168f50282",
@@ -114,6 +115,7 @@
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "1d54a3c5adbac24cedc53d6f3cfd02e575fa7f2550795e681935651211a76d39",
@@ -177,6 +179,7 @@
         "PERSON": [
           {
             "source": "+#OCV PERSON DETECTION ACTION",
+            "algorithm": "PERSONCV",
             "tracks": [
               {
                 "id": "b20f30ac5e7a095c133f2eff1154387072e91265488fcc24a309d0a436ad51a5",

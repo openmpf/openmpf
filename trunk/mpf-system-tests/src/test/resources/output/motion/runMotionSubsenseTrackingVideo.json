@@ -53,6 +53,7 @@
         "MOTION": [
           {
             "source": "+#SUBSENSE MOTION DETECTION (WITH TRACKING) ACTION",
+            "algorithm": "SUBSENSE",
             "tracks": [
               {
                 "id": "7583857abc4e013f35ef5578902c43ddc250b26d74a936bc51c4cfa77bcd23a3",

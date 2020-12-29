@@ -51,6 +51,7 @@
         "SPEECH": [
           {
             "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "algorithm": "SPHINX",
             "tracks": [
               {
                 "id": "7ee2bb4eef4f4f544a0e1ef48e623f7fb82209382bb2c422a1a3945110b64599",
@@ -192,82 +193,6 @@
                 ],
                 "stopOffset": 184,
                 "startOffset": 150
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
-    },
-    {
-      "mediaId": 20,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/green.mov",
-      "mimeType": "video/quicktime",
-      "length": 54,
-      "sha256": "97a643d5228d20b83eeaa12728bb24ebf18098f8dba67aac6a3ce2b6b23d453d",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "DURATION": "2025",
-        "FPS": "24.0",
-        "FRAME_COUNT": "54",
-        "FRAME_HEIGHT": "1080",
-        "FRAME_WIDTH": "1920",
-        "MIME_TYPE": "video/quicktime"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "SPEECH": [
-          {
-            "source": "+#SPHINX SPEECH DETECTION ACTION",
-            "tracks": [
-              {
-                "id": "27e5c801b7e5d0d8d6211dc396008216a910f9f4cfa0f167e7112f645e9a0c0f",
-                "startOffsetFrame": 6,
-                "stopOffsetFrame": 37,
-                "startOffsetTime": 250,
-                "stopOffsetTime": 1542,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPT": "the green one right in the middle"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPT": "the green one right in the middle"
-                  },
-                  "offsetFrame": 6,
-                  "offsetTime": 250,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 6
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPT": "the green one right in the middle"
-                    },
-                    "offsetFrame": 6,
-                    "offsetTime": 250,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 6
-                  }
-                ],
-                "stopOffset": 37,
-                "startOffset": 6
               }
             ]
           }

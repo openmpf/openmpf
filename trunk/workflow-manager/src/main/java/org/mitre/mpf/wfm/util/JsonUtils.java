@@ -30,13 +30,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.interop.JsonAction;
-import org.mitre.mpf.interop.JsonPipeline;
-import org.mitre.mpf.interop.JsonTask;
 import org.mitre.mpf.interop.util.InstantJsonModule;
-import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -141,34 +136,4 @@ public class JsonUtils {
             throw new WfmProcessingException(String.format("Failed to serialize '%s': %s", object, ioe.getMessage()) ,ioe);
         }
     }
-
-
-    public JsonPipeline convert(JobPipelineElements pipelineElements) {
-        Pipeline pipeline = pipelineElements.getPipeline();
-        JsonPipeline jsonPipeline = new JsonPipeline(pipeline.getName(), pipeline.getDescription());
-
-        for (String taskName : pipeline.getTasks()) {
-            Task task = pipelineElements.getTask(taskName);
-            JsonTask jsonTask = new JsonTask(getActionType(pipelineElements, task).name(), taskName,
-                                               task.getDescription());
-
-            for (String actionName : task.getActions()) {
-                Action action = pipelineElements.getAction(actionName);
-                JsonAction jsonAction = new JsonAction(action.getAlgorithm(), actionName, action.getDescription());
-                for (ActionProperty property : action.getProperties()) {
-                    jsonAction.getProperties().put(property.getName(), property.getValue());
-                }
-                jsonTask.getActions().add(jsonAction);
-            }
-
-            jsonPipeline.getTasks().add(jsonTask);
-        }
-        return jsonPipeline;
-    }
-
-    private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
-        Action action = pipeline.getAction(task.getActions().get(0));
-        return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
-    }
-
 }

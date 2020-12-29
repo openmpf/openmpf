@@ -108,7 +108,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.length = length;
 		this.sha256 = sha256;
 		this.status = status;
-		this.detectionTypes = new TreeMap<>();
+		this.detectionTypes = new TreeMap<>(new DetectionTypeComparator());
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
 		this.mediaProperties = new TreeMap<>();
@@ -179,5 +179,23 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			return 0;
 		}
 		return DEFAULT_COMPARATOR.compare(this, other);
+	}
+
+
+	private static class DetectionTypeComparator implements Comparator<String> {
+		private static final Set<String> _special = new HashSet<>(Arrays.asList(
+				JsonActionOutputObject.NO_TRACKS_TYPE,
+				JsonActionOutputObject.TRACKS_MERGED_TYPE,
+				JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE));
+
+		@Override
+		public int compare(String left, String right) {
+			boolean leftIsSpecial = _special.contains(left);
+			boolean rightIsSpecial = _special.contains(right);
+			if (leftIsSpecial == rightIsSpecial) {
+				return stringCompare().compare(left, right);
+			}
+			return leftIsSpecial ? -1 : 1;
+		}
 	}
 }

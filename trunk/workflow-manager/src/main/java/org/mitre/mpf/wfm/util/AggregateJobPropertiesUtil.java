@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -38,6 +40,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -401,5 +404,29 @@ public class AggregateJobPropertiesUtil {
 
         int calcFrameInterval = (int) Math.max(1, Math.floor(mediaFPS / frameRateCapPropInfo.getNumericValue()));
         return Integer.toString(calcFrameInterval);
+    }
+
+
+
+    // Get collection of tasks that need to be merged with the tasks that come immediately before them.
+    public Set<Integer> getTasksToMerge(Media media, BatchJob job) {
+        var tasksToMerge = new HashSet<Integer>();
+        for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            Task task = job.getPipelineElements().getTask(taskIndex);
+
+            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+                Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
+                ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
+
+                boolean shouldMergeWithPreviousTask = Boolean.parseBoolean(
+                        getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action));
+
+                if (actionType == ActionType.DETECTION && shouldMergeWithPreviousTask) {
+                    tasksToMerge.add(taskIndex);
+                }
+            }
+        }
+
+        return tasksToMerge;
     }
 }

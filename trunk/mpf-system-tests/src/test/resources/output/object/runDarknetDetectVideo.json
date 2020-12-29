@@ -54,6 +54,7 @@
                 "CLASS": [
                     {
                         "source": "+#TINY YOLO OBJECT DETECTION ACTION",
+                        "algorithm": "DARKNET",
                         "tracks": [
                             {
                                 "id": "2150f8fa8f350a90040c4fa63874f76734fcce8c5d508ca5b55f38abb6881ce1",

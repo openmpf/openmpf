@@ -1,204 +1,176 @@
 {
-  "jobId": 18,
-  "objectId": "4f9fccf0-cc87-454e-85f0-843a8199c769",
+  "jobId": 460,
+  "errors": [],
+  "warnings": [],
+  "objectId": "d495e4ee-6574-441d-ba79-a6836a029107",
   "pipeline": {
     "name": "SPHINX SPEECH DETECTION PIPELINE",
     "description": "Performs Sphinx speech detection.",
-    "stages": [
-      {
-        "actionType": "DETECTION",
-        "name": "SPHINX SPEECH DETECTION TASK",
-        "description": "Performs Sphinx speech detection.",
-        "actions": [
-          {
-            "algorithm": "SPHINX",
-            "name": "SPHINX SPEECH DETECTION ACTION",
-            "description": "Executes the Sphinx speech detection algorithm using the default parameters.",
-            "properties": {}
-          }
-        ]
-      }
-    ]
+    "tasks": [{
+      "actionType": "DETECTION",
+      "name": "SPHINX SPEECH DETECTION TASK",
+      "description": "Performs Sphinx speech detection.",
+      "actions": [{
+        "algorithm": "SPHINX",
+        "name": "SPHINX SPEECH DETECTION ACTION",
+        "description": "Executes the Sphinx speech detection algorithm using the default parameters.",
+        "properties": {}
+      }]
+    }]
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "3cdc384a-d61e-4fad-b8f3-b8183a0e8515",
-  "timeStart": "2017-05-25T16:01:24.0-05:00",
-  "timeStop": "2017-05-25T16:01:54.0-05:00",
+  "externalJobId": "feeffdeb-82e1-4881-8e9f-1c990d98a7ca",
+  "timeStart": "2021-01-01T13:10:10.456-05:00",
+  "timeStop": "2021-01-01T13:10:40.338-05:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
-  "media": [
-    {
-      "mediaId": 22,
-      "path": "file:/var/jenkins/workspace/openmpf-github-with-pull-request/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.mp4",
-      "mimeType": "video/mp4",
-      "length": 185,
-      "sha256": "a35eaf760008df8e1c28bab97f692e88d01a0931d01c762ca55bf15bfd6b9c34",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "DURATION": "7084",
-        "FPS": "24.0",
-        "FRAME_COUNT": "185",
-        "FRAME_HEIGHT": "1080",
-        "FRAME_WIDTH": "1920",
-        "MIME_TYPE": "video/mp4"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "SPEECH": [
-          {
-            "source": "+#SPHINX SPEECH DETECTION ACTION",
-            "algorithm": "SPHINX",
-            "tracks": [
-              {
-                "id": "7ee2bb4eef4f4f544a0e1ef48e623f7fb82209382bb2c422a1a3945110b64599",
-                "startOffsetFrame": 20,
-                "stopOffsetFrame": 61,
-                "startOffsetTime": 833,
-                "stopOffsetTime": 2542,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPT": "what zero zero zero one"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPT": "what zero zero zero one"
-                  },
-                  "offsetFrame": 20,
-                  "offsetTime": 833,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 20
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPT": "what zero zero zero one"
-                    },
-                    "offsetFrame": 20,
-                    "offsetTime": 833,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 20
-                  }
-                ],
-                "stopOffset": 61,
-                "startOffset": 20
-              },
-              {
-                "id": "f5b5a830c33b86b9a0af17b0b05caeba32d5fcbe5edf2d9615636e59d4d59856",
-                "startOffsetFrame": 64,
-                "stopOffsetFrame": 118,
-                "startOffsetTime": 2667,
-                "stopOffsetTime": 4917,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPT": "nine oh two one oh"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPT": "nine oh two one oh"
-                  },
-                  "offsetFrame": 64,
-                  "offsetTime": 2667,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 64
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPT": "nine oh two one oh"
-                    },
-                    "offsetFrame": 64,
-                    "offsetTime": 2667,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 64
-                  }
-                ],
-                "stopOffset": 118,
-                "startOffset": 64
-              },
-              {
-                "id": "0b036b62cc318e4112998d3d37d8a19651b54649fb2664a3f57c20ea4bac74e9",
-                "startOffsetFrame": 150,
-                "stopOffsetFrame": 184,
-                "startOffsetTime": 6250,
-                "stopOffsetTime": 7667,
-                "confidence": -1.0,
-                "type": "SPEECH",
-                "source": "+#SPHINX SPEECH DETECTION ACTION",
-                "trackProperties": {
-                  "TRANSCRIPT": "cyril one eight sir oath"
-                },
-                "exemplar": {
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "TRANSCRIPT": "cyril one eight sir oath"
-                  },
-                  "offsetFrame": 150,
-                  "offsetTime": 6250,
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 150
-                },
-                "detections": [
-                  {
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "TRANSCRIPT": "cyril one eight sir oath"
-                    },
-                    "offsetFrame": 150,
-                    "offsetTime": 6250,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 150
-                  }
-                ],
-                "stopOffset": 184,
-                "startOffset": 150
-              }
-            ]
-          }
-        ]
-      },
-      "detectionProcessingErrors": {}
+  "media": [{
+    "mediaId": 1,
+    "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.mp4",
+    "sha256": "73cd2148a3ec4a25581df6bcdfd0a5af4b504179af2351cd971d2fd0178ec2b5",
+    "mimeType": "video/mp4",
+    "mediaType": "VIDEO",
+    "length": 183,
+    "mediaMetadata": {
+      "DURATION": "7086",
+      "FPS": "24.0",
+      "FRAME_COUNT": "183",
+      "FRAME_HEIGHT": "1080",
+      "FRAME_WIDTH": "1920",
+      "MIME_TYPE": "video/mp4"
+    },
+    "mediaProperties": {},
+    "status": "COMPLETE",
+    "detectionProcessingErrors": {},
+    "markupResult": null,
+    "output": {
+      "SPEECH": [{
+        "source": "+#SPHINX SPEECH DETECTION ACTION",
+        "algorithm": "SPHINX",
+        "tracks": [{
+          "id": "2bad53f5d0aa25bb28c89c9b4ac3e0f0468ccefe9f26b721a6e4e5a4850c1907",
+          "startOffsetFrame": 20,
+          "stopOffsetFrame": 61,
+          "startOffsetTime": 833,
+          "stopOffsetTime": 2542,
+          "type": "SPEECH",
+          "source": "+#SPHINX SPEECH DETECTION ACTION",
+          "confidence": -1.0,
+          "trackProperties": {
+            "TRANSCRIPT": "what zero zero zero one"
+          },
+          "exemplar": {
+            "offsetFrame": 20,
+            "offsetTime": 833,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "what zero zero zero one"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          },
+          "detections": [{
+            "offsetFrame": 20,
+            "offsetTime": 833,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "what zero zero zero one"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          }]
+        }, {
+          "id": "b9829a284cedb5bac120440f0492db905b15694cc55645735f0c32c2e2003aab",
+          "startOffsetFrame": 94,
+          "stopOffsetFrame": 118,
+          "startOffsetTime": 3917,
+          "stopOffsetTime": 4917,
+          "type": "SPEECH",
+          "source": "+#SPHINX SPEECH DETECTION ACTION",
+          "confidence": -1.0,
+          "trackProperties": {
+            "TRANSCRIPT": "nine oh two one oh"
+          },
+          "exemplar": {
+            "offsetFrame": 94,
+            "offsetTime": 3917,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "nine oh two one oh"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          },
+          "detections": [{
+            "offsetFrame": 94,
+            "offsetTime": 3917,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "nine oh two one oh"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          }]
+        }, {
+          "id": "3db42becf1bd2c927d46a35f4cc2c8a03bb9064a97d5254043e176d7e71ee241",
+          "startOffsetFrame": 150,
+          "stopOffsetFrame": 182,
+          "startOffsetTime": 6250,
+          "stopOffsetTime": 7583,
+          "type": "SPEECH",
+          "source": "+#SPHINX SPEECH DETECTION ACTION",
+          "confidence": -1.0,
+          "trackProperties": {
+            "TRANSCRIPT": "cyril one eight zeros"
+          },
+          "exemplar": {
+            "offsetFrame": 150,
+            "offsetTime": 6250,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "cyril one eight zeros"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          },
+          "detections": [{
+            "offsetFrame": 150,
+            "offsetTime": 6250,
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "confidence": -1.0,
+            "detectionProperties": {
+              "TRANSCRIPT": "cyril one eight zeros"
+            },
+            "artifactExtractionStatus": "NOT_ATTEMPTED",
+            "artifactPath": null
+          }]
+        }]
+      }]
     }
-  ]
+  }]
 }

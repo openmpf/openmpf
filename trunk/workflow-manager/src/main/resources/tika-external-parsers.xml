@@ -24,7 +24,7 @@
             <command>ffmpeg -version</command>
             <error-codes>126,127</error-codes>
         </check>
-        <command>ffmpeg -i ${INPUT} -map 0:v:0 -c copy -f null -</command>
+        <command>ffmpeg -nostats -i ${INPUT} -map 0:v:0 -c copy -f null -</command>
         <mime-types>
             <mime-type>video/avi</mime-type>
             <mime-type>video/mpeg</mime-type>

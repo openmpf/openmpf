@@ -27,25 +27,26 @@
 #include "BoundingBoxVideoHandle.h"
 
 BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath ) :
-        src_(sourceVideoPath),
-        dest_(destinationVideoPath, cv::VideoWriter::fourcc('M','J','P','G'), src_.GetFrameRate(), src_.GetFrameSize(), true) {
-    if(!src_.IsOpened()) {
+        videoCapture_(sourceVideoPath),
+        videoWriter_(destinationVideoPath, cv::VideoWriter::fourcc('M','J','P','G'),
+            videoCapture_.GetFrameRate(), videoCapture_.GetFrameSize(), true) {
+    if (!videoCapture_.IsOpened()) {
         throw std::runtime_error("Unable to open source video: " + sourceVideoPath);
     }
-    if (!dest_.isOpened()) { // Cleanup...
+    if (!videoWriter_.isOpened()) {
         throw std::runtime_error("Unable to open destination video: " + destinationVideoPath);
     }
 }
 
 cv::Size BoundingBoxVideoHandle::GetFrameSize() {
-    return src_.GetFrameSize();
+    return videoCapture_.GetFrameSize();
 }
 
-bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
-    return src_.Read(frame);
+void BoundingBoxVideoHandle::Read(cv::Mat &frame) {
+    videoCapture_.Read(frame);
 }
 
-bool BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
-    dest_ << frame;
+void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
+    videoWriter_ << frame;
 }
 

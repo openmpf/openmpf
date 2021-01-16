@@ -24,27 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_BOUNDINGBOXVIDEOHANDLE_H
-#define MPF_BOUNDINGBOXVIDEOHANDLE_H
+#ifndef MPF_BOUNDINGBOXMEDIAHANDLE_H
+#define MPF_BOUNDINGBOXMEDIAHANDLE_H
 
-#include <MPFVideoCapture.h>
-
-#include "BoundingBoxMediaHandle.h"
-
-class BoundingBoxVideoHandle : public BoundingBoxMediaHandle {
+class BoundingBoxMediaHandle {
 public:
-    BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath);
+    virtual cv::Size GetFrameSize() = 0;
 
-    cv::Size GetFrameSize();
+    virtual void Read(cv::Mat &frame) = 0;
 
-    void Read(cv::Mat &frame);
-
-    void HandleMarkedFrame(const cv::Mat& frame);
-
-private:
-    MPF::COMPONENT::MPFVideoCapture videoCapture_;
-
-    cv::VideoWriter videoWriter_;
+    virtual void HandleMarkedFrame(const cv::Mat& frame) = 0;
 };
 
-#endif //MPF_BOUNDINGBOXVIDEOHANDLE_H
+#endif //MPF_BOUNDINGBOXMEDIAHANDLE_H

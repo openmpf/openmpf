@@ -24,27 +24,31 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_BOUNDINGBOXVIDEOHANDLE_H
-#define MPF_BOUNDINGBOXVIDEOHANDLE_H
+#include <opencv2/imgcodecs.hpp>
+#include "BoundingBoxImageHandle.h"
 
-#include <MPFVideoCapture.h>
+BoundingBoxImageHandle::BoundingBoxImageHandle(std::string sourceImagePath, std::string destinationImagePath ) :
+        sourceImagePath_(sourceImagePath),
+        destinationImagePath_(destinationImagePath),
+        videoCapture_(sourceImagePath_) {
+    if (!videoCapture_.IsOpened()) {
+        throw std::runtime_error("Unable to open source image: " + sourceImagePath_);
+    }
+}
 
-#include "BoundingBoxMediaHandle.h"
+cv::Size BoundingBoxImageHandle::GetFrameSize() {
+    return videoCapture_.GetFrameSize();
+}
 
-class BoundingBoxVideoHandle : public BoundingBoxMediaHandle {
-public:
-    BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath);
+void BoundingBoxImageHandle::Read(cv::Mat &frame) {
+    if (!videoCapture_.Read(frame) || frame.empty()) {
+        throw std::runtime_error("Unable to read source image: " + sourceImagePath_);
+    }
+}
 
-    cv::Size GetFrameSize();
+void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {
+    if (!cv::imwrite(destinationImagePath_, frame, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
+        throw std::runtime_error("Failed to write image: " + destinationImagePath_);
+    }
+}
 
-    void Read(cv::Mat &frame);
-
-    void HandleMarkedFrame(const cv::Mat& frame);
-
-private:
-    MPF::COMPONENT::MPFVideoCapture videoCapture_;
-
-    cv::VideoWriter videoWriter_;
-};
-
-#endif //MPF_BOUNDINGBOXVIDEOHANDLE_H

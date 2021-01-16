@@ -35,13 +35,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
 
-#include <MPFVideoCapture.h>
-#include <MPFImageReader.h>
 #include <MPFRotatedRect.h>
 
 #include "JniHelper.h"
+#include "BoundingBoxImageHandle.h"
 #include "BoundingBoxVideoHandle.h"
 
 #ifdef __cplusplus
@@ -54,7 +52,7 @@ using namespace cv;
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
                      std::string label, Mat *image);
 
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxVideoHandle &boundingBoxMediaHandle)
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
     try {

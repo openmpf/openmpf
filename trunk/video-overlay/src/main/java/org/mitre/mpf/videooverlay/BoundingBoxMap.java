@@ -32,11 +32,6 @@ import java.util.*;
 
 public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
     /**
-     * Indicates that a box should be drawn on all frames.
-     */
-    public static final int ALL_FRAMES = Integer.MAX_VALUE;
-
-    /**
      * Associates a list of bounding boxes (values) with the given 0-based frame index in the video (key). If the
      * key already exists, its value will be overwritten.
      *

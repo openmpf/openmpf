@@ -57,7 +57,6 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
 /*
  * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
  * Method:    markupVideoNative
- * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jstring destinationVideoPathJString)
@@ -65,7 +64,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
     JniHelper jni(env);
     try {
         // Get the bounding box map.
-
         jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap
                 = jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap",
@@ -78,9 +76,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                 = jni.GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
         jmethodID clzBoundingBoxMap_fnContainsKey = jni.GetMethodID(clzBoundingBoxMap, "containsKey",
                                                                     "(Ljava/lang/Object;)Z");
-
-        jint allFramesKey = jni.GetStaticIntField(clzBoundingBoxMap,
-                                                  jni.GetStaticFieldID(clzBoundingBoxMap, "ALL_FRAMES", "I"));
 
         // Get List class and methods.
         jclass clzList = jni.FindClass("java/util/List");
@@ -139,21 +134,18 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
             // if that frame is empty, we've reached the end of the video.
             if(frame.empty()) { break; }
 
-            // Otherwise, get the list of boxes that need to be drawn on this frame. This is the union of the boxes
-            // found in keys ALL_FRAMES and currentFrame.
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,
                                                                        currentFrameBoxed);
             if (foundEntryForCurrentFrame) {
-                // Map has elements which are to be drawn on every frame.
-                jobject allFramesElements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet,
+                jobject currentFrameElements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet,
                                                                  currentFrameBoxed);
 
-                // Iterate through this list, drawing the box on the frame.
-                jint numBoxesCurrentFrame = jni.CallIntMethod(allFramesElements, clzList_fnSize);
+                // Iterate through this list, drawing each box on the frame.
+                jint numBoxesCurrentFrame = jni.CallIntMethod(currentFrameElements, clzList_fnSize);
 
                 for (jint i = 0; i < numBoxesCurrentFrame; i++) {
-                    jobject box = jni.CallObjectMethod(allFramesElements, clzList_fnGet, i);
+                    jobject box = jni.CallObjectMethod(currentFrameElements, clzList_fnGet, i);
                     jint x = jni.CallIntMethod(box, clzBoundingBox_fnGetX);
                     jint y = jni.CallIntMethod(box, clzBoundingBox_fnGetY);
 
@@ -193,43 +185,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                 }
             }
 
-            jobject boxedAllFramesKey = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, allFramesKey);
-
-            jboolean foundAllFramesKey = jni.CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey,
-                                                               boxedAllFramesKey);
-            if (foundAllFramesKey) {
-                // Map has elements which are to be drawn on every frame.
-                jobject allFramesElements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet,
-                                                                 boxedAllFramesKey);
-
-                // Iterate through this list, drawing the box on the frame.
-                jint numBoxesAllFrames = jni.CallIntMethod(allFramesElements, clzList_fnSize);
-
-                for (jint i = 0; i < numBoxesAllFrames; i++) {
-                    jobject box = jni.CallObjectMethod(allFramesElements, clzList_fnGet, i);
-                    jint x = jni.CallIntMethod(box, clzBoundingBox_fnGetX);
-                    jint y = jni.CallIntMethod(box, clzBoundingBox_fnGetY);
-
-                    jint height = jni.CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                    if (height == 0) {
-                        height = cvSize.height;
-                    }
-                    jint width = jni.CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                    if (width == 0) {
-                        width = cvSize.width;
-                    }
-
-                    jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
-                    jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
-                    jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
-                    jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
-                    jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
-                    jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
-
-                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, "", &frame); // DEBUG
-                }
-            }
-
             dest << frame;
         }
 
@@ -245,7 +200,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 /*
  * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
  * Method:    markupImageNative
- * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jstring destinationImagePathJString)
@@ -306,7 +260,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
         // Get the size of the image.
         Size cvSize = Size(image.cols, image.rows);
 
-
         // Box 0 into an Integer.
         jobject boxedZero = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, 0);
 
@@ -315,7 +268,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
         if (foundEntry) {
             jobject elements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxedZero);
 
-            // Iterate through this list, drawing the box on the frame.
+            // Iterate through this list, drawing each box on the frame.
             jint size = jni.CallIntMethod(elements, clzList_fnSize);
 
             for (jint i = 0; i < size; i++) {
@@ -372,7 +325,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int circleRadius = thickness == 1 ? 3 : thickness + 5;
 
     int labelIndent = circleRadius + 2;
-    int labelPadding = 2;
+    int labelPadding = 4;
     double labelScale = 1.0;
     int labelThickness = 1;
     int labelFont = cv::FONT_HERSHEY_PLAIN;

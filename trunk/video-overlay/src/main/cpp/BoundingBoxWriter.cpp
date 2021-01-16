@@ -375,9 +375,10 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int labelPadding = 2;
     double labelScale = 1.0;
     int labelThickness = 1;
+    int labelFont = cv::FONT_HERSHEY_PLAIN;
 
     int baseline = 0;
-    Size labelSize = getTextSize(label, cv::FONT_HERSHEY_PLAIN, labelScale, 1, &baseline);
+    Size labelSize = getTextSize(label, labelFont, labelScale, labelScale, &baseline);
 
     int labelRectBottomLeftX = x;
     int labelRectBottomLeftY = y - thickness;
@@ -390,7 +391,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int labelBottomLeftX = x + labelIndent;
     int labelBottomLeftY = y - labelPadding - (0.5 * thickness);
 
-    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), cv::FONT_HERSHEY_PLAIN, labelScale, boxColor,
+    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, boxColor,
         labelThickness, cv::LineTypes::LINE_AA);
 
     line(*image, corners[0], corners[1], boxColor, thickness, cv::LineTypes::LINE_AA);

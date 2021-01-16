@@ -66,7 +66,7 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox(25, 35, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.empty()); // Optional.of("truck"));
+            BoundingBox box = new BoundingBox(25, 35, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.of("thisisareallylongclassification")); // Optional.empty());
             map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();

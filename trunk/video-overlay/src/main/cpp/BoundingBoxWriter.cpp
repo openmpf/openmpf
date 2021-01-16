@@ -40,9 +40,9 @@
 #include <MPFVideoCapture.h>
 #include <MPFImageReader.h>
 #include <MPFRotatedRect.h>
+
 #include "JniHelper.h"
-
-
+#include "BoundingBoxVideoHandle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,8 +54,7 @@ using namespace cv;
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
                      std::string label, Mat *image);
 
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, MPF::COMPONENT::MPFVideoCapture &src, Size &frameSize,
-    void(*handleMarkedFrame)(const Mat&))
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxVideoHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
     try {
@@ -101,6 +100,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, MPF::COMPONENT::MPF
         jclass clzInteger = jni.FindClass("java/lang/Integer");
         jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
 
+        Size frameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
 
         jint currentFrame = -1;
@@ -109,7 +109,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, MPF::COMPONENT::MPF
             jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrame);
 
             // Get the next frame.
-            src >> frame;
+            boundingBoxMediaHandle.Read(frame);
 
             // if that frame is empty, we've reached the end of the video.
             if(frame.empty()) { break; }
@@ -165,7 +165,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, MPF::COMPONENT::MPF
                 }
             }
 
-            handleMarkedFrame(frame);
+            boundingBoxMediaHandle.HandleMarkedFrame(frame);
         }
 
     }
@@ -186,24 +186,12 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 {
     JniHelper jni(env);
     try {
-        // Set up the videos...
         std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
-        MPF::COMPONENT::MPFVideoCapture src(sourceVideoPath);
-        if(!src.IsOpened()) {
-            throw std::runtime_error("Unable to open source video: " + sourceVideoPath);
-        }
-
-        Size frameSize = src.GetFrameSize();
-        double fps = src.GetFrameRate();
-
         std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
-        VideoWriter dest(destinationVideoPath, VideoWriter::fourcc('M','J','P','G'), fps, frameSize, true);
-        if (!dest.isOpened()) { // Cleanup...
-            throw std::runtime_error("Unable to open destination video: " + sourceVideoPath);
-        }
 
-        // markup(env, boundingBoxWriterInstance, src, frameSize, [&dest](const Mat& frame){ dest << frame; });
-        markup(env, boundingBoxWriterInstance, src, frameSize, [&dest](const Mat& frame){ int x = 1+1; });
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
+
+        markup(env, boundingBoxWriterInstance, boundingBoxVideoHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());

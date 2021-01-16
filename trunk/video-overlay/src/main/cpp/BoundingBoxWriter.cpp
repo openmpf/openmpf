@@ -54,12 +54,8 @@ using namespace cv;
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
                      std::string label, Mat *image);
 
-/*
- * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
- * Method:    markupVideoNative
- */
-JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jstring destinationVideoPathJString)
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, MPF::COMPONENT::MPFVideoCapture &src, Size &frameSize,
+    void(*handleMarkedFrame)(const Mat&))
 {
     JniHelper jni(env);
     try {
@@ -105,22 +101,6 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jclass clzInteger = jni.FindClass("java/lang/Integer");
         jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
 
-        // Set up the videos...
-        std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
-        MPF::COMPONENT::MPFVideoCapture src(sourceVideoPath);
-        if(!src.IsOpened()) {
-            throw std::runtime_error("Unable to open source video: " + sourceVideoPath);
-        }
-
-        Size cvSize = src.GetFrameSize();
-        double fps = src.GetFrameRate();
-
-        std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
-        VideoWriter dest(destinationVideoPath, VideoWriter::fourcc('M','J','P','G'), fps, cvSize, true);
-        if (!dest.isOpened()) { // Cleanup...
-            throw std::runtime_error("Unable to open destination video: " + sourceVideoPath);
-        }
-
         Mat frame;
 
         jint currentFrame = -1;
@@ -151,12 +131,12 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
                     jint height = jni.CallIntMethod(box, clzBoundingBox_fnGetHeight);
                     if (height == 0) {
-                        height = cvSize.height;
+                        height = frameSize.height;
                     }
 
                     jint width = jni.CallIntMethod(box, clzBoundingBox_fnGetWidth);
                     if (width == 0) {
-                        width = cvSize.width;
+                        width = frameSize.width;
                     }
 
                     jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
@@ -185,9 +165,45 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                 }
             }
 
-            dest << frame;
+            handleMarkedFrame(frame);
         }
 
+    }
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
+    }
+    catch (...) {
+        jni.ReportCppException();
+    }
+}
+
+/*
+ * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
+ * Method:    markupVideoNative
+ */
+JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
+  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jstring destinationVideoPathJString)
+{
+    JniHelper jni(env);
+    try {
+        // Set up the videos...
+        std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
+        MPF::COMPONENT::MPFVideoCapture src(sourceVideoPath);
+        if(!src.IsOpened()) {
+            throw std::runtime_error("Unable to open source video: " + sourceVideoPath);
+        }
+
+        Size frameSize = src.GetFrameSize();
+        double fps = src.GetFrameRate();
+
+        std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
+        VideoWriter dest(destinationVideoPath, VideoWriter::fourcc('M','J','P','G'), fps, frameSize, true);
+        if (!dest.isOpened()) { // Cleanup...
+            throw std::runtime_error("Unable to open destination video: " + sourceVideoPath);
+        }
+
+        // markup(env, boundingBoxWriterInstance, src, frameSize, [&dest](const Mat& frame){ dest << frame; });
+        markup(env, boundingBoxWriterInstance, src, frameSize, [&dest](const Mat& frame){ int x = 1+1; });
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());

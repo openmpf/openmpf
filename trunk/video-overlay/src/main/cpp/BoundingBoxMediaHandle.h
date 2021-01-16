@@ -31,7 +31,7 @@ class BoundingBoxMediaHandle {
 public:
     virtual cv::Size GetFrameSize() = 0;
 
-    virtual void Read(cv::Mat &frame) = 0;
+    virtual bool Read(cv::Mat &frame) = 0;
 
     virtual void HandleMarkedFrame(const cv::Mat& frame) = 0;
 };

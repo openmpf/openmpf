@@ -106,11 +106,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
             currentFrame++;
             jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrame);
 
-            // Get the next frame.
-            boundingBoxMediaHandle.Read(frame);
-
-            // if that frame is empty, we've reached the end of the video.
-            if (frame.empty()) { break; }
+            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
+                break;
+            }
 
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,

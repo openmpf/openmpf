@@ -37,7 +37,7 @@ public:
 
     cv::Size GetFrameSize();
 
-    void Read(cv::Mat &frame);
+    bool Read(cv::Mat &frame);
 
     void HandleMarkedFrame(const cv::Mat& frame);
 

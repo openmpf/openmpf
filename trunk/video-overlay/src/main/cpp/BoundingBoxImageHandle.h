@@ -37,7 +37,7 @@ public:
 
     cv::Size GetFrameSize();
 
-    void Read(cv::Mat &frame);
+    bool Read(cv::Mat &frame);
 
     void HandleMarkedFrame(const cv::Mat& frame);
 
@@ -48,7 +48,7 @@ private:
 
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 
-    bool frameRead_;
+    bool frameRead_ = false;
 };
 
 #endif //MPF_BOUNDINGBOXIMAGEHANDLE_H

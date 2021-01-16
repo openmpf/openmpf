@@ -42,8 +42,8 @@ cv::Size BoundingBoxVideoHandle::GetFrameSize() {
     return videoCapture_.GetFrameSize();
 }
 
-void BoundingBoxVideoHandle::Read(cv::Mat &frame) {
-    videoCapture_.Read(frame);
+bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
+    return videoCapture_.Read(frame);
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {

@@ -41,9 +41,13 @@ cv::Size BoundingBoxImageHandle::GetFrameSize() {
 }
 
 void BoundingBoxImageHandle::Read(cv::Mat &frame) {
+    if (frameRead_) {
+        return; // if the image has already been read once, there is nothing more to do
+    }
     if (!videoCapture_.Read(frame) || frame.empty()) {
         throw std::runtime_error("Unable to read source image: " + sourceImagePath_);
     }
+    frameRead_ = true;
 }
 
 void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {

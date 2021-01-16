@@ -47,6 +47,8 @@ private:
     std::string destinationImagePath_;
 
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
+
+    bool frameRead_;
 };
 
 #endif //MPF_BOUNDINGBOXIMAGEHANDLE_H

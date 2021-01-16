@@ -110,11 +110,12 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
             boundingBoxMediaHandle.Read(frame);
 
             // if that frame is empty, we've reached the end of the video.
-            if(frame.empty()) { break; }
+            if (frame.empty()) { break; }
 
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,
                                                                        currentFrameBoxed);
+
             if (foundEntryForCurrentFrame) {
                 jobject currentFrameElements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet,
                                                                  currentFrameBoxed);
@@ -208,100 +209,12 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 {
     JniHelper jni(env);
     try {
-        // Get the bounding box map.
-        jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
-        jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap
-                = jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap",
-                                  "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
-
-        jobject boundingBoxMap = jni.CallObjectMethod(boundingBoxWriterInstance,
-                                                      clzBoundingBoxWriter_fnGetBoundingBoxMap);
-
-        // Get BoundingBoxMap methods.
-        jclass clzBoundingBoxMap = jni.GetObjectClass(boundingBoxMap);
-        jmethodID clzBoundingBoxMap_fnGet = jni.GetMethodID(clzBoundingBoxMap, "get",
-                                                            "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
-
-        jmethodID clzBoundingBoxMap_fnContainsKey = jni.GetMethodID(clzBoundingBoxMap, "containsKey",
-                                                                    "(Ljava/lang/Object;)Z");
-
-        // Get List class and methods.
-        jclass clzList = jni.FindClass("java/util/List");
-        jmethodID clzList_fnGet = jni.GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
-        jmethodID clzList_fnSize = jni.GetMethodID(clzList, "size", "()I");
-
-        // Get BoundingBox class and methods.
-        jclass clzBoundingBox = jni.FindClass("org/mitre/mpf/videooverlay/BoundingBox");
-        jmethodID clzBoundingBox_fnGetX = jni.GetMethodID(clzBoundingBox, "getX", "()I");
-        jmethodID clzBoundingBox_fnGetY = jni.GetMethodID(clzBoundingBox, "getY", "()I");
-        jmethodID clzBoundingBox_fnGetHeight = jni.GetMethodID(clzBoundingBox, "getHeight", "()I");
-        jmethodID clzBoundingBox_fnGetWidth = jni.GetMethodID(clzBoundingBox, "getWidth", "()I");
-        jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
-        jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
-        jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
-        jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
-
-        jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
-        jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
-
-        jclass clzInteger = jni.FindClass("java/lang/Integer");
-        jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
-
-        // Read in the image...
         std::string sourceImagePath = jni.ToStdString(sourceImagePathJString);
-        MPF::COMPONENT::MPFVideoCapture src(sourceImagePath);
-        if (!src.IsOpened()) {
-            throw std::runtime_error("Unable to open source image: " + sourceImagePath);
-        }
-
-        Mat image;
-        if (!src.Read(image) || image.empty()) {
-            throw std::runtime_error("Unable to read source image: " + sourceImagePath);
-        }
-
-        // Get the size of the image.
-        Size cvSize = Size(image.cols, image.rows);
-
-        // Box 0 into an Integer.
-        jobject boxedZero = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, 0);
-
-        // Get the elements for Frame 0.
-        jboolean foundEntry = jni.CallBooleanMethod(boundingBoxMap, clzBoundingBoxMap_fnContainsKey, boxedZero);
-        if (foundEntry) {
-            jobject elements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, boxedZero);
-
-            // Iterate through this list, drawing each box on the frame.
-            jint size = jni.CallIntMethod(elements, clzList_fnSize);
-
-            for (jint i = 0; i < size; i++) {
-                jobject box = jni.CallObjectMethod(elements, clzList_fnGet, i);
-                jint x = jni.CallIntMethod(box, clzBoundingBox_fnGetX);
-                jint y = jni.CallIntMethod(box, clzBoundingBox_fnGetY);
-
-                jint height = jni.CallIntMethod(box, clzBoundingBox_fnGetHeight);
-                if (height == 0) {
-                    height = cvSize.height;
-                }
-                jint width = jni.CallIntMethod(box, clzBoundingBox_fnGetWidth);
-                if (width == 0) {
-                    width = cvSize.width;
-                }
-
-                jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
-                jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
-                jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
-                jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
-                jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
-                jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
-
-                drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, "", &image); // DEBUG
-            }
-        }
-
         std::string destinationImagePath = jni.ToStdString(destinationImagePathJString);
-        if (!imwrite(destinationImagePath, image, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
-            throw std::runtime_error("Failed to write image: " + destinationImagePath);
-        }
+
+        BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
+
+        markup(env, boundingBoxWriterInstance, boundingBoxImageHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -322,37 +235,37 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     // Specifically, no pixels will be drawn near the edge.
     // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
     // To address this, we use a minimum thickness of 2.
-    int thickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
+    int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
 
-    int circleRadius = thickness == 1 ? 3 : thickness + 5;
+    int circleRadius = lineThickness == 1 ? 3 : lineThickness + 5;
 
     int labelIndent = circleRadius + 2;
-    int labelPadding = 4;
-    double labelScale = 1.0;
-    int labelThickness = 1;
-    int labelFont = cv::FONT_HERSHEY_PLAIN;
+    int labelPadding = 8;
+    double labelScale = 0.8;
+    int labelThickness = 2;
+    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
 
     int baseline = 0;
     Size labelSize = getTextSize(label, labelFont, labelScale, labelScale, &baseline);
 
     int labelRectBottomLeftX = x;
-    int labelRectBottomLeftY = y - thickness;
+    int labelRectBottomLeftY = y - lineThickness;
     int labelRectTopRightX = x + labelIndent + labelSize.width + labelPadding;
-    int labelRectTopRightY = y - labelSize.height - (2 * labelPadding) - thickness;
+    int labelRectTopRightY = y - labelSize.height - (2 * labelPadding) - lineThickness;
 
     rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
         Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
     int labelBottomLeftX = x + labelIndent;
-    int labelBottomLeftY = y - labelPadding - (0.5 * thickness);
+    int labelBottomLeftY = y - labelPadding - (0.5 * lineThickness) - 2;
 
     cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, boxColor,
-        labelThickness, cv::LineTypes::LINE_AA);
+        labelThickness, cv::LineTypes::LINE_8);
 
-    line(*image, corners[0], corners[1], boxColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[1], corners[2], boxColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[2], corners[3], boxColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[3], corners[0], boxColor, thickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[0], corners[1], boxColor, lineThickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[1], corners[2], boxColor, lineThickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[2], corners[3], boxColor, lineThickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[3], corners[0], boxColor, lineThickness, cv::LineTypes::LINE_AA);
 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }

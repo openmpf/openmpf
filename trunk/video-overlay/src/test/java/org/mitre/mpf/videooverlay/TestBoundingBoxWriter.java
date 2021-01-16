@@ -43,8 +43,8 @@ public class TestBoundingBoxWriter {
     @Test
     public void testWriterOnVideo() {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
-        // writeBoxOnFrames("/media/SANDISK/SAMPLES/boston-marathon-2000w.jpg"); // DEBUG
-        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/motion/five-second-marathon-clip.mkv"); // DEBUG
+        writeBoxOnFrames("/media/SANDISK/SAMPLES/boston-marathon-2000w.jpg"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/motion/five-second-marathon-clip.mkv"); // DEBUG
     }
 
     @Test
@@ -61,13 +61,13 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".avi");
+            File destinationFile = File.createTempFile("markedup", ".jpg"); // ".jpg"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
 
             BoundingBox box = new BoundingBox(25, 35, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
-            map.putOnFrames(1, 20, box);
+            map.putOnFrames(0, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());

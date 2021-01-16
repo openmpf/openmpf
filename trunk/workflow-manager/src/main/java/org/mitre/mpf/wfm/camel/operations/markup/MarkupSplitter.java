@@ -185,9 +185,11 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
+            Optional trackClassification = track.getTrackProperties().containsKey("CLASSIFICATION") ?
+                    Optional.of(track.getTrackProperties().get("CLASSIFICATION")) : Optional.empty();
+            float trackConfidence = track.getConfidence();
+
             // Create a bounding box at the location.
-            Optional classification = detection.getDetectionProperties().containsKey("CLASSIFICATION") ?
-                    Optional.of(detection.getDetectionProperties().get("CLASSIFICATION")) : Optional.empty();
             BoundingBox boundingBox = new BoundingBox(
                     detection.getX(),
                     detection.getY(),
@@ -198,8 +200,8 @@ public class MarkupSplitter {
                     trackColor.getRed(),
                     trackColor.getGreen(),
                     trackColor.getBlue(),
-                    detection.getConfidence(),
-                    classification);
+                    trackConfidence,
+                    trackClassification);
 
             String objectType = track.getType();
             if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -232,8 +234,6 @@ public class MarkupSplitter {
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
-                Optional nextClassification = nextDetection.getDetectionProperties().containsKey("CLASSIFICATION") ?
-                        Optional.of(nextDetection.getDetectionProperties().get("CLASSIFICATION")) : Optional.empty();
                 BoundingBox nextBoundingBox = new BoundingBox(
                         nextDetection.getX(),
                         nextDetection.getY(),
@@ -244,8 +244,8 @@ public class MarkupSplitter {
                         boundingBox.getRed(),
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
-                        nextDetection.getConfidence(),
-                        nextClassification);
+                        trackConfidence,
+                        trackClassification);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
         }

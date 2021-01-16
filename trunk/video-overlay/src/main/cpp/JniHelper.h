@@ -79,6 +79,11 @@ public:
     }
 
     template <typename ...Args>
+    jdouble CallFloatMethod(jobject obj, jmethodID method, Args... args) {
+        return callJni(&JNIEnv::CallFloatMethod, obj, method, args...);
+    }
+
+    template <typename ...Args>
     jobject CallConstructorMethod(jclass clz, jmethodID method, Args... args) {
         return callJni(&JNIEnv::NewObject, clz, method, args...);
     }

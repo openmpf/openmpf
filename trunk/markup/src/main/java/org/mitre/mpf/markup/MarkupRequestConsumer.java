@@ -88,8 +88,9 @@ public class MarkupRequestConsumer implements MessageListener {
         markupResponseBuilder.setErrorStackTrace(writer.toString());
     }
 
-    private boolean markupVideo(Markup.MarkupRequest markupRequest) throws Exception {
-	    log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.", markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
+    private boolean markup(Markup.MarkupRequest markupRequest) throws Exception {
+        log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.",
+                markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
         BoundingBoxWriter writer = new BoundingBoxWriter();
         writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
         writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
@@ -97,6 +98,8 @@ public class MarkupRequestConsumer implements MessageListener {
         BoundingBoxMap map = new BoundingBoxMap();
         int boxesAdded = 0;
         for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
+            Optional<String> classification = boundingBoxMapEntry.getBoundingBox().hasClassification() ?
+                    Optional.of(boundingBoxMapEntry.getBoundingBox().getClassification()) : Optional.empty();
             BoundingBox boundingBox = new BoundingBox(
                     boundingBoxMapEntry.getBoundingBox().getX(),
                     boundingBoxMapEntry.getBoundingBox().getY(),
@@ -106,51 +109,26 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getFlip(),
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
-                    boundingBoxMapEntry.getBoundingBox().getBlue());
-
+                    boundingBoxMapEntry.getBoundingBox().getBlue(),
+                    boundingBoxMapEntry.getBoundingBox().getConfidence(),
+                    classification);
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
             boxesAdded++;
         }
 
-	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
-	    if(boxesAdded > 0) {
-		    writer.setBoundingBoxMap(map);
-		    writer.markupVideo();
-	    }
+        log.info("[Markup Request #{}] Marking up {} detections on '{}'.",
+                markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
 
-	    return boxesAdded > 0;
-    }
+        if(boxesAdded > 0) {
+            writer.setBoundingBoxMap(map);
+            if (markupRequest.getMediaType() == Markup.MediaType.IMAGE) {
+                writer.markupImage();
+            } else {
+                writer.markupVideo();
+            }
+        }
 
-    private boolean markupImage(Markup.MarkupRequest markupRequest) throws Exception {
-	    log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.", markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
-	    BoundingBoxWriter writer = new BoundingBoxWriter();
-	    writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
-	    writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
-
-	    BoundingBoxMap map = new BoundingBoxMap();
-	    int boxesAdded = 0;
-	    for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
-            BoundingBox boundingBox = new BoundingBox(
-                    boundingBoxMapEntry.getBoundingBox().getX(),
-                    boundingBoxMapEntry.getBoundingBox().getY(),
-                    boundingBoxMapEntry.getBoundingBox().getWidth(),
-                    boundingBoxMapEntry.getBoundingBox().getHeight(),
-                    boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
-                    boundingBoxMapEntry.getBoundingBox().getFlip(),
-                    boundingBoxMapEntry.getBoundingBox().getRed(),
-                    boundingBoxMapEntry.getBoundingBox().getGreen(),
-                    boundingBoxMapEntry.getBoundingBox().getBlue());
-		    map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
-		    boxesAdded++;
-	    }
-
-	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
-	    if(boxesAdded > 0) {
-		    writer.setBoundingBoxMap(map);
-		    writer.markupImage();
-	    }
-
-	    return boxesAdded > 0;
+        return boxesAdded > 0;
     }
 
     public void onMessage(Message message) {
@@ -167,7 +145,8 @@ public class MarkupRequestConsumer implements MessageListener {
         }
 
         try {
-            log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.", message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
+            log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.",
+                    message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
 
             final Map<String, Object> requestHeaders = new HashMap<String, Object>();
             Enumeration<String> properties = message.getPropertyNames();
@@ -185,7 +164,8 @@ public class MarkupRequestConsumer implements MessageListener {
             markupResponseBuilder.setRequestTimestamp(message.getJMSTimestamp());
 
             log.debug("Processing markup request. Media Index = {}. Media ID = {} (type = {}). Request ID = {}.",
-                    markupRequest.getMediaIndex(), markupRequest.getMediaId(), markupRequest.getMediaType(), markupRequest.getRequestId());
+                    markupRequest.getMediaIndex(), markupRequest.getMediaId(), markupRequest.getMediaType(),
+                    markupRequest.getRequestId());
 
 	        try {
 		        if (!new File(URI.create(markupRequest.getDestinationUri())).canWrite()) {
@@ -193,7 +173,8 @@ public class MarkupRequestConsumer implements MessageListener {
 		        }
 	        } catch (Exception exception) {
 		        markupResponseBuilder.setHasError(true);
-		        markupResponseBuilder.setErrorMessage(String.format("The target URI '%s' is not writable.", markupRequest.getDestinationUri()));
+		        markupResponseBuilder.setErrorMessage(String.format("The target URI '%s' is not writable.",
+                        markupRequest.getDestinationUri()));
 	        }
 
 	        try {
@@ -202,7 +183,8 @@ public class MarkupRequestConsumer implements MessageListener {
 		        }
 	        } catch (Exception exception) {
 		        markupResponseBuilder.setHasError(true);
-		        markupResponseBuilder.setErrorMessage(String.format("The source URI '%s' is not readable.", markupRequest.getSourceUri()));
+		        markupResponseBuilder.setErrorMessage(String.format("The source URI '%s' is not readable.",
+                        markupRequest.getSourceUri()));
 	        }
 
 	        if(!markupResponseBuilder.getHasError()) {
@@ -218,29 +200,32 @@ public class MarkupRequestConsumer implements MessageListener {
 				        FileUtils.copyFile(new File(URI.create(sourceUri)), new File(URI.create(destinationUri)));
 				        markupResponseBuilder.setOutputFileUri(destinationUri);
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the file '{}' because of an exception.", markupRequest.getSourceUri(), exception);
+				        log.error("Failed to mark up the file '{}' because of an exception.",
+                                                markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
 		        } else if (markupRequest.getMediaType() == Markup.MediaType.IMAGE) {
 			        try {
-				        if (markupImage(markupRequest)) {
+				        if (markup(markupRequest)) {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
 				        } else {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
 				        }
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the image '{}' because of an exception.", markupRequest.getSourceUri(), exception);
+				        log.error("Failed to mark up the image '{}' because of an exception.",
+                                                markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
 		        } else {
 			        try {
-				        if (markupVideo(markupRequest)) {
+				        if (markup(markupRequest)) {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
 				        } else {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
 				        }
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the video '{}' because of an exception.", markupRequest.getSourceUri(), exception);
+				        log.error("Failed to mark up the video '{}' because of an exception.",
+                                                markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
 		        }
@@ -250,7 +235,8 @@ public class MarkupRequestConsumer implements MessageListener {
             markupResponseBuilder.setTimeProcessing(stopwatch.elapsed(TimeUnit.MILLISECONDS));
             final Markup.MarkupResponse markupResponse = markupResponseBuilder.build();
 
-	        log.info("Returning response for Media {}. Error: {}.", markupResponse.getMediaId(), markupResponse.getHasError());
+	    log.info("Returning response for Media {}. Error: {}.",
+                    markupResponse.getMediaId(), markupResponse.getHasError());
             markupResponseTemplate.setSessionTransacted(true);
             markupResponseTemplate.setDefaultDestination(message.getJMSReplyTo());
             markupResponseTemplate.send(new MessageCreator() {

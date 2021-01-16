@@ -29,6 +29,7 @@ package org.mitre.mpf.videooverlay;
 import org.mitre.mpf.wfm.buffers.Markup;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A bounding box is rectangle with an RGB color associated with it. Coordinates are
@@ -98,10 +99,18 @@ public class BoundingBox {
         return blue;
     }
 
+    private final float confidence;
+    public float getConfidence() {
+        return confidence;
+    }
 
+    private final Optional<String> classification;
+    public Optional<String> getClassification() {
+        return classification;
+    }
 
-    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip, int red, int green,
-                       int blue) {
+    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
+                       int red, int green, int blue, float confidence, Optional<String> classification) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -121,12 +130,19 @@ public class BoundingBox {
         this.red = red;
         this.green = green;
         this.blue = blue;
+        this.confidence = confidence;
+        this.classification = classification;
     }
 
     @Override
     public String toString() {
-        return String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d)>",
-                this.getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue);
+        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), confidence=%f",
+                this.getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, confidence);
+        if (classification.isPresent()) {
+            str += ", classification=" + classification.get();
+        }
+        str += ">";
+        return str;
     }
 
     @Override
@@ -146,7 +162,9 @@ public class BoundingBox {
                 && flip == casted.flip
                 && red == casted.red
                 && green == casted.green
-                && blue == casted.blue;
+                && blue == casted.blue
+                && confidence == casted.confidence
+                && classification == casted.classification;
     }
 
     /**
@@ -154,11 +172,11 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue);
+        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, confidence, classification);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
-        return Markup.BoundingBox.newBuilder()
+        Markup.BoundingBox.Builder builder = Markup.BoundingBox.newBuilder()
                 .setX(x)
                 .setY(y)
                 .setWidth(width)
@@ -168,6 +186,10 @@ public class BoundingBox {
                 .setRed(red)
                 .setBlue(blue)
                 .setGreen(green)
-                .build();
+                .setConfidence(confidence);
+        if (classification.isPresent()) {
+            builder.setClassification(classification.get());
+        }
+        return builder.build();
     }
 }

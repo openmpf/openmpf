@@ -52,7 +52,7 @@ using namespace cv;
 #endif
 
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     Mat *image);
+                     std::string label, Mat *image);
 
 /*
  * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
@@ -87,6 +87,11 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jmethodID clzList_fnGet = jni.GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
         jmethodID clzList_fnSize = jni.GetMethodID(clzList, "size", "()I");
 
+        // Get Optional class and methods.
+        jclass clzOptional = jni.FindClass("java/util/Optional");
+        jmethodID clzOptional_fnIsPresent = jni.GetMethodID(clzOptional, "isPresent", "()Z");
+        jmethodID clzOptional_fnGet = jni.GetMethodID(clzOptional, "get", "()Ljava/lang/Object;");
+
         // Get BoundingBox class and methods.
         jclass clzBoundingBox = jni.FindClass("org/mitre/mpf/videooverlay/BoundingBox");
         jmethodID clzBoundingBox_fnGetX = jni.GetMethodID(clzBoundingBox, "getX", "()I");
@@ -96,6 +101,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
         jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
+        jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
+        jmethodID clzBoundingBox_fnGetClassification = jni.GetMethodID(clzBoundingBox, "getClassification", "()Ljava/util/Optional;");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
@@ -165,8 +172,24 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                     jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
+                    jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
-                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &frame);
+                    std::stringstream ss;
+
+                    jobject classificationObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetClassification);
+                    if (jni.CallBooleanMethod(classificationObj, clzOptional_fnIsPresent)) {
+                        std::string classification =
+                            jni.ToStdString((jstring)jni.CallObjectMethod(classificationObj, clzOptional_fnGet));
+                        ss << classification.substr(0, 10); // truncate long strings
+                        if (classification.length() > 10) {
+                            ss << "...";
+                        }
+                        ss << ' ';
+                    }
+
+                    ss << std::fixed << std::setprecision(3) << confidence;
+
+                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, ss.str(), &frame);
                 }
             }
 
@@ -201,8 +224,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                     jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
+                    jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
-                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &frame);
+                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, "", &frame); // DEBUG
                 }
             }
 
@@ -259,6 +283,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
         jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
         jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
+        jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
@@ -312,8 +337,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
                 jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                 jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
+                jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
-                drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, &image);
+                drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, "", &image); // DEBUG
             }
         }
 
@@ -330,12 +356,11 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
     }
 }
 
-
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     Mat *image) {
+                     std::string label, Mat *image) {
     std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
-    Scalar lineColor(blue, green, red);
+    Scalar boxColor(blue, green, red);
 
     // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
     // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
@@ -344,14 +369,36 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     // To address this, we use a minimum thickness of 2.
     int thickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
 
-    line(*image, corners[0], corners[1], lineColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[1], corners[2], lineColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[2], corners[3], lineColor, thickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[3], corners[0], lineColor, thickness, cv::LineTypes::LINE_AA);
+    int circleRadius = thickness == 1 ? 3 : thickness + 5;
 
-    int radius = thickness == 1 ? 3 : thickness + 5;
-    int filledInCircleCode = -1;
-    circle(*image, Point(x, y), radius, lineColor, filledInCircleCode, cv::LineTypes::LINE_AA);
+    int labelIndent = circleRadius + 2;
+    int labelPadding = 2;
+    double labelScale = 1.0;
+    int labelThickness = 1;
+
+    int baseline = 0;
+    Size labelSize = getTextSize(label, cv::FONT_HERSHEY_PLAIN, labelScale, 1, &baseline);
+
+    int labelRectBottomLeftX = x;
+    int labelRectBottomLeftY = y - thickness;
+    int labelRectTopRightX = x + labelIndent + labelSize.width + labelPadding;
+    int labelRectTopRightY = y - labelSize.height - (2 * labelPadding) - thickness;
+
+    rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
+        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+
+    int labelBottomLeftX = x + labelIndent;
+    int labelBottomLeftY = y - labelPadding - (0.5 * thickness);
+
+    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), cv::FONT_HERSHEY_PLAIN, labelScale, boxColor,
+        labelThickness, cv::LineTypes::LINE_AA);
+
+    line(*image, corners[0], corners[1], boxColor, thickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[1], corners[2], boxColor, thickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[2], corners[3], boxColor, thickness, cv::LineTypes::LINE_AA);
+    line(*image, corners[3], corners[0], boxColor, thickness, cv::LineTypes::LINE_AA);
+
+    circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
 #ifdef __cplusplus

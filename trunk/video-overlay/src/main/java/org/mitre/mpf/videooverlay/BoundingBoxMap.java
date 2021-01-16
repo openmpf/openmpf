@@ -168,7 +168,9 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     origin.getFlip(),
                     origin.getRed(),
                     origin.getGreen(),
-                    origin.getBlue());
+                    origin.getBlue(),
+                    origin.getConfidence(),
+                    origin.getClassification());
             putOnFrame(firstFrame + frameOffset, translatedBox);
         }
     }

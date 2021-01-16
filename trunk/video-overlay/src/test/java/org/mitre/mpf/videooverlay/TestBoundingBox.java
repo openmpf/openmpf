@@ -29,15 +29,17 @@ package org.mitre.mpf.videooverlay;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Optional;
+
 
 public class TestBoundingBox {
 
     @Test
     public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0);
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0);
+        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, 0, Optional.empty());
+        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, 0, Optional.empty());
         // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF);
+        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, 0, Optional.empty());
 
         // Test that objects equal themselves...
         Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));

@@ -32,6 +32,7 @@ import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class TestBoundingBoxWriter {
 
@@ -41,7 +42,9 @@ public class TestBoundingBoxWriter {
 
     @Test
     public void testWriterOnVideo() {
-        writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
+        // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
+        // writeBoxOnFrames("/media/SANDISK/SAMPLES/boston-marathon-2000w.jpg"); // DEBUG
+        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/motion/five-second-marathon-clip.mkv"); // DEBUG
     }
 
     @Test
@@ -52,7 +55,7 @@ public class TestBoundingBoxWriter {
 
     private static void writeBoxOnFrames(String filePath) {
         try {
-            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
+            File sourceFile = new File(filePath); // new File(JniTestUtils.getFileResource(filePath)); // DEBUG
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -63,7 +66,7 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox(5, 5, 15, 15, 0, false, 255, 0, 0);
+            BoundingBox box = new BoundingBox(25, 35, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.empty()); // Optional.of("truck"));
             map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();

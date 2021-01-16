@@ -186,6 +186,8 @@ public class MarkupSplitter {
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
             // Create a bounding box at the location.
+            Optional classification = detection.getDetectionProperties().containsKey("CLASSIFICATION") ?
+                    Optional.of(detection.getDetectionProperties().get("CLASSIFICATION")) : Optional.empty();
             BoundingBox boundingBox = new BoundingBox(
                     detection.getX(),
                     detection.getY(),
@@ -195,7 +197,9 @@ public class MarkupSplitter {
                     detectionFlip.orElse(trackFlip.orElse(false)),
                     trackColor.getRed(),
                     trackColor.getGreen(),
-                    trackColor.getBlue());
+                    trackColor.getBlue(),
+                    detection.getConfidence(),
+                    classification);
 
             String objectType = track.getType();
             if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -228,6 +232,8 @@ public class MarkupSplitter {
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
+                Optional nextClassification = nextDetection.getDetectionProperties().containsKey("CLASSIFICATION") ?
+                        Optional.of(nextDetection.getDetectionProperties().get("CLASSIFICATION")) : Optional.empty();
                 BoundingBox nextBoundingBox = new BoundingBox(
                         nextDetection.getX(),
                         nextDetection.getY(),
@@ -237,7 +243,9 @@ public class MarkupSplitter {
                         nextDetectionFlip.orElse(trackFlip.orElse(false)),
                         boundingBox.getRed(),
                         boundingBox.getBlue(),
-                        boundingBox.getGreen());
+                        boundingBox.getGreen(),
+                        nextDetection.getConfidence(),
+                        nextClassification);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
         }

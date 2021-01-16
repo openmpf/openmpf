@@ -24,6 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# This project is not intended to be built on its own. Instead, build the parent project using
+# openmpf-projects/openmpf/trunk/CMakeLists.txt.
+
 project(VideoOverlay)
 aux_source_directory(./src/main/cpp SRC)
 

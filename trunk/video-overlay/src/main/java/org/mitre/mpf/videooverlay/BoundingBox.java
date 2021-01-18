@@ -53,7 +53,6 @@ public class BoundingBox {
         return y;
     }
 
-
     /**
      * The width of the bounding box.
      */
@@ -61,7 +60,6 @@ public class BoundingBox {
     public int getWidth() {
         return width;
     }
-
 
     /**
      * The height of the bounding box.
@@ -71,18 +69,15 @@ public class BoundingBox {
         return height;
     }
 
-
     private final double rotationDegrees;
     public double getRotationDegrees() {
         return rotationDegrees;
     }
 
-
     private final boolean flip;
     public boolean getFlip() {
         return flip;
     }
-
 
     private final int red;
     public int getRed() {
@@ -99,6 +94,11 @@ public class BoundingBox {
         return blue;
     }
 
+    private final boolean animated;
+    public boolean isAnimated() {
+        return animated;
+    }
+
     private final float confidence;
     public float getConfidence() {
         return confidence;
@@ -109,8 +109,10 @@ public class BoundingBox {
         return classification;
     }
 
+
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
-                       int red, int green, int blue, float confidence, Optional<String> classification) {
+                       int red, int green, int blue, boolean animated, float confidence,
+                       Optional<String> classification) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -130,14 +132,17 @@ public class BoundingBox {
         this.red = red;
         this.green = green;
         this.blue = blue;
+        this.animated = animated;
         this.confidence = confidence;
         this.classification = classification;
     }
 
     @Override
     public String toString() {
-        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), confidence=%f",
-                this.getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, confidence);
+        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), animated=," +
+                        " confidence=%f",
+                getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, animated,
+                confidence);
         if (classification.isPresent()) {
             str += ", classification=" + classification.get();
         }
@@ -163,6 +168,7 @@ public class BoundingBox {
                 && red == casted.red
                 && green == casted.green
                 && blue == casted.blue
+                && animated == casted.animated
                 && confidence == casted.confidence
                 && classification == casted.classification;
     }
@@ -172,7 +178,8 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, confidence, classification);
+        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, animated, confidence,
+                classification);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -186,6 +193,7 @@ public class BoundingBox {
                 .setRed(red)
                 .setBlue(blue)
                 .setGreen(green)
+                .setAnimated(animated)
                 .setConfidence(confidence);
         if (classification.isPresent()) {
             builder.setClassification(classification.get());

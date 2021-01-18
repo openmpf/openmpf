@@ -43,8 +43,8 @@ public class TestBoundingBoxWriter {
     @Test
     public void testWriterOnVideo() {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
-        writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
-        // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/motion/five-second-marathon-clip.mkv"); // DEBUG
+        // writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
+        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/motion/five-second-marathon-clip.mkv"); // DEBUG
     }
 
     @Test
@@ -66,11 +66,13 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box1 = new BoundingBox(25, 35, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
-            BoundingBox box2 = new BoundingBox(80, 90, 30, 15, 0, false, 255, 0, 0, 8.0009f, Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
+            BoundingBox box1 = new BoundingBox(25, 35, 80, 15, 0, false, 255, 0, 0, true, 8.0009f,
+                    Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
+            // BoundingBox box2 = new BoundingBox(80, 90, 30, 15, 0, false, 255, 0, 0, true, 8.0009f,
+            //        Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
 
             map.putOnFrames(0, 20, box1);
-            map.putOnFrames(0, 20, box2);
+            // map.putOnFrames(0, 20, box2);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());

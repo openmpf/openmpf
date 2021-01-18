@@ -49,8 +49,12 @@ using namespace cv;
 
 #endif
 
+
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     std::string label, Mat *image);
+                     bool animated, std::string label, Mat *image);
+
+void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image);
+
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
 {
@@ -58,17 +62,18 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
     try {
         // Get the bounding box map.
         jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
-        jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap
-                = jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap",
-                                  "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
-        jobject boundingBoxMap = jni.CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
+        jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap =
+            jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap",
+            "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
+        jobject boundingBoxMap =
+            jni.CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
 
         // Get BoundingBoxMap methods.
         jclass clzBoundingBoxMap = jni.GetObjectClass(boundingBoxMap);
-        jmethodID clzBoundingBoxMap_fnGet
-                = jni.GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
-        jmethodID clzBoundingBoxMap_fnContainsKey = jni.GetMethodID(clzBoundingBoxMap, "containsKey",
-                                                                    "(Ljava/lang/Object;)Z");
+        jmethodID clzBoundingBoxMap_fnGet =
+            jni.GetMethodID(clzBoundingBoxMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;"); // May be a list.
+        jmethodID clzBoundingBoxMap_fnContainsKey =
+            jni.GetMethodID(clzBoundingBoxMap, "containsKey", "(Ljava/lang/Object;)Z");
 
         // Get List class and methods.
         jclass clzList = jni.FindClass("java/util/List");
@@ -89,8 +94,10 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
         jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
         jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
+        jmethodID clzBoundingBox_fnIsAnimated = jni.GetMethodID(clzBoundingBox, "isAnimated", "()Z");
         jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
-        jmethodID clzBoundingBox_fnGetClassification = jni.GetMethodID(clzBoundingBox, "getClassification", "()Ljava/util/Optional;");
+        jmethodID clzBoundingBox_fnGetClassification =
+            jni.GetMethodID(clzBoundingBox, "getClassification", "()Ljava/util/Optional;");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
@@ -115,8 +122,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
                                                                        currentFrameBoxed);
 
             if (foundEntryForCurrentFrame) {
-                jobject currentFrameElements = jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet,
-                                                                 currentFrameBoxed);
+                jobject currentFrameElements =
+                    jni.CallObjectMethod(boundingBoxMap, clzBoundingBoxMap_fnGet, currentFrameBoxed);
 
                 // Iterate through this list, drawing each box on the frame.
                 jint numBoxesCurrentFrame = jni.CallIntMethod(currentFrameElements, clzList_fnSize);
@@ -139,6 +146,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
                     jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
                     jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
+                    jboolean animated = jni.CallBooleanMethod(box, clzBoundingBox_fnIsAnimated);
                     jdouble rotation = jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     jboolean flip = jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
                     jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
@@ -158,7 +166,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
 
                     ss << std::fixed << std::setprecision(3) << confidence;
 
-                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, ss.str(), &frame);
+                    drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, animated, ss.str(), &frame);
                 }
             }
 
@@ -223,7 +231,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 }
 
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     std::string label, Mat *image) {
+                     bool animated, std::string label, Mat *image) {
     std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
     Scalar boxColor(blue, green, red);
@@ -260,12 +268,54 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, boxColor,
         labelThickness, cv::LineTypes::LINE_8);
 
-    line(*image, corners[0], corners[1], boxColor, lineThickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[1], corners[2], boxColor, lineThickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[2], corners[3], boxColor, lineThickness, cv::LineTypes::LINE_AA);
-    line(*image, corners[3], corners[0], boxColor, lineThickness, cv::LineTypes::LINE_AA);
+    drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
+    drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
+    drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
+    drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+}
+
+void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image) {
+    if (!animated) {
+        line(*image, start, end, color, thickness, cv::LineTypes::LINE_AA);
+        return;
+    }
+    // Create dotted line.
+    /*
+    LineIterator it(*image, start, end);
+    for (int i = 0; i < it.count; i++,it++) {
+        if ( i % 5 != 0 ) { // every 5th pixel gets dropped
+            (*it)[0] = color[0];
+            (*it)[1] = color[1];
+            (*it)[2] = color[2];
+        }
+    }
+    */
+
+    std::cout << "drawLine from " << start << " to " << end << std::endl; // DEBUG
+
+    // Based on: https://stackoverflow.com/a/26711359
+    int gap = 5; // TODO
+    double dist = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
+    std::cout << "dist: " << dist << std::endl; // DEBUG
+    Point prev;
+    bool draw = false; // the first iteration just sets prev
+
+    for (int i = 0; i < dist; i += gap) {
+        double r = i/dist;
+        std::cout << "i: " << i << ", r: " << r << std::endl; // DEBUG
+        int x = (start.x * (1 - r) + end.x * r) + .5;
+        int y = (start.y * (1 - r) + end.y * r) + .5;
+        std::cout << "x: " << x << ", y: " << y << std::endl; // DEBUG
+        Point curr(x, y);
+        if (draw) {
+            std::cout << "line from " << prev << " to " << curr << std::endl; // DEBUG
+            line(*image, prev, curr, color, thickness);
+        }
+        prev = curr;
+        draw = !draw;
+    }
 }
 
 #ifdef __cplusplus

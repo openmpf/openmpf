@@ -66,8 +66,9 @@ message BoundingBox {
     required uint32 red             = 7; // Red channel of bounding box color.
     required uint32 green           = 8; // Green channel of bounding box color.
     required uint32 blue            = 9; // Blue channel of bounding box color.
-    required float confidence       = 10; // The detection confidence.
-    optional string classification  = 11; // The detection classification.
+    required bool animated          = 10; // Whether or not the bounding box is the result of animation or an actual detection.
+    required float confidence       = 11; // The detection confidence.
+    optional string classification  = 12; // The detection classification.
 }
 
 message MarkupResponse {

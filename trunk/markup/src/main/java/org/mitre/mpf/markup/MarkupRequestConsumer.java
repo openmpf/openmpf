@@ -110,6 +110,7 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
                     boundingBoxMapEntry.getBoundingBox().getBlue(),
+                    boundingBoxMapEntry.getBoundingBox().getAnimated(),
                     boundingBoxMapEntry.getBoundingBox().getConfidence(),
                     classification);
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);

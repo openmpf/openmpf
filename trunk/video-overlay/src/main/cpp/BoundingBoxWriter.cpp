@@ -248,7 +248,15 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int circleRadius = lineThickness == 1 ? 3 : lineThickness + 5;
     int labelIndent = circleRadius + 2;
 
-    drawLabel(Point(x, y), boxColor, labelIndent, lineThickness, label, image);
+    // Get top-left point.
+    auto top = std::max_element(corners.begin(), corners.end(), [](Point const& a, Point const& b) {
+        if (a.y == b.y) {
+            return a.x > b.x; // leftmost
+        }
+        return a.y > b.y; // topmost
+    });
+
+    drawLabel(Point(top->x, top->y), boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);

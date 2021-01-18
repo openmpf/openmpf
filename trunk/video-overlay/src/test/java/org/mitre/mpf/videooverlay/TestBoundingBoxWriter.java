@@ -66,13 +66,11 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box1 = new BoundingBox(150, 125, 101, 57, 0, false, 255, 0, 0, true, 8.0009f,
-                    Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
-            // BoundingBox box2 = new BoundingBox(80, 90, 30, 15, 0, false, 255, 0, 0, true, 8.0009f,
-            //        Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
-
-            map.putOnFrames(0, 20, box1);
-            // map.putOnFrames(0, 20, box2);
+            for (int i = 0; i < 360; i++) {
+                BoundingBox box1 = new BoundingBox(150+i, 125+i, 101+i, 57+i, i, false, 255, 0, 0, true, 8.0009f,
+                        Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
+                map.putOnFrames(i, i, box1);
+            }
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());

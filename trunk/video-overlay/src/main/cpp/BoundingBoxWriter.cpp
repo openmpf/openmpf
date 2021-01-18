@@ -55,6 +55,8 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
 
 void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image);
 
+void drawLabel(Point pt, Scalar color, int labelIndent, int lineThickness, std::string label, Mat *image);
+
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
 {
@@ -244,29 +246,9 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
 
     int circleRadius = lineThickness == 1 ? 3 : lineThickness + 5;
-
     int labelIndent = circleRadius + 2;
-    int labelPadding = 8;
-    double labelScale = 0.8;
-    int labelThickness = 2;
-    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
 
-    int baseline = 0;
-    Size labelSize = getTextSize(label, labelFont, labelScale, labelScale, &baseline);
-
-    int labelRectBottomLeftX = x;
-    int labelRectBottomLeftY = y - lineThickness;
-    int labelRectTopRightX = x + labelIndent + labelSize.width + labelPadding;
-    int labelRectTopRightY = y - labelSize.height - (2 * labelPadding) - lineThickness;
-
-    rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
-        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
-
-    int labelBottomLeftX = x + labelIndent;
-    int labelBottomLeftY = y - labelPadding - (0.5 * lineThickness) - 2;
-
-    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, boxColor,
-        labelThickness, cv::LineTypes::LINE_8);
+    drawLabel(Point(x, y), boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -301,6 +283,30 @@ void drawLine(Point start, Point end, Scalar color, int thickness, bool animated
         prev = curr;
         draw = !draw;
     } while (percent < 1.0);
+}
+
+void drawLabel(Point pt, Scalar color, int labelIndent, int lineThickness, std::string label, Mat *image) {
+    int labelPadding = 8;
+    double labelScale = 0.8;
+    int labelThickness = 2;
+    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
+
+    int baseline = 0;
+    Size labelSize = getTextSize(label, labelFont, labelScale, labelScale, &baseline);
+
+    int labelRectBottomLeftX = pt.x;
+    int labelRectBottomLeftY = pt.y - lineThickness;
+    int labelRectTopRightX = pt.x + labelIndent + labelSize.width + labelPadding;
+    int labelRectTopRightY = pt.y - labelSize.height - (2 * labelPadding) - lineThickness;
+
+    rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
+        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+
+    int labelBottomLeftX = pt.x + labelIndent;
+    int labelBottomLeftY = pt.y - labelPadding - (0.5 * lineThickness) - 2;
+
+    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
+        labelThickness, cv::LineTypes::LINE_8);
 }
 
 #ifdef __cplusplus

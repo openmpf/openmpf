@@ -66,7 +66,7 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box1 = new BoundingBox(50, 25, 101, 57, 0, false, 255, 0, 0, true, 8.0009f,
+            BoundingBox box1 = new BoundingBox(150, 125, 101, 57, 0, false, 255, 0, 0, true, 8.0009f,
                     Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
             // BoundingBox box2 = new BoundingBox(80, 90, 30, 15, 0, false, 255, 0, 0, true, 8.0009f,
             //        Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());

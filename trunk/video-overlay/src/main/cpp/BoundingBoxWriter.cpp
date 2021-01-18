@@ -51,11 +51,12 @@ using namespace cv;
 
 
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     bool animated, std::string label, Mat *image);
+                     bool animated, const std::string &label, Mat *image);
 
 void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image);
 
-void drawLabel(Point pt, Scalar color, int labelIndent, int lineThickness, std::string label, Mat *image);
+void drawLabel(std::array<Point2d, 4> corners, Scalar color, int labelIndent, int lineThickness,
+               const std::string &label, Mat *image);
 
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
@@ -97,6 +98,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
         jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
         jmethodID clzBoundingBox_fnIsAnimated = jni.GetMethodID(clzBoundingBox, "isAnimated", "()Z");
+        jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
         jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
         jmethodID clzBoundingBox_fnGetClassification =
             jni.GetMethodID(clzBoundingBox, "getClassification", "()Ljava/util/Optional;");
@@ -168,6 +170,10 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
 
                     ss << std::fixed << std::setprecision(3) << confidence;
 
+                    if (jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
+                        ss << '!';
+                    }
+
                     drawBoundingBox(x, y, width, height, rotation, flip, red, green, blue, animated, ss.str(), &frame);
                 }
             }
@@ -233,7 +239,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 }
 
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     bool animated, std::string label, Mat *image) {
+                     bool animated, const std::string &label, Mat *image) {
     std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
     Scalar boxColor(blue, green, red);
@@ -248,15 +254,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int circleRadius = lineThickness == 1 ? 3 : lineThickness + 5;
     int labelIndent = circleRadius + 2;
 
-    // Get top-left point.
-    auto top = std::max_element(corners.begin(), corners.end(), [](Point const& a, Point const& b) {
-        if (a.y == b.y) {
-            return a.x > b.x; // leftmost
-        }
-        return a.y > b.y; // topmost
-    });
-
-    drawLabel(Point(top->x, top->y), boxColor, labelIndent, lineThickness, label, image);
+    drawLabel(corners, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -293,25 +291,35 @@ void drawLine(Point start, Point end, Scalar color, int thickness, bool animated
     } while (percent < 1.0);
 }
 
-void drawLabel(Point pt, Scalar color, int labelIndent, int lineThickness, std::string label, Mat *image) {
+void drawLabel(std::array<Point2d, 4> corners, Scalar color, int labelIndent, int lineThickness,
+               const std::string &label, Mat *image) {
+
+    // Get top-left point.
+    auto top = std::max_element(corners.begin(), corners.end(), [](Point const& a, Point const& b) {
+        if (a.y == b.y) {
+            return a.x > b.x; // leftmost
+        }
+        return a.y > b.y; // topmost
+    });
+
     int labelPadding = 8;
     double labelScale = 0.8;
     int labelThickness = 2;
     int labelFont = cv::FONT_HERSHEY_SIMPLEX;
 
     int baseline = 0;
-    Size labelSize = getTextSize(label, labelFont, labelScale, labelScale, &baseline);
+    Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
 
-    int labelRectBottomLeftX = pt.x;
-    int labelRectBottomLeftY = pt.y - lineThickness;
-    int labelRectTopRightX = pt.x + labelIndent + labelSize.width + labelPadding;
-    int labelRectTopRightY = pt.y - labelSize.height - (2 * labelPadding) - lineThickness;
+    int labelRectBottomLeftX = top->x;
+    int labelRectBottomLeftY = top->y - lineThickness;
+    int labelRectTopRightX = top->x + labelIndent + labelSize.width + labelPadding;
+    int labelRectTopRightY = top->y - labelSize.height - (2 * labelPadding) - lineThickness;
 
     rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
         Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
-    int labelBottomLeftX = pt.x + labelIndent;
-    int labelBottomLeftY = pt.y - labelPadding - (0.5 * lineThickness) - 2;
+    int labelBottomLeftX = top->x + labelIndent;
+    int labelBottomLeftY = top->y - labelPadding - (0.5 * lineThickness) - 2;
 
     cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
         labelThickness, cv::LineTypes::LINE_8);

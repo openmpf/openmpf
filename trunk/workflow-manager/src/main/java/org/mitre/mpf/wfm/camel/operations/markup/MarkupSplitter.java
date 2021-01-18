@@ -200,7 +200,8 @@ public class MarkupSplitter {
                     trackColor.getRed(),
                     trackColor.getGreen(),
                     trackColor.getBlue(),
-                    false, // not animated because this is an actual detection
+                    false, // not animated
+                    track.getExemplar() == detection,
                     trackConfidence,
                     trackClassification);
 
@@ -246,6 +247,7 @@ public class MarkupSplitter {
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
                         true, // will be animated
+                        false, // not exemplar
                         trackConfidence,
                         trackClassification);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);

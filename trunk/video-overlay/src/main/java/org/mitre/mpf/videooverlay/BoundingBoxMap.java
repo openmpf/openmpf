@@ -153,7 +153,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
         double dWidth = (destination.getWidth() - origin.getWidth()) / (1.0 * interval);
         double dHeight = (destination.getHeight() - origin.getHeight()) / (1.0 * interval);
 
-        for(int frameOffset = 0; frameOffset < interval; frameOffset++) {
+        for(int frameOffset = 1; frameOffset < interval; frameOffset++) {
             BoundingBox translatedBox = new BoundingBox(
                     (int) Math.round(origin.getX() + dx * frameOffset),
                     (int) Math.round(origin.getY() + dy * frameOffset),
@@ -165,6 +165,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     origin.getGreen(),
                     origin.getBlue(),
                     true, // animated
+                    false, // not exemplar
                     origin.getConfidence(),
                     origin.getClassification());
             putOnFrame(firstFrame + frameOffset, translatedBox);

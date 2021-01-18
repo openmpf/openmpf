@@ -99,6 +99,11 @@ public class BoundingBox {
         return animated;
     }
 
+    private final boolean exemplar;
+    public boolean isExemplar() {
+        return exemplar;
+    }
+
     private final float confidence;
     public float getConfidence() {
         return confidence;
@@ -111,7 +116,7 @@ public class BoundingBox {
 
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
-                       int red, int green, int blue, boolean animated, float confidence,
+                       int red, int green, int blue, boolean animated, boolean exemplar, float confidence,
                        Optional<String> classification) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
@@ -133,16 +138,17 @@ public class BoundingBox {
         this.green = green;
         this.blue = blue;
         this.animated = animated;
+        this.exemplar = exemplar;
         this.confidence = confidence;
         this.classification = classification;
     }
 
     @Override
     public String toString() {
-        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), animated=," +
-                        " confidence=%f",
+        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), animated=%b," +
+                        " exemplar=%b, confidence=%f",
                 getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, animated,
-                confidence);
+                exemplar, confidence);
         if (classification.isPresent()) {
             str += ", classification=" + classification.get();
         }
@@ -169,6 +175,7 @@ public class BoundingBox {
                 && green == casted.green
                 && blue == casted.blue
                 && animated == casted.animated
+                && exemplar == casted.exemplar
                 && confidence == casted.confidence
                 && classification == casted.classification;
     }
@@ -178,8 +185,8 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, animated, confidence,
-                classification);
+        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, animated, exemplar,
+                confidence, classification);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -194,6 +201,7 @@ public class BoundingBox {
                 .setBlue(blue)
                 .setGreen(green)
                 .setAnimated(animated)
+                .setExemplar(exemplar)
                 .setConfidence(confidence);
         if (classification.isPresent()) {
             builder.setClassification(classification.get());

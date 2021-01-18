@@ -281,41 +281,26 @@ void drawLine(Point start, Point end, Scalar color, int thickness, bool animated
         line(*image, start, end, color, thickness, cv::LineTypes::LINE_AA);
         return;
     }
-    // Create dotted line.
-    /*
-    LineIterator it(*image, start, end);
-    for (int i = 0; i < it.count; i++,it++) {
-        if ( i % 5 != 0 ) { // every 5th pixel gets dropped
-            (*it)[0] = color[0];
-            (*it)[1] = color[1];
-            (*it)[2] = color[2];
-        }
-    }
-    */
 
-    std::cout << "drawLine from " << start << " to " << end << std::endl; // DEBUG
-
-    // Based on: https://stackoverflow.com/a/26711359
-    int gap = 5; // TODO
+    // Draw dotted line.
+    int gap = 5;
     double dist = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
-    std::cout << "dist: " << dist << std::endl; // DEBUG
-    Point prev;
-    bool draw = false; // the first iteration just sets prev
+    double step = gap / dist;
+    Point prev = start;
+    double percent = 0.0;
+    bool draw = true;
 
-    for (int i = 0; i < dist; i += gap) {
-        double r = i/dist;
-        std::cout << "i: " << i << ", r: " << r << std::endl; // DEBUG
-        int x = (start.x * (1 - r) + end.x * r) + .5;
-        int y = (start.y * (1 - r) + end.y * r) + .5;
-        std::cout << "x: " << x << ", y: " << y << std::endl; // DEBUG
+    do {
+        percent = std::min(percent + step, 1.0);
+        int x = (start.x * (1 - percent) + end.x * percent) + .5;
+        int y = (start.y * (1 - percent) + end.y * percent) + .5;
         Point curr(x, y);
         if (draw) {
-            std::cout << "line from " << prev << " to " << curr << std::endl; // DEBUG
             line(*image, prev, curr, color, thickness);
         }
         prev = curr;
         draw = !draw;
-    }
+    } while (percent < 1.0);
 }
 
 #ifdef __cplusplus

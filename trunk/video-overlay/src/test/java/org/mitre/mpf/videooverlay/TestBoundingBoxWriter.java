@@ -61,12 +61,12 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".png"); // ".avi"
+            File destinationFile = File.createTempFile("markedup", ".avi"); // ".png"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box1 = new BoundingBox(25, 35, 80, 15, 0, false, 255, 0, 0, true, 8.0009f,
+            BoundingBox box1 = new BoundingBox(50, 25, 101, 57, 0, false, 255, 0, 0, true, 8.0009f,
                     Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
             // BoundingBox box2 = new BoundingBox(80, 90, 30, 15, 0, false, 255, 0, 0, true, 8.0009f,
             //        Optional.of("jthigsisarggeallylongclassification")); // Optional.empty());
@@ -78,7 +78,7 @@ public class TestBoundingBoxWriter {
             writer.setSourceMedium(sourceFile.toURI());
             writer.setDestinationMedium(destinationFile.toURI());
             writer.setBoundingBoxMap(map);
-            writer.markupImage(); // writer.markupVideo(); // DEBUG
+            writer.markupVideo(); // writer.markupImage(); // DEBUG
 
             // Test that something was written.
             Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);

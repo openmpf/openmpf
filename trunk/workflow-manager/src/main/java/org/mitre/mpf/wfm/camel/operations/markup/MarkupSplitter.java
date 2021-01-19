@@ -185,8 +185,13 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
-            Optional trackClassification = track.getTrackProperties().containsKey("CLASSIFICATION") ?
-                    Optional.of(track.getTrackProperties().get("CLASSIFICATION")) : Optional.empty();
+            Optional trackClassification = Optional.empty();
+            if (track.getTrackProperties().containsKey("CLASSIFICATION")) {
+                trackClassification = Optional.of(track.getTrackProperties().get("CLASSIFICATION"));
+            } else if (track.getExemplar().getDetectionProperties().containsKey("CLASSIFICATION")) {
+                trackClassification = Optional.of(track.getExemplar().getDetectionProperties().get("CLASSIFICATION"));
+            }
+
             float trackConfidence = track.getConfidence();
 
             // Create a bounding box at the location.
@@ -201,7 +206,7 @@ public class MarkupSplitter {
                     trackColor.getGreen(),
                     trackColor.getBlue(),
                     false, // not animated
-                    track.getExemplar() == detection,
+                    track.getExemplar().equals(detection),
                     trackConfidence,
                     trackClassification);
 

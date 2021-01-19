@@ -243,6 +243,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
     Scalar boxColor(blue, green, red);
+    int minDim = width < height ? width : height;
 
     // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
     // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
@@ -251,9 +252,15 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     // To address this, we use a minimum thickness of 2.
     int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
 
-    int circleRadius = lineThickness == 1 ? 3 : lineThickness + 5;
-    int labelIndent = circleRadius + 2;
+    int minCircleRadius = 3;
+    int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
 
+    double maxCircleCoverage = minDim * 0.25; // circle should not cover more than 25% of the min dim
+    if (circleRadius > maxCircleCoverage) {
+        circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
+    }
+
+    int labelIndent = circleRadius + 2;
     drawLabel(corners, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
@@ -270,18 +277,24 @@ void drawLine(Point start, Point end, Scalar color, int thickness, bool animated
         return;
     }
 
-    // Draw dotted line.
-    int gap = 5;
-    double dist = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
-    double step = gap / dist;
+    // Draw dashed line.
+    double lineLen = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
+
+    int dashLen = 10 + thickness;
+    double maxDashCoverage = lineLen * 0.5; // dash should not cover more than 50% of the line length
+    if (dashLen > maxDashCoverage) {
+        dashLen = (int)maxDashCoverage;
+    }
+
+    double step = dashLen / lineLen;
     Point prev = start;
     double percent = 0.0;
     bool draw = true;
 
     do {
         percent = std::min(percent + step, 1.0);
-        int x = (start.x * (1 - percent) + end.x * percent) + .5;
-        int y = (start.y * (1 - percent) + end.y * percent) + .5;
+        int x = (start.x * (1 - percent) + end.x * percent) + 0.5;
+        int y = (start.y * (1 - percent) + end.y * percent) + 0.5;
         Point curr(x, y);
         if (draw) {
             line(*image, prev, curr, color, thickness);

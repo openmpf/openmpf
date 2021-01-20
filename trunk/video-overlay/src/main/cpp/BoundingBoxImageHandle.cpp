@@ -57,3 +57,10 @@ void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {
     }
 }
 
+bool BoundingBoxImageHandle::MarkExemplar() {
+    return false;
+}
+
+bool BoundingBoxImageHandle::ShowFrameNumbers() {
+    return false;
+}

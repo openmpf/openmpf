@@ -34,6 +34,10 @@ public:
     virtual bool Read(cv::Mat &frame) = 0;
 
     virtual void HandleMarkedFrame(const cv::Mat& frame) = 0;
+
+    virtual bool MarkExemplar() = 0;
+
+    virtual bool ShowFrameNumbers() = 0;
 };
 
 #endif //MPF_BOUNDINGBOXMEDIAHANDLE_H

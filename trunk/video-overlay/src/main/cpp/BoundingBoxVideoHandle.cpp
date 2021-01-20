@@ -50,3 +50,10 @@ void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
     videoWriter_ << frame;
 }
 
+bool BoundingBoxVideoHandle::MarkExemplar() {
+    return true;
+}
+
+bool BoundingBoxVideoHandle::ShowFrameNumbers() {
+    return true;
+}

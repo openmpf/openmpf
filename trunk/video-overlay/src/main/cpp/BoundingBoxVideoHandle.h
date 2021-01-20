@@ -41,6 +41,10 @@ public:
 
     void HandleMarkedFrame(const cv::Mat& frame);
 
+    bool MarkExemplar();
+
+    bool ShowFrameNumbers();
+
 private:
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 

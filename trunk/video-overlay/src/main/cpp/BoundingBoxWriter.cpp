@@ -171,7 +171,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
 
                     ss << std::fixed << std::setprecision(3) << confidence;
 
-                    if (jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
+                    if (boundingBoxMediaHandle.MarkExemplar() &&
+                            jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
                         ss << '!';
                     }
 
@@ -179,7 +180,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
                 }
             }
 
-            drawFrameNumber(currentFrame, &frame);
+            if (boundingBoxMediaHandle.ShowFrameNumbers()) {
+                drawFrameNumber(currentFrame, &frame);
+            }
 
             boundingBoxMediaHandle.HandleMarkedFrame(frame);
         }

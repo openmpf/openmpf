@@ -49,14 +49,15 @@ using namespace cv;
 
 #endif
 
-
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
                      bool animated, const std::string &label, Mat *image);
 
-void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image);
+void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image);
 
-void drawLabel(std::array<Point2d, 4> corners, Scalar color, int labelIndent, int lineThickness,
-               const std::string &label, Mat *image);
+void drawFrameNumber(int frameNumber, Mat *image);
+
+void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineThickness, const std::string &label,
+                          Mat *image);
 
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
@@ -178,6 +179,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
                 }
             }
 
+            drawFrameNumber(currentFrame, &frame);
+
             boundingBoxMediaHandle.HandleMarkedFrame(frame);
         }
 
@@ -260,8 +263,16 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
         circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
     }
 
+    // Get top-left point.
+    auto topLeftPt = std::max_element(corners.begin(), corners.end(), [](Point const& a, Point const& b) {
+        if (a.y == b.y) {
+            return a.x > b.x; // leftmost
+        }
+        return a.y > b.y; // topmost
+    });
+
     int labelIndent = circleRadius + 2;
-    drawLabel(corners, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(topLeftPt, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -271,17 +282,17 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
-void drawLine(Point start, Point end, Scalar color, int thickness, bool animated, Mat *image) {
+void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image) {
     if (!animated) {
-        line(*image, start, end, color, thickness, cv::LineTypes::LINE_AA);
+        line(*image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
         return;
     }
 
     // Draw dashed line.
     double lineLen = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
 
-    int dashLen = 10 + thickness;
-    double maxDashCoverage = lineLen * 0.5; // dash should not cover more than 50% of the line length
+    int dashLen = 10 + lineThickness;
+    double maxDashCoverage = lineLen * 0.5; // dash should not occupy more than 50% of the line length
     if (dashLen > maxDashCoverage) {
         dashLen = (int)maxDashCoverage;
     }
@@ -297,23 +308,15 @@ void drawLine(Point start, Point end, Scalar color, int thickness, bool animated
         int y = (start.y * (1 - percent) + end.y * percent) + 0.5;
         Point curr(x, y);
         if (draw) {
-            line(*image, prev, curr, color, thickness);
+            line(*image, prev, curr, color, lineThickness);
         }
         prev = curr;
         draw = !draw;
     } while (percent < 1.0);
 }
 
-void drawLabel(std::array<Point2d, 4> corners, Scalar color, int labelIndent, int lineThickness,
-               const std::string &label, Mat *image) {
-
-    // Get top-left point.
-    auto top = std::max_element(corners.begin(), corners.end(), [](Point const& a, Point const& b) {
-        if (a.y == b.y) {
-            return a.x > b.x; // leftmost
-        }
-        return a.y > b.y; // topmost
-    });
+void drawFrameNumber(int frameNumber, Mat *image) {
+    std::string label = std::to_string(frameNumber);
 
     int labelPadding = 8;
     double labelScale = 0.8;
@@ -323,16 +326,43 @@ void drawLabel(std::array<Point2d, 4> corners, Scalar color, int labelIndent, in
     int baseline = 0;
     Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
 
-    int labelRectBottomLeftX = top->x;
-    int labelRectBottomLeftY = top->y - lineThickness;
-    int labelRectTopRightX = top->x + labelIndent + labelSize.width + labelPadding;
-    int labelRectTopRightY = top->y - labelSize.height - (2 * labelPadding) - lineThickness;
+    // position frame number near bottom right of the frame
+    int labelRectBottomRightX = image->cols - 10;
+    int labelRectBottomRightY = image->rows - 10;
+
+    int labelRectTopLeftX = labelRectBottomRightX - labelSize.width  - (2 * labelPadding);
+    int labelRectTopLeftY = labelRectBottomRightY - labelSize.height - (2 * labelPadding);
+
+    rectangle(*image, Point(labelRectTopLeftX, labelRectTopLeftY), Point(labelRectBottomRightX, labelRectBottomRightY),
+        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+
+    int labelBottomLeftX = labelRectTopLeftX + labelPadding;
+    int labelBottomLeftY = labelRectTopLeftY + labelSize.height + labelPadding;
+
+    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, Scalar(255,255,255),
+        labelThickness, cv::LineTypes::LINE_8);
+}
+
+void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineThickness, const std::string &label,
+                          Mat *image) {
+    int labelPadding = 8;
+    double labelScale = 0.8;
+    int labelThickness = 2;
+    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
+
+    int baseline = 0;
+    Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
+
+    int labelRectBottomLeftX = pt->x;
+    int labelRectBottomLeftY = pt->y - lineThickness;
+    int labelRectTopRightX = pt->x + labelIndent + labelSize.width + labelPadding;
+    int labelRectTopRightY = pt->y - labelSize.height - (2 * labelPadding) - lineThickness;
 
     rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
         Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
-    int labelBottomLeftX = top->x + labelIndent;
-    int labelBottomLeftY = top->y - labelPadding - (0.5 * lineThickness) - 2;
+    int labelBottomLeftX = pt->x + labelIndent;
+    int labelBottomLeftY = pt->y - labelPadding - (0.5 * lineThickness) - 2;
 
     cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
         labelThickness, cv::LineTypes::LINE_8);

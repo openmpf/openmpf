@@ -149,10 +149,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 mediaRotation, mediaHorizontalFlip, Scalar(0, 0, 0),
                 IFrameTransformer::Ptr(new NoOpFrameTransformer(frameSize)));
 
-        AffineFrameTransformer detectionTransformer(
-                -mediaRotation, mediaHorizontalFlip, Scalar(0, 0, 0),
-                IFrameTransformer::Ptr(new NoOpFrameTransformer(frameSize)));
-
         Mat frame;
 
         jint currentFrame = -1;
@@ -163,10 +159,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
                 break;
             }
-
-            // Account for media metadata (e.g. EXIF).
-            Mat transformFrame = frame.clone();
-            frameTransformer.TransformFrame(transformFrame, 0);
 
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,
@@ -229,40 +221,14 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                         ss << '!';
                     }
 
-                    MPFImageLocation transformLoc(x, y, width, height, 0.0,
-                        { {"ROTATION", std::to_string(rotation)},
-                          {"HORIZONTAL_FLIP", horizontalFlip ? "true" : "false"} });
-                    detectionTransformer.ReverseTransform(transformLoc, 0);
-
-                    double transformRotation = 0.0;
-                    if (transformLoc.detection_properties.find("ROTATION") != transformLoc.detection_properties.end()) {
-                        transformRotation = std::stod(transformLoc.detection_properties.at("ROTATION"));
-                    }
-
-                    bool transformHorizontalFlip = false;
-                    if (transformLoc.detection_properties.find("HORIZONTAL_FLIP") != transformLoc.detection_properties.end()) {
-                        std::string stdString = transformLoc.detection_properties.at("HORIZONTAL_FLIP");
-
-                        // TODO: duplicate code
-                        if (stdString == "1") {
-                            transformHorizontalFlip = true;
-                        } else {
-                            static const std::string trueString = "TRUE";
-                            transformHorizontalFlip = std::equal(trueString.begin(), trueString.end(), stdString.begin(),
-                                    [](char trueChar, char actualChar) {
-                                return trueChar == std::toupper(actualChar);
-                            });
-                        }
-                    }
-
-                    std::cout << "transformRotation: " << transformRotation << std::endl; // DEBUG
-                    std::cout << "transformHorizontalFlip: " << transformHorizontalFlip << std::endl; // DEBUG
-
-                    drawBoundingBox(transformLoc.x_left_upper, transformLoc.y_left_upper,
-                                    transformLoc.width, transformLoc.height, transformRotation, transformHorizontalFlip,
-                                    red, green, blue, animated, ss.str(), &transformFrame);
+                    drawBoundingBox(x, y, width, height, rotation, horizontalFlip,
+                                    red, green, blue, animated, ss.str(), &frame);
                 }
             }
+
+            // Account for media metadata (e.g. EXIF).
+            Mat transformFrame = frame.clone();
+            frameTransformer.TransformFrame(transformFrame, 0);
 
             if (boundingBoxMediaHandle.ShowFrameNumbers()) {
                 drawFrameNumber(currentFrame, &transformFrame);

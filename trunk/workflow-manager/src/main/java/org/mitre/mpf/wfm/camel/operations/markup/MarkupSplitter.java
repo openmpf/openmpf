@@ -100,7 +100,8 @@ public class MarkupSplitter {
                             = createMap(job, media, lastDetectionTaskIndex,
                                         job.getPipelineElements().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
-                    Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
+
+                    Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
                             .setTaskIndex(job.getCurrentTaskIndex())
                             .setActionIndex(actionIndex)
@@ -109,16 +110,21 @@ public class MarkupSplitter {
                             .setRequestId(IdGenerator.next())
                             .setSourceUri(media.getProcessingPath().toUri().toString())
                             .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())
-                            .addAllMapEntries(boundingBoxMapEntryList)
-                            .build();
+                                    propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
+                                    propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())
+                            .addAllMapEntries(boundingBoxMapEntryList);
+
+                    for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {
+                        requestBuilder.addMediaMetadataBuilder()
+                                .setKey(entry.getKey())
+                                .setValue(entry.getValue());
+                    }
 
                     Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
                     DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
                     message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
                     message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
-                    message.setBody(markupRequest);
+                    message.setBody(requestBuilder.build());
                     messages.add(message);
                 }
             }

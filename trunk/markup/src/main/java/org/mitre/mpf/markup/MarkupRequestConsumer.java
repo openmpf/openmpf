@@ -91,9 +91,14 @@ public class MarkupRequestConsumer implements MessageListener {
     private boolean markup(Markup.MarkupRequest markupRequest) throws Exception {
         log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.",
                 markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
+
         BoundingBoxWriter writer = new BoundingBoxWriter();
         writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
         writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
+
+        Map mediaMetadata = new HashMap<String, String>();
+        markupRequest.getMediaMetadataList().stream().forEach(e -> mediaMetadata.put(e.getKey(), e.getValue()) );
+        writer.setMediaMetadata(mediaMetadata);
 
         BoundingBoxMap map = new BoundingBoxMap();
         int boxesAdded = 0;

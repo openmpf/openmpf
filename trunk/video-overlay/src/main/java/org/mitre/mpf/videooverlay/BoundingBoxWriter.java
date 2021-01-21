@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 
 public class BoundingBoxWriter {
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(BoundingBoxWriter.class);
@@ -60,6 +61,10 @@ public class BoundingBoxWriter {
     public BoundingBoxMap getBoundingBoxMap() {
         return boundingBoxMap;
     }
+
+    private Map<String, String> mediaMetadata = Map.of();
+
+    public void setMediaMetadata(Map<String, String> mediaMetadata) { this.mediaMetadata = mediaMetadata; }
 
     /**
      * Sets the BoundingBoxMap associated with this writer. The parameter must not be null.
@@ -114,13 +119,13 @@ public class BoundingBoxWriter {
                 log.debug("markupImage: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupImageNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+                markupImageNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath());
             }
             else {
                 log.debug("markupVideo: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupVideoNative(sourceFile.getAbsolutePath(), destinationFile.getAbsolutePath());
+                markupVideoNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath());
             }
         }
         catch (Exception e) {
@@ -128,7 +133,7 @@ public class BoundingBoxWriter {
         }
     }
 
-    private native void markupVideoNative(String sourceVideo, String destinationVideo);
-	private native void markupImageNative(String sourceVideo, String destinationVideo);
+    private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetdata, String destinationVideo);
+	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetdata, String destinationImage);
 
 }

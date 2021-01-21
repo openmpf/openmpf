@@ -38,6 +38,19 @@ public:
     virtual bool MarkExemplar() = 0;
 
     virtual bool ShowFrameNumbers() = 0;
+
+    void SetMediaRotation(double mediaRotation) {
+        _mediaRotation = mediaRotation;
+    }
+
+    void SetMediaHorizontalFlip(bool mediaHorizontalFlip) {
+        _mediaHorizontalFlip = mediaHorizontalFlip;
+    }
+
+private:
+    double _mediaRotation;
+
+    bool _mediaHorizontalFlip;
 };
 
 #endif //MPF_BOUNDINGBOXMEDIAHANDLE_H

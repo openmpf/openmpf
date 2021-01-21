@@ -31,15 +31,15 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgcodecs.hpp>
+
 #include <MPFDetectionObjects.h>
 #include <MPFVideoCapture.h>
 #include <frame_transformers/AffineFrameTransformer.h>
 #include <frame_transformers/IFrameTransformer.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
 #include <frame_transformers/SearchRegion.h>
-#include "JniHelper.h"
 
-#include <iostream> // DEBUG
+#include "JniHelper.h"
 
 /* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
 
@@ -57,7 +57,6 @@ using namespace COMPONENT;
 /*
  * Class:     org_mitre_mpf_frameextractor_FrameExtractor
  * Method:    executeNative
- * Signature: (java/lang/String;java/lang/String;Z;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
 (JNIEnv *env, jobject frameExtractorInstance, jstring media, jobject mediaMetadata, jstring destinationPath,
@@ -152,9 +151,9 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             jint thisTrack = 0;
 
             if (!croppingFlag) {
-                // No cropping, but account for media metadata (e.g. EXIF).
+                // No cropping. Account for media metadata (e.g. EXIF).
 
-                // Get the rotation property.
+                // Get the media metadata rotation property.
                 jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *rotationJStringPtr);
                 double rotation = 0.0;
                 if (jPropValue != nullptr) {
@@ -162,15 +161,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                     rotation = std::stod(rotationPropValue);
                 }
 
-                // Get the horizontal flip property.
+                // Get the media metadata horizontal flip property.
                 jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *horizontalFlipJStringPtr);
                 bool horizontalFlip = false;
                 if (jPropValue != nullptr) {
                     horizontalFlip = jni.ToBool(jPropValue);
                 }
-
-                std::cout << "rotation: " << rotation << std::endl; // DEBUG
-                std::cout << "horizontalFlip: " << horizontalFlip << std::endl; // DEBUG
 
                 Mat transformFrame = frame.clone();
 

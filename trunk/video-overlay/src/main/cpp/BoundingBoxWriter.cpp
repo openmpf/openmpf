@@ -37,6 +37,9 @@
 #include <opencv2/imgproc.hpp>
 
 #include <MPFRotatedRect.h>
+#include <frame_transformers/NoOpFrameTransformer.h>
+#include <frame_transformers/IFrameTransformer.h>
+#include <frame_transformers/AffineFrameTransformer.h>
 
 #include "JniHelper.h"
 #include "BoundingBoxImageHandle.h"
@@ -46,6 +49,8 @@
 extern "C" {
 
 using namespace cv;
+using namespace MPF;
+using namespace COMPONENT;
 
 #endif
 
@@ -60,7 +65,8 @@ void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineTh
                           Mat *image);
 
 
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHandle &boundingBoxMediaHandle)
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+            BoundingBoxMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
     try {
@@ -79,10 +85,18 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
         jmethodID clzBoundingBoxMap_fnContainsKey =
             jni.GetMethodID(clzBoundingBoxMap, "containsKey", "(Ljava/lang/Object;)Z");
 
+        // Get the Integer class and methods.
+        jclass clzInteger = jni.FindClass("java/lang/Integer");
+        jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
+
         // Get List class and methods.
         jclass clzList = jni.FindClass("java/util/List");
         jmethodID clzList_fnGet = jni.GetMethodID(clzList, "get", "(I)Ljava/lang/Object;");
         jmethodID clzList_fnSize = jni.GetMethodID(clzList, "size", "()I");
+
+        // Get the Map class and methods.
+        jclass clzMap = jni.FindClass("java/util/Map");
+        jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
         // Get Optional class and methods.
         jclass clzOptional = jni.FindClass("java/util/Optional");
@@ -107,8 +121,27 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
 
-        jclass clzInteger = jni.FindClass("java/lang/Integer");
-        jmethodID clzInteger_fnValueOf = jni.GetStaticMethodID(clzInteger, "valueOf", "(I)Ljava/lang/Integer;");
+        // Get the media metadata rotation property.
+        auto rotationJStringPtr = jni.ToJString("ROTATION");
+        jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *rotationJStringPtr);
+        double mediaRotation = 0.0;
+        if (jPropValue != nullptr) {
+            std::string rotationPropValue = jni.ToStdString(jPropValue);
+            mediaRotation = std::stod(rotationPropValue);
+        }
+        boundingBoxMediaHandle.SetMediaRotation(mediaRotation);
+
+        // Get the media metadata horizontal flip property.
+        auto horizontalFlipJStringPtr = jni.ToJString("HORIZONTAL_FLIP");
+        jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *horizontalFlipJStringPtr);
+        bool mediaHorizontalFlip = false;
+        if (jPropValue != nullptr) {
+            mediaHorizontalFlip = jni.ToBool(jPropValue);
+        }
+        boundingBoxMediaHandle.SetMediaHorizontalFlip(mediaHorizontalFlip);
+
+        std::cout << "mediaRotation: " << mediaRotation << std::endl; // DEBUG
+        std::cout << "mediaHorizontalFlip: " << mediaHorizontalFlip << std::endl; // DEBUG
 
         Size frameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
@@ -180,11 +213,21 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
                 }
             }
 
+            // Account for media metadata (e.g. EXIF).
+            Mat transformFrame = frame.clone();
+
+            // Create the transformation for this frame and apply it.
+            AffineFrameTransformer transformer(
+                    mediaRotation, mediaHorizontalFlip, Scalar(0, 0, 0),
+                    IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
+
+            transformer.TransformFrame(transformFrame, 0);
+
             if (boundingBoxMediaHandle.ShowFrameNumbers()) {
-                drawFrameNumber(currentFrame, &frame);
+                drawFrameNumber(currentFrame, &transformFrame);
             }
 
-            boundingBoxMediaHandle.HandleMarkedFrame(frame);
+            boundingBoxMediaHandle.HandleMarkedFrame(transformFrame);
         }
 
     }
@@ -201,7 +244,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, BoundingBoxMediaHan
  * Method:    markupVideoNative
  */
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jstring destinationVideoPathJString)
+  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
+   jstring destinationVideoPathJString)
 {
     JniHelper jni(env);
     try {
@@ -210,7 +254,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
         BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
 
-        markup(env, boundingBoxWriterInstance, boundingBoxVideoHandle);
+        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxVideoHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -225,7 +269,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
  * Method:    markupImageNative
  */
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jstring destinationImagePathJString)
+  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
+   jstring destinationImagePathJString)
 {
     JniHelper jni(env);
     try {
@@ -234,7 +279,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
         BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
 
-        markup(env, boundingBoxWriterInstance, boundingBoxImageHandle);
+        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxImageHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -245,8 +290,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 }
 
 void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     bool animated, const std::string &label, Mat *image) {
-    std::array<Point2d, 4> corners = MPF::COMPONENT::MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
+                     bool animated, const std::string &label, Mat *image)
+{
+    std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -285,7 +331,8 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
-void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image) {
+void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image)
+{
     if (!animated) {
         line(*image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
         return;
@@ -318,7 +365,8 @@ void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool 
     } while (percent < 1.0);
 }
 
-void drawFrameNumber(int frameNumber, Mat *image) {
+void drawFrameNumber(int frameNumber, Mat *image)
+{
     std::string label = std::to_string(frameNumber);
 
     int labelPadding = 8;
@@ -347,7 +395,8 @@ void drawFrameNumber(int frameNumber, Mat *image) {
 }
 
 void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineThickness, const std::string &label,
-                          Mat *image) {
+                          Mat *image)
+{
     int labelPadding = 8;
     double labelScale = 0.8;
     int labelThickness = 2;

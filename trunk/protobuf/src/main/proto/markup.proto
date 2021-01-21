@@ -32,15 +32,21 @@ enum MediaType {
     AUDIO = 3;
 }
 
+message MetadataMap {
+    optional string key = 1;
+    optional string value = 2;
+}
+
 message MarkupRequest {
     required int32 media_index                           = 1; // The index of the media which is being marked up.
     required int64 media_id                              = 2; // The id of the media which is being marked up.
     required int64 request_id                            = 3; // The sequential id of this request.
-    required MediaType media_type                        = 4; // The type of media
-    required string source_uri                           = 5; // The URI of the source media file.
-    required string destination_uri                      = 6; // The URI of the file which should be created by this request.
-    repeated BoundingBoxMapEntry map_entries             = 7; // The collection of bounding boxes which must be written.
-    repeated MarkupRequestMetadataEntry metadata_entries = 8; // The collection of arbitrary key-value pairs.
+    required MediaType media_type                        = 4; // The type of media.
+    repeated MetadataMap media_metadata                  = 5; // The media metadata.
+    required string source_uri                           = 6; // The URI of the source media file.
+    required string destination_uri                      = 7; // The URI of the file which should be created by this request.
+    repeated BoundingBoxMapEntry map_entries             = 8; // The collection of bounding boxes which must be written.
+    repeated MarkupRequestMetadataEntry metadata_entries = 9; // The collection of arbitrary key-value pairs.
 
     required int32 task_index         = 501; // The index of the task which produced this request.
     required int32 action_index       = 502; // The index of the action within the task which produced this request.

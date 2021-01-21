@@ -49,6 +49,8 @@ public class FrameExtractor {
     private static final Logger log = LoggerFactory.getLogger(FrameExtractor.class);
 
     private final URI media;
+    private final Map<String, String> mediaMetadata;
+
     private final URI extractionDirectory;
     private final FileNameGenerator fileNameGenerator;
     private final boolean croppingFlag;
@@ -69,15 +71,16 @@ public class FrameExtractor {
     private String prefix = "frame";
 
 
-    public FrameExtractor(URI media, URI extractionDirectory, boolean croppingFlag,
+    public FrameExtractor(URI media, Map<String, String> mediaMetadata, URI extractionDirectory, boolean croppingFlag,
                           boolean rotationFillIsBlack) {
-        this(media, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag,
+        this(media, mediaMetadata, extractionDirectory, FrameExtractor::defaultFileNameGenerator, croppingFlag,
              rotationFillIsBlack);
     }
 
-    public FrameExtractor(URI media, URI extractionDirectory, FileNameGenerator fileNameGenerator,
-                          boolean croppingFlag, boolean rotationFillIsBlack) {
+    public FrameExtractor(URI media, Map<String, String> mediaMetadata, URI extractionDirectory,
+                          FileNameGenerator fileNameGenerator, boolean croppingFlag, boolean rotationFillIsBlack) {
         this.media = media;
+        this.mediaMetadata = mediaMetadata;
         this.extractionDirectory = extractionDirectory;
         this.fileNameGenerator = fileNameGenerator;
         this.croppingFlag = croppingFlag;
@@ -109,6 +112,7 @@ public class FrameExtractor {
                 else {
                     response = executeNative(
                             new File(media).getAbsolutePath(),
+                            mediaMetadata,
                             new File(extractionDirectory).getAbsolutePath(),
                             croppingFlag,
                             rotationFillIsBlack,
@@ -133,7 +137,8 @@ public class FrameExtractor {
         return fileNameGenerator.generateFileName(path, trackNumber, frameNumber, prefix);
     }
 
-    private native int executeNative(String sourceMedia, String extractionDestination,
+    private native int executeNative(String sourceMedia, Map<String, String> mediaMetadata,
+                                     String extractionDestination,
                                      boolean croppingFlag, boolean rotationFillIsBlack,
                                      List<FrameExtractionResult> results);
 

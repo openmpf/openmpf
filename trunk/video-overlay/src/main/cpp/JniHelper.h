@@ -103,6 +103,8 @@ public:
 
     std::unique_ptr<jstring, JStringDeleter> ToJString(const std::string &stdString);
 
+    bool ToBool(jstring jString);
+
 private:
     JNIEnv * const env_;
 

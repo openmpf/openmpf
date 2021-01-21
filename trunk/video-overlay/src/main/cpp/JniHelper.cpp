@@ -70,6 +70,20 @@ std::string JniHelper::ToStdString(jstring jString) {
 }
 
 
+bool JniHelper::ToBool(jstring jString) {
+    std::string stdString = ToStdString(jString);
+
+    if (stdString == "1") {
+        return true;
+    }
+
+    static const std::string trueString = "TRUE";
+    return std::equal(trueString.begin(), trueString.end(), stdString.begin(), [](char trueChar, char actualChar) {
+        return trueChar == std::toupper(actualChar);
+    });
+}
+
+
 std::unique_ptr<jstring, JStringDeleter> JniHelper::ToJString(const std::string &inString) {
     return {
         new jstring(callJni(&JNIEnv::NewStringUTF, inString.c_str())),

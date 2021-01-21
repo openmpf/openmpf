@@ -26,16 +26,18 @@
 
 package org.mitre.mpf.frameextractor;
 
+import com.google.common.collect.Table;
 import org.junit.Assert;
-import static org.junit.Assert.assertEquals;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.JniTestUtils;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 
-import com.google.common.collect.Table;
-
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -44,11 +46,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-
 import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertEquals;
 
 public class TestFrameExtractor {
     static {
@@ -71,8 +70,8 @@ public class TestFrameExtractor {
                 .forEach(n -> putInExtractionMap(n, trackIndices, 20, 30, 100, 150, 0.0, requestedExtractions));
         URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
         // test first with cropping, then without.
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        extractFrames(media, Map.of(), true, requestedExtractions);
+        extractFrames(media, Map.of(), false, requestedExtractions);
     }
 
     @Test
@@ -83,8 +82,8 @@ public class TestFrameExtractor {
         frameNumbers.stream()
                 .forEach(n -> putInExtractionMap(n, trackIndices, 100, 100, 150, 100, 0.0, requestedExtractions));
         URI media = JniTestUtils.getFileResource("samples/face-morphing.gif");
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        extractFrames(media, Map.of(), true, requestedExtractions);
+        extractFrames(media, Map.of(), false, requestedExtractions);
     }
 
     @Test
@@ -92,17 +91,27 @@ public class TestFrameExtractor {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(3),200, 200, 150, 100, 0.0, requestedExtractions);
         URI media = JniTestUtils.getFileResource("samples/person_cropped_2.png");
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        extractFrames(media, Map.of(), true, requestedExtractions);
+        extractFrames(media, Map.of(), false, requestedExtractions);
     }
 
     @Test
     public void testFrameExtractorOnRotatedImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, requestedExtractions);
+
+        // not accounting for orientation, sample media has raw dimensions of 600 width by 480 height
+        // from exiftool: "Mirror horizontal and rotate 270 CW"
         URI media = JniTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        Map metaMetadata = Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true");
+
+        extractFrames(media, metaMetadata, true, requestedExtractions);
+        Table<Integer, Integer, String> results = extractFrames(media, metaMetadata, false, requestedExtractions);
+
+        String extraction = results.get(0, 0); // track id is set to 0 for full frame results
+        BufferedImage bimg = ImageIO.read(new File(extraction));
+        Assert.assertEquals(480, bimg.getWidth());
+        Assert.assertEquals(600, bimg.getHeight());
     }
 
     @Test
@@ -111,8 +120,8 @@ public class TestFrameExtractor {
         putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, requestedExtractions);
         putInExtractionMap(0, Arrays.asList(1), 970, 165, 329, 329, 0.0, requestedExtractions);
         URI media = JniTestUtils.getFileResource("samples/girl-1741925_1920.jpg");
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        extractFrames(media, Map.of(), true, requestedExtractions);
+        extractFrames(media, Map.of(), false, requestedExtractions);
     }
 
     @Test
@@ -128,17 +137,16 @@ public class TestFrameExtractor {
                 .forEach(n -> putInExtractionMap(n, nextTrackIndices,0, 0, 90, 125, 0.0, requestedExtractions));
 
         URI media = JniTestUtils.getFileResource("samples/five-second-marathon-clip-numbered.mp4");
-        extractFrames(media, true, requestedExtractions);
-        extractFrames(media, false, requestedExtractions);
+        extractFrames(media, Map.of(), true, requestedExtractions);
+        extractFrames(media, Map.of(), false, requestedExtractions);
     }
-
-
-    private void extractFrames(URI media, boolean cropFlag,
-            SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions) throws IOException {
+    
+    private Table<Integer, Integer, String> extractFrames(URI media, Map<String, String> mediaMetadata,
+                boolean cropFlag, SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions)
+            throws IOException {
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
-        FrameExtractor extractor = new FrameExtractor(media, outputDirectory.toUri(), cropFlag,
-                                                      true);
+        FrameExtractor extractor = new FrameExtractor(media, mediaMetadata, outputDirectory.toUri(), cropFlag, true);
         extractor.getExtractionsMap().putAll(requestedExtractions);
         Table<Integer, Integer, String> results = extractor.execute();
 
@@ -162,6 +170,8 @@ public class TestFrameExtractor {
             Assert.assertEquals(frames.size(), fileNames.size());
             frames.forEach(f -> Assert.assertTrue(fileNames.contains("frame-" + f + ".png")));
         }
+
+        return results;
     }
 
 

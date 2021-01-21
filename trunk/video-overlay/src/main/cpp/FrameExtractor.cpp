@@ -39,6 +39,8 @@
 #include <frame_transformers/SearchRegion.h>
 #include "JniHelper.h"
 
+#include <iostream> // DEBUG
+
 /* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
 
 #ifndef _Included_org_mitre_mpf_frameextractor_FrameExtractor
@@ -58,7 +60,7 @@ using namespace COMPONENT;
  * Signature: (java/lang/String;java/lang/String;Z;java/util/List;)I
  */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
-(JNIEnv *env, jobject frameExtractorInstance, jstring video, jstring destinationPath,
+(JNIEnv *env, jobject frameExtractorInstance, jstring media, jobject mediaMetadata, jstring destinationPath,
  jboolean croppingFlag, jboolean rotationFillIsBlack, jobject paths)
 {
     JniHelper jni(env);
@@ -89,7 +91,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jmethodID clzSet_fnIterator = jni.GetMethodID(clzSet, "iterator", "()Ljava/util/Iterator;");
 
         // Get the Map class and method to get the rotation property from the detection properties map.
-        jclass clzMap = jni.FindClass("java/util/TreeMap");
+        jclass clzMap = jni.FindClass("java/util/Map");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
         // Get the FrameExtractionResult class and its constructor.
@@ -111,9 +113,12 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
         jmethodID clzJsonDetectionOutputObject_fnGetProperties = jni.GetMethodID(clzJsonDetectionOutputObject,
                 "getDetectionProperties", "()Ljava/util/SortedMap;");
 
+        auto rotationJStringPtr = jni.ToJString("ROTATION");
+        auto horizontalFlipJStringPtr = jni.ToJString("HORIZONTAL_FLIP");
+
         // Begin processing: open the media, and then process one frame at a time,
         // completing all extractions before going to the next frame.
-        std::string mediaPath = jni.ToStdString(video);
+        std::string mediaPath = jni.ToStdString(media);
 
         MPFVideoCapture src(mediaPath);
         if (!src.IsOpened()) {
@@ -147,7 +152,35 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             jint thisTrack = 0;
 
             if (!croppingFlag) {
-                // No cropping, so simply write the frame to the file and continue.
+                // No cropping, but account for media metadata (e.g. EXIF).
+
+                // Get the rotation property.
+                jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *rotationJStringPtr);
+                double rotation = 0.0;
+                if (jPropValue != nullptr) {
+                    std::string rotationPropValue = jni.ToStdString(jPropValue);
+                    rotation = std::stod(rotationPropValue);
+                }
+
+                // Get the horizontal flip property.
+                jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *horizontalFlipJStringPtr);
+                bool horizontalFlip = false;
+                if (jPropValue != nullptr) {
+                    horizontalFlip = jni.ToBool(jPropValue);
+                }
+
+                std::cout << "rotation: " << rotation << std::endl; // DEBUG
+                std::cout << "horizontalFlip: " << horizontalFlip << std::endl; // DEBUG
+
+                Mat transformFrame = frame.clone();
+
+                // Create the transformation for this frame and apply it.
+                AffineFrameTransformer transformer(
+                        rotation, horizontalFlip, fillColor,
+                        IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
+
+                transformer.TransformFrame(transformFrame, 0);
+
                 jstring filename = (jstring) jni.CallObjectMethod(frameExtractorInstance,
                         clzFrameExtractor_fnMakeFilename,
                         destinationPath,
@@ -156,7 +189,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                 if (filename != nullptr) {
                     std::string destFile = jni.ToStdString(filename);
-                    imwrite(destFile, frame);
+                    imwrite(destFile, transformFrame);
                     jobject result = jni.CallConstructorMethod(clzExtractionResult, clzExtractionResult_fnConstruct,
                                                                thisFrameNum, thisTrack, filename);
                     jni.CallObjectMethod(paths, clzList_fnAdd, result);
@@ -165,8 +198,6 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             else {
                 jobject trackIndexSet = jni.CallObjectMethod(frameExtractorInstance, clzFrameExtractor_fnGetTrackIndices, thisFrameNumObj);
                 jobject trackIterator = jni.CallObjectMethod(trackIndexSet, clzSet_fnIterator);
-
-                auto rotationJStringPtr = jni.ToJString("ROTATION");
 
                 // For each track, perform the extraction for the associated detection object.
                 while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
@@ -185,8 +216,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                     // Get the rotation property.
                     jobject properties = jni.CallObjectMethod(detection, clzJsonDetectionOutputObject_fnGetProperties);
-                    jstring jPropValue = (jstring) jni.CallObjectMethod(properties, clzMap_fnGet,
-                                                                        *rotationJStringPtr);
+                    jstring jPropValue = (jstring) jni.CallObjectMethod(properties, clzMap_fnGet, *rotationJStringPtr);
                     double rotation = 0.0;
                     if (jPropValue != nullptr) {
                         std::string rotationPropValue = jni.ToStdString(jPropValue);

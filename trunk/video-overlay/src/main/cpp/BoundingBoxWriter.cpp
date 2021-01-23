@@ -35,6 +35,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp> // DEBUG
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -63,8 +64,8 @@ void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool 
 
 void drawFrameNumber(int frameNumber, Mat *image);
 
-void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineThickness, const std::string &label,
-                          Mat *image);
+void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent, int lineThickness,
+                          const std::string &label, Mat *image);
 
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
@@ -339,7 +340,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     });
 
     int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(topLeftPt, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(topLeftPt, flip, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -412,8 +413,8 @@ void drawFrameNumber(int frameNumber, Mat *image)
         labelThickness, cv::LineTypes::LINE_8);
 }
 
-void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineThickness, const std::string &label,
-                          Mat *image)
+void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent, int lineThickness,
+                          const std::string &label, Mat *image)
 {
     int labelPadding = 8;
     double labelScale = 0.8;
@@ -428,14 +429,54 @@ void drawBoundingBoxLabel(Point2d *pt, Scalar color, int labelIndent, int lineTh
     int labelRectTopRightX = pt->x + labelIndent + labelSize.width + labelPadding;
     int labelRectTopRightY = pt->y - labelSize.height - (2 * labelPadding) - lineThickness;
 
+/*
+    // OLD WAY
     rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
-        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+       Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
     int labelBottomLeftX = pt->x + labelIndent;
     int labelBottomLeftY = pt->y - labelPadding - (0.5 * lineThickness) - 2;
 
     cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
         labelThickness, cv::LineTypes::LINE_8);
+*/
+
+
+    // NEW WAY
+    imshow("Image", *image); waitKey(0); // DEBUG
+
+    std::cout << "label: " << label << std::endl; // DEBUG
+    std::cout << "labelSize: " << labelSize << std::endl; // DEBUG
+
+    int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
+    int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
+    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
+
+    std::cout << "lineThickness: " << lineThickness << std::endl; // DEBUG
+    std::cout << "labelIndent: " << labelIndent << std::endl; // DEBUG
+
+    std::cout << "labelRectWidth: " << labelRectWidth << std::endl; // DEBUG
+    std::cout << "labelRectHeight: " << labelRectHeight << std::endl; // DEBUG
+
+    imshow("Label 1", labelMat); waitKey(0); // DEBUG
+
+    int labelBottomLeftX = labelIndent;
+    int labelBottomLeftY = labelSize.height + labelPadding;
+
+    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
+        labelThickness, cv::LineTypes::LINE_8);
+
+    imshow("Label 2", labelMat); waitKey(0); // DEBUG
+
+    if (flip) {
+        cv::flip(labelMat, labelMat, 1); // flip around y-axis
+    }
+
+    imshow("Label 3", labelMat); waitKey(0); // DEBUG
+
+    labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, labelRectTopRightY, labelMat.cols, labelMat.rows)));
+    imshow("Image (label)", *image); waitKey(0); // DEBUG
+
 }
 
 #ifdef __cplusplus

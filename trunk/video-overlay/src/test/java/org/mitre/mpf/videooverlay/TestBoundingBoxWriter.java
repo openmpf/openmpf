@@ -46,7 +46,9 @@ public class TestBoundingBoxWriter {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264.mp4"); // DEBUG
-        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
+        writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna.png"); // DEBUG
     }
 
     @Test
@@ -75,14 +77,24 @@ public class TestBoundingBoxWriter {
                 map.putOnFrames(i, i, box1);
             }
             */
-            BoundingBox box1 = new BoundingBox(156, 338, 193, 242, 90, false, 255, 0, 0, true, true, 7.243234f,
-                    Optional.empty()); // Optional.of("thing"));
+
+            // BoundingBox box1 = new BoundingBox(156, 338, 193, 242, 90, false, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-90ccw-exif.jpg
+
+            // BoundingBox box1 = new BoundingBox(339, 156, 194, 243, 0, true, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-flip-exif.jpg
+
+            BoundingBox box1 = new BoundingBox(172, 156, 194, 243, 0, false, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna.png
+
+
             map.putOnFrames(0, 0, box1);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());
             writer.setDestinationMedium(destinationFile.toURI());
-            writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG
+
+            // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-90ccw-exif.jpg
+            // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-exif.jpg
+            writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna.png
+
             writer.setBoundingBoxMap(map);
             writer.markupImage(); // writer.markupVideo(); // DEBUG
 

@@ -342,12 +342,17 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     int labelIndent = circleRadius + 2;
     drawBoundingBoxLabel(topLeftPt, flip, boxColor, labelIndent, lineThickness, label, image);
 
+    // Point2d topLeftPt(x,y); // TODO: Just pass x and y.
+    // drawBoundingBoxLabel(&topLeftPt, flip, boxColor, labelIndent, lineThickness, label, image);
+
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
     drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
     drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+
+    imshow("Image (detection)", *image); waitKey(0); // DEBUG
 }
 
 void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image)
@@ -424,13 +429,13 @@ void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent,
     int baseline = 0;
     Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
 
+/*
+    // OLD WAY
     int labelRectBottomLeftX = pt->x;
     int labelRectBottomLeftY = pt->y - lineThickness;
     int labelRectTopRightX = pt->x + labelIndent + labelSize.width + labelPadding;
     int labelRectTopRightY = pt->y - labelSize.height - (2 * labelPadding) - lineThickness;
 
-/*
-    // OLD WAY
     rectangle(*image, Point(labelRectBottomLeftX, labelRectBottomLeftY), Point(labelRectTopRightX, labelRectTopRightY),
        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
@@ -443,13 +448,19 @@ void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent,
 
 
     // NEW WAY
+    int labelRectBottomLeftX = pt->x;
+    int labelRectBottomLeftY = pt->y;
+    int labelRectTopRightX = pt->x + labelIndent + labelSize.width + labelPadding;
+    int labelRectTopRightY = pt->y - labelSize.height - (2 * labelPadding);
+
+    int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
+    int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
+
     imshow("Image", *image); waitKey(0); // DEBUG
 
     std::cout << "label: " << label << std::endl; // DEBUG
     std::cout << "labelSize: " << labelSize << std::endl; // DEBUG
 
-    int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
-    int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
 
     std::cout << "lineThickness: " << lineThickness << std::endl; // DEBUG
@@ -470,11 +481,16 @@ void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent,
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis
+        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, // labelRectBottomLeftX - labelRectWidth
+                                 labelRectTopRightY, labelRectWidth, labelRectHeight)));
+    } else {
+        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX,
+                                 labelRectTopRightY, labelRectWidth, labelRectHeight)));
     }
 
     imshow("Label 3", labelMat); waitKey(0); // DEBUG
 
-    labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, labelRectTopRightY, labelMat.cols, labelMat.rows)));
+
     imshow("Image (label)", *image); waitKey(0); // DEBUG
 
 }

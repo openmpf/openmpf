@@ -48,10 +48,10 @@ public class TestBoundingBoxWriter {
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264.mp4"); // DEBUG
 
         // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
-        writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna.png"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-180ccw-exif.jpg"); // DEBUG
-        // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-90ccw-exif.jpg"); // DEBUG
+        writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-90ccw-exif.jpg"); // DEBUG
     }
 
     @Test
@@ -82,10 +82,10 @@ public class TestBoundingBoxWriter {
             */
 
             // BoundingBox box1 = new BoundingBox(156, 338, 193, 242, 90, false, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-90ccw-exif.jpg
-            BoundingBox box1 = new BoundingBox(339, 156, 194, 243, 0, true, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-flip-exif.jpg
+            // BoundingBox box1 = new BoundingBox(339, 156, 194, 243, 0, true, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-flip-exif.jpg
             // BoundingBox box1 = new BoundingBox(172, 156, 194, 243, 0, false, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna.png
             // BoundingBox box1 = new BoundingBox(339, 355, 194, 243, 180, false, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-180ccw-exif.png
-            // BoundingBox box1 = new BoundingBox(156, 172, 194, 243, 270, true, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-flip-90ccw-exif.png
+            BoundingBox box1 = new BoundingBox(156, 172, 194, 243, 270, true, 255, 0, 0, true, true, 7.243234f, Optional.empty()); // Lenna-flip-90ccw-exif.png
 
             map.putOnFrames(0, 0, box1);
 
@@ -94,10 +94,10 @@ public class TestBoundingBoxWriter {
             writer.setDestinationMedium(destinationFile.toURI());
 
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-90ccw-exif.jpg
-            writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-exif.jpg
+            // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-exif.jpg
             // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna.png
             // writer.setMediaMetadata(Map.of("ROTATION", "180", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-180ccw-exif.png
-            // writer.setMediaMetadata(Map.of("ROTATION", "270", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
+            writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
 
             writer.setBoundingBoxMap(map);
             writer.markupImage(); // writer.markupVideo(); // DEBUG

@@ -555,9 +555,7 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     std::cout << "label: " << label << std::endl; // DEBUG
     std::cout << "labelSize: " << labelSize << std::endl; // DEBUG
 
-    // Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
-    Mat labelMat = Mat::zeros(labelRectWidth * 2, labelRectWidth * 2, image->type()); // make bigger than necessary // TODO: apply mask
-
+    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
     std::cout << "lineThickness: " << lineThickness << std::endl; // DEBUG
     std::cout << "labelIndent: " << labelIndent << std::endl; // DEBUG
 
@@ -569,19 +567,27 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
 
-    cv::putText(labelMat, label, Point(labelRectWidth + labelBottomLeftX, labelRectWidth + labelBottomLeftY - labelRectHeight),
+    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
         labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);
 
     imshow("Label 2", labelMat); waitKey(0); // DEBUG
 
+    int labelRectMaxDim = labelRectWidth;
+    Mat paddedLabelMat = Mat::zeros(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type());
+    paddedLabelMat = Scalar(255,255,255);
+    labelMat.copyTo(paddedLabelMat(cv::Rect(labelRectMaxDim, labelRectMaxDim - labelRectHeight, labelMat.cols, labelMat.rows)));
+
+    imshow("Padded Label", paddedLabelMat); waitKey(0); // DEBUG
+
     if (flip) {
-        cv::flip(labelMat, labelMat, 1); // flip around y-axis
+        cv::flip(paddedLabelMat, paddedLabelMat, 1); // flip around y-axis
     }
 
     if (rotation != 0.0) {
-        Mat r = cv::getRotationMatrix2D(Point2d(labelRectWidth, labelRectWidth), rotation, 1.0);
-        cv::warpAffine(labelMat, labelMat, r, labelMat.size());
-        imshow("Label 2.5", labelMat); waitKey(0); // DEBUG
+        Point2d center(labelRectMaxDim, labelRectMaxDim);
+        Mat r = cv::getRotationMatrix2D(center, rotation, 1.0);
+        cv::warpAffine(paddedLabelMat, paddedLabelMat, r, paddedLabelMat.size());
+        imshow("Label 2.5", paddedLabelMat); waitKey(0); // DEBUG
     }
 
     //if (flip) {
@@ -594,16 +600,23 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
 
 
     // DEBUG
-    Mat padded = Mat::zeros(image->cols * 2, image->rows * 2, image->type());
-    image->copyTo((padded)(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows)));
+    Mat paddedImage = Mat::zeros(image->cols * 2, image->rows * 2, image->type());
+    image->copyTo((paddedImage)(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows)));
+    imshow("padded 1", paddedImage); waitKey(0); // DEBUG
 
-    labelMat.copyTo((padded)(cv::Rect(image->cols / 2.0 + labelRectBottomLeftX - labelRectWidth, image->rows / 2.0 + labelRectWidth - labelRectHeight,
-        labelMat.cols, labelMat.rows))); // labelMat mask
-    imshow("padded", padded); waitKey(0); // DEBUG
+    /*
+    paddedLabelMat.copyTo((paddedImage)(cv::Rect(image->cols / 2.0 - labelRectMaxDim + labelRectBottomLeftX,
+                                                 image->rows / 2.0 + labelRectMaxDim - labelRectHeight + labelPadding,
+                                                 paddedLabelMat.cols, paddedLabelMat.rows))); // labelMat mask
+    */
+    paddedLabelMat.copyTo((paddedImage)(cv::Rect(image->cols / 2.0 - labelRectMaxDim + labelRectBottomLeftX,
+                                                 image->rows / 2.0 - labelRectMaxDim + labelRectBottomLeftY,
+                                                 paddedLabelMat.cols, paddedLabelMat.rows))); // labelMat mask
+    imshow("padded 2", paddedImage); waitKey(0); // DEBUG
 
-    padded = padded(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows));
-    imshow("cropped", padded); waitKey(0); // DEBUG
-    *image = padded;
+    paddedImage = paddedImage(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows));
+    imshow("cropped", paddedImage); waitKey(0); // DEBUG
+    *image = paddedImage;
 
     // imshow("Label 3", labelMat); waitKey(0); // DEBUG
 

@@ -387,7 +387,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     }
 
     int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(&topLeftPt, boxRotation, boxFlip, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(&topLeftPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -590,25 +590,11 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
         imshow("Label 2.5", paddedLabelMat); waitKey(0); // DEBUG
     }
 
-    //if (flip) {
-    //    cv::flip(labelMat, labelMat, 1); // flip around y-axis
-    //    labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX - labelRectWidth, // OLD WAY: labelRectBottomLeftX
-    //                             labelRectTopRightY, labelMat.cols, labelMat.rows)));
-    //} else {
-        // labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, labelRectTopRightY, labelMat.cols, labelMat.rows)), labelMat);
-    //}
-
-
     // DEBUG
     Mat paddedImage = Mat::zeros(image->cols * 2, image->rows * 2, image->type());
     image->copyTo((paddedImage)(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows)));
     imshow("padded 1", paddedImage); waitKey(0); // DEBUG
 
-    /*
-    paddedLabelMat.copyTo((paddedImage)(cv::Rect(image->cols / 2.0 - labelRectMaxDim + labelRectBottomLeftX,
-                                                 image->rows / 2.0 + labelRectMaxDim - labelRectHeight + labelPadding,
-                                                 paddedLabelMat.cols, paddedLabelMat.rows))); // labelMat mask
-    */
     paddedLabelMat.copyTo((paddedImage)(cv::Rect(image->cols / 2.0 - labelRectMaxDim + labelRectBottomLeftX,
                                                  image->rows / 2.0 - labelRectMaxDim + labelRectBottomLeftY,
                                                  paddedLabelMat.cols, paddedLabelMat.rows))); // labelMat mask

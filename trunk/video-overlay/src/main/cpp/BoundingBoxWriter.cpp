@@ -357,7 +357,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
 
     std::array<Point2d, 4> adjCorners =
-        MPFRotatedRect(x, y, width, height, boxRotation + mediaRotation, boxFlip ? !mediaFlip : mediaFlip).GetCorners();
+        MPFRotatedRect(x, y, width, height, boxRotation - mediaRotation, boxFlip ? !mediaFlip : mediaFlip).GetCorners();
 
     // Get top-left point.
     auto adjTopLeftPt = std::max_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
@@ -381,6 +381,13 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
     // To address this, we use a minimum thickness of 2.
     int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
+
+
+    // DEBUG
+    drawLine(adjCorners[0], adjCorners[1], Scalar(255,255,255), lineThickness, animated, image);
+    drawLine(adjCorners[1], adjCorners[2], Scalar(255,255,255), lineThickness, animated, image);
+    drawLine(adjCorners[2], adjCorners[3], Scalar(255,255,255), lineThickness, animated, image);
+    drawLine(adjCorners[3], adjCorners[0], Scalar(255,255,255), lineThickness, animated, image);
 
     int minCircleRadius = 3;
     int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;

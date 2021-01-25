@@ -98,7 +98,7 @@ public class TestBoundingBoxWriter {
             // writer.setMediaMetadata(Map.of("ROTATION", "180", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-180ccw-exif.png
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
 
-            writer.setMediaMetadata(Map.of("ROTATION", "72", "HORIZONTAL_FLIP", "false")); // DEBUG
+            writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "false")); // DEBUG
 
             writer.setBoundingBoxMap(map);
             writer.markupImage(); // DEBUG

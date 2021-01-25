@@ -555,7 +555,8 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     std::cout << "label: " << label << std::endl; // DEBUG
     std::cout << "labelSize: " << labelSize << std::endl; // DEBUG
 
-    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
+    // Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
+    Mat labelMat = Mat::zeros(labelRectWidth * 2, labelRectWidth * 2, image->type()); // make bigger than necessary // TODO: apply mask
 
     std::cout << "lineThickness: " << lineThickness << std::endl; // DEBUG
     std::cout << "labelIndent: " << labelIndent << std::endl; // DEBUG
@@ -568,8 +569,8 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
 
-    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, color,
-        labelThickness, cv::LineTypes::LINE_8);
+    cv::putText(labelMat, label, Point(labelRectWidth + labelBottomLeftX, labelRectWidth + labelBottomLeftY - labelRectHeight),
+        labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);
 
     imshow("Label 2", labelMat); waitKey(0); // DEBUG
 
@@ -578,24 +579,35 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     }
 
     if (rotation != 0.0) {
-        Mat r = cv::getRotationMatrix2D(Point2d(labelRectWidth / 2.0, labelRectHeight / 2.0), rotation, 1.0);
-        cv::warpAffine(labelMat, labelMat, r, Size(labelRectWidth, labelRectHeight));
+        Mat r = cv::getRotationMatrix2D(Point2d(labelRectWidth, labelRectWidth), rotation, 1.0);
+        cv::warpAffine(labelMat, labelMat, r, labelMat.size());
         imshow("Label 2.5", labelMat); waitKey(0); // DEBUG
     }
 
-    if (flip) {
-        cv::flip(labelMat, labelMat, 1); // flip around y-axis
-        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX - labelRectWidth, // OLD WAY: labelRectBottomLeftX
-                                 labelRectTopRightY, labelRectWidth, labelRectHeight)));
-    } else {
-        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX,
-                                 labelRectTopRightY, labelRectWidth, labelRectHeight)));
-    }
-
-    imshow("Label 3", labelMat); waitKey(0); // DEBUG
+    //if (flip) {
+    //    cv::flip(labelMat, labelMat, 1); // flip around y-axis
+    //    labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX - labelRectWidth, // OLD WAY: labelRectBottomLeftX
+    //                             labelRectTopRightY, labelMat.cols, labelMat.rows)));
+    //} else {
+        // labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, labelRectTopRightY, labelMat.cols, labelMat.rows)), labelMat);
+    //}
 
 
-    imshow("Image (label)", *image); waitKey(0); // DEBUG
+    // DEBUG
+    Mat padded = Mat::zeros(image->cols * 2, image->rows * 2, image->type());
+    image->copyTo((padded)(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows)));
+
+    labelMat.copyTo((padded)(cv::Rect(image->cols / 2.0 + labelRectBottomLeftX - labelRectWidth, image->rows / 2.0 + labelRectWidth - labelRectHeight,
+        labelMat.cols, labelMat.rows))); // labelMat mask
+    imshow("padded", padded); waitKey(0); // DEBUG
+
+    padded = padded(cv::Rect(image->cols / 2.0, image->rows / 2.0, image->cols, image->rows));
+    imshow("cropped", padded); waitKey(0); // DEBUG
+    *image = padded;
+
+    // imshow("Label 3", labelMat); waitKey(0); // DEBUG
+
+    // imshow("Image (label)", *image); waitKey(0); // DEBUG
 
 }
 

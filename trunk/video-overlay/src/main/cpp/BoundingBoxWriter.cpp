@@ -57,14 +57,15 @@ using namespace COMPONENT;
 
 double normalizeAngle(double angle);
 
-void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     bool animated, const std::string &label, Mat *image);
+void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
+                     double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
+                     const std::string &label, Mat *image);
 
 void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image);
 
 void drawFrameNumber(int frameNumber, Mat *image);
 
-void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent, int lineThickness,
+void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color, int labelIndent, int lineThickness,
                           const std::string &label, Mat *image);
 
 
@@ -134,20 +135,20 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         }
 
         // Get the media metadata horizontal flip property.
-        auto horizontalFlipJStringPtr = jni.ToJString("HORIZONTAL_FLIP");
-        jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *horizontalFlipJStringPtr);
-        bool mediaHorizontalFlip = false;
+        auto flipJStringPtr = jni.ToJString("HORIZONTAL_FLIP");
+        jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *flipJStringPtr);
+        bool mediaFlip = false;
         if (jPropValue != nullptr) {
-            mediaHorizontalFlip = jni.ToBool(jPropValue);
+            mediaFlip = jni.ToBool(jPropValue);
         }
 
         std::cout << "mediaRotation: " << mediaRotation << std::endl; // DEBUG
-        std::cout << "mediaHorizontalFlip: " << mediaHorizontalFlip << std::endl; // DEBUG
+        std::cout << "mediaFlip: " << mediaFlip << std::endl; // DEBUG
 
         Size frameSize = boundingBoxMediaHandle.GetFrameSize();
 
         AffineFrameTransformer frameTransformer(
-                mediaRotation, mediaHorizontalFlip, Scalar(0, 0, 0),
+                mediaRotation, mediaFlip, Scalar(0, 0, 0),
                 IFrameTransformer::Ptr(new NoOpFrameTransformer(frameSize)));
 
         Mat frame;
@@ -193,14 +194,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     jboolean animated = jni.CallBooleanMethod(box, clzBoundingBox_fnIsAnimated);
                     jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
-                    double rotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
-                    bool horizontalFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
-
-                    // Rotation and horizontal flip for each detection are relative to the original untransformed frame.
-                    // However, markup is applied to the transformed frame (e.g. to account for EXIF), so we adjust
-                    // those values.
-                    //rotation = normalizeAngle(rotation - mediaRotation);
-                    //horizontalFlip = mediaHorizontalFlip ? !horizontalFlip : horizontalFlip;
+                    double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
+                    bool boxFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
                     std::stringstream ss;
 
@@ -222,7 +217,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                         ss << '!';
                     }
 
-                    drawBoundingBox(x, y, width, height, rotation, horizontalFlip,
+                    drawBoundingBox(x, y, width, height, boxRotation, boxFlip, mediaRotation, mediaFlip,
                                     red, green, blue, animated, ss.str(), &frame);
                 }
             }
@@ -308,10 +303,108 @@ double normalizeAngle(double angle) {
     return 360 + angle;
 }
 
-void drawBoundingBox(int x, int y, int width, int height, double rotation, bool flip, int red, int green, int blue,
-                     bool animated, const std::string &label, Mat *image)
+void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
+                     double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
+                     const std::string &label, Mat *image)
 {
-    std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, rotation, flip).GetCorners();
+    /*
+    // DEBUG
+    int llineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
+
+    std::array<Point2d, 4> ccorners = MPFRotatedRect(x, y, width, height, 0, false).GetCorners();
+    Scalar bboxColor(255, 255, 255);
+    drawLine(ccorners[0], ccorners[1], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[1], ccorners[2], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[2], ccorners[3], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[3], ccorners[0], bboxColor, llineThickness, animated, image);
+
+    imshow("Image (norm)", *image); waitKey(0); // DEBUG
+
+    ccorners = MPFRotatedRect(x, y, width, height, 45, false).GetCorners();
+    bboxColor = Scalar(255, 0, 0);
+    drawLine(ccorners[0], ccorners[1], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[1], ccorners[2], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[2], ccorners[3], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[3], ccorners[0], bboxColor, llineThickness, animated, image);
+
+    imshow("Image (45, false)", *image); waitKey(0); // DEBUG
+
+    ccorners = MPFRotatedRect(x, y, width, height, 0, true).GetCorners();
+    bboxColor = Scalar(0, 255, 0);
+    drawLine(ccorners[0], ccorners[1], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[1], ccorners[2], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[2], ccorners[3], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[3], ccorners[0], bboxColor, llineThickness, animated, image);
+
+    imshow("Image (0, flip)", *image); waitKey(0); // DEBUG
+
+    ccorners = MPFRotatedRect(x, y, width, height, 45, true).GetCorners();
+    bboxColor = Scalar(0, 0, 255);
+    drawLine(ccorners[0], ccorners[1], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[1], ccorners[2], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[2], ccorners[3], bboxColor, llineThickness, animated, image);
+    drawLine(ccorners[3], ccorners[0], bboxColor, llineThickness, animated, image);
+
+    imshow("Image (45, flip)", *image); waitKey(0); // DEBUG
+    */
+
+
+    // NEW WAY
+    std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
+
+    std::array<Point2d, 4> adjCorners =
+        MPFRotatedRect(x, y, width, height, boxRotation + mediaRotation, boxFlip ? !mediaFlip : mediaFlip).GetCorners();
+
+    // Get top-left point.
+    auto adjTopLeftPt = std::max_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
+        if (a.y == b.y) {
+            return a.x > b.x; // leftmost
+        }
+        return a.y > b.y; // topmost
+    });
+    int adjTopLeftPtIndex = std::distance(adjCorners.begin(), adjTopLeftPt);
+
+    Point2d topLeftPt = corners[adjTopLeftPtIndex]; // get pre-adjusted top-left point
+    std::cout << "pre-adjusted top-left pt: " << topLeftPt << std::endl;
+
+
+    Scalar boxColor(blue, green, red);
+    int minDim = width < height ? width : height;
+
+    // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
+    // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
+    // Specifically, no pixels will be drawn near the edge.
+    // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
+    // To address this, we use a minimum thickness of 2.
+    int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
+
+    int minCircleRadius = 3;
+    int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
+
+    double maxCircleCoverage = minDim * 0.25; // circle should not cover more than 25% of the min dim
+    if (circleRadius > maxCircleCoverage) {
+        circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
+    }
+
+    int labelIndent = circleRadius + 2;
+    drawBoundingBoxLabel(&topLeftPt, boxRotation, boxFlip, boxColor, labelIndent, lineThickness, label, image);
+
+    drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
+    drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
+    drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
+    drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
+
+    circle(*image, topLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+
+    imshow("Image (detection)", *image); waitKey(0); // DEBUG
+
+
+    return; // DEBUG
+
+
+/*
+    // OLD WAY
+    std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -353,6 +446,7 @@ void drawBoundingBox(int x, int y, int width, int height, double rotation, bool 
     circle(*image, Point(x, y), circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
     imshow("Image (detection)", *image); waitKey(0); // DEBUG
+*/
 }
 
 void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image)
@@ -418,7 +512,7 @@ void drawFrameNumber(int frameNumber, Mat *image)
         labelThickness, cv::LineTypes::LINE_8);
 }
 
-void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent, int lineThickness,
+void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color, int labelIndent, int lineThickness,
                           const std::string &label, Mat *image)
 {
     int labelPadding = 8;
@@ -481,7 +575,17 @@ void drawBoundingBoxLabel(Point2d *pt, bool flip, Scalar color, int labelIndent,
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis
-        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX, // labelRectBottomLeftX - labelRectWidth
+    }
+
+    if (rotation != 0.0) {
+        Mat r = cv::getRotationMatrix2D(Point2d(labelRectWidth / 2.0, labelRectHeight / 2.0), rotation, 1.0);
+        cv::warpAffine(labelMat, labelMat, r, Size(labelRectWidth, labelRectHeight));
+        imshow("Label 2.5", labelMat); waitKey(0); // DEBUG
+    }
+
+    if (flip) {
+        cv::flip(labelMat, labelMat, 1); // flip around y-axis
+        labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX - labelRectWidth, // OLD WAY: labelRectBottomLeftX
                                  labelRectTopRightY, labelRectWidth, labelRectHeight)));
     } else {
         labelMat.copyTo((*image)(cv::Rect(labelRectBottomLeftX,

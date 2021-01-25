@@ -224,9 +224,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
             // Account for media metadata (e.g. EXIF).
             Mat transformFrame = frame.clone();
-            imshow("Image (pre-transform)", transformFrame); waitKey(0); // DEBUG
+            // imshow("Image (pre-transform)", transformFrame); waitKey(0); // DEBUG
             frameTransformer.TransformFrame(transformFrame, 0);
-            imshow("Image (post-transform)", transformFrame); waitKey(0); // DEBUG
+            // imshow("Image (post-transform)", transformFrame); waitKey(0); // DEBUG
 
             if (boundingBoxMediaHandle.ShowFrameNumbers()) {
                 drawFrameNumber(currentFrame, &transformFrame);
@@ -407,7 +407,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
 
     circle(*image, topLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
-    imshow("Image (detection)", *image); waitKey(0); // DEBUG
+    // imshow("Image (detection)", *image); waitKey(0); // DEBUG
 
 
     return; // DEBUG
@@ -561,7 +561,7 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
     int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
 
-    imshow("Image", *image); waitKey(0); // DEBUG
+    // imshow("Image", *image); waitKey(0); // DEBUG
 
     std::cout << "label: " << label << std::endl; // DEBUG
     std::cout << "labelSize: " << labelSize << std::endl; // DEBUG
@@ -573,7 +573,7 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     std::cout << "labelRectWidth: " << labelRectWidth << std::endl; // DEBUG
     std::cout << "labelRectHeight: " << labelRectHeight << std::endl; // DEBUG
 
-    imshow("Label 1", labelMat); waitKey(0); // DEBUG
+    // imshow("Label 1", labelMat); waitKey(0); // DEBUG
 
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
@@ -581,57 +581,69 @@ void drawBoundingBoxLabel(Point2d *pt, double rotation, bool flip, Scalar color,
     cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
         labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);
 
-    imshow("Label 2", labelMat); waitKey(0); // DEBUG
+    // imshow("Label 2", labelMat); waitKey(0); // DEBUG
 
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis
     }
 
-    imshow("Label 2 (flip)", labelMat); waitKey(0); // DEBUG
+    // imshow("Label 2 (flip)", labelMat); waitKey(0); // DEBUG
 
 
     int labelRectMaxDim = ceil(sqrt(pow(labelRectWidth, 2) + pow(labelRectHeight, 2)));
+
     Mat paddedLabelMat = Mat::zeros(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type());
     paddedLabelMat = Scalar(255,255,255);
 
     std::cout << "labelRectMaxDim: " << labelRectMaxDim << std::endl; // DEBUG
-    cv::Rect labelMatInsertRect(labelRectMaxDim, labelRectMaxDim - labelRectHeight, labelMat.cols, labelMat.rows);
+    cv::Rect labelMatInsertRect(flip ? labelRectMaxDim-labelRectWidth : labelRectWidth,
+                                labelRectMaxDim - labelRectHeight, labelMat.cols, labelMat.rows);
     std::cout << "labelMatInsertRect: " << labelMatInsertRect << std::endl; // DEBUG
     labelMat.copyTo(paddedLabelMat(labelMatInsertRect));
 
-    imshow("Padded Label", paddedLabelMat); waitKey(0); // DEBUG
+    // imshow("Padded Label", paddedLabelMat); waitKey(0); // DEBUG
 
     Point2d center(labelRectMaxDim, labelRectMaxDim);
     Mat r = cv::getRotationMatrix2D(center, rotation, 1.0);
     cv::warpAffine(paddedLabelMat, paddedLabelMat, r, paddedLabelMat.size(),
                    cv::InterpolationFlags::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
-    imshow("Label 2.5", paddedLabelMat); waitKey(0); // DEBUG
+    // imshow("Label 2.5", paddedLabelMat); waitKey(0); // DEBUG
 
 
 
     // DEBUG
-    int imagePadding = labelRectMaxDim;
+    int imagePadding = labelRectMaxDim; // TODO: was: labelRectMaxDim;
     Mat paddedImage = Mat::zeros(image->cols + 2 * imagePadding, image->rows + 2 * imagePadding, image->type());
     // imshow("padded 1", paddedImage); waitKey(0); // DEBUG
 
     image->copyTo((paddedImage)(cv::Rect(imagePadding, imagePadding, image->cols, image->rows)));
-    imshow("padded 2", paddedImage); waitKey(0); // DEBUG
+    // imshow("padded 2", paddedImage); waitKey(0); // DEBUG
 
     Mat paddedLabelMask = Mat::zeros(paddedLabelMat.cols, paddedLabelMat.cols, CV_8U);
     cv::cvtColor(paddedLabelMat, paddedLabelMask, cv::COLOR_BGR2GRAY);
     cv::threshold(paddedLabelMask, paddedLabelMask, 128, 255, cv::THRESH_BINARY);
-    imshow("mask 1", paddedLabelMask); waitKey(0); // DEBUG
+    // imshow("mask 1", paddedLabelMask); waitKey(0); // DEBUG
     paddedLabelMask = ~paddedLabelMask;
-    imshow("mask 2", paddedLabelMask); waitKey(0); // DEBUG
+    // imshow("mask 2", paddedLabelMask); waitKey(0); // DEBUG
 
-    paddedLabelMat.copyTo((paddedImage)(cv::Rect(imagePadding - labelRectMaxDim + labelRectBottomLeftX,
-                                                 imagePadding - labelRectMaxDim + labelRectBottomLeftY,
-                                                 paddedLabelMat.cols, paddedLabelMat.rows)), paddedLabelMask);
-    imshow("padded 3", paddedImage); waitKey(0); // DEBUG
+    cv::Rect paddedLabelMatInsertRect(imagePadding - labelRectMaxDim + labelRectBottomLeftX,
+                                      imagePadding - labelRectMaxDim + labelRectBottomLeftY,
+                                      paddedLabelMat.cols, paddedLabelMat.rows);
+    std::cout << "imagePadding: " << imagePadding << std::endl; // DEBUG
+    std::cout << "labelRectMaxDim: " << labelRectMaxDim << std::endl; // DEBUG
+    std::cout << "labelRectBottomLeftY: " << labelRectBottomLeftY << std::endl; // DEBUG
+    std::cout << "paddedLabelMatInsertRect: " << paddedLabelMatInsertRect << std::endl; // DEBUG
+
+    try {
+        paddedLabelMat.copyTo((paddedImage)(paddedLabelMatInsertRect), paddedLabelMask);
+        // imshow("padded 3", paddedImage); waitKey(0); // DEBUG
+    } catch (std::exception& e) {
+        std::cerr << "Label outside of viewable region." << std::endl; // DEBUG
+    }
 
     Mat croppedImage = paddedImage(cv::Rect(imagePadding, imagePadding, image->cols, image->rows));
-    imshow("cropped", croppedImage); waitKey(0); // DEBUG
+    // imshow("cropped", croppedImage); waitKey(0); // DEBUG
     *image = croppedImage;
 
     // imshow("Label 3", labelMat); waitKey(0); // DEBUG

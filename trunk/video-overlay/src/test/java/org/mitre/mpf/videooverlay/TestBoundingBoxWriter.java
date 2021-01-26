@@ -89,7 +89,7 @@ public class TestBoundingBoxWriter {
             // map.putOnFrames(0, 0, box1);
 
             // DEBUG
-            BoundingBox box1 = new BoundingBox(500, 500, 20, 30, 194, false, 255, 0, 0, true, true, 7.243234f,
+            BoundingBox box1 = new BoundingBox(150, 150, 20, 30, 194, true, 255, 0, 0, true, true, 7.243234f,
                     Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
             map.putOnFrames(0, 0, box1);
 

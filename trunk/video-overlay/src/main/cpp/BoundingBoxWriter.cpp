@@ -41,6 +41,7 @@
 #include <frame_transformers/IFrameTransformer.h>
 #include <frame_transformers/AffineFrameTransformer.h>
 
+#include "detectionComponentUtils.h"
 #include "JniHelper.h"
 #include "BoundingBoxImageHandle.h"
 #include "BoundingBoxVideoHandle.h"
@@ -294,24 +295,38 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
     std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
+    auto topLeftPt = corners[0];
+
+    std::cout << "raw corners:" << std::endl; // DEBUG
+    for (int i = 0; i < corners.size(); i++) {
+        std::cout << "corner[" << i << "]: " << corners[i] << std::endl;
+    }
 
     // Calculate the adjusted box coordinates relative to the final frame.
     // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
     std::array<Point2d, 4> adjCorners =
-        MPFRotatedRect(x, y, width, height, boxRotation - mediaRotation, boxFlip ? !mediaFlip : mediaFlip).GetCorners();
+        MPFRotatedRect(x, y, width, height,
+                       boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
+                       boxFlip ? !mediaFlip : mediaFlip).GetCorners();
+
+    std::cout << "adj corners:" << std::endl; // DEBUG
+    for (int i = 0; i < adjCorners.size(); i++) {
+        std::cout << "corner[" << i << "]: " << adjCorners[i] << std::endl;
+    }
 
     // Get the top-left point of box in final frame. The lower-left corner of the black label rectangle will later be
     // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
-    auto adjTopLeftPt = std::max_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
-        if (a.y == b.y) {
-            return a.x > b.x; // leftmost
-        }
-        return a.y > b.y; // topmost
+    auto adjTopLeftIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
+        return std::tie(a.y, a.x) < std::tie(b.y, b.x);
     });
-    int adjTopLeftPtIndex = std::distance(adjCorners.begin(), adjTopLeftPt);
+    int adjTopLeftPtIndex = std::distance(adjCorners.begin(), adjTopLeftIter);
+
+    std::cout << "adjTopLeftPtIndex: " << adjTopLeftPtIndex << std::endl; // DEBUG
 
     // Get point of box in raw frame that corresponds to the top-left point in the box in the final frame.
-    Point2d topLeftPt = corners[adjTopLeftPtIndex];
+    Point2d rawTopLeftPt = corners[adjTopLeftPtIndex];
+
+    std::cout << "rawTopLeftPt: " << rawTopLeftPt << std::endl; // DEBUG
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -332,7 +347,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     }
 
     int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(topLeftPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(rawTopLeftPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -465,7 +480,8 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     labelMat.copyTo(paddedLabelMat(labelMatInsertRect));
 
     // Rotate the white box such that the label rectangle with text will be orientated horizontally in the final frame.
-    if (rotation > 0.0) {
+    bool hasRotation = !DetectionComponentUtils::RotationAnglesEqual(rotation, 0);
+    if (hasRotation) {
         Point2d center(labelRectMaxDim, labelRectMaxDim);
         Mat r = cv::getRotationMatrix2D(center, rotation, 1.0);
         cv::warpAffine(paddedLabelMat, paddedLabelMat, r, paddedLabelMat.size(),

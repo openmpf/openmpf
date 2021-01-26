@@ -89,8 +89,9 @@ public class TestBoundingBoxWriter {
             // map.putOnFrames(0, 0, box1);
 
             // DEBUG
-            BoundingBox box1 = new BoundingBox(150, 150, 20, 30, 194, true, 255, 0, 0, true, true, 7.243234f,
-                    Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
+            // BoundingBox box1 = new BoundingBox(150, 150, 20, 30, 194, false, 255, 0, 0, true, true, 7.243234f,
+            //        Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
+            BoundingBox box1 = new BoundingBox(372, 156, 194, 243, 30, true, 255, 0, 0, true, true, 7.243234f, Optional.empty());
             map.putOnFrames(0, 0, box1);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
@@ -112,6 +113,7 @@ public class TestBoundingBoxWriter {
                 writer.setBoundingBoxMap(map);
                 writer.markupImage(); // DEBUG
             }
+
 
             for (int i = 0; i <= 360; i+=10) {
                 writer.setMediaMetadata(Map.of("ROTATION", Integer.toString(i), "HORIZONTAL_FLIP", "true")); // DEBUG

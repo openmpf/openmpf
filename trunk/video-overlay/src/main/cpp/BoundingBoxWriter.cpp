@@ -297,22 +297,12 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
     auto topLeftPt = corners[0];
 
-    std::cout << "raw corners:" << std::endl; // DEBUG
-    for (int i = 0; i < corners.size(); i++) {
-        std::cout << "corner[" << i << "]: " << corners[i] << std::endl;
-    }
-
     // Calculate the adjusted box coordinates relative to the final frame.
     // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
     std::array<Point2d, 4> adjCorners =
         MPFRotatedRect(x, y, width, height,
                        boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
                        boxFlip ? !mediaFlip : mediaFlip).GetCorners();
-
-    std::cout << "adj corners:" << std::endl; // DEBUG
-    for (int i = 0; i < adjCorners.size(); i++) {
-        std::cout << "corner[" << i << "]: " << adjCorners[i] << std::endl;
-    }
 
     // Get the top-left point of box in final frame. The lower-left corner of the black label rectangle will later be
     // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
@@ -321,12 +311,8 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     });
     int adjTopLeftPtIndex = std::distance(adjCorners.begin(), adjTopLeftIter);
 
-    std::cout << "adjTopLeftPtIndex: " << adjTopLeftPtIndex << std::endl; // DEBUG
-
     // Get point of box in raw frame that corresponds to the top-left point in the box in the final frame.
     Point2d rawTopLeftPt = corners[adjTopLeftPtIndex];
-
-    std::cout << "rawTopLeftPt: " << rawTopLeftPt << std::endl; // DEBUG
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -475,7 +461,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
 
     // Place the label rectangle within the square, as shown in the above diagram. If the label is flipped, move the
     // rectangle to the left of the center to account for how it will be flipped again when generating the final frame.
-    cv::Rect labelMatInsertRect(flip ? labelRectMaxDim - labelRectWidth : labelRectWidth,
+    cv::Rect labelMatInsertRect(flip ? labelRectMaxDim - labelRectWidth : labelRectMaxDim,
                                 labelRectMaxDim - labelRectHeight, labelMat.cols, labelMat.rows);
     labelMat.copyTo(paddedLabelMat(labelMatInsertRect));
 
@@ -493,7 +479,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     int imagePadding = labelRectMaxDim;
     Mat paddedImage = Mat::zeros(image->cols + 2 * imagePadding, image->rows + 2 * imagePadding, image->type());
 
-    // Place the raw frame on the black canvas.
+    // Place the raw frame in the center of the black canvas.
     image->copyTo((paddedImage)(cv::Rect(imagePadding, imagePadding, image->cols, image->rows)));
 
     // Generate a black and white mask that only captures the label rectangle within the white box.
@@ -504,8 +490,8 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     paddedLabelMask = ~paddedLabelMask;
 
     try {
-        // Place the white box on the canvas. Align the center of the box (which corresponds to the lower-left corner
-        // of the label rectangle) with the desired location (pt).
+        // Place the white box on the canvas and apply the mask. Align the center of the box (which corresponds to the
+        // lower-left corner of the label rectangle) with the desired location (pt).
         cv::Rect paddedLabelMatInsertRect(imagePadding - labelRectMaxDim + labelRectBottomLeftX,
                                           imagePadding - labelRectMaxDim + labelRectBottomLeftY,
                                           paddedLabelMat.cols, paddedLabelMat.rows);
@@ -513,7 +499,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     } catch (std::exception& e) {
         // Depending on the position of the detection relative to the frame boundary, sometimes the label cannot be
         // drawn within the viewable region. This is fine. Log and continue.
-        std::cerr << "Label outside of viewable region." << std::endl;
+        std::cerr << "Warning: Label outside of viewable region." << std::endl;
     }
 
     // Crop the padding off of the canvas, leaving the raw frame with the newly applied label.

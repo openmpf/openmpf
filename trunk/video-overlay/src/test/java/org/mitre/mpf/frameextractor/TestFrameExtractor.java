@@ -98,7 +98,7 @@ public class TestFrameExtractor {
     @Test
     public void testFrameExtractorOnRotatedImage() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, requestedExtractions);
+        putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, requestedExtractions); // capture the subject's right eye
 
         // not accounting for orientation, sample media has raw dimensions of 600 width by 480 height
         // from exiftool: "Mirror horizontal and rotate 270 CW"

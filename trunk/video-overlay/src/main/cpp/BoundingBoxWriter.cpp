@@ -35,6 +35,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp> // DEBUG
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -46,14 +47,13 @@
 #include "BoundingBoxImageHandle.h"
 #include "BoundingBoxVideoHandle.h"
 
-#ifdef __cplusplus
-extern "C" {
 
 using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
-#endif
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+            BoundingBoxMediaHandle &boundingBoxMediaHandle);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
@@ -65,6 +65,53 @@ void drawFrameNumber(int frameNumber, Mat *image);
 
 void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, int lineThickness,
                           const std::string &label, Mat *image);
+
+
+extern "C" {
+
+JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
+  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
+   jstring destinationVideoPathJString)
+{
+    JniHelper jni(env);
+    try {
+        std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
+        std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
+
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
+
+        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxVideoHandle);
+    }
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
+    }
+    catch (...) {
+        jni.ReportCppException();
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
+  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
+   jstring destinationImagePathJString)
+{
+    JniHelper jni(env);
+    try {
+        std::string sourceImagePath = jni.ToStdString(sourceImagePathJString);
+        std::string destinationImagePath = jni.ToStdString(destinationImagePathJString);
+
+        BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
+
+        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxImageHandle);
+    }
+    catch (const std::exception &e) {
+        jni.ReportCppException(e.what());
+    }
+    catch (...) {
+        jni.ReportCppException();
+    }
+}
+
+} // extern "C"
 
 
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
@@ -237,57 +284,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
     }
 }
 
-/*
- * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
- * Method:    markupVideoNative
- */
-JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
-   jstring destinationVideoPathJString)
-{
-    JniHelper jni(env);
-    try {
-        std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
-        std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
-
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
-
-        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxVideoHandle);
-    }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
-    }
-    catch (...) {
-        jni.ReportCppException();
-    }
-}
-
-/*
- * Class:     org_mitre_mpf_videooverlay_BoundingBoxWriter
- * Method:    markupImageNative
- */
-JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
-  (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
-   jstring destinationImagePathJString)
-{
-    JniHelper jni(env);
-    try {
-        std::string sourceImagePath = jni.ToStdString(sourceImagePathJString);
-        std::string destinationImagePath = jni.ToStdString(destinationImagePathJString);
-
-        BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
-
-        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxImageHandle);
-    }
-    catch (const std::exception &e) {
-        jni.ReportCppException(e.what());
-    }
-    catch (...) {
-        jni.ReportCppException();
-    }
-}
-
-
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
                      const std::string &label, Mat *image)
@@ -431,6 +427,8 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
 
+    color = Scalar(255, 255, 254); // DEBUG
+
     cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
         labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);
 
@@ -456,8 +454,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     // degrees within the square.
     int labelRectMaxDim = ceil(sqrt(pow(labelRectWidth, 2) + pow(labelRectHeight, 2)));
 
-    Mat paddedLabelMat = Mat::zeros(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type());
-    paddedLabelMat = Scalar(255,255,255);
+    Mat paddedLabelMat(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type(), Scalar(255,255,255));
 
     // Place the label rectangle within the square, as shown in the above diagram. If the label is flipped, move the
     // rectangle to the left of the center to account for how it will be flipped again when generating the final frame.
@@ -477,17 +474,17 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     // Create a black canvas on which to place the raw frame.
     // Add enough padding around the raw frame to position the entire white box along the outer edge, if necessary.
     int imagePadding = labelRectMaxDim;
-    Mat paddedImage = Mat::zeros(image->cols + 2 * imagePadding, image->rows + 2 * imagePadding, image->type());
+    Mat paddedImage = Mat::zeros(image->rows + 2 * imagePadding, image->cols + 2 * imagePadding, image->type());
 
     // Place the raw frame in the center of the black canvas.
     image->copyTo((paddedImage)(cv::Rect(imagePadding, imagePadding, image->cols, image->rows)));
 
     // Generate a black and white mask that only captures the label rectangle within the white box.
-    // Since black pixels represent the parts to mask out, invert the colors of the white box.
-    Mat paddedLabelMask = Mat::zeros(paddedLabelMat.cols, paddedLabelMat.cols, CV_8U);
-    cv::cvtColor(paddedLabelMat, paddedLabelMask, cv::COLOR_BGR2GRAY);
-    cv::threshold(paddedLabelMask, paddedLabelMask, 128, 255, cv::THRESH_BINARY);
+    // Black pixels in the mask represent the parts to mask out.
+    Mat paddedLabelMask = Mat::zeros(paddedLabelMat.rows, paddedLabelMat.cols, CV_8U);
+    cv::inRange(paddedLabelMat, Scalar(255, 255, 255), Scalar(255, 255, 255), paddedLabelMask);
     paddedLabelMask = ~paddedLabelMask;
+    // cv::imshow("2 paddedLabelMask", paddedLabelMask); cv::waitKey(0); // DEBUG
 
     try {
         // Place the white box on the canvas and apply the mask. Align the center of the box (which corresponds to the
@@ -507,8 +504,4 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     *image = croppedImage;
 }
 
-#ifdef __cplusplus
-}
 #endif
-#endif
-

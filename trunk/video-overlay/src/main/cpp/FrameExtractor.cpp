@@ -151,7 +151,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
             jint thisTrack = 0;
 
             if (!croppingFlag) {
-                // No cropping. Account for media metadata (e.g. EXIF).
+                // No cropping, but we still need to account for media metadata (e.g. EXIF).
 
                 // Get the media metadata rotation property.
                 jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *rotationJStringPtr);
@@ -219,11 +219,18 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
                         rotation = std::stod(rotationPropValue);
                     }
 
+                    // Get the horizontal flip property.
+                    jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *horizontalFlipJStringPtr);
+                    bool horizontalFlip = false;
+                    if (jPropValue != nullptr) {
+                        horizontalFlip = jni.ToBool(jPropValue);
+                    }
+
                     Mat transformFrame = frame.clone();
 
                     // Create the transformation for this frame and apply it.
                     FeedForwardExactRegionAffineTransformer transformer(
-                            { MPFRotatedRect(x, y, width, height, rotation, false) },
+                            { MPFRotatedRect(x, y, width, height, rotation, horizontalFlip) },
                             fillColor,
                             IFrameTransformer::Ptr(new NoOpFrameTransformer(transformFrame.size())));
 

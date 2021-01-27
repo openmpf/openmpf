@@ -29,9 +29,7 @@
 
 #include <MPFVideoCapture.h>
 
-#include "BoundingBoxMediaHandle.h"
-
-class BoundingBoxVideoHandle : public BoundingBoxMediaHandle {
+class BoundingBoxVideoHandle {
 public:
     BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath);
 

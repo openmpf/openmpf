@@ -52,8 +52,9 @@ using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
+template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
-            BoundingBoxMediaHandle &boundingBoxMediaHandle);
+            TMediaHandle &boundingBoxMediaHandle);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
@@ -114,8 +115,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 } // extern "C"
 
 
+template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
-            BoundingBoxMediaHandle &boundingBoxMediaHandle)
+            TMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
     try {
@@ -284,6 +286,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
     }
 }
 
+
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
                      const std::string &label, Mat *image)
@@ -426,8 +429,6 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
 
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
-
-    color = Scalar(255, 255, 254); // DEBUG
 
     cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
         labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);

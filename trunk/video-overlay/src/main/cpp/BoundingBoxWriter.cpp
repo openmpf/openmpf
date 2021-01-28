@@ -35,7 +35,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp> // DEBUG
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -485,7 +484,6 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     Mat paddedLabelMask = Mat::zeros(paddedLabelMat.rows, paddedLabelMat.cols, CV_8U);
     cv::inRange(paddedLabelMat, Scalar(255, 255, 255), Scalar(255, 255, 255), paddedLabelMask);
     paddedLabelMask = ~paddedLabelMask;
-    // cv::imshow("2 paddedLabelMask", paddedLabelMask); cv::waitKey(0); // DEBUG
 
     try {
         // Place the white box on the canvas and apply the mask. Align the center of the box (which corresponds to the

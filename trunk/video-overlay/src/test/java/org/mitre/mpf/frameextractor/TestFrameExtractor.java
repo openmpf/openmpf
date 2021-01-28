@@ -115,23 +115,6 @@ public class TestFrameExtractor {
     }
 
     @Test
-    public void testFrameExtractorOnFlipImage() throws IOException {
-        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        putInExtractionMap(0, Arrays.asList(7), 156, 172, 194, 243, 270, true, requestedExtractions); // Lenna-flip-90ccw-exif.jpg
-
-        URI media = JniTestUtils.getFileResource("samples/Lenna-flip-90ccw-exif.jpg");
-        Map metaMetadata = Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true");
-
-        extractFrames(media, metaMetadata, true, requestedExtractions);
-        Table<Integer, Integer, String> results = extractFrames(media, metaMetadata, false, requestedExtractions);
-
-        String extraction = results.get(0, 0); // track id is set to 0 for full frame results
-        BufferedImage bimg = ImageIO.read(new File(extraction));
-        Assert.assertEquals(480, bimg.getWidth());
-        Assert.assertEquals(600, bimg.getHeight());
-    }
-
-    @Test
     public void testFrameExtractorOnImageWithMultipleDetections() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, false, requestedExtractions);

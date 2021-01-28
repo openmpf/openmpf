@@ -26,7 +26,7 @@
 
 #include "BoundingBoxVideoHandle.h"
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath ) :
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath) :
         videoCapture_(sourceVideoPath),
         videoWriter_(destinationVideoPath, cv::VideoWriter::fourcc('M','J','P','G'),
             videoCapture_.GetFrameRate(), videoCapture_.GetFrameSize(), true) {

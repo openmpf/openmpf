@@ -32,7 +32,6 @@ import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 
 public class TestBoundingBoxWriter {
@@ -46,12 +45,13 @@ public class TestBoundingBoxWriter {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264.mp4"); // DEBUG
+        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi"); // DEBUG
 
         // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna.png"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-180ccw-exif.jpg"); // DEBUG
-        writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-90ccw-exif.jpg"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-90ccw-exif.jpg"); // DEBUG
     }
 
     @Test
@@ -68,7 +68,7 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".png"); // ".avi"
+            File destinationFile = File.createTempFile("markedup", ".avi"); // ".mp4", ".avi", ".png"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
@@ -102,11 +102,11 @@ public class TestBoundingBoxWriter {
             // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-exif.jpg
             // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna.png
             // writer.setMediaMetadata(Map.of("ROTATION", "180", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-180ccw-exif.png
-            writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
+            // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
 
             writer.setBoundingBoxMap(map);
-            writer.markupImage(); // DEBUG
-            // writer.markupVideo();
+            // writer.markupImage(); // DEBUG
+            writer.markupVideo();
 
             /*
             for (int i = 0; i <= 360; i+=10) {

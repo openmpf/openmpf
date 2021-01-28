@@ -34,6 +34,6 @@ import java.io.IOException;
 public class VideoOverlayJniException extends IOException {
 
     public VideoOverlayJniException(Throwable cause) {
-        super("Error writing bounding box(es).", cause);
+        super("Error writing bounding box(es). " + cause.getMessage(), cause);
     }
 }

@@ -274,7 +274,7 @@ public class MarkupSplitter {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return ".avi";
+                return ".mp4"; // .avi
 
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through

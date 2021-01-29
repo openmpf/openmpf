@@ -45,6 +45,7 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -58,6 +59,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.stream.DoubleStream;
@@ -101,6 +103,15 @@ public class MarkupSplitter {
                                         job.getPipelineElements().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
 
+                    Path destinationPath;
+                    if (boundingBoxMapEntryList.isEmpty()) {
+                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                                getFileExtension(media.getMimeType()));
+                    } else {
+                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                                getMarkedUpMediaExtensionForMediaType(media.getType(), job.getSystemPropertiesSnapshot()));
+                    }
+
                     Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
                             .setTaskIndex(job.getCurrentTaskIndex())
@@ -109,9 +120,7 @@ public class MarkupSplitter {
                             .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
                             .setSourceUri(media.getProcessingPath().toUri().toString())
-                            .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                    propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
-                                    propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())
+                            .setDestinationUri(destinationPath.toUri().toString())
                             .addAllMapEntries(boundingBoxMapEntryList);
 
                     for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {
@@ -269,12 +278,13 @@ public class MarkupSplitter {
 
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
-    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
+    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType,
+                                                                SystemPropertiesSnapshot snapshot) {
         switch(mediaType) {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return ".mp4"; // .avi
+                return snapshot.isMarkupVideoH264Enabled() ? ".mp4" : ".avi";
 
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through

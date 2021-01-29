@@ -139,6 +139,10 @@ public class SystemPropertiesSnapshot {
         return ArtifactExtractionPolicy.parse(_properties.get("detection.artifact.extraction.policy"));
     }
 
+    public boolean isMarkupVideoH264Enabled() {
+        return Boolean.parseBoolean(_properties.get("markup.video.h264.enabled"));
+    }
+
 
     public String lookup(String propertyName) {
         return _properties.get(propertyName);

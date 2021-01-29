@@ -277,18 +277,16 @@ public class IoUtils {
         }
     }
 
-    public void writeFileAsAttachment(Path path, HttpServletResponse response)
+    public void writeFileAsStream(Path path, HttpServletResponse response)
             throws IOException {
         try (InputStream inputStream = Files.newInputStream(path)) {
-            writeContentAsAttachment(inputStream, response, path.getFileName().toString(), getMimeType(path),
-                    Files.size(path));
+            writeContentAsStream(inputStream, response, getMimeType(path), Files.size(path));
         }
     }
 
-    public static void writeContentAsAttachment(
+    public static void writeContentAsStream(
             InputStream inputStream,
             HttpServletResponse response,
-            String fileName,
             String mimeType,
             long contentLength)
                 throws IOException {
@@ -298,7 +296,6 @@ public class IoUtils {
         else {
             response.setContentType(mimeType);
         }
-        response.setHeader("Content-Disposition", String.format("attachment; filename=\"%s\"", fileName));
         if (contentLength > 0 && contentLength < Integer.MAX_VALUE) {
             response.setContentLength((int) contentLength);
         }

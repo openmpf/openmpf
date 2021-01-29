@@ -360,16 +360,16 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
                             obj.sourceImg = "server/node-image?nodeFullPath=" + obj.sourceUri.replace("file:", "");
-                            obj.sourceDownload = "server/download?fullPath=" + obj.sourceUri.replace("file:", "");
+                            obj.sourceDownload = "server/download?sourceUri=" + obj.sourceUri + "&jobId=" + obj.jobId;
                             obj.sourceType = getMarkupType(obj.sourceUriContentType);
                             if (obj.sourceType == 'image') {
-                                return '<img src="' + obj.sourceImg + '" alt="" class="img-btn" data-download="' + obj.sourceDownload + '" data-file="' + obj.sourceUri + '" >';
+                                return '<img src="' + obj.sourceImg + '" alt="" class="img-btn" data-download="' + obj.sourceDownload + '" data-file="' + obj.sourceUri + '" style="width: 100%; height: auto">';
                             }
                             else if (obj.sourceType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.sourceType == 'video') {
-                                return '<span class="glyphicon glyphicon-film"></span>';
+                                return '<video controls preload="none" style="width: 100%"><source src="' + obj.sourceDownload + '">Your browser does not support the video tag.</video>';
                             }
                             else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
@@ -400,13 +400,13 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                             obj.markupDownload = "markup/download?id=" + obj.id;
                             obj.markupType = getMarkupType(obj.markupUriContentType);
                             if (obj.markupType == 'image') {
-                                return '<img src="' + obj.markupImg + '" alt="" class="img-btn" data-download="' + obj.markupDownload + '" data-file="' + obj.markupUri + '" >';
+                                return '<img src="' + obj.markupImg + '" alt="" class="img-btn" data-download="' + obj.markupDownload + '" data-file="' + obj.markupUri + '" style="width: 100%; height: auto">';
                             }
                             else if (obj.markupType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.markupType == 'video') {
-                                return '<span class="glyphicon glyphicon-film"></span>';
+                                return '<video controls preload="none" style="width: 100%"><source src="' + obj.markupDownload + '">Your browser does not support the video tag.</video>';
                             } else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }

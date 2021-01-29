@@ -249,7 +249,7 @@ public class MarkupController {
                 response.flushBuffer();
                 return;
             }
-            ioUtils.writeFileAsAttachment(localPath, response);
+            ioUtils.writeFileAsStream(localPath, response);
             return;
         }
 
@@ -282,22 +282,17 @@ public class MarkupController {
             S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.writeContentAsAttachment(inputStream, response, s3Object.getKey(), metadata.getContentType(),
-                                                 metadata.getContentLength());
+                IoUtils.writeContentAsStream(inputStream, response, metadata.getContentType(),
+                                             metadata.getContentLength());
             }
             return;
         }
 
         URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
-        int slashPos = mediaUrl.getPath().lastIndexOf('/');
-        String fileName = mediaUrl.getPath().substring(1 + slashPos);
-        if (fileName.isEmpty()) {
-            fileName = "markup_file";
-        }
         URLConnection urlConnection = mediaUrl.openConnection();
         try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.writeContentAsAttachment(inputStream, response, fileName, urlConnection.getContentType(),
-                                             urlConnection.getContentLength());
+            IoUtils.writeContentAsStream(inputStream, response, urlConnection.getContentType(),
+                                         urlConnection.getContentLength());
         }
     }
 

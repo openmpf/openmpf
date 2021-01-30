@@ -290,7 +290,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
     std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
-    auto topLeftPt = corners[0];
+    auto detectionTopLeftPt = corners[0];
 
     // Calculate the adjusted box coordinates relative to the final frame.
     // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
@@ -299,15 +299,15 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
                        boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
                        boxFlip ? !mediaFlip : mediaFlip).GetCorners();
 
-    // Get the top-left point of box in final frame. The lower-left corner of the black label rectangle will later be
+    // Get the top point of box in final frame. The lower-left corner of the black label rectangle will later be
     // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
-    auto adjTopLeftIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
-        return std::tie(a.y, a.x) < std::tie(b.y, b.x);
+    auto adjTopPtIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
+        return std::tie(a.y, a.x) < std::tie(b.y, b.x); // left takes precedence over right
     });
-    int adjTopLeftPtIndex = std::distance(adjCorners.begin(), adjTopLeftIter);
+    int adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
 
-    // Get point of box in raw frame that corresponds to the top-left point in the box in the final frame.
-    Point2d rawTopLeftPt = corners[adjTopLeftPtIndex];
+    // Get point of box in raw frame that corresponds to the top point in the box in the final frame.
+    Point2d rawTopPt = corners[adjTopPtIndex];
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -328,14 +328,14 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     }
 
     int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(rawTopLeftPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
     drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
     drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
 
-    circle(*image, topLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+    circle(*image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
 void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image)

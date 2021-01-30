@@ -41,23 +41,12 @@
 
 #include "JniHelper.h"
 
-/* Header for class org_mitre_mpf_frameextractor_FrameExtractor */
-
-#ifndef _Included_org_mitre_mpf_frameextractor_FrameExtractor
-#define _Included_org_mitre_mpf_frameextractor_FrameExtractor
-#ifdef __cplusplus
 extern "C" {
+
 using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
-#endif
-
-
-/*
- * Class:     org_mitre_mpf_frameextractor_FrameExtractor
- * Method:    executeNative
- */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNative
 (JNIEnv *env, jobject frameExtractorInstance, jstring media, jobject mediaMetadata, jstring destinationPath,
  jboolean croppingFlag, jboolean rotationFillIsBlack, jobject paths)
@@ -262,8 +251,4 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
     }
 }
 
-
-#ifdef __cplusplus
-}
-#endif
-#endif
+}  // extern "C"

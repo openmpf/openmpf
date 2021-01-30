@@ -24,9 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef _Included_org_mitre_mpf_videooverlay_BoundingBoxWriter
-#define _Included_org_mitre_mpf_videooverlay_BoundingBoxWriter
-
 #include <jni.h>
 #include <stdlib.h>
 #include <cmath>
@@ -502,5 +499,3 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     Mat croppedImage = paddedImage(cv::Rect(imagePadding, imagePadding, image->cols, image->rows));
     *image = croppedImage;
 }
-
-#endif

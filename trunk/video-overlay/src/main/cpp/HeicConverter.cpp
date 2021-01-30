@@ -66,5 +66,5 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_heic_HeicConverter_convertNative (
     }
 }
 
-}
+}  // extern "C"
 

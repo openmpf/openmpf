@@ -60,8 +60,8 @@ void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool 
 
 void drawFrameNumber(int frameNumber, Mat *image);
 
-void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, int lineThickness,
-                          const std::string &label, Mat *image);
+void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
+                          int lineThickness, const std::string &label, Mat *image);
 
 
 extern "C" {
@@ -294,10 +294,10 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
 
     // Calculate the adjusted box coordinates relative to the final frame.
     // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
-    std::array<Point2d, 4> adjCorners =
-        MPFRotatedRect(x, y, width, height,
-                       boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
-                       boxFlip ? !mediaFlip : mediaFlip).GetCorners();
+    MPFRotatedRect adjRotatedRect(x, y, width, height,
+                                  boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
+                                  boxFlip ^ mediaFlip);
+    std::array<Point2d, 4> adjCorners = adjRotatedRect.GetCorners();
 
     // Get the top point of box in final frame. The lower-left corner of the black label rectangle will later be
     // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
@@ -305,9 +305,16 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         return std::tie(a.y, a.x) < std::tie(b.y, b.x); // left takes precedence over right
     });
     int adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
+    Point2d adjTopPt = adjCorners[adjTopPtIndex];
 
     // Get point of box in raw frame that corresponds to the top point in the box in the final frame.
     Point2d rawTopPt = corners[adjTopPtIndex];
+
+    // Determine if the label should be on the left or right side of the top point.
+    // Our goal is to prevent the label from extending past the leftmost or rightmost point, if possible.
+    Rect2d adjRect = adjRotatedRect.GetBoundingRect();
+    Point2d adjRectCenter = (adjRect.br() + adjRect.tl()) * 0.5;
+    bool labelOnLeft = (adjTopPt.x > adjRectCenter.x);
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -328,7 +335,8 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     }
 
     int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, lineThickness, label, image);
+    drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, lineThickness,
+                         label, image);
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
@@ -401,8 +409,8 @@ void drawFrameNumber(int frameNumber, Mat *image)
         labelThickness, cv::LineTypes::LINE_8);
 }
 
-void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, int lineThickness,
-                          const std::string &label, Mat *image)
+void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
+                          int lineThickness, const std::string &label, Mat *image)
 {
     int labelPadding = 8;
     double labelScale = 0.8;
@@ -453,9 +461,11 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
 
     Mat paddedLabelMat(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type(), Scalar(255,255,255));
 
-    // Place the label rectangle within the square, as shown in the above diagram. If the label is flipped, move the
-    // rectangle to the left of the center to account for how it will be flipped again when generating the final frame.
-    cv::Rect labelMatInsertRect(flip ? labelRectMaxDim - labelRectWidth : labelRectMaxDim,
+    // Place the label rectangle within the square on the right side of the point, as shown in the above diagram,
+    // unless labelOnLeft is true, in which case place it on the left side of the point.
+    // If the label is flipped, move the rectangle to the other side of the point to account for how it will be flipped
+    // again when generating the final frame.
+    cv::Rect labelMatInsertRect(flip ^ labelOnLeft ? labelRectMaxDim - labelRectWidth : labelRectMaxDim,
                                 labelRectMaxDim - labelRectHeight, labelMat.cols, labelMat.rows);
     labelMat.copyTo(paddedLabelMat(labelMatInsertRect));
 

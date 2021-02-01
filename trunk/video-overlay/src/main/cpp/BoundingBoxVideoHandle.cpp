@@ -26,7 +26,8 @@
 
 #include "BoundingBoxVideoHandle.h"
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath) :
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath,
+                                               int framePadding) :
         videoCapture_(sourceVideoPath) {
     std::string destinationExtension = destinationVideoPath.substr(destinationVideoPath.find_last_of(".") + 1);
 
@@ -47,8 +48,11 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std:
         encoder = "MJPG";
     }
 
+    cv::Size destinationVideoFrameSize(videoCapture_.GetFrameSize().width  + 2 * framePadding,
+                                       videoCapture_.GetFrameSize().height + 2 * framePadding);
+
     videoWriter_ = cv::VideoWriter(destinationVideoPath, fourcc, videoCapture_.GetFrameRate(),
-                                   videoCapture_.GetFrameSize(), true);
+                                   destinationVideoFrameSize, true);
 
     if (!videoCapture_.IsOpened()) {
         throw std::runtime_error("Unable to open source video capture for: " + sourceVideoPath);

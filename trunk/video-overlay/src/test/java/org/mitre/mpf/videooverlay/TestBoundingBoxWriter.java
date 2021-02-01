@@ -104,8 +104,8 @@ public class TestBoundingBoxWriter {
                     "MARKUP_LABELS_ENABLED", "true",
                     "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", "true",
                     "MARKUP_BORDER_ENABLED", "false",
-                    "MARKUP_VIDEO_EXEMPLAR_ENABLED", "false",
-                    "MARKUP_VIDEO_FRAME_NUMBER_ENABLED", "false"
+                    "MARKUP_VIDEO_EXEMPLARS_ENABLED", "true",
+                    "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true"
             ));
 
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-90ccw-exif.jpg

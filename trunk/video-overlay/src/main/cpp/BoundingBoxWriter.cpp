@@ -49,6 +49,9 @@ using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
+// Provide enough room for long labels with wide characters to extend off the edges of the image.
+const int framePadding = 400;
+
 template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
             TMediaHandle &boundingBoxMediaHandle);
@@ -78,7 +81,17 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
         std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
+        // Get the Map class and method.
+        jclass clzMap = jni.FindClass("java/util/Map");
+        jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+
+        int destinationVideoFramePadding = 0;
+        if (jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet)) {
+            destinationVideoFramePadding = framePadding;
+        }
+
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath,
+                                                      destinationVideoFramePadding);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxVideoHandle);
     }
@@ -184,25 +197,24 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", mediaMetadata, clzMap_fnGet);
 
         // Get request properties.
-        bool labelsEnabled = jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
-        bool labelsChooseSideEnabled = jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED",
-                                                          requestProperties, clzMap_fnGet);
-        bool borderEnabled = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
-        bool exemplarEnabledEnabled = jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ENABLED",
-                                                         requestProperties, clzMap_fnGet);
-        bool frameNumberEnabled = jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBER_ENABLED",
-                                                     requestProperties, clzMap_fnGet);
+        bool labelsEnabled =
+            jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
+        bool labelsChooseSideEnabled =
+            jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", requestProperties, clzMap_fnGet);
+        bool borderEnabled =
+            jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
+        bool exemplarsEnabled =
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLARS_ENABLED", requestProperties, clzMap_fnGet);
+        bool frameNumbersEnabled =
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", requestProperties, clzMap_fnGet);
 
         Size origFrameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
 
-        // Provide enough room for long labels with wide characters to extend off the edges of the image.
-        int framePadding = 400;
-
-        jint currentFrame = -1;
+        jint currentFrameNum = -1;
         while (true) {
-            currentFrame++;
-            jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrame);
+            currentFrameNum++;
+            jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrameNum);
 
             if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
                 break;
@@ -263,7 +275,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                         ss << std::fixed << std::setprecision(3) << confidence;
 
-                        if (exemplarEnabledEnabled && boundingBoxMediaHandle.MarkExemplar() &&
+                        if (exemplarsEnabled && boundingBoxMediaHandle.MarkExemplar() &&
                                 jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
                             ss << '!';
                         }
@@ -289,8 +301,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                                                          origFrameSize.width, origFrameSize.height));
             }
 
-            if (frameNumberEnabled && boundingBoxMediaHandle.ShowFrameNumbers()) {
-                drawFrameNumber(currentFrame, &transformFrame);
+            if (frameNumbersEnabled && boundingBoxMediaHandle.ShowFrameNumbers()) {
+                drawFrameNumber(currentFrameNum, &transformFrame);
             }
 
             boundingBoxMediaHandle.HandleMarkedFrame(transformFrame);

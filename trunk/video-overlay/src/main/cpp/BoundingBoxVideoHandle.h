@@ -31,7 +31,7 @@
 
 class BoundingBoxVideoHandle {
 public:
-    BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath);
+    BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath, int framePadding);
 
     cv::Size GetFrameSize();
 

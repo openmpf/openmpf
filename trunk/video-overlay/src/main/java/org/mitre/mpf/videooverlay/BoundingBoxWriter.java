@@ -66,6 +66,10 @@ public class BoundingBoxWriter {
 
     public void setMediaMetadata(Map<String, String> mediaMetadata) { this.mediaMetadata = mediaMetadata; }
 
+    private Map<String, String> requestProperties = Map.of();
+
+    public void setRequestProperties(Map<String, String> requestProperties) { this.requestProperties = requestProperties; }
+
     /**
      * Sets the BoundingBoxMap associated with this writer. The parameter must not be null.
      */
@@ -119,13 +123,15 @@ public class BoundingBoxWriter {
                 log.debug("markupImage: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupImageNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath());
+                markupImageNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath(),
+                                  requestProperties);
             }
             else {
                 log.debug("markupVideo: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupVideoNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath());
+                markupVideoNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath(),
+                                  requestProperties);
             }
         }
         catch (Exception e) {
@@ -133,7 +139,10 @@ public class BoundingBoxWriter {
         }
     }
 
-    private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetdata, String destinationVideo);
-	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetdata, String destinationImage);
+    private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetdata,
+                                          String destinationVideo, Map<String, String> requestProperties);
+
+	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetdata,
+                                          String destinationImage, Map<String, String> requestProperties);
 
 }

@@ -123,10 +123,18 @@ public class MarkupSplitter {
                             .setDestinationUri(destinationPath.toUri().toString())
                             .addAllMapEntries(boundingBoxMapEntryList);
 
-                    for (Map.Entry<String, String> entry : media.getMetadata().entrySet()) {
+                    for (var entry : media.getMetadata().entrySet()) {
                         requestBuilder.addMediaMetadataBuilder()
                                 .setKey(entry.getKey())
                                 .setValue(entry.getValue());
+                    }
+
+                    for (var entry : job.getSystemPropertiesSnapshot().getProperties().entrySet()) {
+                        if (entry.getKey().startsWith("markup.")) {
+                            requestBuilder.addMarkupPropertiesBuilder()
+                                    .setKey(entry.getKey().toUpperCase().replace('.', '_'))
+                                    .setValue(entry.getValue());
+                        }
                     }
 
                     Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());

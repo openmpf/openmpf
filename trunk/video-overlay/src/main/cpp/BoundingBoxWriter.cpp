@@ -50,12 +50,14 @@ using namespace MPF;
 using namespace COMPONENT;
 
 template<typename TMediaHandle>
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
             TMediaHandle &boundingBoxMediaHandle);
+
+bool jniGetBoolProperty(JniHelper jni, std::string key, jobject map, jmethodID methodId);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
-                     const std::string &label, Mat *image);
+                     const std::string &label, bool labelChooseSide, Mat *image);
 
 void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image);
 
@@ -69,7 +71,7 @@ extern "C" {
 
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
-   jstring destinationVideoPathJString)
+   jstring destinationVideoPathJString, jobject requestProperties)
 {
     JniHelper jni(env);
     try {
@@ -78,7 +80,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
         BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath);
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxVideoHandle);
+        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxVideoHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -90,7 +92,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
-   jstring destinationImagePathJString)
+   jstring destinationImagePathJString, jobject requestProperties)
 {
     JniHelper jni(env);
     try {
@@ -99,7 +101,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
         BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, boundingBoxImageHandle);
+        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxImageHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -113,7 +115,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
 
 template<typename TMediaHandle>
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
             TMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
@@ -170,8 +172,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
 
         // Get the media metadata rotation property.
-        auto rotationJStringPtr = jni.ToJString("ROTATION");
-        jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *rotationJStringPtr);
+        auto jPropKey = jni.ToJString("ROTATION");
+        jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *jPropKey);
         double mediaRotation = 0.0;
         if (jPropValue != nullptr) {
             std::string rotationPropValue = jni.ToStdString(jPropValue);
@@ -179,12 +181,17 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         }
 
         // Get the media metadata horizontal flip property.
-        auto flipJStringPtr = jni.ToJString("HORIZONTAL_FLIP");
-        jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *flipJStringPtr);
-        bool mediaFlip = false;
-        if (jPropValue != nullptr) {
-            mediaFlip = jni.ToBool(jPropValue);
-        }
+        bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", mediaMetadata, clzMap_fnGet);
+
+        // Get request properties.
+        bool labelsEnabled = jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
+        bool labelsChooseSideEnabled = jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED",
+                                                          requestProperties, clzMap_fnGet);
+        bool borderEnabled = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
+        bool exemplarEnabledEnabled = jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ENABLED",
+                                                         requestProperties, clzMap_fnGet);
+        bool frameNumberEnabled = jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBER_ENABLED",
+                                                     requestProperties, clzMap_fnGet);
 
         Size origFrameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
@@ -200,7 +207,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
                 break;
             }
-
 
             // Add a black border to allow boxes and labels to extend off the edges of the image.  
             cv::copyMakeBorder(frame, frame, framePadding, framePadding, framePadding, framePadding,
@@ -243,26 +249,29 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                     std::stringstream ss;
 
-                    jobject classificationObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetClassification);
-                    if (jni.CallBooleanMethod(classificationObj, clzOptional_fnIsPresent)) {
-                        std::string classification =
-                            jni.ToStdString((jstring)jni.CallObjectMethod(classificationObj, clzOptional_fnGet));
-                        ss << classification.substr(0, 10); // truncate long strings
-                        if (classification.length() > 10) {
-                            ss << "...";
+                    if (labelsEnabled) {
+                        jobject classificationObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetClassification);
+                        if (jni.CallBooleanMethod(classificationObj, clzOptional_fnIsPresent)) {
+                            std::string classification =
+                                jni.ToStdString((jstring)jni.CallObjectMethod(classificationObj, clzOptional_fnGet));
+                            ss << classification.substr(0, 10); // truncate long strings
+                            if (classification.length() > 10) {
+                                ss << "...";
+                            }
+                            ss << ' ';
                         }
-                        ss << ' ';
-                    }
 
-                    ss << std::fixed << std::setprecision(3) << confidence;
+                        ss << std::fixed << std::setprecision(3) << confidence;
 
-                    if (boundingBoxMediaHandle.MarkExemplar() &&
-                            jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
-                        ss << '!';
+                        if (exemplarEnabledEnabled && boundingBoxMediaHandle.MarkExemplar() &&
+                                jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
+                            ss << '!';
+                        }
                     }
 
                     drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
-                                    mediaRotation, mediaFlip, red, green, blue, animated, ss.str(), &frame);
+                                    mediaRotation, mediaFlip, red, green, blue, animated, ss.str(),
+                                    labelsChooseSideEnabled, &frame);
                 }
             }
 
@@ -274,11 +283,13 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             Mat transformFrame = frame.clone();
             frameTransformer.TransformFrame(transformFrame, 0);
 
-            // Crop the padding off
-            // transformFrame = transformFrame(cv::Rect(framePadding, framePadding,
-            //                                         origFrameSize.width, origFrameSize.height));
+            // Crop the padding off if we're not keeping the border.
+            if (!borderEnabled) {
+                transformFrame = transformFrame(cv::Rect(framePadding, framePadding,
+                                                         origFrameSize.width, origFrameSize.height));
+            }
 
-            if (boundingBoxMediaHandle.ShowFrameNumbers()) {
+            if (frameNumberEnabled && boundingBoxMediaHandle.ShowFrameNumbers()) {
                 drawFrameNumber(currentFrame, &transformFrame);
             }
 
@@ -295,38 +306,25 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 }
 
 
+bool jniGetBoolProperty(JniHelper jni, std::string key, jobject map, jmethodID methodId) {
+    auto jPropKey = jni.ToJString(key);
+    auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
+    bool value = false;
+    if (jPropValue != nullptr) {
+        value = jni.ToBool(jPropValue);
+    }
+    return value;
+}
+
+
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
-                     const std::string &label, Mat *image)
+                     const std::string &label, bool labelChooseSide, Mat *image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
     std::array<Point2d, 4> corners = MPFRotatedRect(x, y, width, height, boxRotation, boxFlip).GetCorners();
     auto detectionTopLeftPt = corners[0];
-
-    // Calculate the adjusted box coordinates relative to the final frame.
-    // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
-    MPFRotatedRect adjRotatedRect(x, y, width, height,
-                                  boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
-                                  boxFlip ^ mediaFlip);
-    std::array<Point2d, 4> adjCorners = adjRotatedRect.GetCorners();
-
-    // Get the top point of box in final frame. The lower-left corner of the black label rectangle will later be
-    // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
-    auto adjTopPtIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
-        return std::tie(a.y, a.x) < std::tie(b.y, b.x); // left takes precedence over right
-    });
-    int adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
-    Point2d adjTopPt = adjCorners[adjTopPtIndex];
-
-    // Get point of box in raw frame that corresponds to the top point in the box in the final frame.
-    Point2d rawTopPt = corners[adjTopPtIndex];
-
-    // Determine if the label should be on the left or right side of the top point.
-    // Our goal is to prevent the label from extending past the leftmost or rightmost point, if possible.
-    Rect2d adjRect = adjRotatedRect.GetBoundingRect();
-    Point2d adjRectCenter = (adjRect.br() + adjRect.tl()) * 0.5;
-    bool labelOnLeft = (adjTopPt.x > adjRectCenter.x);
 
     Scalar boxColor(blue, green, red);
     int minDim = width < height ? width : height;
@@ -346,9 +344,38 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
     }
 
-    int labelIndent = circleRadius + 2;
-    drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, lineThickness,
-                         label, image);
+    if (!label.empty()) {
+        // Calculate the adjusted box coordinates relative to the final frame.
+        // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
+        MPFRotatedRect adjRotatedRect(x, y, width, height,
+                                      boxFlip ? boxRotation + mediaRotation : boxRotation - mediaRotation,
+                                      boxFlip ^ mediaFlip);
+        std::array<Point2d, 4> adjCorners = adjRotatedRect.GetCorners();
+
+        // Get the top point of box in final frame. The lower-left corner of the black label rectangle will later be
+        // positioned here (see drawBoundingBoxLabel()), ensuring that the label will never appear within the detection box.
+        auto adjTopPtIter = std::min_element(adjCorners.begin(), adjCorners.end(), [](Point const& a, Point const& b) {
+            return std::tie(a.y, a.x) < std::tie(b.y, b.x); // left takes precedence over right
+        });
+        int adjTopPtIndex = std::distance(adjCorners.begin(), adjTopPtIter);
+        Point2d adjTopPt = adjCorners[adjTopPtIndex];
+
+        // Get point of box in raw frame that corresponds to the top point in the box in the final frame.
+        Point2d rawTopPt = corners[adjTopPtIndex];
+
+        bool labelOnLeft = false;
+        if (labelChooseSide) {
+            // Determine if the label should be on the left or right side of the top point.
+            // Our goal is to prevent the label from extending past the leftmost or rightmost point, if possible.
+            Rect2d adjRect = adjRotatedRect.GetBoundingRect();
+            Point2d adjRectCenter = (adjRect.br() + adjRect.tl()) * 0.5;
+            labelOnLeft = (adjTopPt.x > adjRectCenter.x);
+        }
+
+        int labelIndent = circleRadius + 2;
+        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, lineThickness,
+                             label, image);
+    }
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
     drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);

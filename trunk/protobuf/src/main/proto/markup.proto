@@ -32,6 +32,11 @@ enum MediaType {
     AUDIO = 3;
 }
 
+message MarkupRequestPropertyMap {
+    optional string key = 1;
+    optional string value = 2;
+}
+
 message MetadataMap {
     optional string key = 1;
     optional string value = 2;
@@ -46,7 +51,7 @@ message MarkupRequest {
     required string source_uri                           = 6; // The URI of the source media file.
     required string destination_uri                      = 7; // The URI of the file which should be created by this request.
     repeated BoundingBoxMapEntry map_entries             = 8; // The collection of bounding boxes which must be written.
-    repeated MarkupRequestMetadataEntry metadata_entries = 9; // The collection of arbitrary key-value pairs.
+    repeated MarkupRequestPropertyMap markup_properties  = 9; // The collection of arbitrary key-value pairs.
 
     required int32 task_index         = 501; // The index of the task which produced this request.
     required int32 action_index       = 502; // The index of the action within the task which produced this request.
@@ -55,11 +60,6 @@ message MarkupRequest {
 message BoundingBoxMapEntry {
     required int32 frame_number       = 1; // The 1-based frame number on which the box will appear.
     required BoundingBox bounding_box = 2; // The specification of the box.
-}
-
-message MarkupRequestMetadataEntry {
-    required string key = 1;
-    optional string value = 2 [default = ""];
 }
 
 message BoundingBox {
@@ -88,8 +88,6 @@ message MarkupResponse {
     optional int64 request_timestamp  = 7; // The timestamp when the request was received.
     optional int64 time_processing    = 8; // The number of milliseconds spent processing the request.
     optional string error_stack_trace = 9; // The stack trace associated with the exception.
-
-    repeated MarkupRequestMetadataEntry metadata_entries = 10; // A collection of String key-value pairs to which arbitrary metadata elements may be added.
 
     required int32 task_index         = 501; // The index of the task which produced this request.
     required int32 action_index       = 502; // The index of the action within the task which produced this request.

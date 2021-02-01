@@ -44,9 +44,9 @@ public class TestBoundingBoxWriter {
     @Test
     public void testWriterOnVideo() {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
-        writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
+        // writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264.mp4"); // DEBUG
-        // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi"); // DEBUG
+        writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi"); // DEBUG
 
         // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
@@ -69,7 +69,7 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".png"); // ".mp4", ".avi", ".png"
+            File destinationFile = File.createTempFile("markedup", ".mp4"); // ".mp4", ".avi", ".png"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
@@ -92,7 +92,7 @@ public class TestBoundingBoxWriter {
             // DEBUG
             // BoundingBox box1 = new BoundingBox(150, 150, 20, 30, 194, false, 255, 0, 0, true, true, 7.243234f,
             //        Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
-            BoundingBox box1 = new BoundingBox(561, -50, 50, 50, 0, false, 255, 0, 0, true, true, 7.243234f,
+            BoundingBox box1 = new BoundingBox(172, 156, 194, 243, 33, false, 255, 0, 0, true, true, 7.243234f,
                     Optional.of("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")); // Lenna.png
             map.putOnFrames(0, 0, box1);
 
@@ -100,16 +100,24 @@ public class TestBoundingBoxWriter {
             writer.setSourceMedium(sourceFile.toURI());
             writer.setDestinationMedium(destinationFile.toURI());
 
+            writer.setRequestProperties(Map.of(
+                    "MARKUP_LABELS_ENABLED", "true",
+                    "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", "true",
+                    "MARKUP_BORDER_ENABLED", "false",
+                    "MARKUP_VIDEO_EXEMPLAR_ENABLED", "false",
+                    "MARKUP_VIDEO_FRAME_NUMBER_ENABLED", "false"
+            ));
+
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-90ccw-exif.jpg
             // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-exif.jpg
             // writer.setMediaMetadata(Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna.png
             // writer.setMediaMetadata(Map.of("ROTATION", "180", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-180ccw-exif.png
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true")); // DEBUG: Lenna-flip-90ccw-exif.png
 
-            // writer.setBoundingBoxMap(map);
-            // writer.markupImage(); // DEBUG
-            // writer.markupVideo();
+            writer.setBoundingBoxMap(map);
+            writer.markupVideo();
 
+            /*
             for (int i = 0; i <= 45; i+=10) {
                 writer.setMediaMetadata(Map.of("ROTATION", Integer.toString(i), "HORIZONTAL_FLIP", "false")); // DEBUG
                 writer.setBoundingBoxMap(map);
@@ -121,7 +129,7 @@ public class TestBoundingBoxWriter {
                 writer.setBoundingBoxMap(map);
                 writer.markupImage(); // DEBUG
             }
-
+            */
 
             // Test that something was written.
             Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);

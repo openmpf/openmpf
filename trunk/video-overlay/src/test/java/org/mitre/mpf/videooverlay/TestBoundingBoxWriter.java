@@ -103,7 +103,7 @@ public class TestBoundingBoxWriter {
             writer.setRequestProperties(Map.of(
                     "MARKUP_LABELS_ENABLED", "true",
                     "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", "true",
-                    "MARKUP_BORDER_ENABLED", "false",
+                    "MARKUP_BORDER_ENABLED", "true",
                     "MARKUP_VIDEO_EXEMPLARS_ENABLED", "true",
                     "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true"
             ));

@@ -287,6 +287,11 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 }
             }
 
+            // Crop the padding off if we're not keeping the border.
+            if (!borderEnabled) {
+                frame = frame(cv::Rect(framePadding, framePadding, origFrameSize.width, origFrameSize.height));
+            }
+
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
             AffineFrameTransformer frameTransformer(
                     mediaRotation, mediaFlip, Scalar(0, 0, 0),
@@ -294,12 +299,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
             Mat transformFrame = frame.clone();
             frameTransformer.TransformFrame(transformFrame, 0);
-
-            // Crop the padding off if we're not keeping the border.
-            if (!borderEnabled) {
-                transformFrame = transformFrame(cv::Rect(framePadding, framePadding,
-                                                         origFrameSize.width, origFrameSize.height));
-            }
 
             if (frameNumbersEnabled && boundingBoxMediaHandle.ShowFrameNumbers()) {
                 drawFrameNumber(currentFrameNum, &transformFrame);

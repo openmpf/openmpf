@@ -102,7 +102,7 @@ public class MarkupRequestConsumer implements MessageListener {
 
         Map requestProperties = new HashMap<String, String>();
         markupRequest.getMarkupPropertiesList().stream().forEach(e -> requestProperties.put(e.getKey(), e.getValue()) );
-        writer.setMediaMetadata(requestProperties);
+        writer.setRequestProperties(requestProperties);
 
         BoundingBoxMap map = new BoundingBoxMap();
         int boxesAdded = 0;

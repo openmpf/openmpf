@@ -441,11 +441,7 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
             },
             drawCallback: function (settings) {
                 $('.img-btn').on('click', function () {
-                    $('#imageModalTitle').text($(this).data('file'));
-                    $('#imageModal .modal-body img').attr("src", $(this).prop('src'));
-                    $('#imageModalDownloadBtn').attr("href", $(this).data('download'));
-                    $('#imageModalDownloadBtn').attr("download", $(this).data('file'));
-                    $('#imageModal').modal('show');
+                    window.open($(this).prop('src'), '_blank').focus();
                 });
             }
         });

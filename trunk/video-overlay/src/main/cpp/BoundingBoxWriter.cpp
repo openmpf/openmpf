@@ -32,6 +32,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp> // DEBUG
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -185,13 +186,11 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             mediaFlip = jni.ToBool(jPropValue);
         }
 
-        Size frameSize = boundingBoxMediaHandle.GetFrameSize();
-
-        AffineFrameTransformer frameTransformer(
-                mediaRotation, mediaFlip, Scalar(0, 0, 0),
-                IFrameTransformer::Ptr(new NoOpFrameTransformer(frameSize)));
-
+        Size origFrameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
+
+        // Provide enough room for long labels with wide characters to extend off the edges of the image.
+        int framePadding = 400;
 
         jint currentFrame = -1;
         while (true) {
@@ -201,6 +200,11 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
                 break;
             }
+
+
+            // Add a black border to allow boxes and labels to extend off the edges of the image.  
+            cv::copyMakeBorder(frame, frame, framePadding, framePadding, framePadding, framePadding,
+                               cv::BORDER_CONSTANT, Scalar(0, 0, 0));
 
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,
@@ -220,12 +224,12 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                     jint height = jni.CallIntMethod(box, clzBoundingBox_fnGetHeight);
                     if (height == 0) {
-                        height = frameSize.height;
+                        height = origFrameSize.height;
                     }
 
                     jint width = jni.CallIntMethod(box, clzBoundingBox_fnGetWidth);
                     if (width == 0) {
-                        width = frameSize.width;
+                        width = origFrameSize.width;
                     }
 
                     jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
@@ -257,14 +261,22 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                         ss << '!';
                     }
 
-                    drawBoundingBox(x, y, width, height, boxRotation, boxFlip, mediaRotation, mediaFlip,
-                                    red, green, blue, animated, ss.str(), &frame);
+                    drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
+                                    mediaRotation, mediaFlip, red, green, blue, animated, ss.str(), &frame);
                 }
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
+            AffineFrameTransformer frameTransformer(
+                    mediaRotation, mediaFlip, Scalar(0, 0, 0),
+                    IFrameTransformer::Ptr(new NoOpFrameTransformer(frame.size())));
+
             Mat transformFrame = frame.clone();
             frameTransformer.TransformFrame(transformFrame, 0);
+
+            // Crop the padding off
+            // transformFrame = transformFrame(cv::Rect(framePadding, framePadding,
+            //                                         origFrameSize.width, origFrameSize.height));
 
             if (boundingBoxMediaHandle.ShowFrameNumbers()) {
                 drawFrameNumber(currentFrame, &transformFrame);
@@ -478,14 +490,6 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
                        cv::InterpolationFlags::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
     }
 
-    // Create a black canvas on which to place the raw frame.
-    // Add enough padding around the raw frame to position the entire white box along the outer edge, if necessary.
-    int imagePadding = labelRectMaxDim;
-    Mat paddedImage = Mat::zeros(image->rows + 2 * imagePadding, image->cols + 2 * imagePadding, image->type());
-
-    // Place the raw frame in the center of the black canvas.
-    image->copyTo((paddedImage)(cv::Rect(imagePadding, imagePadding, image->cols, image->rows)));
-
     // Generate a black and white mask that only captures the label rectangle within the white box.
     // Black pixels in the mask represent the parts to mask out.
     Mat paddedLabelMask = Mat::zeros(paddedLabelMat.rows, paddedLabelMat.cols, CV_8U);
@@ -493,19 +497,15 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     paddedLabelMask = ~paddedLabelMask;
 
     try {
-        // Place the white box on the canvas and apply the mask. Align the center of the box (which corresponds to the
+        // Place the white box on the image and apply the mask. Align the center of the box (which corresponds to the
         // lower-left corner of the label rectangle) with the desired location (pt).
-        cv::Rect paddedLabelMatInsertRect(imagePadding - labelRectMaxDim + labelRectBottomLeftX,
-                                          imagePadding - labelRectMaxDim + labelRectBottomLeftY,
+        cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
+                                          labelRectBottomLeftY - labelRectMaxDim,
                                           paddedLabelMat.cols, paddedLabelMat.rows);
-        paddedLabelMat.copyTo((paddedImage)(paddedLabelMatInsertRect), paddedLabelMask);
+        paddedLabelMat.copyTo((*image)(paddedLabelMatInsertRect), paddedLabelMask);
     } catch (std::exception& e) {
         // Depending on the position of the detection relative to the frame boundary, sometimes the label cannot be
         // drawn within the viewable region. This is fine. Log and continue.
         std::cerr << "Warning: Label outside of viewable region." << std::endl;
     }
-
-    // Crop the padding off of the canvas, leaving the raw frame with the newly applied label.
-    Mat croppedImage = paddedImage(cv::Rect(imagePadding, imagePadding, image->cols, image->rows));
-    *image = croppedImage;
 }

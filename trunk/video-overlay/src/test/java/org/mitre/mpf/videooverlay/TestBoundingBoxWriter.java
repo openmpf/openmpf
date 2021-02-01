@@ -44,13 +44,13 @@ public class TestBoundingBoxWriter {
     @Test
     public void testWriterOnVideo() {
         // writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
-        // writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
+        writeBoxOnFrames("/media/SANDISK/SAMPLES/parked-on-road-4k.jpg"); // DEBUG
         // writeBoxOnFrames("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264.mp4"); // DEBUG
         // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples/face/new_face_video.avi"); // DEBUG
 
         // writeBoxOnFrames("/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/remote-media/Lenna-90ccw-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-exif.jpg"); // DEBUG
-        writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna.png"); // DEBUG
+        // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna.png"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-180ccw-exif.jpg"); // DEBUG
         // writeBoxOnFrames("/home/mpf/Desktop/SAMPLES/Lenna-flip-90ccw-exif.jpg"); // DEBUG
     }
@@ -92,8 +92,8 @@ public class TestBoundingBoxWriter {
             // DEBUG
             // BoundingBox box1 = new BoundingBox(150, 150, 20, 30, 194, false, 255, 0, 0, true, true, 7.243234f,
             //        Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
-            BoundingBox box1 = new BoundingBox(372, 156, 194, 243, 0, false, 255, 0, 0, true, true, 7.243234f,
-                    Optional.of("verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry")); // Lenna.png
+            BoundingBox box1 = new BoundingBox(561, -50, 50, 50, 0, false, 255, 0, 0, true, true, 7.243234f,
+                    Optional.of("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")); // Lenna.png
             map.putOnFrames(0, 0, box1);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
@@ -110,7 +110,7 @@ public class TestBoundingBoxWriter {
             // writer.markupImage(); // DEBUG
             // writer.markupVideo();
 
-            for (int i = 0; i <= 360; i+=10) {
+            for (int i = 0; i <= 45; i+=10) {
                 writer.setMediaMetadata(Map.of("ROTATION", Integer.toString(i), "HORIZONTAL_FLIP", "false")); // DEBUG
                 writer.setBoundingBoxMap(map);
                 writer.markupImage(); // DEBUG

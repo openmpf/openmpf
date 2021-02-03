@@ -159,7 +159,7 @@ public class MarkupRequestConsumer implements MessageListener {
             log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.",
                     message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
 
-            final Map requestHeaders = new HashMap<String, Object>();
+            final Map<String, Object> requestHeaders = new HashMap<String, Object>();
             Enumeration<String> properties = message.getPropertyNames();
 
             String propertyName;

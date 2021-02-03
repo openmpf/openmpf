@@ -31,7 +31,7 @@
 
 class BoundingBoxVideoHandle {
 public:
-    BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath, int framePadding);
+    BoundingBoxVideoHandle(std::string sourcePath, std::string destinationPath, int crf, int framePadding);
 
     ~BoundingBoxVideoHandle();
 
@@ -48,6 +48,8 @@ public:
     void Close();
 
 private:
+    std::string destinationPath_;
+
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 
     FILE *pipe_;

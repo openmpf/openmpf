@@ -24,27 +24,28 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <fstream>
 #include "BoundingBoxVideoHandle.h"
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath,
-                                               int framePadding) : videoCapture_(sourceVideoPath) {
-    int destinationVideoFrameWidth  = videoCapture_.GetFrameSize().width  + 2 * framePadding;
-    int destinationVideoFrameHeight = videoCapture_.GetFrameSize().height + 2 * framePadding;
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::string destinationPath, int crf,
+                                               int framePadding) :
+        destinationPath_(destinationPath), videoCapture_(sourcePath) {
+    int destinationFrameWidth  = videoCapture_.GetFrameSize().width  + 2 * framePadding;
+    int destinationFrameHeight = videoCapture_.GetFrameSize().height + 2 * framePadding;
 
     std::string command = std::string("ffmpeg") +
         " -pixel_format bgr24" +
-        " -video_size " + std::to_string(destinationVideoFrameWidth) +
-            "x" + std::to_string(destinationVideoFrameHeight) +
+        " -video_size " + std::to_string(destinationFrameWidth) +
+            "x" + std::to_string(destinationFrameHeight) +
         " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
         " -f rawvideo" +
         " -i -" +
         " -pix_fmt yuv420p" + // https://trac.ffmpeg.org/ticket/5276
         " -c:v libvpx-vp9" +
-        " -crf 31 -b:v 0" + // https://trac.ffmpeg.org/wiki/Encode/VP9
+        " -crf " + std::to_string(crf) + " -b:v 0" + // https://trac.ffmpeg.org/wiki/Encode/VP9
         " -threads 2" +
-        // " -loglevel verbose" + // DEBUG
         " -y" + // overwrite file if it exists
-        " '" + destinationVideoPath + "'";
+        " '" + destinationPath + "'";
 
     pipe_ = popen(command.c_str(), "w");
     if (pipe_ == nullptr) {
@@ -83,4 +84,11 @@ void BoundingBoxVideoHandle::Close() {
     fflush(pipe_);
     pclose(pipe_);
     pipe_ = nullptr;
+
+    // Check if destination file exists and if it's empty.
+    std::ifstream destinationFile(destinationPath_);
+    if (destinationFile.peek() == std::ifstream::traits_type::eof()) {
+        throw std::runtime_error("Failed to write " + destinationPath_ +
+                                 ". An error probably occurred during encoding.");
+    }
 }

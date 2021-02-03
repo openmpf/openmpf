@@ -69,7 +69,7 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".webm"); // ".webm", ".avi", ".png"
+            File destinationFile = File.createTempFile("markedup", ".webm"); // ".webm", ".png"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
@@ -105,7 +105,8 @@ public class TestBoundingBoxWriter {
                     "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", "true",
                     "MARKUP_BORDER_ENABLED", "false",
                     "MARKUP_VIDEO_EXEMPLARS_ENABLED", "true",
-                    "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true"
+                    "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
+                    "MARKUP_VIDEO_VP9_CRF", "31"
             ));
 
             // writer.setMediaMetadata(Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "false")); // DEBUG: Lenna-90ccw-exif.jpg

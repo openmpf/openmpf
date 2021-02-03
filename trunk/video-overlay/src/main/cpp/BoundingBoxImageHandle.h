@@ -31,7 +31,7 @@
 
 class BoundingBoxImageHandle {
 public:
-    BoundingBoxImageHandle(std::string sourceImagePath, std::string destinationImagePath);
+    BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath);
 
     cv::Size GetFrameSize();
 
@@ -44,9 +44,9 @@ public:
     bool ShowFrameNumbers();
 
 private:
-    std::string sourceImagePath_;
+    std::string sourcePath_;
 
-    std::string destinationImagePath_;
+    std::string destinationPath_;
 
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 

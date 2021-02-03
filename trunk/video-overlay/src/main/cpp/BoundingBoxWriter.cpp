@@ -85,12 +85,20 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jclass clzMap = jni.FindClass("java/util/Map");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
+        auto jPropKey = jni.ToJString("MARKUP_VIDEO_VP9_CRF");
+        jstring jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
+        int crf = 31;
+        if (jPropValue != nullptr) {
+            std::string crfPropValue = jni.ToStdString(jPropValue);
+            crf = std::stoi(crfPropValue);
+        }
+
         int destinationVideoFramePadding = 0;
         if (jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet)) {
             destinationVideoFramePadding = framePadding;
         }
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath,
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, crf,
                                                       destinationVideoFramePadding);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxVideoHandle);

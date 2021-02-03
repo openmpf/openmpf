@@ -27,12 +27,12 @@
 #include <opencv2/imgcodecs.hpp>
 #include "BoundingBoxImageHandle.h"
 
-BoundingBoxImageHandle::BoundingBoxImageHandle(std::string sourceImagePath, std::string destinationImagePath ) :
-        sourceImagePath_(sourceImagePath),
-        destinationImagePath_(destinationImagePath),
-        videoCapture_(sourceImagePath_) {
+BoundingBoxImageHandle::BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath) :
+        sourcePath_(sourcePath),
+        destinationPath_(destinationPath),
+        videoCapture_(sourcePath_) {
     if (!videoCapture_.IsOpened()) {
-        throw std::runtime_error("Unable to open source image: " + sourceImagePath_);
+        throw std::runtime_error("Unable to open source image: " + sourcePath_);
     }
 }
 
@@ -45,15 +45,15 @@ bool BoundingBoxImageHandle::Read(cv::Mat &frame) {
         return false; // if the image has already been read once, there is nothing more to do
     }
     if (!videoCapture_.Read(frame) || frame.empty()) {
-        throw std::runtime_error("Unable to read source image: " + sourceImagePath_);
+        throw std::runtime_error("Unable to read source image: " + sourcePath_);
     }
     frameRead_ = true;
     return true;
 }
 
 void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {
-    if (!cv::imwrite(destinationImagePath_, frame, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
-        throw std::runtime_error("Failed to write image: " + destinationImagePath_);
+    if (!cv::imwrite(destinationPath_, frame, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
+        throw std::runtime_error("Failed to write image: " + destinationPath_);
     }
 }
 

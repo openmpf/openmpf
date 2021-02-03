@@ -32,7 +32,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp> // DEBUG
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -67,7 +66,7 @@ void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool 
 void drawFrameNumber(int frameNumber, Mat *image);
 
 void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
-                          int lineThickness, const std::string &label, Mat *image);
+                          const std::string &label, Mat *image);
 
 
 extern "C" {
@@ -226,7 +225,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             currentFrameNum++;
             jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrameNum);
 
-            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) { // || currentFrameNum > 10) { // DEBUG
+            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
                 break;
             }
 
@@ -394,8 +393,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         }
 
         int labelIndent = circleRadius + 2;
-        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, lineThickness,
-                             label, image);
+        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, label, image);
     }
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
@@ -470,7 +468,7 @@ void drawFrameNumber(int frameNumber, Mat *image)
 }
 
 void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
-                          int lineThickness, const std::string &label, Mat *image)
+                          const std::string &label, Mat *image)
 {
     int labelPadding = 8;
     double labelScale = 0.8;

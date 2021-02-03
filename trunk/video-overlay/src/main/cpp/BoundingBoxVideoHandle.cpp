@@ -24,7 +24,9 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+#include <iostream>
 #include <fstream>
+
 #include "BoundingBoxVideoHandle.h"
 
 BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::string destinationPath, int crf,
@@ -55,6 +57,7 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::stri
 
 BoundingBoxVideoHandle::~BoundingBoxVideoHandle() {
     if (pipe_ != nullptr) {
+        std::cerr << "Error: Pipe should have been closed and set to nullptr." << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -88,7 +91,7 @@ void BoundingBoxVideoHandle::Close() {
     // Check if destination file exists and if it's empty.
     std::ifstream destinationFile(destinationPath_);
     if (destinationFile.peek() == std::ifstream::traits_type::eof()) {
-        throw std::runtime_error("Failed to write " + destinationPath_ +
-                                 ". An error probably occurred during encoding.");
+        throw std::runtime_error("Failed to write \"" + destinationPath_ +
+                                 "\". An error probably occurred during encoding.");
     }
 }

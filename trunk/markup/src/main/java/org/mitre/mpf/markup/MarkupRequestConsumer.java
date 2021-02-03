@@ -159,11 +159,11 @@ public class MarkupRequestConsumer implements MessageListener {
             log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.",
                     message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
 
-            final Map<String, Object> requestHeaders = new HashMap<String, Object>();
+            final Map requestHeaders = new HashMap<String, Object>();
             Enumeration<String> properties = message.getPropertyNames();
 
-            String propertyName = null;
-            while(properties.hasMoreElements()) {
+            String propertyName;
+            while (properties.hasMoreElements()) {
                 propertyName = properties.nextElement();
                 requestHeaders.put(propertyName, message.getObjectProperty(propertyName));
             }
@@ -215,18 +215,6 @@ public class MarkupRequestConsumer implements MessageListener {
                                                 markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
-		        } else if (markupRequest.getMediaType() == Markup.MediaType.IMAGE) {
-			        try {
-				        if (markup(markupRequest)) {
-					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
-				        } else {
-					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
-				        }
-			        } catch (Exception exception) {
-				        log.error("Failed to mark up the image '{}' because of an exception.",
-                                                markupRequest.getSourceUri(), exception);
-				        finishWithError(markupResponseBuilder, exception);
-			        }
 		        } else {
 			        try {
 				        if (markup(markupRequest)) {
@@ -235,7 +223,7 @@ public class MarkupRequestConsumer implements MessageListener {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
 				        }
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the video '{}' because of an exception.",
+				        log.error("Failed to mark up the file '{}' because of an exception.",
                                                 markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }

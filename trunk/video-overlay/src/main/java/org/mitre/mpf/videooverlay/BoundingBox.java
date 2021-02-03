@@ -203,9 +203,7 @@ public class BoundingBox {
                 .setAnimated(animated)
                 .setExemplar(exemplar)
                 .setConfidence(confidence);
-        if (classification.isPresent()) {
-            builder.setClassification(classification.get());
-        }
+        classification.ifPresent(builder::setClassification);
         return builder.build();
     }
 }

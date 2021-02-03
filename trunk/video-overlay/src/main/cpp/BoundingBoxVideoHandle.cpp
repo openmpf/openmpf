@@ -27,43 +27,34 @@
 #include "BoundingBoxVideoHandle.h"
 
 BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath,
-                                               int framePadding) :
-        videoCapture_(sourceVideoPath) {
-    std::string destinationExtension = destinationVideoPath.substr(destinationVideoPath.find_last_of(".") + 1);
+                                               int framePadding) : videoCapture_(sourceVideoPath) {
+    int destinationVideoFrameWidth  = videoCapture_.GetFrameSize().width  + 2 * framePadding;
+    int destinationVideoFrameHeight = videoCapture_.GetFrameSize().height + 2 * framePadding;
 
-    int fourcc;
-    std::string encoder;
-    if (destinationExtension == "mp4") {
-        // From https://docs.opencv.org/4.5.0/dd/d9e/classcv_1_1VideoWriter.html#ac3478f6257454209fa99249cc03a5c59 :
-        //
-        //  "List of codes can be obtained at Video Codecs by FOURCC page (https://www.fourcc.org/codecs.php).
-        //   FFMPEG backend with MP4 container natively uses other values as fourcc code"
-        //
-        // Providing "H264", "X264", or "AVC1" to cv::VideoWriter::fourcc() doesn't work on CentOS.
-        // Thus, we use a hardcoded value for the H264 codec.
-        fourcc = 0X00000021;
-        encoder = "H264";
-    } else { // .avi
-        fourcc = cv::VideoWriter::fourcc('M','J','P','G');
-        encoder = "MJPG";
+    std::string command = std::string("ffmpeg") +
+        " -pixel_format bgr24" +
+        " -video_size " + std::to_string(destinationVideoFrameWidth) +
+            "x" + std::to_string(destinationVideoFrameHeight) +
+        " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
+        " -f rawvideo" +
+        " -i -" +
+        " -pix_fmt yuv420p" + // https://trac.ffmpeg.org/ticket/5276
+        " -c:v libvpx-vp9" +
+        " -crf 31 -b:v 0" + // https://trac.ffmpeg.org/wiki/Encode/VP9
+        " -threads 2" +
+        // " -loglevel verbose" + // DEBUG
+        " -y" + // overwrite file if it exists
+        " '" + destinationVideoPath + "'";
+
+    pipe_ = popen(command.c_str(), "w");
+    if (pipe_ == nullptr) {
+        throw std::runtime_error("Unable to write markup because ffmpeg process failed to start.");
     }
+}
 
-    cv::Size destinationVideoFrameSize(videoCapture_.GetFrameSize().width  + 2 * framePadding,
-                                       videoCapture_.GetFrameSize().height + 2 * framePadding);
-
-    videoWriter_ = cv::VideoWriter(destinationVideoPath, fourcc, videoCapture_.GetFrameRate(),
-                                   destinationVideoFrameSize, true);
-
-    if (!videoCapture_.IsOpened()) {
-        throw std::runtime_error("Unable to open source video capture for: " + sourceVideoPath);
-    }
-
-    if (!videoWriter_.isOpened()) {
-        // destination file should exist prior to creating the video writer
-        std::string errorMsg = "Unable to open destination video writer to: " + destinationVideoPath
-                + ". First, check that the file exists with proper permissions. Second, use \"ffmpeg -codecs\" to"
-                + " check if the " + encoder + " encoder is installed.";
-        throw std::runtime_error(errorMsg);
+BoundingBoxVideoHandle::~BoundingBoxVideoHandle() {
+    if (pipe_ != nullptr) {
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -76,7 +67,8 @@ bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
-    videoWriter_ << frame;
+    size_t sizeInBytes = frame.step[0] * frame.rows; // https://stackoverflow.com/a/26441073
+    fwrite(frame.data, sizeof(unsigned char), sizeInBytes, pipe_);
 }
 
 bool BoundingBoxVideoHandle::MarkExemplar() {
@@ -85,4 +77,10 @@ bool BoundingBoxVideoHandle::MarkExemplar() {
 
 bool BoundingBoxVideoHandle::ShowFrameNumbers() {
     return true;
+}
+
+void BoundingBoxVideoHandle::Close() {
+    fflush(pipe_);
+    pclose(pipe_);
+    pipe_ = nullptr;
 }

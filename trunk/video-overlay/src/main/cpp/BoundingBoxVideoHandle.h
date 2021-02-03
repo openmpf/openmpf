@@ -33,6 +33,8 @@ class BoundingBoxVideoHandle {
 public:
     BoundingBoxVideoHandle(std::string sourceVideoPath, std::string destinationVideoPath, int framePadding);
 
+    ~BoundingBoxVideoHandle();
+
     cv::Size GetFrameSize();
 
     bool Read(cv::Mat &frame);
@@ -43,10 +45,12 @@ public:
 
     bool ShowFrameNumbers();
 
+    void Close();
+
 private:
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 
-    cv::VideoWriter videoWriter_;
+    FILE *pipe_;
 };
 
 #endif //MPF_BOUNDINGBOXVIDEOHANDLE_H

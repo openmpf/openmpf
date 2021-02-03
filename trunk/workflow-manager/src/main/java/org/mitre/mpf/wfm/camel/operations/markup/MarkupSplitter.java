@@ -292,7 +292,7 @@ public class MarkupSplitter {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return snapshot.isMarkupVideoH264Enabled() ? ".mp4" : ".avi";
+                return snapshot.isMarkupVideoVp9Enabled() ? ".webm" : ".avi";
 
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through

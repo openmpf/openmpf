@@ -94,6 +94,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
                                                       destinationVideoFramePadding);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxVideoHandle);
+
+        boundingBoxVideoHandle.Close();
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -216,7 +218,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             currentFrameNum++;
             jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrameNum);
 
-            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) {
+            if (!boundingBoxMediaHandle.Read(frame) || frame.empty()) { // || currentFrameNum > 10) { // DEBUG
                 break;
             }
 

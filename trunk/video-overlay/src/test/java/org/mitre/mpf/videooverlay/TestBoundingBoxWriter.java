@@ -69,7 +69,7 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".mp4"); // ".mp4", ".avi", ".png"
+            File destinationFile = File.createTempFile("markedup", ".webm"); // ".webm", ".avi", ".png"
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
@@ -103,7 +103,7 @@ public class TestBoundingBoxWriter {
             writer.setRequestProperties(Map.of(
                     "MARKUP_LABELS_ENABLED", "true",
                     "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", "true",
-                    "MARKUP_BORDER_ENABLED", "true",
+                    "MARKUP_BORDER_ENABLED", "false",
                     "MARKUP_VIDEO_EXEMPLARS_ENABLED", "true",
                     "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true"
             ));

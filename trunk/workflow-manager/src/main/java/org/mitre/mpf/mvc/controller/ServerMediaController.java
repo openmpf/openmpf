@@ -211,7 +211,7 @@ public class ServerMediaController {
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
 
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
-            ioUtils.writeFileAsStream(Paths.get(sourceUri), response);
+            ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
         }
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
@@ -228,8 +228,8 @@ public class ServerMediaController {
             S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.writeContentAsStream(inputStream, response, metadata.getContentType(),
-                                             metadata.getContentLength());
+                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
+                                           metadata.getContentLength());
             }
             return;
         }
@@ -237,8 +237,8 @@ public class ServerMediaController {
         URL mediaUrl = sourceUri.toURL();
         URLConnection urlConnection = mediaUrl.openConnection();
         try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.writeContentAsStream(inputStream, response, urlConnection.getContentType(),
-                                         urlConnection.getContentLength());
+            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
+                                       urlConnection.getContentLength());
         }
     }
 }

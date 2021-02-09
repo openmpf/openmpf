@@ -139,10 +139,10 @@ public class BoundingBoxWriter {
         }
     }
 
-    private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetdata,
+    private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetadata,
                                           String destinationVideo, Map<String, String> requestProperties);
 
-	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetdata,
+	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetadata,
                                           String destinationImage, Map<String, String> requestProperties);
 
 }

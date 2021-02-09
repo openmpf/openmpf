@@ -277,14 +277,14 @@ public class IoUtils {
         }
     }
 
-    public void writeFileAsStream(Path path, HttpServletResponse response)
+    public void sendBinaryResponse(Path path, HttpServletResponse response)
             throws IOException {
         try (InputStream inputStream = Files.newInputStream(path)) {
-            writeContentAsStream(inputStream, response, getMimeType(path), Files.size(path));
+            sendBinaryResponse(inputStream, response, getMimeType(path), Files.size(path));
         }
     }
 
-    public static void writeContentAsStream(
+    public static void sendBinaryResponse(
             InputStream inputStream,
             HttpServletResponse response,
             String mimeType,

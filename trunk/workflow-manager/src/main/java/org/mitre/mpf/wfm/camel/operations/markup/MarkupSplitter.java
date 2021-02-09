@@ -45,7 +45,6 @@ import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -109,7 +108,7 @@ public class MarkupSplitter {
                                 getFileExtension(media.getMimeType()));
                     } else {
                         destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
-                                getMarkedUpMediaExtensionForMediaType(media.getType(), job.getSystemPropertiesSnapshot()));
+                                getMarkedUpMediaExtensionForMediaType(media.getType()));
                     }
 
                     Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
@@ -208,7 +207,7 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
-            Optional trackClassification = Optional.empty();
+            Optional<String> trackClassification = Optional.empty();
             if (track.getTrackProperties().containsKey("CLASSIFICATION")) {
                 trackClassification = Optional.of(track.getTrackProperties().get("CLASSIFICATION"));
             } else if (track.getExemplar().getDetectionProperties().containsKey("CLASSIFICATION")) {
@@ -286,8 +285,7 @@ public class MarkupSplitter {
 
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
-    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType,
-                                                                SystemPropertiesSnapshot snapshot) {
+    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
         switch(mediaType) {
             case IMAGE:
                 return ".png";

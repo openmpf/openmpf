@@ -363,13 +363,25 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                             obj.sourceDownload = "server/download?sourceUri=" + obj.sourceUri + "&jobId=" + obj.jobId;
                             obj.sourceType = getMarkupType(obj.sourceUriContentType);
                             if (obj.sourceType == 'image') {
-                                return '<img src="' + obj.sourceImg + '" alt="" class="img-btn" data-download="' + obj.sourceDownload + '" data-file="' + obj.sourceUri + '" style="width: 100%; height: auto">';
+                                return $('<img>')
+                                    .attr('src', obj.sourceImg)
+                                    .addClass('img-btn')
+                                    .css('width', '100%')
+                                    .css('height', 'auto')[0].outerHTML;
                             }
                             else if (obj.sourceType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.sourceType == 'video') {
-                                return '<video controls preload="none" style="width: 100%"><source src="' + obj.sourceDownload + '">Your browser does not support the video tag.</video>';
+                                var sourceEl = $('<source>')
+                                    .attr('src', obj.sourceDownload)
+                                    .text('Your browser does not support the video tag.');
+
+                                return $('<video>')
+                                    .prop('controls', true)
+                                    .attr('preload', 'none')
+                                    .css('width', '100%')
+                                    .append(sourceEl)[0].outerHTML;
                             }
                             else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
@@ -400,13 +412,25 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                             obj.markupDownload = "markup/download?id=" + obj.id;
                             obj.markupType = getMarkupType(obj.markupUriContentType);
                             if (obj.markupType == 'image') {
-                                return '<img src="' + obj.markupImg + '" alt="" class="img-btn" data-download="' + obj.markupDownload + '" data-file="' + obj.markupUri + '" style="width: 100%; height: auto">';
+                                return $('<img>')
+                                    .attr('src', obj.markupImg)
+                                    .addClass('img-btn')
+                                    .css('width', '100%')
+                                    .css('height', 'auto')[0].outerHTML;
                             }
                             else if (obj.markupType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.markupType == 'video') {
-                                return '<video controls preload="none" style="width: 100%"><source src="' + obj.markupDownload + '">Your browser does not support the video tag.</video>';
+                                var sourceEl = $('<source>')
+                                    .attr('src', obj.markupDownload)
+                                    .text('Your browser does not support the video tag.');
+
+                                return $('<video>')
+                                    .prop('controls', true)
+                                    .attr('preload', 'none')
+                                    .css('width', '100%')
+                                    .append(sourceEl)[0].outerHTML;
                             } else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }

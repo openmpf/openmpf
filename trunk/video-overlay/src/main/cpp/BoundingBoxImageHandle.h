@@ -27,21 +27,24 @@
 #ifndef MPF_BOUNDINGBOXIMAGEHANDLE_H
 #define MPF_BOUNDINGBOXIMAGEHANDLE_H
 
+#include <string>
+
+#include <opencv2/core.hpp>
+
 #include <MPFVideoCapture.h>
 
 class BoundingBoxImageHandle {
 public:
+    static constexpr bool markExemplar = false;
+    static constexpr bool showFrameNumbers = false;
+
     BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath);
 
-    cv::Size GetFrameSize();
+    cv::Size GetFrameSize() const;
 
     bool Read(cv::Mat &frame);
 
     void HandleMarkedFrame(const cv::Mat& frame);
-
-    bool MarkExemplar();
-
-    bool ShowFrameNumbers();
 
 private:
     std::string sourcePath_;

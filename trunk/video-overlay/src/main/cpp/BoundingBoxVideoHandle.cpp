@@ -24,14 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <iostream>
-#include <fstream>
-
 #include "BoundingBoxVideoHandle.h"
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::string destinationPath, int crf,
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <utility>
+
+
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, int crf,
                                                int framePadding) :
-        destinationPath_(destinationPath), videoCapture_(sourcePath) {
+        destinationPath_(std::move(destinationPath)), videoCapture_(sourcePath) {
     int destinationFrameWidth  = videoCapture_.GetFrameSize().width  + 2 * framePadding;
     int destinationFrameHeight = videoCapture_.GetFrameSize().height + 2 * framePadding;
 
@@ -47,7 +51,7 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::stri
         " -crf " + std::to_string(crf) + " -b:v 0" + // https://trac.ffmpeg.org/wiki/Encode/VP9
         " -threads 2" +
         " -y" + // overwrite file if it exists
-        " '" + destinationPath + "'";
+        " '" + destinationPath_ + "'";
 
     pipe_ = popen(command.c_str(), "w");
     if (pipe_ == nullptr) {
@@ -58,11 +62,11 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string sourcePath, std::stri
 BoundingBoxVideoHandle::~BoundingBoxVideoHandle() {
     if (pipe_ != nullptr) {
         std::cerr << "Error: Pipe should have been closed and set to nullptr." << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 }
 
-cv::Size BoundingBoxVideoHandle::GetFrameSize() {
+cv::Size BoundingBoxVideoHandle::GetFrameSize() const {
     return videoCapture_.GetFrameSize();
 }
 
@@ -73,14 +77,6 @@ bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
     size_t sizeInBytes = frame.step[0] * frame.rows; // https://stackoverflow.com/a/26441073
     fwrite(frame.data, sizeof(unsigned char), sizeInBytes, pipe_);
-}
-
-bool BoundingBoxVideoHandle::MarkExemplar() {
-    return true;
-}
-
-bool BoundingBoxVideoHandle::ShowFrameNumbers() {
-    return true;
 }
 
 void BoundingBoxVideoHandle::Close() {

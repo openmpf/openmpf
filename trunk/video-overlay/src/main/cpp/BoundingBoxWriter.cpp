@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 #include <jni.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cmath>
 #include <array>
 #include <opencv2/opencv.hpp>
@@ -49,24 +49,25 @@ using namespace MPF;
 using namespace COMPONENT;
 
 // Provide enough room for long labels with wide characters to extend off the edges of the image.
-const int framePadding = 400;
+constexpr int framePadding = 400;
 
 template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
             TMediaHandle &boundingBoxMediaHandle);
 
-bool jniGetBoolProperty(JniHelper jni, std::string key, jobject map, jmethodID methodId);
+bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
-                     const std::string &label, bool labelChooseSide, Mat *image);
+                     const std::string &label, bool labelChooseSide, Mat &image);
 
-void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image);
+void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
+              bool animated, Mat &image);
 
-void drawFrameNumber(int frameNumber, Mat *image);
+void drawFrameNumber(int frameNumber, Mat &image);
 
-void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
-                          const std::string &label, Mat *image);
+void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color,
+                          int labelIndent, bool labelOnLeft, const std::string &label, Mat &image);
 
 
 extern "C" {
@@ -118,10 +119,9 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 {
     JniHelper jni(env);
     try {
-        std::string sourceImagePath = jni.ToStdString(sourceImagePathJString);
-        std::string destinationImagePath = jni.ToStdString(destinationImagePathJString);
-
-        BoundingBoxImageHandle boundingBoxImageHandle(sourceImagePath, destinationImagePath);
+        BoundingBoxImageHandle boundingBoxImageHandle(
+                jni.ToStdString(sourceImagePathJString),
+                jni.ToStdString(destinationImagePathJString));
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxImageHandle);
     }
@@ -284,7 +284,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                         ss << std::fixed << std::setprecision(3) << confidence;
 
-                        if (exemplarsEnabled && boundingBoxMediaHandle.MarkExemplar() &&
+                        if (exemplarsEnabled && boundingBoxMediaHandle.markExemplar &&
                                 jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
                             ss << '!';
                         }
@@ -292,7 +292,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                     drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
                                     mediaRotation, mediaFlip, red, green, blue, animated, ss.str(),
-                                    labelsChooseSideEnabled, &frame);
+                                    labelsChooseSideEnabled, frame);
                 }
             }
 
@@ -309,8 +309,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             Mat transformFrame = frame.clone();
             frameTransformer.TransformFrame(transformFrame, 0);
 
-            if (frameNumbersEnabled && boundingBoxMediaHandle.ShowFrameNumbers()) {
-                drawFrameNumber(currentFrameNum, &transformFrame);
+            if (frameNumbersEnabled && boundingBoxMediaHandle.showFrameNumbers) {
+                drawFrameNumber(currentFrameNum, transformFrame);
             }
 
             boundingBoxMediaHandle.HandleMarkedFrame(transformFrame);
@@ -326,20 +326,16 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 }
 
 
-bool jniGetBoolProperty(JniHelper jni, std::string key, jobject map, jmethodID methodId) {
+bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId) {
     auto jPropKey = jni.ToJString(key);
     auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
-    bool value = false;
-    if (jPropValue != nullptr) {
-        value = jni.ToBool(jPropValue);
-    }
-    return value;
+    return jPropValue != nullptr && jni.ToBool(jPropValue);
 }
 
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
                      double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
-                     const std::string &label, bool labelChooseSide, Mat *image)
+                     const std::string &label, bool labelChooseSide, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
@@ -354,7 +350,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     // Specifically, no pixels will be drawn near the edge.
     // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
     // To address this, we use a minimum thickness of 2.
-    int lineThickness = (int) std::max(.0018 * (image->rows < image->cols ? image->cols : image->rows), 2.0);
+    int lineThickness = (int) std::max(.0018 * (image.rows < image.cols ? image.cols : image.rows), 2.0);
 
     int minCircleRadius = 3;
     int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
@@ -401,13 +397,14 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
     drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
 
-    circle(*image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+    circle(image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
-void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool animated, Mat *image)
+void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
+              bool animated, Mat &image)
 {
     if (!animated) {
-        line(*image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
+        line(image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
         return;
     }
 
@@ -431,14 +428,14 @@ void drawLine(Point2d start, Point2d end, Scalar color, int lineThickness, bool 
         int y = (start.y * (1 - percent) + end.y * percent) + 0.5;
         Point curr(x, y);
         if (draw) {
-            line(*image, prev, curr, color, lineThickness);
+            line(image, prev, curr, color, lineThickness);
         }
         prev = curr;
         draw = !draw;
     } while (percent < 1.0);
 }
 
-void drawFrameNumber(int frameNumber, Mat *image)
+void drawFrameNumber(int frameNumber, Mat &image)
 {
     std::string label = std::to_string(frameNumber);
 
@@ -451,24 +448,24 @@ void drawFrameNumber(int frameNumber, Mat *image)
     Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
 
     // Position frame number near bottom right of the frame.
-    int labelRectBottomRightX = image->cols - 10;
-    int labelRectBottomRightY = image->rows - 10;
+    int labelRectBottomRightX = image.cols - 10;
+    int labelRectBottomRightY = image.rows - 10;
 
     int labelRectTopLeftX = labelRectBottomRightX - labelSize.width  - (2 * labelPadding);
     int labelRectTopLeftY = labelRectBottomRightY - labelSize.height - (2 * labelPadding);
 
-    rectangle(*image, Point(labelRectTopLeftX, labelRectTopLeftY), Point(labelRectBottomRightX, labelRectBottomRightY),
+    rectangle(image, Point(labelRectTopLeftX, labelRectTopLeftY), Point(labelRectBottomRightX, labelRectBottomRightY),
         Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 
     int labelBottomLeftX = labelRectTopLeftX + labelPadding;
     int labelBottomLeftY = labelRectTopLeftY + labelSize.height + labelPadding;
 
-    cv::putText(*image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale, Scalar(255,255,255),
-        labelThickness, cv::LineTypes::LINE_8);
+    cv::putText(image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale,
+                Scalar(255, 255, 255), labelThickness, cv::LineTypes::LINE_AA);
 }
 
-void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, int labelIndent, bool labelOnLeft,
-                          const std::string &label, Mat *image)
+void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color,
+                          int labelIndent, bool labelOnLeft, const std::string &label, Mat &image)
 {
     int labelPadding = 8;
     double labelScale = 0.8;
@@ -487,13 +484,13 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
 
     // Create the black rectangle in which to put the label text.
-    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image->type());
+    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());
 
     int labelBottomLeftX = labelIndent;
     int labelBottomLeftY = labelSize.height + labelPadding;
 
     cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
-        labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_8);
+                labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_AA);
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis so the text appears left-to-right in the final frame
@@ -517,7 +514,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
     // degrees within the square.
     int labelRectMaxDim = ceil(sqrt(pow(labelRectWidth, 2) + pow(labelRectHeight, 2)));
 
-    Mat paddedLabelMat(labelRectMaxDim * 2, labelRectMaxDim * 2, image->type(), Scalar(255,255,255));
+    Mat paddedLabelMat(labelRectMaxDim * 2, labelRectMaxDim * 2, image.type(), Scalar(255,255,255));
 
     // Place the label rectangle within the square on the right side of the point, as shown in the above diagram,
     // unless labelOnLeft is true, in which case place it on the left side of the point.
@@ -548,7 +545,7 @@ void drawBoundingBoxLabel(Point2d pt, double rotation, bool flip, Scalar color, 
         cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
                                           labelRectBottomLeftY - labelRectMaxDim,
                                           paddedLabelMat.cols, paddedLabelMat.rows);
-        paddedLabelMat.copyTo((*image)(paddedLabelMatInsertRect), paddedLabelMask);
+        paddedLabelMat.copyTo(image(paddedLabelMatInsertRect), paddedLabelMask);
     } catch (std::exception& e) {
         // Depending on the position of the detection relative to the frame boundary, sometimes the label cannot be
         // drawn within the viewable region. This is fine. Log and continue.

@@ -24,19 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <opencv2/imgcodecs.hpp>
 #include "BoundingBoxImageHandle.h"
 
+#include <stdexcept>
+#include <utility>
+
+#include <opencv2/imgcodecs.hpp>
+
+
 BoundingBoxImageHandle::BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath) :
-        sourcePath_(sourcePath),
-        destinationPath_(destinationPath),
+        sourcePath_(std::move(sourcePath)),
+        destinationPath_(std::move(destinationPath)),
         videoCapture_(sourcePath_) {
-    if (!videoCapture_.IsOpened()) {
-        throw std::runtime_error("Unable to open source image: " + sourcePath_);
-    }
 }
 
-cv::Size BoundingBoxImageHandle::GetFrameSize() {
+cv::Size BoundingBoxImageHandle::GetFrameSize() const {
     return videoCapture_.GetFrameSize();
 }
 
@@ -55,12 +57,4 @@ void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {
     if (!cv::imwrite(destinationPath_, frame, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
         throw std::runtime_error("Failed to write image: " + destinationPath_);
     }
-}
-
-bool BoundingBoxImageHandle::MarkExemplar() {
-    return false;
-}
-
-bool BoundingBoxImageHandle::ShowFrameNumbers() {
-    return false;
 }

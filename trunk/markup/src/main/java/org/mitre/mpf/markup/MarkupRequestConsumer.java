@@ -48,6 +48,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.stream.Collectors.toMap;
+
 @Service(MarkupRequestConsumer.REF)
 public class MarkupRequestConsumer implements MessageListener {
     public static final String REF = "markupRequestConsumer";
@@ -88,7 +90,7 @@ public class MarkupRequestConsumer implements MessageListener {
         markupResponseBuilder.setErrorStackTrace(writer.toString());
     }
 
-    private boolean markup(Markup.MarkupRequest markupRequest) throws Exception {
+    private static boolean markup(Markup.MarkupRequest markupRequest) throws IOException {
         log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.",
                 markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
 
@@ -96,12 +98,15 @@ public class MarkupRequestConsumer implements MessageListener {
         writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
         writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
 
-        Map mediaMetadata = new HashMap<String, String>();
-        markupRequest.getMediaMetadataList().stream().forEach(e -> mediaMetadata.put(e.getKey(), e.getValue()) );
+        var mediaMetadata = markupRequest.getMediaMetadataList()
+                .stream()
+                .collect(toMap(Markup.MetadataMap::getKey, Markup.MetadataMap::getValue));
         writer.setMediaMetadata(mediaMetadata);
 
-        Map requestProperties = new HashMap<String, String>();
-        markupRequest.getMarkupPropertiesList().stream().forEach(e -> requestProperties.put(e.getKey(), e.getValue()) );
+        var requestProperties = markupRequest.getMarkupPropertiesList()
+                .stream()
+                .collect(toMap(Markup.MarkupRequestPropertyMap::getKey,
+                               Markup.MarkupRequestPropertyMap::getValue));
         writer.setRequestProperties(requestProperties);
 
         BoundingBoxMap map = new BoundingBoxMap();
@@ -162,9 +167,8 @@ public class MarkupRequestConsumer implements MessageListener {
             final Map<String, Object> requestHeaders = new HashMap<String, Object>();
             Enumeration<String> properties = message.getPropertyNames();
 
-            String propertyName;
             while (properties.hasMoreElements()) {
-                propertyName = properties.nextElement();
+                String propertyName = properties.nextElement();
                 requestHeaders.put(propertyName, message.getObjectProperty(propertyName));
             }
 

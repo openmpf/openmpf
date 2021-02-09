@@ -176,8 +176,8 @@ public class BoundingBox {
                 && blue == casted.blue
                 && animated == casted.animated
                 && exemplar == casted.exemplar
-                && confidence == casted.confidence
-                && classification == casted.classification;
+                && Double.compare(confidence, casted.confidence) == 0
+                && classification.equals(casted.classification);
     }
 
     /**

@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProc
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
+import org.mitre.mpf.wfm.camel.operations.detection.stationarytracklabeling.StationaryTrackLabelingProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -98,6 +99,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
 					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
+					.process(StationaryTrackLabelingProcessor.REF) // Detect and flag stationary tracks. Remove stationary tracks if requested by job.
 					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
 					.process(DetectionPaddingProcessor.REF)
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")

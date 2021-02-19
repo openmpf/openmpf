@@ -133,6 +133,34 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "LABEL_STATIONARY_TRACKS",
+        "description": "In the context of videos, when set to true, attempt to label tracks as either stationary or containing moving objects. Default value is defined by the OpenMPF properties file.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.video.track.label.motion.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "DROP_STATIONARY_TRACKS",
+        "description": "In the context of videos, when set to true, remove any tracks that were marked as stationary. Default value is defined by the OpenMPF properties file.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.video.track.drop.stationary.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_IOU_THRESHOLD_STATIONARY_OBJECTS",
+        "description": "In the context of videos, the minimum IoU overlap between bounding boxes and the average per-track bounding box for objects to be considered stationary. Value is expected to be between 0 and 1. Default value is defined by the OpenMPF properties file.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.video.track.iou.threshold.stationary.object",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_DETECTIONS_FOR_NON_STATIONARY_TRACKS",
+        "description": "In the context of videos, the minimum number of non-stationary objects for a track to be labeled as non-stationary. Default value is defined by the OpenMPF properties file.",
+        "type": "INT",
+        "propertiesKey": "detection.video.track.min.threshold.non.stationary.track",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "MERGE_TRACKS",
         "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries. Default value is defined by the OpenMPF properties file.",
         "type": "BOOLEAN",

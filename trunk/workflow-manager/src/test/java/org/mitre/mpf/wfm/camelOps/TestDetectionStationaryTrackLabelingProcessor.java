@@ -62,7 +62,6 @@ public class TestDetectionPaddingProcessor {
         }
 
         {
-
             SortedSet<Detection> detections = new TreeSet<>();
 
             detections.add(createDetection(0, 479, 470, 630, 0);
@@ -71,7 +70,6 @@ public class TestDetectionPaddingProcessor {
             Track track = createTrack(0, 2, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            // Input detection is already at max possible size.
             assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "TRUE");
         }
     }
@@ -87,7 +85,6 @@ public class TestDetectionPaddingProcessor {
             Track track = createTrack(0, 2, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            // Input detection is already at max possible size.
             assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "FALSE");
         }
     }
@@ -101,17 +98,17 @@ public class TestDetectionPaddingProcessor {
 
     private static Track createTrack(int startFrame, int endFrame, Iterable<Detection> detections) {
         return new Track(
-                0,
-                0,
-                0,
-                0,
-                startFrame,
-                endFrame,
-                0,
-                1,
-                "VIDEO",
-                -1,
-                detections,
-                Collections.emptyMap());
+                0, //jobId
+                0, //mediaId
+                0, //taskIndex
+                0, //actionIndex
+                startFrame, //startOffsetFrameInclusive
+                endFrame,   //endOffsetFrameInclusive
+                0, //startOffsetTimeInclusive
+                1, //endOffsetTimeInclusive
+                "VIDEO", //type
+                -1, //confidence
+                detections, //detections
+                Collections.emptyMap()); //trackProperties
     }
 }

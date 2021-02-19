@@ -33,10 +33,12 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestDetectionPaddingProcessor {
+public class TestDetectionStationaryTrackLabelingProcessor {
 
     @Test
     public void testLabelTrackStationary() {

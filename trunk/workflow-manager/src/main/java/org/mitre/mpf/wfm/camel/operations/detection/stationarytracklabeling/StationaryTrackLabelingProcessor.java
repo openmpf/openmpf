@@ -173,7 +173,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
 
         for (Detection detection : track.getDetections()) {
             Detection newDetection = relabelDetection(avg_bbox, iouThreshold, detection);
-            if (newDetection.getDetectionProperties().get("OBJECT_IS_STATIONARY") == "FALSE") {
+            if (newDetection.getDetectionProperties().get("IS_STATIONARY_OBJECT") == "FALSE") {
                 nonStationaryObjects++;
             }
             newDetections.add(newDetection);
@@ -185,7 +185,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
 
         newTrackProperties = ImmutableMap.<String, String>builder()
                 .putAll(track.getTrackProperties())
-                .put("TRACK_IS_STATIONARY", isStationary)
+                .put("IS_STATIONARY_TRACK", isStationary)
                 .build();
 
         return new Track(
@@ -238,7 +238,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
 
         Map<String, String> detectionProperties = ImmutableMap.<String, String>builder()
                 .putAll(originalDetection.getDetectionProperties())
-                .put("OBJECT_IS_STATIONARY", objectIsStationary)
+                .put("IS_STATIONARY_OBJECT", objectIsStationary)
                 .build();
 
         return new Detection(

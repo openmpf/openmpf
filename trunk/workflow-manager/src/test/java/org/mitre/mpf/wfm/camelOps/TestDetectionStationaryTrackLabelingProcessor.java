@@ -92,8 +92,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
     }
 
 
-    private static Detection createDetection(int x, int y, int width, int height, int frame, String rotation) {
-
+    private static Detection createDetection(int x, int y, int width, int height, int frame) {
         Map<String, String> detectionProperties = Collections.emptyMap();
         return new Detection(x, y, width, height, 1, frame, 0, detectionProperties);
     }

@@ -42,7 +42,7 @@ public class TestDetectionPaddingProcessor {
     public void testLabelTrackStationary() {
         {
             SortedSet<Detection> detections = new TreeSet<>();
-            detections.add(createDetection(0, 479, 480, 640, 0);
+            detections.add(createDetection(0, 479, 480, 640, 0));
             Track track = createTrack(0, 0, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
@@ -52,9 +52,9 @@ public class TestDetectionPaddingProcessor {
         {
             SortedSet<Detection> detections = new TreeSet<>();
 
-            detections.add(createDetection(0, 479, 480, 640, 0);
-            detections.add(createDetection(0, 479, 480, 640, 1);
-            detections.add(createDetection(0, 479, 480, 640, 2);
+            detections.add(createDetection(0, 479, 480, 640, 0));
+            detections.add(createDetection(0, 479, 480, 640, 1));
+            detections.add(createDetection(0, 479, 480, 640, 2));
             Track track = createTrack(0, 2, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
@@ -64,9 +64,9 @@ public class TestDetectionPaddingProcessor {
         {
             SortedSet<Detection> detections = new TreeSet<>();
 
-            detections.add(createDetection(0, 479, 470, 630, 0);
-            detections.add(createDetection(0, 479, 450, 610, 1);
-            detections.add(createDetection(0, 479, 460, 620, 2);
+            detections.add(createDetection(0, 479, 470, 630, 0));
+            detections.add(createDetection(0, 479, 450, 610, 1));
+            detections.add(createDetection(0, 479, 460, 620, 2));
             Track track = createTrack(0, 2, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
@@ -79,9 +79,9 @@ public class TestDetectionPaddingProcessor {
         {
             SortedSet<Detection> detections = new TreeSet<>();
 
-            detections.add(createDetection(300, 179, 48, 64, 0);
-            detections.add(createDetection(0, 29, 50, 60, 1);
-            detections.add(createDetection(500, 509, 100, 100, 2);
+            detections.add(createDetection(300, 179, 48, 64, 0));
+            detections.add(createDetection(0, 29, 50, 60, 1));
+            detections.add(createDetection(500, 509, 100, 100, 2));
             Track track = createTrack(0, 2, detections);
 
             Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);

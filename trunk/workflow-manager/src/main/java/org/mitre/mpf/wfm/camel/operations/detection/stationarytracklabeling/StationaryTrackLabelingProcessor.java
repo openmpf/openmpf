@@ -127,7 +127,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
     }
 
 
-    private Collection<Track> updateStationaryTracks(long jobId, long mediaId, boolean dropStationaryTracks,
+    public Collection<Track> updateStationaryTracks(long jobId, long mediaId, boolean dropStationaryTracks,
                                                      double iouThreshold, int minMovingObjects, Iterable<Track> tracks) {
         var newTracks = new TreeSet<Track>();
         int trackIndex = 0;

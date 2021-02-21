@@ -111,7 +111,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             tracks.add(createTrack(0, 2, detections));
 
-            TreeSet<Track> updated_tracks = updateStationaryTracks(0, 0, false, 0.6, 1, tracks);
+            TreeSet<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, false,
+                                                                                                    0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 2);
             assertExpectedTrackCount(1, 1, tracks);
         }
@@ -137,7 +138,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             tracks.add(createTrack(0, 2, detections));
 
-            TreeSet<Track> updated_tracks = updateStationaryTracks(0, 0, true, 0.6, 1, tracks);
+            TreeSet<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, true,
+                                                                                                    0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 1);
             assertExpectedTrackCount(0, 1, tracks);
         }

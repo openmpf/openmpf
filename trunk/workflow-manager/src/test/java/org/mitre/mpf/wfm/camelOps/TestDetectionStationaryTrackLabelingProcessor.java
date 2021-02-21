@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;

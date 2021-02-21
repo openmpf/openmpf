@@ -91,6 +91,70 @@ public class TestDetectionStationaryTrackLabelingProcessor {
         }
     }
 
+    @Test
+    public void testKeepAllTracks() {
+        {
+            TreeSet<Track> tracks = new TreeSet<>();
+            SortedSet<Detection> detections = new TreeSet<>();
+
+            // Add non-stationary track.
+            detections.add(createDetection(300, 179, 48, 64, 0));
+            detections.add(createDetection(0, 29, 50, 60, 1));
+            detections.add(createDetection(500, 509, 100, 100, 2));
+            tracks.add(createTrack(0, 2, detections));
+
+            detections = new TreeSet<>();
+
+            // Add stationary track.
+            detections.add(createDetection(0, 479, 470, 630, 0));
+            detections.add(createDetection(0, 479, 450, 610, 1));
+            detections.add(createDetection(0, 479, 460, 620, 2));
+            tracks.add(createTrack(0, 2, detections));
+
+            TreeSet<Track> updated_tracks = updateStationaryTracks(0, 0, false, 0.6, 1, tracks);
+            assertEquals(updated_tracks.size(), 2);
+            assertExpectedTrackCount(1, 1, tracks);
+        }
+    }
+
+    @Test
+    public void testDropStationaryTracks() {
+        {
+            TreeSet<Track> tracks = new TreeSet<>();
+            SortedSet<Detection> detections = new TreeSet<>();
+
+            // Add non-stationary track.
+            detections.add(createDetection(300, 179, 48, 64, 0));
+            detections.add(createDetection(0, 29, 50, 60, 1));
+            detections.add(createDetection(500, 509, 100, 100, 2));
+            tracks.add(createTrack(0, 2, detections));
+
+            detections = new TreeSet<>();
+
+            // Add stationary track.
+            detections.add(createDetection(0, 479, 470, 630, 0));
+            detections.add(createDetection(0, 479, 450, 610, 1));
+            detections.add(createDetection(0, 479, 460, 620, 2));
+            tracks.add(createTrack(0, 2, detections));
+
+            TreeSet<Track> updated_tracks = updateStationaryTracks(0, 0, true, 0.6, 1, tracks);
+            assertEquals(updated_tracks.size(), 1);
+            assertExpectedTrackCount(0, 1, tracks);
+        }
+    }
+
+    private void assertExpectedTrackCount(int expectedStationary, int expectedNonStationary, TreeSet<Track> tracks) {
+        int countStationary = 0, countNonStationary;
+        for (Track track: tracks) {
+            if (track.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE") {
+                countStationary++;
+            } else {
+                countNonStationary++;
+            }
+        }
+        assertEquals(countStationary, expectedStationary);
+        assertEquals(countNonStationary, expectedNonStationary);
+    }
 
     private static Detection createDetection(int x, int y, int width, int height, int frame) {
         Map<String, String> detectionProperties = Collections.emptyMap();

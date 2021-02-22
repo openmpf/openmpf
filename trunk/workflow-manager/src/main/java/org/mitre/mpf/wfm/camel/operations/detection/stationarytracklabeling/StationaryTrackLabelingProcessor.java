@@ -143,7 +143,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
         int trackIndex = 0;
         for (Track track : tracks) {
             Track newTrack = processTrack(jobId, mediaId, dropStationaryTracks, iouThreshold, minMovingObjects, track);
-            if (newTrack.getTrackProperties().get("IS_STATIONARY_TRACK") == "FALSE" && dropStationaryTracks) {
+            if (newTrack.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE" && dropStationaryTracks) {
                 continue;
             }
             newTracks.add(newTrack);

@@ -48,8 +48,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 480, 640, 0));
             Track track = createTrack(0, 0, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "TRUE");
+            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
 
         {
@@ -60,8 +60,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 480, 640, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "TRUE");
+            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
 
         {
@@ -72,8 +72,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "TRUE");
+            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
     }
 
@@ -87,8 +87,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(500, 509, 100, 100, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, false, 0.6, 1, track);
-            assertEquals(updated.getTrackProperties().get("IS_STATIONARY_TRACK"), "FALSE");
+            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            assertEquals("FALSE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
     }
 
@@ -115,7 +115,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, false,
                                                                                                        0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 2);
-            assertExpectedTrackCount(1, 1, tracks);
+            assertExpectedTrackCount(1, 1, updated_tracks);
         }
     }
 
@@ -142,7 +142,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, true,
                                                                                                        0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 1);
-            assertExpectedTrackCount(0, 1, tracks);
+            assertExpectedTrackCount(0, 1, updated_tracks);
         }
     }
 
@@ -155,8 +155,8 @@ public class TestDetectionStationaryTrackLabelingProcessor {
                 countNonStationary++;
             }
         }
-        assertEquals(countStationary, expectedStationary);
-        assertEquals(countNonStationary, expectedNonStationary);
+        assertEquals(expectedStationary, countStationary);
+        assertEquals(expectedNonStationary, countNonStationary);
     }
 
     private static Detection createDetection(int x, int y, int width, int height, int frame) {

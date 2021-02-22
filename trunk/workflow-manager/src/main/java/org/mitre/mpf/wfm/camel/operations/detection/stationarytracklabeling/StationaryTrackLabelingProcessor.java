@@ -140,21 +140,19 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
     public static Collection<Track> updateStationaryTracks(long jobId, long mediaId, boolean dropStationaryTracks,
                                                      double iouThreshold, int minMovingObjects, Iterable<Track> tracks) {
         var newTracks = new TreeSet<Track>();
-        int trackIndex = 0;
+
         for (Track track : tracks) {
-            Track newTrack = processTrack(jobId, mediaId, dropStationaryTracks, iouThreshold, minMovingObjects, track);
+            Track newTrack = processTrack(jobId, mediaId, iouThreshold, minMovingObjects, track);
             if (newTrack.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE" && dropStationaryTracks) {
                 continue;
             }
             newTracks.add(newTrack);
-            trackIndex++;
         }
         return newTracks;
     }
 
 
-    public static Track processTrack(long jobId, long mediaId, boolean dropStationaryTracks,
-                                     double iouThreshold, int minMovingObjects, Track track) {
+    public static Track processTrack(long jobId, long mediaId, double iouThreshold, int minMovingObjects, Track track) {
         Map<String, String> newTrackProperties;
 
         String isStationary = "TRUE";

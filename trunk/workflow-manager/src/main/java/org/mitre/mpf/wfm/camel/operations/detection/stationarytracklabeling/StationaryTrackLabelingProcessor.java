@@ -124,7 +124,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
                     _log.warn(String.format("Dropping %d stationary tracks for job id %s.",
                             trackSizeDiff, job.getId()));
                     _inProgressBatchJobs.addWarning(
-                            jobId, mediaId, IssueCodes.LABEL_STATIONARY, String.format("Dropping %d stationary tracks for job id %s.",
+                            job.getId(), media.getId(), IssueCodes.LABEL_STATIONARY, String.format("Dropping %d stationary tracks for job id %s.",
                             trackSizeDiff, job.getId()));
                 }
 

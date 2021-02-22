@@ -55,7 +55,7 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
 
     pipe_ = popen(command.c_str(), "w");
     if (pipe_ == nullptr) {
-        throw std::runtime_error("Unable to write markup because ffmpeg process failed to start.");
+        throw std::runtime_error("Unable to write markup because the ffmpeg process failed to start.");
     }
 }
 
@@ -75,14 +75,39 @@ bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
-    size_t sizeInBytes = frame.step[0] * frame.rows; // https://stackoverflow.com/a/26441073
-    fwrite(frame.data, sizeof(unsigned char), sizeInBytes, pipe_);
+    // Properly handle non-continuous cv::Mats. For example, if the left or right side of the frame was cropped off then
+    // the matrix will be non-continuous. This is because cropping doesn't copy the matrix, it creates a submatrix
+    // pointing in to the original un-cropped frame. To avoid writing sections we need to skip we copy data row by row.
+    for (int row = 0; row < frame.rows; ++row) {
+        fwrite(frame.ptr(row), frame.elemSize(), frame.cols, pipe_);
+    }
 }
 
 void BoundingBoxVideoHandle::Close() {
     fflush(pipe_);
-    pclose(pipe_);
+
+    int returnCode = pclose(pipe_);
     pipe_ = nullptr;
+
+    if (returnCode != 0) {
+        std::stringstream errorMsg;
+        errorMsg << "Unable to write markup because the ffmpeg process ";
+
+        if (WIFEXITED(returnCode)) {
+            int ffmpegExitStatus = WEXITSTATUS(returnCode);
+            errorMsg << "exited with exit code: " << ffmpegExitStatus;
+        }
+        else {
+            errorMsg << "did not exit normally";
+        }
+
+        if (WIFSIGNALED(returnCode)) {
+            errorMsg << " due to signal number: " << WTERMSIG(returnCode);
+        }
+        errorMsg << '.';
+
+        throw std::runtime_error(errorMsg.str());
+    }
 
     // Check if destination file exists and if it's empty.
     std::ifstream destinationFile(destinationPath_);

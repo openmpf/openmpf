@@ -306,14 +306,13 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     mediaRotation, mediaFlip, Scalar(0, 0, 0),
                     IFrameTransformer::Ptr(new NoOpFrameTransformer(frame.size())));
 
-            Mat transformFrame = frame.clone();
-            frameTransformer.TransformFrame(transformFrame, 0);
+            frameTransformer.TransformFrame(frame, 0);
 
             if (frameNumbersEnabled && boundingBoxMediaHandle.showFrameNumbers) {
-                drawFrameNumber(currentFrameNum, transformFrame);
+                drawFrameNumber(currentFrameNum, frame);
             }
 
-            boundingBoxMediaHandle.HandleMarkedFrame(transformFrame);
+            boundingBoxMediaHandle.HandleMarkedFrame(frame);
         }
 
     }

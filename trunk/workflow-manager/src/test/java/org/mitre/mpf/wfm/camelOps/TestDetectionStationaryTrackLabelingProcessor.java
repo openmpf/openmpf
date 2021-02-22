@@ -147,7 +147,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
     }
 
     private void assertExpectedTrackCount(int expectedStationary, int expectedNonStationary, Collection<Track> tracks) {
-        int countStationary = 0, countNonStationary;
+        int countStationary = 0, countNonStationary = 0;
         for (Track track: tracks) {
             if (track.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE") {
                 countStationary++;

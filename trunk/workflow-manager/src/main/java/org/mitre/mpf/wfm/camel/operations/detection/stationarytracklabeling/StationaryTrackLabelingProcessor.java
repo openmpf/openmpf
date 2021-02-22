@@ -110,13 +110,23 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
                 boolean dropStationaryTracks = Boolean.parseBoolean(combinedProperties.apply(MpfConstants.DROP_STATIONARY_TRACKS));
                 double iouThreshold = Double.parseDouble(combinedProperties.apply(MpfConstants.MIN_IOU_THRESHOLD_STATIONARY_OBJECTS));
                 int minMovingObjects = Integer.parseInt(combinedProperties.apply(MpfConstants.MIN_DETECTIONS_FOR_NON_STATIONARY_TRACKS));
-
+                int trackSizeDiff;
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex);
 
                 Collection<Track> newTracks = updateStationaryTracks(
                         job.getId(), media.getId(), dropStationaryTracks, iouThreshold, minMovingObjects, tracks);
+
+                trackSizeDiff = tracks.size() - newTracks.size();
+
+                if (trackSizeDiff > 0) {
+                    _log.warn(String.format("Dropping %d stationary tracks for job id %s.",
+                            trackSizeDiff, job.getId()));
+                    _inProgressBatchJobs.addWarning(
+                            jobId, mediaId, IssueCodes.LABEL_STATIONARY, String.format("Dropping %d stationary tracks for job id %s.",
+                            trackSizeDiff, job.getId()));
+                }
 
                 _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex, newTracks);
@@ -134,11 +144,6 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
         for (Track track : tracks) {
             Track newTrack = processTrack(jobId, mediaId, dropStationaryTracks, iouThreshold, minMovingObjects, track);
             if (newTrack.getTrackProperties().get("IS_STATIONARY_TRACK") == "FALSE" && dropStationaryTracks) {
-                _log.warn(String.format("Dropping stationary track %d for job id %s.",
-                        trackIndex, jobId));
-                _inProgressBatchJobs.addWarning(
-                        jobId, mediaId, IssueCodes.LABEL_STATIONARY, String.format("Dropping stationary track %d for job id %s. ",
-                                trackIndex, jobId));
                 continue;
             }
             newTracks.add(newTrack);

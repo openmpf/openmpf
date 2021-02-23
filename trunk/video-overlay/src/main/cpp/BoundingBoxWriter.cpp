@@ -57,16 +57,19 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
 bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
 
+double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
+                            jmethodID methodId);
+
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
-                     double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
-                     const std::string &label, bool labelChooseSide, Mat &image);
+                     double mediaRotation, bool mediaFlip, int red, int green, int blue, double alpha,
+                     bool animated, const std::string &label, bool labelChooseSide, Mat &image);
 
 void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
               bool animated, Mat &image);
 
-void drawFrameNumber(int frameNumber, Mat &image);
+void drawFrameNumber(int frameNumber, double alpha, Mat &image);
 
-void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color,
+void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
                           int labelIndent, bool labelOnLeft, const std::string &label, Mat &image);
 
 
@@ -194,13 +197,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
 
         // Get the media metadata rotation property.
-        auto jPropKey = jni.ToJString("ROTATION");
-        jstring jPropValue = (jstring) jni.CallObjectMethod(mediaMetadata, clzMap_fnGet, *jPropKey);
-        double mediaRotation = 0.0;
-        if (jPropValue != nullptr) {
-            std::string rotationPropValue = jni.ToStdString(jPropValue);
-            mediaRotation = std::stod(rotationPropValue);
-        }
+        double mediaRotation = jniGetDoubleProperty(jni, "ROTATION", 0.0, mediaMetadata, clzMap_fnGet);
 
         // Get the media metadata horizontal flip property.
         bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", mediaMetadata, clzMap_fnGet);
@@ -208,6 +205,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         // Get request properties.
         bool labelsEnabled =
             jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
+        double labelsAlpha =
+            jniGetDoubleProperty(jni, "MARKUP_LABELS_ALPHA", 1.0, requestProperties, clzMap_fnGet);
         bool labelsChooseSideEnabled =
             jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", requestProperties, clzMap_fnGet);
         bool borderEnabled =
@@ -291,7 +290,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     }
 
                     drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
-                                    mediaRotation, mediaFlip, red, green, blue, animated, ss.str(),
+                                    mediaRotation, mediaFlip, red, green, blue, labelsAlpha, animated, ss.str(),
                                     labelsChooseSideEnabled, frame);
                 }
             }
@@ -309,7 +308,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             frameTransformer.TransformFrame(frame, 0);
 
             if (frameNumbersEnabled && boundingBoxMediaHandle.showFrameNumbers) {
-                drawFrameNumber(currentFrameNum, frame);
+                drawFrameNumber(currentFrameNum, labelsAlpha, frame);
             }
 
             boundingBoxMediaHandle.HandleMarkedFrame(frame);
@@ -331,9 +330,21 @@ bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jme
     return jPropValue != nullptr && jni.ToBool(jPropValue);
 }
 
+double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
+                            jmethodID methodId) {
+    auto jPropKey = jni.ToJString(key);
+    auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
+    double retval = defaultValue;
+    if (jPropValue != nullptr) {
+        std::string propValue = jni.ToStdString(jPropValue);
+        retval = std::stod(propValue);
+    }
+    return retval;
+}
+
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
-                     double mediaRotation, bool mediaFlip, int red, int green, int blue, bool animated,
+                     double mediaRotation, bool mediaFlip, int red, int green, int blue, double alpha, bool animated,
                      const std::string &label, bool labelChooseSide, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
@@ -388,7 +399,8 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         }
 
         int labelIndent = circleRadius + 2;
-        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, labelIndent, labelOnLeft, label, image);
+        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, alpha, labelIndent, labelOnLeft,
+                             label, image);
     }
 
     drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
@@ -434,7 +446,7 @@ void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int
     } while (percent < 1.0);
 }
 
-void drawFrameNumber(int frameNumber, Mat &image)
+void drawFrameNumber(int frameNumber, double alpha, Mat &image)
 {
     std::string label = std::to_string(frameNumber);
 
@@ -453,17 +465,25 @@ void drawFrameNumber(int frameNumber, Mat &image)
     int labelRectTopLeftX = labelRectBottomRightX - labelSize.width  - (2 * labelPadding);
     int labelRectTopLeftY = labelRectBottomRightY - labelSize.height - (2 * labelPadding);
 
-    rectangle(image, Point(labelRectTopLeftX, labelRectTopLeftY), Point(labelRectBottomRightX, labelRectBottomRightY),
-        Scalar(0, 0, 0), cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+    int labelRectWidth = labelRectBottomRightX - labelRectTopLeftX;
+    int labelRectHeight = labelRectBottomRightY - labelRectTopLeftY;
 
-    int labelBottomLeftX = labelRectTopLeftX + labelPadding;
-    int labelBottomLeftY = labelRectTopLeftY + labelSize.height + labelPadding;
+    // Create the black rectangle in which to put the label text.
+    Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());
 
-    cv::putText(image, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale,
+    int labelBottomLeftX = labelPadding;
+    int labelBottomLeftY = labelSize.height + labelPadding;
+
+    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale,
                 Scalar(255, 255, 255), labelThickness, cv::LineTypes::LINE_AA);
+
+    // Place the label on the image.
+    cv::Rect labelMatInsertRect(labelRectTopLeftX, labelRectTopLeftY, labelMat.cols, labelMat.rows);
+    auto insertionRegion = image(labelMatInsertRect);
+    cv::addWeighted(insertionRegion, 1 - alpha, labelMat, alpha, 0, insertionRegion);
 }
 
-void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color,
+void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
                           int labelIndent, bool labelOnLeft, const std::string &label, Mat &image)
 {
     int labelPadding = 8;
@@ -532,19 +552,18 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
                        cv::InterpolationFlags::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
     }
 
-    // Generate a black and white mask that only captures the label rectangle within the white box.
-    // Black pixels in the mask represent the parts to mask out.
-    Mat paddedLabelMask = Mat::zeros(paddedLabelMat.rows, paddedLabelMat.cols, CV_8U);
-    cv::inRange(paddedLabelMat, Scalar(255, 255, 255), Scalar(255, 255, 255), paddedLabelMask);
-    paddedLabelMask = ~paddedLabelMask;
-
     try {
-        // Place the white box on the image and apply the mask. Align the center of the box (which corresponds to the
-        // lower-left corner of the label rectangle) with the desired location (pt).
+        // Place the white box on the image. Align the center of the box (which corresponds to the lower-left corner of
+        // the label rectangle) with the desired location (pt).
         cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
                                           labelRectBottomLeftY - labelRectMaxDim,
                                           paddedLabelMat.cols, paddedLabelMat.rows);
-        paddedLabelMat.copyTo(image(paddedLabelMatInsertRect), paddedLabelMask);
+        auto insertionRegion = image(paddedLabelMatInsertRect);
+        insertionRegion.forEach<cv::Vec3b>([&](cv::Vec3b &pixel, const int position[]) {
+            if (paddedLabelMat.at<cv::Vec3b>(position) != cv::Vec3b{255, 255, 255}) {
+                pixel = (1 - alpha) * pixel + alpha * paddedLabelMat.at<cv::Vec3b>(position);
+            }
+        });
     } catch (std::exception& e) {
         // Depending on the position of the detection relative to the frame boundary, sometimes the label cannot be
         // drawn within the viewable region. This is fine. Log and continue.

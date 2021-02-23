@@ -51,7 +51,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.MarkupJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +81,7 @@ public class MarkupSplitter {
     private MarkupResultDao hibernateMarkupResultDao;
 
     @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private MarkupJobPropertiesUtil markupJobPropertiesUtil;
 
 
     public List<Message> performSplit(BatchJob job, Task task) {
@@ -133,12 +133,10 @@ public class MarkupSplitter {
                                 .setValue(entry.getValue());
                     }
 
-                    for (var entry : aggregateJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
-                        if (entry.getKey().startsWith("MARKUP_")) {
-                            requestBuilder.addMarkupPropertiesBuilder()
-                                    .setKey(entry.getKey())
-                                    .setValue(entry.getValue());
-                        }
+                    for (var entry : markupJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
+                        requestBuilder.addMarkupPropertiesBuilder()
+                                .setKey(entry.getKey())
+                                .setValue(entry.getValue());
                     }
 
                     Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
@@ -172,8 +170,7 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
-        String labelPropToShow =
-                aggregateJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
+        String labelPropToShow = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();

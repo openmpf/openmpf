@@ -190,8 +190,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzBoundingBox_fnIsAnimated = jni.GetMethodID(clzBoundingBox, "isAnimated", "()Z");
         jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
         jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
-        jmethodID clzBoundingBox_fnGetClassification =
-            jni.GetMethodID(clzBoundingBox, "getClassification", "()Ljava/util/Optional;");
+        jmethodID clzBoundingBox_fnGetLabel = jni.GetMethodID(clzBoundingBox, "getLabel", "()Ljava/util/Optional;");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
         jmethodID clzBoundingBox_fnGetFlip = jni.GetMethodID(clzBoundingBox, "getFlip", "()Z");
@@ -270,12 +269,12 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     std::stringstream ss;
 
                     if (labelsEnabled) {
-                        jobject classificationObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetClassification);
-                        if (jni.CallBooleanMethod(classificationObj, clzOptional_fnIsPresent)) {
-                            std::string classification =
-                                jni.ToStdString((jstring)jni.CallObjectMethod(classificationObj, clzOptional_fnGet));
-                            ss << classification.substr(0, 10); // truncate long strings
-                            if (classification.length() > 10) {
+                        jobject labelObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetLabel);
+                        if (jni.CallBooleanMethod(labelObj, clzOptional_fnIsPresent)) {
+                            std::string label =
+                                jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
+                            ss << label.substr(0, 10); // truncate long strings
+                            if (label.length() > 10) {
                                 ss << "...";
                             }
                             ss << ' ';
@@ -458,15 +457,12 @@ void drawFrameNumber(int frameNumber, double alpha, Mat &image)
     int baseline = 0;
     Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
 
-    // Position frame number near bottom right of the frame.
-    int labelRectBottomRightX = image.cols - 10;
-    int labelRectBottomRightY = image.rows - 10;
+    int labelRectWidth = labelSize.width + (2 * labelPadding);
+    int labelRectHeight = labelSize.height + (2 * labelPadding);
 
-    int labelRectTopLeftX = labelRectBottomRightX - labelSize.width  - (2 * labelPadding);
-    int labelRectTopLeftY = labelRectBottomRightY - labelSize.height - (2 * labelPadding);
-
-    int labelRectWidth = labelRectBottomRightX - labelRectTopLeftX;
-    int labelRectHeight = labelRectBottomRightY - labelRectTopLeftY;
+    // Position frame number near top right of the frame.
+    int labelRectTopLeftX = image.cols - 10 - labelRectWidth;
+    int labelRectTopLeftY = 10;
 
     // Create the black rectangle in which to put the label text.
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());

@@ -48,8 +48,10 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +79,9 @@ public class MarkupSplitter {
     @Autowired
     @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao hibernateMarkupResultDao;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
 
     public List<Message> performSplit(BatchJob job, Task task) {
@@ -128,10 +133,10 @@ public class MarkupSplitter {
                                 .setValue(entry.getValue());
                     }
 
-                    for (var entry : job.getSystemPropertiesSnapshot().getProperties().entrySet()) {
-                        if (entry.getKey().startsWith("markup.")) {
+                    for (var entry : aggregateJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
+                        if (entry.getKey().startsWith("MARKUP_")) {
                             requestBuilder.addMarkupPropertiesBuilder()
-                                    .setKey(entry.getKey().toUpperCase().replace('.', '_'))
+                                    .setKey(entry.getKey())
                                     .setValue(entry.getValue());
                         }
                     }
@@ -167,13 +172,15 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
+        String labelPropToShow =
+                aggregateJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
             for (Track track : tracks) {
-                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next());
+                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelPropToShow);
             }
         }
         return boundingBoxMap;
@@ -194,7 +201,8 @@ public class MarkupSplitter {
                 .map(s -> Boolean.parseBoolean(s.strip()));
     }
 
-    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
+    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
+                                                 String labelPropToShow) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
@@ -207,11 +215,11 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
-            Optional<String> trackClassification = Optional.empty();
-            if (track.getTrackProperties().containsKey("CLASSIFICATION")) {
-                trackClassification = Optional.of(track.getTrackProperties().get("CLASSIFICATION"));
-            } else if (track.getExemplar().getDetectionProperties().containsKey("CLASSIFICATION")) {
-                trackClassification = Optional.of(track.getExemplar().getDetectionProperties().get("CLASSIFICATION"));
+            Optional<String> trackLabel = Optional.empty();
+            if (track.getTrackProperties().containsKey(labelPropToShow)) {
+                trackLabel = Optional.of(track.getTrackProperties().get(labelPropToShow));
+            } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
+                trackLabel = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
             }
 
             float trackConfidence = track.getConfidence();
@@ -230,7 +238,7 @@ public class MarkupSplitter {
                     false, // not animated
                     track.getExemplar().equals(detection),
                     trackConfidence,
-                    trackClassification);
+                    trackLabel);
 
             String objectType = track.getType();
             if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -276,7 +284,7 @@ public class MarkupSplitter {
                         true, // will be animated
                         false, // not exemplar
                         trackConfidence,
-                        trackClassification);
+                        trackLabel);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
         }

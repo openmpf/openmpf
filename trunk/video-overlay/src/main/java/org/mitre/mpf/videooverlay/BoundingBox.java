@@ -109,15 +109,15 @@ public class BoundingBox {
         return confidence;
     }
 
-    private final Optional<String> classification;
-    public Optional<String> getClassification() {
-        return classification;
+    private final Optional<String> label;
+    public Optional<String> getLabel() {
+        return label;
     }
 
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
                        int red, int green, int blue, boolean animated, boolean exemplar, float confidence,
-                       Optional<String> classification) {
+                       Optional<String> label) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -140,7 +140,7 @@ public class BoundingBox {
         this.animated = animated;
         this.exemplar = exemplar;
         this.confidence = confidence;
-        this.classification = classification;
+        this.label = label;
     }
 
     @Override
@@ -149,8 +149,8 @@ public class BoundingBox {
                         " exemplar=%b, confidence=%f",
                 getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, animated,
                 exemplar, confidence);
-        if (classification.isPresent()) {
-            str += ", classification=" + classification.get();
+        if (label.isPresent()) {
+            str += ", label=" + label.get();
         }
         str += ">";
         return str;
@@ -177,7 +177,7 @@ public class BoundingBox {
                 && animated == casted.animated
                 && exemplar == casted.exemplar
                 && Double.compare(confidence, casted.confidence) == 0
-                && classification.equals(casted.classification);
+                && label.equals(casted.label);
     }
 
     /**
@@ -186,7 +186,7 @@ public class BoundingBox {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, animated, exemplar,
-                confidence, classification);
+                confidence, label);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -203,7 +203,7 @@ public class BoundingBox {
                 .setAnimated(animated)
                 .setExemplar(exemplar)
                 .setConfidence(confidence);
-        classification.ifPresent(builder::setClassification);
+        label.ifPresent(builder::setLabel);
         return builder.build();
     }
 }

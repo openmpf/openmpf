@@ -112,8 +112,8 @@ public class MarkupRequestConsumer implements MessageListener {
         BoundingBoxMap map = new BoundingBoxMap();
         int boxesAdded = 0;
         for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
-            Optional<String> classification = boundingBoxMapEntry.getBoundingBox().hasClassification() ?
-                    Optional.of(boundingBoxMapEntry.getBoundingBox().getClassification()) : Optional.empty();
+            Optional<String> label = boundingBoxMapEntry.getBoundingBox().hasLabel() ?
+                    Optional.of(boundingBoxMapEntry.getBoundingBox().getLabel()) : Optional.empty();
             BoundingBox boundingBox = new BoundingBox(
                     boundingBoxMapEntry.getBoundingBox().getX(),
                     boundingBoxMapEntry.getBoundingBox().getY(),
@@ -127,7 +127,7 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getAnimated(),
                     boundingBoxMapEntry.getBoundingBox().getExemplar(),
                     boundingBoxMapEntry.getBoundingBox().getConfidence(),
-                    classification);
+                    label);
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
             boxesAdded++;
         }

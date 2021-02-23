@@ -75,7 +75,7 @@ message BoundingBox {
     required bool animated          = 10; // Whether or not the bounding box is the result of animation or an actual detection.
     required bool exemplar          = 11; // Whether or not the bounding box represents an exemplar.
     required float confidence       = 12; // The detection confidence.
-    optional string classification  = 13; // The detection classification.
+    optional string label           = 13; // The detection label.
 }
 
 message MarkupResponse {

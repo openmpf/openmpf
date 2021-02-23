@@ -167,7 +167,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     true, // animated
                     false, // not exemplar
                     origin.getConfidence(),
-                    origin.getClassification());
+                    origin.getLabel());
             putOnFrame(firstFrame + frameOffset, translatedBox);
         }
     }

@@ -94,9 +94,14 @@ public class BoundingBox {
         return blue;
     }
 
-    private final boolean animated;
-    public boolean isAnimated() {
-        return animated;
+    private final BoundingBoxSource source;
+    public BoundingBoxSource getSource() {
+        return source;
+    }
+
+    private final boolean stationary;
+    public boolean isStationary() {
+        return stationary;
     }
 
     private final boolean exemplar;
@@ -116,8 +121,14 @@ public class BoundingBox {
 
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
-                       int red, int green, int blue, boolean animated, boolean exemplar, float confidence,
-                       Optional<String> label) {
+                       int red, int green, int blue, float confidence, Optional<String> label) {
+        this(x, y, width, height, rotationDegrees, flip, red, green, blue, BoundingBoxSource.DETECTION_ALGORITHM,
+                true, false, confidence, label);
+    }
+
+    public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
+                       int red, int green, int blue, BoundingBoxSource source, boolean stationary,
+                       boolean exemplar, float confidence, Optional<String> label) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -137,7 +148,8 @@ public class BoundingBox {
         this.red = red;
         this.green = green;
         this.blue = blue;
-        this.animated = animated;
+        this.source = source;
+        this.stationary = stationary;
         this.exemplar = exemplar;
         this.confidence = confidence;
         this.label = label;
@@ -145,10 +157,10 @@ public class BoundingBox {
 
     @Override
     public String toString() {
-        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), animated=%b," +
-                        " exemplar=%b, confidence=%f",
-                getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, animated,
-                exemplar, confidence);
+        String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), source=%s," +
+                        " stationary=%b, exemplar=%b, confidence=%f",
+                getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, source,
+                stationary, exemplar, confidence);
         if (label.isPresent()) {
             str += ", label=" + label.get();
         }
@@ -174,7 +186,8 @@ public class BoundingBox {
                 && red == casted.red
                 && green == casted.green
                 && blue == casted.blue
-                && animated == casted.animated
+                && source == casted.source
+                && stationary == casted.stationary
                 && exemplar == casted.exemplar
                 && Double.compare(confidence, casted.confidence) == 0
                 && label.equals(casted.label);
@@ -185,8 +198,8 @@ public class BoundingBox {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, animated, exemplar,
-                confidence, label);
+        return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, source,
+                stationary, exemplar, confidence, label);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -200,7 +213,8 @@ public class BoundingBox {
                 .setRed(red)
                 .setBlue(blue)
                 .setGreen(green)
-                .setAnimated(animated)
+                .setSource(Markup.BoundingBoxSource.valueOf(source.toString().toUpperCase()))
+                .setStationary(stationary)
                 .setExemplar(exemplar)
                 .setConfidence(confidence);
         label.ifPresent(builder::setLabel);

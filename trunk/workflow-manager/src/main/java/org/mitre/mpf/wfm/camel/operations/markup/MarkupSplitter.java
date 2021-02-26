@@ -37,6 +37,7 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
+import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -203,6 +204,13 @@ public class MarkupSplitter {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
+        Optional<String> trackLabel = Optional.empty();
+        if (track.getTrackProperties().containsKey(labelPropToShow)) {
+            trackLabel = Optional.of(track.getTrackProperties().get(labelPropToShow));
+        } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
+            trackLabel = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
+        }
+
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
         Collections.sort(orderedDetections);
         for (int i = 0; i < orderedDetections.size(); i++) {
@@ -212,11 +220,11 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
-            Optional<String> trackLabel = Optional.empty();
-            if (track.getTrackProperties().containsKey(labelPropToShow)) {
-                trackLabel = Optional.of(track.getTrackProperties().get(labelPropToShow));
-            } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
-                trackLabel = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
+            BoundingBoxSource detectionSource = BoundingBoxSource.DETECTION_ALGORITHM;
+            if (detection.getDetectionProperties().containsKey("FILLED_GAP")) {
+                if (detection.getDetectionProperties().get("FILLED_GAP").equalsIgnoreCase("true")) {
+                    detectionSource = BoundingBoxSource.TRACKING_FILLED_GAP;
+                }
             }
 
             float trackConfidence = track.getConfidence();
@@ -232,7 +240,8 @@ public class MarkupSplitter {
                     trackColor.getRed(),
                     trackColor.getGreen(),
                     trackColor.getBlue(),
-                    false, // not animated
+                    detectionSource,
+                    true, // TODO: stationary
                     track.getExemplar().equals(detection),
                     trackConfidence,
                     trackLabel);
@@ -278,7 +287,8 @@ public class MarkupSplitter {
                         boundingBox.getRed(),
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
-                        true, // will be animated
+                        BoundingBoxSource.ANIMATION,
+                        true, // TODO: stationary
                         false, // not exemplar
                         trackConfidence,
                         trackLabel);

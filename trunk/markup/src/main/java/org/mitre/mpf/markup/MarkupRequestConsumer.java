@@ -31,6 +31,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
+import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.videooverlay.BoundingBoxWriter;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.slf4j.Logger;
@@ -43,9 +44,15 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.jms.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toMap;
@@ -124,7 +131,8 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
                     boundingBoxMapEntry.getBoundingBox().getBlue(),
-                    boundingBoxMapEntry.getBoundingBox().getAnimated(),
+                    BoundingBoxSource.valueOf(boundingBoxMapEntry.getBoundingBox().getSource().toString()),
+                    boundingBoxMapEntry.getBoundingBox().getStationary(),
                     boundingBoxMapEntry.getBoundingBox().getExemplar(),
                     boundingBoxMapEntry.getBoundingBox().getConfidence(),
                     label);

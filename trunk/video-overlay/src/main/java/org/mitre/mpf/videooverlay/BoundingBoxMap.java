@@ -164,7 +164,8 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     origin.getRed(),
                     origin.getGreen(),
                     origin.getBlue(),
-                    true, // animated
+                    BoundingBoxSource.ANIMATION,
+                    true, // TODO: stationary
                     false, // not exemplar
                     origin.getConfidence(),
                     origin.getLabel());

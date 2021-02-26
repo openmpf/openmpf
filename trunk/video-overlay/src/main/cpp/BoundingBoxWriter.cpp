@@ -48,6 +48,12 @@ using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
+enum BoundingBoxSource {
+    DETECTION_ALGORITHM = 0,
+    TRACKING_FILLED_GAP,
+    ANIMATION
+};
+
 // Provide enough room for long labels with wide characters to extend off the edges of the image.
 constexpr int framePadding = 400;
 
@@ -60,12 +66,12 @@ bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jme
 double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
                             jmethodID methodId);
 
-void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
-                     double mediaRotation, bool mediaFlip, int red, int green, int blue, double alpha,
-                     bool animated, const std::string &label, bool labelChooseSide, Mat &image);
+void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
+                     bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
+                     bool stationary, const std::string &label, bool labelChooseSide, Mat &image);
 
 void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
-              bool animated, Mat &image);
+              bool dashed, Mat &image);
 
 void drawFrameNumber(int frameNumber, double alpha, Mat &image);
 
@@ -148,8 +154,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         // Get the bounding box map.
         jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap =
-            jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap",
-            "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
+            jni.GetMethodID(clzBoundingBoxWriter, "getBoundingBoxMap", "()Lorg/mitre/mpf/videooverlay/BoundingBoxMap;");
         jobject boundingBoxMap =
             jni.CallObjectMethod(boundingBoxWriterInstance, clzBoundingBoxWriter_fnGetBoundingBoxMap);
 
@@ -178,6 +183,10 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzOptional_fnIsPresent = jni.GetMethodID(clzOptional, "isPresent", "()Z");
         jmethodID clzOptional_fnGet = jni.GetMethodID(clzOptional, "get", "()Ljava/lang/Object;");
 
+        // Get Enum class and methods.
+        jclass clzEnum = jni.FindClass("java/lang/Enum");
+        jmethodID clzEnum_ordinal = jni.GetMethodID(clzEnum, "ordinal", "()I");
+
         // Get BoundingBox class and methods.
         jclass clzBoundingBox = jni.FindClass("org/mitre/mpf/videooverlay/BoundingBox");
         jmethodID clzBoundingBox_fnGetX = jni.GetMethodID(clzBoundingBox, "getX", "()I");
@@ -187,7 +196,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzBoundingBox_fnGetRed = jni.GetMethodID(clzBoundingBox, "getRed", "()I");
         jmethodID clzBoundingBox_fnGetGreen = jni.GetMethodID(clzBoundingBox, "getGreen", "()I");
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
-        jmethodID clzBoundingBox_fnIsAnimated = jni.GetMethodID(clzBoundingBox, "isAnimated", "()Z");
+        jmethodID clzBoundingBox_fnGetSource =
+            jni.GetMethodID(clzBoundingBox, "getSource", "()Lorg/mitre/mpf/videooverlay/BoundingBoxSource;");
+        jmethodID clzBoundingBox_fnIsStationary = jni.GetMethodID(clzBoundingBox, "isStationary", "()Z");
         jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
         jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
         jmethodID clzBoundingBox_fnGetLabel = jni.GetMethodID(clzBoundingBox, "getLabel", "()Ljava/util/Optional;");
@@ -260,7 +271,12 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     jint red = jni.CallIntMethod(box, clzBoundingBox_fnGetRed);
                     jint green = jni.CallIntMethod(box, clzBoundingBox_fnGetGreen);
                     jint blue = jni.CallIntMethod(box, clzBoundingBox_fnGetBlue);
-                    jboolean animated = jni.CallBooleanMethod(box, clzBoundingBox_fnIsAnimated);
+
+                    jobject boxSourceObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetSource);
+                    jint boxSourceOrdinal = jni.CallIntMethod(boxSourceObj, clzEnum_ordinal);
+                    BoundingBoxSource boxSource = static_cast<BoundingBoxSource>(boxSourceOrdinal);
+
+                    jint stationary = jni.CallIntMethod(box, clzBoundingBox_fnIsStationary);
                     jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
                     double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
@@ -289,8 +305,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     }
 
                     drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
-                                    mediaRotation, mediaFlip, red, green, blue, labelsAlpha, animated, ss.str(),
-                                    labelsChooseSideEnabled, frame);
+                                    mediaRotation, mediaFlip, red, green, blue, labelsAlpha, boxSource, stationary,
+                                    ss.str(), labelsChooseSideEnabled, frame);
                 }
             }
 
@@ -342,9 +358,9 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 }
 
 
-void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip,
-                     double mediaRotation, bool mediaFlip, int red, int green, int blue, double alpha, bool animated,
-                     const std::string &label, bool labelChooseSide, Mat &image)
+void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
+                     bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
+                     bool stationary, const std::string &label, bool labelChooseSide, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
@@ -402,18 +418,25 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
                              label, image);
     }
 
-    drawLine(corners[0], corners[1], boxColor, lineThickness, animated, image);
-    drawLine(corners[1], corners[2], boxColor, lineThickness, animated, image);
-    drawLine(corners[2], corners[3], boxColor, lineThickness, animated, image);
-    drawLine(corners[3], corners[0], boxColor, lineThickness, animated, image);
+    drawLine(corners[0], corners[1], boxColor, lineThickness, !stationary, image);
+    drawLine(corners[1], corners[2], boxColor, lineThickness, !stationary, image);
+    drawLine(corners[2], corners[3], boxColor, lineThickness, !stationary, image);
+    drawLine(corners[3], corners[0], boxColor, lineThickness, !stationary, image);
+
+    if (source == TRACKING_FILLED_GAP) { // draw a thin slash through the box
+        drawLine(corners[0], corners[2], boxColor, 1, false, image);
+    } else if (source == ANIMATION) { // draw a thin "X" through the box
+        drawLine(corners[0], corners[2], boxColor, 1, false, image);
+        drawLine(corners[1], corners[3], boxColor, 1, false, image);
+    }
 
     circle(image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
 void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
-              bool animated, Mat &image)
+              bool dashed, Mat &image)
 {
-    if (!animated) {
+    if (!dashed) {
         line(image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
         return;
     }

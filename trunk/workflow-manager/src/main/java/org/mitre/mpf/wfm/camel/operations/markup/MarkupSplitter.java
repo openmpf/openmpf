@@ -171,14 +171,18 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
-        String labelPropToShow = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
+        String labelPropToShow =
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
+        boolean labelFromDetections = Boolean.parseBoolean(
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_FROM_DETECTIONS, job, media));
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
             for (Track track : tracks) {
-                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelPropToShow);
+                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelPropToShow,
+                        labelFromDetections);
             }
         }
         return boundingBoxMap;
@@ -200,15 +204,20 @@ public class MarkupSplitter {
     }
 
     private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
-                                                 String labelPropToShow) {
+                                                 String labelPropToShow, boolean labelFromDetections) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
-        Optional<String> trackLabel = Optional.empty();
-        if (track.getTrackProperties().containsKey(labelPropToShow)) {
-            trackLabel = Optional.of(track.getTrackProperties().get(labelPropToShow));
-        } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
-            trackLabel = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
+        float confidence = -1.0f;
+        Optional<String> label = Optional.empty();
+
+        if (!labelFromDetections) { // get track-level details
+            confidence = track.getConfidence();
+            if (track.getTrackProperties().containsKey(labelPropToShow)) {
+                label = Optional.of(track.getTrackProperties().get(labelPropToShow));
+            } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
+                label = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
+            }
         }
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
@@ -217,9 +226,6 @@ public class MarkupSplitter {
             Detection detection = orderedDetections.get(i);
             int currentFrame = detection.getMediaOffsetFrame();
 
-            OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
-            Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
-
             BoundingBoxSource detectionSource = BoundingBoxSource.DETECTION_ALGORITHM;
             if (detection.getDetectionProperties().containsKey("FILLED_GAP")) {
                 if (detection.getDetectionProperties().get("FILLED_GAP").equalsIgnoreCase("true")) {
@@ -227,7 +233,15 @@ public class MarkupSplitter {
                 }
             }
 
-            float trackConfidence = track.getConfidence();
+            OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
+            Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
+
+            if (labelFromDetections) {
+                confidence = detection.getConfidence();
+                if (detection.getDetectionProperties().containsKey(labelPropToShow)) {
+                    label = Optional.of(detection.getDetectionProperties().get(labelPropToShow));
+                }
+            }
 
             // Create a bounding box at the location.
             BoundingBox boundingBox = new BoundingBox(
@@ -243,8 +257,8 @@ public class MarkupSplitter {
                     detectionSource,
                     true, // TODO: stationary
                     track.getExemplar().equals(detection),
-                    trackConfidence,
-                    trackLabel);
+                    confidence,
+                    label);
 
             String objectType = track.getType();
             if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -277,6 +291,13 @@ public class MarkupSplitter {
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
+                if (labelFromDetections) {
+                    confidence = nextDetection.getConfidence();
+                    if (detection.getDetectionProperties().containsKey(labelPropToShow)) {
+                        label = Optional.of(nextDetection.getDetectionProperties().get(labelPropToShow));
+                    }
+                }
+
                 BoundingBox nextBoundingBox = new BoundingBox(
                         nextDetection.getX(),
                         nextDetection.getY(),
@@ -290,8 +311,8 @@ public class MarkupSplitter {
                         BoundingBoxSource.ANIMATION,
                         true, // TODO: stationary
                         false, // not exemplar
-                        trackConfidence,
-                        trackLabel);
+                        confidence,
+                        label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
         }

@@ -1,7 +1,7 @@
 [
     {
         "name": "MARKUP_LABELS_ENABLED",
-        "description": "If true, add a label to each detection box. Minimally, it will show the track confidence.",
+        "description": "If true, add a label to each detection box. Minimally, it will show the confidence.",
         "type": "BOOLEAN",
         "propertiesKey": "markup.labels.enabled",
         "mediaTypes": ["VIDEO", "IMAGE"]
@@ -14,8 +14,15 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
+        "name": "MARKUP_LABELS_PROP_FROM_DETECTIONS",
+        "description": "If true, use detection-level details to populate the bounding box labels. Otherwise, use track-level details.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.labels.prop.from.detections",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
         "name": "MARKUP_LABELS_PROP_TO_SHOW",
-        "description": "Track property to show in the label before the track confidence value. If not present at the track level, the detection property for the track's exemplar will be used.",
+        "description": "Property to show in the label before the confidence value. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used.",
         "type": "STRING",
         "propertiesKey": "markup.labels.prop.to.show",
         "mediaTypes": ["VIDEO", "IMAGE"]

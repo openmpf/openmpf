@@ -134,7 +134,6 @@ public class MarkupRequestConsumer implements MessageListener {
                     BoundingBoxSource.valueOf(boundingBoxMapEntry.getBoundingBox().getSource().toString()),
                     boundingBoxMapEntry.getBoundingBox().getStationary(),
                     boundingBoxMapEntry.getBoundingBox().getExemplar(),
-                    boundingBoxMapEntry.getBoundingBox().getConfidence(),
                     label);
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
             boxesAdded++;

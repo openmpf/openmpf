@@ -109,11 +109,6 @@ public class BoundingBox {
         return exemplar;
     }
 
-    private final float confidence;
-    public float getConfidence() {
-        return confidence;
-    }
-
     private final Optional<String> label;
     public Optional<String> getLabel() {
         return label;
@@ -121,14 +116,14 @@ public class BoundingBox {
 
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
-                       int red, int green, int blue, float confidence, Optional<String> label) {
+                       int red, int green, int blue, Optional<String> label) {
         this(x, y, width, height, rotationDegrees, flip, red, green, blue, BoundingBoxSource.DETECTION_ALGORITHM,
-                true, false, confidence, label);
+                true, false, label);
     }
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
                        int red, int green, int blue, BoundingBoxSource source, boolean stationary,
-                       boolean exemplar, float confidence, Optional<String> label) {
+                       boolean exemplar, Optional<String> label) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
         }
@@ -151,18 +146,17 @@ public class BoundingBox {
         this.source = source;
         this.stationary = stationary;
         this.exemplar = exemplar;
-        this.confidence = confidence;
         this.label = label;
     }
 
     @Override
     public String toString() {
         String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), source=%s," +
-                        " stationary=%b, exemplar=%b, confidence=%f",
+                        " stationary=%b, exemplar=%b",
                 getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, source,
-                stationary, exemplar, confidence);
+                stationary, exemplar);
         if (label.isPresent()) {
-            str += ", label=" + label.get();
+            str += ", label=\"" + label.get() + "\"";
         }
         str += ">";
         return str;
@@ -189,7 +183,6 @@ public class BoundingBox {
                 && source == casted.source
                 && stationary == casted.stationary
                 && exemplar == casted.exemplar
-                && Double.compare(confidence, casted.confidence) == 0
                 && label.equals(casted.label);
     }
 
@@ -199,7 +192,7 @@ public class BoundingBox {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, source,
-                stationary, exemplar, confidence, label);
+                stationary, exemplar, label);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -215,8 +208,7 @@ public class BoundingBox {
                 .setGreen(green)
                 .setSource(Markup.BoundingBoxSource.valueOf(source.toString().toUpperCase()))
                 .setStationary(stationary)
-                .setExemplar(exemplar)
-                .setConfidence(confidence);
+                .setExemplar(exemplar);
         label.ifPresent(builder::setLabel);
         return builder.build();
     }

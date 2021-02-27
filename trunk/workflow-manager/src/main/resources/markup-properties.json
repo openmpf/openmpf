@@ -14,17 +14,24 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
-        "name": "MARKUP_LABELS_PROP_FROM_DETECTIONS",
+        "name": "MARKUP_LABELS_FROM_DETECTIONS",
         "description": "If true, use detection-level details to populate the bounding box labels. Otherwise, use track-level details.",
         "type": "BOOLEAN",
-        "propertiesKey": "markup.labels.prop.from.detections",
+        "propertiesKey": "markup.labels.from.detections",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
-        "name": "MARKUP_LABELS_PROP_TO_SHOW",
-        "description": "Property to show in the label before the confidence value. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used.",
+        "name": "MARKUP_LABELS_TEXT_PROP_TO_SHOW",
+        "description": "Name of the text property to show in the label before the numeric property. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used. Leave empty to omit.",
         "type": "STRING",
-        "propertiesKey": "markup.labels.prop.to.show",
+        "propertiesKey": "markup.labels.text.prop.to.show",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_NUMERIC_PROP_TO_SHOW",
+        "description": "Name of the numeric property to show in the label after the text property. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used. Leave empty to omit. Set to CONFIDENCE to use the confidence value.",
+        "type": "STRING",
+        "propertiesKey": "markup.labels.numeric.prop.to.show",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {

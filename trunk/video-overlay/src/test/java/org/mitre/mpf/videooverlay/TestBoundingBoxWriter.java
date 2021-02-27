@@ -65,8 +65,7 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, 7.243234f,
-                    Optional.of("some class"));
+            BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, Optional.of("some class 7.243"));
             map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();

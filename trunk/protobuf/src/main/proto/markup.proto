@@ -81,8 +81,7 @@ message BoundingBox {
     required BoundingBoxSource source = 10; // The source of bounding box.
     required bool stationary          = 11; // Whether or not the bounding box object is stationary or in motion.
     required bool exemplar            = 12; // Whether or not the bounding box represents an exemplar.
-    required float confidence         = 13; // The detection confidence.
-    optional string label             = 14; // The detection label.
+    optional string label             = 13; // The detection label.
 }
 
 message MarkupResponse {

@@ -36,10 +36,10 @@ public class TestBoundingBox {
 
     @Test
     public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, 0.0f, Optional.empty());
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, 0.0f, Optional.empty());
+        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
+        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
         // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, 0.0f, Optional.empty());
+        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, Optional.empty());
 
         // Test that objects equal themselves...
         Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));

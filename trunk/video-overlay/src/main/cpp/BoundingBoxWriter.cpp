@@ -200,7 +200,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             jni.GetMethodID(clzBoundingBox, "getSource", "()Lorg/mitre/mpf/videooverlay/BoundingBoxSource;");
         jmethodID clzBoundingBox_fnIsStationary = jni.GetMethodID(clzBoundingBox, "isStationary", "()Z");
         jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
-        jmethodID clzBoundingBox_fnGetConfidence = jni.GetMethodID(clzBoundingBox, "getConfidence", "()F");
         jmethodID clzBoundingBox_fnGetLabel = jni.GetMethodID(clzBoundingBox, "getLabel", "()Ljava/util/Optional;");
 
         jmethodID clzBoundingBox_fnGetRotationDegrees = jni.GetMethodID(clzBoundingBox, "getRotationDegrees", "()D");
@@ -277,7 +276,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     BoundingBoxSource boxSource = static_cast<BoundingBoxSource>(boxSourceOrdinal);
 
                     jint stationary = jni.CallIntMethod(box, clzBoundingBox_fnIsStationary);
-                    jfloat confidence = jni.CallFloatMethod(box, clzBoundingBox_fnGetConfidence);
 
                     double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     bool boxFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
@@ -287,17 +285,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     if (labelsEnabled) {
                         jobject labelObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetLabel);
                         if (jni.CallBooleanMethod(labelObj, clzOptional_fnIsPresent)) {
-                            std::string label =
-                                jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
-                            ss << label.substr(0, 10); // truncate long strings
-                            if (label.length() > 10) {
-                                ss << "...";
-                            }
-                            ss << ' ';
+                            ss << jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
                         }
-
-                        ss << std::fixed << std::setprecision(3) << confidence;
-
                         if (exemplarsEnabled && boundingBoxMediaHandle.markExemplar &&
                                 jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
                             ss << '!';

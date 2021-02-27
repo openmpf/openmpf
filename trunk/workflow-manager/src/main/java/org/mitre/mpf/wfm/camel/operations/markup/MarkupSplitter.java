@@ -92,7 +92,7 @@ public class MarkupSplitter {
 
         hibernateMarkupResultDao.deleteByJobId(job.getId());
 
-        for(int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             String actionName = task.getActions().get(actionIndex);
             Action action = job.getPipelineElements().getAction(actionName);
             int mediaIndex = -1;
@@ -160,7 +160,7 @@ public class MarkupSplitter {
      */
     private static int findLastDetectionTaskIndex(JobPipelineElements pipeline) {
         int taskIndex = -1;
-        for(int i = 0; i < pipeline.getTaskCount(); i++) {
+        for (int i = 0; i < pipeline.getTaskCount(); i++) {
             ActionType actionType = pipeline.getAlgorithm(i, 0).getActionType();
             if(actionType == ActionType.DETECTION) {
                 taskIndex = i;
@@ -171,18 +171,20 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
-        String labelPropToShow =
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_TO_SHOW, job, media);
         boolean labelFromDetections = Boolean.parseBoolean(
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_PROP_FROM_DETECTIONS, job, media));
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_FROM_DETECTIONS, job, media));
+        String labelTextPropToShow =
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW, job, media);
+        String labelNumericPropToShow =
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW, job, media);
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
             for (Track track : tracks) {
-                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelPropToShow,
-                        labelFromDetections);
+                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelFromDetections,
+                        labelTextPropToShow, labelNumericPropToShow);
             }
         }
         return boundingBoxMap;
@@ -204,7 +206,8 @@ public class MarkupSplitter {
     }
 
     private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
-                                                 String labelPropToShow, boolean labelFromDetections) {
+                                                 boolean labelFromDetections, String labelTextPropToShow,
+                                                 String labelNumericPropToShow) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
@@ -213,11 +216,7 @@ public class MarkupSplitter {
 
         if (!labelFromDetections) { // get track-level details
             confidence = track.getConfidence();
-            if (track.getTrackProperties().containsKey(labelPropToShow)) {
-                label = Optional.of(track.getTrackProperties().get(labelPropToShow));
-            } else if (track.getExemplar().getDetectionProperties().containsKey(labelPropToShow)) {
-                label = Optional.of(track.getExemplar().getDetectionProperties().get(labelPropToShow));
-            }
+            label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
         }
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
@@ -236,11 +235,9 @@ public class MarkupSplitter {
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
-            if (labelFromDetections) {
+            if (labelFromDetections) { // get detection-level details
                 confidence = detection.getConfidence();
-                if (detection.getDetectionProperties().containsKey(labelPropToShow)) {
-                    label = Optional.of(detection.getDetectionProperties().get(labelPropToShow));
-                }
+                label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
             }
 
             // Create a bounding box at the location.
@@ -257,7 +254,6 @@ public class MarkupSplitter {
                     detectionSource,
                     true, // TODO: stationary
                     track.getExemplar().equals(detection),
-                    confidence,
                     label);
 
             String objectType = track.getType();
@@ -291,11 +287,9 @@ public class MarkupSplitter {
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
-                if (labelFromDetections) {
+                if (labelFromDetections) { // get detection-level details
                     confidence = nextDetection.getConfidence();
-                    if (detection.getDetectionProperties().containsKey(labelPropToShow)) {
-                        label = Optional.of(nextDetection.getDetectionProperties().get(labelPropToShow));
-                    }
+                    label = getLabel(nextDetection, labelTextPropToShow, labelNumericPropToShow);
                 }
 
                 BoundingBox nextBoundingBox = new BoundingBox(
@@ -311,7 +305,6 @@ public class MarkupSplitter {
                         BoundingBoxSource.ANIMATION,
                         true, // TODO: stationary
                         false, // not exemplar
-                        confidence,
                         label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
@@ -353,5 +346,56 @@ public class MarkupSplitter {
         return DoubleStream.iterate(0.5, x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
                 .mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
                 .iterator();
+    }
+
+    private static Optional<String> getLabel(String textPart, String numericPart) {
+        String label = "";
+        if (textPart != null) {
+            label += String.format("%.10s", textPart).strip();
+        }
+        if (numericPart != null) {
+            try {
+                float numericVal = Float.parseFloat(numericPart);
+                label += String.format(" %.3f", numericVal);
+            } catch (NumberFormatException e) {
+                log.warn("Failed to convert '{}' to a float when generating bounding box label.", numericPart);
+            }
+        }
+        label = label.strip();
+        return label.isBlank() ? Optional.empty() : Optional.of(label);
+    }
+
+    public static Optional<String> getLabel(Track track, String textProp, String numericProp) {
+        String textStr = null;
+        if (track.getTrackProperties().containsKey(textProp)) {
+            textStr = track.getTrackProperties().get(textProp);
+        } else if (track.getExemplar().getDetectionProperties().containsKey(textProp)) {
+            textStr = track.getExemplar().getDetectionProperties().get(textProp);
+        }
+        String numericStr = null;
+        if (track.getTrackProperties().containsKey(numericProp)) {
+            numericStr = track.getTrackProperties().get(numericProp);
+        } else if (track.getExemplar().getDetectionProperties().containsKey(numericProp)) {
+            numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
+        }
+        if (numericStr == null && numericProp.equals("CONFIDENCE")) {
+            numericStr = Float.toString(track.getConfidence());
+        }
+        return getLabel(textStr, numericStr);
+    }
+
+    public static Optional<String> getLabel(Detection detection, String textProp, String numericProp) {
+        String textStr = null;
+        if (detection.getDetectionProperties().containsKey(textProp)) {
+            textStr = detection.getDetectionProperties().get(textProp);
+        }
+        String numericStr = null;
+        if (detection.getDetectionProperties().containsKey(numericProp)) {
+            numericStr = detection.getDetectionProperties().get(numericProp);
+        }
+        if (numericStr == null && numericProp.equals("CONFIDENCE")) {
+            numericStr = Float.toString(detection.getConfidence());
+        }
+        return getLabel(textStr, numericStr);
     }
 }

@@ -34,10 +34,17 @@
 
 
 BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, int crf,
-                                               int framePadding) :
-        destinationPath_(std::move(destinationPath)), videoCapture_(sourcePath) {
-    int destinationFrameWidth  = videoCapture_.GetFrameSize().width  + 2 * framePadding;
-    int destinationFrameHeight = videoCapture_.GetFrameSize().height + 2 * framePadding;
+                                               bool border, const ResolutionConfig &resCfg,
+                                               MPF::COMPONENT::MPFVideoCapture &videoCapture) :
+        destinationPath_(std::move(destinationPath)), videoCapture_(std::move(videoCapture)) {
+
+    int destinationFrameWidth  = videoCapture_.GetFrameSize().width;
+    int destinationFrameHeight = videoCapture_.GetFrameSize().height;
+
+    if (border) {
+        destinationFrameWidth  += resCfg.framePadding;
+        destinationFrameHeight += resCfg.framePadding;
+    }
 
     std::string command = std::string("ffmpeg") +
         " -pixel_format bgr24" +

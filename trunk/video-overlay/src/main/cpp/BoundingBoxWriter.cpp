@@ -32,6 +32,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/freetype.hpp>
 
 #include <MPFRotatedRect.h>
 #include <frame_transformers/NoOpFrameTransformer.h>
@@ -42,6 +43,7 @@
 #include "JniHelper.h"
 #include "BoundingBoxImageHandle.h"
 #include "BoundingBoxVideoHandle.h"
+#include "ResolutionConfig.h"
 
 
 using namespace cv;
@@ -54,12 +56,25 @@ enum BoundingBoxSource {
     ANIMATION
 };
 
-// Provide enough room for long labels with wide characters to extend off the edges of the image.
-constexpr int framePadding = 400;
+const struct ResolutionConfig lowResConfig = {400, 1, 0.8, 8 };
+const struct ResolutionConfig midResConfig = {400, 2, 0.8, 8 };
+const struct ResolutionConfig hiResConfig  = {800, 2, 1.6, 16 };
+
+// https://unicode.org/emoji/charts/full-emoji-list.html
+const std::string fastForwardEmoji = "\U000023E9";
+const std::string anchorEmoji      = "\U00002693";
+const std::string magGlassEmoji    = "\U0001F50D";
+const std::string paperClipEmoji   = "\U0001F4CE";
+const std::string movieCameraEmoji = "\U0001F3A5";
+const std::string starEmoji        = "\U00002B50";
+
+auto ft = cv::freetype::createFreeType2(); // for emojis
 
 template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
-            TMediaHandle &boundingBoxMediaHandle);
+            const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
+
+const ResolutionConfig& getResolutionConfig(int width, int height);
 
 bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
 
@@ -68,15 +83,17 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
                      bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
-                     bool stationary, const std::string &label, bool labelChooseSide, Mat &image);
+                     const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
+                     const ResolutionConfig &resCfg, Mat &image);
 
-void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
-              bool dashed, Mat &image);
+void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness, bool dashed,
+              const ResolutionConfig &resCfg, Mat &image);
 
-void drawFrameNumber(int frameNumber, double alpha, Mat &image);
+void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image);
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
-                          int labelIndent, bool labelOnLeft, const std::string &label, Mat &image);
+                          int labelIndent, bool labelOnLeft, const std::string &emojiLabel,
+                          const std::string &textLabel, const ResolutionConfig &resCfg, Mat &image);
 
 
 extern "C" {
@@ -90,6 +107,10 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
         std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
 
+        MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
+        ResolutionConfig resCfg =
+            getResolutionConfig(videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
+
         // Get the Map class and method.
         jclass clzMap = jni.FindClass("java/util/Map");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
@@ -102,15 +123,12 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
             crf = std::stoi(crfPropValue);
         }
 
-        int destinationVideoFramePadding = 0;
-        if (jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet)) {
-            destinationVideoFramePadding = framePadding;
-        }
+        bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, crf,
-                                                      destinationVideoFramePadding);
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, crf, border,
+                                                      resCfg, videoCapture);
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxVideoHandle);
+        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxVideoHandle);
 
         boundingBoxVideoHandle.Close();
     }
@@ -132,7 +150,10 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jni.ToStdString(sourceImagePathJString),
                 jni.ToStdString(destinationImagePathJString));
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, boundingBoxImageHandle);
+        ResolutionConfig resCfg =
+            getResolutionConfig(boundingBoxImageHandle.GetFrameSize().width, boundingBoxImageHandle.GetFrameSize().height);
+
+        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxImageHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -147,10 +168,13 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
 template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
-            TMediaHandle &boundingBoxMediaHandle)
+            const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
+
     try {
+        ft->loadFontData("/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf", 0);
+
         // Get the bounding box map.
         jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap =
@@ -237,9 +261,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 break;
             }
 
-            // Add a black border to allow boxes and labels to extend off the edges of the image.  
-            cv::copyMakeBorder(frame, frame, framePadding, framePadding, framePadding, framePadding,
-                               cv::BORDER_CONSTANT, Scalar(0, 0, 0));
+            // Add a black border to allow boxes and labels to extend off the edges of the image.
+            cv::copyMakeBorder(frame, frame, resCfg.framePadding, resCfg.framePadding, resCfg.framePadding,
+                               resCfg.framePadding, cv::BORDER_CONSTANT, Scalar(0, 0, 0));
 
             jboolean foundEntryForCurrentFrame = jni.CallBooleanMethod(boundingBoxMap,
                                                                        clzBoundingBoxMap_fnContainsKey,
@@ -275,33 +299,63 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     jint boxSourceOrdinal = jni.CallIntMethod(boxSourceObj, clzEnum_ordinal);
                     BoundingBoxSource boxSource = static_cast<BoundingBoxSource>(boxSourceOrdinal);
 
-                    jint stationary = jni.CallIntMethod(box, clzBoundingBox_fnIsStationary);
-
                     double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     bool boxFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
-                    std::stringstream ss;
+                    std::string emojiLabel= "";
+                    std::string textLabel = "";
 
                     if (labelsEnabled) {
+                        jboolean exemplar = jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar);
+                        jboolean stationary = jni.CallBooleanMethod(box, clzBoundingBox_fnIsStationary);
+                        // stationary = false; // DEBUG
+
+                        std::stringstream ssEmojiLabel;
+                        /*
+                        if (exemplarsEnabled && boundingBoxMediaHandle.markExemplar && exemplar) {
+                            ssEmojiLabel << starEmoji;
+                        }
+                        */
+                        if (exemplar) {
+                            ssEmojiLabel << starEmoji;
+                        } else if (boxSource == DETECTION_ALGORITHM) {
+                            ssEmojiLabel << magGlassEmoji;
+                        } else if (boxSource == TRACKING_FILLED_GAP) {
+                            ssEmojiLabel << paperClipEmoji;
+                        } else { // ANIMATION
+                            ssEmojiLabel << movieCameraEmoji;
+                        }
+                        if (stationary) {
+                            ssEmojiLabel << anchorEmoji;
+                        } else {
+                            ssEmojiLabel << fastForwardEmoji;
+                        }
+                        emojiLabel = ssEmojiLabel.str();
+
                         jobject labelObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetLabel);
                         if (jni.CallBooleanMethod(labelObj, clzOptional_fnIsPresent)) {
-                            ss << jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
-                        }
-                        if (exemplarsEnabled && boundingBoxMediaHandle.markExemplar &&
-                                jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar)) {
-                            ss << '!';
+                            std::stringstream ssTextLabel;
+                            if (!emojiLabel.empty()) {
+                                ssTextLabel << ' ';
+                            }
+                            ssTextLabel << jni.ToStdString((jstring)jni.CallObjectMethod(labelObj, clzOptional_fnGet));
+                            textLabel = ssTextLabel.str();
                         }
                     }
 
-                    drawBoundingBox(x + framePadding, y + framePadding, width, height, boxRotation, boxFlip,
-                                    mediaRotation, mediaFlip, red, green, blue, labelsAlpha, boxSource, stationary,
-                                    ss.str(), labelsChooseSideEnabled, frame);
+                    drawBoundingBox(x + resCfg.framePadding, y + resCfg.framePadding, width, height, boxRotation,
+                                    boxFlip, mediaRotation, mediaFlip, red, green, blue, labelsAlpha, boxSource,
+                                    emojiLabel, textLabel, labelsChooseSideEnabled, resCfg, frame);
                 }
             }
 
-            // Crop the padding off if we're not keeping the border.
+            // Crop the padding off.
             if (!borderEnabled) {
-                frame = frame(cv::Rect(framePadding, framePadding, origFrameSize.width, origFrameSize.height));
+                frame = frame(cv::Rect(resCfg.framePadding, resCfg.framePadding, origFrameSize.width,
+                              origFrameSize.height));
+            } else {
+                frame = frame(cv::Rect(resCfg.framePadding / 2, resCfg.framePadding / 2,
+                              origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
@@ -312,7 +366,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
             frameTransformer.TransformFrame(frame, 0);
 
             if (frameNumbersEnabled && boundingBoxMediaHandle.showFrameNumbers) {
-                drawFrameNumber(currentFrameNum, labelsAlpha, frame);
+                drawFrameNumber(currentFrameNum, labelsAlpha, resCfg, frame);
             }
 
             boundingBoxMediaHandle.HandleMarkedFrame(frame);
@@ -325,6 +379,22 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
     catch (...) {
         jni.ReportCppException();
     }
+}
+
+
+const ResolutionConfig& getResolutionConfig(int width, int height) {
+    int minDim = width < height ? width : height;
+    std::cout << "minDim: " << minDim << std::endl; // DEBUG
+    if (minDim > 1080) {
+        std::cout << "hiResConfig: " << std::endl; // DEBUG
+        return hiResConfig;
+    }
+    if (minDim > 320) {
+        std::cout << "midResConfig: " << std::endl; // DEBUG
+        return midResConfig;
+    }
+    std::cout << "lowResConfig: " << std::endl; // DEBUG
+    return lowResConfig;
 }
 
 
@@ -349,7 +419,8 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
                      bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
-                     bool stationary, const std::string &label, bool labelChooseSide, Mat &image)
+                     const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
+                     const ResolutionConfig &resCfg, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
@@ -374,7 +445,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
     }
 
-    if (!label.empty()) {
+    if (!textLabel.empty()) { // TODO
         // Calculate the adjusted box coordinates relative to the final frame.
         // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
         MPFRotatedRect adjRotatedRect(x, y, width, height,
@@ -404,26 +475,19 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
 
         int labelIndent = circleRadius + 2;
         drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, alpha, labelIndent, labelOnLeft,
-                             label, image);
+                             emojiLabel, textLabel, resCfg, image);
     }
 
-    drawLine(corners[0], corners[1], boxColor, lineThickness, !stationary, image);
-    drawLine(corners[1], corners[2], boxColor, lineThickness, !stationary, image);
-    drawLine(corners[2], corners[3], boxColor, lineThickness, !stationary, image);
-    drawLine(corners[3], corners[0], boxColor, lineThickness, !stationary, image);
-
-    if (source == TRACKING_FILLED_GAP) { // draw a thin slash through the box
-        drawLine(corners[0], corners[2], boxColor, 1, false, image);
-    } else if (source == ANIMATION) { // draw a thin "X" through the box
-        drawLine(corners[0], corners[2], boxColor, 1, false, image);
-        drawLine(corners[1], corners[3], boxColor, 1, false, image);
-    }
+    drawLine(corners[0], corners[1], boxColor, lineThickness, false, resCfg, image);
+    drawLine(corners[1], corners[2], boxColor, lineThickness, false, resCfg, image);
+    drawLine(corners[2], corners[3], boxColor, lineThickness, false, resCfg, image);
+    drawLine(corners[3], corners[0], boxColor, lineThickness, false, resCfg, image);
 
     circle(image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
 void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
-              bool dashed, Mat &image)
+              bool dashed, const ResolutionConfig &resCfg, Mat &image)
 {
     if (!dashed) {
         line(image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
@@ -457,20 +521,16 @@ void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int
     } while (percent < 1.0);
 }
 
-void drawFrameNumber(int frameNumber, double alpha, Mat &image)
+void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image)
 {
     std::string label = std::to_string(frameNumber);
-
-    int labelPadding = 8;
-    double labelScale = 0.8;
-    int labelThickness = 2;
     int labelFont = cv::FONT_HERSHEY_SIMPLEX;
 
     int baseline = 0;
-    Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
+    Size labelSize = getTextSize(label, labelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
 
-    int labelRectWidth = labelSize.width + (2 * labelPadding);
-    int labelRectHeight = labelSize.height + (2 * labelPadding);
+    int labelRectWidth = labelSize.width + (2 * resCfg.labelPadding);
+    int labelRectHeight = labelSize.height + (2 * resCfg.labelPadding);
 
     // Position frame number near top right of the frame.
     int labelRectTopLeftX = image.cols - 10 - labelRectWidth;
@@ -479,11 +539,11 @@ void drawFrameNumber(int frameNumber, double alpha, Mat &image)
     // Create the black rectangle in which to put the label text.
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());
 
-    int labelBottomLeftX = labelPadding;
-    int labelBottomLeftY = labelSize.height + labelPadding;
+    int labelBottomLeftX = resCfg.labelPadding;
+    int labelBottomLeftY = labelSize.height + resCfg.labelPadding;
 
-    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, labelScale,
-                Scalar(255, 255, 255), labelThickness, cv::LineTypes::LINE_AA);
+    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, resCfg.textLabelScale,
+                Scalar(255, 255, 255), resCfg.textLabelThickness, cv::LineTypes::LINE_AA);
 
     // Place the label on the image.
     cv::Rect labelMatInsertRect(labelRectTopLeftX, labelRectTopLeftY, labelMat.cols, labelMat.rows);
@@ -492,32 +552,37 @@ void drawFrameNumber(int frameNumber, double alpha, Mat &image)
 }
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
-                          int labelIndent, bool labelOnLeft, const std::string &label, Mat &image)
+                          int labelIndent, bool labelOnLeft, const std::string &emojiLabel,
+                          const std::string &textLabel, const ResolutionConfig &resCfg, Mat &image)
 {
-    int labelPadding = 8;
-    double labelScale = 0.8;
-    int labelThickness = 2;
-    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
+    int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
 
     int baseline = 0;
-    Size labelSize = getTextSize(label, labelFont, labelScale, labelThickness, &baseline);
+    Size textLabelSize =
+        getTextSize(textLabel, textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
+
+    int emojiHeight = textLabelSize.height; // 18;
+    Size emojiLabelSize = ft->getTextSize(emojiLabel, emojiHeight, cv::FILLED, &baseline);
 
     int labelRectBottomLeftX = pt.x;
     int labelRectBottomLeftY = pt.y;
-    int labelRectTopRightX = pt.x + labelIndent + labelSize.width + labelPadding;
-    int labelRectTopRightY = pt.y - labelSize.height - (2 * labelPadding);
+    int labelRectTopRightX = pt.x + labelIndent + emojiLabelSize.width + textLabelSize.width + resCfg.labelPadding;
+    int labelRectTopRightY = pt.y - textLabelSize.height - (2 * resCfg.labelPadding);
 
     int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
     int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
 
-    // Create the black rectangle in which to put the label text.
+    // Create the black rectangle in which to put the label.
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());
 
     int labelBottomLeftX = labelIndent;
-    int labelBottomLeftY = labelSize.height + labelPadding;
+    int labelBottomLeftY = textLabelSize.height + resCfg.labelPadding;
 
-    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY),
-                labelFont, labelScale, color, labelThickness, cv::LineTypes::LINE_AA);
+    ft->putText(labelMat, emojiLabel, Point(labelBottomLeftX, resCfg.labelPadding),
+                emojiHeight, color, cv::FILLED, cv::LineTypes::LINE_AA, false);
+
+    cv::putText(labelMat, textLabel, Point(labelBottomLeftX + emojiLabelSize.width, labelBottomLeftY),
+                textLabelFont, resCfg.textLabelScale, color, resCfg.textLabelThickness, cv::LineTypes::LINE_AA);
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis so the text appears left-to-right in the final frame

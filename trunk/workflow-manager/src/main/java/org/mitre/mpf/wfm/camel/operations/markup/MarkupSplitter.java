@@ -211,13 +211,13 @@ public class MarkupSplitter {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
-        float confidence = -1.0f;
         Optional<String> label = Optional.empty();
 
         if (!labelFromDetections) { // get track-level details
-            confidence = track.getConfidence();
             label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
         }
+
+        boolean stationary = (new Random()).nextBoolean(); // DEBUG
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
         Collections.sort(orderedDetections);
@@ -236,7 +236,6 @@ public class MarkupSplitter {
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
             if (labelFromDetections) { // get detection-level details
-                confidence = detection.getConfidence();
                 label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
             }
 
@@ -252,7 +251,7 @@ public class MarkupSplitter {
                     trackColor.getGreen(),
                     trackColor.getBlue(),
                     detectionSource,
-                    true, // TODO: stationary
+                    stationary, // true, // TODO: stationary
                     track.getExemplar().equals(detection),
                     label);
 
@@ -288,7 +287,6 @@ public class MarkupSplitter {
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
                 if (labelFromDetections) { // get detection-level details
-                    confidence = nextDetection.getConfidence();
                     label = getLabel(nextDetection, labelTextPropToShow, labelNumericPropToShow);
                 }
 
@@ -303,7 +301,7 @@ public class MarkupSplitter {
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
                         BoundingBoxSource.ANIMATION,
-                        true, // TODO: stationary
+                        stationary, // true, // TODO: stationary
                         false, // not exemplar
                         label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);

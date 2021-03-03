@@ -165,7 +165,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     origin.getGreen(),
                     origin.getBlue(),
                     BoundingBoxSource.ANIMATION,
-                    true, // TODO: stationary
+                    origin.isStationary(), // true, // TODO: stationary
                     false, // not exemplar
                     origin.getLabel());
             putOnFrame(firstFrame + frameOffset, translatedBox);

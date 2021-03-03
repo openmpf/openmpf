@@ -54,7 +54,7 @@ public class TestBoundingBoxWriter {
 
     private static void writeBoxOnFrames(String filePath) {
         try {
-            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
+            File sourceFile = new File("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264_short.mp4"); // JniTestUtils.getFileResource(filePath));
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
@@ -65,8 +65,27 @@ public class TestBoundingBoxWriter {
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, Optional.of("some class 7.243"));
-            map.putOnFrames(1, 20, box);
+            {
+                BoundingBox box = new BoundingBox(1030, 30, 100, 50, 0, false, 255, 0, 0, BoundingBoxSource.ANIMATION,
+                        true, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
+                map.putOnFrames(1, 20, box);
+            }
+            {
+                BoundingBox box = new BoundingBox(1230, 30, 100, 50, 0, false, 0, 255, 0, BoundingBoxSource.TRACKING_FILLED_GAP,
+                        true, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
+                map.putOnFrames(1, 20, box);
+            }
+
+            {
+                BoundingBox box = new BoundingBox(1030, 230, 100, 50, 0, false, 255, 255, 0, BoundingBoxSource.DETECTION_ALGORITHM,
+                        false, true, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
+                map.putOnFrames(1, 20, box);
+            }
+            {
+                BoundingBox box = new BoundingBox(1230, 230, 100, 50, 0, false, 0, 255, 255, BoundingBoxSource.DETECTION_ALGORITHM,
+                        false, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
+                map.putOnFrames(1, 20, box);
+            }
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());
@@ -74,9 +93,10 @@ public class TestBoundingBoxWriter {
 
             writer.setRequestProperties(Map.of(
                     "MARKUP_LABELS_ENABLED", "true",
+                    "MARKUP_BORDER_ENABLED", "true",
                     "MARKUP_VIDEO_EXEMPLARS_ENABLED", "true",
                     "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
-                    "MARKUP_VIDEO_VP9_CRF", "60" // poor quality makes the test run faster
+                    "MARKUP_VIDEO_VP9_CRF", "31" // poor quality makes the test run faster
             ));
 
             writer.setBoundingBoxMap(map);

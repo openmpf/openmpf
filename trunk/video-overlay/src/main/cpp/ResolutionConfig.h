@@ -24,43 +24,15 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#ifndef MPF_BOUNDINGBOXVIDEOHANDLE_H
-#define MPF_BOUNDINGBOXVIDEOHANDLE_H
+#ifndef MPF_RESOLUTIONCONFIG_H
+#define MPF_RESOLUTIONCONFIG_H
 
-#include <cstdio>
-#include <string>
-
-#include <opencv2/core.hpp>
-
-#include <MPFVideoCapture.h>
-
-#include "ResolutionConfig.h"
-
-
-class BoundingBoxVideoHandle {
-public:
-    static constexpr bool markExemplar = true;
-    static constexpr bool showFrameNumbers = true;
-
-    BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, int crf, bool border,
-                           const ResolutionConfig &resCfg, MPF::COMPONENT::MPFVideoCapture &videoCapture);
-
-    ~BoundingBoxVideoHandle();
-
-    cv::Size GetFrameSize() const;
-
-    bool Read(cv::Mat &frame);
-
-    void HandleMarkedFrame(const cv::Mat& frame);
-
-    void Close();
-
-private:
-    std::string destinationPath_;
-
-    MPF::COMPONENT::MPFVideoCapture videoCapture_;
-
-    FILE *pipe_;
+struct ResolutionConfig {
+    // Provide enough room for long labels with wide characters to extend off the edges of the image.
+    int framePadding;
+    int textLabelThickness;
+    double textLabelScale;
+    int labelPadding;
 };
 
-#endif //MPF_BOUNDINGBOXVIDEOHANDLE_H
+#endif //MPF_RESOLUTIONCONFIG_H

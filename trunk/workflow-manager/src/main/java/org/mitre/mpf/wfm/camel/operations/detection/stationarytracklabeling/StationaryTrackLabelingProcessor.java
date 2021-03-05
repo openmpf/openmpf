@@ -27,15 +27,12 @@
 package org.mitre.mpf.wfm.camel.operations.detection.stationarytracklabeling;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.primitives.Doubles;
 import org.apache.camel.Exchange;
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.data.DetectionErrorUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -51,12 +48,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 @Component(StationaryTrackLabelingProcessor.REF)
 public class StationaryTrackLabelingProcessor extends WfmProcessor {
@@ -110,15 +107,14 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
                 boolean dropStationaryTracks = Boolean.parseBoolean(combinedProperties.apply(MpfConstants.DROP_STATIONARY_TRACKS));
                 double iouThreshold = Double.parseDouble(combinedProperties.apply(MpfConstants.MIN_IOU_THRESHOLD_STATIONARY_OBJECTS));
                 int minMovingObjects = Integer.parseInt(combinedProperties.apply(MpfConstants.MIN_DETECTIONS_FOR_NON_STATIONARY_TRACKS));
-                int trackSizeDiff;
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex);
 
                 Collection<Track> newTracks = updateStationaryTracks(
-                        job.getId(), media.getId(), dropStationaryTracks, iouThreshold, minMovingObjects, tracks);
+                        dropStationaryTracks, iouThreshold, minMovingObjects, tracks);
 
-                trackSizeDiff = tracks.size() - newTracks.size();
+                int trackSizeDiff = tracks.size() - newTracks.size();
 
                 if (trackSizeDiff > 0) {
                     _log.warn(String.format("Dropping %d stationary tracks for job id %s.",
@@ -137,13 +133,16 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
     }
 
 
-    public static Collection<Track> updateStationaryTracks(long jobId, long mediaId, boolean dropStationaryTracks,
-                                                     double iouThreshold, int minMovingObjects, Iterable<Track> tracks) {
+    public static Collection<Track> updateStationaryTracks(
+            boolean dropStationaryTracks, double iouThreshold, int minMovingObjects,
+            Iterable<Track> tracks) {
         var newTracks = new TreeSet<Track>();
 
         for (Track track : tracks) {
-            Track newTrack = processTrack(jobId, mediaId, iouThreshold, minMovingObjects, track);
-            if (newTrack.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE" && dropStationaryTracks) {
+            Track newTrack = processTrack(iouThreshold, minMovingObjects, track);
+            if (dropStationaryTracks
+                    && Boolean.parseBoolean(
+                            newTrack.getTrackProperties().get("IS_STATIONARY_TRACK"))) {
                 continue;
             }
             newTracks.add(newTrack);
@@ -152,12 +151,7 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
     }
 
 
-    public static Track processTrack(long jobId, long mediaId, double iouThreshold, int minMovingObjects, Track track) {
-        Map<String, String> newTrackProperties;
-
-        String isStationary = "TRUE";
-        SortedSet<Detection> newDetections = new TreeSet<>();
-        int nonStationaryObjects = 0;
+    public static Track processTrack(double iouThreshold, int minMovingObjects, Track track) {
         double avgX = 0, avgY = 0, avgWidth = 0, avgHeight = 0, trackSize = 0;
 
         for (Detection detection : track.getDetections()) {
@@ -174,19 +168,22 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
         avgHeight = avgHeight / trackSize;
         Rectangle2D.Double avg_bbox = new Rectangle2D.Double(avgX, avgY, avgWidth, avgHeight);
 
+        int nonStationaryObjects = 0;
+        SortedSet<Detection> newDetections = new TreeSet<>();
         for (Detection detection : track.getDetections()) {
             Detection newDetection = relabelDetection(avg_bbox, iouThreshold, detection);
-            if (newDetection.getDetectionProperties().get("IS_STATIONARY_OBJECT") == "FALSE") {
+            if (!Boolean.parseBoolean(newDetection.getDetectionProperties().get("IS_STATIONARY_OBJECT"))) {
                 nonStationaryObjects++;
             }
             newDetections.add(newDetection);
         }
 
+        String isStationary = "TRUE";
         if (nonStationaryObjects >= minMovingObjects) {
             isStationary = "FALSE";
         }
 
-        newTrackProperties = ImmutableMap.<String, String>builder()
+        Map<String, String> newTrackProperties = ImmutableMap.<String, String>builder()
                 .putAll(track.getTrackProperties())
                 .put("IS_STATIONARY_TRACK", isStationary)
                 .build();
@@ -206,24 +203,26 @@ public class StationaryTrackLabelingProcessor extends WfmProcessor {
                 newTrackProperties);
     }
 
-    public static Detection relabelDetection(Rectangle2D.Double rectangle1, double iouThreshold, Detection detection) {
-        Rectangle2D.Double rectangle2 = new Rectangle2D.Double(detection.getX(), detection.getY(), detection.getWidth(), detection.getHeight());
+    private static Detection relabelDetection(Rectangle2D.Double averageBoundingBox, double iouThreshold, Detection detection) {
+        Rectangle2D.Double detectionBox = new Rectangle2D.Double(
+                detection.getX(), detection.getY(), detection.getWidth(), detection.getHeight());
         String objectIsStationary = "TRUE";
-        if (rectangle1.getWidth() == 0 || rectangle2.getWidth() == 0 || rectangle1.getHeight() == 0 || rectangle2.getHeight() == 0) {
+        if (averageBoundingBox.isEmpty() || detectionBox.isEmpty()) {
             return updateDetection(objectIsStationary, detection);
         }
 
-        if (!rectangle1.intersects(rectangle2)) {
+        if (!averageBoundingBox.intersects(detectionBox)) {
             if (0 < iouThreshold) {
                 objectIsStationary = "FALSE";
             }
             return updateDetection(objectIsStationary, detection);
         }
 
-        Rectangle2D.Double intersection = (Rectangle2D.Double) rectangle1.createIntersection(rectangle2);
+        var intersection = averageBoundingBox.createIntersection(detectionBox);
+        var union = averageBoundingBox.createUnion(detectionBox);
 
         double intersectArea = intersection.getHeight() * intersection.getWidth();
-        double unionArea = (rectangle2.getHeight() * rectangle2.getWidth()) + (rectangle1.getHeight() * rectangle1.getWidth()) - intersectArea;
+        double unionArea = union.getHeight() * union.getWidth();
         double percentOverlap = intersectArea / unionArea;
 
         if (percentOverlap < iouThreshold) {

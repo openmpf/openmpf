@@ -31,11 +31,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.stationarytracklabeling.Stat
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 
-import java.util.Collections;
-import java.util.Collection;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +44,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 480, 640, 0));
             Track track = createTrack(0, 0, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            Track updated = StationaryTrackLabelingProcessor.processTrack(0.6, 1, track);
             assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
 
@@ -60,7 +56,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 480, 640, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            Track updated = StationaryTrackLabelingProcessor.processTrack(0.6, 1, track);
             assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
 
@@ -72,7 +68,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            Track updated = StationaryTrackLabelingProcessor.processTrack(0.6, 1, track);
             assertEquals("TRUE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
     }
@@ -87,7 +83,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(500, 509, 100, 100, 2));
             Track track = createTrack(0, 2, detections);
 
-            Track updated = StationaryTrackLabelingProcessor.processTrack(1, 1, 0.6, 1, track);
+            Track updated = StationaryTrackLabelingProcessor.processTrack(0.6, 1, track);
             assertEquals("FALSE", updated.getTrackProperties().get("IS_STATIONARY_TRACK"));
         }
     }
@@ -112,7 +108,7 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             tracks.add(createTrack(0, 2, detections));
 
-            Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, false,
+            Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(false,
                                                                                                        0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 2);
             assertExpectedTrackCount(1, 1, updated_tracks);
@@ -139,17 +135,17 @@ public class TestDetectionStationaryTrackLabelingProcessor {
             detections.add(createDetection(0, 479, 460, 620, 2));
             tracks.add(createTrack(0, 2, detections));
 
-            Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(0, 0, true,
+            Collection<Track> updated_tracks = StationaryTrackLabelingProcessor.updateStationaryTracks(true,
                                                                                                        0.6, 1, tracks);
             assertEquals(updated_tracks.size(), 1);
             assertExpectedTrackCount(0, 1, updated_tracks);
         }
     }
 
-    private void assertExpectedTrackCount(int expectedStationary, int expectedNonStationary, Collection<Track> tracks) {
+    private static void assertExpectedTrackCount(int expectedStationary, int expectedNonStationary, Collection<Track> tracks) {
         int countStationary = 0, countNonStationary = 0;
         for (Track track: tracks) {
-            if (track.getTrackProperties().get("IS_STATIONARY_TRACK") == "TRUE") {
+            if (Boolean.parseBoolean(track.getTrackProperties().get("IS_STATIONARY_TRACK"))) {
                 countStationary++;
             } else {
                 countNonStationary++;

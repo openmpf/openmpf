@@ -222,7 +222,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         jmethodID clzBoundingBox_fnGetBlue = jni.GetMethodID(clzBoundingBox, "getBlue", "()I");
         jmethodID clzBoundingBox_fnGetSource =
             jni.GetMethodID(clzBoundingBox, "getSource", "()Lorg/mitre/mpf/videooverlay/BoundingBoxSource;");
-        jmethodID clzBoundingBox_fnIsStationary = jni.GetMethodID(clzBoundingBox, "isStationary", "()Z");
+        jmethodID clzBoundingBox_fnIsMoving = jni.GetMethodID(clzBoundingBox, "isMoving", "()Z");
         jmethodID clzBoundingBox_fnIsExemplar = jni.GetMethodID(clzBoundingBox, "isExemplar", "()Z");
         jmethodID clzBoundingBox_fnGetLabel = jni.GetMethodID(clzBoundingBox, "getLabel", "()Ljava/util/Optional;");
 
@@ -239,13 +239,17 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
         bool labelsEnabled =
             jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
         double labelsAlpha =
-            jniGetDoubleProperty(jni, "MARKUP_LABELS_ALPHA", 1.0, requestProperties, clzMap_fnGet);
+            jniGetDoubleProperty(jni, "MARKUP_LABELS_ALPHA", 0.5, requestProperties, clzMap_fnGet);
         bool labelsChooseSideEnabled =
             jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", requestProperties, clzMap_fnGet);
         bool borderEnabled =
             jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
-        bool exemplarsEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLARS_ENABLED", requestProperties, clzMap_fnGet);
+        bool markExemplarsEnabled =
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", requestProperties, clzMap_fnGet);
+        bool markBoxSourceEnabled =
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", requestProperties, clzMap_fnGet);
+        bool markMovingEnabled =
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", requestProperties, clzMap_fnGet);
         bool frameNumbersEnabled =
             jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", requestProperties, clzMap_fnGet);
 
@@ -307,30 +311,35 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                     if (labelsEnabled) {
                         jboolean exemplar = jni.CallBooleanMethod(box, clzBoundingBox_fnIsExemplar);
-                        jboolean stationary = jni.CallBooleanMethod(box, clzBoundingBox_fnIsStationary);
-                        // stationary = false; // DEBUG
+                        jboolean moving = jni.CallBooleanMethod(box, clzBoundingBox_fnIsMoving);
 
-                        std::stringstream ssEmojiLabel;
-                        /*
-                        if (exemplarsEnabled && boundingBoxMediaHandle.markExemplar && exemplar) {
-                            ssEmojiLabel << starEmoji;
+                        if (boundingBoxMediaHandle.useIcons) {
+                            std::stringstream ssEmojiLabel;
+                            if (markMovingEnabled) {
+                                if (moving) {
+                                    ssEmojiLabel << fastForwardEmoji;
+                                } else {
+                                    ssEmojiLabel << anchorEmoji;
+                                }
+                            }
+                            bool markedExemplar = false;
+                            if (markExemplarsEnabled && exemplar) {
+                                ssEmojiLabel << starEmoji;
+                                markedExemplar = true;
+                            }
+                            if (markBoxSourceEnabled) {
+                                if (boxSource == DETECTION_ALGORITHM) {
+                                    if (!markedExemplar) { // marking the exemplar implies the detection algorithm was used
+                                        ssEmojiLabel << magGlassEmoji;
+                                    }
+                                } else if (boxSource == TRACKING_FILLED_GAP) {
+                                    ssEmojiLabel << paperClipEmoji;
+                                } else { // ANIMATION
+                                    ssEmojiLabel << movieCameraEmoji;
+                                }
+                            }
+                            emojiLabel = ssEmojiLabel.str();
                         }
-                        */
-                        if (exemplar) {
-                            ssEmojiLabel << starEmoji;
-                        } else if (boxSource == DETECTION_ALGORITHM) {
-                            ssEmojiLabel << magGlassEmoji;
-                        } else if (boxSource == TRACKING_FILLED_GAP) {
-                            ssEmojiLabel << paperClipEmoji;
-                        } else { // ANIMATION
-                            ssEmojiLabel << movieCameraEmoji;
-                        }
-                        if (stationary) {
-                            ssEmojiLabel << anchorEmoji;
-                        } else {
-                            ssEmojiLabel << fastForwardEmoji;
-                        }
-                        emojiLabel = ssEmojiLabel.str();
 
                         jobject labelObj = jni.CallObjectMethod(box, clzBoundingBox_fnGetLabel);
                         if (jni.CallBooleanMethod(labelObj, clzOptional_fnIsPresent)) {

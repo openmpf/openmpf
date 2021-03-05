@@ -79,7 +79,7 @@ message BoundingBox {
     required uint32 green             = 8; // Green channel of bounding box color.
     required uint32 blue              = 9; // Blue channel of bounding box color.
     required BoundingBoxSource source = 10; // The source of bounding box.
-    required bool stationary          = 11; // Whether or not the bounding box object is stationary or in motion.
+    required bool moving              = 11; // Whether or not the bounding box object is moving or stationary.
     required bool exemplar            = 12; // Whether or not the bounding box represents an exemplar.
     optional string label             = 13; // The detection label.
 }

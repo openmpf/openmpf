@@ -39,7 +39,7 @@
 
 class BoundingBoxVideoHandle {
 public:
-    static constexpr bool markExemplar = true;
+    static constexpr bool useIcons = true;
     static constexpr bool showFrameNumbers = true;
 
     BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, int crf, bool border,

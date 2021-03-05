@@ -212,12 +212,16 @@ public class MarkupSplitter {
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
         Optional<String> label = Optional.empty();
-
+        boolean moving = false;
         if (!labelFromDetections) { // get track-level details
             label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
+            moving = (new Random()).nextBoolean(); // DEBUG
+            /*
+            if (track.getTrackProperties().containsKey("MOVING")) {
+                moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
+            }
+            */
         }
-
-        boolean stationary = (new Random()).nextBoolean(); // DEBUG
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
         Collections.sort(orderedDetections);
@@ -237,6 +241,12 @@ public class MarkupSplitter {
 
             if (labelFromDetections) { // get detection-level details
                 label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
+                moving = (new Random()).nextBoolean(); // DEBUG
+                /*
+                if (detection.getDetectionProperties().containsKey("MOVING")) {
+                    moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
+                }
+                */
             }
 
             // Create a bounding box at the location.
@@ -251,7 +261,7 @@ public class MarkupSplitter {
                     trackColor.getGreen(),
                     trackColor.getBlue(),
                     detectionSource,
-                    stationary, // true, // TODO: stationary
+                    moving, // true, // TODO: moving vs. stationary
                     track.getExemplar().equals(detection),
                     label);
 
@@ -301,7 +311,7 @@ public class MarkupSplitter {
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
                         BoundingBoxSource.ANIMATION,
-                        stationary, // true, // TODO: stationary
+                        moving, // true, // TODO: moving vs. stationary
                         false, // not exemplar
                         label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);

@@ -35,7 +35,7 @@
 
 class BoundingBoxImageHandle {
 public:
-    static constexpr bool markExemplar = false;
+    static constexpr bool useIcons = false;
     static constexpr bool showFrameNumbers = false;
 
     BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath);

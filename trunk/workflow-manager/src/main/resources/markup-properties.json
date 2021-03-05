@@ -49,10 +49,24 @@
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
-        "name": "MARKUP_VIDEO_EXEMPLARS_ENABLED",
-        "description": "If true, and labels are enabled, denote the track examplar with a \"!\".",
+        "name": "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use an icon to indicate the exemplar detection for each track.",
         "type": "BOOLEAN",
-        "propertiesKey": "markup.video.exemplars.enabled",
+        "propertiesKey": "markup.video.exemplar.icons.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use icons to indicate the source of each bounding box. For example, if the box is the result of an algorithm detection, tracking performing gap fill, or Workflow Manager animation.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.box.source.icons.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use icons to indicate if the object is considered moving or stationary. If using track-level details, and the \"MOVING\" property is not present at the track level, then the property for the track's exemplar will be used.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.moving.object.icons.enabled",
         "mediaTypes": ["VIDEO"]
     },
     {

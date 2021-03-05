@@ -99,9 +99,9 @@ public class BoundingBox {
         return source;
     }
 
-    private final boolean stationary;
-    public boolean isStationary() {
-        return stationary;
+    private final boolean moving;
+    public boolean isMoving() {
+        return moving;
     }
 
     private final boolean exemplar;
@@ -122,7 +122,7 @@ public class BoundingBox {
     }
 
     public BoundingBox(int x, int y, int width, int height, double rotationDegrees, boolean flip,
-                       int red, int green, int blue, BoundingBoxSource source, boolean stationary,
+                       int red, int green, int blue, BoundingBoxSource source, boolean moving,
                        boolean exemplar, Optional<String> label) {
         if (red < 0 || red > 255) {
             throw new IllegalArgumentException("red must be in range [0,255]");
@@ -144,7 +144,7 @@ public class BoundingBox {
         this.green = green;
         this.blue = blue;
         this.source = source;
-        this.stationary = stationary;
+        this.moving = moving;
         this.exemplar = exemplar;
         this.label = label;
     }
@@ -152,9 +152,9 @@ public class BoundingBox {
     @Override
     public String toString() {
         String str = String.format("%s#<x=%d, y=%d, height=%d, width=%d, rotation=%f, color=(%d, %d, %d), source=%s," +
-                        " stationary=%b, exemplar=%b",
+                        " moving=%b, exemplar=%b",
                 getClass().getSimpleName(), x, y, height, width, rotationDegrees, red, green, blue, source,
-                stationary, exemplar);
+                moving, exemplar);
         if (label.isPresent()) {
             str += ", label=\"" + label.get() + "\"";
         }
@@ -181,7 +181,7 @@ public class BoundingBox {
                 && green == casted.green
                 && blue == casted.blue
                 && source == casted.source
-                && stationary == casted.stationary
+                && moving == casted.moving
                 && exemplar == casted.exemplar
                 && label.equals(casted.label);
     }
@@ -192,7 +192,7 @@ public class BoundingBox {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, height, width, rotationDegrees, flip, red, green, blue, source,
-                stationary, exemplar, label);
+                moving, exemplar, label);
     }
 
     public Markup.BoundingBox toProtocolBuffer() {
@@ -207,7 +207,7 @@ public class BoundingBox {
                 .setBlue(blue)
                 .setGreen(green)
                 .setSource(Markup.BoundingBoxSource.valueOf(source.toString().toUpperCase()))
-                .setStationary(stationary)
+                .setMoving(moving)
                 .setExemplar(exemplar);
         label.ifPresent(builder::setLabel);
         return builder.build();

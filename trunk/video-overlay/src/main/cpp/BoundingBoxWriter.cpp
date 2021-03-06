@@ -56,10 +56,6 @@ enum BoundingBoxSource {
     ANIMATION
 };
 
-const struct ResolutionConfig lowResConfig = {400, 1, 0.8, 8 };
-const struct ResolutionConfig midResConfig = {400, 2, 0.8, 8 };
-const struct ResolutionConfig hiResConfig  = {800, 2, 1.6, 16 };
-
 // https://unicode.org/emoji/charts/full-emoji-list.html
 const std::string fastForwardEmoji = "\U000023E9";
 const std::string anchorEmoji      = "\U00002693";
@@ -74,7 +70,7 @@ template<typename TMediaHandle>
 void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
             const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
 
-const ResolutionConfig& getResolutionConfig(int width, int height);
+const ResolutionConfig getResolutionConfig(int width, int height);
 
 bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
 
@@ -173,8 +169,6 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
     JniHelper jni(env);
 
     try {
-        ft->loadFontData("/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf", 0);
-
         // Get the bounding box map.
         jclass clzBoundingBoxWriter = jni.GetObjectClass(boundingBoxWriterInstance);
         jmethodID clzBoundingBoxWriter_fnGetBoundingBoxMap =
@@ -363,8 +357,9 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 frame = frame(cv::Rect(resCfg.framePadding, resCfg.framePadding, origFrameSize.width,
                               origFrameSize.height));
             } else {
-                frame = frame(cv::Rect(resCfg.framePadding / 2, resCfg.framePadding / 2,
-                              origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
+                // Reduce the border padding by half to minimize sceen real estate. // TODO: divide by 4
+                frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
+                              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
@@ -391,19 +386,53 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 }
 
 
-const ResolutionConfig& getResolutionConfig(int width, int height) {
+const ResolutionConfig getResolutionConfig(int width, int height) {
+    ft->loadFontData("/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf", 0);
+
     int minDim = width < height ? width : height;
-    std::cout << "minDim: " << minDim << std::endl; // DEBUG
-    if (minDim > 1080) {
-        std::cout << "hiResConfig: " << std::endl; // DEBUG
-        return hiResConfig;
+
+    int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
+    int fontBaseHeight = 21; // px
+
+    double textScaleFactor = 1 / (100 * (double)fontBaseHeight); // stack 100 labels in an image, vertically
+    std::cout << "textScaleFactor: " << textScaleFactor << std::endl;
+
+    double textLabelScale = max(textScaleFactor * minDim, 0.40);
+    int textLabelThickness = ceil(textLabelScale + 0.25);
+    int labelPadding = 10 * textLabelScale;
+    
+    int baseline = 0;
+    Size textLabelSize =
+        getTextSize("WWWWWWWWWW 888.888", textLabelFont, textLabelScale, textLabelThickness, &baseline);
+    std::cout << "textLabelSize: " << textLabelSize << std::endl;
+
+    int emojiHeight = textLabelSize.height;
+    Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, emojiHeight, cv::FILLED, &baseline);
+    std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
+
+
+    int lineThickness = (int) std::max(.0018 * (height < width ? width : height), 2.0);
+
+    int minCircleRadius = 3;
+    int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
+
+    double maxCircleCoverage = minDim * 0.25; // circle should not cover more than 25% of the minimum dimension
+    if (circleRadius > maxCircleCoverage) {
+        circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
     }
-    if (minDim > 320) {
-        std::cout << "midResConfig: " << std::endl; // DEBUG
-        return midResConfig;
-    }
-    std::cout << "lowResConfig: " << std::endl; // DEBUG
-    return lowResConfig;
+
+    int labelIndent = circleRadius + 2;
+
+
+    int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
+    framePadding = framePadding * 2;
+
+    std::cout << "textLabelScale: " << textLabelScale << std::endl; // DEBUG
+    std::cout << "textLabelThickness: " << textLabelThickness << std::endl;
+    std::cout << "labelPadding: " << labelPadding << std::endl;
+    std::cout << "framePadding: " << framePadding << std::endl;
+
+    return { textLabelFont, textLabelScale, textLabelThickness, labelPadding, framePadding };
 }
 
 
@@ -533,10 +562,10 @@ void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int
 void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image)
 {
     std::string label = std::to_string(frameNumber);
-    int labelFont = cv::FONT_HERSHEY_SIMPLEX;
 
     int baseline = 0;
-    Size labelSize = getTextSize(label, labelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
+    Size labelSize =
+        getTextSize(label, resCfg.textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
 
     int labelRectWidth = labelSize.width + (2 * resCfg.labelPadding);
     int labelRectHeight = labelSize.height + (2 * resCfg.labelPadding);
@@ -551,7 +580,7 @@ void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resC
     int labelBottomLeftX = resCfg.labelPadding;
     int labelBottomLeftY = labelSize.height + resCfg.labelPadding;
 
-    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), labelFont, resCfg.textLabelScale,
+    cv::putText(labelMat, label, Point(labelBottomLeftX, labelBottomLeftY), resCfg.textLabelFont, resCfg.textLabelScale,
                 Scalar(255, 255, 255), resCfg.textLabelThickness, cv::LineTypes::LINE_AA);
 
     // Place the label on the image.
@@ -564,11 +593,9 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
                           int labelIndent, bool labelOnLeft, const std::string &emojiLabel,
                           const std::string &textLabel, const ResolutionConfig &resCfg, Mat &image)
 {
-    int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
-
     int baseline = 0;
     Size textLabelSize =
-        getTextSize(textLabel, textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
+        getTextSize(textLabel, resCfg.textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
 
     int emojiHeight = textLabelSize.height; // 18;
     Size emojiLabelSize = ft->getTextSize(emojiLabel, emojiHeight, cv::FILLED, &baseline);
@@ -591,7 +618,7 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
                 emojiHeight, color, cv::FILLED, cv::LineTypes::LINE_AA, false);
 
     cv::putText(labelMat, textLabel, Point(labelBottomLeftX + emojiLabelSize.width, labelBottomLeftY),
-                textLabelFont, resCfg.textLabelScale, color, resCfg.textLabelThickness, cv::LineTypes::LINE_AA);
+                resCfg.textLabelFont, resCfg.textLabelScale, color, resCfg.textLabelThickness, cv::LineTypes::LINE_AA);
 
     if (flip) {
         cv::flip(labelMat, labelMat, 1); // flip around y-axis so the text appears left-to-right in the final frame

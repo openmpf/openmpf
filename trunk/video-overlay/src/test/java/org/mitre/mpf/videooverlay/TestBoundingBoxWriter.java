@@ -55,22 +55,22 @@ public class TestBoundingBoxWriter {
     private static void writeBoxOnFrames(String filePath) {
         try {
             // File sourceFile = new File("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264_short.mp4"); // JniTestUtils.getFileResource(filePath));
-            // File sourceFile = new File("/home/mpf/Desktop/SAMPLES/new_face_video.avi");
-            File sourceFile = new File("/home/mpf/git/openmpf-projects/openmpf-components/cpp/OcvYoloDetection/test/data/dog-4096w.jpg");
+            File sourceFile = new File("/home/mpf/Desktop/SAMPLES/new_face_video.avi");
+            // File sourceFile = new File("/home/mpf/git/openmpf-projects/openmpf-components/cpp/OcvYoloDetection/test/data/dog-100x100.jpg");
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            // File destinationFile = File.createTempFile("markedup", ".webm");
-            File destinationFile = File.createTempFile("markedup", ".png");
+            File destinationFile = File.createTempFile("markedup", ".webm");
+            // File destinationFile = File.createTempFile("markedup", ".png");
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
 
             {
-                for (int i = 1; i <= 50; i += 2) {
-                    BoundingBox box = new BoundingBox(0, i * 23, 100, 50, 0, false, 255, 0, 0, BoundingBoxSource.DETECTION_ALGORITHM,
+                for (int i = 1; i <= 10; i += 2) {
+                    BoundingBox box = new BoundingBox(10, i * 50, 100, 50, 0, false, 255, 0, 0, BoundingBoxSource.DETECTION_ALGORITHM,
                             true, false, Optional.empty()); // Optional.of("WWWWWWWWWW 888.888"));
                     map.putOnFrame(0, box);
                 }
@@ -104,7 +104,7 @@ public class TestBoundingBoxWriter {
 
             writer.setRequestProperties(Map.of(
                     "MARKUP_LABELS_ENABLED", "true",
-                    "MARKUP_BORDER_ENABLED", "false",
+                    "MARKUP_BORDER_ENABLED", "true",
                     "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", "true",
                     "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", "true",
                     "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", "true",
@@ -113,8 +113,8 @@ public class TestBoundingBoxWriter {
             ));
 
             writer.setBoundingBoxMap(map);
-            // writer.markupVideo();
-            writer.markupImage();
+            writer.markupVideo();
+            // writer.markupImage();
 
             // Test that something was written.
             Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);

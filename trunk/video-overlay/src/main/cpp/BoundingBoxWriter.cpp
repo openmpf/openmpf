@@ -357,7 +357,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 frame = frame(cv::Rect(resCfg.framePadding, resCfg.framePadding, origFrameSize.width,
                               origFrameSize.height));
             } else {
-                // Reduce the border padding by half to minimize sceen real estate. // TODO: divide by 4
+                // Reduce the border padding to minimize sceen real estate.
                 frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
                               origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
             }
@@ -397,25 +397,17 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     double textScaleFactor = 1 / (100 * (double)fontBaseHeight); // stack 100 labels in an image, vertically
     std::cout << "textScaleFactor: " << textScaleFactor << std::endl;
 
-    double textLabelScale = max(textScaleFactor * minDim, 0.40);
-    int textLabelThickness = ceil(textLabelScale + 0.25);
+    double textLabelScale = std::max(textScaleFactor * minDim, 0.40);
+    int textLabelThickness = std::ceil(textLabelScale + 0.25);
     int labelPadding = 10 * textLabelScale;
-    
-    int baseline = 0;
-    Size textLabelSize =
-        getTextSize("WWWWWWWWWW 888.888", textLabelFont, textLabelScale, textLabelThickness, &baseline);
-    std::cout << "textLabelSize: " << textLabelSize << std::endl;
 
-    int emojiHeight = textLabelSize.height;
-    Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, emojiHeight, cv::FILLED, &baseline);
-    std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
 
     // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
     // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
     // Specifically, no pixels will be drawn near the edge.
     // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
     // To address this, we use a minimum thickness of 2.
-    int lineThickness = (int) std::max(.0018 * (height < width ? width : height), 2.0);
+    int lineThickness = std::max(textLabelThickness, 2);
 
     int minCircleRadius = 3;
     int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
@@ -428,10 +420,25 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     int labelIndent = circleRadius + 2;
 
 
+    // Calculate frame padding for worst-case scenario.
+    int baseline = 0;
+    Size textLabelSize = getTextSize("WWWWWWWWWW 888.888", // "W" is the widest character
+                                     textLabelFont, textLabelScale, textLabelThickness, &baseline);
+    std::cout << "textLabelSize: " << textLabelSize << std::endl;
+
+    int emojiHeight = textLabelSize.height;
+    Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, // magnifying glass is the widest emoji
+                                          emojiHeight, cv::FILLED, &baseline);
+    std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
+
     int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
     framePadding = framePadding * 2;
 
-    std::cout << "textLabelScale: " << textLabelScale << std::endl; // DEBUG
+
+    // DEBUG
+    std::cout << "lineThickness: " << lineThickness << std::endl;
+    std::cout << "circleRadius: " << circleRadius << std::endl;
+    std::cout << "textLabelScale: " << textLabelScale << std::endl;
     std::cout << "textLabelThickness: " << textLabelThickness << std::endl;
     std::cout << "labelPadding: " << labelPadding << std::endl;
     std::cout << "framePadding: " << framePadding << std::endl;

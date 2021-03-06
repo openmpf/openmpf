@@ -42,8 +42,8 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
     int destinationFrameHeight = videoCapture_.GetFrameSize().height;
 
     if (border) {
-        destinationFrameWidth  += resCfg.framePadding;
-        destinationFrameHeight += resCfg.framePadding;
+        destinationFrameWidth  += resCfg.framePadding / 2;
+        destinationFrameHeight += resCfg.framePadding / 2;
     }
 
     std::string command = std::string("ffmpeg") +

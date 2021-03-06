@@ -28,9 +28,12 @@
 #define MPF_RESOLUTIONCONFIG_H
 
 struct ResolutionConfig {
+    int lineThickness;
+    int circleRadius;
     int textLabelFont;
     double textLabelScale;
     int textLabelThickness;
+    int labelIndent;
     int labelPadding;
     int framePadding; // provide enough room for long labels with wide characters to extend off the edges of the image
 };

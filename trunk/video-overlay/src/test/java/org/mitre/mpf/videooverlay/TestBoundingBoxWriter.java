@@ -71,7 +71,7 @@ public class TestBoundingBoxWriter {
             {
                 for (int i = 1; i <= 50; i += 2) {
                     BoundingBox box = new BoundingBox(0, i * 23, 100, 50, 0, false, 255, 0, 0, BoundingBoxSource.DETECTION_ALGORITHM,
-                            true, false, Optional.of("WWWWWWWWWW 888.888")); // "WWWWWWWWWW... 7.243"
+                            true, false, Optional.empty()); // Optional.of("WWWWWWWWWW 888.888"));
                     map.putOnFrame(0, box);
                 }
             }

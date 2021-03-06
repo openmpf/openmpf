@@ -82,14 +82,14 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
                      const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
                      const ResolutionConfig &resCfg, Mat &image);
 
-void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness, bool dashed,
+void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, bool dashed,
               const ResolutionConfig &resCfg, Mat &image);
 
 void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image);
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
-                          int labelIndent, bool labelOnLeft, const std::string &emojiLabel,
-                          const std::string &textLabel, const ResolutionConfig &resCfg, Mat &image);
+                          bool labelOnLeft, const std::string &emojiLabel, const std::string &textLabel,
+                          const ResolutionConfig &resCfg, Mat &image);
 
 
 extern "C" {
@@ -410,7 +410,11 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, emojiHeight, cv::FILLED, &baseline);
     std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
 
-
+    // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
+    // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
+    // Specifically, no pixels will be drawn near the edge.
+    // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
+    // To address this, we use a minimum thickness of 2.
     int lineThickness = (int) std::max(.0018 * (height < width ? width : height), 2.0);
 
     int minCircleRadius = 3;
@@ -432,7 +436,8 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     std::cout << "labelPadding: " << labelPadding << std::endl;
     std::cout << "framePadding: " << framePadding << std::endl;
 
-    return { textLabelFont, textLabelScale, textLabelThickness, labelPadding, framePadding };
+    return { lineThickness, circleRadius, textLabelFont, textLabelScale, textLabelThickness, labelIndent, labelPadding,
+             framePadding };
 }
 
 
@@ -466,24 +471,8 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
     auto detectionTopLeftPt = corners[0];
 
     Scalar boxColor(blue, green, red);
-    int minDim = width < height ? width : height;
 
-    // Because we use LINE_AA below for anti-aliasing, which uses a Gaussian filter, the lack of pixels near the edge
-    // of the frame causes a problem when attempting to draw a line along the edge using a thickness of 1.
-    // Specifically, no pixels will be drawn near the edge.
-    // Refer to: https://stackoverflow.com/questions/42484955/pixels-at-arrow-tip-missing-when-using-antialiasing
-    // To address this, we use a minimum thickness of 2.
-    int lineThickness = (int) std::max(.0018 * (image.rows < image.cols ? image.cols : image.rows), 2.0);
-
-    int minCircleRadius = 3;
-    int circleRadius = lineThickness == 1 ? minCircleRadius : lineThickness + 5;
-
-    double maxCircleCoverage = minDim * 0.25; // circle should not cover more than 25% of the minimum dimension
-    if (circleRadius > maxCircleCoverage) {
-        circleRadius = std::max((int)maxCircleCoverage, minCircleRadius);
-    }
-
-    if (!textLabel.empty()) { // TODO
+    if (!textLabel.empty() || !emojiLabel.empty()) {
         // Calculate the adjusted box coordinates relative to the final frame.
         // The frame is "final" in the sense that it's flipped and/or rotated to account for media metadata.
         MPFRotatedRect adjRotatedRect(x, y, width, height,
@@ -511,31 +500,30 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
             labelOnLeft = (adjTopPt.x > adjRectCenter.x);
         }
 
-        int labelIndent = circleRadius + 2;
-        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, alpha, labelIndent, labelOnLeft,
-                             emojiLabel, textLabel, resCfg, image);
+        drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, alpha, labelOnLeft, emojiLabel, textLabel,
+                             resCfg, image);
     }
 
-    drawLine(corners[0], corners[1], boxColor, lineThickness, false, resCfg, image);
-    drawLine(corners[1], corners[2], boxColor, lineThickness, false, resCfg, image);
-    drawLine(corners[2], corners[3], boxColor, lineThickness, false, resCfg, image);
-    drawLine(corners[3], corners[0], boxColor, lineThickness, false, resCfg, image);
+    drawLine(corners[0], corners[1], boxColor, false, resCfg, image);
+    drawLine(corners[1], corners[2], boxColor, false, resCfg, image);
+    drawLine(corners[2], corners[3], boxColor, false, resCfg, image);
+    drawLine(corners[3], corners[0], boxColor, false, resCfg, image);
 
-    circle(image, detectionTopLeftPt, circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
+    circle(image, detectionTopLeftPt, resCfg.circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
-void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int lineThickness,
-              bool dashed, const ResolutionConfig &resCfg, Mat &image)
+void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, bool dashed,
+              const ResolutionConfig &resCfg, Mat &image)
 {
     if (!dashed) {
-        line(image, start, end, color, lineThickness, cv::LineTypes::LINE_AA);
+        line(image, start, end, color, resCfg.lineThickness, cv::LineTypes::LINE_AA);
         return;
     }
 
     // Draw dashed line.
     double lineLen = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
 
-    int dashLen = 10 + lineThickness;
+    int dashLen = 10 + resCfg.lineThickness;
     double maxDashCoverage = lineLen * 0.5; // dash segment should not occupy more than 50% of the total line length
     if (dashLen > maxDashCoverage) {
         dashLen = (int)maxDashCoverage;
@@ -552,7 +540,7 @@ void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, int
         int y = (start.y * (1 - percent) + end.y * percent) + 0.5;
         Point curr(x, y);
         if (draw) {
-            line(image, prev, curr, color, lineThickness);
+            line(image, prev, curr, color, resCfg.lineThickness);
         }
         prev = curr;
         draw = !draw;
@@ -590,19 +578,19 @@ void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resC
 }
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
-                          int labelIndent, bool labelOnLeft, const std::string &emojiLabel,
-                          const std::string &textLabel, const ResolutionConfig &resCfg, Mat &image)
+                          bool labelOnLeft, const std::string &emojiLabel, const std::string &textLabel,
+                          const ResolutionConfig &resCfg, Mat &image)
 {
     int baseline = 0;
     Size textLabelSize =
         getTextSize(textLabel, resCfg.textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
 
-    int emojiHeight = textLabelSize.height; // 18;
+    int emojiHeight = textLabelSize.height;
     Size emojiLabelSize = ft->getTextSize(emojiLabel, emojiHeight, cv::FILLED, &baseline);
 
     int labelRectBottomLeftX = pt.x;
     int labelRectBottomLeftY = pt.y;
-    int labelRectTopRightX = pt.x + labelIndent + emojiLabelSize.width + textLabelSize.width + resCfg.labelPadding;
+    int labelRectTopRightX = pt.x + resCfg.labelIndent + emojiLabelSize.width + textLabelSize.width + resCfg.labelPadding;
     int labelRectTopRightY = pt.y - textLabelSize.height - (2 * resCfg.labelPadding);
 
     int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
@@ -611,7 +599,7 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
     // Create the black rectangle in which to put the label.
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());
 
-    int labelBottomLeftX = labelIndent;
+    int labelBottomLeftX = resCfg.labelIndent;
     int labelBottomLeftY = textLabelSize.height + resCfg.labelPadding;
 
     ft->putText(labelMat, emojiLabel, Point(labelBottomLeftX, resCfg.labelPadding),

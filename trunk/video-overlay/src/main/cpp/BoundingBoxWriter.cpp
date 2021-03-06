@@ -358,8 +358,10 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                               origFrameSize.height));
             } else {
                 // Reduce the border padding to minimize sceen real estate.
-                frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
-                              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
+                //frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75, // TODO
+                //              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
+                frame = frame(cv::Rect(resCfg.framePadding / 2 , resCfg.framePadding / 2 ,
+                                       origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
@@ -432,7 +434,7 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
 
     int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
-    framePadding = framePadding * 2;
+    //framePadding = framePadding * 2; // TODO
 
 
     // DEBUG

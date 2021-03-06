@@ -42,9 +42,14 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
     int destinationFrameHeight = videoCapture_.GetFrameSize().height;
 
     if (border) {
-        destinationFrameWidth  += resCfg.framePadding / 2;
-        destinationFrameHeight += resCfg.framePadding / 2;
+        // destinationFrameWidth  += (resCfg.framePadding / 2); // TODO
+        // destinationFrameHeight += (resCfg.framePadding / 2);
+        destinationFrameWidth  += resCfg.framePadding;
+        destinationFrameHeight += resCfg.framePadding;
     }
+
+    std::cout << "destinationFrameWidth: " << destinationFrameWidth << std::endl; // DEBUG
+    std::cout << "destinationFrameHeight: " << destinationFrameHeight << std::endl; // DEBUG
 
     std::string command = std::string("ffmpeg") +
         " -pixel_format bgr24" +
@@ -82,6 +87,9 @@ bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
+
+    // std::cout << "frame.size(): " << frame.size() << std::endl; // DEBUG
+
     // Properly handle non-continuous cv::Mats. For example, if the left or right side of the frame was cropped off then
     // the matrix will be non-continuous. This is because cropping doesn't copy the matrix, it creates a submatrix
     // pointing in to the original un-cropped frame. To avoid writing sections we need to skip we copy data row by row.

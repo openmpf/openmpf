@@ -40,8 +40,7 @@ public enum IssueCodes {
     MISSING_AUDIO_STREAM,
     MEDIA_INITIALIZATION,
     MARKUP,
-    PADDING,
-    LABEL_STATIONARY;
+    PADDING;
 
     public static final IssueCodes DEFAULT = OTHER;
 

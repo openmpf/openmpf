@@ -107,10 +107,16 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         jclass clzMap = jni.FindClass("java/util/Map");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
-        bool useVp9 = jniGetBoolProperty(jni, "MARKUP_VIDEO_VP9_ENABLED", requestProperties, clzMap_fnGet);
-
-        auto jPropKey = jni.ToJString("MARKUP_VIDEO_VP9_CRF");
+        auto jPropKey = jni.ToJString("MARKUP_VIDEO_ENCODER");
         jstring jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
+        std::string encoder = "mjpeg";
+        if (jPropValue != nullptr) {
+            encoder = jni.ToStdString(jPropValue);
+            std::transform(encoder.begin(), encoder.end(), encoder.begin(), ::tolower);
+        }
+
+        jPropKey = jni.ToJString("MARKUP_VIDEO_VP9_CRF");
+        jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
         int vp9Crf = 31;
         if (jPropValue != nullptr) {
             std::string crfPropValue = jni.ToStdString(jPropValue);
@@ -123,7 +129,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         ResolutionConfig resCfg =
             getResolutionConfig(videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, useVp9, vp9Crf, border,
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, encoder, vp9Crf, border,
                                                       resCfg, videoCapture);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxVideoHandle);

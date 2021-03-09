@@ -327,8 +327,19 @@ public class MarkupSplitter {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return Boolean.parseBoolean(markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_VP9_ENABLED, job,
-                           media)) ? ".webm" : ".avi";
+                String encoder = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_ENCODER, job, media)
+                        .toLowerCase();
+                switch (encoder) {
+                    case ("vp9"):
+                        return ".webm";
+                    case ("h264"):
+                        return ".mp4";
+                    case ("mjpeg"):
+                        return ".avi";
+                    default:
+                        log.warn("\"" + encoder + "\" is not a valid decoder. Defaulting to mjpeg.");
+                        return ".avi";
+                }
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through
             default:

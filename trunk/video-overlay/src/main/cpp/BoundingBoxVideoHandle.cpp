@@ -33,8 +33,9 @@
 #include <utility>
 
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, bool useVp9,
-                                               int vp9Crf, bool border, const ResolutionConfig &resCfg,
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath,
+                                               std::string &encoder, int vp9Crf, bool border,
+                                               const ResolutionConfig &resCfg,
                                                MPF::COMPONENT::MPFVideoCapture &videoCapture) :
         destinationPath_(std::move(destinationPath)), videoCapture_(std::move(videoCapture)) {
 
@@ -55,17 +56,22 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
         " -i -" +
         " -pix_fmt yuv420p"; // https://trac.ffmpeg.org/ticket/5276
 
-    if (useVp9) { // .webm
+    if (std::string("vp9") == encoder) { // .webm
         command = command +
             " -c:v libvpx-vp9" +
             " -crf " + std::to_string(vp9Crf) + " -b:v 0"; // https://trac.ffmpeg.org/wiki/Encode/VP9
     }
-    else { // .avi
+    else if (std::string("h264") == encoder) { // .mp4
+        command = command +
+            " -c:v libx264";
+    }
+    else { // "mjpeg" .avi
         command = command +
             " -c:v mjpeg";
     }
 
     command = command +
+        " -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\"" + // https://stackoverflow.com/a/20848224
         " -threads 2" +
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";

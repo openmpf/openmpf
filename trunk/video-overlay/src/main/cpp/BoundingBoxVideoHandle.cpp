@@ -33,8 +33,8 @@
 #include <utility>
 
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, int crf,
-                                               bool border, const ResolutionConfig &resCfg,
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, bool useVp9,
+                                               int vp9Crf, bool border, const ResolutionConfig &resCfg,
                                                MPF::COMPONENT::MPFVideoCapture &videoCapture) :
         destinationPath_(std::move(destinationPath)), videoCapture_(std::move(videoCapture)) {
 
@@ -42,14 +42,9 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
     int destinationFrameHeight = videoCapture_.GetFrameSize().height;
 
     if (border) {
-        // destinationFrameWidth  += (resCfg.framePadding / 2); // TODO
-        // destinationFrameHeight += (resCfg.framePadding / 2);
-        destinationFrameWidth  += resCfg.framePadding;
-        destinationFrameHeight += resCfg.framePadding;
+        destinationFrameWidth  += resCfg.framePadding / 2;
+        destinationFrameHeight += resCfg.framePadding / 2;
     }
-
-    std::cout << "destinationFrameWidth: " << destinationFrameWidth << std::endl; // DEBUG
-    std::cout << "destinationFrameHeight: " << destinationFrameHeight << std::endl; // DEBUG
 
     std::string command = std::string("ffmpeg") +
         " -pixel_format bgr24" +
@@ -58,9 +53,23 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
         " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
         " -f rawvideo" +
         " -i -" +
-        " -pix_fmt yuv420p" + // https://trac.ffmpeg.org/ticket/5276
-        " -c:v libvpx-vp9" +
-        " -crf " + std::to_string(crf) + " -b:v 0" + // https://trac.ffmpeg.org/wiki/Encode/VP9
+        " -pix_fmt yuv420p"; // https://trac.ffmpeg.org/ticket/5276
+
+    if (useVp9) { // .webm
+        command = command +
+            " -c:v libvpx-vp9" +
+            " -crf " + std::to_string(vp9Crf) + " -b:v 0"; // https://trac.ffmpeg.org/wiki/Encode/VP9
+    }
+    else { // .avi
+        command = command +
+            // " -c:v jpeg2000" +
+            // " -pred 0"
+            // " -q:v 100";
+            " -c:v mjpeg";
+            // " -qmin 1 -q:v 1";
+    }
+
+    command = command +
         " -threads 2" +
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";
@@ -87,9 +96,6 @@ bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
-
-    // std::cout << "frame.size(): " << frame.size() << std::endl; // DEBUG
-
     // Properly handle non-continuous cv::Mats. For example, if the left or right side of the frame was cropped off then
     // the matrix will be non-continuous. This is because cropping doesn't copy the matrix, it creates a submatrix
     // pointing in to the original un-cropped frame. To avoid writing sections we need to skip we copy data row by row.

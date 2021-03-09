@@ -103,25 +103,27 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         std::string sourceVideoPath = jni.ToStdString(sourceVideoPathJString);
         std::string destinationVideoPath = jni.ToStdString(destinationVideoPathJString);
 
-        MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
-        ResolutionConfig resCfg =
-            getResolutionConfig(videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
-
         // Get the Map class and method.
         jclass clzMap = jni.FindClass("java/util/Map");
         jmethodID clzMap_fnGet = jni.GetMethodID(clzMap, "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
 
+        bool useVp9 = jniGetBoolProperty(jni, "MARKUP_VIDEO_VP9_ENABLED", requestProperties, clzMap_fnGet);
+
         auto jPropKey = jni.ToJString("MARKUP_VIDEO_VP9_CRF");
         jstring jPropValue = (jstring) jni.CallObjectMethod(requestProperties, clzMap_fnGet, *jPropKey);
-        int crf = 31;
+        int vp9Crf = 31;
         if (jPropValue != nullptr) {
             std::string crfPropValue = jni.ToStdString(jPropValue);
-            crf = std::stoi(crfPropValue);
+            vp9Crf = std::stoi(crfPropValue);
         }
 
         bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, crf, border,
+        MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
+        ResolutionConfig resCfg =
+            getResolutionConfig(videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
+
+        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, useVp9, vp9Crf, border,
                                                       resCfg, videoCapture);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxVideoHandle);
@@ -146,8 +148,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jni.ToStdString(sourceImagePathJString),
                 jni.ToStdString(destinationImagePathJString));
 
-        ResolutionConfig resCfg =
-            getResolutionConfig(boundingBoxImageHandle.GetFrameSize().width, boundingBoxImageHandle.GetFrameSize().height);
+        ResolutionConfig resCfg = getResolutionConfig(boundingBoxImageHandle.GetFrameSize().width,
+                                                      boundingBoxImageHandle.GetFrameSize().height);
 
         markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxImageHandle);
     }
@@ -300,7 +302,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                     double boxRotation = (double)jni.CallDoubleMethod(box, clzBoundingBox_fnGetRotationDegrees);
                     bool boxFlip = (bool)jni.CallBooleanMethod(box, clzBoundingBox_fnGetFlip);
 
-                    std::string emojiLabel= "";
+                    std::string emojiLabel = "";
                     std::string textLabel = "";
 
                     if (labelsEnabled) {
@@ -358,10 +360,8 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                               origFrameSize.height));
             } else {
                 // Reduce the border padding to minimize sceen real estate.
-                //frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75, // TODO
-                //              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
-                frame = frame(cv::Rect(resCfg.framePadding / 2 , resCfg.framePadding / 2 ,
-                                       origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
+                frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
+                              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
@@ -397,7 +397,6 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     int fontBaseHeight = 21; // px
 
     double textScaleFactor = 1 / (100 * (double)fontBaseHeight); // stack 100 labels in an image, vertically
-    std::cout << "textScaleFactor: " << textScaleFactor << std::endl;
 
     double textLabelScale = std::max(textScaleFactor * minDim, 0.40);
     int textLabelThickness = std::ceil(textLabelScale + 0.25);
@@ -426,24 +425,13 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
     int baseline = 0;
     Size textLabelSize = getTextSize("WWWWWWWWWW 888.888", // "W" is the widest character
                                      textLabelFont, textLabelScale, textLabelThickness, &baseline);
-    std::cout << "textLabelSize: " << textLabelSize << std::endl;
 
     int emojiHeight = textLabelSize.height;
     Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, // magnifying glass is the widest emoji
                                           emojiHeight, cv::FILLED, &baseline);
-    std::cout << "emojiLabelSize: " << emojiLabelSize << std::endl;
 
     int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
-    //framePadding = framePadding * 2; // TODO
-
-
-    // DEBUG
-    std::cout << "lineThickness: " << lineThickness << std::endl;
-    std::cout << "circleRadius: " << circleRadius << std::endl;
-    std::cout << "textLabelScale: " << textLabelScale << std::endl;
-    std::cout << "textLabelThickness: " << textLabelThickness << std::endl;
-    std::cout << "labelPadding: " << labelPadding << std::endl;
-    std::cout << "framePadding: " << framePadding << std::endl;
+    framePadding = framePadding * 2;
 
     return { lineThickness, circleRadius, textLabelFont, textLabelScale, textLabelThickness, labelIndent, labelPadding,
              framePadding };

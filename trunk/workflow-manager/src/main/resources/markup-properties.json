@@ -77,8 +77,15 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "MARKUP_VIDEO_VP9_ENABLED",
+        "description": "If true, generate VP9-encoded .webm video files. If false, generate mjpeg-encoded .avi files. The .webm files can display in most browsers, but take longer to generate.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.vp9.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "MARKUP_VIDEO_VP9_CRF",
-        "description": "The CRF value can be from 0-63. Lower values mean better quality. Recommended values range from 15-35, with 31 being recommended for 1080p HD video.",
+        "description": "The CRF value can be from 0-63. Lower values mean better quality. Recommended values range from 15-35, with 31 being recommended for 1080p HD video. This property is only used if generating VP9-encoded .webm files.",
         "type": "INT",
         "propertiesKey": "markup.video.vp9.crf",
         "mediaTypes": ["VIDEO"]

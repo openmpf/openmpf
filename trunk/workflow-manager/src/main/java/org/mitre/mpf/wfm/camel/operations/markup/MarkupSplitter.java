@@ -114,7 +114,7 @@ public class MarkupSplitter {
                                 getFileExtension(media.getMimeType()));
                     } else {
                         destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
-                                getMarkedUpMediaExtensionForMediaType(media.getType()));
+                                getMarkedUpMediaExtensionForMediaType(job, media));
                     }
 
                     Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
@@ -322,13 +322,13 @@ public class MarkupSplitter {
 
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
-    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
-        switch(mediaType) {
+    private String getMarkedUpMediaExtensionForMediaType(BatchJob job, Media media) {
+        switch (media.getType()) {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return ".webm";
-
+                return Boolean.parseBoolean(markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_VP9_ENABLED, job,
+                           media)) ? ".webm" : ".avi";
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through
             default:

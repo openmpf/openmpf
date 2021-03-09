@@ -62,11 +62,7 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
     }
     else { // .avi
         command = command +
-            // " -c:v jpeg2000" +
-            // " -pred 0"
-            // " -q:v 100";
             " -c:v mjpeg";
-            // " -qmin 1 -q:v 1";
     }
 
     command = command +

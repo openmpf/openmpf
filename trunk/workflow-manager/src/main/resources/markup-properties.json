@@ -1,7 +1,7 @@
 [
     {
         "name": "MARKUP_LABELS_ENABLED",
-        "description": "If true, add a label to each detection box. Minimally, it will show the confidence.",
+        "description": "If true, add a label to each detection box.",
         "type": "BOOLEAN",
         "propertiesKey": "markup.labels.enabled",
         "mediaTypes": ["VIDEO", "IMAGE"]

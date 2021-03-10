@@ -73,8 +73,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
@@ -338,6 +337,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         censorPropertiesService.copyAndCensorProperties(
                 job.getJobProperties(), jsonOutputObject.getJobProperties());
+
+        censorPropertiesService.copyAndCensorProperties(
+                getEnvironmentProperties(), jsonOutputObject.getEnvironmentVariableProperties());
 
         for (Map.Entry<String, ImmutableMap<String, String>> algoPropsEntry
                 : job.getOverriddenAlgorithmProperties().entrySet()) {
@@ -623,6 +625,17 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
+
+    private static Map<String, String> getEnvironmentProperties() {
+        var propertyPrefix = "MPF_PROP_";
+        return System.getenv()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getKey().length() > propertyPrefix.length()
+                        && e.getKey().startsWith(propertyPrefix))
+                .collect(toMap(e -> e.getKey().substring(propertyPrefix.length()),
+                               Map.Entry::getValue));
+    }
 
     @Override
     public void subscribe(NotificationConsumer<JobCompleteNotification> consumer) {

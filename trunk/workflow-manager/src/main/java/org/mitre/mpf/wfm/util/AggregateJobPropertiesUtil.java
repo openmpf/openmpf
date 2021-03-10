@@ -64,7 +64,9 @@ public class AggregateJobPropertiesUtil {
 
 
     // in order of precedence
-    private enum PropertyLevel { NONE, SYSTEM, WORKFLOW, ALGORITHM, ACTION, JOB, OVERRIDDEN_ALGORITHM, MEDIA }
+    private enum PropertyLevel {
+        NONE, SYSTEM, WORKFLOW, ALGORITHM, ACTION, JOB, OVERRIDDEN_ALGORITHM, MEDIA,
+        ENVIRONMENT_VARIABLE }
 
 
     private static class PropertyInfo {
@@ -126,6 +128,11 @@ public class AggregateJobPropertiesUtil {
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             Map<String, String> jobProperties,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
+
+        var envPropVal = System.getenv("MPF_PROP_" + propertyName);
+        if (envPropVal != null) {
+            return new PropertyInfo(propertyName, envPropVal, PropertyLevel.ENVIRONMENT_VARIABLE);
+        }
 
         var mediaPropVal = mediaSpecificProperties.get(propertyName);
         if (mediaPropVal != null) {

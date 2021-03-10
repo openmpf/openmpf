@@ -92,14 +92,14 @@
     },
     {
         "name": "FRAME_INTERVAL",
-        "description": "Controls whether the component performs detection on every frame in the video segment, or skips some frames at a regular interval. Must be set to a value >= 0. If set to 0 or 1, a frame interval of 1 will be used, meaning that detection is performed on every frame. If set to N > 1, every N-1 frames will be skipped. Default value is defined by the OpenMPF properties file.",
+        "description": "Controls whether the component performs detection on every frame in the video segment, or skips some frames at a regular interval. Must be set to a value >= 0. If set to 0 or 1, a frame interval of 1 will be used, meaning that detection is performed on every frame. If set to N > 1, every N-1 frames will be skipped.",
         "type": "INT",
         "propertiesKey": "detection.sampling.interval",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "FRAME_RATE_CAP",
-        "description": "The threshold on the maximum number of frames to process in the video segment within one second of the native video time. If set to a value > 0, then an internal frame interval value is calculated as max(1, floor(mediaNativeFPS / FRAME_RATE_CAP)) and the FRAME_INTERVAL property is not used. To disable, set to a value <= 0. When disabled, the FRAME_INTERVAL property is used, if valid. Default value is defined by the OpenMPF properties file.",
+        "description": "The threshold on the maximum number of frames to process in the video segment within one second of the native video time. If set to a value > 0, then an internal frame interval value is calculated as max(1, floor(mediaNativeFPS / FRAME_RATE_CAP)) and the FRAME_INTERVAL property is not used. To disable, set to a value <= 0. When disabled, the FRAME_INTERVAL property is used, if valid.",
         "type": "INT",
         "propertiesKey": "detection.frame.rate.cap",
         "mediaTypes": ["VIDEO"]
@@ -113,49 +113,49 @@
     },
     {
         "name": "MIN_GAP_BETWEEN_SEGMENTS",
-        "description": "In the context of videos, the minimum number of frames between segments which are not adjacent. Value must be greater than or equal to 1. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, the minimum number of frames between segments which are not adjacent. Value must be greater than or equal to 1.",
         "type": "INT",
         "propertiesKey": "detection.segment.minimum.gap",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "TARGET_SEGMENT_LENGTH",
-        "description": "In the context of videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10.",
         "type": "INT",
         "propertiesKey": "detection.segment.target.length",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "MIN_SEGMENT_LENGTH",
-        "description": "In the context of videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0.",
         "type": "INT",
         "propertiesKey": "detection.segment.minimum.length",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "MERGE_TRACKS",
-        "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, when set to true, attempt to merge tracks spanning segment boundaries.",
         "type": "BOOLEAN",
         "propertiesKey": "detection.video.track.merging.enabled",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "MIN_GAP_BETWEEN_TRACKS",
-        "description": "In the context of videos, similar tracks with less than this number of frames between them will be merged into a single track. If MERGE_TRACKS is false, this has no effect. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, similar tracks with less than this number of frames between them will be merged into a single track. If MERGE_TRACKS is false, this has no effect.",
         "type": "INT",
         "propertiesKey": "detection.video.track.min.gap",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "MIN_TRACK_LENGTH",
-        "description": "In the context of videos, defines the minimum track length in frames. Tracks shorter than this minimum length will be silently discarded. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, defines the minimum track length in frames. Tracks shorter than this minimum length will be silently discarded.",
         "type": "INT",
         "propertiesKey": "detection.video.track.min.length",
         "mediaTypes": ["VIDEO"]
     },
     {
         "name": "MIN_OVERLAP",
-        "description": "In the context of videos, the minimum overlap between detection bounding boxes for adjacent tracks to be considered continuous. Value is expected to be between 0 and 1. Default value is defined by the OpenMPF properties file.",
+        "description": "In the context of videos, the minimum overlap between detection bounding boxes for adjacent tracks to be considered continuous. Value is expected to be between 0 and 1.",
         "type": "DOUBLE",
         "propertiesKey": "detection.video.track.overlap.threshold",
         "mediaTypes": ["VIDEO"]
@@ -250,5 +250,33 @@
         "type": "STRING",
         "propertiesKey": "detection.rotation.fill.color",
         "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MOVING_TRACK_LABELS_ENABLED",
+        "description": "In the context of videos, when set to true, attempt to label tracks as either moving or not moving objects.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.moving.track.labels.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACKS_ONLY",
+        "description": "In the context of videos, when set to true, remove any tracks that were marked as not moving.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.moving.track.outputs.only",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACK_MAX_IOU",
+        "description": "In the context of videos, the maximum intersection of union(IoU) overlap between detection bounding boxes and the average per-track bounding box for objects to be considered moving. Value is expected to be between 0 and 1. Note that the lower IoU, the more likely the object is moving.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.moving.track.max.iou",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACK_MIN_DETECTIONS",
+        "description": "In the context of videos, the minimum number of moving detections for a track to be labeled as moving.",
+        "type": "DOUBLE",
+        "propertiesKey": "detection.moving.track.min.detections",
+        "mediaTypes": ["VIDEO"]
     }
 ]

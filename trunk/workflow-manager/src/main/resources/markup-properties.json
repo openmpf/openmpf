@@ -78,7 +78,7 @@
     },
     {
         "name": "MARKUP_VIDEO_ENCODER",
-                "description": "Use \"vp9\" to generate VP9-encoded .webm video files. Use \"h264\" to generate H.264-encoded .mp4 files. Use \"mjpeg\" to generate MJPEG-encoded .avi files. The .webm and .mp4 files can display in most browsers, but take longer to generate.",
+                "description": "Use \"vp9\" to generate VP9-encoded .webm video files. Use \"h264\" to generate H.264-encoded .mp4 files. Use \"mjpeg\" to generate MJPEG-encoded .avi files. The .webm and .mp4 files can display in most browsers, and are higher quality, but take longer to generate.",
         "type": "STRING",
         "propertiesKey": "markup.video.encoder",
         "mediaTypes": ["VIDEO"]

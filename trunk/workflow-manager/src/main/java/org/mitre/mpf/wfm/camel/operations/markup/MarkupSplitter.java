@@ -215,12 +215,9 @@ public class MarkupSplitter {
         boolean moving = false;
         if (!labelFromDetections) { // get track-level details
             label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
-            moving = (new Random()).nextBoolean(); // DEBUG
-            /*
             if (track.getTrackProperties().containsKey("MOVING")) {
                 moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
             }
-            */
         }
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
@@ -241,12 +238,9 @@ public class MarkupSplitter {
 
             if (labelFromDetections) { // get detection-level details
                 label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
-                moving = (new Random()).nextBoolean(); // DEBUG
-                /*
                 if (detection.getDetectionProperties().containsKey("MOVING")) {
                     moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
                 }
-                */
             }
 
             // Create a bounding box at the location.
@@ -261,7 +255,7 @@ public class MarkupSplitter {
                     trackColor.getGreen(),
                     trackColor.getBlue(),
                     detectionSource,
-                    moving, // true, // TODO: moving vs. stationary
+                    moving,
                     track.getExemplar().equals(detection),
                     label);
 
@@ -311,7 +305,7 @@ public class MarkupSplitter {
                         boundingBox.getBlue(),
                         boundingBox.getGreen(),
                         BoundingBoxSource.ANIMATION,
-                        moving, // true, // TODO: moving vs. stationary
+                        moving,
                         false, // not exemplar
                         label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
@@ -337,7 +331,7 @@ public class MarkupSplitter {
                     case ("mjpeg"):
                         return ".avi";
                     default:
-                        log.warn("\"" + encoder + "\" is not a valid decoder. Defaulting to mjpeg.");
+                        log.warn("\"" + encoder + "\" is not a valid encoder. Defaulting to mjpeg.");
                         return ".avi";
                 }
             case AUDIO: // Falls through

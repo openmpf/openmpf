@@ -54,49 +54,19 @@ public class TestBoundingBoxWriter {
 
     private static void writeBoxOnFrames(String filePath) {
         try {
-            // File sourceFile = new File("/media/SANDISK/SAMPLES/4kSampleFiles/News_H264_short.mp4"); // JniTestUtils.getFileResource(filePath));
-            File sourceFile = new File("/home/mpf/Desktop/SAMPLES/new_face_video.avi");
-            // File sourceFile = new File("/home/mpf/git/openmpf-projects/openmpf-components/cpp/OcvYoloDetection/test/data/dog-100x100.jpg");
+            File sourceFile = new File(JniTestUtils.getFileResource(filePath));
 
             if (!sourceFile.exists()) {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
             File destinationFile = File.createTempFile("markedup", ".webm");
-            // File destinationFile = File.createTempFile("markedup", ".png");
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            {
-                for (int i = 1; i <= 10; i += 2) {
-                    BoundingBox box = new BoundingBox(10, i * 80, 100, 50, 0, false, 255, 0, 0, BoundingBoxSource.DETECTION_ALGORITHM,
-                            true, false, Optional.of("WWWWWWWWWW 888.888"));
-                    map.putOnFrame(0, box);
-                }
-            }
-            /*
-            {
-                BoundingBox box = new BoundingBox(130, 30, 100, 50, 0, false, 0, 255, 0, BoundingBoxSource.TRACKING_FILLED_GAP,
-                        true, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
-                map.putOnFrames(6, 10, box);
-            }
-
-            {
-                BoundingBox box = new BoundingBox(130, 30, 100, 50, 0, false, 255, 255, 0, BoundingBoxSource.DETECTION_ALGORITHM,
-                        false, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
-                map.putOnFrames(11, 14, box);
-
-                box = new BoundingBox(130, 30, 100, 50, 0, false, 255, 255, 0, BoundingBoxSource.DETECTION_ALGORITHM,
-                        false, true, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
-                map.putOnFrame(15, box);
-            }
-            {
-                BoundingBox box = new BoundingBox(130, 30, 100, 50, 0, false, 0, 255, 255, BoundingBoxSource.DETECTION_ALGORITHM,
-                        false, false, Optional.of("wwwwwwwwww 7.243")); // "WWWWWWWWWW... 7.243"
-                map.putOnFrames(16, 20, box);
-            }
-            */
+            BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, Optional.of("some class 7.243"));
+            map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());
@@ -109,12 +79,12 @@ public class TestBoundingBoxWriter {
                     "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", "true",
                     "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", "true",
                     "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
-                    "MARKUP_VIDEO_VP9_CRF", "31" // poor quality makes the test run faster
+                    "MARKUP_VIDEO_ENCODER", "vp9",
+                    "MARKUP_VIDEO_VP9_CRF", "60" // poor quality makes the test run faster
             ));
 
             writer.setBoundingBoxMap(map);
             writer.markupVideo();
-            // writer.markupImage();
 
             // Test that something was written.
             Assert.assertTrue("The size of the output video must be greater than 4096.", destinationFile.length() > 4096);

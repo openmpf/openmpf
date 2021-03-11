@@ -25,26 +25,61 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service;
+package org.mitre.mpf.wfm.data.entities.transients;
 
-import com.google.common.collect.Table;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.interop.JsonActionOutputObject;
 
-import java.io.IOException;
-import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-public interface StorageBackend {
+public class TrackCounter {
 
-    public boolean canStore(JsonOutputObject outputObject) throws StorageException;
-    public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException;
+    private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
 
+    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
+        return Objects.requireNonNullElseGet(
+                _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx)),
+                () -> new TrackCountEntry(mediaId, taskIdx, actionIdx,
+                                          JsonActionOutputObject.NO_TRACKS_TYPE, 0));
+    }
 
-    public boolean canStore(ArtifactExtractionRequest request) throws StorageException;
-    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
+    public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
+        _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
+                    new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));
+    }
 
-    public boolean canStore(MarkupResult markupResult) throws StorageException;
-    public void store(MarkupResult markupResult) throws IOException, StorageException;
+    private static class TrackCountKey {
+        private final long _mediaId;
+
+        private final int _taskIdx;
+
+        private final int _actionIdx;
+
+        public TrackCountKey(long mediaId, int taskIdx, int actionIdx) {
+            _mediaId = mediaId;
+            _taskIdx = taskIdx;
+            _actionIdx = actionIdx;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            else if (o instanceof TrackCountKey) {
+                TrackCountKey that = (TrackCountKey) o;
+                return _mediaId == that._mediaId && _taskIdx == that._taskIdx
+                        && _actionIdx == that._actionIdx;
+            }
+            else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(_mediaId, _taskIdx, _actionIdx);
+        }
+    }
 }

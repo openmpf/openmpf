@@ -365,7 +365,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
                 frame = frame(cv::Rect(resCfg.framePadding, resCfg.framePadding, origFrameSize.width,
                               origFrameSize.height));
             } else {
-                // Reduce the border padding to minimize sceen real estate.
+                // Reduce the border padding to minimize screen real estate.
                 frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
                               origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
             }

@@ -1040,7 +1040,7 @@ public class ITWebREST {
 					String.format("output-objects/%s/detection.json", jobId)));
 
 			// The getCallbackResult future is resolved slightly before WFM marks the job as COMPLETE_WITH_WARNINGS.
-			Thread.sleep(200);
+			Thread.sleep(1000);
 			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
 			                                                         WebRESTUtils.MPF_AUTHORIZATION));
 			var jobStatus = jobResponseObj.getString("jobStatus");

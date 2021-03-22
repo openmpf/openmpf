@@ -656,9 +656,9 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
     }
 
     // Place the white box on the image. Align the center of the box (which corresponds to the lower-left corner of
-    // the label rectangle) with the desired location (pt).
+    // the label rectangle) with the desired location (pt). Shift the label up slightly to account for line thickness.
     cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
-                                      labelRectBottomLeftY - labelRectMaxDim,
+                                      labelRectBottomLeftY - labelRectMaxDim - (resCfg.lineThickness/2),
                                       paddedLabelMat.cols, paddedLabelMat.rows);
 
     cv::Rect intersection(cv::Rect(cv::Point(0, 0), image.size()) & paddedLabelMatInsertRect);

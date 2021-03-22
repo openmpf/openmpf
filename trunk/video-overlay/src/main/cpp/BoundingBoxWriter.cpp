@@ -59,7 +59,7 @@ enum BoundingBoxSource {
 };
 
 // https://unicode.org/emoji/charts/full-emoji-list.html
-constexpr const char *notoEmojiRegularPath = "/usr/share/fonts/google-noto-emoji/NotoEmoji-RegularX.ttf";
+constexpr const char *notoEmojiRegularPath = "/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf";
 constexpr const char *fastForwardEmoji = "\U000023E9";
 constexpr const char *anchorEmoji      = "\U00002693";
 constexpr const char *magGlassEmoji    = "\U0001F50D";
@@ -370,8 +370,8 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
                               origFrameSize.height));
             } else {
                 // Reduce the border padding to minimize screen real estate.
-                frame = frame(cv::Rect(resCfg.framePadding * 0.75, resCfg.framePadding * 0.75,
-                              origFrameSize.width + resCfg.framePadding / 2, origFrameSize.height + resCfg.framePadding / 2));
+                frame = frame(cv::Rect(resCfg.framePadding * 0.5, resCfg.framePadding * 0.5,
+                              origFrameSize.width + resCfg.framePadding, origFrameSize.height + resCfg.framePadding));
             }
 
             // Generate the final frame by flipping and/or rotating the raw frame to account for media metadata.
@@ -387,7 +387,6 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
 
             boundingBoxMediaHandle.HandleMarkedFrame(frame);
         }
-
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -439,7 +438,6 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height
                                                  emojiHeight, cv::FILLED, &baseline);
 
     int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
-    framePadding = framePadding * 2;
 
     return { lineThickness, circleRadius, textLabelFont, textLabelScale, textLabelThickness, labelIndent, labelPadding,
              framePadding };
@@ -657,21 +655,23 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
                        cv::InterpolationFlags::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(255, 255, 255));
     }
 
-    try {
-        // Place the white box on the image. Align the center of the box (which corresponds to the lower-left corner of
-        // the label rectangle) with the desired location (pt).
-        cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
-                                          labelRectBottomLeftY - labelRectMaxDim,
-                                          paddedLabelMat.cols, paddedLabelMat.rows);
-        auto insertionRegion = image(paddedLabelMatInsertRect);
+    // Place the white box on the image. Align the center of the box (which corresponds to the lower-left corner of
+    // the label rectangle) with the desired location (pt).
+    cv::Rect paddedLabelMatInsertRect(labelRectBottomLeftX - labelRectMaxDim,
+                                      labelRectBottomLeftY - labelRectMaxDim,
+                                      paddedLabelMat.cols, paddedLabelMat.rows);
+
+    cv::Rect intersection(cv::Rect(cv::Point(0, 0), image.size()) & paddedLabelMatInsertRect);
+
+    auto insertionRegion = image(intersection);
+    if (!insertionRegion.empty()) {
+        auto paddedLabelMatRegion = paddedLabelMat(cv::Rect(intersection.x - paddedLabelMatInsertRect.x,
+                                                            intersection.y - paddedLabelMatInsertRect.y,
+                                                            intersection.width, intersection.height));
         insertionRegion.forEach<cv::Vec3b>([&](cv::Vec3b &pixel, const int position[]) {
-            if (paddedLabelMat.at<cv::Vec3b>(position) != cv::Vec3b{255, 255, 255}) {
-                pixel = (1 - alpha) * pixel + alpha * paddedLabelMat.at<cv::Vec3b>(position);
+            if (paddedLabelMatRegion.at<cv::Vec3b>(position) != cv::Vec3b{255, 255, 255}) {
+                pixel = (1 - alpha) * pixel + alpha * paddedLabelMatRegion.at<cv::Vec3b>(position);
             }
         });
-    } catch (std::exception& e) {
-        // Depending on the position of the detection relative to the frame boundary, sometimes the label cannot be
-        // drawn within the viewable region. This is fine. Log and continue.
-        std::cerr << "Warning: Label outside of viewable region." << std::endl;
     }
 }

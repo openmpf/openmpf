@@ -75,7 +75,7 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height
 
 pFreeType2 initFreeType2(JniHelper &jni);
 
-bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
+bool jniGetBoolProperty(JniHelper &jni, const std::string &key, bool defaultValue, jobject map, jmethodID methodId);
 
 double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,
                             jmethodID methodId);
@@ -123,7 +123,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
             vp9Crf = std::stoi(crfPropValue);
         }
 
-        bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
+        bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", false, requestProperties, clzMap_fnGet);
 
         pFreeType2 freeType2 = initFreeType2(jni);
         MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
@@ -239,25 +239,25 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
         double mediaRotation = jniGetDoubleProperty(jni, "ROTATION", 0.0, mediaMetadata, clzMap_fnGet);
 
         // Get the media metadata horizontal flip property.
-        bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", mediaMetadata, clzMap_fnGet);
+        bool mediaFlip = jniGetBoolProperty(jni, "HORIZONTAL_FLIP", false, mediaMetadata, clzMap_fnGet);
 
         // Get request properties.
         bool labelsEnabled =
-            jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_LABELS_ENABLED", true, requestProperties, clzMap_fnGet);
         double labelsAlpha =
             jniGetDoubleProperty(jni, "MARKUP_LABELS_ALPHA", 0.5, requestProperties, clzMap_fnGet);
         bool labelsChooseSideEnabled =
-            jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_LABELS_CHOOSE_SIDE_ENABLED", true, requestProperties, clzMap_fnGet);
         bool borderEnabled =
-            jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", false, requestProperties, clzMap_fnGet);
         bool markExemplarsEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", true, requestProperties, clzMap_fnGet);
         bool markBoxSourceEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", false, requestProperties, clzMap_fnGet);
         bool markMovingEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", false, requestProperties, clzMap_fnGet);
         bool frameNumbersEnabled =
-            jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", requestProperties, clzMap_fnGet);
+            jniGetBoolProperty(jni, "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", true, requestProperties, clzMap_fnGet);
 
         Size origFrameSize = boundingBoxMediaHandle.GetFrameSize();
         Mat frame;
@@ -454,10 +454,10 @@ pFreeType2 initFreeType2(JniHelper &jni) {
     return freeType2;
 }
 
-bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId) {
+bool jniGetBoolProperty(JniHelper &jni, const std::string &key, bool defaultValue, jobject map, jmethodID methodId) {
     auto jPropKey = jni.ToJString(key);
     auto jPropValue = (jstring) jni.CallObjectMethod(map, methodId, *jPropKey);
-    return jPropValue != nullptr && jni.ToBool(jPropValue);
+    return (jPropValue == nullptr) ? defaultValue : jni.ToBool(jPropValue);
 }
 
 double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defaultValue, jobject map,

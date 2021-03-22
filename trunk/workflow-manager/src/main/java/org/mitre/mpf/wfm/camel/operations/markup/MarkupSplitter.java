@@ -215,9 +215,7 @@ public class MarkupSplitter {
         boolean moving = false;
         if (!labelFromDetections) { // get track-level details
             label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
-            if (track.getTrackProperties().containsKey("MOVING")) {
-                moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
-            }
+            moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
         }
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
@@ -227,10 +225,8 @@ public class MarkupSplitter {
             int currentFrame = detection.getMediaOffsetFrame();
 
             BoundingBoxSource detectionSource = BoundingBoxSource.DETECTION_ALGORITHM;
-            if (detection.getDetectionProperties().containsKey("FILLED_GAP")) {
-                if (detection.getDetectionProperties().get("FILLED_GAP").equalsIgnoreCase("true")) {
-                    detectionSource = BoundingBoxSource.TRACKING_FILLED_GAP;
-                }
+            if (Boolean.parseBoolean(detection.getDetectionProperties().get("FILLED_GAP"))) {
+                detectionSource = BoundingBoxSource.TRACKING_FILLED_GAP;
             }
 
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
@@ -238,9 +234,7 @@ public class MarkupSplitter {
 
             if (labelFromDetections) { // get detection-level details
                 label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
-                if (detection.getDetectionProperties().containsKey("MOVING")) {
-                    moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
-                }
+                moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
             }
 
             // Create a bounding box at the location.
@@ -379,34 +373,24 @@ public class MarkupSplitter {
     }
 
     public static Optional<String> getLabel(Track track, String textProp, String numericProp) {
-        String textStr = null;
-        if (track.getTrackProperties().containsKey(textProp)) {
-            textStr = track.getTrackProperties().get(textProp);
-        } else if (track.getExemplar().getDetectionProperties().containsKey(textProp)) {
+        String textStr = track.getTrackProperties().get(textProp);
+        if (textStr == null) {
             textStr = track.getExemplar().getDetectionProperties().get(textProp);
         }
-        String numericStr = null;
-        if (track.getTrackProperties().containsKey(numericProp)) {
-            numericStr = track.getTrackProperties().get(numericProp);
-        } else if (track.getExemplar().getDetectionProperties().containsKey(numericProp)) {
+        String numericStr = track.getTrackProperties().get(numericProp);
+        if (numericStr == null) {
             numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
         }
-        if (numericStr == null && numericProp.equals("CONFIDENCE")) {
+        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
             numericStr = Float.toString(track.getConfidence());
         }
         return getLabel(textStr, numericStr);
     }
 
     public static Optional<String> getLabel(Detection detection, String textProp, String numericProp) {
-        String textStr = null;
-        if (detection.getDetectionProperties().containsKey(textProp)) {
-            textStr = detection.getDetectionProperties().get(textProp);
-        }
-        String numericStr = null;
-        if (detection.getDetectionProperties().containsKey(numericProp)) {
-            numericStr = detection.getDetectionProperties().get(numericProp);
-        }
-        if (numericStr == null && numericProp.equals("CONFIDENCE")) {
+        String textStr = detection.getDetectionProperties().get(textProp);
+        String numericStr = detection.getDetectionProperties().get(numericProp);
+        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
             numericStr = Float.toString(detection.getConfidence());
         }
         return getLabel(textStr, numericStr);

@@ -49,8 +49,6 @@ import java.util.List;
 @Service
 public class WorkflowPropertyService {
 
-    private static final String _propertiesFileKey = "workflow.properties.file";
-
     private final PropertiesUtil _propertiesUtil;
 
     private final ImmutableMap<String, WorkflowProperty> _indexedByName;
@@ -63,7 +61,7 @@ public class WorkflowPropertyService {
         this(propertiesUtil, objectMapper, propertiesUtil.getWorkflowPropertiesFile());
     }
 
-    public WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper, Resource propertiesFile)
+    protected WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper, Resource propertiesFile)
             throws IOException {
         _propertiesUtil = propertiesUtil;
 

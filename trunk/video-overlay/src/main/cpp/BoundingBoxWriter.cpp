@@ -81,12 +81,9 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
                             jmethodID methodId);
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
-                     bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
-                     const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
-                     pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image);
-
-void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, bool dashed,
-              const ResolutionConfig &resCfg, Mat &image);
+                     bool mediaFlip, int red, int green, int blue, double alpha, const std::string &emojiLabel,
+                     const std::string &textLabel, bool labelChooseSide, pFreeType2 freeType2,
+                     const ResolutionConfig &resCfg, Mat &image);
 
 void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image);
 
@@ -362,8 +359,8 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
                     }
 
                     drawBoundingBox(x + resCfg.framePadding, y + resCfg.framePadding, width, height, boxRotation,
-                                    boxFlip, mediaRotation, mediaFlip, red, green, blue, labelsAlpha, boxSource,
-                                    emojiLabel, textLabel, labelsChooseSideEnabled, freeType2, resCfg, frame);
+                                    boxFlip, mediaRotation, mediaFlip, red, green, blue, labelsAlpha, emojiLabel,
+                                    textLabel, labelsChooseSideEnabled, freeType2, resCfg, frame);
                 }
             }
 
@@ -479,9 +476,9 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 
 
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
-                     bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
-                     const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
-                     pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image)
+                     bool mediaFlip, int red, int green, int blue, double alpha, const std::string &emojiLabel,
+                     const std::string &textLabel, bool labelChooseSide, pFreeType2 freeType2,
+                     const ResolutionConfig &resCfg, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
@@ -522,23 +519,17 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
                              freeType2, resCfg, image);
     }
 
-    drawLine(corners[0], corners[1], boxColor, false, resCfg, image);
-    drawLine(corners[1], corners[2], boxColor, false, resCfg, image);
-    drawLine(corners[2], corners[3], boxColor, false, resCfg, image);
-    drawLine(corners[3], corners[0], boxColor, false, resCfg, image);
+    line(image, corners[0], corners[1], boxColor, resCfg.lineThickness, cv::LineTypes::LINE_AA);
+    line(image, corners[1], corners[2], boxColor, resCfg.lineThickness, cv::LineTypes::LINE_AA);
+    line(image, corners[2], corners[3], boxColor, resCfg.lineThickness, cv::LineTypes::LINE_AA);
+    line(image, corners[3], corners[0], boxColor, resCfg.lineThickness, cv::LineTypes::LINE_AA);
 
     circle(image, detectionTopLeftPt, resCfg.circleRadius, boxColor, cv::LineTypes::FILLED, cv::LineTypes::LINE_AA);
 }
 
-void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, bool dashed,
-              const ResolutionConfig &resCfg, Mat &image)
-{
-    if (!dashed) {
-        line(image, start, end, color, resCfg.lineThickness, cv::LineTypes::LINE_AA);
-        return;
-    }
-
-    // Draw dashed line.
+/* This code might be useful in the future.
+void drawDashedLine(const Point2d &start, const Point2d &end, const Scalar &color, const ResolutionConfig &resCfg,
+                    Mat &image) {
     double lineLen = pow(pow(start.x - end.x, 2) + pow(start.y - end.y, 2), .5);
 
     int dashLen = 10 + resCfg.lineThickness;
@@ -564,6 +555,7 @@ void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, boo
         draw = !draw;
     } while (percent < 1.0);
 }
+*/
 
 void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resCfg, Mat &image)
 {
@@ -608,11 +600,9 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
 
     int labelRectBottomLeftX = pt.x;
     int labelRectBottomLeftY = pt.y;
-    int labelRectTopRightX = pt.x + resCfg.labelIndent + emojiLabelSize.width + textLabelSize.width + resCfg.labelPadding;
-    int labelRectTopRightY = pt.y - textLabelSize.height - (2 * resCfg.labelPadding);
 
-    int labelRectWidth = labelRectTopRightX - labelRectBottomLeftX;
-    int labelRectHeight = labelRectBottomLeftY - labelRectTopRightY;
+    int labelRectWidth = resCfg.labelIndent + emojiLabelSize.width + textLabelSize.width + resCfg.labelPadding;
+    int labelRectHeight = textLabelSize.height + (2 * resCfg.labelPadding);
 
     // Create the black rectangle in which to put the label.
     Mat labelMat = Mat::zeros(labelRectHeight, labelRectWidth, image.type());

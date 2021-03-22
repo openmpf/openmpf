@@ -50,6 +50,8 @@ using namespace cv;
 using namespace MPF;
 using namespace COMPONENT;
 
+typedef cv::Ptr<cv::freetype::FreeType2> pFreeType2;
+
 enum BoundingBoxSource {
     DETECTION_ALGORITHM = 0,
     TRACKING_FILLED_GAP,
@@ -57,20 +59,21 @@ enum BoundingBoxSource {
 };
 
 // https://unicode.org/emoji/charts/full-emoji-list.html
-const std::string fastForwardEmoji = "\U000023E9";
-const std::string anchorEmoji      = "\U00002693";
-const std::string magGlassEmoji    = "\U0001F50D";
-const std::string paperClipEmoji   = "\U0001F4CE";
-const std::string movieCameraEmoji = "\U0001F3A5";
-const std::string starEmoji        = "\U00002B50";
-
-auto ft = cv::freetype::createFreeType2(); // for emojis
+constexpr const char *notoEmojiRegularPath = "/usr/share/fonts/google-noto-emoji/NotoEmoji-RegularX.ttf";
+constexpr const char *fastForwardEmoji = "\U000023E9";
+constexpr const char *anchorEmoji      = "\U00002693";
+constexpr const char *magGlassEmoji    = "\U0001F50D";
+constexpr const char *paperClipEmoji   = "\U0001F4CE";
+constexpr const char *movieCameraEmoji = "\U0001F3A5";
+constexpr const char *starEmoji        = "\U00002B50";
 
 template<typename TMediaHandle>
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
-            const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
+void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+            jobject requestProperties, const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
 
-const ResolutionConfig getResolutionConfig(int width, int height);
+ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height);
+
+pFreeType2 initFreeType2(JniHelper &jni);
 
 bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId);
 
@@ -80,7 +83,7 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
                      bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
                      const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
-                     const ResolutionConfig &resCfg, Mat &image);
+                     pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image);
 
 void drawLine(const Point2d &start, const Point2d &end, const Scalar &color, bool dashed,
               const ResolutionConfig &resCfg, Mat &image);
@@ -89,7 +92,7 @@ void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resC
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
                           bool labelOnLeft, const std::string &emojiLabel, const std::string &textLabel,
-                          const ResolutionConfig &resCfg, Mat &image);
+                          pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image);
 
 
 extern "C" {
@@ -125,14 +128,16 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
         bool border = jniGetBoolProperty(jni, "MARKUP_BORDER_ENABLED", requestProperties, clzMap_fnGet);
 
+        pFreeType2 freeType2 = initFreeType2(jni);
         MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
         ResolutionConfig resCfg =
-            getResolutionConfig(videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
+            getResolutionConfig(freeType2, videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(sourceVideoPath, destinationVideoPath, encoder, vp9Crf, border,
-                                                      resCfg, videoCapture);
+        BoundingBoxVideoHandle boundingBoxVideoHandle(destinationVideoPath, encoder, vp9Crf, border, resCfg,
+                                                      std::move(videoCapture));
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxVideoHandle);
+        markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
+               boundingBoxVideoHandle);
 
         boundingBoxVideoHandle.Close();
     }
@@ -154,10 +159,12 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jni.ToStdString(sourceImagePathJString),
                 jni.ToStdString(destinationImagePathJString));
 
-        ResolutionConfig resCfg = getResolutionConfig(boundingBoxImageHandle.GetFrameSize().width,
+        pFreeType2 freeType2 = initFreeType2(jni);
+        ResolutionConfig resCfg = getResolutionConfig(freeType2, boundingBoxImageHandle.GetFrameSize().width,
                                                       boundingBoxImageHandle.GetFrameSize().height);
 
-        markup(env, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg, boundingBoxImageHandle);
+        markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
+               boundingBoxImageHandle);
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
@@ -171,8 +178,8 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
 
 
 template<typename TMediaHandle>
-void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetadata, jobject requestProperties,
-            const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle)
+void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
+            jobject requestProperties, const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle)
 {
     JniHelper jni(env);
 
@@ -356,7 +363,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 
                     drawBoundingBox(x + resCfg.framePadding, y + resCfg.framePadding, width, height, boxRotation,
                                     boxFlip, mediaRotation, mediaFlip, red, green, blue, labelsAlpha, boxSource,
-                                    emojiLabel, textLabel, labelsChooseSideEnabled, resCfg, frame);
+                                    emojiLabel, textLabel, labelsChooseSideEnabled, freeType2, resCfg, frame);
                 }
             }
 
@@ -394,9 +401,7 @@ void markup(JNIEnv *env, jobject &boundingBoxWriterInstance, jobject mediaMetada
 }
 
 
-const ResolutionConfig getResolutionConfig(int width, int height) {
-    ft->loadFontData("/usr/share/fonts/google-noto-emoji/NotoEmoji-Regular.ttf", 0);
-
+ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height) {
     int minDim = width < height ? width : height;
 
     int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
@@ -433,8 +438,8 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
                                      textLabelFont, textLabelScale, textLabelThickness, &baseline);
 
     int emojiHeight = textLabelSize.height;
-    Size emojiLabelSize = ft->getTextSize(magGlassEmoji + magGlassEmoji, // magnifying glass is the widest emoji
-                                          emojiHeight, cv::FILLED, &baseline);
+    Size emojiLabelSize = freeType2->getTextSize(std::string(magGlassEmoji) + magGlassEmoji, // magnifying glass is the widest emoji
+                                                 emojiHeight, cv::FILLED, &baseline);
 
     int framePadding = labelIndent + textLabelSize.width + emojiLabelSize.width + labelPadding;
     framePadding = framePadding * 2;
@@ -443,6 +448,16 @@ const ResolutionConfig getResolutionConfig(int width, int height) {
              framePadding };
 }
 
+pFreeType2 initFreeType2(JniHelper &jni) {
+    pFreeType2 freeType2 = cv::freetype::createFreeType2();
+    try {
+        freeType2->loadFontData(notoEmojiRegularPath, 0);
+    } catch (cv::Exception& e) {
+        throw std::runtime_error(std::string("An error occurred in freeType2. Check that \"") +
+                                 notoEmojiRegularPath + "\" exists: " + e.what());
+    }
+    return freeType2;
+}
 
 bool jniGetBoolProperty(JniHelper &jni, const std::string &key, jobject map, jmethodID methodId) {
     auto jPropKey = jni.ToJString(key);
@@ -466,7 +481,7 @@ double jniGetDoubleProperty(JniHelper &jni, const std::string &key, double defau
 void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bool boxFlip, double mediaRotation,
                      bool mediaFlip, int red, int green, int blue, double alpha, BoundingBoxSource source,
                      const std::string &emojiLabel, const std::string &textLabel, bool labelChooseSide,
-                     const ResolutionConfig &resCfg, Mat &image)
+                     pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image)
 {
     // Calculate the box coordinates relative to the raw frame.
     // The frame is "raw" in the sense that it's not flipped and/or rotated to account for media metadata.
@@ -504,7 +519,7 @@ void drawBoundingBox(int x, int y, int width, int height, double boxRotation, bo
         }
 
         drawBoundingBoxLabel(rawTopPt, mediaRotation, mediaFlip, boxColor, alpha, labelOnLeft, emojiLabel, textLabel,
-                             resCfg, image);
+                             freeType2, resCfg, image);
     }
 
     drawLine(corners[0], corners[1], boxColor, false, resCfg, image);
@@ -582,14 +597,14 @@ void drawFrameNumber(int frameNumber, double alpha, const ResolutionConfig &resC
 
 void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const Scalar &color, double alpha,
                           bool labelOnLeft, const std::string &emojiLabel, const std::string &textLabel,
-                          const ResolutionConfig &resCfg, Mat &image)
+                          pFreeType2 freeType2, const ResolutionConfig &resCfg, Mat &image)
 {
     int baseline = 0;
     Size textLabelSize =
         getTextSize(textLabel, resCfg.textLabelFont, resCfg.textLabelScale, resCfg.textLabelThickness, &baseline);
 
     int emojiHeight = textLabelSize.height;
-    Size emojiLabelSize = ft->getTextSize(emojiLabel, emojiHeight, cv::FILLED, &baseline);
+    Size emojiLabelSize = freeType2->getTextSize(emojiLabel, emojiHeight, cv::FILLED, &baseline);
 
     int labelRectBottomLeftX = pt.x;
     int labelRectBottomLeftY = pt.y;
@@ -605,8 +620,8 @@ void drawBoundingBoxLabel(const Point2d &pt, double rotation, bool flip, const S
     int labelBottomLeftX = resCfg.labelIndent;
     int labelBottomLeftY = textLabelSize.height + resCfg.labelPadding;
 
-    ft->putText(labelMat, emojiLabel, Point(labelBottomLeftX, resCfg.labelPadding),
-                emojiHeight, color, cv::FILLED, cv::LineTypes::LINE_AA, false);
+    freeType2->putText(labelMat, emojiLabel, Point(labelBottomLeftX, resCfg.labelPadding),
+                       emojiHeight, color, cv::FILLED, cv::LineTypes::LINE_AA, false);
 
     cv::putText(labelMat, textLabel, Point(labelBottomLeftX + emojiLabelSize.width, labelBottomLeftY),
                 resCfg.textLabelFont, resCfg.textLabelScale, color, resCfg.textLabelThickness, cv::LineTypes::LINE_AA);

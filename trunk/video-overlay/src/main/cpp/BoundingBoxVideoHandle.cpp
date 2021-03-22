@@ -33,10 +33,9 @@
 #include <utility>
 
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath,
-                                               std::string &encoder, int vp9Crf, bool border,
-                                               const ResolutionConfig &resCfg,
-                                               MPF::COMPONENT::MPFVideoCapture &videoCapture) :
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, const std::string &encoder,
+                                               int vp9Crf, bool border, const ResolutionConfig &resCfg,
+                                               MPF::COMPONENT::MPFVideoCapture videoCapture) :
         destinationPath_(std::move(destinationPath)), videoCapture_(std::move(videoCapture)) {
 
     int destinationFrameWidth  = videoCapture_.GetFrameSize().width;
@@ -54,14 +53,20 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
         " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
         " -f rawvideo" +
         " -i -" +
-        " -pix_fmt yuv420p"; // https://trac.ffmpeg.org/ticket/5276
+        // https://trac.ffmpeg.org/ticket/5276
+        // Use yuv420p to encode webm files that can be played with current browsers.
+        " -pix_fmt yuv420p";
 
-    if (std::string("vp9") == encoder) { // .webm
+    if ("vp9" == encoder) { // .webm
         command = command +
             " -c:v libvpx-vp9" +
-            " -crf " + std::to_string(vp9Crf) + " -b:v 0"; // https://trac.ffmpeg.org/wiki/Encode/VP9
+            // https://trac.ffmpeg.org/wiki/Encode/VP9
+            // Two-pass is the recommended encoding method for libvpx-vp9 as some quality-enhancing encoder features are
+            // only available in 2-pass mode. Constant quality 2-pass is invoked by setting -b:v to zero and specifiying
+            // a quality level using the -crf switch.
+            " -crf " + std::to_string(vp9Crf) + " -b:v 0";
     }
-    else if (std::string("h264") == encoder) { // .mp4
+    else if ("h264" == encoder) { // .mp4
         command = command +
             " -c:v libx264";
     }
@@ -71,7 +76,9 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(const std::string &sourcePath, st
     }
 
     command = command +
-        " -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\"" + // https://stackoverflow.com/a/20848224
+        // https://stackoverflow.com/a/20848224
+        // H.264 needs even dimensions. VLC and mpv players sometimes have issues with odd dimensions.
+        " -vf \"pad=ceil(iw/2)*2:ceil(ih/2)*2\"" +
         " -threads 2" +
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";

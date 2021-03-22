@@ -42,8 +42,8 @@ public:
     static constexpr bool useIcons = true;
     static constexpr bool showFrameNumbers = true;
 
-    BoundingBoxVideoHandle(const std::string &sourcePath, std::string destinationPath, std::string &encoder, int vp9Crf,
-                           bool border, const ResolutionConfig &resCfg, MPF::COMPONENT::MPFVideoCapture &videoCapture);
+    BoundingBoxVideoHandle(std::string destinationPath, const std::string &encoder, int vp9Crf, bool border,
+                           const ResolutionConfig &resCfg, MPF::COMPONENT::MPFVideoCapture videoCapture);
 
     ~BoundingBoxVideoHandle();
 

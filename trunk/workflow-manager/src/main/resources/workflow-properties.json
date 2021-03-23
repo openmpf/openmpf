@@ -260,7 +260,7 @@
     },
     {
         "name": "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS",
-        "description": "The number of milliseconds a component should initially wait before retrying an HTTP requests. Each subsequent attempt will wait for double the amount of time of the previous attempt.",
+        "description": "The number of milliseconds a component should initially wait before retrying an HTTP request. Each subsequent attempt will wait for double the amount of time of the previous attempt.",
         "type": "INT",
         "propertiesKey": "detection.http.retry.initial.delay.ms",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

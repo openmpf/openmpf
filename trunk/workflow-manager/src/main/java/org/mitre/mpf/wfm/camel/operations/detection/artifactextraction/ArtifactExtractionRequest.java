@@ -41,12 +41,16 @@ public class ArtifactExtractionRequest {
     public long getMediaId() { return _mediaId; }
 
     /** The local path of the medium. */
-    private final String _path;
-    public String getPath() { return _path; }
+    private final String _mediaPath;
+    public String getMediaPath() { return _mediaPath; }
 
     /** The type of media associated with this request. */
     private final MediaType _mediaType;
     public MediaType getMediaType() { return _mediaType; }
+
+    /** The media metadata. */
+    private final Map<String, String> _mediaMetadata;
+    public Map<String, String> getMediaMetadata() { return _mediaMetadata; }
 
     /** The job id associated with this request. */
     private final long _jobId;
@@ -79,16 +83,18 @@ public class ArtifactExtractionRequest {
     public ArtifactExtractionRequest(
             @JsonProperty("jobId") long jobId,
             @JsonProperty("mediaId") long mediaId,
-            @JsonProperty("path") String path,
+            @JsonProperty("mediaPath") String mediaPath,
             @JsonProperty("mediaType") MediaType mediaType,
+            @JsonProperty("mediaMetadata") Map<String, String> mediaMetadata,
             @JsonProperty("taskIndex") int taskIndex,
             @JsonProperty("actionIndex") int actionIndex,
             @JsonProperty("croppingFlag") boolean croppingFlag,
             @JsonProperty("rotationFillIsBlack") boolean rotationFillIsBlack) {
         _jobId = jobId;
         _mediaId = mediaId;
-        _path = path;
+        _mediaPath = mediaPath;
         _mediaType = mediaType;
+        _mediaMetadata = mediaMetadata;
         _taskIndex = taskIndex;
         _actionIndex = actionIndex;
         _croppingFlag = croppingFlag;

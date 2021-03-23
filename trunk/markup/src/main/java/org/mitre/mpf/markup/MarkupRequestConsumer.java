@@ -31,6 +31,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
+import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.videooverlay.BoundingBoxWriter;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.slf4j.Logger;
@@ -43,10 +44,18 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.jms.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.stream.Collectors.toMap;
 
 @Service(MarkupRequestConsumer.REF)
 public class MarkupRequestConsumer implements MessageListener {
@@ -88,15 +97,30 @@ public class MarkupRequestConsumer implements MessageListener {
         markupResponseBuilder.setErrorStackTrace(writer.toString());
     }
 
-    private boolean markupVideo(Markup.MarkupRequest markupRequest) throws Exception {
-	    log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.", markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
+    private static boolean markup(Markup.MarkupRequest markupRequest) throws IOException {
+        log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.",
+                markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
+
         BoundingBoxWriter writer = new BoundingBoxWriter();
         writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
         writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
 
+        var mediaMetadata = markupRequest.getMediaMetadataList()
+                .stream()
+                .collect(toMap(Markup.MetadataMap::getKey, Markup.MetadataMap::getValue));
+        writer.setMediaMetadata(mediaMetadata);
+
+        var requestProperties = markupRequest.getMarkupPropertiesList()
+                .stream()
+                .collect(toMap(Markup.MarkupRequestPropertyMap::getKey,
+                               Markup.MarkupRequestPropertyMap::getValue));
+        writer.setRequestProperties(requestProperties);
+
         BoundingBoxMap map = new BoundingBoxMap();
         int boxesAdded = 0;
         for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
+            Optional<String> label = boundingBoxMapEntry.getBoundingBox().hasLabel() ?
+                    Optional.of(boundingBoxMapEntry.getBoundingBox().getLabel()) : Optional.empty();
             BoundingBox boundingBox = new BoundingBox(
                     boundingBoxMapEntry.getBoundingBox().getX(),
                     boundingBoxMapEntry.getBoundingBox().getY(),
@@ -106,51 +130,28 @@ public class MarkupRequestConsumer implements MessageListener {
                     boundingBoxMapEntry.getBoundingBox().getFlip(),
                     boundingBoxMapEntry.getBoundingBox().getRed(),
                     boundingBoxMapEntry.getBoundingBox().getGreen(),
-                    boundingBoxMapEntry.getBoundingBox().getBlue());
-
+                    boundingBoxMapEntry.getBoundingBox().getBlue(),
+                    BoundingBoxSource.valueOf(boundingBoxMapEntry.getBoundingBox().getSource().toString()),
+                    boundingBoxMapEntry.getBoundingBox().getMoving(),
+                    boundingBoxMapEntry.getBoundingBox().getExemplar(),
+                    label);
             map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
             boxesAdded++;
         }
 
-	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
-	    if(boxesAdded > 0) {
-		    writer.setBoundingBoxMap(map);
-		    writer.markupVideo();
-	    }
+        log.info("[Markup Request #{}] Marking up {} detections on '{}'.",
+                markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
 
-	    return boxesAdded > 0;
-    }
+        if(boxesAdded > 0) {
+            writer.setBoundingBoxMap(map);
+            if (markupRequest.getMediaType() == Markup.MediaType.IMAGE) {
+                writer.markupImage();
+            } else {
+                writer.markupVideo();
+            }
+        }
 
-    private boolean markupImage(Markup.MarkupRequest markupRequest) throws Exception {
-	    log.info("[Markup Request #{}] Source: '{}' Destination: '{}'.", markupRequest.getRequestId(), markupRequest.getSourceUri(), markupRequest.getDestinationUri());
-	    BoundingBoxWriter writer = new BoundingBoxWriter();
-	    writer.setSourceMedium(URI.create(markupRequest.getSourceUri()));
-	    writer.setDestinationMedium(URI.create(markupRequest.getDestinationUri()));
-
-	    BoundingBoxMap map = new BoundingBoxMap();
-	    int boxesAdded = 0;
-	    for(Markup.BoundingBoxMapEntry boundingBoxMapEntry : markupRequest.getMapEntriesList()) {
-            BoundingBox boundingBox = new BoundingBox(
-                    boundingBoxMapEntry.getBoundingBox().getX(),
-                    boundingBoxMapEntry.getBoundingBox().getY(),
-                    boundingBoxMapEntry.getBoundingBox().getWidth(),
-                    boundingBoxMapEntry.getBoundingBox().getHeight(),
-                    boundingBoxMapEntry.getBoundingBox().getRotationDegrees(),
-                    boundingBoxMapEntry.getBoundingBox().getFlip(),
-                    boundingBoxMapEntry.getBoundingBox().getRed(),
-                    boundingBoxMapEntry.getBoundingBox().getGreen(),
-                    boundingBoxMapEntry.getBoundingBox().getBlue());
-		    map.putOnFrame(boundingBoxMapEntry.getFrameNumber(), boundingBox);
-		    boxesAdded++;
-	    }
-
-	    log.info("[Markup Request #{}] Marking up {} detections on '{}'.", markupRequest.getRequestId(), markupRequest.getMapEntriesCount(), markupRequest.getDestinationUri());
-	    if(boxesAdded > 0) {
-		    writer.setBoundingBoxMap(map);
-		    writer.markupImage();
-	    }
-
-	    return boxesAdded > 0;
+        return boxesAdded > 0;
     }
 
     public void onMessage(Message message) {
@@ -167,14 +168,14 @@ public class MarkupRequestConsumer implements MessageListener {
         }
 
         try {
-            log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.", message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
+            log.info("Received JMS message. Type = {}. JMS Message ID = {}. JMS Correlation ID = {}.",
+                    message.getClass().getName(), message.getJMSMessageID(), message.getJMSCorrelationID());
 
             final Map<String, Object> requestHeaders = new HashMap<String, Object>();
             Enumeration<String> properties = message.getPropertyNames();
 
-            String propertyName = null;
-            while(properties.hasMoreElements()) {
-                propertyName = properties.nextElement();
+            while (properties.hasMoreElements()) {
+                String propertyName = properties.nextElement();
                 requestHeaders.put(propertyName, message.getObjectProperty(propertyName));
             }
 
@@ -185,7 +186,8 @@ public class MarkupRequestConsumer implements MessageListener {
             markupResponseBuilder.setRequestTimestamp(message.getJMSTimestamp());
 
             log.debug("Processing markup request. Media Index = {}. Media ID = {} (type = {}). Request ID = {}.",
-                    markupRequest.getMediaIndex(), markupRequest.getMediaId(), markupRequest.getMediaType(), markupRequest.getRequestId());
+                    markupRequest.getMediaIndex(), markupRequest.getMediaId(), markupRequest.getMediaType(),
+                    markupRequest.getRequestId());
 
 	        try {
 		        if (!new File(URI.create(markupRequest.getDestinationUri())).canWrite()) {
@@ -193,7 +195,8 @@ public class MarkupRequestConsumer implements MessageListener {
 		        }
 	        } catch (Exception exception) {
 		        markupResponseBuilder.setHasError(true);
-		        markupResponseBuilder.setErrorMessage(String.format("The target URI '%s' is not writable.", markupRequest.getDestinationUri()));
+		        markupResponseBuilder.setErrorMessage(String.format("The target URI '%s' is not writable.",
+                        markupRequest.getDestinationUri()));
 	        }
 
 	        try {
@@ -202,7 +205,8 @@ public class MarkupRequestConsumer implements MessageListener {
 		        }
 	        } catch (Exception exception) {
 		        markupResponseBuilder.setHasError(true);
-		        markupResponseBuilder.setErrorMessage(String.format("The source URI '%s' is not readable.", markupRequest.getSourceUri()));
+		        markupResponseBuilder.setErrorMessage(String.format("The source URI '%s' is not readable.",
+                        markupRequest.getSourceUri()));
 	        }
 
 	        if(!markupResponseBuilder.getHasError()) {
@@ -218,29 +222,20 @@ public class MarkupRequestConsumer implements MessageListener {
 				        FileUtils.copyFile(new File(URI.create(sourceUri)), new File(URI.create(destinationUri)));
 				        markupResponseBuilder.setOutputFileUri(destinationUri);
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the file '{}' because of an exception.", markupRequest.getSourceUri(), exception);
-				        finishWithError(markupResponseBuilder, exception);
-			        }
-		        } else if (markupRequest.getMediaType() == Markup.MediaType.IMAGE) {
-			        try {
-				        if (markupImage(markupRequest)) {
-					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
-				        } else {
-					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
-				        }
-			        } catch (Exception exception) {
-				        log.error("Failed to mark up the image '{}' because of an exception.", markupRequest.getSourceUri(), exception);
+				        log.error("Failed to mark up the file '{}' because of an exception.",
+                                                markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
 		        } else {
 			        try {
-				        if (markupVideo(markupRequest)) {
+				        if (markup(markupRequest)) {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getDestinationUri());
 				        } else {
 					        markupResponseBuilder.setOutputFileUri(markupRequest.getSourceUri());
 				        }
 			        } catch (Exception exception) {
-				        log.error("Failed to mark up the video '{}' because of an exception.", markupRequest.getSourceUri(), exception);
+				        log.error("Failed to mark up the file '{}' because of an exception.",
+                                                markupRequest.getSourceUri(), exception);
 				        finishWithError(markupResponseBuilder, exception);
 			        }
 		        }
@@ -250,7 +245,8 @@ public class MarkupRequestConsumer implements MessageListener {
             markupResponseBuilder.setTimeProcessing(stopwatch.elapsed(TimeUnit.MILLISECONDS));
             final Markup.MarkupResponse markupResponse = markupResponseBuilder.build();
 
-	        log.info("Returning response for Media {}. Error: {}.", markupResponse.getMediaId(), markupResponse.getHasError());
+	    log.info("Returning response for Media {}. Error: {}.",
+                    markupResponse.getMediaId(), markupResponse.getHasError());
             markupResponseTemplate.setSessionTransacted(true);
             markupResponseTemplate.setDefaultDestination(message.getJMSReplyTo());
             markupResponseTemplate.send(new MessageCreator() {

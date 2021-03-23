@@ -96,7 +96,7 @@ public class LocalStorageBackend implements StorageBackend {
                 request.getActionIndex()).toURI();
 
         FrameExtractor frameExtractor = new FrameExtractor(
-                Paths.get(request.getPath()).toUri(), artifactsDirectory,
+                Paths.get(request.getMediaPath()).toUri(), request.getMediaMetadata(), artifactsDirectory,
                 request.getCroppingFlag(), request.getRotationFillIsBlack());
         frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
 

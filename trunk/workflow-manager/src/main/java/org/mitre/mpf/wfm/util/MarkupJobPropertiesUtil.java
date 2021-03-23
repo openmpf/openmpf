@@ -24,38 +24,21 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.videooverlay;
+package org.mitre.mpf.wfm.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.mitre.mpf.wfm.service.MarkupPropertyService;
+import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import javax.inject.Inject;
 
 
-public class TestBoundingBox {
+@Component
+public class MarkupJobPropertiesUtil extends AggregateJobPropertiesUtil {
 
-    @Test
-    public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, Optional.empty());
-
-        // Test that objects equal themselves...
-        Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));
-        Assert.assertTrue("box2.equals(box2) should be true", box2.equals(box2));
-        Assert.assertTrue("box3.equals(box3) should be true", box3.equals(box3));
-
-        // Box1 and Box2 should be equal with the same hash code values.
-        Assert.assertTrue("box1.equals(box2) should be true", box1.equals(box2));
-        Assert.assertTrue("box2.equals(box1) should be true", box2.equals(box1));
-        Assert.assertTrue("box1.hashCode() != box2.hashCode()", box1.hashCode() == box2.hashCode());
-
-        // Box1 and Box2 should not reference the same object.
-        Assert.assertFalse("box1 == box2 should not be true (they should be different objects)", box1 == box2);
-
-        // Box1 and Box3 should not be equal (reflexive).
-        Assert.assertFalse("box1.equals(box3) should be false", box1.equals(box3));
-        Assert.assertFalse("box3.equals(box1) should be false", box3.equals(box1));
+    @Inject
+    public MarkupJobPropertiesUtil(
+            PropertiesUtil propertiesUtil,
+            MarkupPropertyService markupPropertyService) {
+        super(propertiesUtil, markupPropertyService);
     }
 }

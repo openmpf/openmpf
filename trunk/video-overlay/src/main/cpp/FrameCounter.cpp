@@ -35,21 +35,10 @@
 
 #include "JniHelper.h"
 
-
-#ifndef _Included_org_mitre_mpf_framecounter_FrameCounter
-#define _Included_org_mitre_mpf_framecounter_FrameCounter
-#ifdef __cplusplus
 extern "C" {
 
 using namespace cv;
 
-#endif
-
-/*
- * Class:     org_mitre_mpf_framecounter_FrameCounter
- * Method:    countNative
- * Signature: (Ljava/lang/String;)V
- */
 JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
   (JNIEnv *env, jobject frameCounterInstance, jstring sourceVideoPath, bool bruteForce)
 {
@@ -92,7 +81,4 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_framecounter_FrameCounter_countNative
     return -1;
 }
 
-#ifdef __cplusplus
-}
-#endif
-#endif
+} // extern "C"

@@ -24,38 +24,36 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.videooverlay;
+#ifndef MPF_BOUNDINGBOXIMAGEHANDLE_H
+#define MPF_BOUNDINGBOXIMAGEHANDLE_H
 
-import org.junit.Assert;
-import org.junit.Test;
+#include <string>
 
-import java.util.Optional;
+#include <opencv2/core.hpp>
 
+#include <MPFVideoCapture.h>
 
-public class TestBoundingBox {
+class BoundingBoxImageHandle {
+public:
+    static constexpr bool useIcons = false;
+    static constexpr bool showFrameNumbers = false;
 
-    @Test
-    public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, Optional.empty());
+    BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath);
 
-        // Test that objects equal themselves...
-        Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));
-        Assert.assertTrue("box2.equals(box2) should be true", box2.equals(box2));
-        Assert.assertTrue("box3.equals(box3) should be true", box3.equals(box3));
+    cv::Size GetFrameSize() const;
 
-        // Box1 and Box2 should be equal with the same hash code values.
-        Assert.assertTrue("box1.equals(box2) should be true", box1.equals(box2));
-        Assert.assertTrue("box2.equals(box1) should be true", box2.equals(box1));
-        Assert.assertTrue("box1.hashCode() != box2.hashCode()", box1.hashCode() == box2.hashCode());
+    bool Read(cv::Mat &frame);
 
-        // Box1 and Box2 should not reference the same object.
-        Assert.assertFalse("box1 == box2 should not be true (they should be different objects)", box1 == box2);
+    void HandleMarkedFrame(const cv::Mat& frame);
 
-        // Box1 and Box3 should not be equal (reflexive).
-        Assert.assertFalse("box1.equals(box3) should be false", box1.equals(box3));
-        Assert.assertFalse("box3.equals(box1) should be false", box3.equals(box1));
-    }
-}
+private:
+    std::string sourcePath_;
+
+    std::string destinationPath_;
+
+    MPF::COMPONENT::MPFVideoCapture videoCapture_;
+
+    bool frameRead_ = false;
+};
+
+#endif //MPF_BOUNDINGBOXIMAGEHANDLE_H

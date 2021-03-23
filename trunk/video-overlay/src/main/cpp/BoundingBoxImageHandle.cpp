@@ -24,38 +24,37 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.videooverlay;
+#include "BoundingBoxImageHandle.h"
 
-import org.junit.Assert;
-import org.junit.Test;
+#include <stdexcept>
+#include <utility>
 
-import java.util.Optional;
+#include <opencv2/imgcodecs.hpp>
 
 
-public class TestBoundingBox {
+BoundingBoxImageHandle::BoundingBoxImageHandle(std::string sourcePath, std::string destinationPath) :
+        sourcePath_(std::move(sourcePath)),
+        destinationPath_(std::move(destinationPath)),
+        videoCapture_(sourcePath_) {
+}
 
-    @Test
-    public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, Optional.empty());
+cv::Size BoundingBoxImageHandle::GetFrameSize() const {
+    return videoCapture_.GetFrameSize();
+}
 
-        // Test that objects equal themselves...
-        Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));
-        Assert.assertTrue("box2.equals(box2) should be true", box2.equals(box2));
-        Assert.assertTrue("box3.equals(box3) should be true", box3.equals(box3));
+bool BoundingBoxImageHandle::Read(cv::Mat &frame) {
+    if (frameRead_) {
+        return false; // if the image has already been read once, there is nothing more to do
+    }
+    if (!videoCapture_.Read(frame) || frame.empty()) {
+        throw std::runtime_error("Unable to read source image: " + sourcePath_);
+    }
+    frameRead_ = true;
+    return true;
+}
 
-        // Box1 and Box2 should be equal with the same hash code values.
-        Assert.assertTrue("box1.equals(box2) should be true", box1.equals(box2));
-        Assert.assertTrue("box2.equals(box1) should be true", box2.equals(box1));
-        Assert.assertTrue("box1.hashCode() != box2.hashCode()", box1.hashCode() == box2.hashCode());
-
-        // Box1 and Box2 should not reference the same object.
-        Assert.assertFalse("box1 == box2 should not be true (they should be different objects)", box1 == box2);
-
-        // Box1 and Box3 should not be equal (reflexive).
-        Assert.assertFalse("box1.equals(box3) should be false", box1.equals(box3));
-        Assert.assertFalse("box3.equals(box1) should be false", box3.equals(box1));
+void BoundingBoxImageHandle::HandleMarkedFrame(const cv::Mat& frame) {
+    if (!cv::imwrite(destinationPath_, frame, { cv::IMWRITE_PNG_COMPRESSION, 9 })) {
+        throw std::runtime_error("Failed to write image: " + destinationPath_);
     }
 }

@@ -32,6 +32,8 @@ import org.mitre.mpf.JniTestUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 public class TestBoundingBoxWriter {
 
@@ -41,7 +43,7 @@ public class TestBoundingBoxWriter {
 
     @Test
     public void testWriterOnVideo() {
-        writeBoxOnFrames("samples/five-second-marathon-clip-numbered.mp4");
+        writeBoxOnFrames("samples/lp-ferrari-texas-shortened.mp4");
     }
 
     @Test
@@ -58,17 +60,29 @@ public class TestBoundingBoxWriter {
                 throw new IOException(String.format("File not found %s.", sourceFile.getAbsolutePath()));
             }
 
-            File destinationFile = File.createTempFile("markedup", ".avi");
+            File destinationFile = File.createTempFile("markedup", ".webm");
             destinationFile.deleteOnExit();
 
             BoundingBoxMap map = new BoundingBoxMap();
 
-            BoundingBox box = new BoundingBox(5, 5, 15, 15, 0, false, 255, 0, 0);
+            BoundingBox box = new BoundingBox(20, 60, 30, 20, 45, false, 255, 0, 0, Optional.of("some class 7.243"));
             map.putOnFrames(1, 20, box);
 
             BoundingBoxWriter writer = new BoundingBoxWriter();
             writer.setSourceMedium(sourceFile.toURI());
             writer.setDestinationMedium(destinationFile.toURI());
+
+            writer.setRequestProperties(Map.of(
+                    "MARKUP_LABELS_ENABLED", "true",
+                    "MARKUP_BORDER_ENABLED", "true",
+                    "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED", "true",
+                    "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED", "true",
+                    "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED", "true",
+                    "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED", "true",
+                    "MARKUP_VIDEO_ENCODER", "vp9",
+                    "MARKUP_VIDEO_VP9_CRF", "60" // poor quality makes the test run faster
+            ));
+
             writer.setBoundingBoxMap(map);
             writer.markupVideo();
 

@@ -295,6 +295,7 @@ public class TestCustomNginxStorageBackend {
                 0,
                 testFile.toString(),
                 MediaType.VIDEO,
+                Map.of(),
                 0,
                 0,
                 true,

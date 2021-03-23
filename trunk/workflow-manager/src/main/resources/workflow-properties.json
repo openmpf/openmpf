@@ -267,7 +267,7 @@
     },
     {
         "name": "COMPONENT_HTTP_RETRY_MAX_DELAY_MS",
-        "description": "The maximum number of a milliseconds a component should wait before retrying an HTTP request.",
+        "description": "The maximum number of a milliseconds a component should wait before retrying an HTTP request. If the component receives an error response with the \"Retry-After\" header set to a value greater than this propertry, the value from the header will be used.",
         "type": "INT",
         "propertiesKey": "detection.http.retry.max.delay.ms",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

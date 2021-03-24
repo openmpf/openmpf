@@ -37,6 +37,7 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
+import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -48,8 +49,10 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.MarkupJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +61,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.stream.DoubleStream;
@@ -77,6 +81,9 @@ public class MarkupSplitter {
     @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao hibernateMarkupResultDao;
 
+    @Autowired
+    private MarkupJobPropertiesUtil markupJobPropertiesUtil;
+
 
     public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
@@ -85,7 +92,7 @@ public class MarkupSplitter {
 
         hibernateMarkupResultDao.deleteByJobId(job.getId());
 
-        for(int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             String actionName = task.getActions().get(actionIndex);
             Action action = job.getPipelineElements().getAction(actionName);
             int mediaIndex = -1;
@@ -100,7 +107,17 @@ public class MarkupSplitter {
                             = createMap(job, media, lastDetectionTaskIndex,
                                         job.getPipelineElements().getTask(lastDetectionTaskIndex))
                             .toBoundingBoxMapEntryList();
-                    Markup.MarkupRequest markupRequest = Markup.MarkupRequest.newBuilder()
+
+                    Path destinationPath;
+                    if (boundingBoxMapEntryList.isEmpty()) {
+                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                                getFileExtension(media.getMimeType()));
+                    } else {
+                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                                getMarkedUpMediaExtensionForMediaType(job, media));
+                    }
+
+                    Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
                             .setMediaIndex(mediaIndex)
                             .setTaskIndex(job.getCurrentTaskIndex())
                             .setActionIndex(actionIndex)
@@ -108,17 +125,26 @@ public class MarkupSplitter {
                             .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
                             .setRequestId(IdGenerator.next())
                             .setSourceUri(media.getProcessingPath().toUri().toString())
-                            .setDestinationUri(boundingBoxMapEntryList.size() > 0 ?
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getMarkedUpMediaExtensionForMediaType(media.getType())).toUri().toString() :
-                                                       propertiesUtil.createMarkupPath(job.getId(), media.getId(), getFileExtension(media.getMimeType())).toUri().toString())
-                            .addAllMapEntries(boundingBoxMapEntryList)
-                            .build();
+                            .setDestinationUri(destinationPath.toUri().toString())
+                            .addAllMapEntries(boundingBoxMapEntryList);
+
+                    for (var entry : media.getMetadata().entrySet()) {
+                        requestBuilder.addMediaMetadataBuilder()
+                                .setKey(entry.getKey())
+                                .setValue(entry.getValue());
+                    }
+
+                    for (var entry : markupJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
+                        requestBuilder.addMarkupPropertiesBuilder()
+                                .setKey(entry.getKey())
+                                .setValue(entry.getValue());
+                    }
 
                     Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
                     DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
                     message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
                     message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
-                    message.setBody(markupRequest);
+                    message.setBody(requestBuilder.build());
                     messages.add(message);
                 }
             }
@@ -134,7 +160,7 @@ public class MarkupSplitter {
      */
     private static int findLastDetectionTaskIndex(JobPipelineElements pipeline) {
         int taskIndex = -1;
-        for(int i = 0; i < pipeline.getTaskCount(); i++) {
+        for (int i = 0; i < pipeline.getTaskCount(); i++) {
             ActionType actionType = pipeline.getAlgorithm(i, 0).getActionType();
             if(actionType == ActionType.DETECTION) {
                 taskIndex = i;
@@ -145,13 +171,20 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
+        boolean labelFromDetections = Boolean.parseBoolean(
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_FROM_DETECTIONS, job, media));
+        String labelTextPropToShow =
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW, job, media);
+        String labelNumericPropToShow =
+                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW, job, media);
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
             for (Track track : tracks) {
-                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next());
+                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelFromDetections,
+                        labelTextPropToShow, labelNumericPropToShow);
             }
         }
         return boundingBoxMap;
@@ -172,9 +205,18 @@ public class MarkupSplitter {
                 .map(s -> Boolean.parseBoolean(s.strip()));
     }
 
-    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor) {
+    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
+                                                 boolean labelFromDetections, String labelTextPropToShow,
+                                                 String labelNumericPropToShow) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
+
+        Optional<String> label = Optional.empty();
+        boolean moving = false;
+        if (!labelFromDetections) { // get track-level details
+            label = getLabel(track, labelTextPropToShow, labelNumericPropToShow);
+            moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
+        }
 
         List<Detection> orderedDetections = new ArrayList<>(track.getDetections());
         Collections.sort(orderedDetections);
@@ -182,8 +224,18 @@ public class MarkupSplitter {
             Detection detection = orderedDetections.get(i);
             int currentFrame = detection.getMediaOffsetFrame();
 
+            BoundingBoxSource detectionSource = BoundingBoxSource.DETECTION_ALGORITHM;
+            if (Boolean.parseBoolean(detection.getDetectionProperties().get("FILLED_GAP"))) {
+                detectionSource = BoundingBoxSource.TRACKING_FILLED_GAP;
+            }
+
             OptionalDouble detectionRotation = getRotation(detection.getDetectionProperties());
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
+
+            if (labelFromDetections) { // get detection-level details
+                label = getLabel(detection, labelTextPropToShow, labelNumericPropToShow);
+                moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
+            }
 
             // Create a bounding box at the location.
             BoundingBox boundingBox = new BoundingBox(
@@ -195,7 +247,11 @@ public class MarkupSplitter {
                     detectionFlip.orElse(trackFlip.orElse(false)),
                     trackColor.getRed(),
                     trackColor.getGreen(),
-                    trackColor.getBlue());
+                    trackColor.getBlue(),
+                    detectionSource,
+                    moving,
+                    track.getExemplar().equals(detection),
+                    label);
 
             String objectType = track.getType();
             if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
@@ -228,6 +284,10 @@ public class MarkupSplitter {
                 OptionalDouble nextDetectionRotation = getRotation(nextDetection.getDetectionProperties());
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
+                if (labelFromDetections) { // get detection-level details
+                    label = getLabel(nextDetection, labelTextPropToShow, labelNumericPropToShow);
+                }
+
                 BoundingBox nextBoundingBox = new BoundingBox(
                         nextDetection.getX(),
                         nextDetection.getY(),
@@ -237,7 +297,11 @@ public class MarkupSplitter {
                         nextDetectionFlip.orElse(trackFlip.orElse(false)),
                         boundingBox.getRed(),
                         boundingBox.getBlue(),
-                        boundingBox.getGreen());
+                        boundingBox.getGreen(),
+                        BoundingBoxSource.ANIMATION,
+                        moving,
+                        false, // not exemplar
+                        label);
                 boundingBoxMap.animate(boundingBox, nextBoundingBox, currentFrame, gapBetweenNextDetection);
             }
         }
@@ -246,13 +310,24 @@ public class MarkupSplitter {
 
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
-    private static String getMarkedUpMediaExtensionForMediaType(MediaType mediaType) {
-        switch(mediaType) {
+    private String getMarkedUpMediaExtensionForMediaType(BatchJob job, Media media) {
+        switch (media.getType()) {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                return ".avi";
-
+                String encoder = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_ENCODER, job, media)
+                        .toLowerCase();
+                switch (encoder) {
+                    case ("vp9"):
+                        return ".webm";
+                    case ("h264"):
+                        return ".mp4";
+                    case ("mjpeg"):
+                        return ".avi";
+                    default:
+                        log.warn("\"" + encoder + "\" is not a valid encoder. Defaulting to mjpeg.");
+                        return ".avi";
+                }
             case AUDIO: // Falls through
             case UNKNOWN: // Falls through
             default:
@@ -278,5 +353,46 @@ public class MarkupSplitter {
         return DoubleStream.iterate(0.5, x -> (x + GOLDEN_RATIO_CONJUGATE) % 1)
                 .mapToObj(x -> Color.getHSBColor((float) x, 0.5f, 0.95f))
                 .iterator();
+    }
+
+    private static Optional<String> getLabel(String textPart, String numericPart) {
+        String label = "";
+        if (textPart != null) {
+            label += String.format("%.10s", textPart).strip();
+        }
+        if (numericPart != null) {
+            try {
+                float numericVal = Float.parseFloat(numericPart);
+                label += String.format(" %.3f", numericVal);
+            } catch (NumberFormatException e) {
+                log.warn("Failed to convert '{}' to a float when generating bounding box label.", numericPart);
+            }
+        }
+        label = label.strip();
+        return label.isBlank() ? Optional.empty() : Optional.of(label);
+    }
+
+    public static Optional<String> getLabel(Track track, String textProp, String numericProp) {
+        String textStr = track.getTrackProperties().get(textProp);
+        if (textStr == null) {
+            textStr = track.getExemplar().getDetectionProperties().get(textProp);
+        }
+        String numericStr = track.getTrackProperties().get(numericProp);
+        if (numericStr == null) {
+            numericStr = track.getExemplar().getDetectionProperties().get(numericProp);
+        }
+        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
+            numericStr = Float.toString(track.getConfidence());
+        }
+        return getLabel(textStr, numericStr);
+    }
+
+    public static Optional<String> getLabel(Detection detection, String textProp, String numericProp) {
+        String textStr = detection.getDetectionProperties().get(textProp);
+        String numericStr = detection.getDetectionProperties().get(numericProp);
+        if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
+            numericStr = Float.toString(detection.getConfidence());
+        }
+        return getLabel(textStr, numericStr);
     }
 }

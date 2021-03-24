@@ -1,0 +1,93 @@
+[
+    {
+        "name": "MARKUP_LABELS_ENABLED",
+        "description": "If true, add a label to each detection box.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.labels.enabled",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_ALPHA",
+        "description": "Value in range [0.0, 1.0] that specifies how transparent the labels and frame number overlay should be. 0.0 is invisible (not recommended) and 1.0 is fully opaque.",
+        "type": "DOUBLE",
+        "propertiesKey": "markup.labels.alpha",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_FROM_DETECTIONS",
+        "description": "If true, use detection-level details to populate the bounding box labels. Otherwise, use track-level details.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.labels.from.detections",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_TEXT_PROP_TO_SHOW",
+        "description": "Name of the text property to show in the label before the numeric property. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used. Leave empty to omit.",
+        "type": "STRING",
+        "propertiesKey": "markup.labels.text.prop.to.show",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_NUMERIC_PROP_TO_SHOW",
+        "description": "Name of the numeric property to show in the label after the text property. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used. Leave empty to omit. Set to CONFIDENCE to use the confidence value.",
+        "type": "STRING",
+        "propertiesKey": "markup.labels.numeric.prop.to.show",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_LABELS_CHOOSE_SIDE_ENABLED",
+        "description": "Labels will always snap to the top-most corner of the box. If true, snap the label to the side of the corner that produces the least amount of overhang. If false, always show the label on the right side of the corner.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.labels.choose.side.enabled",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_BORDER_ENABLED",
+        "description": "If true, generate the marked-up frame with a black border. Can be useful if boxes or labels extend beyond frame boundaries.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.border.enabled",
+        "mediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "MARKUP_VIDEO_EXEMPLAR_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use an icon to indicate the exemplar detection for each track.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.exemplar.icons.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_BOX_SOURCE_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use icons to indicate the source of each bounding box. For example, if the box is the result of an algorithm detection, tracking performing gap fill, or Workflow Manager animation.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.box.source.icons.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_MOVING_OBJECT_ICONS_ENABLED",
+        "description": "If true, and labels are enabled, use icons to indicate if the object is considered moving or stationary. If using track-level details, and the \"MOVING\" property is not present at the track level, then the property for the track's exemplar will be used.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.moving.object.icons.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_FRAME_NUMBERS_ENABLED",
+        "description": "If true, add the frame number to each marked-up frame. This setting is independent of MARKUP_LABELS_ENABLED.",
+        "type": "BOOLEAN",
+        "propertiesKey": "markup.video.frame.numbers.enabled",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_ENCODER",
+                "description": "Use \"vp9\" to generate VP9-encoded .webm video files. Use \"h264\" to generate H.264-encoded .mp4 files. Use \"mjpeg\" to generate MJPEG-encoded .avi files. The .webm and .mp4 files can display in most browsers, and are higher quality, but take longer to generate.",
+        "type": "STRING",
+        "propertiesKey": "markup.video.encoder",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MARKUP_VIDEO_VP9_CRF",
+        "description": "The CRF value can be from 0-63. Lower values mean better quality. Recommended values range from 15-35, with 31 being recommended for 1080p HD video. This property is only used if generating VP9-encoded .webm files.",
+        "type": "INT",
+        "propertiesKey": "markup.video.vp9.crf",
+        "mediaTypes": ["VIDEO"]
+    }
+]

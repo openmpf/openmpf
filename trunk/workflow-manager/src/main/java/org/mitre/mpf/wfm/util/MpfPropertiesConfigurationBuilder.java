@@ -54,11 +54,13 @@ public class MpfPropertiesConfigurationBuilder {
             "web.broadcast.job.status.enabled",
             "web.job.polling.interval",
             "http.callback.timeout.ms",
-            "warn."
+            "warn.",
+            "markup."
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
             "detection.",
+            "markup.",
             "http.object.storage.nginx.service.uri",
             "mpf.output.objects.artifacts.and.exemplars.only",
             "mpf.output.objects.last.task.only");

@@ -26,15 +26,13 @@
 
 package org.mitre.mpf.wfm.service;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.util.ThreadUtil;
-
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
-
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +64,8 @@ public class StreamableFrameExtractor {
         try {
             BlockingQueue<MutablePair<Integer, Integer>> queue = new SynchronousQueue<>();
             FrameExtractor frameExtractor = new FrameExtractor(
-                    Paths.get(request.getPath()).toUri(),
+                    Paths.get(request.getMediaPath()).toUri(),
+                    request.getMediaMetadata(),
                     tempDirectory.toUri(),
                     filenameGenerator(pipePath.toString(), queue),
                     request.getCroppingFlag(),

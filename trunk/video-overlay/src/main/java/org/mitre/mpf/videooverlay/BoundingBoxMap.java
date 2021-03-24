@@ -32,11 +32,6 @@ import java.util.*;
 
 public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
     /**
-     * Indicates that a box should be drawn on all frames.
-     */
-    public static final int ALL_FRAMES = Integer.MAX_VALUE;
-
-    /**
      * Associates a list of bounding boxes (values) with the given 0-based frame index in the video (key). If the
      * key already exists, its value will be overwritten.
      *
@@ -158,7 +153,7 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
         double dWidth = (destination.getWidth() - origin.getWidth()) / (1.0 * interval);
         double dHeight = (destination.getHeight() - origin.getHeight()) / (1.0 * interval);
 
-        for(int frameOffset = 0; frameOffset < interval; frameOffset++) {
+        for(int frameOffset = 1; frameOffset < interval; frameOffset++) {
             BoundingBox translatedBox = new BoundingBox(
                     (int) Math.round(origin.getX() + dx * frameOffset),
                     (int) Math.round(origin.getY() + dy * frameOffset),
@@ -168,7 +163,11 @@ public class BoundingBoxMap extends TreeMap<Integer, List<BoundingBox>> {
                     origin.getFlip(),
                     origin.getRed(),
                     origin.getGreen(),
-                    origin.getBlue());
+                    origin.getBlue(),
+                    BoundingBoxSource.ANIMATION,
+                    origin.isMoving(),
+                    false, // not exemplar
+                    origin.getLabel());
             putOnFrame(firstFrame + frameOffset, translatedBox);
         }
     }

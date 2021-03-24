@@ -24,38 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.videooverlay;
+#ifndef MPF_RESOLUTIONCONFIG_H
+#define MPF_RESOLUTIONCONFIG_H
 
-import org.junit.Assert;
-import org.junit.Test;
+struct ResolutionConfig {
+    int lineThickness;
+    int circleRadius;
+    int textLabelFont;
+    double textLabelScale;
+    int textLabelThickness;
+    int labelIndent;
+    int labelPadding;
+    int framePadding; // provide enough room for long labels with wide characters to extend off the edges of the image
+};
 
-import java.util.Optional;
-
-
-public class TestBoundingBox {
-
-    @Test
-    public void testEquals() {
-        BoundingBox box1 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        BoundingBox box2 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0, Optional.empty());
-        // Differ only by color.
-        BoundingBox box3 = new BoundingBox(12, 34, 56, 78, 0, false, 0, 0, 0xFF, Optional.empty());
-
-        // Test that objects equal themselves...
-        Assert.assertTrue("box1.equals(box1) should be true", box1.equals(box1));
-        Assert.assertTrue("box2.equals(box2) should be true", box2.equals(box2));
-        Assert.assertTrue("box3.equals(box3) should be true", box3.equals(box3));
-
-        // Box1 and Box2 should be equal with the same hash code values.
-        Assert.assertTrue("box1.equals(box2) should be true", box1.equals(box2));
-        Assert.assertTrue("box2.equals(box1) should be true", box2.equals(box1));
-        Assert.assertTrue("box1.hashCode() != box2.hashCode()", box1.hashCode() == box2.hashCode());
-
-        // Box1 and Box2 should not reference the same object.
-        Assert.assertFalse("box1 == box2 should not be true (they should be different objects)", box1 == box2);
-
-        // Box1 and Box3 should not be equal (reflexive).
-        Assert.assertFalse("box1.equals(box3) should be false", box1.equals(box3));
-        Assert.assertFalse("box3.equals(box1) should be false", box3.equals(box1));
-    }
-}
+#endif //MPF_RESOLUTIONCONFIG_H

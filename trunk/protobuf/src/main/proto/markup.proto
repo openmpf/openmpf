@@ -32,15 +32,26 @@ enum MediaType {
     AUDIO = 3;
 }
 
+message MarkupRequestPropertyMap {
+    optional string key = 1;
+    optional string value = 2;
+}
+
+message MetadataMap {
+    optional string key = 1;
+    optional string value = 2;
+}
+
 message MarkupRequest {
     required int32 media_index                           = 1; // The index of the media which is being marked up.
     required int64 media_id                              = 2; // The id of the media which is being marked up.
     required int64 request_id                            = 3; // The sequential id of this request.
-    required MediaType media_type                        = 4; // The type of media
-    required string source_uri                           = 5; // The URI of the source media file.
-    required string destination_uri                      = 6; // The URI of the file which should be created by this request.
-    repeated BoundingBoxMapEntry map_entries             = 7; // The collection of bounding boxes which must be written.
-    repeated MarkupRequestMetadataEntry metadata_entries = 8; // The collection of arbitrary key-value pairs.
+    required MediaType media_type                        = 4; // The type of media.
+    repeated MetadataMap media_metadata                  = 5; // The media metadata.
+    required string source_uri                           = 6; // The URI of the source media file.
+    required string destination_uri                      = 7; // The URI of the file which should be created by this request.
+    repeated BoundingBoxMapEntry map_entries             = 8; // The collection of bounding boxes which must be written.
+    repeated MarkupRequestPropertyMap markup_properties  = 9; // The collection of arbitrary key-value pairs.
 
     required int32 task_index         = 501; // The index of the task which produced this request.
     required int32 action_index       = 502; // The index of the action within the task which produced this request.
@@ -51,23 +62,26 @@ message BoundingBoxMapEntry {
     required BoundingBox bounding_box = 2; // The specification of the box.
 }
 
-message MarkupRequestMetadataEntry {
-    required string key = 1;
-    optional string value = 2 [default = ""];
+enum BoundingBoxSource {
+    DETECTION_ALGORITHM = 0;
+    TRACKING_FILLED_GAP = 1;
+    ANIMATION = 2;
 }
 
 message BoundingBox {
-    required int32 x                = 1; // The x-coordinate of the bounding box relative the top-left corner of the image (positive x values move right from this corner).
-    required int32 y                = 2; // The y-coordinate of the bounding box relative the top-left corner of the image (positive y values move down from this corner).
-    required int32 width            = 3; // The width of the bounding box.
-    required int32 height           = 4; // The height of the bounding box.
-    required double rotationDegrees = 5; // Rotation of bounding box in counter-clockwise direction.
-    required bool flip              = 6; // Whether or not the bounding box is horizontally flipped.
-    required uint32 red             = 7; // Red channel of bounding box color.
-    required uint32 green           = 8; // Green channel of bounding box color.
-    required uint32 blue            = 9; // Blue channel of bounding box color.
-
-
+    required int32 x                  = 1; // The x-coordinate of the bounding box relative the top-left corner of the image (positive x values move right from this corner).
+    required int32 y                  = 2; // The y-coordinate of the bounding box relative the top-left corner of the image (positive y values move down from this corner).
+    required int32 width              = 3; // The width of the bounding box.
+    required int32 height             = 4; // The height of the bounding box.
+    required double rotationDegrees   = 5; // Rotation of bounding box in counter-clockwise direction.
+    required bool flip                = 6; // Whether or not the bounding box is horizontally flipped.
+    required uint32 red               = 7; // Red channel of bounding box color.
+    required uint32 green             = 8; // Green channel of bounding box color.
+    required uint32 blue              = 9; // Blue channel of bounding box color.
+    required BoundingBoxSource source = 10; // The source of bounding box.
+    required bool moving              = 11; // Whether or not the bounding box object is moving or stationary.
+    required bool exemplar            = 12; // Whether or not the bounding box represents an exemplar.
+    optional string label             = 13; // The detection label.
 }
 
 message MarkupResponse {
@@ -80,8 +94,6 @@ message MarkupResponse {
     optional int64 request_timestamp  = 7; // The timestamp when the request was received.
     optional int64 time_processing    = 8; // The number of milliseconds spent processing the request.
     optional string error_stack_trace = 9; // The stack trace associated with the exception.
-
-    repeated MarkupRequestMetadataEntry metadata_entries = 10; // A collection of String key-value pairs to which arbitrary metadata elements may be added.
 
     required int32 task_index         = 501; // The index of the task which produced this request.
     required int32 action_index       = 502; // The index of the action within the task which produced this request.

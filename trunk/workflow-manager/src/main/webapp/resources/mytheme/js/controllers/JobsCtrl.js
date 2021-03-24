@@ -360,16 +360,28 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
                             obj.sourceImg = "server/node-image?nodeFullPath=" + obj.sourceUri.replace("file:", "");
-                            obj.sourceDownload = "server/download?fullPath=" + obj.sourceUri.replace("file:", "");
+                            obj.sourceDownload = "server/download?sourceUri=" + obj.sourceUri + "&jobId=" + obj.jobId;
                             obj.sourceType = getMarkupType(obj.sourceUriContentType);
                             if (obj.sourceType == 'image') {
-                                return '<img src="' + obj.sourceImg + '" alt="" class="img-btn" data-download="' + obj.sourceDownload + '" data-file="' + obj.sourceUri + '" >';
+                                return $('<img>')
+                                    .attr('src', obj.sourceImg)
+                                    .addClass('img-btn')
+                                    .css('width', '100%')
+                                    .css('height', 'auto')[0].outerHTML;
                             }
                             else if (obj.sourceType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.sourceType == 'video') {
-                                return '<span class="glyphicon glyphicon-film"></span>';
+                                var sourceEl = $('<source>')
+                                    .attr('src', obj.sourceDownload)
+                                    .text('Your browser does not support the video tag.');
+
+                                return $('<video>')
+                                    .prop('controls', true)
+                                    .attr('preload', 'none')
+                                    .css('width', '100%')
+                                    .append(sourceEl)[0].outerHTML;
                             }
                             else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
@@ -400,13 +412,25 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
                             obj.markupDownload = "markup/download?id=" + obj.id;
                             obj.markupType = getMarkupType(obj.markupUriContentType);
                             if (obj.markupType == 'image') {
-                                return '<img src="' + obj.markupImg + '" alt="" class="img-btn" data-download="' + obj.markupDownload + '" data-file="' + obj.markupUri + '" >';
+                                return $('<img>')
+                                    .attr('src', obj.markupImg)
+                                    .addClass('img-btn')
+                                    .css('width', '100%')
+                                    .css('height', 'auto')[0].outerHTML;
                             }
                             else if (obj.markupType == 'audio') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
                             else if (obj.markupType == 'video') {
-                                return '<span class="glyphicon glyphicon-film"></span>';
+                                var sourceEl = $('<source>')
+                                    .attr('src', obj.markupDownload)
+                                    .text('Your browser does not support the video tag.');
+
+                                return $('<video>')
+                                    .prop('controls', true)
+                                    .attr('preload', 'none')
+                                    .css('width', '100%')
+                                    .append(sourceEl)[0].outerHTML;
                             } else {
                                 return '<span class="glyphicon glyphicon-file"></span>';
                             }
@@ -441,11 +465,7 @@ var JobsCtrl = function ($scope, $log, $interval, ServerSidePush, JobsService, N
             },
             drawCallback: function (settings) {
                 $('.img-btn').on('click', function () {
-                    $('#imageModalTitle').text($(this).data('file'));
-                    $('#imageModal .modal-body img').attr("src", $(this).prop('src'));
-                    $('#imageModalDownloadBtn').attr("href", $(this).data('download'));
-                    $('#imageModalDownloadBtn').attr("download", $(this).data('file'));
-                    $('#imageModal').modal('show');
+                    window.open($(this).prop('src'), '_blank').focus();
                 });
             }
         });

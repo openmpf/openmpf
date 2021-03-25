@@ -39,9 +39,7 @@
 #include <string>
 #include <vector>
 
-#include <log4cxx/logger.h>
 #include <log4cxx/logmanager.h>
-#include <log4cxx/xml/domconfigurator.h>
 
 #include <MPFDetectionComponent.h>
 #include <MPFDetectionException.h>
@@ -164,7 +162,7 @@ std::string get_component_name_and_set_env_var() {
     }
 
     std::string component_name = "detection";
-    // Need to make sure COMPONENT_NAME is set because it used to determine the name of the log file.
+    // Need to make sure COMPONENT_NAME is set because it is used to determine the name of the log file.
     setenv("COMPONENT_NAME", component_name.c_str(), 1);
 
     std::cerr << "Expected the COMPONENT_NAME environment variable to be set to the "

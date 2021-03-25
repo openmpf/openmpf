@@ -135,18 +135,16 @@ public abstract class BaseServiceLauncher implements Runnable {
                 }
 
             };
-        } // else don't waste time and drop any input from the service (see OutputShredder)
 
-        if (LOG.isWarnEnabled()) {
             this.errReceiver = new OutputReceiver() {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.warn("Node stderr [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.debug("Node stderr [{}]: {}", mServiceDesc.getService().getName(), output);
                 }
 
             };
-        }
+        } // else don't waste time and drop any input from the service (see OutputShredder)
     }
 
     /**

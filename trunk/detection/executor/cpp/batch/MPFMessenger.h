@@ -73,9 +73,8 @@ public:
 };
 
 /**
- * The MPFMessenger class encapsulates ActiveMQ and Google Protocol Buffer
- * functionality associated with the MPF Tracking Component.  It utilizes
- * version 3.8.1 of the ActiveMQ C++ API and protobufs v2.5.0.
+ * The MPFMessenger class encapsulates ActiveMQ and Google Protocol Buffer functionality associated
+ * with the MPF component.
  */
 template <typename Logger>
 class MPFMessenger : private AmqLibraryManager {

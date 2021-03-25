@@ -278,5 +278,26 @@
         "type": "DOUBLE",
         "propertiesKey": "detection.moving.track.min.detections",
         "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_MAX_ATTEMPTS",
+        "description": "The maximum number of times a component should attempt an HTTP request before failing.",
+        "type": "INT",
+        "propertiesKey": "detection.http.retry.max.attempts",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS",
+        "description": "The number of milliseconds a component should initially wait before retrying an HTTP request. Each subsequent attempt will wait for double the amount of time of the previous attempt.",
+        "type": "INT",
+        "propertiesKey": "detection.http.retry.initial.delay.ms",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_MAX_DELAY_MS",
+        "description": "The maximum number of a milliseconds a component should wait before retrying an HTTP request. If the component receives an error response with the \"Retry-After\" header set to a value greater than this propertry, the value from the header will be used.",
+        "type": "INT",
+        "propertiesKey": "detection.http.retry.max.delay.ms",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

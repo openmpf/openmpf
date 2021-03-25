@@ -184,17 +184,28 @@ std::string get_log_level_and_set_env_var() {
     std::transform(level_name.begin(), level_name.end(), level_name.begin(),
                    static_cast<int(*)(int)>(std::toupper));
 
-    if (level_name == "TRACE" || level_name == "DEBUG" || level_name == "INFO"
+    if (level_name == "WARNING") {
+        // Python logging accepts either WARNING or WARN, but Log4CXX requires it be WARN.
+        setenv("LOG_LEVEL", "WARN", 1);
+        return "WARN";
+    }
+    else if (level_name == "CRITICAL") {
+        // Python logging accepts either CRITICAL or FATAL, but Log4CXX requires it be FATAL.
+        setenv("LOG_LEVEL", "FATAL", 1);
+        return "FATAL";
+    }
+    else if (level_name == "TRACE" || level_name == "DEBUG" || level_name == "INFO"
                 || level_name == "WARN" || level_name == "ERROR" || level_name == "FATAL") {
         return level_name;
     }
+    else {
+        level_name = "DEBUG";
+        std::cerr << "The LOG_LEVEL environment variable is set to " << env_val
+                  << " but that isn't a valid log level. Using " << level_name << " instead." << std::endl;
 
-    level_name = "DEBUG";
-    std::cerr << "The LOG_LEVEL environment variable is set to " << env_val
-          << " but that isn't a valid log level. Using " << level_name << " instead." << std::endl;
-
-    setenv("LOG_LEVEL", level_name.c_str(), 1);
-    return level_name;
+        setenv("LOG_LEVEL", level_name.c_str(), 1);
+        return level_name;
+    }
 }
 
 

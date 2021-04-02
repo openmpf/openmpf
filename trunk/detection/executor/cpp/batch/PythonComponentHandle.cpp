@@ -176,7 +176,7 @@ namespace MPF { namespace COMPONENT {
                 }
             }
 
-            if (entry_points.size() < 1) {
+            if (entry_points.empty()) {
                 try {
                     return load_component_from_module(distribution_name, distribution_name);
                 }
@@ -477,12 +477,47 @@ namespace MPF { namespace COMPONENT {
                 return to_std_string(obj.attr("detection_type"));
             }
         };
-    }
+
+        struct LoggerAttrs {
+            py::function debug;
+            py::function info;
+            py::function warn;
+            py::function error;
+            py::function fatal;
+
+            explicit LoggerAttrs(py::handle logger)
+                : debug(logger.attr("debug"))
+                , info(logger.attr("info"))
+                , warn(logger.attr("warning"))
+                , error(logger.attr("error"))
+                , fatal(logger.attr("fatal"))
+            {
+            }
+        };
+
+        // When logging from C++ filename gets set to "(unknown file)".
+        // This replaces "(unknown file)" with the logger name.
+        class LogRecordFactory {
+        public:
+            py::object operator()(const py::args &args, const py::kwargs &kwargs) {
+                py::object record = log_record_cls_(*args, **kwargs);
+                py::str file_name = record.attr("filename");
+                if (file_name.equal(unknown_file_str_)) {
+                    record.attr("filename") = record.attr("name");
+                }
+                return record;
+            }
+
+        private:
+            py::object log_record_cls_ = py::module::import("logging").attr("LogRecord");
+            py::str unknown_file_str_ = "(unknown file)";
+        };
+    } // end anonymous namespace
 
 
     class PythonComponentHandle::impl {
     private:
-        log4cxx::LoggerPtr logger_;
+        LazyLoggerWrapper<PythonLogger> logger_;
 
         // The pybind11 library declares everything with hidden visibility.
         // When this class has fields that are pybind11 types, the compiler warns:
@@ -494,11 +529,8 @@ namespace MPF { namespace COMPONENT {
         ComponentAttrs component_;
 
     public:
-        impl(const log4cxx::LoggerPtr &logger, const std::string &lib_path)
-            : logger_((
-                  // Use comma operator so that initialize_python gets called before any fields are initialized.
-                  initialize_python(), // result is discarded
-                  logger))
+        impl(const LazyLoggerWrapper<PythonLogger> &logger, const std::string &lib_path)
+            : logger_(logger)
             , component_api_()
             , component_(lib_path)
         {
@@ -527,7 +559,8 @@ namespace MPF { namespace COMPONENT {
         std::vector<MPFVideoTrack> GetDetections(const MPFVideoJob &job) {
             try {
                 if (component_.get_detections_from_video_method.is_none()) {
-                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
+                                                "Unsupported data type.");
                 }
 
                 py::object py_video_job = component_api_.to_python(job);
@@ -561,7 +594,8 @@ namespace MPF { namespace COMPONENT {
         std::vector<MPFImageLocation> GetDetections(const MPFImageJob &job) {
             try {
                 if (component_.get_detections_from_image_method.is_none()) {
-                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
+                                                "Unsupported data type.");
                 }
 
                 py::object py_image_job = component_api_.to_python(job);
@@ -584,7 +618,8 @@ namespace MPF { namespace COMPONENT {
         std::vector<MPFAudioTrack> GetDetections(const MPFAudioJob &job) {
             try {
                 if (component_.get_detections_from_audio_method.is_none()) {
-                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
+                                                "Unsupported data type.");
                 }
 
                 py::object py_audio_job = component_api_.to_python(job);
@@ -610,7 +645,8 @@ namespace MPF { namespace COMPONENT {
         std::vector<MPFGenericTrack> GetDetections(const MPFGenericJob &job) {
             try {
                 if (component_.get_detections_from_generic_method.is_none()) {
-                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE);
+                    throw MPFDetectionException(MPF_UNSUPPORTED_DATA_TYPE,
+                                                "Unsupported data type.");
                 }
 
                 py::object py_generic_job = component_api_.to_python(job);
@@ -641,37 +677,34 @@ namespace MPF { namespace COMPONENT {
             }
             catch (const MPFDetectionException &ex) {
                 std::string message = base_message + ": " + ex.what();
-                LOG4CXX_ERROR(logger_, message)
+                logger_.Error(message);
                 throw MPFDetectionException(ex.error_code, message);
             }
             catch (const py::error_already_set &ex) {
                 // ex.what() includes the stack trace so we log ex.what(),
                 // but throw with to_std_string(ex.value()) so the stack trace
                 // doesn't appear in the error message sent to Workflow Manager.
-                LOG4CXX_ERROR(logger_, base_message << ": " << ex.what());
+                logger_.Error(base_message, ": ", ex.what());
                 throw MPFDetectionException(
                         component_api_.get_error_code(ex),
                         base_message + ": " + to_std_string(ex.value()));
             }
             catch (const std::exception &ex) {
                 std::string message = base_message + ": " + ex.what();
-                LOG4CXX_ERROR(logger_, message)
+                logger_.Error(message);
                 throw MPFDetectionException(MPF_OTHER_DETECTION_ERROR_TYPE, message);
             }
             catch (...) {
-                LOG4CXX_ERROR(logger_, base_message)
+                logger_.Error(base_message);
                 throw MPFDetectionException(MPF_OTHER_DETECTION_ERROR_TYPE, base_message);
             }
         }
-    };
+    }; //  class PythonComponentHandle::impl
 
-
-
-
-
-    PythonComponentHandle::PythonComponentHandle(const log4cxx::LoggerPtr &logger, const std::string &lib_path)
-            : impl_(new impl(logger, lib_path))
-    {
+    PythonComponentHandle::PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
+                                                 const std::string &lib_path) {
+        initialize_python();
+        impl_ = std::unique_ptr<impl>(new impl(logger, lib_path));
     }
 
     // Can't be defaulted in header because in the header PythonComponentHandle::impl is still an incomplete type.
@@ -723,5 +756,124 @@ namespace MPF { namespace COMPONENT {
 
     bool PythonComponentHandle::Close() {
         return true;
+    }
+
+
+
+    class PythonLogger::logger_impl {
+    public:
+        LoggerAttrs loggerAttrs {
+            py::module::import("logging").attr("getLogger")("org.mitre.mpf.detection") };
+    };
+
+
+    PythonLogger::PythonLogger(const std::string &log_level, const std::string &component_name) {
+        initialize_python();
+        ConfigureLogging(log_level, component_name);
+        impl_ = std::unique_ptr<logger_impl>(new logger_impl);
+    }
+
+    PythonLogger::PythonLogger(const PythonLogger& other)
+        : impl_(new logger_impl(*other.impl_)) {
+    }
+
+    PythonLogger::PythonLogger(PythonLogger &&other) noexcept = default;
+
+    PythonLogger::~PythonLogger() = default;
+
+
+    void PythonLogger::Debug(const std::string &message) {
+        impl_->loggerAttrs.debug(message);
+    }
+
+    void PythonLogger::Info(const std::string &message) {
+        impl_->loggerAttrs.info(message);
+    }
+
+    void PythonLogger::Warn(const std::string &message) {
+        impl_->loggerAttrs.warn(message);
+    }
+
+    void PythonLogger::Error(const std::string &message) {
+        impl_->loggerAttrs.error(message);
+    }
+
+    void PythonLogger::Fatal(const std::string &message) {
+        impl_->loggerAttrs.fatal(message);
+    }
+
+
+    void PythonLogger::ConfigureLogging(const std::string &log_level_name,
+                                        const std::string &component_name) {
+        static bool initialized = false;
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
+        py::module logging_module = py::module::import("logging");
+        // Change default level names to match what WFM expects
+        // Change default level name for logger.warn and logger.warning from 'WARNING' to 'WARN'
+        logging_module.attr("addLevelName")(logging_module.attr("WARN"), "WARN");
+        //Change default level name for logger.fatal and logger.critical from 'CRITICAL' to 'FATAL'
+        logging_module.attr("addLevelName")(logging_module.attr("FATAL"), "FATAL");
+
+        py::list handlers;
+
+        py::object sys_stderr = py::module::import("sys").attr("stderr");
+        py::object stream_handler = logging_module.attr("StreamHandler")(sys_stderr);
+        handlers.append(stream_handler);
+
+        std::string log_file_path = GetLogFilePath(component_name);
+        if (!log_file_path.empty()) {
+            py::object timed_rotating_file_handler_cls
+                    = py::module::import("logging.handlers").attr("TimedRotatingFileHandler");
+
+            py::object file_handler = timed_rotating_file_handler_cls(
+                    log_file_path, py::arg("when")="midnight", py::arg("delay")=true);
+            handlers.append(file_handler);
+        }
+
+        py::str py_log_level = log_level_name == "TRACE"
+                ? "NOTSET"  // Python doesn't use TRACE so we just log everything when TRACE is provided
+                : log_level_name;
+
+        logging_module.attr("basicConfig")(
+            py::arg("format")="%(asctime)s %(levelname)-5s [%(filename)s:%(lineno)d] - %(message)s",
+            py::arg("level")=py_log_level,
+            py::arg("handlers")=handlers);
+
+        if (log_file_path.empty()) {
+            py::object logger = logging_module.attr("getLogger")("org.mitre.mpf.detection");
+            logger.attr("error")(
+                    "Unable to determine full path to log file because the $MPF_LOG_PATH and/or "
+                    "$THIS_MPF_NODE environment variables were not set. Log messages will only be "
+                    "sent to standard error.");
+        }
+
+        logging_module.attr("setLogRecordFactory")(py::cpp_function(LogRecordFactory()));
+    }
+
+
+    std::string PythonLogger::GetLogFilePath(const std::string &component_name) {
+        const char * const log_path_env_val = std::getenv("MPF_LOG_PATH");
+        if (log_path_env_val == nullptr || log_path_env_val[0] == '\0') {
+            return "";
+        }
+
+        const char * this_node_env_val = std::getenv("THIS_MPF_NODE");
+        if (this_node_env_val == nullptr || this_node_env_val[0] == '\0') {
+            return "";
+        }
+
+        std::string log_path = log_path_env_val;
+        if (log_path.back() != '/') {
+            log_path += '/';
+        }
+
+        std::string log_dir = log_path + this_node_env_val + "/log";
+        py::module::import("os").attr("makedirs")(log_dir, py::arg("exist_ok")=true);
+
+        return log_dir + '/' + component_name + ".log";
     }
 }}

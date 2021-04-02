@@ -83,10 +83,8 @@ endif()
 set(MSG_UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/detection/executor/cpp/common)
 set(MSG_UTILS_FILE ${MSG_UTILS_DIR}/MPFMessageUtils.cpp)
 
-# Build the detection component executable for batch jobs
-add_subdirectory(detection/executor/cpp/batch)
-# Build the executables for streaming jobs
-add_subdirectory(detection/executor/cpp/streaming)
+# Build the component executors.
+add_subdirectory(detection/executor/cpp)
 
 # Build the video overlay utility
 add_subdirectory(video-overlay)

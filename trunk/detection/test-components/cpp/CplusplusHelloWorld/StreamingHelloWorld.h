@@ -61,8 +61,6 @@ private:
     double confidence_threshold_;
 
     std::vector<MPF::COMPONENT::MPFVideoTrack> segment_detections_;
-
-    static log4cxx::LoggerPtr GetLogger(const std::string &run_directory);
 };
 
 

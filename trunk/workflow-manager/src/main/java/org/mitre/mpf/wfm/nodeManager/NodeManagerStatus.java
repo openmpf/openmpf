@@ -180,8 +180,8 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     //comment - if this throws an exception, JGroups goes bonkers - Unprocessed ServiceStatusUpdate state
     private void updateServiceDescriptorEntry(ServiceDescriptor desc) {
         synchronized (serviceDescriptorMap) {
-            this.serviceDescriptorMap.put(desc.getName(), desc);
-            log.debug("updated ServiceDescriptor with name: {}", desc.getName());
+            this.serviceDescriptorMap.put(desc.getFullyQualifiedName(), desc);
+            log.debug("updated ServiceDescriptor with name: {}", desc.getFullyQualifiedName());
         }
     }
 
@@ -228,11 +228,11 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
                 }
             } else {
                 log.warn("No recovered node managers - cannot request state {} of the service with name: {}",
-                        requestedServiceState, desc.getName());
+                        requestedServiceState, desc.getFullyQualifiedName());
             }
         } else {
             log.warn("Launcher is null - cannot request state {} of the service with name: {}",
-                    requestedServiceState, desc.getName());
+                    requestedServiceState, desc.getFullyQualifiedName());
         }
     }
 
@@ -240,7 +240,8 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         if (desc.isAlive()) {
             sendMessageToNodeManager(desc, States.ShuttingDownNoRestart);
         } else {
-            log.debug("Service with name, {}, is not alive - no need to send a shutdown request", desc.getName());
+            log.debug("Service with name, {}, is not alive - no need to send a shutdown request",
+                      desc.getFullyQualifiedName());
         }
     }
 
@@ -248,14 +249,15 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
         if (!desc.isAlive()) {
             sendMessageToNodeManager(desc, States.Launching);
         } else {
-            log.debug("Service with name, {}, is already alive - no need to send a launch request", desc.getName());
+            log.debug("Service with name, {}, is already alive - no need to send a launch request",
+                      desc.getFullyQualifiedName());
         }
     }
 
     /** broadcasts service events via Atmosphere */
     private void broadcastServiceEvent(ServiceDescriptor service, String event) {
         HashMap<String,Object> datamap = new HashMap<String,Object>();
-        datamap.put("name", service.getName());
+        datamap.put("name", service.getFullyQualifiedName());
         datamap.put("lastKnownState", service.getLastKnownState());
         datamap.put("host", service.getHost());
         datamap.put("event", event);
@@ -312,14 +314,14 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
     public void newService(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
         broadcastServiceEvent(service, "OnNewService");
-        log.info("adding new service: {}", service.getName());
+        log.info("adding new service: {}", service.getFullyQualifiedName());
     }
 
     @Override
     public void serviceDown(ServiceDescriptor service) {
         updateServiceDescriptorEntry(service);
         broadcastServiceEvent(service, "OnServiceDown");
-        log.info("{} has shut down.", service.getName());
+        log.info("{} has shut down.", service.getFullyQualifiedName());
     }
 
     @Override
@@ -370,11 +372,12 @@ public class NodeManagerStatus implements ClusterChangeNotifier {
 
     @Override
     public void serviceReadyToRemove(ServiceDescriptor serviceDescriptor) {
-        log.info("The service '{}' has been shut down and is ready to be removed.", serviceDescriptor.getName());
+        log.info("The service '{}' has been shut down and is ready to be removed.",
+                 serviceDescriptor.getFullyQualifiedName());
         synchronized (serviceDescriptorMap) {
             //other nodes may continue to keep the desc in their service table or map, but it is not necessary
             //once in this state
-            serviceDescriptorMap.remove(serviceDescriptor.getName());
+            serviceDescriptorMap.remove(serviceDescriptor.getFullyQualifiedName());
             broadcastServiceEvent(serviceDescriptor, "OnServiceReadyToRemove");
         }
     }

@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2021 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -24,34 +24,16 @@
 # limitations under the License.                                            #
 #############################################################################
 
-import logging
+cmake_minimum_required(VERSION 3.6)
+project(cpp-executors)
 
-import mpf_component_api as mpf
+set(PYBIND11_CPP_STANDARD -std=c++11)
+set(PYBIND11_PYTHON_VERSION 3.8)
+add_subdirectory(pybind11)
 
-logger = logging.getLogger('GenericTestComponent')
+# Build the detection component executable for batch jobs
+add_subdirectory(batch)
+# Build the executables for streaming jobs
+add_subdirectory(streaming)
 
-
-class GenericTestComponent(object):
-    detection_type = 'TEST GENERIC DETECTION TYPE'
-
-
-    @staticmethod
-    def get_detections_from_generic(generic_job):
-        logger.info('[%s] Received generic job: %s', generic_job.job_name, generic_job)
-        if generic_job.feed_forward_track is not None:
-            return generic_job.feed_forward_track,
-
-        echo_job, echo_media = GenericTestComponent.get_echo_msgs(generic_job)
-        properties = dict(ECHO_JOB=echo_job, ECHO_MEDIA=echo_media)
-        return mpf.GenericTrack(1, properties), mpf.GenericTrack(2, properties)
-
-
-
-    @staticmethod
-    def get_echo_msgs(job):
-        #  Make sure properties get converted between C++ and Python properly
-        return (job.job_properties.get('ECHO_JOB', 'echo_job not present'),
-                job.media_properties.get('ECHO_MEDIA', 'echo_media not present'))
-
-
-EXPORT_MPF_COMPONENT = GenericTestComponent
+add_subdirectory(cli-runner)

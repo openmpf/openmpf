@@ -39,15 +39,14 @@
 #include <string>
 #include <vector>
 
-#include <log4cxx/logger.h>
 #include <log4cxx/logmanager.h>
-#include <log4cxx/xml/domconfigurator.h>
 
 #include <MPFDetectionComponent.h>
 #include <MPFDetectionException.h>
 
 #include "ComponentLoadError.h"
 #include "CppComponentHandle.h"
+#include "LazyLoggerWrapper.h"
 #include "MPFDetectionBuffer.h"
 #include "MPFMessenger.h"
 #include "PythonComponentHandle.h"
@@ -63,13 +62,18 @@ using namespace MPF;
 using namespace COMPONENT;
 
 
-bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]);
+bool is_python(int argc, char* argv[]);
 
-template <typename ComponentHandle>
-int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
+template <typename Logger, typename ComponentHandle>
+int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine);
 
 std::string get_app_dir(const char * argv0);
+
+std::string get_component_name_and_set_env_var();
+
+std::string get_log_level_and_set_env_var();
+
 
 /**
  * This is the main program for the Detection Component.  It accepts two
@@ -87,45 +91,41 @@ int main(int argc, char* argv[]) {
     // since the config and log files are found relative to that path.
     string app_dir = get_app_dir(argv[0]);
 
-    log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
-    log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection");
-
     if (argc < 4) {
-        LOG4CXX_ERROR(logger,
-                      "ERROR: the activemq broker uri, component library name, and request queue name must be supplied as arguments");
-        return -1;
+        std::cerr << "ERROR: the activemq broker uri, component library name, "
+                     "and request queue name must be supplied as arguments" << std::endl;
+        return 1;
     }
 
     string broker_uri = argv[1];
     string lib_path = argv[2];
     string request_queue = argv[3];
-
-    LOG4CXX_DEBUG(logger, "broker uri = " << argv[1]);
-    LOG4CXX_DEBUG(logger, "library name = " << argv[2]);
-    LOG4CXX_DEBUG(logger, "request queue = " << argv[3]);
-
-
     try {
-        if (is_python(logger, argc, argv)) {
+        std::string component_name = get_component_name_and_set_env_var();
+        std::string log_level = get_log_level_and_set_env_var();
+
+        if (is_python(argc, argv)) {
+            LazyLoggerWrapper<PythonLogger> logger(log_level, log_level, component_name);
             PythonComponentHandle component_handle(logger, lib_path);
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
         else {
+            LazyLoggerWrapper<CppLogger> logger(log_level, app_dir);
             CppComponentHandle component_handle(lib_path);
             return run_jobs(logger, broker_uri, request_queue, app_dir, component_handle);
         }
     }
     catch (const ComponentLoadError &ex) {
-        LOG4CXX_ERROR(logger, "An error occurred while trying to load component: " << ex.what());
+        std::cerr << "An error occurred while trying to load component: " << ex.what() << std::endl;
         return 38;
     }
     catch (const std::exception &ex) {
-        LOG4CXX_ERROR(logger, "An error occurred while running the job: " << ex.what());
-        return -1;
+        std::cerr << "An error occurred while running the job: " << ex.what() << std::endl;
+        return 1;
     }
     catch (...) {
-        LOG4CXX_ERROR(logger, "An error occurred while running the job.");
-        return -1;
+        std::cerr << "An error occurred while running the job." << std::endl;
+        return 1;
     }
 }
 
@@ -154,6 +154,61 @@ std::string get_app_dir(const char * const argv0) {
     return ".";
 }
 
+
+std::string get_component_name_and_set_env_var() {
+    const char * const env_val = std::getenv("COMPONENT_NAME");
+    if (env_val != nullptr && env_val[0] != '\0') {
+        return env_val;
+    }
+
+    std::string component_name = "detection";
+    // Need to make sure COMPONENT_NAME is set because it is used to determine the name of the log file.
+    setenv("COMPONENT_NAME", component_name.c_str(), 1);
+
+    std::cerr << "Expected the COMPONENT_NAME environment variable to be set to the "
+                 "component's name, but it was empty. Using " << component_name << " instead."
+                 << std::endl;
+    return component_name;
+}
+
+
+std::string get_log_level_and_set_env_var() {
+    const char * const env_val = std::getenv("LOG_LEVEL");
+    if (env_val == nullptr || env_val[0] == '\0') {
+        std::string level_name = "INFO";
+        setenv("LOG_LEVEL", level_name.c_str(), 1);
+        return level_name;
+    }
+
+    std::string level_name = env_val;
+    std::transform(level_name.begin(), level_name.end(), level_name.begin(),
+                   static_cast<int(*)(int)>(std::toupper));
+
+    if (level_name == "WARNING") {
+        // Python logging accepts either WARNING or WARN, but Log4CXX requires it be WARN.
+        setenv("LOG_LEVEL", "WARN", 1);
+        return "WARN";
+    }
+    else if (level_name == "CRITICAL") {
+        // Python logging accepts either CRITICAL or FATAL, but Log4CXX requires it be FATAL.
+        setenv("LOG_LEVEL", "FATAL", 1);
+        return "FATAL";
+    }
+    else if (level_name == "TRACE" || level_name == "DEBUG" || level_name == "INFO"
+                || level_name == "WARN" || level_name == "ERROR" || level_name == "FATAL") {
+        return level_name;
+    }
+    else {
+        level_name = "DEBUG";
+        std::cerr << "The LOG_LEVEL environment variable is set to " << env_val
+                  << " but that isn't a valid log level. Using " << level_name << " instead." << std::endl;
+
+        setenv("LOG_LEVEL", level_name.c_str(), 1);
+        return level_name;
+    }
+}
+
+
 std::string get_extension(const std::string &path) {
     size_t last_slash_pos = path.rfind('/');
     if (last_slash_pos == std::string::npos) {
@@ -167,7 +222,7 @@ std::string get_extension(const std::string &path) {
 }
 
 
-bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
+bool is_python(int argc, char* argv[]) {
     if (argc > 4) {
         std::string provided_language = argv[4];
         std::transform(provided_language.begin(), provided_language.end(), provided_language.begin(),
@@ -179,12 +234,12 @@ bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
         if (std::string("c++") == provided_language) {
             return false;
         }
-        LOG4CXX_WARN(logger, "Expected the fifth command line argument to either be \"c++\" or \"python\", but \""
-                << argv[4] << "\" was provided.")
+        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", but ")"
+                  << argv[4] << "\" was provided." << std::endl;
     }
     else {
-        LOG4CXX_WARN(logger, "Expected the fifth command line argument to either be \"c++\" or \"python\", "
-                "but no value was provided.");
+        std::cerr << R"(Expected the fifth command line argument to either be "c++" or "python", )"
+                     "but no value was provided." << std::endl;
     }
 
     std::string lib_extension = get_extension(argv[2]);
@@ -192,13 +247,14 @@ bool is_python(log4cxx::LoggerPtr &logger, int argc, char* argv[]) {
                    static_cast<int(*)(int)>(std::tolower));
 
     if (lib_extension.find("so") == std::string::npos) {
-        LOG4CXX_WARN(logger, "Assuming \"" << argv[2]
-                           << "\" is a Python component because it does not have the .so extension.");
+        std::cerr << "Assuming \"" << argv[2]
+                  << "\" is a Python component because it does not have the .so extension."
+                  << std::endl;
         return true;
     }
     else {
-        LOG4CXX_WARN(logger, "Assuming \"" << argv[2]
-                           << "\" is a C++ component because it has the .so extension.");
+        std::cerr << "Assuming \"" << argv[2]
+                << "\" is a C++ component because it has the .so extension." << std::endl;
         return false;
     }
 }
@@ -227,9 +283,9 @@ string get_file_name(const string& s) {
 }
 
 
-template <typename ComponentHandle>
-int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const std::string &request_queue,
-            const std::string &app_dir, ComponentHandle &detection_engine) {
+template <typename Logger, typename ComponentHandle>
+int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &request_queue,
+             const std::string &app_dir, ComponentHandle &detection_engine) {
     int pollingInterval = 1;
 
     // Remain in loop handling job request messages
@@ -250,20 +306,20 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
-        MPFMessenger messenger(logger, broker_uri, request_queue);
+        MPFMessenger<Logger> messenger(logger, broker_uri, request_queue);
 
         detection_engine.SetRunDirectory(app_dir + "/../plugins");
 
         if (!detection_engine.Init()) {
-            LOG4CXX_ERROR(logger, "Detection component initialization failed, exiting.");
-            return -1;
+            logger.Error("Detection component initialization failed, exiting.");
+            return 1;
         }
 
         const std::map<std::string, std::string> env_job_props
                 = BatchExecutorUtil::get_environment_job_properties();
 
         string service_name(getenv("SERVICE_NAME"));
-        LOG4CXX_INFO(logger, "Completed initialization of " << service_name << ".");
+        logger.Info("Completed initialization of ", service_name, '.');
 
         bool gotMessageOnLastPull = false;
         while (keep_running) {
@@ -280,8 +336,6 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
             if (!request_contents.empty()) {
                 //  Set not to sleep flag.
                 gotMessageOnLastPull = true;
-
-                std::stringstream job_name; // Empty; need to unpack detection request to determine name
 
                 MPFDetectionBuffer detection_buf(request_contents);
 
@@ -306,27 +360,28 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                 MPFDetectionImageRequest image_request;
                 MPFDetectionGenericRequest generic_request;
 
-                job_name << "Job " << msg_metadata.job_id << ":" << get_file_name(data_uri);
+                std::string job_name = "Job " + std::to_string(msg_metadata.job_id) + ':'
+                                        + get_file_name(data_uri);
 
                 if (data_type == MPFDetectionDataType::VIDEO) {
                     detection_buf.GetVideoRequest(video_request);
 
                     // Identify segment
-                    job_name << "(";
-                    job_name << video_request.start_frame;
-                    job_name << "-";
-                    job_name << video_request.stop_frame;
-                    job_name << ")";
+                    job_name += '(';
+                    job_name += std::to_string(video_request.start_frame);
+                    job_name += '-';
+                    job_name += std::to_string(video_request.stop_frame);
+                    job_name += ')';
 
                 } else if (data_type == MPFDetectionDataType::AUDIO) {
                     detection_buf.GetAudioRequest(audio_request);
 
                     // Identify segment
-                    job_name << "(";
-                    job_name << audio_request.start_time;
-                    job_name << "-";
-                    job_name << audio_request.stop_time;
-                    job_name << ")";
+                    job_name += '(';
+                    job_name += std::to_string(audio_request.start_time);
+                    job_name += '-';
+                    job_name += std::to_string(audio_request.stop_time);
+                    job_name += ')';
 
                 } else if (data_type == MPFDetectionDataType::IMAGE) {
                     detection_buf.GetImageRequest(image_request);
@@ -334,7 +389,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     detection_buf.GetGenericRequest(generic_request);
                 }
 
-                LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing message on " << service_name << ".");
+                logger.Info('[', job_name, "] Processing message on ", service_name, '.');
 
                 string detection_type = detection_engine.GetDetectionType();
 
@@ -348,8 +403,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         if (video_request.has_feed_forward_track) {
                             // Invoke the detection component with
                             // a feed-forward track
-                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                            MPFVideoJob video_job(job_name.str(),
+                            logger.Info('[', job_name, "] Processing feed-forward track on ",
+                                        service_name, '.');
+                            MPFVideoJob video_job(job_name,
                                                   data_uri,
                                                   video_request.start_frame,
                                                   video_request.stop_frame,
@@ -366,7 +422,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         else {
                             // Invoke the detection component
                             // without a feed-forward track
-                            MPFVideoJob video_job(job_name.str(),
+                            MPFVideoJob video_job(job_name,
                                                   data_uri,
                                                   video_request.start_frame,
                                                   video_request.stop_frame,
@@ -382,7 +438,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Video detection method returned an error for " << data_uri);
+                            logger.Error('[', job_name,
+                                         "] Video detection method returned an error for ",
+                                         data_uri);
                         }
 
                         // Pack video response
@@ -396,8 +454,10 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         if (audio_request.has_feed_forward_track) {
                             // Invoke the detection component with
                             // a feed-forward track
-                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                            MPFAudioJob audio_job(job_name.str(),
+                            logger.Info('[', job_name, "] Processing feed-forward track on ",
+                                        service_name, '.');
+
+                            MPFAudioJob audio_job(job_name,
                                                   data_uri,
                                                   audio_request.start_time,
                                                   audio_request.stop_time,
@@ -415,7 +475,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         else {
                             // Invoke the detection component
                             // without a feed-forward track
-                            MPFAudioJob audio_job(job_name.str(),
+                            MPFAudioJob audio_job(job_name,
                                                   data_uri,
                                                   audio_request.start_time,
                                                   audio_request.stop_time,
@@ -431,7 +491,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Audio detection method returned an error for " << data_uri);
+                            logger.Error('[', job_name,
+                                         "] Audio detection method returned an error for ",
+                                         data_uri);
                         }
 
                         // Pack audio response
@@ -445,8 +507,10 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         if (image_request.has_feed_forward_location) {
                             // Invoke the detection component with
                             // a feed-forward location
-                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward location on " << service_name << ".");
-                            MPFImageJob image_job(job_name.str(),
+                            logger.Info('[', job_name, "] Processing feed-forward location on ",
+                                        service_name, '.');
+
+                            MPFImageJob image_job(job_name,
                                                   data_uri,
                                                   image_request.feed_forward_location,
                                                   algorithm_properties,
@@ -462,7 +526,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         else {
                             // Invoke the detection component
                             // without a feed-forward location
-                            MPFImageJob image_job(job_name.str(),
+                            MPFImageJob image_job(job_name,
                                                   data_uri,
                                                   algorithm_properties,
                                                   media_properties);
@@ -476,7 +540,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Image detection method returned an error for " << data_uri);
+                            logger.Error('[', job_name,
+                                         "] Image detection method returned an error for ",
+                                         data_uri);
                         }
 
                         // Pack image response
@@ -488,8 +554,10 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         if (generic_request.has_feed_forward_track) {
                             // Invoke the detection component
                             // with a feed-forward track
-                            LOG4CXX_INFO(logger, "[" << job_name.str() << "] Processing feed-forward track on " << service_name << ".");
-                            MPFGenericJob generic_job(job_name.str(),
+                            logger.Info('[', job_name, "] Processing feed-forward track on ",
+                                        service_name, '.');
+
+                            MPFGenericJob generic_job(job_name,
                                                       data_uri,
                                                       generic_request.feed_forward_track,
                                                       algorithm_properties,
@@ -505,7 +573,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         else {
                             // Invoke the detection component
                             // without a feed-forward track
-                            MPFGenericJob generic_job(job_name.str(),
+                            MPFGenericJob generic_job(job_name,
                                                       data_uri,
                                                       algorithm_properties,
                                                       media_properties);
@@ -519,7 +587,9 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Generic detection method returned an error for " << data_uri);
+                            logger.Error('[', job_name,
+                                         "] Generic detection method returned an error for ",
+                                         data_uri);
                         }
 
                         // Pack generic response
@@ -547,7 +617,7 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                     }
                     std::string error_message = "The detection component does not support detection data type of "
                                                 + data_type_str;
-                    LOG4CXX_WARN(logger, "[" << job_name.str() << "] " << error_message);
+                    logger.Warn('[', job_name, "] ", error_message);
 
                     // Pack error response
                     detection_response_body = detection_buf.PackErrorResponse(
@@ -558,13 +628,13 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                 // Sanity check
                 if (!detection_response_body.empty()) {
                     // Send response
-                    LOG4CXX_DEBUG(logger, "[" << job_name.str() << "] Sending response message on " <<
-                                          service_name << ".");
+                    logger.Debug('[', job_name, "] Sending response message on ", service_name,
+                                 '.');
 
-                    messenger.SendMessage(detection_response_body, msg_metadata, job_name.str());
+                    messenger.SendMessage(detection_response_body, msg_metadata, job_name);
 
                 } else {
-                    LOG4CXX_ERROR(logger, "[" << job_name.str() << "] Failed to generate a detection response");
+                    logger.Error('[', job_name, "] Failed to generate a detection response.");
                 }
             }
 
@@ -578,25 +648,23 @@ int run_jobs(log4cxx::LoggerPtr &logger, const std::string &broker_uri, const st
                 string std_input(input_buf);
                 std_input.resize(input_buf_size);
                 if ((bytes_read > 0) && (std_input == quit_string)) {
-                    LOG4CXX_INFO(logger, "Received quit command.");
+                    logger.Info("Received quit command.");
                     keep_running = false;
                 }
             }
         } // end while
     } catch (std::exception &e) {
         error_occurred = true;
-        LOG4CXX_ERROR(logger, "Standard Exception caught in main.cpp:  "
-                              << e.what()
-                              << "\n");
+        logger.Error("Standard Exception caught in main.cpp: ", e.what(), '\n');
     } catch (...) {
         error_occurred = true;
         // Swallow any other unknown exceptions
-        LOG4CXX_ERROR(logger, "Unknown Exception caught in main.cpp\n");
+        logger.Error("Unknown Exception caught in main.cpp\n");
     }
 
     if (!detection_engine.Close()) {
         error_occurred = true;
-        LOG4CXX_ERROR(logger, "Detection engine failed to close... ");
+        logger.Error("Detection engine failed to close... ");
     }
 
     // Close the logger

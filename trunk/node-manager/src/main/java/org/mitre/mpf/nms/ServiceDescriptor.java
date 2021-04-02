@@ -49,52 +49,58 @@ public class ServiceDescriptor implements Serializable {
     private Service mService;
     private String mTargetHost;     // machine hostname where this app runs
     private int mRank;              // used to build the FQN to keep track of possible multiple services with the same name on the same node
+    private String componentName;
     private String mFQN;
     private String activeMqHost = "";
     private boolean fatalIssueFlag = false;
     private NodeManagerConstants.States lastKnownState = NodeManagerConstants.States.Unknown;
     private long startTimeMillis = 0;
-  
+
 
     public ServiceDescriptor() {}
 
     /**
-     * Builds a Full Qualified Unique Name 
+     * Builds a Full Qualified Unique Name
      * <br/>
      * <pre>
      * targetHost:serviceName:rank
      * </pre>
      * @param service
      * @param target
-     * @param rank 
+     * @param rank
      */
     public ServiceDescriptor(Service service, String target, int rank) {
         this.mService = service;
         this.mTargetHost = target;
         this.mRank = rank;
+        this.componentName = service.getName();
         this.mFQN = target + FQN_SEP + this.mService.getName() + FQN_SEP + rank;
     }
-    
+
     /**
      * Returns Fully Qualified Unique Name.
-     * @return 
+     * @return
      */
-    public String getName() {
+    public String getFullyQualifiedName() {
         return this.mFQN;
     }
-    
+
     public String getHost() {
         return this.mTargetHost;
     }
-    
+
+    public String getComponentName() {
+        return this.componentName;
+    }
+
     public Service getService() {
         return this.mService;
     }
 
     /**
      * Trims the underlining service name (removes white-spaces) before comparing.
-     * 
-     * @return 
+     *
+     * @return
      */
     public ServiceTypes getServiceType() {
         try {
@@ -103,7 +109,7 @@ public class ServiceDescriptor implements Serializable {
             return ServiceTypes.Unknown;
         }
     }
-    
+
     public int getRank() {
         return this.mRank;
     }

@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
+#include <cstdlib>
 #include <libgen.h>
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
@@ -39,13 +39,14 @@ namespace MPF { namespace COMPONENT {
 
 
     ExitCode StreamingComponentExecutor::RunJob(const std::string &ini_path) {
+        std::cout << "Loading job settings from: " << ini_path << std::endl;
+        JobSettings settings = JobSettings::FromIniFile(ini_path);
         std::string app_dir = GetAppDir();
-        log4cxx::LoggerPtr logger = GetLogger(app_dir);
+        log4cxx::LoggerPtr logger = GetLogger(app_dir, settings.component_name);
         std::string log_prefix;
         try {
-            LOG4CXX_INFO(logger, "Loading job settings from: " << ini_path);
+            LOG4CXX_INFO(logger, "Loaded job settings from: " << ini_path);
 
-            JobSettings settings = JobSettings::FromIniFile(ini_path);
             std::string job_name = "Streaming Job #" + std::to_string(settings.job_id);
             LOG4CXX_INFO(logger, "Initializing " << job_name);
 
@@ -316,14 +317,18 @@ namespace MPF { namespace COMPONENT {
     }
 
 
-    log4cxx::LoggerPtr StreamingComponentExecutor::GetLogger(const std::string &app_dir) {
+    log4cxx::LoggerPtr StreamingComponentExecutor::GetLogger(const std::string &app_dir,
+                                                             const std::string &component_name) {
+        // StreamingExecutorLog4cxxConfig.xml uses the $COMPONENT_NAME environment variable
+        // to determine the log file name.
+        setenv("COMPONENT_NAME", component_name.c_str(), true);
         std::string log_config_file = app_dir + "/../config/StreamingExecutorLog4cxxConfig.xml";
         log4cxx::xml::DOMConfigurator::configure(log_config_file);
         log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("org.mitre.mpf.detection.streaming");
-        if (logger->getAllAppenders().empty()) {
+        if (log4cxx::Logger::getRootLogger()->getAllAppenders().empty()) {
             log4cxx::BasicConfigurator::configure();
             LOG4CXX_WARN(logger, "Unable to load log configuration file at " << log_config_file
-                                                                             << ". Logging to standard out instead.")
+                    << ". Logging to standard out instead.")
         }
         return logger;
     }

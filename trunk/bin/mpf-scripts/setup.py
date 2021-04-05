@@ -27,7 +27,7 @@
 import setuptools
 
 setuptools.setup(name='mpf',
-                 version='6.0',
+                 version='6.1',
                  description='MPF management script',
                  packages=['mpf'],
                  entry_points={

@@ -53,8 +53,8 @@
 
     <pluginRepositories>
         <pluginRepository>
-            <id>protoc-plugin</id>
-            <url>http://dl.bintray.com/sergei-ivanov/maven/</url>
+            <id>mapr-releases</id>
+            <url>https://repository.mapr.com/nexus/content/groups/mapr-public/releases/</url>
         </pluginRepository>
     </pluginRepositories>
 

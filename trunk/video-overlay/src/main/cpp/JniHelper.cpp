@@ -128,3 +128,18 @@ void JStringDeleter::operator()(jstring *str) {
     env_->DeleteLocalRef(*str);
     delete str;
 }
+
+
+LocalJniFrame::LocalJniFrame(JNIEnv* env, jint capacity)
+        : env_(env) {
+    jint rc = env->PushLocalFrame(capacity);
+    if (rc < 0) {
+        // An OutOfMemoryError exception has been set and will be reported when the
+        // JNI function returns.
+        throw JniException();
+    }
+}
+
+LocalJniFrame::~LocalJniFrame() {
+    env_->PopLocalFrame(nullptr);
+}

@@ -71,19 +71,24 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 		long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class); // previously assert'd to not be null
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
-		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
-		if(!inProgressJobs.containsJob(jobId)) {
+		var jobExists = inProgressJobs.containsJob(jobId);
+		if (jobExists) {
+			var job = inProgressJobs.getJob(jobId);
+			exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+			Object newBody = processResponse(jobId, exchange.getIn().getBody(clazz), exchange.getIn().getHeaders());
+			if (newBody != null) {
+				exchange.getOut().setBody(newBody);
+			}
+		}
+		else {
+			exchange.getOut().getHeaders().put(
+					MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 			// No such job. Repackage the response and send it to the unsolicited responses queue for future analysis.
 			log.warn("[Job {}|*|*] A job with this ID is not known to the system. This message will be ignored.", jobId);
 			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
 			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
 			exchange.getOut().setBody(((T)(exchange.getIn().getBody())).toByteArray());
-		} else {
-			Object newBody = processResponse(jobId, exchange.getIn().getBody(clazz), exchange.getIn().getHeaders());
-			if (newBody != null) {
-				exchange.getOut().setBody(newBody);
-			}
 		}
 	}
 }

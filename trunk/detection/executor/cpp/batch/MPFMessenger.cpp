@@ -148,6 +148,7 @@ std::vector<unsigned char> MPFMessenger<Logger>::ReceiveMessage(MPFMessageMetada
 
         // Create a producer to send response to reply-to queue
         response_producer_.reset(session_->createProducer(request_bytes_message->getCMSReplyTo()));
+        response_producer_->setPriority(request_bytes_message->getCMSPriority());
         // Capture header properties needed for response message
         msg_metadata.correlation_id = "";
         msg_metadata.job_id = 0;

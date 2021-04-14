@@ -249,6 +249,7 @@ public class MarkupRequestConsumer implements MessageListener {
                     markupResponse.getMediaId(), markupResponse.getHasError());
             markupResponseTemplate.setSessionTransacted(true);
             markupResponseTemplate.setDefaultDestination(message.getJMSReplyTo());
+            markupResponseTemplate.setPriority(message.getJMSPriority());
             markupResponseTemplate.send(new MessageCreator() {
                 public Message createMessage(Session session) throws JMSException {
                     BytesMessage bytesMessage = session.createBytesMessage();

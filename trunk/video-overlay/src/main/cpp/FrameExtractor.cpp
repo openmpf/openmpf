@@ -123,6 +123,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
         // Iterate over the frames in the set
         while (jni.CallBooleanMethod(frameIterator, clzIterator_fnHasNext) == JNI_TRUE) {
+            LocalJniFrame perVideoFrameJniFrame(env, 32);
             // Get the frame number and read it.
             jobject thisFrameNumObj = jni.CallObjectMethod(frameIterator, clzIterator_fnNext);
             jint thisFrameNum = jni.CallIntMethod(thisFrameNumObj, clzInteger_fnIntValue);
@@ -186,6 +187,7 @@ JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtractor_executeNa
 
                 // For each track, perform the extraction for the associated detection object.
                 while (jni.CallBooleanMethod(trackIterator, clzIterator_fnHasNext) == JNI_TRUE) {
+                    LocalJniFrame perTrackLocalFrame(env, 32);
                     // Get the detection associated with this track
                     jobject thisTrackObj = jni.CallObjectMethod(trackIterator, clzIterator_fnNext);
                     jint thisTrack = jni.CallIntMethod(thisTrackObj, clzInteger_fnIntValue);

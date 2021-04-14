@@ -184,6 +184,7 @@ public class MPFDetectionMessenger {
                         responseBytesMessage.writeBytes(responseBytes);
                         ProtoUtils.setMsgProperties(headerProperties, responseBytesMessage);
 	                    MessageProducer replyProducer = session.createProducer(out);
+	                    replyProducer.setPriority(message.getJMSPriority());
                         replyProducer.send(responseBytesMessage);
                         session.commit();
                         LOG.info("Detection response sent for job ID {}", msgMetadata.getJobId());

@@ -264,6 +264,7 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
 
         jint currentFrameNum = -1;
         while (true) {
+            LocalJniFrame perVideoFrameLocalFrame(env, 32);
             currentFrameNum++;
             jobject currentFrameBoxed = jni.CallStaticObjectMethod(clzInteger, clzInteger_fnValueOf, currentFrameNum);
 
@@ -287,6 +288,7 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
                 jint numBoxesCurrentFrame = jni.CallIntMethod(currentFrameElements, clzList_fnSize);
 
                 for (jint i = 0; i < numBoxesCurrentFrame; i++) {
+                    LocalJniFrame perBoxLocalFrame(env, 32);
                     jobject box = jni.CallObjectMethod(currentFrameElements, clzList_fnGet, i);
                     jint x = jni.CallIntMethod(box, clzBoundingBox_fnGetX);
                     jint y = jni.CallIntMethod(box, clzBoundingBox_fnGetY);

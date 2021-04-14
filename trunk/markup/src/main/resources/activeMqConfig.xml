@@ -68,5 +68,6 @@
         <property name="connectionFactory" ref="jmsFactory"/>
         <property name="defaultDestination" ref="markupResponse"/>
         <property name="sessionTransacted" value="true"/>
+        <property name="explicitQosEnabled" value="true" />
     </bean>
 </beans>

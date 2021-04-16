@@ -63,8 +63,8 @@ public class FrameExtractor {
     }
     // Access methods for the extractions map.
     public Set<Integer> getFrameNumbers() { return extractionsMap.keySet(); }
-    public Set<Integer> getTrackIndices(Integer frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
-    public JsonDetectionOutputObject getDetection(Integer frameNumber, Integer trackIndex) {
+    public Set<Integer> getTrackIndices(int frameNumber) { return extractionsMap.get(frameNumber).keySet(); }
+    public JsonDetectionOutputObject getDetection(int frameNumber, int trackIndex) {
         return extractionsMap.get(frameNumber).get(trackIndex);
     }
 

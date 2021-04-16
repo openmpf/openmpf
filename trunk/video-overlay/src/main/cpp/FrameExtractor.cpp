@@ -134,6 +134,10 @@ extern "C" JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtracto
 namespace {
     cv::Mat cropFrame(const cv::Mat &original, int x, int y, int width, int height, double rotation,
                       bool flip, const cv::Scalar& fillColor) {
+        if (width == 0 || height == 0) {
+            return cv::Mat(1, 1, original.type(), fillColor);
+        }
+
         bool hasRotation = !DetectionComponentUtils::RotationAnglesEqual(rotation, 0);
         if (hasRotation || flip) {
             cv::Mat transformFrame = original.clone();
@@ -148,8 +152,8 @@ namespace {
             cv::Rect frameRect(0, 0, original.cols, original.rows);
             cv::Rect detectionRect(x, y, width, height);
             auto extractionRegion = frameRect & detectionRect;
-            if (extractionRegion.empty() || frameRect == extractionRegion) {
-                return original;
+            if (extractionRegion.empty()) {
+                return cv::Mat(height, width, original.type(), fillColor);
             }
             else {
                 return original(extractionRegion);

@@ -25,6 +25,9 @@
  ******************************************************************************/
 
 #include "CppComponentHandle.h"
+
+#include <log4cxx/xml/domconfigurator.h>
+
 #include "ComponentLoadError.h"
 
 
@@ -77,4 +80,29 @@ namespace MPF { namespace COMPONENT {
     }
 
 
+
+    CppLogger::CppLogger(const std::string &app_dir) {
+        log4cxx::xml::DOMConfigurator::configure(app_dir + "/../config/Log4cxxConfig.xml");
+        logger_ = log4cxx::Logger::getLogger("org.mitre.mpf.detection");
+    }
+
+    void CppLogger::Debug(const std::string& message) {
+        LOG4CXX_DEBUG(logger_, message);
+    }
+
+    void CppLogger::Info(const std::string& message) {
+        LOG4CXX_INFO(logger_, message);
+    }
+
+    void CppLogger::Warn(const std::string& message) {
+        LOG4CXX_WARN(logger_, message);
+    }
+
+    void CppLogger::Error(const std::string& message) {
+        LOG4CXX_ERROR(logger_, message);
+    }
+
+    void CppLogger::Fatal(const std::string& message) {
+        LOG4CXX_FATAL(logger_, message);
+    }
 }}

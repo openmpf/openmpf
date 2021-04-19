@@ -112,9 +112,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
-            if (media.isFailed()
-                    || (media.getType() != MediaType.IMAGE
-                        && media.getType() != MediaType.VIDEO)) {
+            if (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
                 continue;
             }
 

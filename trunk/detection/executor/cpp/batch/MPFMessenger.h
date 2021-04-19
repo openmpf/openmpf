@@ -73,10 +73,10 @@ public:
 };
 
 /**
- * The MPFMessenger class encapsulates ActiveMQ and Google Protocol Buffer
- * functionality associated with the MPF Tracking Component.  It utilizes
- * version 3.8.1 of the ActiveMQ C++ API and protobufs v2.5.0.
+ * The MPFMessenger class encapsulates ActiveMQ and Google Protocol Buffer functionality associated
+ * with the MPF component.
  */
+template <typename Logger>
 class MPFMessenger : private AmqLibraryManager {
 
  public:
@@ -89,7 +89,7 @@ class MPFMessenger : private AmqLibraryManager {
    * @param broker_uri The remote address used to connect to the message * provider
    * @param request_queue The name of the queue that will be queried for * messages
    */
-  explicit MPFMessenger(const log4cxx::LoggerPtr &logger, const string& broker_uri, const string& request_queue);
+  explicit MPFMessenger(Logger &logger, const string& broker_uri, const string& request_queue);
 
   /**
    * The ReceiveMessage method is invoked to receive the next available
@@ -119,15 +119,13 @@ class MPFMessenger : private AmqLibraryManager {
   static std::string GetMediaTypeSelector();
 
  private:
-
+  Logger logger_;
   std::unique_ptr<activemq::core::ActiveMQConnectionFactory> connection_factory_;
   std::unique_ptr<cms::Connection> connection_;
   std::unique_ptr<cms::Session> session_;
   std::unique_ptr<cms::Destination> request_destination_;
   std::unique_ptr<cms::MessageConsumer> request_consumer_;
   std::unique_ptr<cms::MessageProducer> response_producer_;
-  const log4cxx::LoggerPtr main_logger_;
-
 };
 
 #endif /* MPF_MESSENGER_H_ */

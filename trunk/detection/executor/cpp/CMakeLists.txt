@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -7,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2021 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -26,32 +24,16 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# The arguments passed into this script should be
-# 1. The component jar filename
-# 2. The activemq queue name
-# 3. The service name
+cmake_minimum_required(VERSION 3.6)
+project(cpp-executors)
 
-# Source log4bash
-. ${MPF_HOME}/bin/log4bash.sh
+set(PYBIND11_CPP_STANDARD -std=c++11)
+set(PYBIND11_PYTHON_VERSION 3.8)
+add_subdirectory(pybind11)
 
-# don't source mpf.sh - if under /etc/profile.d we got it
+# Build the detection component executable for batch jobs
+add_subdirectory(batch)
+# Build the executables for streaming jobs
+add_subdirectory(streaming)
 
-# Do an environment variable and Java property
-if [ -n "${ACTIVE_MQ_BROKER_URI}" ]; then
-    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}"
-else
-    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=tcp://localhost:61616"
-    log_warn "ACTIVE_MQ_BROKER_URI unset or empty, using tcp://localhost:61616"
-fi
-
-
-# NOTE: As of Java 6 update 18, Java will allocate up to 1/4 of a machine's physical memory to heap space (-Xmx).
-# Java will use 1/64 of a machine's physical memory for the initial heap space (-Xms).
-
-# NOTE: As of Java 8, PermGen no longer exists. Native system memory is used to store class data.
-
-JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib:${MPF_HOME}/jars"
-
-set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} -cp ${MPF_HOME}/jars/mpf-java-component-executor-6.1.jar:${MPF_HOME}/plugins/$3/$1 ${QUEUE_FLAGS} org.mitre.mpf.component.executor.detection.MPFDetectionMain $2
-set +x
+add_subdirectory(cli-runner)

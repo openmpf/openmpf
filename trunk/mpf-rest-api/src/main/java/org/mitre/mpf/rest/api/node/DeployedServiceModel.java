@@ -40,9 +40,9 @@ public class DeployedServiceModel {
 
     public DeployedServiceModel() {}
 
-	public DeployedServiceModel(ServiceDescriptor sd /*String name, Integer rank, States lastKnownState*/) {
+	public DeployedServiceModel(ServiceDescriptor sd) {
 		//serviceName
-		this.name = sd.getName();
+		this.name = sd.getFullyQualifiedName();
 		this.rank = sd.getRank();
 		this.lastKnownState = sd.getLastKnownState().name();
 		this.unlaunchable = sd.getFatalIssueFlag();

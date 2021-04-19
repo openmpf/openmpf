@@ -24,12 +24,11 @@
 # limitations under the License.                                            #
 #############################################################################
 
+import logging
 
 import mpf_component_api as mpf
 
-
-# logger = mpf.configure_logging('python-generic-test.log', __name__ == '__main__')
-logger = mpf.configure_logging('python-generic-test.log', True)
+logger = logging.getLogger('GenericTestComponent')
 
 
 class GenericTestComponent(object):

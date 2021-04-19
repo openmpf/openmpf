@@ -31,6 +31,8 @@ import org.mitre.mpf.interop.util.CompareUtils;
 
 import java.util.*;
 
+import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
+
 @JsonTypeName("TrackOutputObject")
 @JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
 		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
@@ -127,8 +129,8 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id, startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source,
-		                    confidence, trackProperties, exemplar);
+		return Objects.hash(startOffsetFrame, stopOffsetFrame, startOffsetTime, stopOffsetTime, type, source,
+		                    exemplar, id, confidence, trackProperties);
 	}
 
 	@Override
@@ -146,9 +148,9 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
                 .thenComparingLong(JsonTrackOutputObject::getStartOffsetTime)
                 .thenComparingLong(JsonTrackOutputObject::getStopOffsetTime)
                 .thenComparing(JsonTrackOutputObject::getType)
-                .thenComparing(JsonTrackOutputObject::getSource)
+                .thenComparing(JsonTrackOutputObject::getSource, nullsFirst())
                 .thenComparing(JsonTrackOutputObject::getExemplar)
-                .thenComparing(JsonTrackOutputObject::getId)
+                .thenComparing(JsonTrackOutputObject::getId, nullsFirst())
                 .thenComparingDouble(JsonTrackOutputObject::getConfidence)
                 .thenComparing(JsonTrackOutputObject::getTrackProperties, CompareUtils.MAP_COMPARATOR)
 			);

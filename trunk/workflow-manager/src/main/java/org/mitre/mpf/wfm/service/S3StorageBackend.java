@@ -40,7 +40,6 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
@@ -55,6 +54,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -67,6 +67,9 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 
 @Service
@@ -124,25 +127,46 @@ public class S3StorageBackend implements StorageBackend {
         Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
         Table<Integer, Integer, URI> localResults = _localStorageBackend.storeArtifacts(request);
+        var futures = createArtifactUploadFutures(localResults, combinedProperties);
         Table<Integer, Integer, URI> remoteResults = HashBasedTable.create();
+        for (var cell : futures.cellSet()) {
+            URI resultUri;
+            try {
+                resultUri = cell.getValue().join();
+            }
+            catch (CompletionException e) {
+                _inProgressJobs.addWarning(
+                        request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE,
+                        "Artifact stored locally due to: " + e.getCause().getMessage());
 
-        try {
-            for (Table.Cell<Integer, Integer, URI> entry : localResults.cellSet()) {
-                URI remoteUri = putInS3IfAbsent(Paths.get(entry.getValue()), combinedProperties);
-                remoteResults.put(entry.getRowKey(), entry.getColumnKey(), remoteUri);
+                resultUri = localResults.get(cell.getRowKey(), cell.getColumnKey());
             }
-        } catch (StorageException | IOException e) {
-            LOG.error(String.format("An error occurred while uploading artifacts for job %d and media %d. "
-                    + "They will be stored locally instead.", request.getJobId(), request.getMediaId()), e);
-            _inProgressJobs.addWarning(request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE,
-                                       "Some artifacts were stored locally because storing them remotely failed due to: " + e);
-            for (Table.Cell<Integer, Integer, URI> localEntry : localResults.cellSet()) {
-                if (!remoteResults.contains(localEntry.getRowKey(), localEntry.getColumnKey())) {
-                    remoteResults.put(localEntry.getRowKey(), localEntry.getColumnKey(), localEntry.getValue());
-                }
-            }
+            remoteResults.put(cell.getRowKey(), cell.getColumnKey(), resultUri);
         }
         return remoteResults;
+    }
+
+    private Table<Integer, Integer, CompletableFuture<URI>> createArtifactUploadFutures(
+            Table<Integer, Integer, URI> localResults,
+            Function<String, String> combinedProperties) {
+
+        var futures = HashBasedTable.<Integer, Integer, CompletableFuture<URI>>create();
+        var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getArtifactParallelUploadCount()));
+        for (Table.Cell<Integer, Integer, URI> entry : localResults.cellSet()) {
+            try {
+                semaphore.acquire();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+
+            var future = ThreadUtil.callAsync(
+                    () -> putInS3IfAbsent(Path.of(entry.getValue()), combinedProperties));
+            future.whenComplete((x, y) -> semaphore.release());
+            futures.put(entry.getRowKey(), entry.getColumnKey(), future);
+        }
+        return futures;
     }
 
 
@@ -294,7 +318,6 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-
     private URI putInS3IfAbsent(Path path, Function<String, String> properties) throws IOException, StorageException {
         String hash = hashExistingFile(path);
         String objectName = getObjectName(hash);
@@ -323,10 +346,14 @@ public class S3StorageBackend implements StorageBackend {
             return objectUri;
         }
         catch (SdkClientException e) {
-            throw new StorageException(String.format("Failed to upload %s due to S3 error: %s", path, e), e);
+            var errorMsg = String.format("Failed to upload %s due to S3 error: %s", path, e);
+            LOG.error(errorMsg, e);
+            throw new StorageException(errorMsg, e);
         }
         catch (URISyntaxException e) {
-            throw new StorageException("Couldn't build uri: " + e, e);
+            var errorMsg = "Couldn't build uri: " + e;
+            LOG.error(errorMsg, e);
+            throw new StorageException(errorMsg, e);
         }
     }
 

@@ -46,7 +46,8 @@
                 "FRAME_COUNT": "90",
                 "FRAME_HEIGHT": "480",
                 "FRAME_WIDTH": "640",
-                "MIME_TYPE": "video/mp4"
+                "MIME_TYPE": "video/mp4",
+                "HAS_CONSTANT_FRAME_RATE": "true"
             },
             "mediaProperties": {},
             "markupResult": null,

@@ -44,7 +44,8 @@
         "FRAME_COUNT": "471",
         "FRAME_HEIGHT": "1080",
         "FRAME_WIDTH": "1920",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "HAS_CONSTANT_FRAME_RATE": "true"
       },
       "mediaProperties": {},
       "status": "COMPLETE",
@@ -5835,7 +5836,8 @@
         "FRAME_COUNT": "486",
         "FRAME_HEIGHT": "720",
         "FRAME_WIDTH": "1280",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "HAS_CONSTANT_FRAME_RATE": "true"
       },
       "mediaProperties": {},
       "status": "COMPLETE",

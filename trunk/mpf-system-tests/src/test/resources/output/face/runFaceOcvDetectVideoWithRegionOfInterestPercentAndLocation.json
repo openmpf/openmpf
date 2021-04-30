@@ -64,8 +64,8 @@
             "tracks": [
               {
                 "id": "31872d04dd7f008b067d4e265d269ff8e2e1dd533a43b3c76e282c9842831766",
-                "startOffsetFrame": 242,
-                "stopOffsetFrame": 251,
+                "startOffsetFrame": 241,
+                "stopOffsetFrame": 250,
                 "startOffsetTime": 8075,
                 "stopOffsetTime": 8375,
                 "type": "FACE",
@@ -73,7 +73,7 @@
                 "confidence": 44,
                 "trackProperties": {},
                 "exemplar": {
-                  "offsetFrame": 247,
+                  "offsetFrame": 246,
                   "offsetTime": 8242,
                   "x": 332,
                   "y": 106,
@@ -86,7 +86,7 @@
                 },
                 "detections": [
                   {
-                    "offsetFrame": 242,
+                    "offsetFrame": 241,
                     "offsetTime": 8075,
                     "x": 317,
                     "y": 96,
@@ -98,7 +98,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 243,
+                    "offsetFrame": 242,
                     "offsetTime": 8108,
                     "x": 318,
                     "y": 97,
@@ -110,7 +110,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 244,
+                    "offsetFrame": 243,
                     "offsetTime": 8141,
                     "x": 318,
                     "y": 108,
@@ -122,7 +122,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 245,
+                    "offsetFrame": 244,
                     "offsetTime": 8175,
                     "x": 316,
                     "y": 108,
@@ -134,7 +134,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 246,
+                    "offsetFrame": 245,
                     "offsetTime": 8208,
                     "x": 330,
                     "y": 107,
@@ -146,7 +146,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 247,
+                    "offsetFrame": 246,
                     "offsetTime": 8242,
                     "x": 332,
                     "y": 106,
@@ -158,7 +158,7 @@
                     "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png"
                   },
                   {
-                    "offsetFrame": 248,
+                    "offsetFrame": 247,
                     "offsetTime": 8275,
                     "x": 328,
                     "y": 110,
@@ -170,7 +170,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 249,
+                    "offsetFrame": 248,
                     "offsetTime": 8308,
                     "x": 331,
                     "y": 124,
@@ -182,7 +182,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 250,
+                    "offsetFrame": 249,
                     "offsetTime": 8342,
                     "x": 324,
                     "y": 134,
@@ -194,7 +194,7 @@
                     "artifactPath": null
                   },
                   {
-                    "offsetFrame": 251,
+                    "offsetFrame": 250,
                     "offsetTime": 8375,
                     "x": 310,
                     "y": 135,

@@ -78,6 +78,7 @@ public class CallbackUtils implements AutoCloseable {
         this.jsonUtils = jsonUtils;
 
         IOReactorConfig ioConfig = IOReactorConfig.custom()
+                .setIoThreadCount(Math.min(8, Runtime.getRuntime().availableProcessors()))
                 // the default connect timeout value for non-blocking connection requests.
                 .setConnectTimeout(SOCKET_TIMEOUT_MILLISEC)
                 // the default socket timeout value for non-blocking I/O operations

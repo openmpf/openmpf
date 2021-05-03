@@ -138,4 +138,16 @@ private:
     JNIEnv * env_;
 };
 
+
+class LocalJniFrame {
+public:
+    LocalJniFrame(JNIEnv *env, jint capacity);
+
+    // Deletes all local references created since the constructor was called.
+    ~LocalJniFrame();
+
+private:
+    JNIEnv * env_;
+};
+
 #endif //MPF_JNIHELPER_H

@@ -408,6 +408,10 @@ public class PropertiesUtil {
         return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
     }
 
+    public int getArtifactParallelUploadCount() {
+        return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
+    }
+
     public int getSamplingInterval() {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
     }

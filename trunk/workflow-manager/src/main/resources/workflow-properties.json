@@ -134,7 +134,14 @@
     },
     {
         "name": "MIN_SEGMENT_LENGTH",
-        "description": "In the context of videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0.",
+        "description": "In the context of constant frame rate videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0.",
+        "type": "INT",
+        "propertiesKey": "detection.segment.minimum.length",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "VFR_MIN_SEGMENT_LENGTH",
+        "description": "In the context of variable segment length videos, the minimum length of a segment which will be processed by this algorithm. Value must be greater than 0.",
         "type": "INT",
         "propertiesKey": "detection.segment.minimum.length",
         "mediaTypes": ["VIDEO"]

@@ -256,24 +256,24 @@ public class DetectionTaskSplitter {
 
         boolean hasConstantFrameRate
                 = Boolean.parseBoolean(media.getMetadata().get("HAS_CONSTANT_FRAME_RATE"));
-        String targetSegmentLengthPropName;
-        String minSegmentLengthPropName;
+        int targetSegmentLength;
+        int minSegmentLength;
         if (hasConstantFrameRate) {
-            targetSegmentLengthPropName = MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY;
-            minSegmentLengthPropName = MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY;
+            targetSegmentLength = tryParseIntProperty(
+                    MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getTargetSegmentLength());
+            minSegmentLength = tryParseIntProperty(
+                    MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getMinSegmentLength());
         }
         else {
-            targetSegmentLengthPropName = MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY;
-            minSegmentLengthPropName = MpfConstants.VFR_MINIMUM_SEGMENT_LENGTH_PROPERTY;
+            targetSegmentLength = tryParseIntProperty(
+                    MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getVfrTargetSegmentLength());
+            minSegmentLength = tryParseIntProperty(
+                    MpfConstants.VFR_MINIMUM_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getVfrMinSegmentLength());
         }
-
-        int targetSegmentLength = tryParseIntProperty(
-                targetSegmentLengthPropName, properties,
-                systemPropertiesSnapshot.getTargetSegmentLength());
-
-        int minSegmentLength = tryParseIntProperty(
-                minSegmentLengthPropName, properties,
-                systemPropertiesSnapshot.getMinSegmentLength());
 
         return new SegmentingPlan(targetSegmentLength, minSegmentLength, samplingInterval, minGapBetweenSegments);
     }

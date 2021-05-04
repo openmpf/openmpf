@@ -1,4 +1,3 @@
-package org.mitre.mpf.wfm.util;
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,6 +24,7 @@ package org.mitre.mpf.wfm.util;
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.util;
 
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;

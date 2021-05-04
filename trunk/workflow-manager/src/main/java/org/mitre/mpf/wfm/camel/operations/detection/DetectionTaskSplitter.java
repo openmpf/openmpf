@@ -138,7 +138,8 @@ public class DetectionTaskSplitter {
                                 job.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         combinedProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                        segmentingPlan = createSegmentingPlan(job.getSystemPropertiesSnapshot(), combinedProperties);
+                        segmentingPlan = createSegmentingPlan(
+                                job.getSystemPropertiesSnapshot(), combinedProperties, media);
                     }
 
                     List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
@@ -235,17 +236,22 @@ public class DetectionTaskSplitter {
      * @param properties properties defined for the sub-job
      * @return segmenting plan for this sub-job
      */
-    private SegmentingPlan createSegmentingPlan(SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties) {
+    private static SegmentingPlan createSegmentingPlan(
+            SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties,
+            Media media) {
         int targetSegmentLength = systemPropertiesSnapshot.getTargetSegmentLength();
         int minSegmentLength = systemPropertiesSnapshot.getMinSegmentLength();
         int samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
         int minGapBetweenSegments = systemPropertiesSnapshot.getMinAllowableSegmentGap();
+        boolean hasConstantFrameRate
+                = Boolean.parseBoolean(media.getMetadata().get("HAS_CONSTANT_FRAME_RATE"));
 
         // TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
         // Enforce case-sensitivity throughout the WFM.
         if (properties != null) {
             for (Map.Entry<String, String> property : properties.entrySet()) {
-                if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
+                if (hasConstantFrameRate &&
+                        StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
                     try {
                         targetSegmentLength = Integer.valueOf(property.getValue());
                     }
@@ -256,6 +262,20 @@ public class DetectionTaskSplitter {
                             property.getValue(),
                             targetSegmentLength,
                             exception);
+                    }
+                }
+                if (!hasConstantFrameRate &&
+                        StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY)) {
+                    try {
+                        targetSegmentLength = Integer.parseInt(property.getValue());
+                    }
+                    catch (NumberFormatException exception) {
+                        log.warn(
+                                "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+                                MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY,
+                                property.getValue(),
+                                targetSegmentLength,
+                                exception);
                     }
                 }
                 if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY)) {

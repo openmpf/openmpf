@@ -120,9 +120,16 @@
     },
     {
         "name": "TARGET_SEGMENT_LENGTH",
-        "description": "In the context of videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10.",
+        "description": "In the context of constant frame rate videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10.",
         "type": "INT",
         "propertiesKey": "detection.segment.target.length",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "VFR_TARGET_SEGMENT_LENGTH",
+        "description": "In the context of variable frame rate videos, the preferred length of segments which are to be processed by this algorithm. Value is expected to be greater than 10.",
+        "type": "INT",
+        "propertiesKey": "detection.vfr.segment.target.length",
         "mediaTypes": ["VIDEO"]
     },
     {

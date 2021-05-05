@@ -138,7 +138,8 @@ public class DetectionTaskSplitter {
                                 job.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
                         combinedProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, calcframeInterval);
 
-                        segmentingPlan = createSegmentingPlan(job.getSystemPropertiesSnapshot(), combinedProperties);
+                        segmentingPlan = createSegmentingPlan(
+                                job.getSystemPropertiesSnapshot(), combinedProperties, media);
                     }
 
                     List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
@@ -235,79 +236,63 @@ public class DetectionTaskSplitter {
      * @param properties properties defined for the sub-job
      * @return segmenting plan for this sub-job
      */
-    private SegmentingPlan createSegmentingPlan(SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties) {
-        int targetSegmentLength = systemPropertiesSnapshot.getTargetSegmentLength();
-        int minSegmentLength = systemPropertiesSnapshot.getMinSegmentLength();
-        int samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
-        int minGapBetweenSegments = systemPropertiesSnapshot.getMinAllowableSegmentGap();
+    private static SegmentingPlan createSegmentingPlan(
+            SystemPropertiesSnapshot systemPropertiesSnapshot, Map<String, String> properties,
+            Media media) {
+        int samplingInterval = tryParseIntProperty(
+                MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, properties,
+                systemPropertiesSnapshot.getSamplingInterval());
+        if (samplingInterval < 1) {
+            samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
+            log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
+                     MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
+                     properties.get(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY),
+                     samplingInterval);
+        }
 
-        // TODO: Better to use direct map access rather than a loop, but that requires knowing the case of the keys in the map.
-        // Enforce case-sensitivity throughout the WFM.
-        if (properties != null) {
-            for (Map.Entry<String, String> property : properties.entrySet()) {
-                if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY)) {
-                    try {
-                        targetSegmentLength = Integer.valueOf(property.getValue());
-                    }
-                    catch (NumberFormatException exception) {
-                        log.warn(
-                            "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                            MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY,
-                            property.getValue(),
-                            targetSegmentLength,
-                            exception);
-                    }
-                }
-                if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY)) {
-                    try {
-                        minSegmentLength = Integer.valueOf(property.getValue());
-                    }
-                    catch (NumberFormatException exception) {
-                        log.warn(
-                            "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                            MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY,
-                            property.getValue(),
-                            minSegmentLength,
-                            exception);
-                    }
-                }
-                if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY)) {
-                    try {
-                        samplingInterval = Integer.valueOf(property.getValue());
-                        if (samplingInterval < 1) {
-                            samplingInterval = systemPropertiesSnapshot.getSamplingInterval(); // get FRAME_INTERVAL system property
-                            log.warn("'{}' is not an acceptable {} value. Defaulting to '{}'.",
-                                     MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-                                     property.getValue(),
-                                     samplingInterval);
-                        }
-                    }
-                    catch (NumberFormatException exception) {
-                        log.warn(
-                            "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                             MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY,
-                             property.getValue(),
-                             samplingInterval,
-                             exception);
-                    }
-                }
-                if (StringUtils.equalsIgnoreCase(property.getKey(), MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS)) {
-                    try {
-                        minGapBetweenSegments = Integer.valueOf(property.getValue());
-                    }
-                    catch (NumberFormatException exception) {
-                        log.warn(
-                            "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
-                            MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS,
-                            property.getValue(),
-                            minGapBetweenSegments,
-                            exception);
-                    }
-                }
-            }
+        int minGapBetweenSegments = tryParseIntProperty(
+                MpfConstants.MINIMUM_GAP_BETWEEN_SEGMENTS, properties,
+                systemPropertiesSnapshot.getMinAllowableSegmentGap());
+
+        boolean hasConstantFrameRate
+                = Boolean.parseBoolean(media.getMetadata().get("HAS_CONSTANT_FRAME_RATE"));
+        int targetSegmentLength;
+        int minSegmentLength;
+        if (hasConstantFrameRate) {
+            targetSegmentLength = tryParseIntProperty(
+                    MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getTargetSegmentLength());
+            minSegmentLength = tryParseIntProperty(
+                    MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getMinSegmentLength());
+        }
+        else {
+            targetSegmentLength = tryParseIntProperty(
+                    MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getVfrTargetSegmentLength());
+            minSegmentLength = tryParseIntProperty(
+                    MpfConstants.VFR_MINIMUM_SEGMENT_LENGTH_PROPERTY, properties,
+                    systemPropertiesSnapshot.getVfrMinSegmentLength());
         }
 
         return new SegmentingPlan(targetSegmentLength, minSegmentLength, samplingInterval, minGapBetweenSegments);
+    }
+
+
+    private static int tryParseIntProperty(String propertyName, Map<String, String> properties,
+                                           int defaultValue) {
+        try {
+            return Integer.parseInt(properties.get(propertyName));
+        }
+        catch (NumberFormatException exception) {
+            log.warn(
+                    "Attempted to parse {} value of '{}' but encountered an exception. Defaulting to '{}'.",
+                    propertyName,
+                    properties.get(propertyName),
+                    defaultValue,
+                    exception);
+            return defaultValue;
+        }
     }
 
     /**

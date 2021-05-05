@@ -183,7 +183,7 @@ public class TestDetectionTaskSplitter {
         actionProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         actionProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         actionProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
-        actionProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+        actionProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         BatchJob testJob = createSimpleJobForTest(actionProperties, jobProperties, Collections.emptyMap(),
                                                       "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");
         List<Message> responseList = detectionSplitter.performSplit(
@@ -219,7 +219,7 @@ public class TestDetectionTaskSplitter {
         jobProperties.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
         jobProperties.put(MpfConstants.MIN_GAP_BETWEEN_TRACKS, "1");
         jobProperties.put(MpfConstants.MINIMUM_SEGMENT_LENGTH_PROPERTY, "10");
-        jobProperties.put(MpfConstants.TARGET_SEGMENT_LENGTH_PROPERTY, "25");
+        jobProperties.put(MpfConstants.VFR_TARGET_SEGMENT_LENGTH_PROPERTY, "25");
         BatchJob testJob = createSimpleJobForTest(
                 Collections.emptyMap(), jobProperties, mediaProperties,
                 "/samples/new_face_video.avi", MediaType.VIDEO, "video/avi");

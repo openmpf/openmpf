@@ -229,7 +229,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
                              Map<String, String> mediaMetadata, Metadata ffmpegMetadata)
-            throws NotReadableByOpenCvException {
+            throws NotReadableByOpenCvException, IOException {
 
         int frameCount = getFrameCount(localPath, jobId, mediaId, mimeType, ffmpegMetadata);
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
@@ -268,6 +268,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
         String rotation = ffmpegMetadata.get("rotation");
         if (rotation != null) {
             mediaMetadata.put("ROTATION", rotation);
+        }
+
+        if (FrameRateTypeDetector.hasConstantFrameRate(localPath)) {
+            mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
         }
         return frameCount;
     }

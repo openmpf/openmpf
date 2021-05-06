@@ -119,6 +119,8 @@ DetectionError translateMPFDetectionError(
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
         case MPF_GPU_ERROR:
             return DetectionError::GPU_ERROR;
+        case MPF_NETWORK_ERROR:
+            return DetectionError::NETWORK_ERROR;
         default:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
     }
@@ -177,6 +179,8 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_OTHER_DETECTION_ERROR_TYPE;
         case DetectionError::GPU_ERROR:
             return MPF_GPU_ERROR;
+        case DetectionError::NETWORK_ERROR:
+            return MPF_NETWORK_ERROR;
         default:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
     }

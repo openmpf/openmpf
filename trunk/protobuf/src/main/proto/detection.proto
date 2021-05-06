@@ -55,6 +55,7 @@ enum DetectionError {
     REQUEST_CANCELLED              = 23; // The detection request was cancelled by the user.
     DEAD_LETTER                    = 24;
     GPU_ERROR                      = 25;
+    NETWORK_ERROR                  = 26;
 }
 
 message PropertyMap {

@@ -32,7 +32,8 @@ import java.util.Objects;
 public enum IssueCodes {
     OTHER,
     FAILED_CALLBACK,
-    REMOTE_STORAGE,
+    REMOTE_STORAGE_DOWNLOAD,
+    REMOTE_STORAGE_UPLOAD,
     ARTIFACT_EXTRACTION,
     MEDIA_INSPECTION,
     FRAME_COUNT,

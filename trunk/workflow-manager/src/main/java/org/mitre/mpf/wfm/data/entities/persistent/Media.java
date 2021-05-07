@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -85,4 +86,6 @@ public interface Media {
 
     /** The SHA 256 hash of the local file (assuming it could be retrieved. */
     public String getSha256();
+
+    public FrameTimeInfo getFrameTimeInfo();
 }

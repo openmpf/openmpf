@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 
 import java.nio.file.Path;
@@ -147,6 +148,12 @@ public class MediaImpl implements Media {
     @Override
     public String getSha256() { return _sha256; }
     public void setSha256(String sha256) { _sha256 = sha256; }
+
+    private FrameTimeInfo _frameTimeInfo;
+    @Override
+    @JsonIgnore
+    public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
+    public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
 
     public MediaImpl(

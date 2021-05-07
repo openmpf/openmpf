@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.transients.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
@@ -129,12 +130,11 @@ public class DetectionResponseProcessor
     private void processVideoResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
                                       double confidenceThreshold, Media media) {
-        Float fps = (media.getMetadata("FPS") == null) ? null : Float.valueOf(media.getMetadata("FPS"));
-
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
-        int startTime = convertFrameToTime(startFrame, fps);
-        int stopTime = convertFrameToTime(stopFrame, fps);
+        var frameTimeInfo = media.getFrameTimeInfo();
+        int startTime = frameTimeInfo.getFrameTimeMs(startFrame);
+        int stopTime = frameTimeInfo.getFrameTimeMs(stopFrame);
 
         String mediaLabel = String.format("Media #%d, Frames: %d-%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
@@ -152,13 +152,13 @@ public class DetectionResponseProcessor
                 continue;
             }
 
-            int startOffsetTime = convertFrameToTime(objectTrack.getStartFrame(), fps);
-            int stopOffsetTime  = convertFrameToTime(objectTrack.getStopFrame(), fps);
+            int startOffsetTime = frameTimeInfo.getFrameTimeMs(objectTrack.getStartFrame());
+            int stopOffsetTime  = frameTimeInfo.getFrameTimeMs(objectTrack.getStopFrame());
 
             ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
                     .stream()
                     .filter(flm -> flm.getImageLocation().getConfidence() >= confidenceThreshold)
-                    .map(flm -> toDetection(flm, fps))
+                    .map(flm -> toDetection(flm, frameTimeInfo))
                     .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
             if (!detections.isEmpty()) {
@@ -335,8 +335,10 @@ public class DetectionResponseProcessor
         }
     }
 
-    private static Detection toDetection(DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap, Float fps) {
-        int time = convertFrameToTime(frameLocationMap.getFrame(), fps);
+    private static Detection toDetection(
+            DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap,
+            FrameTimeInfo timeInfo) {
+        int time = timeInfo.getFrameTimeMs(frameLocationMap.getFrame());
         return toDetection(frameLocationMap.getImageLocation(), frameLocationMap.getFrame(), time);
     }
 
@@ -368,9 +370,5 @@ public class DetectionResponseProcessor
     private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
         return String.format("Media #%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
-    }
-
-    public static int convertFrameToTime(int frame, Float fps) {
-        return fps == null ? 0 : Math.round(frame * 1000 / fps); // in milliseconds
     }
 }

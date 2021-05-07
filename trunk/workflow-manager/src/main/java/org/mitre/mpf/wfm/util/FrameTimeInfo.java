@@ -24,33 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.util;
 
-import org.junit.Test;
-import org.mitre.mpf.test.TestUtil;
+import java.util.function.IntUnaryOperator;
 
-import java.io.IOException;
+public class FrameTimeInfo {
+    private final boolean _hasConstantFrameRate;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+    private final boolean _requiresTimeEstimation;
 
-public class TestFrameRateTypeDetector {
+    private final IntUnaryOperator _frameToTimeFn;
 
-    @Test
-    public void testSamples() throws IOException {
-        assertTrue(hasConstantFrameRate("/samples/five-second-marathon-clip.mkv"));
-        assertTrue(hasConstantFrameRate("/samples/video_01.mp4"));
-        assertTrue(hasConstantFrameRate("/samples/video_02.mp4"));
 
-        assertFalse(hasConstantFrameRate("/samples/bbb24p_00_short.ts"));
-        assertFalse(hasConstantFrameRate("/samples/new_face_video.avi"));
-        assertFalse(hasConstantFrameRate("/samples/video_01_invalid.mp4"));
-        assertFalse(hasConstantFrameRate("/samples/video_02_audio_only.mp4"));
-        assertFalse(hasConstantFrameRate("/samples/STRUCK_Test_720p.mp4"));
+    private FrameTimeInfo(boolean hasConstantFrameRate,  boolean requiresTimeEstimation,
+                          IntUnaryOperator frameToTimeFn) {
+        _hasConstantFrameRate = hasConstantFrameRate;
+        _requiresTimeEstimation = requiresTimeEstimation;
+        _frameToTimeFn = frameToTimeFn;
     }
 
 
-    private static boolean hasConstantFrameRate(String path) throws IOException {
-        return FrameRateTypeDetector.hasConstantFrameRate(TestUtil.findFilePath(path));
+    public static FrameTimeInfo forConstantFrameRate(double fps, int startTime) {
+        double msPerFrame = 1000 / fps;
+        return new FrameTimeInfo(true, false,
+                                 frameIdx -> (int) (startTime + frameIdx * msPerFrame));
+    }
+
+    public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
+                                                     boolean requiresTimeEstimation) {
+        double msPerFrame = 1000 / fps;
+        return new FrameTimeInfo(false, requiresTimeEstimation, frameIdx -> {
+            try {
+                return timeStamps[frameIdx];
+            }
+            catch (ArrayIndexOutOfBoundsException e) {
+                int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
+                return (int) (startTime + frameIdx * msPerFrame);
+            }
+        });
+    }
+
+    public boolean hasConstantFrameRate() {
+        return _hasConstantFrameRate;
+    }
+
+    public boolean requiresTimeEstimation() {
+        return _requiresTimeEstimation;
+    }
+
+    public int getFrameTimeMs(int frameIndex) {
+        return _frameToTimeFn.applyAsInt(frameIndex);
     }
 }

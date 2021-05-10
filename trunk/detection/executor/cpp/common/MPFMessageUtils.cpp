@@ -121,6 +121,8 @@ DetectionError translateMPFDetectionError(
             return DetectionError::GPU_ERROR;
         case MPF_NETWORK_ERROR:
             return DetectionError::NETWORK_ERROR;
+        case MPF_COULD_NOT_OPEN_MEDIA:
+            return DetectionError::COULD_NOT_OPEN_MEDIA;
         case MPF_COULD_NOT_READ_MEDIA:
             return DetectionError::COULD_NOT_READ_MEDIA;
         default:
@@ -183,6 +185,8 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_GPU_ERROR;
         case DetectionError::NETWORK_ERROR:
             return MPF_NETWORK_ERROR;
+        case DetectionError::COULD_NOT_OPEN_MEDIA:
+            return MPF_COULD_NOT_OPEN_MEDIA;
         case DetectionError::COULD_NOT_READ_MEDIA:
             return MPF_COULD_NOT_READ_MEDIA;
         default:

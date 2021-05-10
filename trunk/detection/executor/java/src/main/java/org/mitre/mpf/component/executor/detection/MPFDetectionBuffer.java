@@ -480,6 +480,8 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             case MPF_NETWORK_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.NETWORK_ERROR;
+            case MPF_COULD_NOT_OPEN_MEDIA:
+                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.COULD_NOT_OPEN_MEDIA;
             case MPF_COULD_NOT_READ_MEDIA:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.COULD_NOT_READ_MEDIA;
             default:

@@ -27,70 +27,84 @@
 package org.mitre.mpf.rest.api;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 public class SingleJobInfo {
-	private Long jobId;
-	private String pipelineName;
-	private int jobPriority = -1;
-	private String jobStatus;
-	private float jobProgress = 0;
-	private Instant startDate;
-	private Instant endDate;
-	private String outputObjectPath;
-	//terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
-	private boolean terminal;
+    private long jobId;
+    private String pipelineName;
+    private int jobPriority;
+    private String jobStatus;
+    private float jobProgress;
+    private Instant startDate;
+    private Instant endDate;
+    private String outputObjectPath;
+    //terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
+    private boolean terminal;
+    private List<String> mediaUris;
 
-	public SingleJobInfo() {}
+    public SingleJobInfo() { }
 
-	public SingleJobInfo(Long jobId, String pipelineName, int jobPriority, String jobStatus, float jobProgress,
-	                     Instant startDate, Instant endDate, String outputObjectPath, boolean terminal) {
-		this.jobId = jobId;
-		this.pipelineName = pipelineName;
-		this.jobPriority = jobPriority;
-		this.jobStatus = jobStatus;
-		this.jobProgress = jobProgress;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.outputObjectPath = outputObjectPath;
-		this.terminal = terminal;
-	}
+    public SingleJobInfo(
+            long jobId,
+            String pipelineName,
+            int jobPriority,
+            String jobStatus,
+            float jobProgress,
+            Instant startDate,
+            Instant endDate,
+            String outputObjectPath,
+            boolean terminal,
+            Collection<String> mediaUris) {
+        this.jobId = jobId;
+        this.pipelineName = pipelineName;
+        this.jobPriority = jobPriority;
+        this.jobStatus = jobStatus;
+        this.jobProgress = jobProgress;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.outputObjectPath = outputObjectPath;
+        this.terminal = terminal;
+        this.mediaUris = List.copyOf(mediaUris);
+    }
 
-	public Long getJobId() {
-		return jobId;
-	}
+    public long getJobId() {
+        return jobId;
+    }
 
-	public String getPipelineName() {
-		return pipelineName;
-	}
+    public String getPipelineName() {
+        return pipelineName;
+    }
 
-	public int getJobPriority() {
-		return jobPriority;
-	}
+    public int getJobPriority() {
+        return jobPriority;
+    }
 
-	public String getJobStatus() {
-		return jobStatus;
-	}
+    public String getJobStatus() {
+        return jobStatus;
+    }
 
-	public float getJobProgress() {
-		return jobProgress;
-	}
-	public void setJobProgress(float jobProgress) {
-		this.jobProgress = jobProgress;
-	}
+    public float getJobProgress() {
+        return jobProgress;
+    }
 
-	public Instant getStartDate() {
-		return startDate;
-	}
+    public Instant getStartDate() {
+        return startDate;
+    }
 
-	public Instant getEndDate() {
-		return endDate;
-	}
+    public Instant getEndDate() {
+        return endDate;
+    }
 
-	public String getOutputObjectPath() {
-		return outputObjectPath;
-	}
+    public String getOutputObjectPath() {
+        return outputObjectPath;
+    }
 
-	public boolean isTerminal() {
-		return terminal;
-	}
+    public boolean isTerminal() {
+        return terminal;
+    }
+
+    public List<String> getMediaUris() {
+        return mediaUris;
+    }
 }

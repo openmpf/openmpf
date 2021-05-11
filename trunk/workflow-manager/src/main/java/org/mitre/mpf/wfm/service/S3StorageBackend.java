@@ -136,7 +136,7 @@ public class S3StorageBackend implements StorageBackend {
             }
             catch (CompletionException e) {
                 _inProgressJobs.addWarning(
-                        request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE,
+                        request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
                         "Artifact stored locally due to: " + e.getCause().getMessage());
 
                 resultUri = localResults.get(cell.getRowKey(), cell.getColumnKey());

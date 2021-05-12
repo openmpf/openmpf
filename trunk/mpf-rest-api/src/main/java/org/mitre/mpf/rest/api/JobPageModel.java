@@ -26,10 +26,6 @@
 
 package org.mitre.mpf.rest.api;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 public class JobPageModel extends SingleJobInfo {
 
     private boolean outputFileExists = false;
@@ -46,6 +42,15 @@ public class JobPageModel extends SingleJobInfo {
     }
 
     public JobPageModel(SingleJobInfo job) {
-        super(job.getJobId(), job.getPipelineName(), job.getJobPriority(), job.getJobStatus(), job.getJobProgress(), job.getStartDate(), job.getEndDate(), job.getOutputObjectPath(), job.isTerminal());
+        super(job.getJobId(),
+              job.getPipelineName(),
+              job.getJobPriority(),
+              job.getJobStatus(),
+              job.getJobProgress(),
+              job.getStartDate(),
+              job.getEndDate(),
+              job.getOutputObjectPath(),
+              job.isTerminal(),
+              job.getMediaUris());
     }
 }

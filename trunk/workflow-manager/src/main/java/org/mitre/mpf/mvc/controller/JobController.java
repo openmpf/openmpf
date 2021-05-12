@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -438,10 +439,16 @@ public class JobController {
     private SingleJobInfo convertJob(JobRequest job) {
         float jobProgressVal = jobProgress.getJobProgress(job.getId())
                 .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
+
+        var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
+        var mediaUris = batchJob.getMedia().stream()
+                .map(Media::getUri)
+                .collect(toList());
+
         return new SingleJobInfo(
                 job.getId(), job.getPipeline(), job.getPriority(), job.getStatus().toString(), jobProgressVal,
                 job.getTimeReceived(), job.getTimeCompleted(), job.getOutputObjectPath(),
-                job.getStatus().isTerminal());
+                job.getStatus().isTerminal(), mediaUris);
     }
 
 

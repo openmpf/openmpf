@@ -524,7 +524,7 @@ public class ITComponentLifecycle {
             
             log.debug("jobsInfo status: " + jobInfo.getJobStatus());
             assertNotNull(jobInfo);
-            assertEquals(jobCreationResponse.getJobId(), jobInfo.getJobId().longValue());
+            assertEquals(jobCreationResponse.getJobId(), jobInfo.getJobId());
             
             assertEquals("COMPLETE", jobInfo.getJobStatus());
         } else {

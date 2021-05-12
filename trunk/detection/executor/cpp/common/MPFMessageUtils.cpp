@@ -119,6 +119,12 @@ DetectionError translateMPFDetectionError(
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
         case MPF_GPU_ERROR:
             return DetectionError::GPU_ERROR;
+        case MPF_NETWORK_ERROR:
+            return DetectionError::NETWORK_ERROR;
+        case MPF_COULD_NOT_OPEN_MEDIA:
+            return DetectionError::COULD_NOT_OPEN_MEDIA;
+        case MPF_COULD_NOT_READ_MEDIA:
+            return DetectionError::COULD_NOT_READ_MEDIA;
         default:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
     }
@@ -177,6 +183,12 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_OTHER_DETECTION_ERROR_TYPE;
         case DetectionError::GPU_ERROR:
             return MPF_GPU_ERROR;
+        case DetectionError::NETWORK_ERROR:
+            return MPF_NETWORK_ERROR;
+        case DetectionError::COULD_NOT_OPEN_MEDIA:
+            return MPF_COULD_NOT_OPEN_MEDIA;
+        case DetectionError::COULD_NOT_READ_MEDIA:
+            return MPF_COULD_NOT_READ_MEDIA;
         default:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
     }

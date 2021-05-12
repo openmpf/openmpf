@@ -170,7 +170,7 @@ public class TestRemoteMediaProcessor {
         verify(_mockInProgressJobs)
                 .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
         verify(_mockInProgressJobs)
-                .addError(eq(jobId), eq(mediaId), eq(IssueCodes.REMOTE_STORAGE), nonBlank());
+                .addError(eq(jobId), eq(mediaId), eq(IssueCodes.REMOTE_STORAGE_DOWNLOAD), nonBlank());
 
         LOG.info("Remote invalid image retrieval request passed.");
     }

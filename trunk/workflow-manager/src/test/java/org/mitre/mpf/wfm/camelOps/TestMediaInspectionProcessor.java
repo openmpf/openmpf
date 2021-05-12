@@ -132,10 +132,15 @@ public class TestMediaInspectionProcessor {
         String mediaHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; // `sha256sum video_01.mp4`
         int frameCount = 90; // `ffprobe -show_packets video_01.mp4 | grep video | wc -l`
 
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO), eq("video/mp4"),
-                        eq(frameCount), nonEmptyMap());
+                        eq(frameCount), metadataCaptor.capture());
         verifyNoJobOrMediaError();
+
+        var mediaMetadata = metadataCaptor.getValue();
+        assertTrue(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
 
         LOG.info("Video media inspection test passed.");
     }
@@ -254,15 +259,19 @@ public class TestMediaInspectionProcessor {
 
         String mediaHash = "06091f89bfa66d0f882f1a71f68858a8ec1ffaa96919b9f87b30a14795f0189f"; // `sha256sum bbb24p_00_short.ts`
 
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
-                        eq("video/vnd.dlna.mpeg-tts"), eq(10), nonEmptyMap());
+                        eq("video/vnd.dlna.mpeg-tts"), eq(10), metadataCaptor.capture());
 
         verify(_mockInProgressJobs)
                 .addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
                             "OpenCV reported the frame count to be 27, but FFmpeg reported it to be 10. 10 will be used.");
 
         verifyNoJobOrMediaError();
+        var mediaMetadata = metadataCaptor.getValue();
+        assertFalse(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
 
         LOG.info("ts file test passed.");
     }

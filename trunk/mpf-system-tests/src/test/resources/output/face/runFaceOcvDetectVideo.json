@@ -1550,8 +1550,8 @@
               },
               {
                 "id": "3406c4b75882ebe3670b9606e5fada0512cb3fe7892d135f5af8c32835e4efbe",
-                "startOffsetFrame": 222,
-                "stopOffsetFrame": 227,
+                "startOffsetFrame": 221,
+                "stopOffsetFrame": 226,
                 "startOffsetTime": 7407,
                 "stopOffsetTime": 7574,
                 "type": "FACE",
@@ -1647,8 +1647,8 @@
               },
               {
                 "id": "8900392f170662838c0e4c161fa4ab621f4812ade8e55ae08a42eb9a036203c0",
-                "startOffsetFrame": 232,
-                "stopOffsetFrame": 256,
+                "startOffsetFrame": 231,
+                "stopOffsetFrame": 255,
                 "startOffsetTime": 7741,
                 "stopOffsetTime": 8542,
                 "type": "FACE",
@@ -1972,8 +1972,8 @@
               },
               {
                 "id": "5929f49bf07dfe74932c0d23bb58719041936f4d807fd7247293413ed3e0cf65",
-                "startOffsetFrame": 262,
-                "stopOffsetFrame": 284,
+                "startOffsetFrame": 261,
+                "stopOffsetFrame": 283,
                 "startOffsetTime": 8742,
                 "stopOffsetTime": 9476,
                 "type": "FACE",
@@ -2273,8 +2273,8 @@
               },
               {
                 "id": "f8f6af81395a43f467099b84f8f02fe016f2eeca212d93d655be30302e2f9ae3",
-                "startOffsetFrame": 287,
-                "stopOffsetFrame": 324,
+                "startOffsetFrame": 286,
+                "stopOffsetFrame": 323,
                 "startOffsetTime": 9576,
                 "stopOffsetTime": 10811,
                 "type": "FACE",
@@ -2772,7 +2772,8 @@
         "FRAME_COUNT": "90",
         "FRAME_HEIGHT": "480",
         "FRAME_WIDTH": "640",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "HAS_CONSTANT_FRAME_RATE": "true"
       },
       "mediaProperties": {},
       "markupResult": null,
@@ -5012,7 +5013,8 @@
         "FRAME_COUNT": "521",
         "FRAME_HEIGHT": "480",
         "FRAME_WIDTH": "640",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "HAS_CONSTANT_FRAME_RATE": "true"
       },
       "mediaProperties": {},
       "markupResult": null,

@@ -24,28 +24,33 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.util;
 
-package org.mitre.mpf.wfm.enums;
+import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 
-import java.util.Objects;
+import java.io.IOException;
 
-public enum IssueCodes {
-    OTHER,
-    FAILED_CALLBACK,
-    REMOTE_STORAGE_DOWNLOAD,
-    REMOTE_STORAGE_UPLOAD,
-    ARTIFACT_EXTRACTION,
-    MEDIA_INSPECTION,
-    FRAME_COUNT,
-    MISSING_VIDEO_STREAM,
-    MISSING_AUDIO_STREAM,
-    MEDIA_INITIALIZATION,
-    MARKUP,
-    PADDING;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-    public static final IssueCodes DEFAULT = OTHER;
+public class TestFrameRateTypeDetector {
 
-    public static String toString(IssueCodes errorCode) {
-        return Objects.requireNonNullElse(errorCode, DEFAULT).toString();
+    @Test
+    public void testSamples() throws IOException {
+        assertTrue(hasConstantFrameRate("/samples/five-second-marathon-clip.mkv"));
+        assertTrue(hasConstantFrameRate("/samples/video_01.mp4"));
+        assertTrue(hasConstantFrameRate("/samples/video_02.mp4"));
+
+        assertFalse(hasConstantFrameRate("/samples/bbb24p_00_short.ts"));
+        assertFalse(hasConstantFrameRate("/samples/new_face_video.avi"));
+        assertFalse(hasConstantFrameRate("/samples/video_01_invalid.mp4"));
+        assertFalse(hasConstantFrameRate("/samples/video_02_audio_only.mp4"));
+        assertFalse(hasConstantFrameRate("/samples/STRUCK_Test_720p.mp4"));
+    }
+
+
+    private static boolean hasConstantFrameRate(String path) throws IOException {
+        return FrameRateTypeDetector.hasConstantFrameRate(TestUtil.findFilePath(path));
     }
 }

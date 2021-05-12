@@ -39,7 +39,8 @@
       "FRAME_COUNT": "54",
       "FRAME_HEIGHT": "1080",
       "FRAME_WIDTH": "1920",
-      "MIME_TYPE": "video/quicktime"
+      "MIME_TYPE": "video/quicktime",
+      "HAS_CONSTANT_FRAME_RATE": "true"
     },
     "mediaProperties": {},
     "markupResult": null,

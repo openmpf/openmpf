@@ -39,7 +39,8 @@
       "FRAME_COUNT": "183",
       "FRAME_HEIGHT": "1080",
       "FRAME_WIDTH": "1920",
-      "MIME_TYPE": "video/mp4"
+      "MIME_TYPE": "video/mp4",
+      "HAS_CONSTANT_FRAME_RATE": "true"
     },
     "mediaProperties": {},
     "status": "COMPLETE",

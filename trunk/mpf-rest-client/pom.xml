@@ -46,13 +46,6 @@
     <maven.compiler.target>11</maven.compiler.target>
     <g00dnatur3.http-rest-client-version>1.0.21</g00dnatur3.http-rest-client-version>
   </properties>
-  
-  <repositories>
-  	<repository>
-    	<id>java-utils</id>
-    	<url>http://dl.bintray.com/g00dnatur3/java-utils/</url>
-	</repository>
-  </repositories>
 
   <dependencies>
     <dependency>
@@ -70,6 +63,34 @@
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+
+    <!-- start: from http-rest-client_2.10-1.0.21.pom -->
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.10.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.3.4</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.7</version>
+    </dependency>
+    <!-- end: from http-rest-client_2.10-1.0.21.pom -->
   </dependencies>
 
   <build>
@@ -106,6 +127,9 @@
             <manifest>
               <mainClass>org.mitre.mpf.rest.client.Main</mainClass>
             </manifest>
+            <manifestEntries>
+              <Multi-Release>true</Multi-Release>
+            </manifestEntries>
           </archive>
         </configuration>
         <executions>

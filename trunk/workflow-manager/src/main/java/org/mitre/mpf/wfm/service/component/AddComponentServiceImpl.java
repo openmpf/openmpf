@@ -169,28 +169,6 @@ public class AddComponentServiceImpl implements AddComponentService {
         }
     }
 
-    @Override
-    public synchronized RegisterComponentModel registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException {
-        if (_propertiesUtil.dockerProfileEnabled()) {
-            throw new ManagedComponentsUnsupportedException();
-        }
-
-        JsonComponentDescriptor descriptor = loadDescriptor(descriptorPath);
-
-        RegisterComponentModel registrationModel = _componentStateService
-                .getByComponentName(descriptor.getComponentName())
-                .orElseGet(RegisterComponentModel::new);
-        registrationModel.setComponentName(descriptor.getComponentName());
-        registrationModel.setJsonDescriptorPath(descriptorPath);
-        registrationModel.setManaged(true);
-
-        registerDeployedComponent(descriptor, registrationModel);
-        registrationModel.setComponentState(ComponentState.REGISTERED);
-        registrationModel.setDateRegistered(Instant.now());
-        _componentStateService.update(registrationModel);
-        return registrationModel;
-    }
-
     private void registerDeployedComponent(JsonComponentDescriptor descriptor, RegisterComponentModel model)
             throws ComponentRegistrationException {
 

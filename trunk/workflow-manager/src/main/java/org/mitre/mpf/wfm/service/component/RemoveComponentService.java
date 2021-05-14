@@ -32,9 +32,6 @@ public interface RemoveComponentService {
 
     public void removeComponent(String componentName) throws ManagedComponentsUnsupportedException;
 
-    public void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage)
-            throws ManagedComponentsUnsupportedException;
-
     public void removePackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException;
 
     public void unregisterRetainPackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException;

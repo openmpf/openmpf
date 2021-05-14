@@ -243,18 +243,6 @@ public class TestAdminComponentRegistrationController {
 
 
     @Test
-    public void canRegisterViaFile() throws ComponentRegistrationException {
-        String filePath = "/tmp/TestComponent/descriptor/descriptor.json";
-
-        ResponseMessage result = _controller.registerViaFileRest(filePath);
-
-        assertEquals(HttpStatus.OK, result.getStatusCode());
-        verify(_mockAddComponentService)
-                .registerDeployedComponent(filePath);
-    }
-
-
-    @Test
     public void returnsErrorWhenUnregisterUnknownComponent() {
         when(_mockStateService.getByComponentName(_testComponentName))
                 .thenReturn(Optional.empty());

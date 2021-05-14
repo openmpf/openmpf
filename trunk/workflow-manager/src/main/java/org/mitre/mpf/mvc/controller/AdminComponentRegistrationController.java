@@ -28,12 +28,9 @@ package org.mitre.mpf.mvc.controller;
 
 import com.google.common.collect.ImmutableSet;
 import io.swagger.annotations.Api;
-import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.wfm.service.component.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
@@ -57,8 +54,6 @@ import java.util.Set;
 @Scope("request")
 @Profile("!docker")
 public class AdminComponentRegistrationController extends BasicAdminComponentRegistrationController {
-
-    private static final Logger log = LoggerFactory.getLogger(AdminComponentRegistrationController.class);
 
     private final PropertiesUtil _propertiesUtil;
 
@@ -170,61 +165,6 @@ public class AdminComponentRegistrationController extends BasicAdminComponentReg
                 String errorMsg = "An error occurred while saving uploaded file";
                 return handleRegistrationErrorResponse(componentPackageName, errorMsg,
                                                        HttpStatus.INTERNAL_SERVER_ERROR, ex);
-            }
-        });
-    }
-
-
-
-    //TODO: commenting out the swagger annotations because this is still needed externally by ansible
-    /* @ApiOperation(value = "Register an external component",
-            notes = "The component's algorithm will be added to the list of services available for deployment via the web UI",
-            produces = "application/json" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") }) */
-    @RequestMapping(value = {"/component/registerViaFile", "/rest/component/registerViaFile"}, method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseMessage registerViaFileRest(
-            /*@ApiParam(required = true, defaultValue = "",
-                      value = "The path to the JSON component descriptor file")*/
-            @RequestParam String filePath
-    ) {
-        return withWriteLock(() -> {
-            log.info("Entered {}", "[rest/component/registerViaFile]");
-            try {
-                _addComponentService.registerDeployedComponent(filePath);
-                return ResponseMessage.ok("Component successfully registered");
-            }
-            catch (ComponentRegistrationException ex) {
-                return handleRegistrationErrorResponse(filePath, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, ex);
-            }
-        });
-    }
-
-  //TODO: commenting out the swagger annotations because this is still needed externall by ansible
-    // NOTE, un-registering a component does not shut down or remove any deployed running instances
-/*    @ApiOperation(value = "Remove (unregister) an external component",
-            notes = "The component's algorithm will be removed from the list of services available for deployment via the web UI",
-            produces = "application/json" )
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successful response"),
-            @ApiResponse(code = 401, message = "Bad credentials") })*/
-    @RequestMapping(value = {"/component/unregisterViaFile", "/rest/component/unregisterViaFile"}, method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseMessage unregisterViaFileRest(
-            /*@ApiParam(required = true, value = "The path to the JSON component descriptor file")*/
-            @RequestParam String filePath,
-            @RequestParam(required = false, defaultValue = "true") boolean deletePackage) {
-        return withWriteLock(() -> {
-            try {
-                log.info("Entered {}", "[rest/component/unregisterViaFile]");
-                _removeComponentService.unregisterViaFile(filePath, deletePackage);
-                return ResponseMessage.ok("Component successfully unregistered");
-            }
-            catch (ManagedComponentsUnsupportedException e) {
-                // Impossible because this class has @Profile("!docker").
-                throw new IllegalStateException(e);
             }
         });
     }

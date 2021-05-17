@@ -30,7 +30,6 @@
 # This file is used to set up the runtime environment for the MPF system, particularly the
 # node manager.
 #
-# NOTE: In a deployed environment managed by ansible, this file is set up for you by ansible.
 # The variables defined here and their example values are mainly for use in development VM
 # environments.
 #

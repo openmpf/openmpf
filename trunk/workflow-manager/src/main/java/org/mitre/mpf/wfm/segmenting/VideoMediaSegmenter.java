@@ -135,8 +135,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .summaryStatistics();
 
         DetectionProtobuf.VideoTrack.Builder videoTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
-                .setStartFrame(track.getStartOffsetFrameInclusive())
-                .setStopFrame(track.getEndOffsetFrameInclusive())
+                .setStartFrame(frameSummaryStats.getMin())
+                .setStopFrame(frameSummaryStats.getMax())
                 .setConfidence(track.getExemplar().getConfidence());
 
         for (Map.Entry<String, String> entry : track.getTrackProperties().entrySet()) {

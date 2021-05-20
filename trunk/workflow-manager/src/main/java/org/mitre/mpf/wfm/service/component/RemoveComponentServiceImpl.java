@@ -163,35 +163,6 @@ public class RemoveComponentServiceImpl implements RemoveComponentService {
 
 
     @Override
-    public synchronized void unregisterViaFile(String jsonDescriptorPath, boolean deletePackage)
-            throws ManagedComponentsUnsupportedException {
-
-        if (_propertiesUtil.dockerProfileEnabled()) {
-            throw new ManagedComponentsUnsupportedException();
-        }
-
-        Optional<RegisterComponentModel> optRegisterModel = _componentStateService.get()
-                .stream()
-                .filter(rcm -> jsonDescriptorPath.equals(rcm.getJsonDescriptorPath()))
-                .findAny();
-
-        if (optRegisterModel.isPresent()) {
-            try {
-                removeManagedComponent(optRegisterModel.get(), deletePackage);
-            }
-            catch (Exception ex) {
-               _componentStateService.replaceComponentState(
-                       optRegisterModel.get().getComponentName(), ComponentState.REGISTER_ERROR);
-                throw ex;
-            }
-        }
-        else {
-            String componentTld = getComponentTopLevelDirName(jsonDescriptorPath);
-            _deployService.undeployComponent(componentTld);
-        }
-    }
-
-    @Override
     public void removePackage(String componentPackageFileName) throws ManagedComponentsUnsupportedException {
         if (_propertiesUtil.dockerProfileEnabled()) {
             throw new ManagedComponentsUnsupportedException();

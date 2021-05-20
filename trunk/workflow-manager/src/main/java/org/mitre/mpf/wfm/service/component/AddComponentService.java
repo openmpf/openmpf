@@ -32,8 +32,6 @@ public interface AddComponentService {
     public RegisterComponentModel registerComponent(String componentPackageFileName)
             throws ComponentRegistrationException;
 
-    public RegisterComponentModel registerDeployedComponent(String descriptorPath) throws ComponentRegistrationException;
-
     public boolean registerUnmanagedComponent(JsonComponentDescriptor descriptor)
             throws ComponentRegistrationException;
 }

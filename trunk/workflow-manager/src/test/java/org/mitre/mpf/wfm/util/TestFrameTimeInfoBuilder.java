@@ -43,6 +43,8 @@ public class TestFrameTimeInfoBuilder {
     @Test
     public void testMkv() throws IOException {
         var videoPath = TestUtil.findFilePath("/samples/five-second-marathon-clip.mkv");
+        // Something is wrong with last frame in the video. All frames have the same pts delta
+        // except the last frame has double the pts delta.
         compareTimes(videoPath, 29.97, true, false);
     }
 
@@ -79,7 +81,7 @@ public class TestFrameTimeInfoBuilder {
 
 
     @Test
-    public void testVideoWithMissingTimes() throws IOException {
+    public void testVideoWithMissingTimes() {
         // timebase = 12/223
         // ffprobe output:
         // 41
@@ -124,13 +126,13 @@ public class TestFrameTimeInfoBuilder {
 
 
     private static int[] getTimes(Path video) throws IOException {
-        // In the actual code we use best_effort_timestamp instead of
-        // best_effort_timestamp_time (like below) because when collecting the timestamps,
-        // we are also checking for a variable frame rate. best_effort_timestamp is always an
-        // integer, unlike best_effort_timestamp_time which is a floating point value.
-        // Using best_effort_timestamp to check for variable frame rate prevents the loss of
-        // precision that occurs with floating point values. The rounding would likely cause
-        // constant frame rate videos to be detected as having a variable frame rate.
+        // In the actual code we use best_effort_timestamp instead of best_effort_timestamp_time
+        // (like below) because when collecting the timestamps, we are also checking for a variable
+        // frame rate. best_effort_timestamp (normally PTS values) is always an  integer, unlike
+        // best_effort_timestamp_time which is a floating point value. Using best_effort_timestamp
+        // to check for variable frame rate prevents the loss of precision that occurs with
+        // floating point values. The rounding would likely cause constant frame rate videos to be
+        // detected as having a variable frame rate.
 
         String[] command = {
                 "ffprobe", "-hide_banner", "-select_streams", "v",

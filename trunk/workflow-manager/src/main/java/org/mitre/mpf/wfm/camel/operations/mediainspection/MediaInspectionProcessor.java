@@ -229,7 +229,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
                              Map<String, String> mediaMetadata, Metadata ffmpegMetadata)
-            throws NotReadableByOpenCvException, IOException {
+            throws NotReadableByOpenCvException {
 
         int frameCount = getFrameCount(localPath, jobId, mediaId, mimeType, ffmpegMetadata);
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));

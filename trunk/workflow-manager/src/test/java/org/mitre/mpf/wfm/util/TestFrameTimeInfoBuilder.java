@@ -43,8 +43,6 @@ public class TestFrameTimeInfoBuilder {
     @Test
     public void testMkv() throws IOException {
         var videoPath = TestUtil.findFilePath("/samples/five-second-marathon-clip.mkv");
-        // Something is wrong with last frame in the video. All frames have the same pts delta
-        // except the last frame has double the pts delta.
         compareTimes(videoPath, 29.97, true, false);
     }
 
@@ -53,7 +51,6 @@ public class TestFrameTimeInfoBuilder {
         var videoPath = TestUtil.findFilePath("/samples/video_01.mp4");
         compareTimes(videoPath, 29.97, true, true);
     }
-
 
     @Test
     public void testVideo2() throws IOException {
@@ -82,7 +79,7 @@ public class TestFrameTimeInfoBuilder {
 
 
     @Test
-    public void testVideoWithMissingTimes() {
+    public void testVideoWithMissingTimes() throws IOException {
         // timebase = 12/223
         // ffprobe output:
         // 41
@@ -91,6 +88,7 @@ public class TestFrameTimeInfoBuilder {
 
         var videoPath = TestUtil.findFilePath("/samples/text-test-video-detection.avi");
         var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, 18.58);
+
         assertEquals(2206, timeInfo.getFrameTimeMs(0));
         // Use frame rate to guess time
         // prev + (1000 / fps)
@@ -103,74 +101,6 @@ public class TestFrameTimeInfoBuilder {
 
         assertFalse(timeInfo.hasConstantFrameRate());
         assertTrue(timeInfo.requiresTimeEstimation());
-    }
-
-
-    @Test
-    public void testGetTimesAssumingVfr() {
-        var videoPath = TestUtil.findFilePath("/samples/video_01.mp4");
-        var frameTimeInfoCfr = FrameTimeInfoBuilder
-                .getFrameTimeInfo(videoPath, 29.97);
-        assertTrue(frameTimeInfoCfr.hasConstantFrameRate());
-
-        var frameTimeInfoAssumingVfr
-                = FrameTimeInfoBuilder.getFrameTimeInfoAssumingVfr(videoPath, 29.97);
-        assertFalse(frameTimeInfoAssumingVfr.requiresTimeEstimation());
-        assertFalse(frameTimeInfoAssumingVfr.hasConstantFrameRate());
-
-        for (int i = 0; i < 90; i++) {
-            var expected = frameTimeInfoCfr.getFrameTimeMs(i);
-            var actual = frameTimeInfoAssumingVfr.getFrameTimeMs(i);
-            assertTrue("frame " + i, Math.abs(expected - actual) <= 1);
-        }
-    }
-
-    @Test
-    public void testGetEstimatedTimesAssumingVfr() {
-        var videoPath = TestUtil.findFilePath("/samples/video_01.mp4");
-        var frameTimeInfoCfr = FrameTimeInfoBuilder
-                .getFrameTimeInfo(videoPath, 29.97);
-        assertTrue(frameTimeInfoCfr.hasConstantFrameRate());
-
-        var frameTimeInfoAssumingVfr
-                = FrameTimeInfoBuilder.getEstimatedFrameTimeInfoAssumingVfr(videoPath, 29.97);
-        assertTrue(frameTimeInfoAssumingVfr.requiresTimeEstimation());
-        assertFalse(frameTimeInfoAssumingVfr.hasConstantFrameRate());
-
-        for (int i = 0; i < 90; i++) {
-            var expected = frameTimeInfoCfr.getFrameTimeMs(i);
-            var actual = frameTimeInfoAssumingVfr.getFrameTimeMs(i);
-            assertEquals(expected, actual);
-        }
-    }
-
-
-    @Test
-    public void testGetEstimatedTimesVfr() {
-        var videoPath = TestUtil.findFilePath("/samples/bbb24p_00_short.ts");
-        var timeInfo = FrameTimeInfoBuilder.getEstimatedTimes(videoPath, 24);
-
-        assertFalse(timeInfo.hasConstantFrameRate());
-        assertTrue(timeInfo.requiresTimeEstimation());
-
-        int[] expectedTimes = {2029, 2070, 2112, 2154, 2195, 2237, 2279, 2320, 2362, 2404};
-        for (int i = 0; i < expectedTimes.length; i++) {
-            assertEquals(expectedTimes[i], timeInfo.getFrameTimeMs(i));
-        }
-    }
-
-
-    @Test
-    public void testGetEstimatedTimesCfr() throws IOException {
-        var videoPath = TestUtil.findFilePath("/samples/video_01.mp4");
-        var timeInfo = FrameTimeInfoBuilder.getEstimatedTimes(videoPath, 29.97);
-        assertTrue(timeInfo.hasConstantFrameRate());
-        assertFalse(timeInfo.requiresTimeEstimation());
-
-        var ffmpegTimes = getTimes(videoPath);
-        for (int i = 0; i < ffmpegTimes.length; i++) {
-            assertTrue(Math.abs(ffmpegTimes[i] - timeInfo.getFrameTimeMs(i)) <= 1);
-        }
     }
 
 
@@ -194,13 +124,13 @@ public class TestFrameTimeInfoBuilder {
 
 
     private static int[] getTimes(Path video) throws IOException {
-        // In the actual code we use best_effort_timestamp instead of best_effort_timestamp_time
-        // (like below) because when collecting the timestamps, we are also checking for a variable
-        // frame rate. best_effort_timestamp (normally PTS values) is always an  integer, unlike
-        // best_effort_timestamp_time which is a floating point value. Using best_effort_timestamp
-        // to check for variable frame rate prevents the loss of precision that occurs with
-        // floating point values. The rounding would likely cause constant frame rate videos to be
-        // detected as having a variable frame rate.
+        // In the actual code we use best_effort_timestamp instead of
+        // best_effort_timestamp_time (like below) because when collecting the timestamps,
+        // we are also checking for a variable frame rate. best_effort_timestamp is always an
+        // integer, unlike best_effort_timestamp_time which is a floating point value.
+        // Using best_effort_timestamp to check for variable frame rate prevents the loss of
+        // precision that occurs with floating point values. The rounding would likely cause
+        // constant frame rate videos to be detected as having a variable frame rate.
 
         String[] command = {
                 "ffprobe", "-hide_banner", "-select_streams", "v",
@@ -217,7 +147,8 @@ public class TestFrameTimeInfoBuilder {
             String line;
             while ((line = br.readLine()) != null) {
                 try {
-                    times.accept((int) (Double.parseDouble(line) * 1000));
+                    double time = Double.parseDouble(line) * 1000;
+                    times.accept((int) time);
                 }
                 catch (NumberFormatException e) {
                     times.accept(-1);

@@ -38,7 +38,10 @@ import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.util.*;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JniLoader;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +71,9 @@ public class TestMediaInspectionProcessor {
     private final MediaMetadataValidator _mockMediaMetadataValidator
             = mock(MediaMetadataValidator.class);
 
-    private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil
-            = mock(AggregateJobPropertiesUtil.class);
-
     private final MediaInspectionProcessor _mediaInspectionProcessor
             = new MediaInspectionProcessor(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                           _mockMediaMetadataValidator,
-                                           _mockAggregateJobPropertiesUtil);
+                                           _mockMediaMetadataValidator);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();

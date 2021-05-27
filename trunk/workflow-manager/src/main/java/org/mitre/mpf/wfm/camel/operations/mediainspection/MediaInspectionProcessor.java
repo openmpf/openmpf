@@ -43,7 +43,6 @@ import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -97,18 +96,14 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private final MediaMetadataValidator _mediaMetadataValidator;
 
-    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-
     @Inject
     public MediaInspectionProcessor(
             PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
-            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator,
-            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator) {
         _propertiesUtil = propertiesUtil;
         _inProgressJobs = inProgressJobs;
         _ioUtils = ioUtils;
         _mediaMetadataValidator = mediaMetadataValidator;
-        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
     @Override
@@ -161,8 +156,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         ffmpegMetadata = generateFfmpegMetadata(localPath, mimeType);
                         String resolutionStr = ffmpegMetadata.get("videoResolution");
                         if (resolutionStr != null) {
-                            var job = _inProgressJobs.getJob(jobId);
-                            length = inspectVideo(localPath, job, media, mimeType, mediaMetadata, ffmpegMetadata);
+                            length = inspectVideo(localPath, jobId, mediaId, mimeType, mediaMetadata, ffmpegMetadata);
                             break;
                         }
                         _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.MISSING_VIDEO_STREAM,
@@ -233,19 +227,18 @@ public class MediaInspectionProcessor extends WfmProcessor {
         return -1;
     }
 
-    private int inspectVideo(Path localPath, BatchJob job, Media media, String mimeType,
+    private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
                              Map<String, String> mediaMetadata, Metadata ffmpegMetadata)
-            throws NotReadableByOpenCvException {
+            throws NotReadableByOpenCvException, IOException {
 
-        int frameCount = getFrameCount(localPath, job.getId(), media.getId(), mimeType,
-                                       ffmpegMetadata);
+        int frameCount = getFrameCount(localPath, jobId, mediaId, mimeType, ffmpegMetadata);
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
 
         // FRAME_WIDTH and FRAME_HEIGHT
 
         String resolutionStr = ffmpegMetadata.get("videoResolution");
         if (resolutionStr == null) {
-            _inProgressJobs.addError(job.getId(), media.getId(), IssueCodes.MEDIA_INSPECTION,
+            _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                      "Cannot detect video file resolution.");
             return -1;
         }
@@ -277,50 +270,18 @@ public class MediaInspectionProcessor extends WfmProcessor {
             mediaMetadata.put("ROTATION", rotation);
         }
 
-        boolean assumeVfr = Boolean.parseBoolean(
-                _aggregateJobPropertiesUtil.getValue("ASSUME_VFR", job, media));
-
-        boolean accurateVfrTimestamps = Boolean.parseBoolean(
-                _aggregateJobPropertiesUtil.getValue("ACCURATE_VFR_TIMESTAMPS", job, media));
-
-        FrameTimeInfo frameTimeInfo;
-        if (assumeVfr) {
-            if (accurateVfrTimestamps) {
-                frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfoAssumingVfr(
-                        localPath, fps);
-                if (frameTimeInfo.requiresTimeEstimation()) {
-                    _inProgressJobs.addWarning(
-                            job.getId(), media.getId(), IssueCodes.MEDIA_INSPECTION,
-                            "One or more presentation timestamp (PTS) values were missing " +
-                                    "from the video file. Some times in the output object will be " +
-                                    "estimated.");
-                }
-            }
-            else {
-                frameTimeInfo = FrameTimeInfoBuilder.getEstimatedFrameTimeInfoAssumingVfr(
-                        localPath, fps);
-            }
+        var frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, fps);
+        if (frameTimeInfo.hasConstantFrameRate()) {
+            mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
         }
-        else {
-            if (accurateVfrTimestamps) {
-                frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, fps);
-                if (frameTimeInfo.requiresTimeEstimation()) {
-                    _inProgressJobs.addWarning(
-                            job.getId(), media.getId(), IssueCodes.MEDIA_INSPECTION,
-                            "One or more presentation timestamp (PTS) values were missing " +
-                                    "from the video file. Some times in the output object will be " +
-                                    "estimated.");
-                }
-            }
-            else {
-                frameTimeInfo = FrameTimeInfoBuilder.getEstimatedTimes(localPath, fps);
-            }
-            if (frameTimeInfo.hasConstantFrameRate()) {
-                mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
-            }
+        if (frameTimeInfo.requiresTimeEstimation()) {
+            _inProgressJobs.addWarning(
+                    jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                    "One or more presentation timestamp (PTS) values were missing from the " +
+                            "video file. Some times in the output object will be estimated.");
         }
 
-        _inProgressJobs.addFrameTimeInfo(job.getId(), media.getId(), frameTimeInfo);
+        _inProgressJobs.addFrameTimeInfo(jobId, mediaId, frameTimeInfo);
         return frameCount;
     }
 

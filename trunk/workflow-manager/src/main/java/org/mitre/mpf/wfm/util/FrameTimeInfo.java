@@ -46,33 +46,23 @@ public class FrameTimeInfo {
 
 
     public static FrameTimeInfo forConstantFrameRate(double fps, int startTime) {
-        return new FrameTimeInfo(true, false, getTimeUsingFps(fps, startTime));
-    }
-
-    public static FrameTimeInfo forConstantFrameRateWithEstimatedTimes(double fps, int startTime) {
-        return new FrameTimeInfo(true, true, getTimeUsingFps(fps, startTime));
+        double msPerFrame = 1000 / fps;
+        return new FrameTimeInfo(true, false,
+                                 frameIdx -> (int) (startTime + frameIdx * msPerFrame));
     }
 
     public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
                                                      boolean requiresTimeEstimation) {
+        double msPerFrame = 1000 / fps;
         return new FrameTimeInfo(false, requiresTimeEstimation, frameIdx -> {
             try {
                 return timeStamps[frameIdx];
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
-                return getTimeUsingFps(fps, startTime).applyAsInt(frameIdx);
+                return (int) (startTime + frameIdx * msPerFrame);
             }
         });
-    }
-
-    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps, int startTime) {
-        return new FrameTimeInfo(false, true, getTimeUsingFps(fps, startTime));
-    }
-
-    private static IntUnaryOperator getTimeUsingFps(double fps, int startTime) {
-        double msPerFrame = 1000 / fps;
-        return frameIdx -> startTime + (int) (frameIdx * msPerFrame);
     }
 
     public boolean hasConstantFrameRate() {

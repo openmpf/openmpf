@@ -45,6 +45,8 @@ public class MediaTestUtil {
     public static Exchange setupExchange(long jobId, MediaImpl media,
                                          InProgressBatchJobsService mockInProgressJobs) {
         var job = mock(BatchJob.class);
+        when(job.getId())
+                .thenReturn(jobId);
         when(job.getMedia(media.getId()))
                 .thenReturn(media);
         when(job.getJobProperties())

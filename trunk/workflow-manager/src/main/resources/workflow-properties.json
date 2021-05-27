@@ -175,6 +175,20 @@
         "mediaTypes": ["VIDEO"]
     },
     {
+        "name": "ACCURATE_VFR_TIMESTAMPS",
+        "description": "Enables or disables the use of ffprobe extract accurate timestamps for variable frame rate videos. Getting accurate timestamps can be slow, so some users may prefer to estimate the timestamps using the average frame rate.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.vfr.accurate.timestamps",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "ASSUME_VFR",
+        "description": "When true, skip detecting whether a video has a variable frame rate and assume it does.",
+        "type": "BOOLEAN",
+        "propertiesKey": "detection.assume.vfr",
+        "mediaTypes": ["VIDEO"]
+    },
+    {
         "name": "SEARCH_REGION_ENABLE_DETECTION",
         "description": "Enable cropping.",
         "type": "BOOLEAN",

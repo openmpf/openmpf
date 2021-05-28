@@ -229,7 +229,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
 
     private int inspectVideo(Path localPath, long jobId, long mediaId, String mimeType,
                              Map<String, String> mediaMetadata, Metadata ffmpegMetadata)
-            throws NotReadableByOpenCvException, IOException {
+            throws NotReadableByOpenCvException {
 
         int frameCount = getFrameCount(localPath, jobId, mediaId, mimeType, ffmpegMetadata);
         mediaMetadata.put("FRAME_COUNT", Integer.toString(frameCount));
@@ -270,9 +270,18 @@ public class MediaInspectionProcessor extends WfmProcessor {
             mediaMetadata.put("ROTATION", rotation);
         }
 
-        if (FrameRateTypeDetector.hasConstantFrameRate(localPath)) {
+        var frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, fps);
+        if (frameTimeInfo.hasConstantFrameRate()) {
             mediaMetadata.put("HAS_CONSTANT_FRAME_RATE", "true");
         }
+        if (frameTimeInfo.requiresTimeEstimation()) {
+            _inProgressJobs.addWarning(
+                    jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                    "One or more presentation timestamp (PTS) values were missing from the " +
+                            "video file. Some times in the output object will be estimated.");
+        }
+
+        _inProgressJobs.addFrameTimeInfo(jobId, mediaId, frameTimeInfo);
         return frameCount;
     }
 

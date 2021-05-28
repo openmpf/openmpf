@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -329,6 +330,12 @@ public class InProgressBatchJobsService {
         LOG.info("Setting job {}'s media {}'s converted media path to {}",
                  jobId, mediaId, convertedMediaPath);
         getMediaImpl(jobId, mediaId).setConvertedMediaPath(convertedMediaPath);
+    }
+
+    public synchronized void addFrameTimeInfo(long jobId, long mediaId,
+                                              FrameTimeInfo frameTimeInfo) {
+        LOG.info("Adding frame time info to job {}'s media {}.", jobId, mediaId);
+        getMediaImpl(jobId, mediaId).setFrameTimeInfo(frameTimeInfo);
     }
 
     private MediaImpl getMediaImpl(long jobId, long mediaId) {

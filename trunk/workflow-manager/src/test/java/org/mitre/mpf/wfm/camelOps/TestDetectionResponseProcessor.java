@@ -44,10 +44,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.*;
 import org.mockito.*;
 
 import java.net.URI;
@@ -86,8 +83,8 @@ public class TestDetectionResponseProcessor {
     private static final int START_FRAME = 10;
     private static final int STOP_FRAME = 30;
 
-    private static final int START_TIME = DetectionResponseProcessor.convertFrameToTime(START_FRAME, FPS);
-    private static final int STOP_TIME  = DetectionResponseProcessor.convertFrameToTime(STOP_FRAME, FPS);
+    private static final int START_TIME = 333;
+    private static final int STOP_TIME  = 1001;
 
     private static final String DETECTION_RESPONSE_ALG_NAME = "TEST_DETECTION_RESPONSE_ALG";
     private static final String DETECTION_RESPONSE_ACTION_NAME = "TEST_DETECTION_RESPONSE_ACTION";
@@ -130,6 +127,7 @@ public class TestDetectionResponseProcessor {
                 Collections.emptyMap(), Collections.emptyMap(), null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
+        media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(FPS, 0, false));
 
         BatchJobImpl job = new BatchJobImpl(
             JOB_ID,

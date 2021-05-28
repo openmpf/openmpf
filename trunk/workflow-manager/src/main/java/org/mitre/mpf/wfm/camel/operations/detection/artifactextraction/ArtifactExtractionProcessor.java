@@ -175,10 +175,10 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
     private void handleException(ArtifactExtractionRequest request, IOException e) {
         LOG.warn(
-                "[Job {}|{}|ARTIFACT_EXTRACTION] Failed to extract the artifacts from Media #{} due to an "
+                "Failed to extract the artifacts from Media #{} due to an "
                         + "exception. All detections (including exemplars) produced in this task "
                         + "for this medium will NOT have an associated artifact.",
-                request.getJobId(), request.getTaskIndex(), request.getMediaId(), e);
+                request.getMediaId(), e);
         var tracks = _inProgressBatchJobs.getTracks(
                 request.getJobId(),
                 request.getMediaId(),

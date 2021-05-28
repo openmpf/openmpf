@@ -27,30 +27,27 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.mitre.mpf.mvc.util.MdcUtil;
+import org.slf4j.MDC;
+
 import java.util.Collection;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 public class ThreadUtil {
 
-    private static ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+    private static ExecutorService THREAD_POOL = new MdcAwareCachedThreadPool();
 
     private ThreadUtil() {
     }
 
-
     public static synchronized CustomCompletableFuture<Void> runAsync(ThrowingRunnable task) {
-        return callAsync(() -> {
-            task.run();
-            return null;
-        });
+        return callAsync(task.asCallable());
     }
 
     public static synchronized CustomCompletableFuture<Void> runAsync(long delay, TimeUnit unit,
                                                                       ThrowingRunnable task) {
-        return callAsync(delay, unit, () -> {
-            task.run();
-            return null;
-        });
+        return callAsync(delay, unit, task.asCallable());
     }
 
 
@@ -59,7 +56,8 @@ public class ThreadUtil {
     }
 
 
-    public static synchronized <T> CustomCompletableFuture<T> callAsync(long delay, TimeUnit unit, Callable<T> task) {
+    public static synchronized <T> CustomCompletableFuture<T> callAsync(long delay, TimeUnit unit,
+                                                                        Callable<T> task) {
         var future = ThreadUtil.<T>newFuture();
 
         return (CustomCompletableFuture<T>)  future.completeAsync(() -> {
@@ -69,13 +67,28 @@ public class ThreadUtil {
             catch (Exception e) {
                 throw new CompletionException(e);
             }
-
         }, delayedExecutor(delay, unit));
     }
 
 
     public static synchronized Executor delayedExecutor(long delay, TimeUnit unit) {
-        return CompletableFuture.delayedExecutor(delay, unit, THREAD_POOL);
+        // Capture context on submitting thread.
+        var submitterMdcCtx = MDC.getCopyOfContextMap();
+        return CompletableFuture.delayedExecutor(delay, unit, r -> {
+            // Temporarily restore context on CompletableFuture.delayedExecutor's thread.
+            MdcUtil.all(submitterMdcCtx, () -> THREAD_POOL.execute(r));
+        });
+    }
+
+
+    public static <T> CompletableFuture<T> delayAndUnwrap(
+            long delay, TimeUnit unit,
+            Callable<CompletableFuture<T>> supplier) {
+
+        CompletableFuture<CompletableFuture<T>> delayedAndWrapped
+                = ThreadUtil.callAsync(delay, unit, supplier);
+
+        return delayedAndWrapped.thenCompose(Function.identity());
     }
 
 
@@ -129,12 +142,19 @@ public class ThreadUtil {
     @FunctionalInterface
     public interface ThrowingRunnable {
         public void run() throws Exception;
+
+        public default Callable<Void> asCallable() {
+            return () -> {
+                run();
+                return null;
+            };
+        }
     }
 
 
     public static synchronized void start() {
         if (THREAD_POOL.isShutdown()) {
-            THREAD_POOL = Executors.newCachedThreadPool();
+            THREAD_POOL = new MdcAwareCachedThreadPool();
         }
     }
 
@@ -196,7 +216,7 @@ public class ThreadUtil {
 
         @Override
         public <U> CompletableFuture<U> newIncompleteFuture() {
-            return new CustomCompletableFuture<U>(_cancellableFuture, _defaultExecutor);
+            return new CustomCompletableFuture<>(_cancellableFuture, _defaultExecutor);
         }
 
 
@@ -206,6 +226,23 @@ public class ThreadUtil {
                 _cancellableFuture.cancel(mayInterruptIfRunning);
             }
             return super.cancel(mayInterruptIfRunning);
+        }
+    }
+
+
+    private static class MdcAwareCachedThreadPool extends ThreadPoolExecutor {
+
+        MdcAwareCachedThreadPool() {
+            // Uses same arguments as Executors.newCachedThreadPool()
+            super(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
+                  new SynchronousQueue<>());
+        }
+
+        @Override
+        public void execute(Runnable runnable) {
+            // Capture context on submitting thread.
+            var submitterMdcCtx = MDC.getCopyOfContextMap();
+            super.execute(() -> MdcUtil.all(submitterMdcCtx, runnable));
         }
     }
 }

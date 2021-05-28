@@ -67,7 +67,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 
     @Override
     public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
-        log.debug("[Job {}:{}:{}] Received response for Media {} (Index = {}). Error? {}", jobId, markupResponse.getTaskIndex(), markupResponse.getActionIndex(), markupResponse.getMediaId(), markupResponse.getMediaIndex(), markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
+        log.debug("Received response for Media {} (Index = {}). Error? {}",
+                  markupResponse.getMediaId(), markupResponse.getMediaIndex(),
+                  markupResponse.getHasError() ? markupResponse.getErrorMessage() : "None.");
         MarkupResult markupResult = new MarkupResult();
         markupResult.setTaskIndex(markupResponse.getTaskIndex());
         markupResult.setActionIndex(markupResponse.getActionIndex());

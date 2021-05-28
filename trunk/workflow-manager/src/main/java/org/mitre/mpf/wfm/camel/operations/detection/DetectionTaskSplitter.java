@@ -92,10 +92,7 @@ public class DetectionTaskSplitter {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
-                    log.warn("[Job {}:{}:*] Skipping Media #{} - it is in an error state.",
-                            job.getId(),
-                            job.getCurrentTaskIndex(),
-                            media.getId());
+                    log.warn("Skipping Media #{} - it is in an error state.", media.getId());
                     continue;
                 }
 
@@ -173,10 +170,7 @@ public class DetectionTaskSplitter {
                         message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
                     }
                     messages.addAll(detectionRequestMessages);
-                    log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
-                            job.getId(),
-                            job.getCurrentTaskIndex(),
-                            actionIndex,
+                    log.debug("Created {} work units for Media #{}.",
                             detectionRequestMessages.size(), media.getId());
                 }
             } catch (WfmProcessingException e) {

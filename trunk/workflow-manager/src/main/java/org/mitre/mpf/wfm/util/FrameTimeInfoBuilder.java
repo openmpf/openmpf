@@ -265,11 +265,11 @@ public class FrameTimeInfoBuilder {
             }
         }
 
-        // Last frame needs special handling because it doesn't have a following value to use to
-        // calculate the average PTS value.
+        // Last frame needs special handling (when it isn't the first or second frame) because it
+        // doesn't have a following value to use to calculate the average PTS value.
         if (frameTimes.length > 2 && frameTimes[frameTimes.length - 1] <= 0) {
             requiredEstimation = true;
-            estimateWithPrevDelta(frameTimes, frameTimes.length -1 );
+            estimateWithPrevDelta(frameTimes, frameTimes.length - 1);
         }
 
         return requiredEstimation;
@@ -323,6 +323,11 @@ public class FrameTimeInfoBuilder {
 
 
     private static OptionalInt getStartTimeMs(Path mediaPath) {
+        // Uses -read_intervals %30 to get timestamps for the first 30 seconds of the video.
+        // We really only need the very first timestamp, however %1 (1 second) doesn't work
+        // for some videos. We use 30 seconds to over estimate the actual amount of time required.
+        // It is unlikely that ffprobe will ever make it all the way to 30 seconds because we
+        // close ffprobe's standard out after reading the first line causing ffprobe to exit.
         String[] command = {
                 "ffprobe", "-read_intervals", "%30" ,"-hide_banner", "-select_streams", "v",
                 "-show_entries", "frame=best_effort_timestamp_time",
@@ -343,13 +348,14 @@ public class FrameTimeInfoBuilder {
                 LOG.error("ffprobe produced no output when checking the start time of {}. " +
                                   "Assuming start time is 0.", mediaPath);
                 return OptionalInt.empty();
-
             }
             return OptionalInt.of((int) (Double.parseDouble(line) * 1000));
         }
         catch (IOException | NumberFormatException e) {
-            LOG.error("Assuming start time of %s is 0 because the following error occurred " +
-                              "while checking the start time: " + e.getMessage(), e);
+            LOG.error(String.format(
+                    "Assuming start time of %s is 0 because the following error occurred " +
+                            "while checking the start time: %s",
+                    mediaPath, e.getMessage()), e);
             return OptionalInt.empty();
         }
     }

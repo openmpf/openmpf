@@ -29,9 +29,11 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,10 +54,12 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -335,8 +339,7 @@ public class TestTiesDbService {
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
         when(_mockCallbackUtils.executeRequest(argThat(action2Matcher), eq(3)))
-                .thenReturn(ThreadUtil.completedFuture(
-                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "BAD REQUEST")));
+                .thenReturn(ThreadUtil.completedFuture(createErrorResponse()));
 
         var result = _tiesDbService.addAssertions(
                 job,
@@ -349,11 +352,20 @@ public class TestTiesDbService {
         var exception = TestUtil.assertThrows(CompletionException.class, result::join);
         assertTrue(exception.getCause() instanceof IllegalStateException);
         assertTrue(exception.getMessage().contains("400"));
+        assertTrue(exception.getMessage().contains("<error>"));
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt());
     }
 
+    private static HttpResponse createErrorResponse() {
+        var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "BAD REQUEST");
+        var entity = new BasicHttpEntity();
+        response.setEntity(entity);
+        var bytes = "<error>".getBytes(StandardCharsets.UTF_8);
+        entity.setContent(new ByteArrayInputStream(bytes));
+        return response;
+    }
 
     private static BatchJob createTestJob() {
         var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
@@ -397,19 +409,16 @@ public class TestTiesDbService {
 
         var post = (HttpPost) httpRequest;
 
-        JsonNode assertions;
+        JsonNode assertion;
         try {
-            assertions = _objectMapper.readTree(post.getEntity().getContent());
+            assertion = _objectMapper.readTree(post.getEntity().getContent());
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         // Assertions that apply to all possible arguments
-        assertTrue(assertions.isArray());
-        assertEquals(1, assertions.size());
-
-        var assertion = assertions.get(0);
+        assertTrue(assertion.isObject());
         assertFalse(assertion.get("assertionId").textValue().isBlank());
         assertEquals("UNCLASSIFIED", assertion.get("securityTag").textValue());
         assertEquals("OpenMPF", assertion.get("system").textValue());

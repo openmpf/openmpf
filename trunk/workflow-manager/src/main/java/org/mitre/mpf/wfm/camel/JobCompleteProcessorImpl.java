@@ -183,32 +183,33 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 " If this job is resubmitted, it will likely not complete again!", jobId), exception);
             }
 
-            var tiesDbFuture = tiesDbService.addAssertions(
-                    job,
-                    jobStatus.getValue(),
-                    jobRequest.getTimeCompleted(),
-                    outputObjectUri,
-                    outputSha.getValue(),
-                    trackCounter
-            ).exceptionally(err -> {
-                // A warning has already been added to the job
-                recreateOutputObject(job, jobStatus, outputSha);
-                return null;
-            });
-
             if (job.getCallbackUrl().isPresent()) {
-                final var finalOutputObjectUri = outputObjectUri;
-                tiesDbFuture
-                        .thenComposeAsync(x -> sendCallbackAsync(job, finalOutputObjectUri))
-                        .whenCompleteAsync((resp, err) -> {
-                            if (err != null) {
-                                handleFailedCallback(job, jobStatus, outputSha, err);
-                            }
-                            completeJob(job, jobStatus);
-                        });
+                var mutableOutputUri = new MutableObject<>(outputObjectUri);
+                sendCallbackAsync(job, outputObjectUri)
+                        .handleAsync((resp, err) -> handleFailedCallback(
+                                job,
+                                jobStatus,
+                                mutableOutputUri,
+                                outputSha,
+                                err))
+                        .thenCompose(resp -> tiesDbService.addAssertions(
+                                job,
+                                jobStatus.getValue(),
+                                jobRequest.getTimeCompleted(),
+                                mutableOutputUri.getValue(),
+                                outputSha.getValue(),
+                                trackCounter))
+                        .whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
             }
             else {
-                tiesDbFuture.thenRunAsync(() -> completeJob(job, jobStatus));
+                tiesDbService.addAssertions(
+                        job,
+                        jobStatus.getValue(),
+                        jobRequest.getTimeCompleted(),
+                        outputObjectUri,
+                        outputSha.getValue(),
+                        trackCounter
+                ).whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
             }
         }
     }
@@ -240,9 +241,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private void handleFailedCallback(BatchJob job, Mutable<BatchJobStatusType> jobStatus,
+    private Void handleFailedCallback(BatchJob job,
+                                      Mutable<BatchJobStatusType> jobStatus,
+                                      Mutable<URI> mutableOutputUri,
                                       Mutable<String> outputSha,
                                       Throwable callbackError) {
+        if (callbackError == null) {
+            return null;
+        }
+
         if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
             callbackError = callbackError.getCause();
         }
@@ -258,28 +265,26 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         log.warn(warningMessage, callbackError);
         inProgressBatchJobs.addJobWarning(job.getId(), IssueCodes.FAILED_CALLBACK, warningMessage);
 
-        recreateOutputObject(job, jobStatus, outputSha);
-    }
-
-
-    private void recreateOutputObject(BatchJob job, Mutable<BatchJobStatusType> jobStatus,
-                                      Mutable<String> outputSha) {
         JobRequest jobRequest = jobRequestDao.findById(job.getId());
-        BatchJobStatusType initialStatus = jobStatus.getValue();
         try {
-            createOutputObject(job, jobRequest.getTimeReceived(), jobRequest.getTimeCompleted(),
-                               jobStatus, outputSha, new TrackCounter());
+            outputSha.setValue(null);
+            URI outputObjectUri = createOutputObject(
+                    job, jobRequest.getTimeReceived(), jobRequest.getTimeCompleted(),
+                    jobStatus, outputSha, new TrackCounter());
+            mutableOutputUri.setValue(outputObjectUri);
+            jobRequest.setOutputObjectPath(outputObjectUri.toString());
         }
         catch (Exception e) {
             log.warn("Failed to create the output object for Job {} due to an exception.", job.getId(), e);
             jobStatus.setValue(BatchJobStatusType.ERROR);
         }
 
-        if (jobStatus.getValue() != initialStatus) {
-            jobRequest.setTimeCompleted(Instant.now());
-            jobRequest.setStatus(jobStatus.getValue());
-            jobRequestDao.persist(jobRequest);
-        }
+        jobRequest.setTimeCompleted(Instant.now());
+        jobRequest.setStatus(jobStatus.getValue());
+        jobRequest.setJob(jsonUtils.serialize(job));
+        jobRequestDao.persist(jobRequest);
+
+        return null;
     }
 
     private CompletableFuture<HttpResponse> sendCallbackAsync(BatchJob job, URI outputObjectUri) {

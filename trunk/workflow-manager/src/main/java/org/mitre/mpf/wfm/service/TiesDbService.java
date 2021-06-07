@@ -39,13 +39,11 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCountEntry;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CallbackUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -76,8 +74,6 @@ public class TiesDbService {
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
-    private final InProgressBatchJobsService _inProgressJobs;
-
     private final ObjectMapper _objectMapper;
 
     private final CallbackUtils _callbackUtils;
@@ -85,12 +81,10 @@ public class TiesDbService {
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-                  InProgressBatchJobsService inProgressJobs,
                   ObjectMapper objectMapper,
                   CallbackUtils callbackUtils) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _inProgressJobs = inProgressJobs;
         _objectMapper = objectMapper;
         _callbackUtils = callbackUtils;
     }
@@ -121,7 +115,7 @@ public class TiesDbService {
                         }
                     }
                     catch (IllegalStateException e) {
-                        handleHttpError(job.getId(), media.getId(), e);
+                        handleHttpError(job.getId(), e);
                         futures.add(ThreadUtil.failedFuture(e));
                         continue;
                     }
@@ -175,10 +169,12 @@ public class TiesDbService {
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
-        return postAssertion(tiesDbUrl, media.getSha256(), assertion)
-                .whenComplete((resp, err) -> handleHttpError(job.getId(), media.getId(), err));
-    }
+        LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
+                 job.getId(), action.getName());
 
+        return postAssertion(tiesDbUrl, media.getSha256(), assertion)
+                .whenComplete((resp, err) -> handleHttpError(job.getId(), err));
+    }
 
 
     private Optional<URI> getTiesDbUri(BatchJob job, Media media, Action action) {
@@ -271,7 +267,7 @@ public class TiesDbService {
     }
 
 
-    private void handleHttpError(long jobId, long mediaId, Throwable error) {
+    private static void handleHttpError(long jobId, Throwable error) {
         if (error == null) {
             return;
         }
@@ -283,6 +279,5 @@ public class TiesDbService {
         var warningMessage = String.format(
                 "[Job %s] Sending HTTP POST to TiesDb failed due to: %s", jobId, error);
         LOG.warn(warningMessage, error);
-        _inProgressJobs.addWarning(jobId, mediaId, IssueCodes.FAILED_CALLBACK, warningMessage);
     }
 }

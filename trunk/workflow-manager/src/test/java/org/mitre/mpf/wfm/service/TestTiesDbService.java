@@ -44,11 +44,9 @@ import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.util.*;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
@@ -66,7 +64,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.*;
-import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Mockito.*;
 
@@ -77,9 +74,6 @@ public class TestTiesDbService {
 
     @Mock
     private AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil;
-
-    @Mock
-    private InProgressBatchJobsService _mockInProgressJobs;
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
@@ -98,7 +92,7 @@ public class TestTiesDbService {
     public void init() {
         MockitoAnnotations.initMocks(this);
         _tiesDbService = new TiesDbService(_mockPropertiesUtil, _mockAggregateJobPropertiesUtil,
-                                           _mockInProgressJobs, _objectMapper, _mockCallbackUtils);
+                                           _objectMapper, _mockCallbackUtils);
 
         when(_mockPropertiesUtil.getSemanticVersion())
                 .thenReturn("1.5");
@@ -109,6 +103,7 @@ public class TestTiesDbService {
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
     }
+
 
     @Test
     public void testAddAssertions() {
@@ -264,10 +259,6 @@ public class TestTiesDbService {
         var exception = TestUtil.assertThrows(CompletionException.class, result::join);
         assertTrue(exception.getCause() instanceof IllegalStateException);
         assertTrue(exception.getCause().getCause() instanceof URISyntaxException);
-
-        verify(_mockInProgressJobs)
-                .addWarning(eq(job.getId()), eq(media.getId()), eq(IssueCodes.FAILED_CALLBACK),
-                            nonBlank());
 
         verify(_mockCallbackUtils, times(1))
                 .executeRequest(any(), anyInt());

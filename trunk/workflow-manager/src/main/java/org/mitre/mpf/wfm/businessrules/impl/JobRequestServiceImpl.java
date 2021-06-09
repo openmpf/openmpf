@@ -226,8 +226,6 @@ public class JobRequestServiceImpl implements JobRequestService {
         jobRequestEntity = _jobRequestDao.persist(jobRequestEntity);
 
         try {
-            _jobStatusBroadcaster.broadcast(jobRequestEntity.getId(), 0, BatchJobStatusType.INITIALIZED);
-
             BatchJob job = _inProgressJobs.addJob(
                     jobRequestEntity.getId(),
                     externalId,

@@ -692,7 +692,7 @@ AppServices.factory('ServerSidePush',
 AppServices.factory('TimerService', ['$interval', function ($interval) {
 
     var registrants = {},
-        internalInterval = 1000;
+        internalInterval = 60000;
 
     var start = function () {
         $interval(service.tick, internalInterval);

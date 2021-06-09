@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -63,6 +64,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -163,15 +166,12 @@ public class JobController {
     @ResponseBody
     public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
         if (useSession) {
-            return sessionModel.getSessionJobs().stream()
-                    .map(id -> convertJob(jobRequestDao.findById(id)))
-                    .collect(toList());
+            return convertJobs(sessionModel.getSessionJobs()
+                                       .stream()
+                                       .map(jobRequestDao::findById));
         }
         else {
-            return jobRequestDao.findAll()
-                    .stream()
-                    .map(this::convertJob)
-                    .collect(toList());
+            return convertJobs(jobRequestDao.findAll().stream());
         }
     }
 
@@ -192,7 +192,7 @@ public class JobController {
     @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
     @ResponseBody
     public JobPageListModel getJobStatusFiltered(
-            @RequestParam(value = "draw", required = false) int draw,
+            @RequestParam(value = "draw", required = false) Integer draw,
             @RequestParam(value = "start", required = false) int start,
             @RequestParam(value = "length", required = false) int length,
             @RequestParam(value = "search", required = false) String search,
@@ -204,14 +204,15 @@ public class JobController {
         String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
         //handle paging
-        List<SingleJobInfo> jobInfoModels = jobRequestDao
-                .findByPage(length, start, search, sortColumn, sortOrderDirection)
-                .stream()
-                .map(this::convertJob)
-                .collect(toList());
+        var jobInfoModels = convertJobs(
+                jobRequestDao
+                        .findByPage(length, start, search, sortColumn, sortOrderDirection)
+                        .stream());
+
         int recordsTotal = (int) jobRequestDao.countAll();
 
         JobPageListModel model = new JobPageListModel();
+        model.setDraw(draw);
         // Total records, before filtering (i.e. the total number of records in the database)
         model.setRecordsTotal(recordsTotal);
         // Total records, after filtering (i.e. the total number of records after filtering has been applied -
@@ -248,12 +249,10 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
-            log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return ResponseEntity.badRequest().body(null);
-        }
-        return ResponseEntity.ok(convertJob(jobRequest));
+        return Optional.ofNullable(jobRequestDao.findById(jobId))
+                .flatMap(this::convertJob)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().body(null));
     }
 
     //INTERNAL
@@ -265,12 +264,9 @@ public class JobController {
             return null;
         }
 
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
-            log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return null;
-        }
-        return convertJob(jobRequest);
+        return Optional.ofNullable(jobRequestDao.findById(jobId))
+                .flatMap(this::convertJob)
+                .orElse(null);
     }
 
     /*
@@ -436,19 +432,47 @@ public class JobController {
     }
 
 
-    private SingleJobInfo convertJob(JobRequest job) {
+    private Optional<SingleJobInfo> convertJob(JobRequest job) {
         float jobProgressVal = jobProgress.getJobProgress(job.getId())
                 .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-        var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
-        var mediaUris = batchJob.getMedia().stream()
-                .map(Media::getUri)
-                .collect(toList());
+        List<String> mediaUris;
+        try {
+            if (job.getJob() == null) {
+                if (job.getStatus() == BatchJobStatusType.INITIALIZED) {
+                    return Optional.empty();
+                }
+                else {
+                    mediaUris = List.of();
+                }
+            }
+            else {
+                var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
+                mediaUris = batchJob.getMedia().stream()
+                        .map(Media::getUri)
+                        .collect(toList());
+            }
 
-        return new SingleJobInfo(
+        }
+        catch (WfmProcessingException e) {
+            log.error(String.format(
+                    "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
+            mediaUris = List.of();
+        }
+
+        return Optional.of(new SingleJobInfo(
                 job.getId(), job.getPipeline(), job.getPriority(), job.getStatus().toString(), jobProgressVal,
                 job.getTimeReceived(), job.getTimeCompleted(), job.getOutputObjectPath(),
-                job.getStatus().isTerminal(), mediaUris);
+                job.getStatus().isTerminal(), mediaUris));
+    }
+
+
+    private List<SingleJobInfo> convertJobs(Stream<JobRequest> jobRequests) {
+        return jobRequests
+                .map(this::convertJob)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(toList());
     }
 
 

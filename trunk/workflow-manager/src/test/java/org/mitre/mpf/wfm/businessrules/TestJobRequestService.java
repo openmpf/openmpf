@@ -43,12 +43,11 @@ import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -173,11 +172,9 @@ public class TestJobRequestService {
         var jobRequestEntity = _jobRequestService.run(jobCreationRequest);
 
 
-        InOrder jobStatusBroadcastOrder = inOrder(_mockJobStatusBroadcaster);
-        jobStatusBroadcastOrder.verify(_mockJobStatusBroadcaster)
-                .broadcast(123, 0, BatchJobStatusType.INITIALIZED);
-        jobStatusBroadcastOrder.verify(_mockJobStatusBroadcaster)
+        verify(_mockJobStatusBroadcaster)
                 .broadcast(123, 0, BatchJobStatusType.IN_PROGRESS);
+        verifyNoMoreInteractions(_mockJobStatusBroadcaster);
 
         assertEquals(123, jobRequestEntity.getId());
         assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
@@ -298,11 +295,9 @@ public class TestJobRequestService {
         _jobRequestService.resubmit(321, -1);
 
 
-        InOrder jobStatusBroadcastOrder = inOrder(_mockJobStatusBroadcaster);
-        jobStatusBroadcastOrder.verify(_mockJobStatusBroadcaster)
-                .broadcast(321, 0, BatchJobStatusType.INITIALIZED);
-        jobStatusBroadcastOrder.verify(_mockJobStatusBroadcaster)
+        verify(_mockJobStatusBroadcaster)
                 .broadcast(321, 0, BatchJobStatusType.IN_PROGRESS);
+        verifyNoMoreInteractions(_mockJobStatusBroadcaster);
 
         verify(_mockProduceTemplate)
                 .sendBodyAndHeaders(eq(MediaRetrieverRouteBuilder.ENTRY_POINT), eq(ExchangePattern.InOnly),

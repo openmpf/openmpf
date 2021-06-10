@@ -1,4 +1,4 @@
-package org.mitre.mpf.wfm.businessrules; /******************************************************************************
+ /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
  * This software (or technical data) was produced for the U.S. Government     *
@@ -24,6 +24,7 @@ package org.mitre.mpf.wfm.businessrules; /**************************************
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.businessrules;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
@@ -58,7 +59,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 public class TestJobRequestService {
@@ -148,29 +148,16 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(mockSystemPropSnapshot);
 
-        var returnedJobRequestEntity = new JobRequest() {
-            @Override
-            public long getId() {
-                return 123;
-            }
-        };
-        returnedJobRequestEntity.setStatus(BatchJobStatusType.INITIALIZED);
-        returnedJobRequestEntity.setPipeline("TEST PIPELINE");
-        returnedJobRequestEntity.setPriority(defaultPriority);
+        when(_mockJobRequestDao.getNextId())
+                .thenReturn(123L);
 
-        when(_mockJobRequestDao.persist(
-                argThat(jr -> jr.getId() == 0 && jr.getStatus() == BatchJobStatusType.INITIALIZED
-                        && jr.getPipeline().equals("TEST PIPELINE") && jr.getPriority() == defaultPriority)))
-                .thenReturn(returnedJobRequestEntity);
-
-        when(_mockJobRequestDao.persist(returnedJobRequestEntity))
-                .thenReturn(returnedJobRequestEntity);
+        when(_mockJobRequestDao.persist(any()))
+                .thenAnswer(i -> i.getArgument(0));
 
 
         var jobCreationRequest = createTestJobCreationRequest();
 
         var jobRequestEntity = _jobRequestService.run(jobCreationRequest);
-
 
         verify(_mockJobStatusBroadcaster)
                 .broadcast(123, 0, BatchJobStatusType.IN_PROGRESS);
@@ -178,6 +165,8 @@ public class TestJobRequestService {
 
         assertEquals(123, jobRequestEntity.getId());
         assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
+        assertEquals("TEST PIPELINE", jobRequestEntity.getPipeline());
+        assertEquals(defaultPriority, jobRequestEntity.getPriority());
 
         verify(_mockProduceTemplate)
                 .sendBodyAndHeaders(eq(MediaRetrieverRouteBuilder.ENTRY_POINT), eq(ExchangePattern.InOnly),
@@ -240,18 +229,13 @@ public class TestJobRequestService {
         originalJob.addWarning(1, "TEST ALGO", null, "warning");
 
 
-        var existingJobRequestEntity = new JobRequest() {
-            @Override
-            public long getId() {
-                return 321;
-            }
-        };
-
-        existingJobRequestEntity.setStatus(BatchJobStatusType.COMPLETE);
-        existingJobRequestEntity.setJob(_jsonUtils.serialize(originalJob));
+        var jobRequestEntity = new JobRequest();
+        jobRequestEntity.setId(321);
+        jobRequestEntity.setStatus(BatchJobStatusType.COMPLETE);
+        jobRequestEntity.setJob(_jsonUtils.serialize(originalJob));
 
         when(_mockJobRequestDao.findById(321))
-                .thenReturn(existingJobRequestEntity);
+                .thenReturn(jobRequestEntity);
 
         var newJobPipelineElements = createJobPipelineElements();
         when(_mockPipelineService.getBatchPipelineElements(originalJobPipelineElements.getName()))
@@ -260,21 +244,8 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(new SystemPropertiesSnapshot(Map.of("my.property", "10")));
 
-        var newJobRequestEntity = new JobRequest() {
-            @Override
-            public long getId() {
-                return 321;
-            }
-        };
-        newJobRequestEntity.setPriority(3);
-        when(_mockJobRequestDao.persist(argThat(
-                jr -> jr.getId() == 321 && jr.getPriority() == 3 && jr.getStatus() == BatchJobStatusType.INITIALIZED
-                    && jr.getPipeline().equals(existingJobRequestEntity.getPipeline())
-                        && jr.getOutputObjectPath() == null && jr.getJob() == null)))
-                .thenReturn(newJobRequestEntity);
-
-        when(_mockJobRequestDao.persist(newJobRequestEntity))
-                .thenReturn(newJobRequestEntity);
+        when(_mockJobRequestDao.persist(jobRequestEntity))
+                .thenReturn(jobRequestEntity);
 
         File artifactsDir = _temporaryFolder.newFolder("artifacts");
         Files.writeString(artifactsDir.toPath().resolve("artifact.bin"), "hello world");
@@ -294,6 +265,8 @@ public class TestJobRequestService {
 
         _jobRequestService.resubmit(321, -1);
 
+        verify(_mockJobRequestDao)
+                .persist(jobRequestEntity);
 
         verify(_mockJobStatusBroadcaster)
                 .broadcast(321, 0, BatchJobStatusType.IN_PROGRESS);
@@ -307,8 +280,8 @@ public class TestJobRequestService {
 
 
         BatchJob newJob = _inProgressJobs.getJob(321);
-        assertArrayEquals(newJobRequestEntity.getJob(), _jsonUtils.serialize(newJob));
-        assertEquals(BatchJobStatusType.IN_PROGRESS, newJobRequestEntity.getStatus());
+        assertArrayEquals(jobRequestEntity.getJob(), _jsonUtils.serialize(newJob));
+        assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
 
         assertEquals(BatchJobStatusType.IN_PROGRESS, newJob.getStatus());
         assertNotSame(newJob.getPipelineElements(), originalJob.getPipelineElements());

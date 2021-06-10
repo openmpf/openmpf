@@ -154,6 +154,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 }
             });
             jobTable.on('error.dt', function(){
+                tableLastUpdate = moment();
                 console.error(
                     "The most recent attempt to update the jobs table failed: %o",
                     arguments);

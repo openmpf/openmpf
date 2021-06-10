@@ -161,6 +161,10 @@ public class InProgressBatchJobsService {
         }
     }
 
+    public synchronized void clearOnInitializationError(long jobId) {
+        _jobs.remove(jobId);
+    }
+
     public synchronized boolean containsJob(long jobId) {
         return _jobs.containsKey(jobId);
     }

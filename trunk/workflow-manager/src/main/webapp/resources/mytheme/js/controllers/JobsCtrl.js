@@ -155,6 +155,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             });
             jobTable.on('error.dt', function(){
                 tableLastUpdate = moment();
+                if (!updateConfig.broadcastEnabled && updateConfig.pollingInterval > 0) {
+                    updateLastCheckedMsg();
+                }
                 console.error(
                     "The most recent attempt to update the jobs table failed: %o",
                     arguments);
@@ -231,11 +234,15 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             return;
         }
 
-        $scope.updateInfoMsg = 'Last checked at ' + tableLastUpdate.format('h:mm:ss a');
+        updateLastCheckedMsg();
         if (pollingIntervalChanged) {
             cancelPolling();
             scheduleNextPoll();
         }
+    };
+
+    var updateLastCheckedMsg = function () {
+        $scope.updateInfoMsg = 'Last checked at ' + tableLastUpdate.format('h:mm:ss a');
     };
 
     var pollingUpdate = function () {
@@ -247,7 +254,8 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         try {
             jobTable.ajax.reload(function () {
                 $scope.$apply(function () {
-                    $scope.updateInfoMsg = 'Last checked at ' + moment().format('h:mm:ss a');
+                    tableLastUpdate = moment();
+                    updateLastCheckedMsg();
                     scheduleNextPoll();
                 });
             }, false);

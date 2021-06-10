@@ -28,6 +28,11 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Query;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
+import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
+import org.hibernate.engine.jdbc.dialect.spi.DialectResolver;
+import org.hibernate.jdbc.ReturningWork;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -37,6 +42,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 @Repository
@@ -96,5 +104,32 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                         + " or to_char(timeCompleted, 'YYYY-MM-DD HH24:MI:SS') like :searchTerm "
                         + orderByClause)
                 .setString("searchTerm", '%' + searchTerm.toLowerCase() + '%');
+    }
+
+    public long getNextId() {
+        ReturningWork<Long> maxReturningWork = connection -> {
+            DialectResolver dialectResolver = new StandardDialectResolver();
+            Dialect dialect =  dialectResolver.resolveDialect(
+                    new DatabaseMetaDataDialectResolutionInfoAdapter(connection.getMetaData()));
+            PreparedStatement preparedStatement = null;
+            ResultSet resultSet = null;
+            try {
+                preparedStatement = connection.prepareStatement(dialect.getSequenceNextValString("hibernate_sequence"));
+                resultSet = preparedStatement.executeQuery();
+                resultSet.next();
+                return resultSet.getLong(1);
+            }catch (SQLException e) {
+                throw e;
+            } finally {
+                if(preparedStatement != null) {
+                    preparedStatement.close();
+                }
+                if(resultSet != null) {
+                    resultSet.close();
+                }
+            }
+
+        };
+        return getCurrentSession().doReturningWork(maxReturningWork);
     }
 }

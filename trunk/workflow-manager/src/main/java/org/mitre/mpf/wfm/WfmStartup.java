@@ -111,6 +111,8 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
                 log.info("Marking any remaining running batch jobs as CANCELLED_BY_SHUTDOWN.");
                 jobRequestDao.cancelJobsInNonTerminalState();
 
+                long nextId = jobRequestDao.getNextId();
+
                 streamingJobRequestDao.ifPresent(StreamingJobRequestDao::cancelJobsInNonTerminalState);
 
                 if (propertiesUtil.isAmqBrokerEnabled()) {

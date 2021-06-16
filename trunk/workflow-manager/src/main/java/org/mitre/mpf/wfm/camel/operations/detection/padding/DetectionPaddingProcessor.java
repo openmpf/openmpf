@@ -56,6 +56,7 @@ import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component(DetectionPaddingProcessor.REF)
@@ -101,8 +102,15 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Function<String, String> combinedProperties =
                         _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
 
+                Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
+                        trackMergingContext.getTaskIndex(), actionIndex);
+
+                Collection<Track> filteredTracks = removeZeroSizeDetections(tracks);
+
                 try {
                     if (!requiresPadding(combinedProperties)) {
+                        _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
+                                trackMergingContext.getTaskIndex(), actionIndex, filteredTracks);
                         continue;
                     }
                 } catch (DetectionPaddingException e) {
@@ -117,11 +125,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                 int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
-                Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
-                        trackMergingContext.getTaskIndex(), actionIndex);
-
                 Collection<Track> newTracks = processTracks(
-                        job.getId(), media.getId(), xPadding, yPadding, frameWidth, frameHeight, tracks);
+                        job.getId(), media.getId(), xPadding, yPadding, frameWidth, frameHeight, filteredTracks);
 
                 _inProgressBatchJobs.setTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex, newTracks);
@@ -181,6 +186,33 @@ public class DetectionPaddingProcessor extends WfmProcessor {
         }
     }
 
+    public static Collection<Track> removeZeroSizeDetections(Iterable<Track> tracks) {
+        // Remove any detections with zero width and height before padding.
+        // If the number of detections goes to 0, drop the track.
+        var newTracks = new TreeSet<Track>();
+        for (Track track : tracks) {
+            SortedSet<Detection> goodDetections = track.getDetections().stream()
+                    .filter(d -> (d.getWidth() != 0 && d.getHeight() != 0))
+                    .collect(Collectors.toCollection(TreeSet::new));
+
+            if (goodDetections.size() > 0) {
+                newTracks.add(new Track(
+                        track.getJobId(),
+                        track.getMediaId(),
+                        track.getTaskIndex(),
+                        track.getActionIndex(),
+                        goodDetections.first().getMediaOffsetFrame(),
+                        goodDetections.last().getMediaOffsetFrame(),
+                        goodDetections.first().getMediaOffsetTime(),
+                        goodDetections.last().getMediaOffsetTime(),
+                        track.getType(),
+                        track.getConfidence(),
+                        goodDetections,
+                        track.getTrackProperties()));
+            }
+        }
+        return newTracks;
+    }
 
     private Collection<Track> processTracks(long jobId, long mediaId, String xPadding, String yPadding,
                                             int frameWidth, int frameHeight, Iterable<Track> tracks) {

@@ -29,11 +29,12 @@ package org.mitre.mpf.wfm.camelOps;
 import org.junit.Test;
 import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestDetectionPaddingProcessor {
 
@@ -202,6 +203,106 @@ public class TestDetectionPaddingProcessor {
                     "-10%", "60%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
+    }
+
+    @Test
+    public void testRemoveZeroSizeDetectionsNoZeroDetections() {
+        SortedSet<Detection> detections = new TreeSet<Detection>();
+        Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
+        Detection detection2 = new Detection(50, 60, 20, 40, 1, 2, 2, Collections.emptyMap());
+        Detection detection3 = new Detection(50, 60, 20, 40, 1, 3, 3, Collections.emptyMap());
+        detections.add(detection1);
+        detections.add(detection2);
+        detections.add(detection3);
+
+        Track track1 = new Track(1, 2, 1, 1, 1, 3,
+                1, 3, "FACE", 1, detections, Collections.emptyMap());
+
+        SortedSet<Track> tracks = new TreeSet<Track>();
+        tracks.add(track1);
+
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+
+        assertEquals(1, filteredTracks.size());
+        Track filteredTrack = filteredTracks.iterator().next();
+        SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
+        assertEquals(3, filteredDetections.size());
+        assertEquals(1, filteredTrack.getStartOffsetFrameInclusive());
+        assertEquals(3, filteredTrack.getEndOffsetFrameInclusive());
+        assertEquals(1, filteredTrack.getStartOffsetTimeInclusive());
+        assertEquals(3, filteredTrack.getEndOffsetTimeInclusive());
+    }
+
+    @Test
+    public void testRemoveZeroSizeDetectionsOneZeroDetection() {
+        SortedSet<Detection> detections = new TreeSet<Detection>();
+        Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
+        Detection detection2 = new Detection(50, 60, 0, 0, 1, 2, 2, Collections.emptyMap());
+        Detection detection3 = new Detection(50, 60, 20, 40, 1, 3, 3, Collections.emptyMap());
+        detections.add(detection1);
+        detections.add(detection2);
+        detections.add(detection3);
+
+        Track track1 = new Track(1, 2, 1, 1, 1, 3,
+                1, 3, "FACE", 1, detections, Collections.emptyMap());
+
+        SortedSet<Track> tracks = new TreeSet<Track>();
+        tracks.add(track1);
+
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+        assertEquals(1, filteredTracks.size());
+        Track filteredTrack = filteredTracks.iterator().next();
+        SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
+        assertEquals(2, filteredDetections.size());
+        assertEquals(1, filteredTrack.getStartOffsetFrameInclusive());
+        assertEquals(3, filteredTrack.getEndOffsetFrameInclusive());
+        assertEquals(1, filteredTrack.getStartOffsetTimeInclusive());
+        assertEquals(3, filteredTrack.getEndOffsetTimeInclusive());
+    }
+
+    @Test
+    public void testRemoveZeroSizeDetectionsSingleDetectionTrack() {
+        SortedSet<Detection> detections = new TreeSet<Detection>();
+        Detection detection1 = new Detection(50, 60, 0, 0, 1, 1, 1, Collections.emptyMap());
+        detections.add(detection1);
+
+        Track track1 = new Track(1, 2, 1, 1, 1, 1,
+                1, 1, "FACE", 1, detections, Collections.emptyMap());
+
+        SortedSet<Track> tracks = new TreeSet<Track>();
+        tracks.add(track1);
+
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+
+        assertTrue(filteredTracks.isEmpty());
+    }
+
+    @Test
+    public void testRemoveZeroSizeDetectionsOneZeroDetectionAtEnd() {
+        SortedSet<Detection> detections = new TreeSet<Detection>();
+        Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
+        Detection detection2 = new Detection(50, 60, 20, 40, 1, 2, 2, Collections.emptyMap());
+        Detection detection3 = new Detection(50, 60, 0, 0, 1, 3, 3, Collections.emptyMap());
+        detections.add(detection1);
+        detections.add(detection2);
+        detections.add(detection3);
+
+        Track track1 = new Track(1, 2, 1, 1, 1, 3,
+                1, 3, "FACE", 1, detections, Collections.emptyMap());
+
+        SortedSet<Track> tracks = new TreeSet<Track>();
+        tracks.add(track1);
+
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+
+        assertEquals(1, filteredTracks.size());
+        Track filteredTrack = filteredTracks.iterator().next();
+        SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
+        assertEquals(2, filteredDetections.size());
+        assertEquals(1, filteredTrack.getStartOffsetFrameInclusive());
+        assertEquals(2, filteredTrack.getEndOffsetFrameInclusive());
+        assertEquals(1, filteredTrack.getStartOffsetTimeInclusive());
+        assertEquals(2, filteredTrack.getEndOffsetTimeInclusive());
     }
 
 

@@ -180,36 +180,24 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 " If this job is resubmitted, it will likely not complete again!", jobId), exception);
             }
 
+            var tiesDbFuture = tiesDbService.addAssertions(
+                    job,
+                    jobStatus.getValue(),
+                    jobRequest.getTimeCompleted(),
+                    outputObjectUri,
+                    outputSha.getValue(),
+                    trackCounter);
+
             if (job.getCallbackUrl().isPresent()) {
-                var mutableOutputUri = new MutableObject<>(outputObjectUri);
-                sendCallbackAsync(job, outputObjectUri)
-                        .handleAsync((resp, err) -> handleFailedCallback(
-                                job,
-                                jobStatus,
-                                mutableOutputUri,
-                                outputSha,
-                                err))
-                        .thenCompose(resp -> tiesDbService.addAssertions(
-                                job,
-                                jobStatus.getValue(),
-                                jobRequest.getTimeCompleted(),
-                                mutableOutputUri.getValue(),
-                                outputSha.getValue(),
-                                trackCounter))
+                ThreadUtil.allOf(tiesDbFuture, sendCallbackAsync(job, outputObjectUri))
                         .whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
             }
             else {
-                tiesDbService.addAssertions(
-                        job,
-                        jobStatus.getValue(),
-                        jobRequest.getTimeCompleted(),
-                        outputObjectUri,
-                        outputSha.getValue(),
-                        trackCounter
-                ).whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
+                tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
             }
         }
     }
+
 
     private void completeJob(BatchJob job, Mutable<BatchJobStatusType> jobStatus) {
 
@@ -238,53 +226,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private Void handleFailedCallback(BatchJob job,
-                                      Mutable<BatchJobStatusType> jobStatus,
-                                      Mutable<URI> mutableOutputUri,
-                                      Mutable<String> outputSha,
-                                      Throwable callbackError) {
-        if (callbackError == null) {
-            return null;
-        }
-
-        if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
-            callbackError = callbackError.getCause();
-        }
-
-        String callbackMethod = job.getCallbackMethod().orElse("POST");
-        String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
-                .orElseThrow();
-
-        String warningMessage = String.format(
-                "Sending HTTP %s callback to %s failed due to: %s",
-                callbackMethod, callbackUrl, callbackError);
-        log.warn(warningMessage, callbackError);
-        inProgressBatchJobs.addJobWarning(job.getId(), IssueCodes.FAILED_CALLBACK, warningMessage);
-
-        JobRequest jobRequest = jobRequestDao.findById(job.getId());
-        try {
-            outputSha.setValue(null);
-            URI outputObjectUri = createOutputObject(
-                    job, jobRequest.getTimeReceived(), jobRequest.getTimeCompleted(),
-                    jobStatus, outputSha, new TrackCounter());
-            mutableOutputUri.setValue(outputObjectUri);
-            jobRequest.setOutputObjectPath(outputObjectUri.toString());
-        }
-        catch (Exception e) {
-            log.warn("Failed to create the output object for Job {} due to an exception.", job.getId(), e);
-            jobStatus.setValue(BatchJobStatusType.ERROR);
-        }
-
-        jobRequest.setTimeCompleted(Instant.now());
-        jobRequest.setStatus(jobStatus.getValue());
-        jobRequest.setJob(jsonUtils.serialize(job));
-        jobRequestDao.persist(jobRequest);
-
-        return null;
-    }
-
-    private CompletableFuture<HttpResponse> sendCallbackAsync(BatchJob job, URI outputObjectUri) {
+    private CompletableFuture<Void> sendCallbackAsync(BatchJob job, URI outputObjectUri) {
         String callbackMethod = job.getCallbackMethod().orElse("POST");
 
         String callbackUrl = job.getCallbackUrl()
@@ -296,22 +238,22 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
             return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(JobCompleteProcessorImpl::checkResponse);
+                    .thenApply(JobCompleteProcessorImpl::checkResponse)
+                    .exceptionally(err -> handleFailedCallback(job, err));
         }
         catch (Exception e) {
-            log.warn(String.format("Failed to issue %s callback to '%s' for job id %s.",
-                                   callbackMethod, callbackUrl, job.getId()), e);
-            return ThreadUtil.failedFuture(e);
+            handleFailedCallback(job, e);
+            return ThreadUtil.completedFuture(null);
         }
     }
 
-
-    private static HttpResponse checkResponse(HttpResponse response) {
+    private static Void checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode >= 200 && statusCode <= 299) {
-            return response;
+        if (statusCode < 200 || statusCode > 299) {
+            throw new IllegalStateException(
+                    "The remote server responded with a non-200 status code of: " + statusCode);
         }
-        throw new IllegalStateException("The remote server responded with a non-200 status code of: " + statusCode);
+        return null;
     }
 
 
@@ -353,6 +295,25 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         postRequest.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody),
                                                ContentType.APPLICATION_JSON));
         return postRequest;
+    }
+
+
+    private static Void handleFailedCallback(BatchJob job, Throwable callbackError) {
+        if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
+            callbackError = callbackError.getCause();
+        }
+
+        String callbackMethod = job.getCallbackMethod().orElse("POST");
+        String callbackUrl = job.getCallbackUrl()
+                // This is will never throw because we already checked that the URL is present.
+                .orElseThrow();
+
+        log.warn(String.format(
+                    "[Job %s] Sending HTTP %s callback to %s failed due to: %s",
+                    job.getId(), callbackMethod, callbackUrl, callbackError),
+                 callbackError);
+
+        return null;
     }
 
 

@@ -65,6 +65,14 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+/**
+ * Refer to https://github.com/Noblis/ties-lib for more information on the Triage Import Export
+ * Schema (TIES). For each piece of media, we create one or more TIES
+ * "supplementalDescription (Data Object)" entries in the database, one for each
+ * analytic (algorithm) run on the media. In general, a "supplementalDescription" is a kind of TIES
+ * "assertion", which is used to represent metadata about the media object. In our case it
+ * represents the detection and track information in the OpenMPF JSON output object.
+ */
 @Component
 public class TiesDbService {
 
@@ -96,7 +104,7 @@ public class TiesDbService {
                                                  URI outputObjectLocation,
                                                  String outputObjectSha,
                                                  TrackCounter trackCounter) {
-        var futures = new ArrayList<CompletableFuture<HttpResponse>>();
+        var futures = new ArrayList<CompletableFuture<Void>>();
 
         for (var media : job.getMedia()) {
             for (int taskIdx = 0; taskIdx < job.getPipelineElements().getTaskCount(); taskIdx++) {
@@ -116,7 +124,6 @@ public class TiesDbService {
                     }
                     catch (IllegalStateException e) {
                         handleHttpError(job.getId(), e);
-                        futures.add(ThreadUtil.failedFuture(e));
                         continue;
                     }
 
@@ -137,7 +144,7 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<HttpResponse> addActionAssertion(
+    private CompletableFuture<Void> addActionAssertion(
             BatchJob job,
             BatchJobStatusType jobStatus,
             Instant timeCompleted,
@@ -172,8 +179,7 @@ public class TiesDbService {
         LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
                  job.getId(), action.getName());
 
-        return postAssertion(tiesDbUrl, media.getSha256(), assertion)
-                .whenComplete((resp, err) -> handleHttpError(job.getId(), err));
+        return postAssertion(job.getId(), tiesDbUrl, media.getSha256(), assertion);
     }
 
 
@@ -191,7 +197,6 @@ public class TiesDbService {
                     uriString, e.getMessage()), e);
         }
     }
-
 
 
     private static String getAssertionId(long jobId, String detectionType, String algorithm,
@@ -212,9 +217,10 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<HttpResponse> postAssertion(URI tiesDbUrl,
-                                                          String mediaSha,
-                                                          Map<String, Object> assertions) {
+    private CompletableFuture<Void> postAssertion(long jobId,
+                                                  URI tiesDbUrl,
+                                                  String mediaSha,
+                                                  Map<String, Object> assertions) {
         try {
             var uri = new URIBuilder(tiesDbUrl)
                     .setPath(tiesDbUrl.getPath() + "/api/db/supplementals")
@@ -233,24 +239,20 @@ public class TiesDbService {
 
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(TiesDbService::checkResponse);
+                    .thenApply(TiesDbService::checkResponse)
+                    .exceptionally(err -> handleHttpError(jobId, err));
         }
-        catch (URISyntaxException e) {
-            // This should never happen since tiesDbUrl is already a URL.
-            return ThreadUtil.failedFuture(new IllegalStateException(
-                    "Failed to create full TiesDb URL: " + e.getMessage(), e));
-        }
-        catch (JsonProcessingException e) {
-            return ThreadUtil.failedFuture(new IllegalStateException(
-                    "Failed to convert TiesDb assertion to JSON due to: " + e.getMessage(), e));
+        catch (URISyntaxException | JsonProcessingException e) {
+            handleHttpError(jobId, e);
+            return ThreadUtil.completedFuture(null);
         }
     }
 
 
-    private static HttpResponse checkResponse(HttpResponse response) {
+    private static Void checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode >= 200 && statusCode <= 299) {
-            return response;
+            return null;
         }
         try {
             var responseContent = IOUtils.toString(response.getEntity().getContent(),
@@ -262,22 +264,17 @@ public class TiesDbService {
         catch (IOException e) {
             throw new IllegalStateException(
                     "TiesDb responded with a non-200 status code of " + statusCode, e);
-
         }
     }
 
 
-    private static void handleHttpError(long jobId, Throwable error) {
-        if (error == null) {
-            return;
-        }
-
+    private static Void handleHttpError(long jobId, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
-
         var warningMessage = String.format(
                 "[Job %s] Sending HTTP POST to TiesDb failed due to: %s", jobId, error);
         LOG.warn(warningMessage, error);
+        return null;
     }
 }

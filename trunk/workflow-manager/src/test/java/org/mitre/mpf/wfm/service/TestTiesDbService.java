@@ -43,7 +43,6 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -56,12 +55,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 
 import static org.junit.Assert.*;
 import static org.mockito.AdditionalMatchers.or;
@@ -256,9 +253,8 @@ public class TestTiesDbService {
                 outputSha,
                 trackCounter);
 
-        var exception = TestUtil.assertThrows(CompletionException.class, result::join);
-        assertTrue(exception.getCause() instanceof IllegalStateException);
-        assertTrue(exception.getCause().getCause() instanceof URISyntaxException);
+        // TiesDbService handles the error internally and always returns a successful future.
+        result.join();
 
         verify(_mockCallbackUtils, times(1))
                 .executeRequest(any(), anyInt());
@@ -340,10 +336,8 @@ public class TestTiesDbService {
                 outputSha,
                 trackCounter);
 
-        var exception = TestUtil.assertThrows(CompletionException.class, result::join);
-        assertTrue(exception.getCause() instanceof IllegalStateException);
-        assertTrue(exception.getMessage().contains("400"));
-        assertTrue(exception.getMessage().contains("<error>"));
+        // TiesDbService handles the error internally and always returns a successful future.
+        result.join();
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt());

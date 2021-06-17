@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.MediaType;
 
 import java.util.*;
 
@@ -207,7 +208,7 @@ public class TestDetectionPaddingProcessor {
 
     @Test
     public void testRemoveZeroSizeDetectionsNoZeroDetections() {
-        SortedSet<Detection> detections = new TreeSet<Detection>();
+        SortedSet<Detection> detections = new TreeSet<>();
         Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
         Detection detection2 = new Detection(50, 60, 20, 40, 1, 2, 2, Collections.emptyMap());
         Detection detection3 = new Detection(50, 60, 20, 40, 1, 3, 3, Collections.emptyMap());
@@ -218,10 +219,10 @@ public class TestDetectionPaddingProcessor {
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
                 1, 3, "FACE", 1, detections, Collections.emptyMap());
 
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(1, MediaType.VIDEO, tracks);
 
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
@@ -235,7 +236,7 @@ public class TestDetectionPaddingProcessor {
 
     @Test
     public void testRemoveZeroSizeDetectionsOneZeroDetection() {
-        SortedSet<Detection> detections = new TreeSet<Detection>();
+        SortedSet<Detection> detections = new TreeSet<>();
         Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
         Detection detection2 = new Detection(50, 60, 0, 0, 1, 2, 2, Collections.emptyMap());
         Detection detection3 = new Detection(50, 60, 20, 40, 1, 3, 3, Collections.emptyMap());
@@ -246,10 +247,10 @@ public class TestDetectionPaddingProcessor {
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
                 1, 3, "FACE", 1, detections, Collections.emptyMap());
 
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(2, MediaType.VIDEO, tracks);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -262,24 +263,24 @@ public class TestDetectionPaddingProcessor {
 
     @Test
     public void testRemoveZeroSizeDetectionsSingleDetectionTrack() {
-        SortedSet<Detection> detections = new TreeSet<Detection>();
+        SortedSet<Detection> detections = new TreeSet<>();
         Detection detection1 = new Detection(50, 60, 0, 0, 1, 1, 1, Collections.emptyMap());
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
                 1, 1, "FACE", 1, detections, Collections.emptyMap());
 
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(3, MediaType.IMAGE, tracks);
 
         assertTrue(filteredTracks.isEmpty());
     }
 
     @Test
     public void testRemoveZeroSizeDetectionsOneZeroDetectionAtEnd() {
-        SortedSet<Detection> detections = new TreeSet<Detection>();
+        SortedSet<Detection> detections = new TreeSet<>();
         Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
         Detection detection2 = new Detection(50, 60, 20, 40, 1, 2, 2, Collections.emptyMap());
         Detection detection3 = new Detection(50, 60, 0, 0, 1, 3, 3, Collections.emptyMap());
@@ -290,10 +291,10 @@ public class TestDetectionPaddingProcessor {
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
                 1, 3, "FACE", 1, detections, Collections.emptyMap());
 
-        SortedSet<Track> tracks = new TreeSet<Track>();
+        SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(tracks);
+        Collection<Track> filteredTracks = DetectionPaddingProcessor.removeZeroSizeDetections(4, MediaType.VIDEO, tracks);
 
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();

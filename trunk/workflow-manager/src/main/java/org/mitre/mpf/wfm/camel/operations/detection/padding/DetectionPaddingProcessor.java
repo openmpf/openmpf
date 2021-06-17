@@ -105,7 +105,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex);
 
-                Collection<Track> filteredTracks = removeZeroSizeDetections(tracks);
+                Collection<Track> filteredTracks = removeZeroSizeDetections(job.getId(), media.getType(), tracks);
 
                 try {
                     if (!requiresPadding(combinedProperties)) {
@@ -186,23 +186,31 @@ public class DetectionPaddingProcessor extends WfmProcessor {
         }
     }
 
-    public static Collection<Track> removeZeroSizeDetections(Iterable<Track> tracks) {
+    public static Collection<Track> removeZeroSizeDetections(long jobId, MediaType type, Iterable<Track> tracks) {
         // Remove any detections with zero width and height before padding.
         // If the number of detections goes to 0, drop the track.
         var newTracks = new TreeSet<Track>();
+        var zeroSizeFrames = IntStream.builder();
         for (Track track : tracks) {
-            SortedSet<Detection> goodDetections = track.getDetections().stream()
-                    .filter(d -> (d.getWidth() != 0 && d.getHeight() != 0))
-                    .collect(Collectors.toCollection(TreeSet::new));
-
+            SortedSet<Detection> goodDetections = new TreeSet<>();
+            for (Detection detection : track.getDetections()) {
+                if (detection.getWidth() == 0 && detection.getHeight() == 0) {
+                    zeroSizeFrames.add(detection.getMediaOffsetFrame());
+                } else {
+                    goodDetections.add(detection);
+                }
+            }
             if (goodDetections.size() > 0) {
+                // This is needed because image "tracks" do not respect the "inclusiveness" of the stop frame:
+                // an image track has start frame 0 and end frame 1, for no apparent reason.
+                int stopFrame = (type == MediaType.IMAGE) ? 1 : goodDetections.last().getMediaOffsetFrame();
                 newTracks.add(new Track(
                         track.getJobId(),
                         track.getMediaId(),
                         track.getTaskIndex(),
                         track.getActionIndex(),
                         goodDetections.first().getMediaOffsetFrame(),
-                        goodDetections.last().getMediaOffsetFrame(),
+                        stopFrame,
                         goodDetections.first().getMediaOffsetTime(),
                         goodDetections.last().getMediaOffsetTime(),
                         track.getType(),
@@ -210,7 +218,22 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                         goodDetections,
                         track.getTrackProperties()));
             }
+            else {
+                _log.warn("Empty track dropped after removing zero size detection(s)");
+            }
+
         }
+
+        Optional<String> zeroSizeFramesString = zeroSizeFrames.build()
+                .boxed()
+                .collect(DetectionErrorUtil.toFrameRangesString());
+
+        if (zeroSizeFramesString.isPresent()) {
+            _log.warn(String.format("Dropped one or more detection regions for job id %s with zero width and height. " +
+                            "frames dropped: %s",
+                    jobId, zeroSizeFramesString.get()));
+        }
+
         return newTracks;
     }
 

@@ -27,25 +27,38 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import org.mitre.mpf.interop.JsonActionOutputObject;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
-public class TrackCounter {
+public class TrackCountKey {
+    private final long _mediaId;
 
-    private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
+    private final int _taskIdx;
 
-    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
-        return Objects.requireNonNullElseGet(
-                _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx)),
-                () -> new TrackCountEntry(mediaId, taskIdx, actionIdx,
-                                          JsonActionOutputObject.NO_TRACKS_TYPE, 0));
+    private final int _actionIdx;
+
+    public TrackCountKey(long mediaId, int taskIdx, int actionIdx) {
+        _mediaId = mediaId;
+        _taskIdx = taskIdx;
+        _actionIdx = actionIdx;
     }
 
-    public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
-        _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
-                    new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        else if (o instanceof TrackCountKey) {
+            var that = (TrackCountKey) o;
+            return _mediaId == that._mediaId && _taskIdx == that._taskIdx
+                    && _actionIdx == that._actionIdx;
+        }
+        else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_mediaId, _taskIdx, _actionIdx);
     }
 }

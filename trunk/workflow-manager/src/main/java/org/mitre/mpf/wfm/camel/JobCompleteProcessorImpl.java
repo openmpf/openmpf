@@ -417,15 +417,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
+                    String trackType;
                     if (tracks.isEmpty()) {
-                        trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                         JsonActionOutputObject.NO_TRACKS_TYPE, 0);
+                        trackType = inProgressBatchJobs.getNoTracksType(
+                                jobId, media.getId(), taskIndex, actionIndex);
                     }
                     else {
-                        var firstTrack = tracks.iterator().next();
-                        trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                         firstTrack.getType(), tracks.size());
+                        trackType = tracks.iterator().next().getType();
                     }
+                    trackCounter.set(media.getId(), taskIndex, actionIndex,
+                                     trackType, tracks.size());
 
                     if (tracks.isEmpty()) {
                         // Always include detection actions in the output object, even if they do not generate any results.

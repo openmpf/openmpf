@@ -39,6 +39,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCountEntry;
@@ -155,9 +156,14 @@ public class TiesDbService {
             Media media,
             Action action) {
 
+        var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
+        var trackType = algo.getActionType() == ActionType.MARKUP
+                ? "MARKUP"
+                : trackCountEntry.getTrackType();
+
         var dataObject = Map.of(
                 "algorithm", action.getAlgorithm(),
-                "outputType", trackCountEntry.getTrackType(),
+                "outputType", trackType,
                 "jobId", job.getId(),
                 "outputUri", outputObjectLocation.toString(),
                 "sha256OutputHash", outputObjectSha,
@@ -167,11 +173,11 @@ public class TiesDbService {
                 "systemHostname", getHostName(),
                 "trackCount", trackCountEntry.getCount()
         );
-        var assertionId = getAssertionId(job.getId(), trackCountEntry.getTrackType(),
+        var assertionId = getAssertionId(job.getId(), trackType,
                                          action.getAlgorithm(), timeCompleted);
         var assertion = Map.of(
                 "assertionId", assertionId,
-                "informationType", "OpenMPF_" + trackCountEntry.getTrackType(),
+                "informationType", "OpenMPF_" + trackType,
                 "securityTag", "UNCLASSIFIED",
                 "system", "OpenMPF",
                 "dataObject", dataObject);

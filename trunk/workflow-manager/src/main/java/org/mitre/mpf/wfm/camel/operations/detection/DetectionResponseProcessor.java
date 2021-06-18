@@ -146,6 +146,7 @@ public class DetectionResponseProcessor
         log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
 
+        var tracksAdded = false;
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
             if (objectTrack.getConfidence() < confidenceThreshold) {
@@ -177,7 +178,17 @@ public class DetectionResponseProcessor
                         toMap(objectTrack.getDetectionPropertiesList()));
 
                 inProgressJobs.addTrack(track);
+                tracksAdded = true;
             }
+        }
+
+        if (!tracksAdded) {
+            inProgressJobs.recordNoTracks(
+                    jobId,
+                    detectionResponse.getMediaId(),
+                    detectionResponse.getTaskIndex(),
+                    detectionResponse.getActionIndex(),
+                    videoResponse.getDetectionType());
         }
     }
 
@@ -197,6 +208,7 @@ public class DetectionResponseProcessor
         log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
 
+        var tracksAdded = false;
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
             if (objectTrack.getConfidence() >= confidenceThreshold) {
@@ -226,7 +238,17 @@ public class DetectionResponseProcessor
                         properties);
 
                 inProgressJobs.addTrack(track);
+                tracksAdded = true;
             }
+        }
+
+        if (!tracksAdded) {
+            inProgressJobs.recordNoTracks(
+                    jobId,
+                    detectionResponse.getMediaId(),
+                    detectionResponse.getTaskIndex(),
+                    detectionResponse.getActionIndex(),
+                    audioResponse.getDetectionType());
         }
     }
 
@@ -238,6 +260,7 @@ public class DetectionResponseProcessor
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 1, 0, 0);
 
+        var tracksAdded = false;
         // Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
         for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
             if (location.getConfidence() >= confidenceThreshold) {
@@ -255,7 +278,17 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         toMap(location.getDetectionPropertiesList()));
                 inProgressJobs.addTrack(track);
+                tracksAdded = true;
             }
+        }
+
+        if (!tracksAdded) {
+            inProgressJobs.recordNoTracks(
+                    jobId,
+                    detectionResponse.getMediaId(),
+                    detectionResponse.getTaskIndex(),
+                    detectionResponse.getActionIndex(),
+                    imageResponse.getDetectionType());
         }
     }
 
@@ -267,6 +300,7 @@ public class DetectionResponseProcessor
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 
+        var tracksAdded = false;
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
             if (objectTrack.getConfidence() >= confidenceThreshold) {
@@ -297,7 +331,17 @@ public class DetectionResponseProcessor
                         properties);
 
                 inProgressJobs.addTrack(track);
+                tracksAdded = true;
             }
+        }
+
+        if (!tracksAdded) {
+            inProgressJobs.recordNoTracks(
+                    jobId,
+                    detectionResponse.getMediaId(),
+                    detectionResponse.getTaskIndex(),
+                    detectionResponse.getActionIndex(),
+                    genericResponse.getDetectionType());
         }
     }
 

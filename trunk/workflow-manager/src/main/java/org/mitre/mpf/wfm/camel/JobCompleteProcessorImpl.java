@@ -189,7 +189,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     trackCounter);
 
             if (job.getCallbackUrl().isPresent()) {
-                ThreadUtil.allOf(tiesDbFuture, sendCallbackAsync(job, outputObjectUri))
+                final var finalOutputUri = outputObjectUri;
+                tiesDbFuture
+                        .whenCompleteAsync(
+                                (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
                         .whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
             }
             else {

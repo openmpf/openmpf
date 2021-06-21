@@ -88,6 +88,11 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
 
         storageService.store(markupResult);
         markupResultDao.persist(markupResult);
+        inProgressJobs.recordTrackType(jobId,
+                                       markupResponse.getMediaId(),
+                                       markupResponse.getTaskIndex(),
+                                       markupResponse.getActionIndex(),
+                                       "MARKUP");
 
         if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
             inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);

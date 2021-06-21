@@ -39,7 +39,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.rest.api.pipelines.Action;
-import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCountEntry;
@@ -62,7 +61,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -113,18 +111,9 @@ public class TiesDbService {
 
                 for (int actionIdx = 0; actionIdx < task.getActions().size(); actionIdx++) {
                     var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
-                    URI tiesDbUri;
-                    try {
-                        var optTiesDbUrl = getTiesDbUri(job, media, action);
-                        if (optTiesDbUrl.isPresent()) {
-                            tiesDbUri = optTiesDbUrl.get();
-                        }
-                        else {
-                            continue;
-                        }
-                    }
-                    catch (IllegalStateException e) {
-                        handleHttpError(job.getId(), e);
+                    var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
+                            "TIES_DB_URL", job, media, action);
+                    if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
                         continue;
                     }
 
@@ -135,7 +124,7 @@ public class TiesDbService {
                             outputObjectLocation,
                             outputObjectSha,
                             trackCounter.get(media.getId(), taskIdx, actionIdx),
-                            tiesDbUri,
+                            tiesDbUrl,
                             media,
                             action));
                 }
@@ -152,18 +141,13 @@ public class TiesDbService {
             URI outputObjectLocation,
             String outputObjectSha,
             TrackCountEntry trackCountEntry,
-            URI tiesDbUrl,
+            String tiesDbUrl,
             Media media,
             Action action) {
 
-        var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-        var trackType = algo.getActionType() == ActionType.MARKUP
-                ? "MARKUP"
-                : trackCountEntry.getTrackType();
-
         var dataObject = Map.of(
                 "algorithm", action.getAlgorithm(),
-                "outputType", trackType,
+                "outputType", trackCountEntry.getTrackType(),
                 "jobId", job.getId(),
                 "outputUri", outputObjectLocation.toString(),
                 "sha256OutputHash", outputObjectSha,
@@ -173,11 +157,11 @@ public class TiesDbService {
                 "systemHostname", getHostName(),
                 "trackCount", trackCountEntry.getCount()
         );
-        var assertionId = getAssertionId(job.getId(), trackType,
+        var assertionId = getAssertionId(job.getId(), trackCountEntry.getTrackType(),
                                          action.getAlgorithm(), timeCompleted);
         var assertion = Map.of(
                 "assertionId", assertionId,
-                "informationType", "OpenMPF_" + trackType,
+                "informationType", "OpenMPF_" + trackCountEntry.getTrackType(),
                 "securityTag", "UNCLASSIFIED",
                 "system", "OpenMPF",
                 "dataObject", dataObject);
@@ -185,24 +169,11 @@ public class TiesDbService {
         LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
                  job.getId(), action.getName());
 
-        return postAssertion(job.getId(), tiesDbUrl, media.getSha256(), assertion);
+        return postAssertion(job.getId(), action.getAlgorithm(), tiesDbUrl, media.getSha256(),
+                             assertion);
     }
 
 
-    private Optional<URI> getTiesDbUri(BatchJob job, Media media, Action action) {
-        var uriString = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, action);
-        if (uriString == null || uriString.isBlank()) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(new URI(uriString));
-        }
-        catch (URISyntaxException e) {
-            throw new IllegalStateException(String.format(
-                    "Could not convert TIES_DB_URL=\"%s\" to a URL due to: %s",
-                    uriString, e.getMessage()), e);
-        }
-    }
 
 
     private static String getAssertionId(long jobId, String detectionType, String algorithm,
@@ -224,17 +195,27 @@ public class TiesDbService {
 
 
     private CompletableFuture<Void> postAssertion(long jobId,
-                                                  URI tiesDbUrl,
+                                                  String algorithm,
+                                                  String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
+        URI fullUrl;
         try {
-            var uri = new URIBuilder(tiesDbUrl)
-                    .setPath(tiesDbUrl.getPath() + "/api/db/supplementals")
+            var baseUrl = new URI(tiesDbUrl);
+            fullUrl = new URIBuilder(tiesDbUrl)
+                    .setPath(baseUrl.getPath() + "/api/db/supplementals")
                     .setParameter("sha256Hash", mediaSha)
                     .build();
+        }
+        catch (URISyntaxException e) {
+            handleHttpError(jobId, algorithm, tiesDbUrl, e);
+            return ThreadUtil.completedFuture(null);
+        }
+
+        try {
             var jsonString = _objectMapper.writeValueAsString(assertions);
 
-            var postRequest = new HttpPost(uri);
+            var postRequest = new HttpPost(fullUrl);
             postRequest.addHeader("Content-Type", "application/json");
             RequestConfig requestConfig = RequestConfig.custom()
                     .setSocketTimeout(_propertiesUtil.getHttpCallbackTimeoutMs())
@@ -246,10 +227,11 @@ public class TiesDbService {
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(TiesDbService::checkResponse)
-                    .exceptionally(err -> handleHttpError(jobId, err));
+                    .exceptionally(err -> handleHttpError(jobId, algorithm, fullUrl.toString(),
+                                                          err));
         }
-        catch (URISyntaxException | JsonProcessingException e) {
-            handleHttpError(jobId, e);
+        catch (JsonProcessingException e) {
+            handleHttpError(jobId, algorithm, fullUrl.toString(), e);
             return ThreadUtil.completedFuture(null);
         }
     }
@@ -274,12 +256,13 @@ public class TiesDbService {
     }
 
 
-    private static Void handleHttpError(long jobId, Throwable error) {
+    private static Void handleHttpError(long jobId, String url, String algorithm, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var warningMessage = String.format(
-                "[Job %s] Sending HTTP POST to TiesDb failed due to: %s", jobId, error);
+                "[Job %s] Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
+                jobId, url, algorithm, error);
         LOG.warn(warningMessage, error);
         return null;
     }

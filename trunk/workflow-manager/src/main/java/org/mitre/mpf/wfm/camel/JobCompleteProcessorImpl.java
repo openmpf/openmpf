@@ -312,7 +312,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .orElseThrow();
 
         log.warn(String.format(
-                    "[Job %s] Sending HTTP %s callback to %s failed due to: %s",
+                    "[Job %s] Sending HTTP %s callback to \"%s\" failed due to: %s",
                     job.getId(), callbackMethod, callbackUrl, callbackError),
                  callbackError);
 
@@ -417,14 +417,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
-                    String trackType;
-                    if (tracks.isEmpty()) {
-                        trackType = inProgressBatchJobs.getNoTracksType(
-                                jobId, media.getId(), taskIndex, actionIndex);
-                    }
-                    else {
-                        trackType = tracks.iterator().next().getType();
-                    }
+                    String trackType = inProgressBatchJobs.getTrackType(
+                            jobId, media.getId(), taskIndex, actionIndex);
                     trackCounter.set(media.getId(), taskIndex, actionIndex,
                                      trackType, tracks.size());
 

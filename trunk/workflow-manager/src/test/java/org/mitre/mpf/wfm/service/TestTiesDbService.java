@@ -166,6 +166,7 @@ public class TestTiesDbService {
 
         result.join();
 
+        // Only action1 is configured to use TiesDb.
         verify(_mockCallbackUtils, times(3))
                 .executeRequest(any(), anyInt());
 
@@ -253,7 +254,7 @@ public class TestTiesDbService {
                 outputSha,
                 trackCounter);
 
-        // TiesDbService handles the error internally and always returns a successful future.
+        // TiesDbService logs a warning and always returns a successful future.
         result.join();
 
         verify(_mockCallbackUtils, times(1))
@@ -336,7 +337,7 @@ public class TestTiesDbService {
                 outputSha,
                 trackCounter);
 
-        // TiesDbService handles the error internally and always returns a successful future.
+        // TiesDbService logs a warning and always returns a successful future.
         result.join();
 
         verify(_mockCallbackUtils, times(2))

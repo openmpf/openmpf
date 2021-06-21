@@ -68,8 +68,7 @@ public class InProgressBatchJobsService {
 
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
-    private final Table<Long, TrackCountKey, String> _noTracksEntries
-            = HashBasedTable.create();
+    private final Table<Long, TrackCountKey, String> _trackTypes = HashBasedTable.create();
 
 
     @Inject
@@ -147,7 +146,7 @@ public class InProgressBatchJobsService {
         BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
-        _noTracksEntries.row(jobId).clear();
+        _trackTypes.row(jobId).clear();
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
@@ -206,15 +205,15 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void recordNoTracks(long jobId, long mediaId, int taskIndex,
-                                            int actionIndex, String type) {
-        _noTracksEntries.put(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex), type);
+    public synchronized void recordTrackType(long jobId, long mediaId, int taskIndex,
+                                             int actionIndex, String type) {
+        _trackTypes.put(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex), type);
     }
 
 
-    public synchronized String getNoTracksType(long jobId, long mediaId, int taskIndex,
-                                               int actionIndex) {
-        return _noTracksEntries.get(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex));
+    public synchronized String getTrackType(long jobId, long mediaId, int taskIndex,
+                                            int actionIndex) {
+        return _trackTypes.get(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex));
     }
 
 

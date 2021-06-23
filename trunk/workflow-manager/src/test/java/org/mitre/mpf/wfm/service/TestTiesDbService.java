@@ -61,7 +61,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Mockito.*;
 
 public class TestTiesDbService {
@@ -131,15 +130,18 @@ public class TestTiesDbService {
 
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                    eq("TIES_DB_URL"),
-                    same(job),
-                    or(same(media1), same(media2)),
-                    same(action1)))
-                .thenReturn(url1);
+                eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job)
+                        && jp.getAction().equals(action1)
+                        && (jp.getMedia().equals(media1) || jp.getMedia().equals(media2)))
+        )).thenReturn(url1);
 
         String url2 = "http://localhost:90/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media1, action2))
-                .thenReturn(url2);
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media1)
+                        && jp.getAction().equals(action2))
+        )).thenReturn(url2);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -227,12 +229,18 @@ public class TestTiesDbService {
         var badAction = job.getPipelineElements().getAction(0, 0);
         var goodAction = job.getPipelineElements().getAction(1, 0);
 
-        when(_mockAggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, badAction))
-                .thenReturn("BAD URI");
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
+                        && jp.getAction().equals(badAction)))
+        ).thenReturn("BAD URI");
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, goodAction))
-                .thenReturn(url);
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
+                        && jp.getAction().equals(goodAction)))
+        ).thenReturn(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -285,8 +293,9 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                    eq("TIES_DB_URL"), same(job), same(media), any(Action.class)))
-                .thenReturn(url);
+                eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)))
+        ).thenReturn(url);
 
         var trackCounter = new TrackCounter();
         trackCounter.set(media.getId(), 0, 0, "TEXT", 34);

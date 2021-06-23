@@ -38,16 +38,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCountEntry;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.CallbackUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -104,51 +99,40 @@ public class TiesDbService {
                                                  String outputObjectSha,
                                                  TrackCounter trackCounter) {
         var futures = new ArrayList<CompletableFuture<Void>>();
+        for (var jobPart : JobPartsIter.of(job)) {
+            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
+                    "TIES_DB_URL", jobPart);
 
-        for (var media : job.getMedia()) {
-            for (int taskIdx = 0; taskIdx < job.getPipelineElements().getTaskCount(); taskIdx++) {
-                var task = job.getPipelineElements().getTask(taskIdx);
-
-                for (int actionIdx = 0; actionIdx < task.getActions().size(); actionIdx++) {
-                    var action = job.getPipelineElements().getAction(taskIdx, actionIdx);
-                    var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
-                            "TIES_DB_URL", job, media, action);
-                    if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
-                        continue;
-                    }
-
-                    futures.add(addActionAssertion(
-                            job,
-                            jobStatus,
-                            timeCompleted,
-                            outputObjectLocation,
-                            outputObjectSha,
-                            trackCounter.get(media.getId(), taskIdx, actionIdx),
-                            tiesDbUrl,
-                            media,
-                            action));
-                }
+            if (tiesDbUrl != null && !tiesDbUrl.isBlank()) {
+                futures.add(addActionAssertion(
+                        jobPart,
+                        jobStatus,
+                        timeCompleted,
+                        outputObjectLocation,
+                        outputObjectSha,
+                        trackCounter.get(jobPart.getMedia().getId(), jobPart.getTaskIndex(),
+                                         jobPart.getActionIndex()),
+                        tiesDbUrl));
             }
         }
         return ThreadUtil.allOf(futures);
     }
 
-
     private CompletableFuture<Void> addActionAssertion(
-            BatchJob job,
+            JobPart jobPart,
             BatchJobStatusType jobStatus,
             Instant timeCompleted,
             URI outputObjectLocation,
             String outputObjectSha,
             TrackCountEntry trackCountEntry,
-            String tiesDbUrl,
-            Media media,
-            Action action) {
+            String tiesDbUrl) {
 
+        var trackType = Objects.requireNonNullElse(trackCountEntry.getTrackType(),
+                                                   "WHAT_GOES_HERE");
         var dataObject = Map.of(
-                "algorithm", action.getAlgorithm(),
-                "outputType", trackCountEntry.getTrackType(),
-                "jobId", job.getId(),
+                "algorithm", jobPart.getAlgorithm().getName(),
+                "outputType", trackType,
+                "jobId", jobPart.getJob().getId(),
                 "outputUri", outputObjectLocation.toString(),
                 "sha256OutputHash", outputObjectSha,
                 "processDate", timeCompleted,
@@ -157,23 +141,26 @@ public class TiesDbService {
                 "systemHostname", getHostName(),
                 "trackCount", trackCountEntry.getCount()
         );
-        var assertionId = getAssertionId(job.getId(), trackCountEntry.getTrackType(),
-                                         action.getAlgorithm(), timeCompleted);
+        var assertionId = getAssertionId(
+                jobPart.getJob().getId(),
+                trackType,
+                jobPart.getAlgorithm().getName(), timeCompleted);
         var assertion = Map.of(
                 "assertionId", assertionId,
-                "informationType", "OpenMPF_" + trackCountEntry.getTrackType(),
+                "informationType", "OpenMPF_" + trackType,
                 "securityTag", "UNCLASSIFIED",
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
         LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
-                 job.getId(), action.getName());
+                 jobPart.getJob().getId(), jobPart.getAction().getName());
 
-        return postAssertion(job.getId(), action.getAlgorithm(), tiesDbUrl, media.getSha256(),
+        return postAssertion(jobPart.getJob().getId(),
+                             jobPart.getAlgorithm().getName(),
+                             tiesDbUrl,
+                             jobPart.getMedia().getSha256(),
                              assertion);
     }
-
-
 
 
     private static String getAssertionId(long jobId, String detectionType, String algorithm,

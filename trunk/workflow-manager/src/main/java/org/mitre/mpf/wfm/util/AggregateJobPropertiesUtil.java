@@ -253,7 +253,6 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-
     public String getValue(String propertyName, BatchJob job, Media media,
                            Action action) {
         return getPropertyInfo(
@@ -268,6 +267,10 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
+
+    public String getValue(String propertyName, JobPart jobPart) {
+        return getValue(propertyName, jobPart.getJob(), jobPart.getMedia(), jobPart.getAction());
+    }
 
     public String getValue(String propertyName, BatchJob job, Media media) {
         return getValue(propertyName, job, media, null);

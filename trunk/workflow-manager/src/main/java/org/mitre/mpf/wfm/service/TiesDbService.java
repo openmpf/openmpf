@@ -102,16 +102,17 @@ public class TiesDbService {
         for (var jobPart : JobPartsIter.of(job)) {
             var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
                     "TIES_DB_URL", jobPart);
+            var optTrackCount = trackCounter.get(
+                    jobPart.getMedia().getId(), jobPart.getTaskIndex(), jobPart.getActionIndex());
 
-            if (tiesDbUrl != null && !tiesDbUrl.isBlank()) {
+            if (tiesDbUrl != null && !tiesDbUrl.isBlank() && optTrackCount.isPresent()) {
                 futures.add(addActionAssertion(
                         jobPart,
                         jobStatus,
                         timeCompleted,
                         outputObjectLocation,
                         outputObjectSha,
-                        trackCounter.get(jobPart.getMedia().getId(), jobPart.getTaskIndex(),
-                                         jobPart.getActionIndex()),
+                        optTrackCount.get(),
                         tiesDbUrl));
             }
         }
@@ -127,27 +128,28 @@ public class TiesDbService {
             TrackCountEntry trackCountEntry,
             String tiesDbUrl) {
 
-        var trackType = Objects.requireNonNullElse(trackCountEntry.getTrackType(),
-                                                   "WHAT_GOES_HERE");
-        var dataObject = Map.of(
-                "algorithm", jobPart.getAlgorithm().getName(),
-                "outputType", trackType,
-                "jobId", jobPart.getJob().getId(),
-                "outputUri", outputObjectLocation.toString(),
-                "sha256OutputHash", outputObjectSha,
-                "processDate", timeCompleted,
-                "jobStatus", jobStatus,
-                "systemVersion", _propertiesUtil.getSemanticVersion(),
-                "systemHostname", getHostName(),
-                "trackCount", trackCountEntry.getCount()
+        var dataObject = Map.ofEntries(
+                Map.entry("pipeline", jobPart.getPipeline().getName()),
+                Map.entry("algorithm", jobPart.getAlgorithm().getName()),
+                Map.entry("outputType", trackCountEntry.getTrackType()),
+                Map.entry("jobId", jobPart.getJob().getId()),
+                Map.entry("outputUri", outputObjectLocation.toString()),
+                Map.entry("sha256OutputHash", outputObjectSha),
+                Map.entry("processDate", timeCompleted),
+                Map.entry("jobStatus", jobStatus),
+                Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
+                Map.entry("systemHostname", getHostName()),
+                Map.entry("trackCount", trackCountEntry.getCount())
         );
+
         var assertionId = getAssertionId(
                 jobPart.getJob().getId(),
-                trackType,
+                trackCountEntry.getTrackType(),
                 jobPart.getAlgorithm().getName(), timeCompleted);
+
         var assertion = Map.of(
                 "assertionId", assertionId,
-                "informationType", "OpenMPF_" + trackType,
+                "informationType", "OpenMPF_" + trackCountEntry.getTrackType(),
                 "securityTag", "UNCLASSIFIED",
                 "system", "OpenMPF",
                 "dataObject", dataObject);
@@ -156,7 +158,7 @@ public class TiesDbService {
                  jobPart.getJob().getId(), jobPart.getAction().getName());
 
         return postAssertion(jobPart.getJob().getId(),
-                             jobPart.getAlgorithm().getName(),
+                             jobPart.getAction().getName(),
                              tiesDbUrl,
                              jobPart.getMedia().getSha256(),
                              assertion);
@@ -182,7 +184,7 @@ public class TiesDbService {
 
 
     private CompletableFuture<Void> postAssertion(long jobId,
-                                                  String algorithm,
+                                                  String action,
                                                   String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
@@ -195,7 +197,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            handleHttpError(jobId, algorithm, tiesDbUrl, e);
+            handleHttpError(jobId, action, tiesDbUrl, e);
             return ThreadUtil.completedFuture(null);
         }
 
@@ -214,11 +216,11 @@ public class TiesDbService {
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(TiesDbService::checkResponse)
-                    .exceptionally(err -> handleHttpError(jobId, algorithm, fullUrl.toString(),
+                    .exceptionally(err -> handleHttpError(jobId, action, fullUrl.toString(),
                                                           err));
         }
         catch (JsonProcessingException e) {
-            handleHttpError(jobId, algorithm, fullUrl.toString(), e);
+            handleHttpError(jobId, action, fullUrl.toString(), e);
             return ThreadUtil.completedFuture(null);
         }
     }
@@ -243,13 +245,13 @@ public class TiesDbService {
     }
 
 
-    private static Void handleHttpError(long jobId, String url, String algorithm, Throwable error) {
+    private static Void handleHttpError(long jobId, String url, String action, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var warningMessage = String.format(
                 "[Job %s] Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
-                jobId, url, algorithm, error);
+                jobId, url, action, error);
         LOG.warn(warningMessage, error);
         return null;
     }

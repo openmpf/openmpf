@@ -27,15 +27,12 @@
 
 package org.mitre.mpf.wfm.data;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Table;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.transients.TrackCountKey;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -67,8 +64,6 @@ public class InProgressBatchJobsService {
     private final Redis _redis;
 
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
-
-    private final Table<Long, TrackCountKey, String> _trackTypes = HashBasedTable.create();
 
 
     @Inject
@@ -146,7 +141,6 @@ public class InProgressBatchJobsService {
         BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
-        _trackTypes.row(jobId).clear();
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
@@ -202,18 +196,6 @@ public class InProgressBatchJobsService {
                                        Collection<Track> tracks) {
         LOG.info("Replacing tracks for job {}'s media {}", jobId, mediaId);
         _redis.setTracks(jobId, mediaId, taskIndex, actionIndex, tracks);
-    }
-
-
-    public synchronized void recordTrackType(long jobId, long mediaId, int taskIndex,
-                                             int actionIndex, String type) {
-        _trackTypes.put(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex), type);
-    }
-
-
-    public synchronized String getTrackType(long jobId, long mediaId, int taskIndex,
-                                            int actionIndex) {
-        return _trackTypes.get(jobId, new TrackCountKey(mediaId, taskIndex, actionIndex));
     }
 
 

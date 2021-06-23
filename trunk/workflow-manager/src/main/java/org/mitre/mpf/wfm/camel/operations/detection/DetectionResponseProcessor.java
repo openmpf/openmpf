@@ -94,41 +94,15 @@ public class DetectionResponseProcessor
             Action action = job.getPipelineElements().getAction(detectionResponse.getActionName());
             double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 
-            String trackType;
             if (detectionResponse.getVideoResponsesCount() != 0) {
-                trackType = detectionResponse.getVideoResponses(0).getDetectionType();
-                processVideoResponse(jobId,
-                                     detectionResponse,
-                                     detectionResponse.getVideoResponses(0),
-                                     confidenceThreshold,
-                                     media);
+                processVideoResponse(jobId, detectionResponse, detectionResponse.getVideoResponses(0), confidenceThreshold, media);
+            } else if (detectionResponse.getAudioResponsesCount() != 0) {
+                processAudioResponse(jobId, detectionResponse, detectionResponse.getAudioResponses(0), confidenceThreshold);
+            } else if (detectionResponse.getImageResponsesCount() != 0) {
+                processImageResponse(jobId, detectionResponse, detectionResponse.getImageResponses(0), confidenceThreshold);
+            } else {
+                processGenericResponse(jobId, detectionResponse, detectionResponse.getGenericResponses(0), confidenceThreshold);
             }
-            else if (detectionResponse.getAudioResponsesCount() != 0) {
-                trackType = detectionResponse.getAudioResponses(0).getDetectionType();
-                processAudioResponse(jobId,
-                                     detectionResponse,
-                                     detectionResponse.getAudioResponses(0),
-                                     confidenceThreshold);
-            }
-            else if (detectionResponse.getImageResponsesCount() != 0) {
-                trackType = detectionResponse.getImageResponses(0).getDetectionType();
-                processImageResponse(jobId,
-                                     detectionResponse,
-                                     detectionResponse.getImageResponses(0),
-                                     confidenceThreshold);
-            }
-            else {
-                trackType = detectionResponse.getGenericResponses(0).getDetectionType();
-                processGenericResponse(jobId,
-                                       detectionResponse,
-                                       detectionResponse.getGenericResponses(0),
-                                       confidenceThreshold);
-            }
-            inProgressJobs.recordTrackType(jobId,
-                                           media.getId(),
-                                           detectionResponse.getTaskIndex(),
-                                           detectionResponse.getActionIndex(),
-                                           trackType);
         }
         else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);

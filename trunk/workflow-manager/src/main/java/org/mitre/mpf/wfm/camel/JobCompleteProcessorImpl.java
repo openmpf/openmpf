@@ -203,7 +203,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
 
     private void completeJob(BatchJob job, Mutable<BatchJobStatusType> jobStatus) {
-
         try {
             inProgressBatchJobs.clearJob(job.getId());
         } catch (Exception exception) {
@@ -417,10 +416,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
-                    String trackType = inProgressBatchJobs.getTrackType(
-                            jobId, media.getId(), taskIndex, actionIndex);
-                    trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                     trackType, tracks.size());
+                    if (tracks.isEmpty()
+                            && !tasksToSuppress.contains(taskIndex)
+                            && !tasksToMerge.contains(taskIndex)) {
+                        trackCounter.set(media.getId(), taskIndex, actionIndex, "NO_TRACKS", 0);
+                    }
 
                     if (tracks.isEmpty()) {
                         // Always include detection actions in the output object, even if they do not generate any results.
@@ -437,6 +437,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 action.getAlgorithm(), mediaOutputObject);
                     }
                     else {
+                        trackCounter.set(media.getId(), taskIndex, actionIndex,
+                                         tracks.iterator().next().getType(), tracks.size());
                         for (Track track : tracks) {
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.

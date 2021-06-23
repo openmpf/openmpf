@@ -27,21 +27,16 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import org.mitre.mpf.interop.JsonActionOutputObject;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
 public class TrackCounter {
 
     private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
 
-    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
-        return Objects.requireNonNullElseGet(
-                _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx)),
-                () -> new TrackCountEntry(mediaId, taskIdx, actionIdx,
-                                          JsonActionOutputObject.NO_TRACKS_TYPE, 0));
+    public Optional<TrackCountEntry> get(long mediaId, int taskIdx, int actionIdx) {
+        return Optional.ofNullable(_counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx)));
     }
 
     public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {

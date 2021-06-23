@@ -118,7 +118,7 @@ public class TestTiesDbService {
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
 
-        var pipeline = new Pipeline(null, null, List.of(task1.getName(), task2.getName()));
+        var pipeline = new Pipeline("PIPELINE", null, List.of(task1.getName(), task2.getName()));
         var pipelineElements = new JobPipelineElements(
                 pipeline, List.of(task1, task2), List.of(action1, action2), List.of(algo1, algo2));
 
@@ -375,7 +375,7 @@ public class TestTiesDbService {
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
 
-        var pipeline = new Pipeline(null, null, List.of(task1.getName(), task2.getName()));
+        var pipeline = new Pipeline("PIPELINE", null, List.of(task1.getName(), task2.getName()));
         var pipelineElements = new JobPipelineElements(
                 pipeline, List.of(task1, task2), List.of(action1, action2), List.of(algo1, algo2));
 
@@ -421,6 +421,7 @@ public class TestTiesDbService {
         var dataObject = assertion.get("dataObject");
         assertEquals("1.5", dataObject.get("systemVersion").textValue());
         assertFalse(dataObject.get("systemHostname").textValue().isBlank());
+        assertEquals("PIPELINE", dataObject.get("pipeline").textValue());
 
 
         // Assertions specific to given arguments

@@ -437,15 +437,23 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 action.getAlgorithm(), mediaOutputObject);
                     }
                     else {
-                        trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                         tracks.iterator().next().getType(), tracks.size());
                         for (Track track : tracks) {
+                            String type;
+                            String algo;
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
-                            String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
-                                    track.getType();
-                            String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
-                                    action.getAlgorithm();
+                            if (tasksToMerge.contains(taskIndex)) {
+                                type = prevUnmergedTaskType;
+                                algo = prevUnmergedAlgorithm;
+                                trackCounter.set(media.getId(), taskIndex - 1, 0,
+                                                 type, tracks.size());
+                            }
+                            else {
+                                type = track.getType();
+                                algo = action.getAlgorithm();
+                                trackCounter.set(media.getId(), taskIndex, actionIndex,
+                                                 type, tracks.size());
+                            }
 
                             JsonTrackOutputObject jsonTrackOutputObject
                                     = createTrackOutputObject(track, stateKey, type, action, media, job);

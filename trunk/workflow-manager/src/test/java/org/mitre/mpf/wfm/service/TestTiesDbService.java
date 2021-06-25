@@ -168,7 +168,8 @@ public class TestTiesDbService {
 
         result.join();
 
-        // Only action1 is configured to use TiesDb.
+        // action1 on media1, action1 on media2, and action2 on media1 are configured TiesDb.
+        // action2 on media2 is not configured to use TiesDb
         verify(_mockCallbackUtils, times(3))
                 .executeRequest(any(), anyInt());
 

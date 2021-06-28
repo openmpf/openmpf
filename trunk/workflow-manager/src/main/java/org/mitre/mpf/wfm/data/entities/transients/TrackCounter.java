@@ -29,14 +29,13 @@ package org.mitre.mpf.wfm.data.entities.transients;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 public class TrackCounter {
 
     private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
 
-    public Optional<TrackCountEntry> get(long mediaId, int taskIdx, int actionIdx) {
-        return Optional.ofNullable(_counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx)));
+    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
+        return _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx));
     }
 
     public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {

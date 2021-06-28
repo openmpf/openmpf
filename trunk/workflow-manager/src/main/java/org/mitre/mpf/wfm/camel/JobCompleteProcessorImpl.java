@@ -416,10 +416,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
                     Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
                                                                              taskIndex, actionIndex);
-                    if (tracks.isEmpty()
-                            && !tasksToSuppress.contains(taskIndex)
-                            && !tasksToMerge.contains(taskIndex)) {
-                        trackCounter.set(media.getId(), taskIndex, actionIndex, "NO_TRACKS", 0);
+                    if (tracks.isEmpty()) {
+                        trackCounter.set(media.getId(), taskIndex, actionIndex,
+                                         JsonActionOutputObject.NO_TRACKS_TYPE, 0);
+                    }
+                    else {
+                        var type = tracks.iterator().next().getType();
+                        trackCounter.set(media.getId(), taskIndex, actionIndex, type,
+                                         tracks.size());
                     }
 
                     if (tracks.isEmpty()) {
@@ -438,22 +442,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
                     else {
                         for (Track track : tracks) {
-                            String type;
-                            String algo;
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
-                            if (tasksToMerge.contains(taskIndex)) {
-                                type = prevUnmergedTaskType;
-                                algo = prevUnmergedAlgorithm;
-                                trackCounter.set(media.getId(), taskIndex - 1, 0,
-                                                 type, tracks.size());
-                            }
-                            else {
-                                type = track.getType();
-                                algo = action.getAlgorithm();
-                                trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                                 type, tracks.size());
-                            }
+                            String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
+                                    track.getType();
+                            String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
+                                    action.getAlgorithm();
 
                             JsonTrackOutputObject jsonTrackOutputObject
                                     = createTrackOutputObject(track, stateKey, type, action, media, job);
@@ -610,16 +604,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private boolean isOutputLastTaskOnly(Media media, BatchJob job) {
-        // Action properties and algorithm properties are not checked because it doesn't make sense to apply
-        // OUTPUT_LAST_TASK_ONLY to a single task.
-        return Boolean.parseBoolean(
-                aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
-    }
-
-
     private Set<Integer> getTasksToSuppress(Media media, BatchJob job) {
-        if (!isOutputLastTaskOnly(media, job)) {
+        if (!aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)) {
             return Set.of();
         }
 

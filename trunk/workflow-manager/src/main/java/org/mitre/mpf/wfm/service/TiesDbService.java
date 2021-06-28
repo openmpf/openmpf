@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
@@ -39,7 +40,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.TrackCountEntry;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.*;
@@ -54,6 +54,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -99,25 +100,69 @@ public class TiesDbService {
                                                  String outputObjectSha,
                                                  TrackCounter trackCounter) {
         var futures = new ArrayList<CompletableFuture<Void>>();
-        for (var jobPart : JobPartsIter.of(job)) {
-            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
-                    "TIES_DB_URL", jobPart);
-            var optTrackCount = trackCounter.get(
-                    jobPart.getMedia().getId(), jobPart.getTaskIndex(), jobPart.getActionIndex());
 
-            if (tiesDbUrl != null && !tiesDbUrl.isBlank() && optTrackCount.isPresent()) {
+        for (var media : job.getMedia()) {
+            boolean outputLastTaskOnly
+                    = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
+            var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+
+            for (var jobPart : JobPartsIter.of(job, media)) {
+                if (outputLastTaskOnly
+                        && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) {
+                    continue;
+                }
+
+                if (tasksToMerge.contains(jobPart.getTaskIndex() + 1)) {
+                    continue;
+                }
+
+                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
+                        "TIES_DB_URL", jobPart);
+                if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
+                    continue;
+                }
+
+                var trackCountEntry = trackCounter.get(
+                        jobPart.getMedia().getId(),
+                        jobPart.getTaskIndex(),
+                        jobPart.getActionIndex());
+                var algoAndDetectionType = getAlgoAndTypeToUse(
+                        jobPart, trackCounter, tasksToMerge);
+
                 futures.add(addActionAssertion(
                         jobPart,
                         jobStatus,
                         timeCompleted,
                         outputObjectLocation,
                         outputObjectSha,
-                        optTrackCount.get(),
+                        algoAndDetectionType.getLeft(),
+                        algoAndDetectionType.getRight(),
+                        trackCountEntry.getCount(),
                         tiesDbUrl));
             }
         }
         return ThreadUtil.allOf(futures);
     }
+
+
+    private static Pair<String, String> getAlgoAndTypeToUse(
+            JobPart jobPart, TrackCounter trackCounter, Collection<Integer> tasksToMerge) {
+        int taskIndexToUse = jobPart.getTaskIndex();
+        int actionIndexToUse = jobPart.getActionIndex();
+        while (tasksToMerge.contains(taskIndexToUse) && taskIndexToUse > 0) {
+            taskIndexToUse -= 1;
+            actionIndexToUse = 0;
+        }
+
+        var algo = jobPart.getJob().getPipelineElements()
+                .getAlgorithm(taskIndexToUse, actionIndexToUse);
+        var trackCountEntry = trackCounter.get(
+                jobPart.getMedia().getId(),
+                taskIndexToUse,
+                actionIndexToUse);
+        return Pair.of(algo.getName(), trackCountEntry.getTrackType());
+    }
+
 
     private CompletableFuture<Void> addActionAssertion(
             JobPart jobPart,
@@ -125,13 +170,15 @@ public class TiesDbService {
             Instant timeCompleted,
             URI outputObjectLocation,
             String outputObjectSha,
-            TrackCountEntry trackCountEntry,
+            String algoName,
+            String trackType,
+            int trackCount,
             String tiesDbUrl) {
 
         var dataObject = Map.ofEntries(
                 Map.entry("pipeline", jobPart.getPipeline().getName()),
-                Map.entry("algorithm", jobPart.getAlgorithm().getName()),
-                Map.entry("outputType", trackCountEntry.getTrackType()),
+                Map.entry("algorithm", algoName),
+                Map.entry("outputType", trackType),
                 Map.entry("jobId", jobPart.getJob().getId()),
                 Map.entry("outputUri", outputObjectLocation.toString()),
                 Map.entry("sha256OutputHash", outputObjectSha),
@@ -139,17 +186,17 @@ public class TiesDbService {
                 Map.entry("jobStatus", jobStatus),
                 Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
                 Map.entry("systemHostname", getHostName()),
-                Map.entry("trackCount", trackCountEntry.getCount())
+                Map.entry("trackCount", trackCount)
         );
 
         var assertionId = getAssertionId(
                 jobPart.getJob().getId(),
-                trackCountEntry.getTrackType(),
+                trackType,
                 jobPart.getAlgorithm().getName(), timeCompleted);
 
         var assertion = Map.of(
                 "assertionId", assertionId,
-                "informationType", "OpenMPF_" + trackCountEntry.getTrackType(),
+                "informationType", "OpenMPF " + trackType,
                 "securityTag", "UNCLASSIFIED",
                 "system", "OpenMPF",
                 "dataObject", dataObject);

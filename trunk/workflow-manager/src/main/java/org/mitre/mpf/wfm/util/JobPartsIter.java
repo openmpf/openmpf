@@ -32,7 +32,6 @@ import com.google.common.collect.Streams;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 public class JobPartsIter {
@@ -41,24 +40,31 @@ public class JobPartsIter {
     }
 
     public static Iterable<JobPart> of(BatchJob job) {
-        return () -> new JobPartsIterator(job);
+        return () -> stream(job).iterator();
     }
 
     public static Stream<JobPart> stream(BatchJob job) {
-        return Streams.stream(new JobPartsIterator(job));
+        return job.getMedia().stream().flatMap(m -> stream(job, m));
     }
 
 
-    private static class JobPartsIterator extends AbstractSequentialIterator<JobPart> {
-        private final Iterator<? extends Media> _mediaIter;
+    public static Iterable<JobPart> of(BatchJob job, Media media) {
+        return () -> new JobPartsFixedMediaIter(job, media);
+    }
 
-        public JobPartsIterator(BatchJob job) {
-            this(job, job.getMedia().iterator());
+    public static Stream<JobPart> stream(BatchJob job, Media media) {
+        return Streams.stream(new JobPartsFixedMediaIter(job, media));
+    }
+
+
+    private static class JobPartsFixedMediaIter extends AbstractSequentialIterator<JobPart> {
+
+        public JobPartsFixedMediaIter(BatchJob job, Media media) {
+            super(new JobPart(job, media, getMediaIndex(job, media), 0, 0));
         }
 
-        private JobPartsIterator(BatchJob job, Iterator<? extends Media> mediaIter) {
-            super(new JobPart(job, mediaIter.next(), 0, 0, 0));
-            _mediaIter = mediaIter;
+        public JobPartsFixedMediaIter(BatchJob job, Media media, int mediaIndex) {
+            super(new JobPart(job, media, mediaIndex, 0, 0));
         }
 
         @Override
@@ -86,15 +92,18 @@ public class JobPartsIter {
                         0);
             }
 
-            if (_mediaIter.hasNext()) {
-                return new JobPart(
-                        job,
-                        _mediaIter.next(),
-                        previous.getMediaIndex() + 1,
-                        0,
-                        0);
-            }
             return null;
         }
+    }
+
+    private static int getMediaIndex(BatchJob job, Media targetMedia) {
+        int i = 0;
+        for (var media : job.getMedia()) {
+            if (media.equals(targetMedia)) {
+                return i;
+            }
+            i++;
+        }
+        throw new IllegalArgumentException("targetMedia does not belong to job.");
     }
 }

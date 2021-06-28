@@ -99,7 +99,7 @@ public class JobPartsIter {
     private static int getMediaIndex(BatchJob job, Media targetMedia) {
         int i = 0;
         for (var media : job.getMedia()) {
-            if (media.equals(targetMedia)) {
+            if (media.getId() == targetMedia.getId()) {
                 return i;
             }
             i++;

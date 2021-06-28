@@ -80,15 +80,11 @@ public class DetectionTaskSplitter {
     @Qualifier(DefaultMediaSegmenter.REF)
     private MediaSegmenter defaultMediaSegmenter;
 
-
-
-    public List<Message> performSplit(BatchJob job, Task task) {
-        List<Message> messages = new ArrayList<>();
-
+    private void processMediaTasks(BatchJob job, Task task, Collection<? extends Media> mediaList, List<Message> messages) {
         // Is this the first detection task in the pipeline?
         boolean isFirstDetectionTask = isFirstDetectionTask(job);
 
-        for (Media media : job.getMedia()) {
+        for (Media media : mediaList) {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
@@ -170,10 +166,9 @@ public class DetectionTaskSplitter {
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
-                        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
                     }
                     messages.addAll(detectionRequestMessages);
-                    log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
+                    log.debug("[Job {}|{}|{}] Created {} work units for Media #{} and associated new derivatives.",
                             job.getId(),
                             job.getCurrentTaskIndex(),
                             actionIndex,
@@ -184,7 +179,12 @@ public class DetectionTaskSplitter {
                 inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER, e.getMessage());
             }
         }
+    }
 
+
+    public List<Message> performSplit(BatchJob job, Task task) {
+        List<Message> messages = new ArrayList<>();
+        processMediaTasks(job, task, job.getMedia(), messages);
         return messages;
     }
 

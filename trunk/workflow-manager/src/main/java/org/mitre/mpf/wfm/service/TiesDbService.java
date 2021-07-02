@@ -127,7 +127,7 @@ public class TiesDbService {
                         jobPart.getTaskIndex(),
                         jobPart.getActionIndex());
                 var algoAndDetectionType = getAlgoAndTypeToUse(
-                        jobPart, trackCounter, tasksToMerge);
+                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
 
                 futures.add(addActionAssertion(
                         jobPart,
@@ -146,7 +146,10 @@ public class TiesDbService {
 
 
     private static Pair<String, String> getAlgoAndTypeToUse(
-            JobPart jobPart, TrackCounter trackCounter, Collection<Integer> tasksToMerge) {
+            JobPart jobPart,
+            int trackCount,
+            TrackCounter trackCounter,
+            Collection<Integer> tasksToMerge) {
         int taskIndexToUse = jobPart.getTaskIndex();
         int actionIndexToUse = jobPart.getActionIndex();
         while (tasksToMerge.contains(taskIndexToUse) && taskIndexToUse > 0) {
@@ -156,11 +159,17 @@ public class TiesDbService {
 
         var algo = jobPart.getJob().getPipelineElements()
                 .getAlgorithm(taskIndexToUse, actionIndexToUse);
-        var trackCountEntry = trackCounter.get(
-                jobPart.getMedia().getId(),
-                taskIndexToUse,
-                actionIndexToUse);
-        return Pair.of(algo.getName(), trackCountEntry.getTrackType());
+
+        if (trackCount == 0) {
+            return Pair.of(algo.getName(), "NO TRACKS");
+        }
+        else {
+            var trackCountEntry = trackCounter.get(
+                    jobPart.getMedia().getId(),
+                    taskIndexToUse,
+                    actionIndexToUse);
+            return Pair.of(algo.getName(), trackCountEntry.getTrackType());
+        }
     }
 
 

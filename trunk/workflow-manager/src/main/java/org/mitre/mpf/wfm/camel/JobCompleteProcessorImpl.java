@@ -427,9 +427,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
 
                     if (tracks.isEmpty()) {
-                        // Always include detection actions in the output object, even if they do not generate any results.
-                        addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
-                                action.getAlgorithm(), mediaOutputObject);
+                        // Always include detection actions in the output object,
+                        // even if they do not generate any results.
+                        if (tasksToMerge.contains(taskIndex)) {
+                            addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
+                                                prevUnmergedAlgorithm, mediaOutputObject);
+                        }
+                        else {
+                            addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
+                                                action.getAlgorithm(), mediaOutputObject);
+                        }
                     }
                     else if (tasksToSuppress.contains(taskIndex)) {
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,

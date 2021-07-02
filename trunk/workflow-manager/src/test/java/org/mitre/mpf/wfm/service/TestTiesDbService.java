@@ -226,6 +226,22 @@ public class TestTiesDbService {
 
     @Test
     public void testTaskMerging() {
+        testTwoStageTrackMerging("TYPE1", 451, 452);
+    }
+
+    @Test
+    public void testTaskMergingLastTaskNoTracks() {
+        testTwoStageTrackMerging("NO TRACKS", 451, 0);
+    }
+
+    @Test
+    public void testTaskMergingFirstTaskNoTracks() {
+        testTwoStageTrackMerging("TYPE1", 0, 452);
+    }
+
+
+    private void testTwoStageTrackMerging(String expectedType,
+                                          int task1TrackCount, int task2TrackCount) {
         var job = createTwoStageTestJob();
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
@@ -239,8 +255,8 @@ public class TestTiesDbService {
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
         var trackCounter = new TrackCounter();
-        trackCounter.set(321, 0, 0, "TYPE1", 45);
-        trackCounter.set(321, 1, 0, "TYPE2", 458);
+        trackCounter.set(321, 0, 0, "TYPE1", task1TrackCount);
+        trackCounter.set(321, 1, 0, "TYPE2", task2TrackCount);
 
         var timeCompleted = Instant.ofEpochSecond(1622724824);
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
@@ -264,8 +280,92 @@ public class TestTiesDbService {
                                 job.getMedia().iterator().next(),
                                 url,
                                 "ALGO1",
-                                "TYPE1",
-                                458,
+                                expectedType,
+                                task2TrackCount,
+                                outputObjectLocation,
+                                outputSha,
+                                timeCompleted,
+                                req)),
+                        eq(3));
+
+        verifyNoMoreInteractions(_mockCallbackUtils);
+    }
+
+
+    @Test
+    public void testThreeStageMergeLast() {
+        runThreeStageMergeLastTest(true);
+    }
+
+    @Test
+    public void testThreeStageMergeLastAndOutputLastOnly() {
+        when(_mockAggregateJobPropertiesUtil.isOutputLastTaskOnly(any(), any()))
+                .thenReturn(true);
+        runThreeStageMergeLastTest(false);
+    }
+
+
+    private void runThreeStageMergeLastTest(boolean verifyAlgo1Request) {
+        var job = createThreeStageTestJob();
+        String url = "http://localhost:81/qwer";
+
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+                .thenReturn(url);
+
+        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
+                .thenReturn(Set.of(2));
+
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+                .thenReturn(ThreadUtil.completedFuture(
+                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
+
+        var trackCounter = new TrackCounter();
+        trackCounter.set(321, 0, 0, "TYPE1", 451);
+        trackCounter.set(321, 1, 0, "TYPE2", 452);
+        trackCounter.set(321, 2, 0, "TYPE3", 453);
+
+        var timeCompleted = Instant.ofEpochSecond(1622724824);
+        var outputObjectLocation = URI.create("http://localhost:321/asdf");
+        var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE,
+                timeCompleted,
+                outputObjectLocation,
+                outputSha,
+                trackCounter);
+
+        result.join();
+
+        if (verifyAlgo1Request) {
+            verify(_mockCallbackUtils)
+                    .executeRequest(
+                            argThat(req -> httpRequestMatcher(
+                                    job.getId(),
+                                    BatchJobStatusType.COMPLETE,
+                                    job.getMedia().iterator().next(),
+                                    url,
+                                    "ALGO1",
+                                    "TYPE1",
+                                    451,
+                                    outputObjectLocation,
+                                    outputSha,
+                                    timeCompleted,
+                                    req)),
+                            eq(3));
+        }
+
+        verify(_mockCallbackUtils)
+                .executeRequest(
+                        argThat(req -> httpRequestMatcher(
+                                job.getId(),
+                                BatchJobStatusType.COMPLETE,
+                                job.getMedia().iterator().next(),
+                                url,
+                                "ALGO2",
+                                "TYPE2",
+                                453,
                                 outputObjectLocation,
                                 outputSha,
                                 timeCompleted,

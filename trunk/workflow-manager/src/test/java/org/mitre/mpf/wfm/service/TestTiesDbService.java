@@ -239,6 +239,11 @@ public class TestTiesDbService {
         testTwoStageTrackMerging("TYPE1", 0, 452);
     }
 
+    @Test
+    public void testTaskMergingNoTracks() {
+        testTwoStageTrackMerging("NO TRACKS", 0, 0);
+    }
+
 
     private void testTwoStageTrackMerging(String expectedType,
                                           int task1TrackCount, int task2TrackCount) {

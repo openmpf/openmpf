@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -146,7 +148,7 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
                 log.warn("Initializing derivative media from {}. Beginning inspection.", uriStr);
 
-                MediaImpl derivative_media = _inProgressJobs.initMedia(uriStr, Collections.emptyMap(), Collections.emptyMap());
+                MediaImpl derivative_media = _inProgressJobs.initMedia(uriStr, ImmutableMap.of("IS_DERIVATIVE_MEDIA", "TRUE"), Collections.emptyMap());
 
                 _inProgressJobs.getJob(context.getJobId()).addDerivativeMedia(derivative_media.getId(), derivative_media);
 

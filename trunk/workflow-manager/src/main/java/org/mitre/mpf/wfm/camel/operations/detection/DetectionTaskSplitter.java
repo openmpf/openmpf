@@ -80,11 +80,12 @@ public class DetectionTaskSplitter {
     @Qualifier(DefaultMediaSegmenter.REF)
     private MediaSegmenter defaultMediaSegmenter;
 
-    private void processMediaTasks(BatchJob job, Task task, Collection<? extends Media> mediaList, List<Message> messages) {
+    public List<Message> performSplit(BatchJob job, Task task) {
+        List<Message> messages = new ArrayList<>();
         // Is this the first detection task in the pipeline?
         boolean isFirstDetectionTask = isFirstDetectionTask(job);
 
-        for (Media media : mediaList) {
+        for (Media media : job.getMedia()) {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
@@ -101,8 +102,7 @@ public class DetectionTaskSplitter {
                 SortedSet<Track> previousTracks;
                 if (isFirstDetectionTask) {
                     previousTracks = Collections.emptySortedSet();
-                }
-                else {
+                } else {
                     previousTracks = inProgressBatchJobs.getTracks(
                             job.getId(), media.getId(), job.getCurrentTaskIndex() - 1, 0);
                 }
@@ -179,12 +179,6 @@ public class DetectionTaskSplitter {
                 inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER, e.getMessage());
             }
         }
-    }
-
-
-    public List<Message> performSplit(BatchJob job, Task task) {
-        List<Message> messages = new ArrayList<>();
-        processMediaTasks(job, task, job.getMedia(), messages);
         return messages;
     }
 

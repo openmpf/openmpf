@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camel.operations.detection.padding;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
@@ -104,27 +105,29 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), media.getId(),
                         trackMergingContext.getTaskIndex(), actionIndex);
 
+                if (Iterables.size(tracks) > 0) {
 
-                int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
-                int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
+                    int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
+                    int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
-                Collection<Track> filteredTracks = removeIllFormedDetections(job.getId(), media.getId(),
-                        trackMergingContext.getTaskIndex(), actionIndex,
-                        frameWidth, frameHeight, tracks);
+                    Iterable<Track> filteredTracks = removeIllFormedDetections(job.getId(), media.getId(),
+                            trackMergingContext.getTaskIndex(), actionIndex,
+                            frameWidth, frameHeight, tracks);
 
-                try {
-                    if (requiresPadding(combinedProperties)) {
+                    try {
+                        if (requiresPadding(combinedProperties)) {
 
-                        String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
-                        String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
+                            String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
+                            String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
-                        processTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
-                              xPadding, yPadding, frameWidth, frameHeight, filteredTracks);
+                            processTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
+                                    xPadding, yPadding, frameWidth, frameHeight, filteredTracks);
+                        }
+                    } catch (DetectionPaddingException e) {
+                        // This should not happen because we checked that the detection properties were valid when the
+                        // job was created.
+                        throw new WfmProcessingException(e);
                     }
-                } catch (DetectionPaddingException e) {
-                    // This should not happen because we checked that the detection properties were valid when the
-                    // job was created.
-                    throw new WfmProcessingException(e);
                 }
             }
         }
@@ -187,19 +190,17 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                                                        Iterable<Track> tracks) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
-        // Do not remove ill-formed detections for those types that are exempted.
+        // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
+        // bounding boxes for detections.
+        if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(tracks.iterator().next().getType())) {
+            return (Collection<Track>) tracks;
+        }
 
         var newTracks = new TreeSet<Track>();
         var zeroSizeFrames = IntStream.builder();
         var outsideFrames = IntStream.builder();
         var frameBoundingBox = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
         for (Track track : tracks) {
-            // If the detection algorithm that created this track normally does not generate bounding boxes for detections,
-            // we need to simply pass these tracks through without filtering.
-            if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(track.getType())) {
-                newTracks.add(track);
-                continue;
-            }
             SortedSet<Detection> goodDetections = new TreeSet<>();
             for (Detection detection : track.getDetections()) {
                 var detectionBoundingBox = new Rectangle2D.Double(detection.getX(), detection.getY(),

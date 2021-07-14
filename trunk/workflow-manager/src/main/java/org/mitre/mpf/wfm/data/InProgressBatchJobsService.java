@@ -224,9 +224,7 @@ public class InProgressBatchJobsService {
 
         var job = getJobImpl(jobId);
         job.addWarning(mediaId, IssueSources.toString(source), codeString, message);
-        if (job.getStatus() != BatchJobStatusType.IN_PROGRESS_ERRORS) {
-            setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
-        }
+        setJobStatus(jobId, job.getStatus().onWarning());
     }
 
 
@@ -238,33 +236,42 @@ public class InProgressBatchJobsService {
         addError(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
     }
 
-    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message, IssueSources source) {
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code,
+                                      String message, IssueSources source) {
         var codeString = IssueCodes.toString(code);
-
         LOG.error("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
-
-        getJobImpl(jobId).addError(mediaId, IssueSources.toString(source), codeString, message);
-
+        var job = getJobImpl(jobId);
+        job.addError(mediaId, IssueSources.toString(source), codeString, message);
         if (source != IssueSources.MARKUP && mediaId != 0) {
             getMediaImpl(jobId, mediaId).setFailed(true);
         }
-        setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+        setJobStatus(jobId, job.getStatus().onError());
+    }
+
+
+    public synchronized void addFatalError(long jobId, IssueCodes code, String message) {
+        var codeString = IssueCodes.toString(code);
+        LOG.error("Adding the following error to job {}: {} - {}", jobId, codeString, message);
+        var job = getJobImpl(jobId);
+        job.addError(0, IssueSources.toString(IssueSources.WORKFLOW_MANAGER), codeString, message);
+        setJobStatus(jobId, job.getStatus().onFatalError());
     }
 
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
         LOG.info("Adding detection processing error for job {}'s media {}: {} - {}",
                  error.getJobId(), error.getMediaId(), error.getErrorCode(), error.getErrorMessage());
-        getJobImpl(error.getJobId()).addDetectionProcessingError(error);
+        var job = getJobImpl(error.getJobId());
+        job.addDetectionProcessingError(error);
 
         var media = getMediaImpl(error.getJobId(), error.getMediaId());
         media.setFailed(true);
 
         if (error.getErrorCode().equals(MpfConstants.REQUEST_CANCELLED)) {
-            setJobStatus(error.getJobId(), BatchJobStatusType.CANCELLING);
+            setJobStatus(error.getJobId(), job.getStatus().onCancel());
         }
         else {
-            setJobStatus(error.getJobId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
+            setJobStatus(error.getJobId(), job.getStatus().onError());
         }
     }
 
@@ -275,22 +282,16 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatus) {
-        if (setJobStatusNoBroadcast(jobId, batchJobStatus)) {
-            _jobStatusBroadcaster.broadcast(jobId, batchJobStatus);
-        }
-    }
-
-
-    public synchronized boolean setJobStatusNoBroadcast(long jobId,
-                                                        BatchJobStatusType batchJobStatus) {
         var job = getJobImpl(jobId);
         if (job.getStatus() == batchJobStatus) {
-            return false;
+            return;
         }
         LOG.info("Setting status of job {} to {}", jobId, batchJobStatus);
         job.setStatus(batchJobStatus);
-        _jobRequestDao.updateStatus(jobId, batchJobStatus);
-        return true;
+        if (!batchJobStatus.isTerminal()) {
+            _jobRequestDao.updateStatus(jobId, batchJobStatus);
+            _jobStatusBroadcaster.broadcast(jobId, batchJobStatus);
+        }
     }
 
 

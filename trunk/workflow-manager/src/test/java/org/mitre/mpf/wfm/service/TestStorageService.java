@@ -38,6 +38,7 @@ import org.mitre.mpf.interop.JsonMediaIssue;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.*;
 import org.mockito.InjectMocks;
@@ -90,11 +91,10 @@ public class TestStorageService {
         when(_mockNginxBackend.canStore(outputObject))
                 .thenReturn(true);
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
         var outputSha = new MutableObject<String>();
-        _storageService.store(outputObject, status, outputSha);
-        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
+        _storageService.store(outputObject, outputSha);
 
+        verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
                 .store(outputObject, outputSha);
         verify(_mockNginxBackend, never())
@@ -112,10 +112,8 @@ public class TestStorageService {
         when(_mockS3Backend.store(same(outputObject), any()))
                 .thenReturn(TEST_REMOTE_URI);
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
-        URI result = _storageService.store(outputObject, status, new MutableObject<>());
+        URI result = _storageService.store(outputObject, new MutableObject<>());
         assertEquals(TEST_REMOTE_URI, result);
-        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
 
         verifyZeroInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
@@ -127,10 +125,8 @@ public class TestStorageService {
         when(_mockLocalBackend.store(same(outputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
-        URI result = _storageService.store(outputObject, status, new MutableObject<>());
+        URI result = _storageService.store(outputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
-        assertEquals(BatchJobStatusType.COMPLETE, status.getValue());
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
@@ -146,6 +142,7 @@ public class TestStorageService {
         when(outputObject.getJobId())
                 .thenReturn(jobId);
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
+        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
 
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
@@ -155,10 +152,8 @@ public class TestStorageService {
         when(_mockLocalBackend.store(same(outputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
-        URI result = _storageService.store(outputObject, status, new MutableObject<>());
+        URI result = _storageService.store(outputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
-        assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
         verifyJobWarning(jobId);
         verifySingleWarningAddedToOutputObject(0, warnings);
@@ -173,6 +168,7 @@ public class TestStorageService {
                 .thenReturn(jobId);
 
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
+        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
 
         doThrow(StorageException.class)
                 .when(_mockNginxBackend).canStore(outputObject);
@@ -180,10 +176,8 @@ public class TestStorageService {
         when(_mockLocalBackend.store(same(outputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
-        URI result = _storageService.store(outputObject, status, new MutableObject<>());
+        URI result = _storageService.store(outputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
-        assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
 
         verifyJobWarning(jobId);
         verifySingleWarningAddedToOutputObject(0, warnings);
@@ -195,8 +189,12 @@ public class TestStorageService {
 
     @Test
     public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
+        long jobId = 598;
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
+        when(outputObject.getJobId())
+                .thenReturn(jobId);
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
+        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
 
         when(_mockS3Backend.canStore(outputObject))
                 .thenReturn(true);
@@ -207,16 +205,14 @@ public class TestStorageService {
         doThrow(new IOException("test"))
                 .when(_mockLocalBackend).store(same(outputObject), any());
 
-        var status = new MutableObject<>(BatchJobStatusType.COMPLETE);
         try {
-            _storageService.store(outputObject, status, new MutableObject<>());
+            _storageService.store(outputObject, new MutableObject<>());
             fail("Expected IOException");
         }
         catch (IOException e) {
             assertTrue(e.getSuppressed()[0] instanceof StorageException);
             // The code that calls _storageService.store() will catch the exception and set the final status to ERROR.
             // Until then, the status is COMPLETE_WITH_WARNINGS.
-            assertEquals(BatchJobStatusType.COMPLETE_WITH_WARNINGS, status.getValue());
             verifySingleWarningAddedToOutputObject(0, warnings);
         }
     }
@@ -445,6 +441,14 @@ public class TestStorageService {
         return warnings;
     }
 
+    private void setInitialJobStatus(long jobId, BatchJobStatusType status) {
+        var job = mock(BatchJob.class);
+        when(job.getStatus())
+                .thenReturn(status);
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+    }
+
     private static void verifyNoMarkupError(MarkupResult markup) {
         verify(markup, never())
                 .setMessage(any());
@@ -481,6 +485,5 @@ public class TestStorageService {
         assertFalse(StringUtils.isBlank(details.getMessage()));
         assertEquals(IssueSources.WORKFLOW_MANAGER.toString(), details.getSource());
         assertEquals(IssueCodes.REMOTE_STORAGE_UPLOAD.toString(), details.getCode());
-
     }
 }

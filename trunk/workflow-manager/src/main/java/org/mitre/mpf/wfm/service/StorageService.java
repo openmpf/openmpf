@@ -29,11 +29,9 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
-
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.wfm.camel.JobStatusCalculator;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
@@ -71,8 +69,7 @@ public class StorageService {
     }
 
 
-    public URI store(JsonOutputObject outputObject, Mutable<BatchJobStatusType> jobStatus,
-                     Mutable<String> outputSha) throws IOException {
+    public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws IOException {
         Exception remoteException = null;
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
@@ -95,7 +92,8 @@ public class StorageService {
                     IssueSources.WORKFLOW_MANAGER.toString(), IssueCodes.REMOTE_STORAGE_UPLOAD.toString(),
                     "This output object was stored locally because storing it remotely failed due to: " + ex)));
 
-            JobStatusCalculator.checkErrorMessages(outputObject, jobStatus);
+            var job = _inProgressJobs.getJob(outputObject.getJobId());
+            outputObject.setStatus(job.getStatus().onComplete().toString());
         }
 
         try {

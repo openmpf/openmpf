@@ -67,7 +67,10 @@ public class BroadcastEnabledCountBasedWfmAggregator extends CountBasedWfmAggreg
             int tasksCompleted = job.getCurrentTaskIndex();
             int totalTasks = job.getPipelineElements().getTaskCount();
             float progressInCurrentTask = (float) aggregateCount / splitSize;
-            float jobProgress = (tasksCompleted + progressInCurrentTask) / totalTasks * 100;
+            // Make sure job progress never gets to 100% before the job is actually complete.
+            float jobProgress = Math.min(
+                    99,
+                    (tasksCompleted + progressInCurrentTask) / totalTasks * 100);
 
             jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
             jobProgressStore.setJobProgress(jobId, jobProgress);

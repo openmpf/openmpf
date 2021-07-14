@@ -28,6 +28,8 @@ package org.mitre.mpf.wfm.data.access;
 
 import org.mitre.mpf.wfm.data.entities.persistent.User;
 
+import java.util.Optional;
+
 public interface UserDao extends JpaDao<User> {
-    User findByUserName(String userName);
+    Optional<User> findByUserName(String userName);
 }

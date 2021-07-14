@@ -32,6 +32,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
@@ -41,7 +43,7 @@ public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements 
     }
 
     @Override
-    public User findByUserName(final String userName) {
+    public Optional<User> findByUserName(final String userName) {
         var cb = getCriteriaBuilder();
         var query = cb.createQuery(User.class);
         var root = query.from(User.class);
@@ -51,7 +53,6 @@ public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements 
         return buildQuery(query)
                 .list()
                 .stream()
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 }

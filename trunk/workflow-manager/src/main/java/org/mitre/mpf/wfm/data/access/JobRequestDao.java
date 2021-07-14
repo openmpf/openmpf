@@ -42,7 +42,7 @@ public interface JobRequestDao extends JpaDao<JobRequest> {
 
     public long getNextId();
 
-    void updateStatus(long jobId, BatchJobStatusType status);
+    public void updateStatus(long jobId, BatchJobStatusType status);
 
     public BatchJobStatusType getStatus(long jobId);
 }

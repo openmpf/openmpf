@@ -187,7 +187,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
         var missingFrameString = createMissingFramesString(tracks, request)
                 .map(err -> "Error extracting artifact(s). " + err)
-                .orElseGet(() -> "Artifact extraction failed to due " + e);
+                .orElseGet(() -> "Artifact extraction failed to due to: " + e);
         _inProgressBatchJobs.addError(
                 request.getJobId(), request.getMediaId(), IssueCodes.ARTIFACT_EXTRACTION,
                 missingFrameString);

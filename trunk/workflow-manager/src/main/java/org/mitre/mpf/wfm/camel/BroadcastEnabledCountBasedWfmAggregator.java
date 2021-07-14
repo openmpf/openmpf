@@ -37,10 +37,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component(BroadcastEnabledStringCountBasedWfmAggregator.REF)
-public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBasedWfmAggregator {
-    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
-    public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
+@Component(BroadcastEnabledCountBasedWfmAggregator.REF)
+public class BroadcastEnabledCountBasedWfmAggregator extends CountBasedWfmAggregator {
+    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledCountBasedWfmAggregator.class);
+    public static final String REF = "broadcastEnabledCountBasedWfmAggregator";
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;
@@ -53,7 +53,6 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 
     @Override
     public void onResponse(Exchange newExchange) {
-        super.onResponse(newExchange);
         Object suppressBroadcast = newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST);
         if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
             return;

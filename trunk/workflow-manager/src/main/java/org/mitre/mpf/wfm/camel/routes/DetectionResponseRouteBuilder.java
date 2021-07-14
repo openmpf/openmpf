@@ -30,7 +30,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.BroadcastEnabledStringCountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
@@ -63,8 +63,8 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID = "Detection Response Route";
 
 	@Autowired
-	@Qualifier(BroadcastEnabledStringCountBasedWfmAggregator.REF)
-	private WfmAggregator<String> aggregator;
+	@Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
+	private WfmAggregator aggregator;
 
 	private final String entryPoint, exitPoint, routeId;
 

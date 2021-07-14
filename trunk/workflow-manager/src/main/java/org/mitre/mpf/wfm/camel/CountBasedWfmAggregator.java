@@ -30,20 +30,21 @@ import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * A count-based aggregator naively counts the number of exchanges which pass through it. When the count
  * exceeds the size of the split (as measured by the {@link MpfHeaders#SPLIT_SIZE} header), the
  * aggregator sets the {@link MpfHeaders#SPLIT_COMPLETED} header to {@link Boolean#TRUE}. The body of the
  * out exchange is left blank.
- *
- * @param <T> The type of object contained in each in exchange received.
  */
-public class CountBasedWfmAggregator<T> extends DefaultWfmAggregator<T> {
+@Component(CountBasedWfmAggregator.REF)
+public class CountBasedWfmAggregator implements WfmAggregator {
 	private static final Logger log = LoggerFactory.getLogger(CountBasedWfmAggregator.class);
+	public static final String REF = "CountBasedWfmAggregator";
 
-	public CountBasedWfmAggregator(Class<T> bodyClass) {
-		super(bodyClass);
+
+	public void onResponse(Exchange newExchange) {
 	}
 
 	@Override

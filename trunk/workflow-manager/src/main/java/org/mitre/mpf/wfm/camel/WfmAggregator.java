@@ -26,16 +26,13 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.javasimon.aop.Monitored;
 
 /**
  * An aggregator collects the processed responses which were created by a splitter.
- * @param <T> The type of object contained in the incoming exchange's message body.
  */
 @Monitored
-public interface WfmAggregator<T> extends AggregationStrategy {
+public interface WfmAggregator extends AggregationStrategy {
 
 }

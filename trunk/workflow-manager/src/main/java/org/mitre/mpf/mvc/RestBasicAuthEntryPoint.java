@@ -50,9 +50,23 @@ public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
         // This header is what makes the log in box appear when accessing the REST URLs
         // in a browser such as on the Swagger page.
         response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        try (PrintWriter pw = response.getWriter()) {
-            pw.printf("{\"message\": \"%s\"}", authException.getMessage());
+        var origin = request.getHeader("Origin");
+        if (origin != null && request.getMethod().equals("OPTIONS")) {
+            // Handle CORS preflight request
+            response.addHeader("Access-Control-Allow-Origin", origin);
+            response.addHeader("Access-Control-Allow-Credentials", "true");
+            response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+            var ac_request_headers = request.getHeader("Access-Control-Request-Headers");
+            if (ac_request_headers != null) {
+                response.addHeader("Access-Control-Allow-Headers", ac_request_headers);
+            }
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+        else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            try (PrintWriter pw = response.getWriter()) {
+                pw.printf("{\"message\": \"%s\"}", authException.getMessage());
+            }
         }
     }
 }

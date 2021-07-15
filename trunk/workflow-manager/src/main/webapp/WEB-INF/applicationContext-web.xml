@@ -76,5 +76,9 @@
         <context:annotation-config /> <!-- does not break the xml config -->
         <!-- not sure if needed for swagger 2, but kept -->
         <mvc:default-servlet-handler />
+
+        <mvc:cors>
+            <mvc:mapping path="/**" />
+        </mvc:cors>
     </beans>
 </beans>

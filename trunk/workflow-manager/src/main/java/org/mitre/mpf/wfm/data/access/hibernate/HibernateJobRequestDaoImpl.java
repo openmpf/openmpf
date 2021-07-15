@@ -44,6 +44,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
 
@@ -64,6 +65,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 
         var nonTerminalStatuses = BatchJobStatusType.getNonTerminalStatuses();
         update.set("status", BatchJobStatusType.CANCELLED_BY_SHUTDOWN)
+                .set("timeCompleted", Instant.now())
                 .where(root.get("status").in(nonTerminalStatuses));
 
         int numRowsUpdated = executeUpdate(update);

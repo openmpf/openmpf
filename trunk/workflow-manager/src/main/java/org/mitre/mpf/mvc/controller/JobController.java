@@ -180,8 +180,8 @@ public class JobController {
             = ImmutableMap.<String, String>builder()
             .put("0", "id")
             .put("1", "pipeline")
-            .put("2", "time_received")
-            .put("3", "time_completed")
+            .put("2", "timeReceived")
+            .put("3", "timeCompleted")
             .put("4", "status")
             .put("5", "priority")
             .build();

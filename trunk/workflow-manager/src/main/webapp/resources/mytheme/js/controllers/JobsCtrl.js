@@ -93,9 +93,12 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     {
                         data: "endDate",
                         render: function (data, type, job) {
-                            if (job.endDate && job.jobStatus.startsWith('COMPLETE'))
-                                return (moment(job.endDate).format("YYYY-MM-DD HH:mm:ss"));
-                            return "";
+                            if (job.endDate) {
+                                return moment(job.endDate).format("YYYY-MM-DD HH:mm:ss");
+                            }
+                            else {
+                                return "";
+                            }
                         }
                     },
                     {

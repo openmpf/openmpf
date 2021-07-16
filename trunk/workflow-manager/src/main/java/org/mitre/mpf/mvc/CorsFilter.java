@@ -33,6 +33,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -70,15 +71,12 @@ public class CorsFilter implements Filter {
 
 
     private static Set<String> getCorsAllowedOrigins() {
-        var allowedOriginsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (allowedOriginsEnv == null || allowedOriginsEnv.isBlank()) {
-            return Set.of();
-        }
-        else {
-            return Stream.of(allowedOriginsEnv.split(","))
-                    .map(String::strip)
-                    .collect(toUnmodifiableSet());
-        }
+        return Optional.ofNullable(System.getenv("CORS_ALLOWED_ORIGINS"))
+                .stream()
+                .flatMap(s -> Stream.of(s.split(",")))
+                .map(String::strip)
+                .filter(s -> !s.isBlank())
+                .collect(toUnmodifiableSet());
     }
 
 

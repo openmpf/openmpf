@@ -412,7 +412,6 @@ public class PropertiesUtil {
         return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.exempt.from.illformed.detection.removal.types"));
     }
 
-
     public int getArtifactParallelUploadCount() {
         return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
     }

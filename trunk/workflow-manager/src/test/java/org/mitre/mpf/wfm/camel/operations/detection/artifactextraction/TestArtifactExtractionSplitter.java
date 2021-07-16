@@ -33,24 +33,29 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.transients.*;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class TestArtifactExtractionSplitter {
@@ -58,15 +63,12 @@ public class TestArtifactExtractionSplitter {
     private final JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
-    private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
-
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
             _jsonUtils,
             _mockInProgressJobs,
-            _mockPropertiesUtil,
             _mockAggregateJobPropertiesUtil);
 
 

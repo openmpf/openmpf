@@ -29,12 +29,9 @@ package org.mitre.mpf.wfm.camelOps;
 import org.junit.Test;
 import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
-import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
@@ -46,7 +43,6 @@ import static org.apache.commons.collections4.CollectionUtils.isEqualCollection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 public class TestDetectionPaddingProcessor {
 
@@ -478,21 +474,23 @@ public class TestDetectionPaddingProcessor {
         long jobId = 123;
         long mediaId = 5321;
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
+
         Collection<Track> new_tracks = _detectionPaddingProcessor.removeIllFormedDetections(jobId, mediaId,
                 0, 0, frameWidth, frameHeight, tracks);
         if (checkSetTracks) {
             verify(_mockInProgressJobs, atLeast(1))
-                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.PADDING), anyString());
+                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
             verify(_mockInProgressJobs, atMost(2))
-                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.PADDING), anyString());
+                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
             verify(_mockInProgressJobs)
                     .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
             assertTrue(isEqualCollection(new_tracks, captor.getValue()));
         }
         else {
             verify(_mockInProgressJobs, times(0))
-                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.PADDING), anyString());
+                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
             verify(_mockInProgressJobs, times(0))
                     .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
         }

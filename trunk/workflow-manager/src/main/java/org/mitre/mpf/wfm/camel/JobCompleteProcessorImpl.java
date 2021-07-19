@@ -184,8 +184,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     outputObjectUri,
                     outputSha.getValue(),
                     trackCounter);
+            if (!tiesDbFuture.isDone()) {
+                inProgressBatchJobs.setCallbacksInProgress(jobId);
+            }
 
             if (job.getCallbackUrl().isPresent()) {
+                inProgressBatchJobs.setCallbacksInProgress(jobId);
                 final var finalOutputUri = outputObjectUri;
                 tiesDbFuture
                         .whenCompleteAsync(
@@ -202,6 +206,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
+            jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +

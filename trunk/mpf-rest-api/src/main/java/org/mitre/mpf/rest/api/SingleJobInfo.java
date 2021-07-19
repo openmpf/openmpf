@@ -39,6 +39,7 @@ public class SingleJobInfo {
     private Instant startDate;
     private Instant endDate;
     private String outputObjectPath;
+    private boolean hasCallbacksInProgress;
     //terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
     private boolean terminal;
     private List<String> mediaUris;
@@ -54,6 +55,7 @@ public class SingleJobInfo {
             Instant startDate,
             Instant endDate,
             String outputObjectPath,
+            boolean hasCallbacksInProgress,
             boolean terminal,
             Collection<String> mediaUris) {
         this.jobId = jobId;
@@ -64,6 +66,7 @@ public class SingleJobInfo {
         this.startDate = startDate;
         this.endDate = endDate;
         this.outputObjectPath = outputObjectPath;
+        this.hasCallbacksInProgress = hasCallbacksInProgress;
         this.terminal = terminal;
         this.mediaUris = List.copyOf(mediaUris);
     }
@@ -98,6 +101,10 @@ public class SingleJobInfo {
 
     public String getOutputObjectPath() {
         return outputObjectPath;
+    }
+
+    public boolean getHasCallbacksInProgress() {
+        return hasCallbacksInProgress;
     }
 
     public boolean isTerminal() {

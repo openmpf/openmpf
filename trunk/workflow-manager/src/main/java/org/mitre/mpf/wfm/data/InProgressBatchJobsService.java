@@ -71,6 +71,8 @@ public class InProgressBatchJobsService {
 
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
+    private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
+
 
     @Inject
     public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis,
@@ -145,12 +147,20 @@ public class InProgressBatchJobsService {
         throw new WfmProcessingException("Unable to locate batch job with id: " + jobId);
     }
 
+    public synchronized void setCallbacksInProgress(long jobId) {
+        _jobsWithCallbacksInProgress.add(jobId);
+    }
+
+    public synchronized boolean jobHasCallbacksInProgress(long jobId) {
+        return _jobsWithCallbacksInProgress.contains(jobId);
+    }
 
     public synchronized void clearJob(long jobId) {
         LOG.info("Clearing all job information for job: {}", jobId);
         BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
+        _jobsWithCallbacksInProgress.remove(jobId);
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {

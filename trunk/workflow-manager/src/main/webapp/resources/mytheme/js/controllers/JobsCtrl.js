@@ -112,11 +112,16 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
+                            var jobStatus = job.jobStatus;
+                            if (job.hasCallbacksInProgress) {
+                                jobStatus += ' (callbacks in progress)';
+                            }
+
                             var hideProgress = 'style="display:none;"';
                             if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
                             var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + jobStatus + '</span>' + progressDiv;
                         }
                     },
                     {
@@ -129,9 +134,14 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         data: "null", "defaultContent": '', orderable: false,
                         render: function (data, type, job) {
                             var cancel_disabled = "";
-                            if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
+                            if (job.terminal || job.jobStatus === 'CANCELLING' ||
+                                    job.jobStatus === 'COMPLETE' || job.hasCallbacksInProgress) {
+                                cancel_disabled = "disabled=disabled";
+                            }
                             var isterminal = "";
-                            if (!job.terminal) isterminal = "disabled=disabled";
+                            if (!job.terminal || job.hasCallbacksInProgress) {
+                                isterminal = "disabled=disabled" ;
+                            }
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
                             if (job.outputFileExists) {

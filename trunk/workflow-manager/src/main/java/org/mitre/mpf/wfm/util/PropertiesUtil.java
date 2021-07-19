@@ -409,7 +409,11 @@ public class PropertiesUtil {
     }
 
     public Set<String> getIllFormedDetectionRemovalExemptionList() {
-        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.exempt.from.illformed.detection.removal.types"));
+        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.illformed.detection.removal.exempt.types"));
+    }
+
+    public Set<String> getTrackMergingExemptionList() {
+        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.video.track.merging.exempt.types"));
     }
 
     public int getArtifactParallelUploadCount() {

@@ -118,17 +118,14 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                             String xPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_X);
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
-                            updatedTracks = padTracks(job.getId(), media.getId(), xPadding, yPadding, frameWidth,
-                                    frameHeight, updatedTracks);
+                            padTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
+                                    xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
                         }
                     } catch (DetectionPaddingException e) {
                         // This should not happen because we checked that the detection properties were valid when the
                         // job was created.
                         throw new WfmProcessingException(e);
                     }
-
-                    _inProgressBatchJobs.setTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(),
-                            actionIndex, updatedTracks);
                 }
             }
         }
@@ -272,8 +269,9 @@ public class DetectionPaddingProcessor extends WfmProcessor {
         return newTracks;
     }
 
-    private Collection<Track> padTracks(long jobId, long mediaId, String xPadding, String yPadding, int frameWidth,
-                                        int frameHeight, Collection<Track> tracks) {
+    private void padTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
+                           String xPadding, String yPadding, int frameWidth,
+                           int frameHeight, Collection<Track> tracks) {
         var newTracks = new TreeSet<Track>();
         var shrunkToNothingFrames = IntStream.builder();
 
@@ -318,7 +316,8 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                             "1-pixel detection regions used instead. %s", shrunkToNothingString.get()));
         }
 
-        return newTracks;
+        _inProgressBatchJobs.setTracks(jobId, mediaId, taskIndex,
+                actionIndex, newTracks);
     }
 
 

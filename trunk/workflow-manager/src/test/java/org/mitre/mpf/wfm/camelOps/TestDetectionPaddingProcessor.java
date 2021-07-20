@@ -405,14 +405,14 @@ public class TestDetectionPaddingProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
-        assertEquals(1, filteredDetections.size());
-        assertEquals(3, filteredTrack.getStartOffsetFrameInclusive());
+        assertEquals(3, filteredDetections.size());
+        assertEquals(1, filteredTrack.getStartOffsetFrameInclusive());
         assertEquals(3, filteredTrack.getEndOffsetFrameInclusive());
-        assertEquals(3, filteredTrack.getStartOffsetTimeInclusive());
+        assertEquals(1, filteredTrack.getStartOffsetTimeInclusive());
         assertEquals(3, filteredTrack.getEndOffsetTimeInclusive());
     }
 
@@ -467,6 +467,7 @@ public class TestDetectionPaddingProcessor {
         JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
         InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
         AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
+        when(_mockAggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval("SPEECH")).thenReturn(true);
         DetectionPaddingProcessor _detectionPaddingProcessor = new DetectionPaddingProcessor(
                 _jsonUtils,
                 _mockInProgressJobs,

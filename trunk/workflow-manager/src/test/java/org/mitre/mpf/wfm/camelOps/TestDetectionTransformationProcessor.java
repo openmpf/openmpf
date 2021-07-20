@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.junit.Test;
-import org.mitre.mpf.wfm.camel.operations.detection.padding.DetectionPaddingProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
-public class TestDetectionPaddingProcessor {
+public class TestDetectionTransformationProcessor {
 
     @Test
     public void testPaddingWithoutRotation() {
@@ -94,7 +94,7 @@ public class TestDetectionPaddingProcessor {
     public void testRotatedClippingOrthogonal() {
         {
             Detection input = createDetection(0, 479, 480, 640, "90");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "200%", "200%", 640, 480, input);
             // Input detection is already at max possible size.
             assertEquals(input, actual);
@@ -102,7 +102,7 @@ public class TestDetectionPaddingProcessor {
 
         {
             Detection input = createDetection(300, 100, 400, 100, "90");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
             Detection expected = createDetection(300, 300, 301, 100, "90");
             assertEquals(expected, actual);
@@ -114,7 +114,7 @@ public class TestDetectionPaddingProcessor {
     public void testRotatedClippingNonOrthogonal() {
         {
             Detection input = createDetection(30, 40, 580, 400, "20");
-            Detection padded = DetectionPaddingProcessor.padDetection(
+            Detection padded = DetectionTransformationProcessor.padDetection(
                     "1000%", "1000%", 640, 480, input);
             Detection expected = createDetection(-153, 56, 766, 670, "20");
             assertEquals(expected, padded);
@@ -122,7 +122,7 @@ public class TestDetectionPaddingProcessor {
 
         {
             Detection input = createDetection(300, 100, 400, 100, "45");
-            Detection padded = DetectionPaddingProcessor.padDetection(
+            Detection padded = DetectionTransformationProcessor.padDetection(
                     "0", "0", 500, 500, input);
             Detection expected = createDetection(300, 100, 213, 100, "45");
             assertEquals(expected, padded);
@@ -130,7 +130,7 @@ public class TestDetectionPaddingProcessor {
 
         {
             Detection input = createDetection(300, 100, 400, 100, "45");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
             Detection expected = createDetection(158, 241, 413, 100, "45");
             assertEquals(expected, actual);
@@ -138,7 +138,7 @@ public class TestDetectionPaddingProcessor {
 
         {
             Detection input = createDetection(300, 100, 400, 100, "225");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "100%", "0", 500, 500, input);
             Detection expected = createDetection(449, -49, 707, 100, "225");
             assertEquals(expected, actual);
@@ -146,7 +146,7 @@ public class TestDetectionPaddingProcessor {
 
         {
             Detection input = createDetection(300, 100, 400, 100, "225");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
             Detection expected = createDetection(441, -41, 696, 100, "225");
             assertEquals(expected, actual);
@@ -160,27 +160,27 @@ public class TestDetectionPaddingProcessor {
         Detection input = createDetection(96, 140, 190, 42, "18.74");
         {
             Detection expected = createDetection(6, 170, 380, 42, "18.74");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(89, 120, 190, 84, "18.74");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "0%", "50%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(0, 150, 380, 84, "18.74");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "50%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "0", "0", 500, 500, input);
             assertEquals(input, actual);
         }
@@ -193,21 +193,21 @@ public class TestDetectionPaddingProcessor {
         Detection input = createDetection(50, 60, 20, 40, "90");
         {
             Detection expected = createDetection(26, 60, 20, 88, "90");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "0", "60%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(50, 58, 16, 40, "90");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "-10%", "0", 1000, 1000, input);
             assertEquals(expected, actual);
         }
 
         {
             Detection expected = createDetection(26, 58, 16, 88, "90");
-            Detection actual = DetectionPaddingProcessor.padDetection(
+            Detection actual = DetectionTransformationProcessor.padDetection(
                     "-10%", "60%", 1000, 1000, input);
             assertEquals(expected, actual);
         }
@@ -247,7 +247,7 @@ public class TestDetectionPaddingProcessor {
         Detection detection = new Detection(x, y, width, height, -1, 0, 0, Collections.emptyMap());
         Detection expectedDetection = new Detection(expectedX, expectedY, expectedWidth, expectedHeight, -1, 0, 0,
                 shrinkToNothing ? Collections.singletonMap("SHRUNK_TO_NOTHING", "TRUE") : Collections.emptyMap());
-        Detection newDetection = DetectionPaddingProcessor.padDetection(xPadding, yPadding, frameWidth, frameHeight,
+        Detection newDetection = DetectionTransformationProcessor.padDetection(xPadding, yPadding, frameWidth, frameHeight,
                 detection);
         assertEquals(expectedDetection, newDetection);
     }
@@ -468,7 +468,7 @@ public class TestDetectionPaddingProcessor {
         InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
         AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
         when(_mockAggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval("SPEECH")).thenReturn(true);
-        DetectionPaddingProcessor _detectionPaddingProcessor = new DetectionPaddingProcessor(
+        DetectionTransformationProcessor _detectionTransformationProcessor = new DetectionTransformationProcessor(
                 _jsonUtils,
                 _mockInProgressJobs,
                 _mockAggregateJobPropertiesUtil);
@@ -478,7 +478,7 @@ public class TestDetectionPaddingProcessor {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
 
-        Collection<Track> new_tracks = _detectionPaddingProcessor.removeIllFormedDetections(jobId, mediaId,
+        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(jobId, mediaId,
                 0, 0, frameWidth, frameHeight, tracks);
         if (checkSetTracks) {
             verify(_mockInProgressJobs, atLeast(1))

@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.detection.padding;
+package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
@@ -58,11 +58,11 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-@Component(DetectionPaddingProcessor.REF)
-public class DetectionPaddingProcessor extends WfmProcessor {
+@Component(DetectionTransformationProcessor.REF)
+public class DetectionTransformationProcessor extends WfmProcessor {
     public static final String REF = "detectionPaddingProcessor";
 
-    private static final Logger _log = LoggerFactory.getLogger(DetectionPaddingProcessor.class);
+    private static final Logger _log = LoggerFactory.getLogger(DetectionTransformationProcessor.class);
 
     private final JsonUtils _jsonUtils;
 
@@ -71,7 +71,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
-    public DetectionPaddingProcessor(
+    public DetectionTransformationProcessor(
             JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
@@ -121,7 +121,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                             padTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
                                     xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
                         }
-                    } catch (DetectionPaddingException e) {
+                    } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
                         // job was created.
                         throw new WfmProcessingException(e);
@@ -137,10 +137,10 @@ public class DetectionPaddingProcessor extends WfmProcessor {
     /**
      * Ensures that the detection padding properties are valid..
      * @param properties Properties to validate
-     * @throws DetectionPaddingException when invalid detection padding properties are provided.
+     * @throws DetectionTransformationException when invalid detection padding properties are provided.
      */
     public static void validatePaddingProperties(Function<String, String> properties)
-            throws DetectionPaddingException {
+            throws DetectionTransformationException {
         // Both will throw if property is invalid.
         requiresPadding(properties, MpfConstants.DETECTION_PADDING_X);
         requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y);
@@ -148,14 +148,14 @@ public class DetectionPaddingProcessor extends WfmProcessor {
 
 
     private static boolean requiresPadding(Function<String, String> properties)
-            throws DetectionPaddingException {
+            throws DetectionTransformationException {
         return requiresPadding(properties, MpfConstants.DETECTION_PADDING_X) ||
                requiresPadding(properties, MpfConstants.DETECTION_PADDING_Y);
     }
 
 
     private static boolean requiresPadding(Function<String, String> properties, String propertyName)
-            throws DetectionPaddingException {
+            throws DetectionTransformationException {
         String padding = properties.apply(propertyName);
         if (StringUtils.isBlank(padding)) {
             return false;
@@ -165,7 +165,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
                 double percent = Double.parseDouble(padding.substring(0, padding.length() - 1));
                 if (percent <= -50.0) {
                     // can't shrink to nothing
-                    throw new DetectionPaddingException(String.format(
+                    throw new DetectionTransformationException(String.format(
                             "The %s property was set to \"%s\", but that would result in empty detections. " +
                                     "When specified as a percentage, padding values must be > -50%%.",
                             propertyName, padding));
@@ -174,7 +174,7 @@ public class DetectionPaddingProcessor extends WfmProcessor {
             }
             return Integer.parseInt(padding) != 0;
         } catch (NumberFormatException e) {
-            throw new DetectionPaddingException(String.format(
+            throw new DetectionTransformationException(String.format(
                     "The %s property was set to \"%s\", but that is not a valid value. " +
                             "Padding must be specified as whole number integer, or a percentage that ends " +
                             "with \"%%\". Percentages can be decimal values. Negative values are allowed in both " +

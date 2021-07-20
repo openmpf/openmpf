@@ -25,15 +25,15 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.camel.operations.detection.padding;
+package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
-public class DetectionPaddingException extends Exception {
+public class DetectionTransformationException extends Exception {
 
-    public DetectionPaddingException(String message) {
+    public DetectionTransformationException(String message) {
         super(message);
     }
 
-    public DetectionPaddingException(String message, Throwable cause) {
+    public DetectionTransformationException(String message, Throwable cause) {
         super(message, cause);
     }
 }

@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.util;
 
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
@@ -431,19 +430,18 @@ public class AggregateJobPropertiesUtil {
         return tasksToMerge;
     }
 
-    public boolean isOutputLastTaskOnly(Media media, BatchJob job) {
-        // Action properties and algorithm properties are not checked because it doesn't make sense
-        // to apply OUTPUT_LAST_TASK_ONLY to a single task.
-        return Boolean.parseBoolean(
-                getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
+    public boolean isNonVisualObjectType(String type) {
+        return _propertiesUtil.getArtifactExtractionNonVisualTypesList().stream()
+                .anyMatch(type::equalsIgnoreCase);
     }
 
     public boolean isExemptFromIllFormedDetectionRemoval(String type) {
-        for (String propType : _propertiesUtil.getIllFormedDetectionRemovalExemptionList()) {
-            if (StringUtils.equalsIgnoreCase(type, propType))
-                return true;
-        }
-        return false;
+        return _propertiesUtil.getIllFormedDetectionRemovalExemptionList().stream()
+                .anyMatch(type::equalsIgnoreCase);
+    }
 
+    public boolean isExemptFromTrackMerging(String type) {
+        return _propertiesUtil.getTrackMergingExemptionList().stream()
+                .anyMatch(type::equalsIgnoreCase);
     }
 }

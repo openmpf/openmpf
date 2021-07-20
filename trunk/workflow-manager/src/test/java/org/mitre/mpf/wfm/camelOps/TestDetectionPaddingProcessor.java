@@ -439,7 +439,7 @@ public class TestDetectionPaddingProcessor {
         SortedSet<Detection> detections = new TreeSet<>();
         Detection detection1 = new Detection(50, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
         Detection detection2 = new Detection(50, 60, 20, 40, 1, 2, 2, Collections.emptyMap());
-        Detection detection3 = new Detection(50, 60, 0, 0, 1, 3, 3, Collections.emptyMap());
+        Detection detection3 = new Detection(50, 60, 10, 0, 1, 3, 3, Collections.emptyMap());
         detections.add(detection1);
         detections.add(detection2);
         detections.add(detection3);

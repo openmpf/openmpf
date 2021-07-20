@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2018 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2021 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2018 The MITRE Corporation                                       *
+ * Copyright 2021 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,39 +27,64 @@
 
 package org.mitre.mpf.mvc;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
-/**
- * By default Spring returns HTML when authentication fails,
- * but since this is applied to our REST endpoints JSON is more appropriate.
- */
-@Component
-public class RestBasicAuthEntryPoint implements AuthenticationEntryPoint {
+import static java.util.stream.Collectors.toUnmodifiableSet;
+
+@Component("corsFilter")
+public class CorsFilter implements Filter {
+
+    private static final Set<String> CORS_ALLOWED_ORIGINS = getCorsAllowedOrigins();
+
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
-        // This header is what makes the log in box appear when accessing the REST URLs
-        // in a browser such as on the Swagger page.
-        response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Workflow Manager\"");
-        if (request.getMethod().equals("OPTIONS")
-                && CorsFilter.addCorsHeadersIfAllowed(request, response)) {
-            // Handle CORS preflight request
-            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        addCorsHeadersIfAllowed((HttpServletRequest) request, (HttpServletResponse) response);
+        chain.doFilter(request, response);
+    }
+
+
+    public static boolean addCorsHeadersIfAllowed(HttpServletRequest request,
+                                                  HttpServletResponse response) {
+        var origin = request.getHeader("Origin");
+        if (origin == null || !CORS_ALLOWED_ORIGINS.contains(origin)) {
+            return false;
         }
-        else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            try (PrintWriter pw = response.getWriter()) {
-                pw.printf("{\"message\": \"%s\"}", authException.getMessage());
-            }
+        response.addHeader("Access-Control-Allow-Origin", origin);
+        response.addHeader("Access-Control-Allow-Credentials", "true");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+        var acRequestHeaders = request.getHeader("Access-Control-Request-Headers");
+        if (acRequestHeaders != null) {
+            response.addHeader("Access-Control-Allow-Headers", acRequestHeaders);
         }
+        return true;
+    }
+
+
+    private static Set<String> getCorsAllowedOrigins() {
+        return Optional.ofNullable(System.getenv("CORS_ALLOWED_ORIGINS"))
+                .stream()
+                .flatMap(s -> Stream.of(s.split(",")))
+                .map(String::strip)
+                .filter(s -> !s.isBlank())
+                .collect(toUnmodifiableSet());
+    }
+
+
+    @Override
+    public void init(FilterConfig filterConfig) {
+    }
+
+    @Override
+    public void destroy() {
     }
 }

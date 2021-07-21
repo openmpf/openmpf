@@ -291,6 +291,14 @@ public class InProgressBatchJobsService {
     }
 
 
+    public synchronized void handleMarkupCancellation(long jobId, long mediaId) {
+        var job = getJobImpl(jobId);
+        job.addError(mediaId, IssueSources.MARKUP.toString(), MpfConstants.REQUEST_CANCELLED,
+                     "Successfully cancelled.");
+        setJobStatus(jobId, job.getStatus().onCancel());
+    }
+
+
     public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatus) {
         var job = getJobImpl(jobId);
         if (job.getStatus() == batchJobStatus) {

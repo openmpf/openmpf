@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.markup;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.springframework.stereotype.Component;
 
 @Component(MarkupCancellationProcessor.REF)
@@ -50,7 +51,7 @@ public class MarkupCancellationProcessor implements Processor {
                 .setMediaId(request.getMediaId())
                 .setRequestId(request.getRequestId())
                 .setHasError(true)
-                .setErrorMessage("This request was cancelled.")
+                .setErrorMessage(MpfConstants.REQUEST_CANCELLED)
                 .build()
                 .toByteArray()
         );

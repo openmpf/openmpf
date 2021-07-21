@@ -233,6 +233,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             jobRequestEntity.setStatus(jobStatus);
             jobRequestEntity.setTimeReceived(Instant.now());
             jobRequestEntity.setPipeline(pipelineElements.getName());
+            jobRequestEntity.setTimeCompleted(null);
             jobRequestEntity.setOutputObjectPath(null);
             jobRequestEntity.setOutputObjectVersion(null);
 

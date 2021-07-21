@@ -269,7 +269,7 @@ public class InProgressBatchJobsService {
 
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
-        LOG.info("Adding detection processing error for job {}'s media {}: {} - {}",
+        LOG.error("Adding detection processing error for job {}'s media {}: {} - {}",
                  error.getJobId(), error.getMediaId(), error.getErrorCode(), error.getErrorMessage());
         var job = getJobImpl(error.getJobId());
         job.addDetectionProcessingError(error);

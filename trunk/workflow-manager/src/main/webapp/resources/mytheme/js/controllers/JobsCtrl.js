@@ -135,12 +135,12 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         render: function (data, type, job) {
                             var cancel_disabled = "";
                             if (job.terminal || job.jobStatus === 'CANCELLING' ||
-                                    job.jobStatus === 'COMPLETE' || job.hasCallbacksInProgress) {
+                                    job.hasCallbacksInProgress) {
                                 cancel_disabled = "disabled=disabled";
                             }
-                            var isterminal = "";
+                            var resubmit_disabled = "";
                             if (!job.terminal || job.hasCallbacksInProgress) {
-                                isterminal = "disabled=disabled" ;
+                                resubmit_disabled = "disabled=disabled" ;
                             }
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
@@ -149,7 +149,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             }
                             return '<div class="btn-group btn-group-sm" role="group" >' +
                                 '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + resubmit_disabled + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
                                 '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
                                 '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" id="jsonBtn' + job.jobId + '" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
                         }

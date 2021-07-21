@@ -110,7 +110,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 }
                 break;
             default:
-                log.warn("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
+                log.error("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
                 _inProgressJobs.addError(jobId, mediaId, IssueCodes.REMOTE_STORAGE_DOWNLOAD, String.format(
                         "The scheme '%s' was not expected or does not have a handler associated with it.",
                         media.getUriScheme()));

@@ -205,8 +205,6 @@ public class TestDetectionResponseProcessor {
         verify(inProgressJobs, never())
                 .addDetectionProcessingError(any());
         verify(inProgressJobs, never())
-                .addJobError(eq(JOB_ID), any(), any());
-        verify(inProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
         verify(inProgressJobs, times(1))
                 .addTrack(track(JOB_ID, 5));

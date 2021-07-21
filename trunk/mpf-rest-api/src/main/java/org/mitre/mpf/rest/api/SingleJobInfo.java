@@ -40,7 +40,6 @@ public class SingleJobInfo {
     private Instant endDate;
     private String outputObjectPath;
     private boolean hasCallbacksInProgress;
-    //terminal if status is JOB_CREATION_ERROR, COMPLETE, CANCELLED, or ERROR.
     private boolean terminal;
     private List<String> mediaUris;
 

@@ -151,10 +151,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         trackCounter); // this may update the job status
                 jobRequest.setOutputObjectPath(outputObjectUri.toString());
                 jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-            } catch (Exception exception) {
-                inProgressBatchJobs.addFatalError(
-                        jobId, IssueCodes.OTHER,
-                        "Failed to create the output object due to: " + exception);
+            }
+            catch (Exception exception) {
+                var message = "Failed to create the output object due to: " + exception;
+                log.error(message, exception);
+                inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
             }
             completionStatus = job.getStatus().onComplete();
 
@@ -163,7 +164,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setStatus(completionStatus);
             jobRequest.setJob(jsonUtils.serialize(job));
             jobRequestDao.persist(jobRequest);
-            jobStatusBroadcaster.broadcast(jobId, 100, completionStatus);
 
             IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
             IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());

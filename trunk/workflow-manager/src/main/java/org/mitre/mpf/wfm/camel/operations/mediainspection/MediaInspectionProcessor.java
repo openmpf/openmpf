@@ -136,7 +136,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 } catch (IOException ioe) {
                     String errorMessage = "Could not calculate the SHA-256 hash for the file due to IOException: "
                             + ioe;
-                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.ARTIFACT_EXTRACTION, errorMessage);
+                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
+                                             errorMessage);
                     LOG.error(errorMessage, ioe);
                 }
 

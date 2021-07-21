@@ -199,7 +199,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         $(".resubmitBtn").click(function () {
             resubmitJob(getJobFromTableEle(this));
         });
-        $("#infoModalBtn").click(function () {
+        $("#infoModalBtn").click(function (evt) {
+            // Prevent table from sorting by status when clicking info icon.
+            evt.stopPropagation();
             $("#infoModal").modal('show');
         });
     };
@@ -365,6 +367,8 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
     var resubmitJob = function (job) {
         $log.debug("resubmitJob:", job);
         var statusCell = $("#jobStatusCell" + job.jobId);
+        var prevClasses = statusCell.attr('class');
+        var prevHtml = statusCell.html();
         statusCell.html("RESUBMITTING");
         statusCell.removeClass('label-danger label-warning label-primary');
         statusCell.addClass('label-default');
@@ -375,6 +379,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 resp.hasOwnProperty("jobId")) {
                 if (resp.mpfResponse.responseCode != 0) {
                     NotificationSvc.error(resp.mpfResponse.message);
+                    statusCell.attr('class', prevClasses);
+                    statusCell.html(prevHtml);
+                    $("#resubmitBtn" + job.jobId).removeAttr("disabled");
                 } else {
                     NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
                 }

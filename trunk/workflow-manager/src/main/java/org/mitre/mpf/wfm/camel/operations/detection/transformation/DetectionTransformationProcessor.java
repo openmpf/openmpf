@@ -60,7 +60,7 @@ import java.util.stream.IntStream;
 
 @Component(DetectionTransformationProcessor.REF)
 public class DetectionTransformationProcessor extends WfmProcessor {
-    public static final String REF = "detectionPaddingProcessor";
+    public static final String REF = "detectionTransformationProcessor";
 
     private static final Logger _log = LoggerFactory.getLogger(DetectionTransformationProcessor.class);
 

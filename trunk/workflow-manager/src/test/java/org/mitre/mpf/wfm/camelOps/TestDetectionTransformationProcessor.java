@@ -269,7 +269,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400);
 
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
@@ -297,7 +297,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true, false);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -324,7 +324,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -351,7 +351,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -365,8 +365,8 @@ public class TestDetectionTransformationProcessor {
     @Test
     public void testRemoveIllFormedDetectionsOneOfEach() {
         SortedSet<Detection> detections = new TreeSet<>();
-        Detection detection1 = new Detection(-25, 60, 20, 40, 1, 1, 1, Collections.emptyMap());
-        Detection detection2 = new Detection(50, 60, 0, 0, 1, 2, 2, Collections.emptyMap());
+        Detection detection1 = new Detection(-25, 60, 20, 40, 1, 1, 1, Collections.emptyMap()); // out of frame
+        Detection detection2 = new Detection(50, 60, 0, 0, 1, 2, 2, Collections.emptyMap()); // zero width and height
         Detection detection3 = new Detection(50, 60, 20, 40, 1, 3, 3, Collections.emptyMap());
         detections.add(detection1);
         detections.add(detection2);
@@ -378,7 +378,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true, true);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -405,7 +405,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400);
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
         SortedSet<Detection> filteredDetections = filteredTrack.getDetections();
@@ -429,7 +429,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true, false);
 
         assertTrue(filteredTracks.isEmpty());
     }
@@ -450,7 +450,7 @@ public class TestDetectionTransformationProcessor {
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
 
-        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true);
+        Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, true, false);
 
         assertEquals(1, filteredTracks.size());
         Track filteredTrack = filteredTracks.iterator().next();
@@ -462,8 +462,13 @@ public class TestDetectionTransformationProcessor {
         assertEquals(2, filteredTrack.getEndOffsetTimeInclusive());
     }
 
+    private Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks, int frameWidth, int frameHeight) {
+        return runRemoveIllFormedDetections(tracks, frameWidth, frameWidth, false, false);
+    }
+
     private Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks, int frameWidth, int frameHeight,
-                                                           boolean checkSetTracks) {
+                                                           boolean hasWidthHeightWarning,
+                                                           boolean hasOutsideFrameWarning) {
         JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
         InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
         AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
@@ -480,20 +485,25 @@ public class TestDetectionTransformationProcessor {
 
         Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(jobId, mediaId,
                 0, 0, frameWidth, frameHeight, tracks);
-        if (checkSetTracks) {
-            verify(_mockInProgressJobs, atLeast(1))
+        if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
+            verify(_mockInProgressJobs, times(0))
                     .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
-            verify(_mockInProgressJobs, atMost(2))
-                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
+            verify(_mockInProgressJobs, times(0))
+                    .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
+        } else {
+            if (hasWidthHeightWarning) {
+                verify(_mockInProgressJobs, times(1))
+                        .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION),
+                                contains("width or height equal to 0"));
+            }
+            if (hasOutsideFrameWarning) {
+                verify(_mockInProgressJobs, times(1))
+                        .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION),
+                                contains("completely outside frame"));
+            }
             verify(_mockInProgressJobs)
                     .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
             assertTrue(isEqualCollection(new_tracks, captor.getValue()));
-        }
-        else {
-            verify(_mockInProgressJobs, times(0))
-                    .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
-            verify(_mockInProgressJobs, times(0))
-                    .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
         }
         return new_tracks;
     }

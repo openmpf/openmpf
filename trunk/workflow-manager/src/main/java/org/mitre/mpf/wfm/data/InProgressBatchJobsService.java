@@ -198,8 +198,11 @@ public class InProgressBatchJobsService {
 
     public synchronized boolean cancelJob(long jobId) {
         LOG.info("Marking job {} as cancelled.", jobId);
-        getJobImpl(jobId).setCancelled(true);
-        return true;
+        var job = getJobImpl(jobId);
+        job.setCancelled(true);
+        setJobStatus(jobId, job.getStatus().onCancel());
+        return job.getStatus() == BatchJobStatusType.CANCELLING
+                || job.getStatus() == BatchJobStatusType.CANCELLED;
     }
 
     public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
@@ -278,7 +281,7 @@ public class InProgressBatchJobsService {
         media.setFailed(true);
 
         if (error.getErrorCode().equals(MpfConstants.REQUEST_CANCELLED)) {
-            setJobStatus(error.getJobId(), job.getStatus().onCancel());
+            cancelJob(error.getJobId());
         }
         else {
             setJobStatus(error.getJobId(), job.getStatus().onError());
@@ -295,7 +298,7 @@ public class InProgressBatchJobsService {
         var job = getJobImpl(jobId);
         job.addError(mediaId, IssueSources.MARKUP.toString(), MpfConstants.REQUEST_CANCELLED,
                      "Successfully cancelled.");
-        setJobStatus(jobId, job.getStatus().onCancel());
+        cancelJob(jobId);
     }
 
 

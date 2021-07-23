@@ -197,12 +197,12 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized boolean cancelJob(long jobId) {
-        LOG.info("Marking job {} as cancelled.", jobId);
         var job = getJobImpl(jobId);
-        job.setCancelled(true);
-        setJobStatus(jobId, job.getStatus().onCancel());
-        return job.getStatus() == BatchJobStatusType.CANCELLING
-                || job.getStatus() == BatchJobStatusType.CANCELLED;
+        if (!job.isCancelled()) {
+            LOG.info("Marking job {} as cancelled.", jobId);
+            setJobStatus(jobId, job.getStatus().onCancel());
+        }
+        return job.isCancelled();
     }
 
     public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
@@ -310,6 +310,7 @@ public class InProgressBatchJobsService {
         LOG.info("Setting status of job {} to {}", jobId, batchJobStatus);
         job.setStatus(batchJobStatus);
         if (!batchJobStatus.isTerminal()) {
+            // Terminal jobs are persisted, and status is broadcast, in JobCompleteProcessorImpl.
             _jobRequestDao.updateStatus(jobId, batchJobStatus);
             _jobStatusBroadcaster.broadcast(jobId, batchJobStatus);
         }

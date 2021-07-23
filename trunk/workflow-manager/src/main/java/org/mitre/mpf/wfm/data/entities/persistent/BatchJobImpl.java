@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
@@ -100,11 +101,18 @@ public class BatchJobImpl implements BatchJob {
     public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
 
 
-    private boolean _cancelled;
     @Override
-    public boolean isCancelled() { return _cancelled; }
-    public void setCancelled(boolean isCancelled) { _cancelled = isCancelled; }
-
+    @JsonIgnore
+    public boolean isCancelled() {
+        switch (getStatus()) {
+            case CANCELLED:
+            case CANCELLING:
+            case CANCELLED_BY_SHUTDOWN:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     private final String _callbackUrl;
     @Override

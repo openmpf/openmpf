@@ -89,6 +89,7 @@ public abstract class WfmSplitter implements MonitoredWfmSplitter {
             var errorMsg = String.format(
                     "Failed to complete the split operation for Job %s due to: %s",
                     jobId, exception);
+            log.error(errorMsg, exception);
             inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
             failed = true;
         }

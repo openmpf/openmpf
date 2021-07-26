@@ -42,7 +42,6 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -52,14 +51,14 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.MarkupJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.nio.file.Path;
 import java.util.List;
@@ -71,18 +70,29 @@ import java.util.stream.DoubleStream;
 public class MarkupSplitter {
     private static final Logger log = LoggerFactory.getLogger(MarkupSplitter.class);
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
-    private MarkupResultDao hibernateMarkupResultDao;
+    private final MarkupResultDao _markupResultDao;
 
-    @Autowired
-    private MarkupJobPropertiesUtil markupJobPropertiesUtil;
+    private final MarkupJobPropertiesUtil _markupJobPropertiesUtil;
+
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    @Inject
+    public MarkupSplitter(
+            InProgressBatchJobsService inProgressBatchJobs,
+            PropertiesUtil propertiesUtil,
+            MarkupResultDao markupResultDao,
+            MarkupJobPropertiesUtil markupJobPropertiesUtil,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _propertiesUtil = propertiesUtil;
+        _markupResultDao = markupResultDao;
+        _markupJobPropertiesUtil = markupJobPropertiesUtil;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+    }
 
 
     public List<Message> performSplit(BatchJob job, Task task) {
@@ -90,7 +100,7 @@ public class MarkupSplitter {
 
         int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getPipelineElements());
 
-        hibernateMarkupResultDao.deleteByJobId(job.getId());
+        _markupResultDao.deleteByJobId(job.getId());
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             String actionName = task.getActions().get(actionIndex);
@@ -110,10 +120,10 @@ public class MarkupSplitter {
 
                     Path destinationPath;
                     if (boundingBoxMapEntryList.isEmpty()) {
-                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                        destinationPath = _propertiesUtil.createMarkupPath(job.getId(), media.getId(),
                                 getFileExtension(media.getMimeType()));
                     } else {
-                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
+                        destinationPath = _propertiesUtil.createMarkupPath(job.getId(), media.getId(),
                                 getMarkedUpMediaExtensionForMediaType(job, media));
                     }
 
@@ -134,7 +144,7 @@ public class MarkupSplitter {
                                 .setValue(entry.getValue());
                     }
 
-                    for (var entry : markupJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
+                    for (var entry : _markupJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
                         requestBuilder.addMarkupPropertiesBuilder()
                                 .setKey(entry.getKey())
                                 .setValue(entry.getValue());
@@ -172,16 +182,16 @@ public class MarkupSplitter {
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
         boolean labelFromDetections = Boolean.parseBoolean(
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_FROM_DETECTIONS, job, media));
+                _markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_FROM_DETECTIONS, job, media));
         String labelTextPropToShow =
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW, job, media);
+                _markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW, job, media);
         String labelNumericPropToShow =
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW, job, media);
+                _markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW, job, media);
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
         long mediaId = media.getId();
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
+            SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
             for (Track track : tracks) {
                 addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelFromDetections,
                         labelTextPropToShow, labelNumericPropToShow);
@@ -205,7 +215,7 @@ public class MarkupSplitter {
                 .map(s -> Boolean.parseBoolean(s.strip()));
     }
 
-    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
+    private void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
                                                  boolean labelFromDetections, String labelTextPropToShow,
                                                  String labelNumericPropToShow) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
@@ -253,8 +263,7 @@ public class MarkupSplitter {
                     track.getExemplar().equals(detection),
                     label);
 
-            String objectType = track.getType();
-            if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
+            if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(track.getType())) {
                 // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
                 // go by the track start and stop frames.
                 boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
@@ -315,7 +324,7 @@ public class MarkupSplitter {
             case IMAGE:
                 return ".png";
             case VIDEO:
-                String encoder = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_ENCODER, job, media)
+                String encoder = _markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_ENCODER, job, media)
                         .toLowerCase();
                 switch (encoder) {
                     case ("vp9"):

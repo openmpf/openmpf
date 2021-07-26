@@ -32,19 +32,17 @@ import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -62,7 +60,6 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
     private InProgressBatchJobsService inProgressJobs;
 
     @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao markupResultDao;
 
     @Autowired
@@ -77,9 +74,27 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         markupResult.setMediaId(markupResponse.getMediaId());
         markupResult.setMediaIndex(markupResponse.getMediaIndex());
         markupResult.setJobId(jobId);
-        markupResult.setMarkupStatus(markupResponse.getHasError() ? MarkupStatus.FAILED : MarkupStatus.COMPLETE);
         markupResult.setMarkupUri(markupResponse.getOutputFileUri());
-        markupResult.setMessage(markupResponse.hasErrorMessage() ? markupResponse.getErrorMessage() : null);
+
+        if (markupResponse.getHasError()) {
+            if (markupResponse.hasErrorMessage()) {
+                if (markupResponse.getErrorMessage().equals(MpfConstants.REQUEST_CANCELLED)) {
+                    markupResult.setMarkupStatus(MarkupStatus.CANCELLED);
+                    markupResult.setMessage("Successfully cancelled.");
+                }
+                else {
+                    markupResult.setMarkupStatus(MarkupStatus.FAILED);
+                    markupResult.setMessage(markupResponse.getErrorMessage());
+                }
+            }
+            else {
+                markupResult.setMarkupStatus(MarkupStatus.FAILED);
+                markupResult.setMessage("FAILED");
+            }
+        }
+        else {
+            markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
+        }
 
         BatchJob job = inProgressJobs.getJob(jobId);
         Media media = job.getMedia(markupResponse.getMediaId());
@@ -89,21 +104,20 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         storageService.store(markupResult);
         markupResultDao.persist(markupResult);
 
-        if (markupResult.getMarkupStatus() == MarkupStatus.FAILED) {
-            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
-            var errorMessage = markupResponse.hasErrorMessage()
-                    ? markupResponse.getErrorMessage()
-                    : "FAILED";
-            inProgressJobs.addError(jobId, markupResult.getMediaId(), IssueCodes.MARKUP, errorMessage,
-                                    IssueSources.MARKUP);
-        }
-        if (markupResult.getMarkupStatus() == MarkupStatus.COMPLETE_WITH_WARNING) {
-            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_WARNINGS);
-            var warningMessage = markupResponse.hasErrorMessage()
-                    ? markupResponse.getErrorMessage()
-                    : "COMPLETE_WITH_WARNING";
-            inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP, warningMessage,
-                                      IssueSources.MARKUP);
+        switch (markupResult.getMarkupStatus()) {
+            case FAILED:
+                inProgressJobs.addError(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
+                                        markupResult.getMessage(), IssueSources.MARKUP);
+                break;
+            case CANCELLED:
+                inProgressJobs.handleMarkupCancellation(jobId, markupResult.getMediaId());
+                break;
+            case COMPLETE_WITH_WARNING:
+                var warningMessage = markupResponse.hasErrorMessage()
+                        ? markupResponse.getErrorMessage()
+                        : "COMPLETE_WITH_WARNING";
+                inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
+                                          warningMessage, IssueSources.MARKUP);
         }
         return null;
     }

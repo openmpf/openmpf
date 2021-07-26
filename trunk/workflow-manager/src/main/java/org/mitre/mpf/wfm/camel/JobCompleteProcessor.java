@@ -44,7 +44,7 @@ import java.time.Instant;
 public interface JobCompleteProcessor extends WfmProcessorInterface, NotificationProducer<JobCompleteNotification> {
     URI createOutputObject(BatchJob job, Instant timeReceived,
                            Instant timeCompleted,
-                           Mutable<BatchJobStatusType> jobStatus,
+                           BatchJobStatusType jobStatus,
                            Mutable<String> outputSha,
                            TrackCounter trackCounter) throws WfmProcessingException, IOException;
 

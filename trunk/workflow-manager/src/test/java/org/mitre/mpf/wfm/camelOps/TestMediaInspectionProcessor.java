@@ -400,8 +400,6 @@ public class TestMediaInspectionProcessor {
     private void verifyMediaError(long jobId, long mediaId) {
         verify(_mockInProgressJobs, atLeastOnce())
                 .addError(eq(jobId), eq(mediaId), eq(IssueCodes.MEDIA_INSPECTION), nonBlank());
-        verify(_mockInProgressJobs)
-                .setJobStatus(jobId, BatchJobStatusType.ERROR);
     }
 
     private Exchange setupExchange(long jobId, MediaImpl media) {

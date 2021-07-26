@@ -28,7 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.BroadcastEnabledStringCountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.EndOfTaskProcessor;
 import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
@@ -46,8 +46,8 @@ public class TaskResponseAggregationRoute extends RouteBuilder {
     public static final String ROUTE_ID = "Stage Response Aggregation Route";
 
     @Autowired
-    @Qualifier(BroadcastEnabledStringCountBasedWfmAggregator.REF)
-    private WfmAggregator<String> aggregator;
+    @Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
+    private WfmAggregator aggregator;
 
     private final String entryPoint, exitPoint, routeId;
 

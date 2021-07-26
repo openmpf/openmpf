@@ -31,9 +31,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -63,13 +65,23 @@ public class InProgressBatchJobsService {
 
     private final Redis _redis;
 
+    private final JobRequestDao _jobRequestDao;
+
+    private final JobStatusBroadcaster _jobStatusBroadcaster;
+
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
+
+    private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
 
 
     @Inject
-    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis) {
+    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis,
+                                      JobRequestDao jobRequestDao,
+                                      JobStatusBroadcaster jobStatusBroadcaster) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
+        _jobRequestDao = jobRequestDao;
+        _jobStatusBroadcaster = jobStatusBroadcaster;
     }
 
 
@@ -135,12 +147,20 @@ public class InProgressBatchJobsService {
         throw new WfmProcessingException("Unable to locate batch job with id: " + jobId);
     }
 
+    public synchronized void setCallbacksInProgress(long jobId) {
+        _jobsWithCallbacksInProgress.add(jobId);
+    }
+
+    public synchronized boolean jobHasCallbacksInProgress(long jobId) {
+        return _jobsWithCallbacksInProgress.contains(jobId);
+    }
 
     public synchronized void clearJob(long jobId) {
         LOG.info("Clearing all job information for job: {}", jobId);
         BatchJobImpl job = getJobImpl(jobId);
         _redis.clearTracks(job);
         _jobs.remove(jobId);
+        _jobsWithCallbacksInProgress.remove(jobId);
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
@@ -177,9 +197,12 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized boolean cancelJob(long jobId) {
-        LOG.info("Marking job {} as cancelled.", jobId);
-        getJobImpl(jobId).setCancelled(true);
-        return true;
+        var job = getJobImpl(jobId);
+        if (!job.isCancelled()) {
+            LOG.info("Marking job {} as cancelled.", jobId);
+            setJobStatus(jobId, job.getStatus().onCancel());
+        }
+        return job.isCancelled();
     }
 
     public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
@@ -212,7 +235,9 @@ public class InProgressBatchJobsService {
         var codeString = IssueCodes.toString(code);
         LOG.warn("Adding the following warning to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
 
-        getJobImpl(jobId).addWarning(mediaId, IssueSources.toString(source), codeString, message);
+        var job = getJobImpl(jobId);
+        job.addWarning(mediaId, IssueSources.toString(source), codeString, message);
+        setJobStatus(jobId, job.getStatus().onWarning());
     }
 
 
@@ -224,26 +249,43 @@ public class InProgressBatchJobsService {
         addError(jobId, mediaId, code, message, IssueSources.WORKFLOW_MANAGER);
     }
 
-    public synchronized void addError(long jobId, long mediaId, IssueCodes code, String message, IssueSources source) {
+    public synchronized void addError(long jobId, long mediaId, IssueCodes code,
+                                      String message, IssueSources source) {
         var codeString = IssueCodes.toString(code);
-
         LOG.error("Adding the following error to job {}'s media {}: {} - {}", jobId, mediaId, codeString, message);
-
-        getJobImpl(jobId).addError(mediaId, IssueSources.toString(source), codeString, message);
-
+        var job = getJobImpl(jobId);
+        job.addError(mediaId, IssueSources.toString(source), codeString, message);
         if (source != IssueSources.MARKUP && mediaId != 0) {
             getMediaImpl(jobId, mediaId).setFailed(true);
         }
+        setJobStatus(jobId, job.getStatus().onError());
+    }
+
+
+    public synchronized void addFatalError(long jobId, IssueCodes code, String message) {
+        var codeString = IssueCodes.toString(code);
+        LOG.error("Adding the following error to job {}: {} - {}", jobId, codeString, message);
+        var job = getJobImpl(jobId);
+        job.addError(0, IssueSources.toString(IssueSources.WORKFLOW_MANAGER), codeString, message);
+        setJobStatus(jobId, job.getStatus().onFatalError());
     }
 
 
     public synchronized void addDetectionProcessingError(DetectionProcessingError error) {
-        LOG.info("Adding detection processing error for job {}'s media {}: {} - {}",
+        LOG.error("Adding detection processing error for job {}'s media {}: {} - {}",
                  error.getJobId(), error.getMediaId(), error.getErrorCode(), error.getErrorMessage());
-        getJobImpl(error.getJobId()).addDetectionProcessingError(error);
+        var job = getJobImpl(error.getJobId());
+        job.addDetectionProcessingError(error);
 
         var media = getMediaImpl(error.getJobId(), error.getMediaId());
         media.setFailed(true);
+
+        if (error.getErrorCode().equals(MpfConstants.REQUEST_CANCELLED)) {
+            cancelJob(error.getJobId());
+        }
+        else {
+            setJobStatus(error.getJobId(), job.getStatus().onError());
+        }
     }
 
 
@@ -252,11 +294,25 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatusType) {
+    public synchronized void handleMarkupCancellation(long jobId, long mediaId) {
         var job = getJobImpl(jobId);
-        if (job.getStatus() != batchJobStatusType) {
-            LOG.info("Setting status of job {} to {}", jobId, batchJobStatusType);
-            getJobImpl(jobId).setStatus(batchJobStatusType);
+        job.addError(mediaId, IssueSources.MARKUP.toString(), MpfConstants.REQUEST_CANCELLED,
+                     "Successfully cancelled.");
+        cancelJob(jobId);
+    }
+
+
+    public synchronized void setJobStatus(long jobId, BatchJobStatusType batchJobStatus) {
+        var job = getJobImpl(jobId);
+        if (job.getStatus() == batchJobStatus) {
+            return;
+        }
+        LOG.info("Setting status of job {} to {}", jobId, batchJobStatus);
+        job.setStatus(batchJobStatus);
+        if (!batchJobStatus.isTerminal()) {
+            // Terminal jobs are persisted, and status is broadcast, in JobCompleteProcessorImpl.
+            _jobRequestDao.updateStatus(jobId, batchJobStatus);
+            _jobStatusBroadcaster.broadcast(jobId, batchJobStatus);
         }
     }
 

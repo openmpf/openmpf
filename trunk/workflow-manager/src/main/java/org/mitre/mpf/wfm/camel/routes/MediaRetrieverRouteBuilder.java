@@ -28,9 +28,9 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
+import org.mitre.mpf.wfm.camel.CountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
-import org.mitre.mpf.wfm.camel.StringCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
@@ -47,8 +47,8 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID = "Media Retriever Route";
 
 	@Autowired
-	@Qualifier(StringCountBasedWfmAggregator.REF)
-	private WfmAggregator<String> stringCountBasedAggregator;
+	@Qualifier(CountBasedWfmAggregator.REF)
+	private WfmAggregator stringCountBasedAggregator;
 
 	private final String entryPoint, exitPoint;
 

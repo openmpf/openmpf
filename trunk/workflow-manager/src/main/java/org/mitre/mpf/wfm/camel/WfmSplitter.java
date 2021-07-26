@@ -30,7 +30,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,9 +86,11 @@ public abstract class WfmSplitter implements MonitoredWfmSplitter {
         catch (Exception exception) {
             // The split operation failed. The job cannot continue.
             // Print out the stack trace since no details will be reported in the JSON output.
-            log.error(String.format("Failed to complete the split operation for Job %s due to an exception.", jobId),
-                      exception);
-            inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
+            var errorMsg = String.format(
+                    "Failed to complete the split operation for Job %s due to: %s",
+                    jobId, exception);
+            log.error(errorMsg, exception);
+            inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
             failed = true;
         }
 

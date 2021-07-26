@@ -33,7 +33,6 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
@@ -111,7 +110,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
                 }
                 break;
             default:
-                log.warn("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
+                log.error("The UriScheme '{}' was not expected at this time.", media.getUriScheme());
                 _inProgressJobs.addError(jobId, mediaId, IssueCodes.REMOTE_STORAGE_DOWNLOAD, String.format(
                         "The scheme '%s' was not expected or does not have a handler associated with it.",
                         media.getUriScheme()));
@@ -180,6 +179,5 @@ public class RemoteMediaProcessor extends WfmProcessor {
                                              String errorMessage) {
         _inProgressJobs.addError(jobId, media.getId(), IssueCodes.REMOTE_STORAGE_DOWNLOAD,
                                  "Error retrieving media and saving it to temp file: " + errorMessage);
-        _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
     }
 }

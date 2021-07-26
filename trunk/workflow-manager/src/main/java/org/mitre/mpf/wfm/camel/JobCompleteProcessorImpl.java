@@ -45,7 +45,6 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -62,7 +61,6 @@ import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -88,7 +86,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private JobRequestDao jobRequestDao;
 
     @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
     private MarkupResultDao markupResultDao;
 
     @Autowired
@@ -140,8 +137,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setTimeCompleted(Instant.now());
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
-            var jobStatus = new MutableObject<>(
-                    JobStatusCalculator.completionStatus(job.getStatus()));
+            var completionStatus = job.getStatus().onComplete();
             URI outputObjectUri = null;
             var outputSha = new MutableObject<String>();
             var trackCounter = new TrackCounter();
@@ -150,21 +146,22 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         job,
                         jobRequest.getTimeReceived(),
                         jobRequest.getTimeCompleted(),
-                        jobStatus,
+                        completionStatus,
                         outputSha,
                         trackCounter); // this may update the job status
                 jobRequest.setOutputObjectPath(outputObjectUri.toString());
                 jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-            } catch (Exception exception) {
-                log.error(String.format("Failed to create the output object for job %d due to an exception.", jobId),
-                          exception);
-                inProgressBatchJobs.addJobError(jobId, IssueCodes.OTHER,
-                                                "Failed to create the output object due to: " + exception);
-                jobStatus.setValue(BatchJobStatusType.ERROR);
             }
+            catch (Exception exception) {
+                var message = "Failed to create the output object due to: " + exception;
+                log.error(message, exception);
+                inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
+            }
+            completionStatus = job.getStatus().onComplete();
 
-            inProgressBatchJobs.setJobStatus(jobId, jobStatus.getValue());
-            jobRequest.setStatus(jobStatus.getValue());
+            jobProgressStore.setJobProgress(jobId, 100);
+            inProgressBatchJobs.setJobStatus(jobId, completionStatus);
+            jobRequest.setStatus(completionStatus);
             jobRequest.setJob(jsonUtils.serialize(job));
             jobRequestDao.persist(jobRequest);
 
@@ -182,29 +179,34 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
             var tiesDbFuture = tiesDbService.addAssertions(
                     job,
-                    jobStatus.getValue(),
+                    completionStatus,
                     jobRequest.getTimeCompleted(),
                     outputObjectUri,
                     outputSha.getValue(),
                     trackCounter);
+            if (!tiesDbFuture.isDone()) {
+                inProgressBatchJobs.setCallbacksInProgress(jobId);
+            }
 
             if (job.getCallbackUrl().isPresent()) {
+                inProgressBatchJobs.setCallbacksInProgress(jobId);
                 final var finalOutputUri = outputObjectUri;
                 tiesDbFuture
                         .whenCompleteAsync(
                                 (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
-                        .whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
+                        .whenCompleteAsync((x, err) -> completeJob(job));
             }
             else {
-                tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job, jobStatus));
+                tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job));
             }
         }
     }
 
 
-    private void completeJob(BatchJob job, Mutable<BatchJobStatusType> jobStatus) {
+    private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
+            jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -222,9 +224,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
         }
 
-        jobStatusBroadcaster.broadcast(job.getId(), 100, jobStatus.getValue(), Instant.now());
         jobProgressStore.removeJob(job.getId());
-        log.info("[Job {}] Job complete with status: {}", job.getId(), jobStatus.getValue());
+        log.info("[Job {}] Job complete with status: {}", job.getId(), job.getStatus());
     }
 
 
@@ -323,14 +324,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     public URI createOutputObject(BatchJob job,
                                   Instant timeReceived,
                                   Instant timeCompleted,
-                                  Mutable<BatchJobStatusType> jobStatus,
+                                  BatchJobStatusType completionStatus,
                                   Mutable<String> outputSha,
                                   TrackCounter trackCounter) throws IOException {
         long jobId = job.getId();
-
-        if (job.isCancelled()) {
-            jobStatus.setValue(BatchJobStatusType.CANCELLED);
-        }
 
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
                 jobId,
@@ -341,7 +338,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 job.getExternalId().orElse(null),
                 timeReceived,
                 timeCompleted,
-                jobStatus.getValue().toString());
+                completionStatus.toString());
 
         censorPropertiesService.copyAndCensorProperties(
                 job.getJobProperties(), jsonOutputObject.getJobProperties());
@@ -375,12 +372,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getMediaSpecificProperties(),
                     mediaOutputObject.getMediaProperties());
 
-            MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
-            if(markupResult != null) {
-                mediaOutputObject.setMarkupResult(new JsonMarkupOutputObject(markupResult.getId(),
-                        markupResult.getMarkupUri(), markupResult.getMarkupStatus().name(), markupResult.getMessage()));
-            }
-
+            markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex)
+                    .ifPresent(mr -> mediaOutputObject.setMarkupResult(
+                            new JsonMarkupOutputObject(
+                                    mr.getId(),
+                                    mr.getMarkupUri(),
+                                    mr.getMarkupStatus().name(),
+                                    mr.getMessage())));
 
             Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
             Set<Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
@@ -498,9 +496,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             mediaIndex++;
         }
 
-        JobStatusCalculator.checkErrorMessages(jsonOutputObject, jobStatus);
-
-        return storageService.store(jsonOutputObject, jobStatus, outputSha); // this may update the job status
+        // this may update the job status
+        return storageService.store(jsonOutputObject, outputSha);
     }
 
 

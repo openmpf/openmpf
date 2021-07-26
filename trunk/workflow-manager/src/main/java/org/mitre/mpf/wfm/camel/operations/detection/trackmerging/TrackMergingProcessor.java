@@ -38,16 +38,17 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -80,20 +81,29 @@ public class TrackMergingProcessor extends WfmProcessor {
     public static final String REF = "trackMergingProcessor";
     private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
-    @Autowired
-    private JsonUtils jsonUtils;
+    private final JsonUtils _jsonUtils;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    @Inject
+    public TrackMergingProcessor(
+            JsonUtils jsonUtils,
+            InProgressBatchJobsService inProgressBatchJobs,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _jsonUtils = jsonUtils;
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+    }
+
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-        TrackMergingContext trackMergingContext = jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
+        TrackMergingContext trackMergingContext =
+                _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
 
-        BatchJob job = inProgressJobs.getJob(trackMergingContext.getJobId());
+        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
         Task task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
@@ -116,7 +126,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     continue; // nothing to do
                 }
 
-                SortedSet<Track> tracks = inProgressJobs.getTracks(
+                SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
                         trackMergingContext.getJobId(), media.getId(), trackMergingContext.getTaskIndex(),
                         actionIndex);
 
@@ -145,17 +155,17 @@ public class TrackMergingProcessor extends WfmProcessor {
                               initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 
-                inProgressJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
+                _inProgressBatchJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
                                          trackMergingContext.getTaskIndex(), actionIndex, tracks);
             }
         }
 
-        exchange.getOut().setBody(jsonUtils.serialize(trackMergingContext));
+        exchange.getOut().setBody(_jsonUtils.serialize(trackMergingContext));
     }
 
     private TrackMergingPlan createTrackMergingPlan(BatchJob job, Media media,
                                                     Action action) {
-        Function<String, String> combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                 job, media, action);
 
         // If there exist media-specific properties for track merging, use them.
@@ -296,15 +306,10 @@ public class TrackMergingProcessor extends WfmProcessor {
                 && intersects(track1, track2, plan.getMinTrackOverlap());
     }
 
-    private static boolean isEligibleForFixup(SortedSet<Track> tracks) {
+    private boolean isEligibleForFixup(SortedSet<Track> tracks) {
         // NOTE: All tracks should be the same type.
-        switch (tracks.first().getType().toUpperCase()) {
-            case "SPEECH":
-            case "SCENE":
-                return false;
-            default:
-                return true;
-        }
+        String type = tracks.first().getType();
+        return !_aggregateJobPropertiesUtil.isExemptFromTrackMerging(type);
     }
 
     // This method assumes that isEligibleForFixup() has been checked.

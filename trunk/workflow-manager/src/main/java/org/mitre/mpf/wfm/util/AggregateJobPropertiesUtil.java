@@ -429,4 +429,19 @@ public class AggregateJobPropertiesUtil {
 
         return tasksToMerge;
     }
+
+    public boolean isNonVisualObjectType(String type) {
+        return _propertiesUtil.getArtifactExtractionNonVisualTypesList().stream()
+                .anyMatch(type::equalsIgnoreCase);
+    }
+
+    public boolean isExemptFromIllFormedDetectionRemoval(String type) {
+        return _propertiesUtil.getIllFormedDetectionRemovalExemptionList().stream()
+                .anyMatch(type::equalsIgnoreCase);
+    }
+
+    public boolean isExemptFromTrackMerging(String type) {
+        return _propertiesUtil.getTrackMergingExemptionList().stream()
+                .anyMatch(type::equalsIgnoreCase);
+    }
 }

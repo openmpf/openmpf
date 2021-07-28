@@ -207,7 +207,7 @@ public class MediaController {
 
         var originalFileName = uploadedFile.getOriginalFilename();
         if (originalFileName == null || originalFileName.isBlank()) {
-            var errorMsg = "The filename as empty during upload of the MultipartFile.";
+            var errorMsg = "The filename was empty during upload of the MultipartFile.";
             log.error("File upload failed due to: " + errorMsg);
             return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }

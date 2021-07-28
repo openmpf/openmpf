@@ -821,14 +821,9 @@
                                 $scope.cancelUpload();
                             });
                             self.on("error", function (file, resp) {
-                                var err = resp;
-                                if (resp.error) {
-                                    err = resp.error;
-                                } else if (resp == "You can't upload files of this type.") {
-                                    err += " Please add a whitelist." + file.type + " entry to the mediaType.properties file."
-                                }
-                                $log.error(err, file);
-                                $(file.previewElement).find('.dz-error-message').text(err);
+                                updateProgress();
+                                $log.error(resp.message, file);
+                                $(file.previewElement).find('.dz-error-message').text(resp.message);
                             });
                         }
                     }
@@ -850,7 +845,8 @@
             var updateProgress = function (uploadProgress, totalBytes, totalBytesSent) {
                 var total = dropzone.files.length;
                 var queue = dropzone.getQueuedFiles().length;
-                var rejected = dropzone.getRejectedFiles().length;
+                var errorCount = dropzone.getFilesWithStatus(Dropzone.ERROR).length;
+                var rejected = dropzone.getRejectedFiles().length + errorCount;
                 updateUploading();
 
                 $("#total-count").html(total);

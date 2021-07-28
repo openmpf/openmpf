@@ -184,28 +184,32 @@ public class MediaController {
             ServletRequest servletRequest) throws IOException {
 
         if (desiredPathParam == null || desiredPathParam.isBlank()) {
-            return new ResponseMessage("desiredpath was not provided",
-                                       HttpStatus.BAD_REQUEST);
+            var errorMsg = "desiredpath was not provided";
+            log.error("File upload failed due to: " + errorMsg);
+            return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
         var desiredPath = new File(desiredPathParam);
         var remoteMediaDirectory = propertiesUtil.getRemoteMediaDirectory();
         if (!IoUtils.isSubdirectory(desiredPath, remoteMediaDirectory)) {
-            return new ResponseMessage(String.format(
+            var errorMsg = String.format(
                     "Desired path was not under the remote media directory (%s).",
-                    remoteMediaDirectory), HttpStatus.FORBIDDEN);
+                    remoteMediaDirectory);
+            log.error("File upload failed due to: " + errorMsg);
+            return new ResponseMessage(errorMsg, HttpStatus.FORBIDDEN);
         }
 
         if (!desiredPath.exists()) {
-            return new ResponseMessage("Desired path does not exist.",
-                                       HttpStatus.CONFLICT);
+            var errorMsg = "Desired path does not exist.";
+            log.error("File upload failed due to: " + errorMsg);
+            return new ResponseMessage(errorMsg, HttpStatus.CONFLICT);
         }
 
         var originalFileName = uploadedFile.getOriginalFilename();
         if (originalFileName == null || originalFileName.isBlank()) {
-            return new ResponseMessage(
-                    "The filename is empty during upload of the MultipartFile.",
-                    HttpStatus.BAD_REQUEST);
+            var errorMsg = "The filename as empty during upload of the MultipartFile.";
+            log.error("File upload failed due to: " + errorMsg);
+            return new ResponseMessage(errorMsg, HttpStatus.BAD_REQUEST);
         }
 
         var targetFile = ioUtils.getNewFileName(

@@ -194,6 +194,15 @@ public class IoUtils {
         return newFile;
     }
 
+    public static boolean isSubdirectory(File child, File parent) {
+        return isSubdirectory(child.toPath(), parent.toPath());
+    }
+
+    public static boolean isSubdirectory(Path child, Path parent) {
+        return child.toAbsolutePath().normalize().startsWith(
+                parent.toAbsolutePath().normalize());
+    }
+
     public static void closeQuietly(Closeable closeable) {
         if (closeable == null) {
             return;

@@ -31,17 +31,16 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
@@ -88,9 +87,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     .setStartFrame(segment.getStartInclusive())
                     .setStopFrame(segment.getEndInclusive())
                     .build();
-            Message message = createProtobufMessage(media, context, videoRequest);
-            message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
-            messages.add(message);
+
+            messages.add(createProtobufMessage(media, context, videoRequest));
         }
         return messages;
     }
@@ -124,9 +122,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             }
 
             VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
-            Message message = createProtobufMessage(media, context, videoRequest);
-            message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
-            messages.add(message);
+            messages.add(createProtobufMessage(media, context, videoRequest));
         }
 
         return messages;

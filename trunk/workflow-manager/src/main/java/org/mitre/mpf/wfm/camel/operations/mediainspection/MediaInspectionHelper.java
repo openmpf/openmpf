@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import com.google.common.base.Preconditions;
-import org.apache.camel.Exchange;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.exception.TikaException;
@@ -41,13 +40,11 @@ import org.mitre.mpf.framecounter.FrameCounter;
 import org.mitre.mpf.framecounter.NotReadableByOpenCvException;
 import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

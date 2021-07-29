@@ -32,9 +32,10 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.AudioTrack;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.AudioRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,8 +44,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 
 @Component(AudioMediaSegmenter.REF)
 public class AudioMediaSegmenter implements MediaSegmenter {
@@ -102,9 +101,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                         .setValue(entry.getValue());
             }
 
-            Message message = createProtobufMessage(media, context, audioRequest.build());
-            message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
-            messages.add(message);
+            messages.add(createProtobufMessage(media, context, audioRequest.build()));
         }
         return messages;
     }

@@ -26,35 +26,20 @@
 
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
-import com.google.common.base.Preconditions;
 import org.apache.camel.Exchange;
-import org.apache.tika.exception.TikaException;
-import org.apache.tika.io.TikaInputStream;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.Parser;
-import org.apache.tika.parser.external.ExternalParsersConfigReader;
-import org.mitre.mpf.framecounter.FrameCounter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.*;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 import javax.inject.Inject;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.Map;
 
 /**
  * Class used to extract metadata about a piece of media. Media inspection will be skipped if the appropriate media
@@ -112,6 +97,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
             _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
         }
     }
+
     private static void setHeaders(Exchange exchange, long jobId, long mediaId) {
         // Copy these headers to the output exchange.
         exchange.getOut().setHeader(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
@@ -119,45 +105,5 @@ public class MediaInspectionProcessor extends WfmProcessor {
         exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
         exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
         exchange.getOut().setHeader(MpfHeaders.MEDIA_ID, mediaId);
-    }
-
-    private Metadata generateFfmpegMetadata(Path path, String mimeType) throws IOException, TikaException,
-            SAXException {
-        Metadata metadata = new Metadata();
-        try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
-                "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, mimeType);
-            URL url = this.getClass().getClassLoader().getResource("tika-external-parsers.xml");
-            Parser parser = ExternalParsersConfigReader.read(url.openStream()).get(0);
-            parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
-        }
-        return metadata;
-    }
-
-    private static Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
-        Metadata metadata = new Metadata();
-        try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
-                "Cannot open file '%s'", path)) {
-            metadata.set(Metadata.CONTENT_TYPE, mimeType);
-
-            Parser parser = mimeType.equals("image/jpeg")
-                    ? new CustomJpegParser()
-                    : new AutoDetectParser();
-            parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
-        }
-        return metadata;
-    }
-
-    private static int calculateDurationMilliseconds(String durationStr) {
-        if (durationStr != null) {
-            String[] durationArray = durationStr.split("\\.|:");
-            int hours = Integer.parseInt(durationArray[0]);
-            int minutes = Integer.parseInt(durationArray[1]);
-            int seconds = Integer.parseInt(durationArray[2]);
-            int milliseconds = Integer.parseInt(durationArray[3]);
-            milliseconds = milliseconds + 1000 * seconds + 1000 * 60 * minutes + 1000 * 60 * 60 * hours;
-            return milliseconds;
-        }
-        return -1;
     }
 }

@@ -26,42 +26,26 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 
-import com.google.common.collect.ImmutableMap;
-
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystemNotFoundException;
-
-import org.mitre.mpf.wfm.enums.UriScheme;
-
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.*;
-import org.mitre.mpf.wfm.util.*;
-
-import org.mitre.mpf.wfm.data.IdGenerator;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import javax.inject.Inject;
 
 /**
  * This segmenter returns an empty message collection and warns that the provided {@link Media}
@@ -148,7 +132,7 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
                 log.warn("Initializing derivative media from {}. Beginning inspection.", uriStr);
 
-                MediaImpl derivative_media = _inProgressJobs.initMedia(uriStr, ImmutableMap.of("IS_DERIVATIVE_MEDIA", "TRUE"), Collections.emptyMap());
+                Media derivative_media = _inProgressJobs.initMedia(uriStr, ImmutableMap.of("IS_DERIVATIVE_MEDIA", "TRUE"), Collections.emptyMap());
 
                 _inProgressJobs.getJob(context.getJobId()).addDerivativeMedia(derivative_media.getId(), derivative_media);
 
@@ -158,13 +142,9 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
                 log.info("Media ID {} inspection complete.", derivative_media.getId());
 
-                Message message = createProtobufMessage(derivative_media, context, genericRequest.build());
-                message.setHeader(MpfHeaders.MEDIA_TYPE, derivative_media.getType().toString());
-                messages.add(message);
+                messages.add(createProtobufMessage(derivative_media, context, genericRequest.build()));
             } else {
-                Message message = createProtobufMessage(media, context, genericRequest.build());
-                message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
-                messages.add(message);
+                messages.add(createProtobufMessage(media, context, genericRequest.build()));
             }
         }
         return messages;

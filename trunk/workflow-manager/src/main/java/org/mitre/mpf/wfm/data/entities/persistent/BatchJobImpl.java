@@ -50,14 +50,6 @@ public class BatchJobImpl implements BatchJob {
     public long getId() { return _id; }
 
 
-    private final HashMap<Long, MediaImpl> _derivative_media = new HashMap<Long, MediaImpl>();
-
-    @Override
-    public MediaImpl getDerivativeMedia(long mediaId) { return _derivative_media.get(mediaId); }
-
-    @Override
-    public void addDerivativeMedia(long mediaId, MediaImpl media) { _derivative_media.put(mediaId, media); }
-
     private BatchJobStatusType _status = BatchJobStatusType.INITIALIZED;
     @Override
     public BatchJobStatusType getStatus() { return _status; }
@@ -104,6 +96,14 @@ public class BatchJobImpl implements BatchJob {
             return _media.get(mediaId);
         }
         return _derivative_media.get(mediaId);
+    }
+
+
+
+    private final SortedMap<Long, MediaImpl> _derivative_media = new TreeMap<>();
+    @Override
+    public void addDerivativeMedia(long mediaId, Media media) {
+        _derivative_media.put(mediaId, MediaImpl.toMediaImpl(media));
     }
 
 

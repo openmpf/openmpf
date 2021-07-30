@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.*;
 
 import java.util.*;
 
+import static java.util.Comparator.comparingLong;
 import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 @JsonTypeName("MediaOutputObject")
@@ -154,7 +155,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(path, mediaId, sha256, length, status, type, mimeType);
+		return Objects.hash(mediaId, path, sha256, length, status, type, mimeType);
 	}
 
 	@Override
@@ -164,8 +165,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	private static final Comparator<JsonMediaOutputObject> DEFAULT_COMPARATOR = Comparator
 			.nullsFirst(
-					stringCompare(JsonMediaOutputObject::getPath)
-					.thenComparingLong(JsonMediaOutputObject::getMediaId)
+					comparingLong(JsonMediaOutputObject::getMediaId)
+					.thenComparing(stringCompare(JsonMediaOutputObject::getPath))
 					.thenComparing(stringCompare(JsonMediaOutputObject::getSha256))
 					.thenComparingInt(JsonMediaOutputObject::getLength)
 					.thenComparing(stringCompare(JsonMediaOutputObject::getStatus))

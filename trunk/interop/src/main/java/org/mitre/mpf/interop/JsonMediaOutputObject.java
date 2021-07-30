@@ -155,7 +155,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(path, mediaId, sha256, length, status, type, mimeType);
+		return Objects.hash(mediaId, path, sha256, length, status, type, mimeType);
 	}
 
 	@Override

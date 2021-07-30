@@ -176,3 +176,15 @@
 .form-control.service-count {
   display: inline-block;
 }
+
+
+/* Make the failure icon that appears when a file upload fails easier to see.  */
+.dz-error-mark #Check-\+-Oval-2 {
+  fill: red;
+}
+
+/* Make the failure icon that appears when a file upload fails mostly transparent when hovering
+   over the preview image so that the file name can be read. */
+.dz-preview:hover .dz-error-mark #Check-\+-Oval-2 {
+  opacity: 0.1;
+}

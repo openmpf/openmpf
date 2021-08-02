@@ -88,7 +88,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 "/samples/face/meds-aa-S001-01.jpg",
                 "/samples/face/meds-aa-S029-01.jpg");
     }
-
+    @Ignore // TODO: fix or delete?
     @Test(timeout = 5*MINUTES)
     public void runFaceCombinedDetectImage() throws Exception {
         String taskName = "TEST CVFACE DLIB COMBINED TASK";
@@ -156,7 +156,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
-        long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
+        long jobId = runPipelineOnMedia("OCV TINY YOLO VEHICLE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
@@ -173,7 +173,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testNonUri() throws Exception {
         List<JobCreationMediaData> media = new LinkedList<>();
         media.add(new JobCreationMediaData("/not/a/file.txt"));
-        long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
+        long jobRequestId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
     }
 

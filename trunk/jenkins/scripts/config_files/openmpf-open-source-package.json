@@ -9,16 +9,8 @@
             "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection"
         },
         {
-            "name": "DlibFaceDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DlibFaceDetection"
-        },
-        {
             "name": "OcvFaceDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvFaceDetection"
-        },
-        {
-            "name": "OcvPersonDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-contrib-components/cpp/OcvPersonDetection"
         },
         {
             "name": "OalprLicensePlateTextDetection",
@@ -31,10 +23,6 @@
         {
             "name": "OcvDnnDetection",
             "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/OcvDnnDetection"
-        },
-        {
-            "name": "DarknetDetection",
-            "path": "/home/mpf/openmpf-projects/openmpf-components/cpp/DarknetDetection"
         },
         {
             "name": "SceneChangeDetection",

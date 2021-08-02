@@ -157,13 +157,6 @@
           "customLicenseId": "opencv-license"
         },
         {
-          "name": "DLIB",
-          "copyright": "2006  Davis E. King (davis@dlib.net)",
-          "projectUrl": "http://dlib.net",
-          "sourceUrl": "https://sourceforge.net/p/dclib/code/ci/default/tree/",
-          "licenseType": "Boost Software License Version 1.0"
-        },
-        {
           "name": "Google Test Library",
           "copyright": "2008 Google Inc",
           "projectUrl": "https://github.com/google/googletest/",

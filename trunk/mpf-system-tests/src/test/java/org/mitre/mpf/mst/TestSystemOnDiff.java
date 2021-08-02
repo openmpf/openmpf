@@ -514,14 +514,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 15 * MINUTES)
-    public void runDarknetDetectVideo() throws Exception {
-        runSystemTest("TINY YOLO OBJECT DETECTION PIPELINE",
-                      "output/object/runDarknetDetectVideo.json",
-                      "/samples/face/video_01.mp4");
-    }
-
-
     @Test
     public void runOcvFaceOnRotatedImage() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
@@ -676,28 +668,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         Map<String, String> result = new HashMap<>(otherProperties);
         result.putAll(TINY_YOLO_CONFIG);
         return result;
-    }
-
-
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenDarknetFeedForwardRegionTest() {
-        String actionTaskName = "TEST DARKNET WITH FEED FORWARD SUPERSET REGION";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "DARKNET",
-                  getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION")));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED SUPERSET REGION TO DARKNET PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
-
-        runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                 "CLASS", firstMotionFrame, maxXMotion);
     }
 
 
@@ -1063,28 +1033,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
 
     @Test(timeout = 5 * MINUTES)
-    public void runMogThenDarknetFeedForwardFullFrameTest() {
-        String actionTaskName = "TEST DARKNET WITH FEED FORWARD FULL FRAME";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "DARKNET",
-                  getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME")));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED FULL FRAME TO DARKNET PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
-        int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
-        runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                    "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
-    }
-
-
-    @Test(timeout = 5 * MINUTES)
     public void runMogThenOalprFeedForwardFullFrameTest() {
         String actionTaskName = "TEST OALPR WITH FEED FORWARD FULL FRAME";
 
@@ -1262,11 +1210,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runMultipleDetectionAlgorithmsImage() throws Exception {
-        String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK";
-        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
+        String multipleActionTaskName = "TEST MULTIPLE-ACTION TASK";
+        addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
-        String pipelineName = "TEST MULTIPLE FACE DETECTION PIPELINE";
-        addPipeline(pipelineName, multipleTaskName);
+        String pipelineName = "TEST MULTIPLE-ACTION TASK PIPELINE";
+        addPipeline(pipelineName, multipleActionTaskName);
 
         runSystemTest(pipelineName,
                       "output/face/runMultipleDetectionAlgorithmsImage.json",
@@ -1276,11 +1224,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 15 * MINUTES)
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
-        String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK 2";
-        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
+        String multipleActionTaskName = "TEST MULTIPLE-ACTION DETECTION TASK 2";
+        addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
-        String pipelineName = "TEST MULTIPLE FACE DETECTION PIPELINE 2";
-        addPipeline(pipelineName, multipleTaskName);
+        String pipelineName = "TEST MULTIPLE-ACTION DETECTION PIPELINE 2";
+        addPipeline(pipelineName, multipleActionTaskName);
 
         runSystemTest(pipelineName,
                       "output/face/runMultipleDetectionAlgorithmsVideo.json",

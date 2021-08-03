@@ -639,27 +639,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenOcvPersonFeedForwardRegionTest() {
-        String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD SUPERSET REGION";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "PERSONCV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED SUPERSET REGION TO OCV PERSON PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
-
-        runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                 "PERSON", firstMotionFrame, maxXMotion);
-    }
-
     private static final Map<String, String> TINY_YOLO_CONFIG = ImmutableMap.of(
             "MODEL_NAME", "tiny yolo");
 
@@ -1010,27 +989,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenOcvPersonFeedForwardFullFrameTest() {
-        String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD FULL FRAME";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "PERSONCV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED FULL FRAME TO OCV PERSON PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
-        int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
-        runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                    "PERSON", firstMotionFrame, maxXLeftDetection, minXRightDetection);
-    }
-
 
     @Test(timeout = 5 * MINUTES)
     public void runMogThenOalprFeedForwardFullFrameTest() {
@@ -1233,14 +1191,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         runSystemTest(pipelineName,
                       "output/face/runMultipleDetectionAlgorithmsVideo.json",
                       "/samples/person/video_02.mp4");
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void runPersonOcvDetectImage() throws Exception {
-        runSystemTest("OCV PERSON DETECTION PIPELINE", "output/person/runPersonOcvDetectImage.json",
-                      "/samples/face/person_cropped_2.png",
-                      "/samples/person/race.jpg",
-                      "/samples/person/homewood-bank-robbery.jpg");
     }
 
     @Test(timeout = 5 * MINUTES)

@@ -88,13 +88,14 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 "/samples/face/meds-aa-S001-01.jpg",
                 "/samples/face/meds-aa-S029-01.jpg");
     }
-    @Ignore // TODO: fix or delete?
+
     @Test(timeout = 5*MINUTES)
     public void runFaceCombinedDetectImage() throws Exception {
-        String taskName = "TEST CVFACE DLIB COMBINED TASK";
-        addTask(taskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION");
+        // This tests the handling of more than one output with the same data type ("FACE").
+        String taskName = "TEST OCVFACE COMBINED TASK";
+        addTask(taskName, "OCV FACE DETECTION ACTION", "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION");
 
-        String pipelineName = "TEST CVFACE DLIB COMBINED PIPELINE";
+        String pipelineName = "TEST OCVFACE COMBINED PIPELINE";
         addPipeline(pipelineName, taskName);
 
         runSystemTest(pipelineName, "output/face/runFaceCombinedDetectImage.json",

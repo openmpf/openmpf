@@ -37,7 +37,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
@@ -58,15 +57,10 @@ public class WorkflowPropertyService {
 
     @Inject
     public WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) throws IOException {
-        this(propertiesUtil, objectMapper, propertiesUtil.getWorkflowPropertiesFile());
-    }
-
-    protected WorkflowPropertyService(PropertiesUtil propertiesUtil, ObjectMapper objectMapper, Resource propertiesFile)
-            throws IOException {
         _propertiesUtil = propertiesUtil;
 
         List<WorkflowProperty> workflowPropertiesList;
-        try (InputStream inputStream = propertiesFile.getInputStream()) {
+        try (InputStream inputStream = propertiesUtil.getWorkflowPropertiesFile().getInputStream()) {
             workflowPropertiesList = objectMapper.readValue(inputStream,
                     new TypeReference<List<WorkflowProperty>>() { });
         }

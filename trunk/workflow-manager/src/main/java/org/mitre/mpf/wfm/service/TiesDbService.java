@@ -112,7 +112,7 @@ public class TiesDbService {
                     continue;
                 }
 
-                if (tasksToMerge.contains(jobPart.getTaskIndex() + 1)) {
+                if (tasksToMerge.values().contains(jobPart.getTaskIndex())) {
                     continue;
                 }
 
@@ -127,7 +127,7 @@ public class TiesDbService {
                         jobPart.getTaskIndex(),
                         jobPart.getActionIndex());
                 var algoAndDetectionType = getAlgoAndTypeToUse(
-                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
+                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge.keySet());
 
                 futures.add(addActionAssertion(
                         jobPart,

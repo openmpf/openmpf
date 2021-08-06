@@ -85,8 +85,6 @@ public class DetectionTaskSplitter {
 
     public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
-        // Is this the first detection task in the pipeline?
-        boolean isFirstDetectionTask = isFirstDetectionTask(job);
 
         for (Media media : job.getMedia()) { // this includes derivative media
             try {
@@ -99,6 +97,9 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
+                // Is this the first detection task in the pipeline for this media?
+                boolean isFirstDetectionTask = isFirstDetectionTask(job, media);
+
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
                 // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
@@ -106,12 +107,9 @@ public class DetectionTaskSplitter {
                 if (isFirstDetectionTask) {
                     previousTracks = Collections.emptySortedSet();
                 } else {
-                    // TODO: What will this return for the first task for derivative media? A: Empty collection.
-                    // TODO: A task might have been skipped. Do we need to look back?
-                    // NOTE: An empty set might mean the task was skipped, or no tracks were generated.
-                    // IDEA: _inProgressBatchJobs keep track of last valid task for this media
+                    // Get the tracks for the last task that was processed for this media.
                     previousTracks = _inProgressBatchJobs.getTracks(
-                            job.getId(), media.getId(), job.getCurrentTaskIndex() - 1, 0);
+                            job.getId(), media.getId(), job.getLastProcessedTaskIndex(media.getId()), 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -308,23 +306,20 @@ public class DetectionTaskSplitter {
     }
 
     /**
-     * Returns {@literal true} iff the current task of this job is the first detection task in the job.
+     * Returns {@literal true} iff the current task of this job is the first detection task in the job for the media.
      */
     // TODO: parentMediaId
-    // TODO: Pass media to this. BatchJob has map of media ids to task ids.
-    private static boolean isFirstDetectionTask(BatchJob job) {
-        boolean isFirst = false;
-        for (int i = 0; i < job.getPipelineElements().getTaskCount(); i++) {
-            ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
-            // This is a detection task.
-            if (actionType == ActionType.DETECTION) {
-                // If this is the first detection task, it must be true that the current task's index is at most the
-                // current job task's index.
-                isFirst = i >= job.getCurrentTaskIndex();
-                break;
+    private static boolean isFirstDetectionTask(BatchJob job, Media media) {
+        for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
+            // Only need to check the first action. We would not be here in the splitter after a parellel action,
+            // which can only be the last action in a pipeline.
+            int actionIndex = 0;
+            boolean wasProcessed = job.wasActionProcessed(media.getId(), taskIndex, actionIndex);
+            ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
+            if (wasProcessed && actionType == ActionType.DETECTION) {
+                return false;
             }
         }
-
-        return isFirst;
+        return true;
     }
 }

@@ -285,9 +285,16 @@ public class InProgressBatchJobsService {
         return initMediaImpl(uriStr, mediaSpecificProperties, providedMetadataProperties);
     }
 
-    public synchronized Media initDerivativeMedia(String uriStr) {
+    public synchronized Media initDerivativeMedia(long parentMediaId, SortedMap<String, String> properties) {
+        String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_URI");
         MediaImpl media = initMediaImpl(uriStr, Collections.emptyMap(), Collections.emptyMap());
+        media.setParentId(parentMediaId);
+
+        var metadata = new TreeMap<>(properties); // include page number and other info, if available
+        metadata.remove("DERIVATIVE_MEDIA_URI"); // this would just be redundant
         media.addMetadata("IS_DERIVATIVE_MEDIA", "TRUE");
+        media.addMetadata(metadata);
+
         return media;
     }
 

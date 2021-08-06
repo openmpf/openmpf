@@ -49,6 +49,12 @@ public interface BatchJob {
 
     public int getCurrentTaskIndex();
 
+    public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex);
+
+    public void setProcessedAction(long mediaId, int taskIndex, int actionIndex);
+
+    public int getLastProcessedTaskIndex(long mediaId);
+
     public Optional<String> getExternalId();
 
     public int getPriority();
@@ -60,8 +66,6 @@ public interface BatchJob {
     public Media getMedia(long mediaId);
 
     public void addDerivativeMedia(Media media);
-
-    public Media getDerivativeMedia(String uri);
 
     // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();

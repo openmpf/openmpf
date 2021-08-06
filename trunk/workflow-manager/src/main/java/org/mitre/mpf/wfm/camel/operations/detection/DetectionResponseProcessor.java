@@ -90,8 +90,9 @@ public class DetectionResponseProcessor
                     String.format("Unsupported operation. More than one DetectionResponse sub-message found for job %d.", jobId));
         }
 
+        BatchJob job = _inProgressJobs.getJob(jobId);
+
         if (totalResponses != 0) {
-            BatchJob job = _inProgressJobs.getJob(jobId);
             Media media = job.getMedia()
                     .stream()
                     .filter(m -> m.getId() == detectionResponse.getMediaId())
@@ -110,12 +111,13 @@ public class DetectionResponseProcessor
             } else {
                 processGenericResponse(jobId, detectionResponse, detectionResponse.getGenericResponses(0), confidenceThreshold);
             }
-        }
-        else {
+        } else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
             log.warn("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
+
+        job.setProcessedAction(detectionResponse.getMediaId(), detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
 
         return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
@@ -279,7 +281,7 @@ public class DetectionResponseProcessor
             SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
 
             // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
-            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, properties);
+            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, detectionResponse.getMediaId(), properties);
 
             if (hasDerivativeMedia || objectTrack.getConfidence() >= confidenceThreshold) {
                 Detection detection = new Detection(
@@ -383,18 +385,14 @@ public class DetectionResponseProcessor
     }
 
     // TODO: Indicate if derivate media / source media in the Media popup in the web UI. Show ids. Link to parent id.
-    private boolean checkDerivativeMedia(long jobId, SortedMap<String, String> properties) {
+    private boolean checkDerivativeMedia(long jobId, long parentMediaId, SortedMap<String, String> properties) {
+        // TODO: Change DERIVATIVE_MEDIA_URI to DERIVATIVE_MEDIA_PATH
         boolean hasDerivativeMedia = properties.containsKey("DERIVATIVE_MEDIA_URI");
         if (hasDerivativeMedia) {
-            // TODO: Change DERIVATIVE_MEDIA_URI to DERIVATIVE_MEDIA_PATH
-            String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_URI");
-
-            log.info("Initializing derivative media from {}. Beginning inspection.", uriStr);
-            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(uriStr);
-
+            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(parentMediaId, properties);
             _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 
-            log.info("Added media ID {} to job ID {}. Beginning inspection.", derivativeMedia.getId(), jobId);
+            log.info("Initialized derivative media from {}. Beginning inspection.", derivativeMedia.getUri());
             _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
 
             // TODO: Upload to S3 here and update DERIVATIVE_MEDIA_URI in "properties"

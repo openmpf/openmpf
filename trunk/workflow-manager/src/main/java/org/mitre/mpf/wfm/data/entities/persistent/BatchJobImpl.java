@@ -67,6 +67,36 @@ public class BatchJobImpl implements BatchJob {
     public void setCurrentTaskIndex(int currentTaskIndex) { _currentTaskIndex = currentTaskIndex; }
 
 
+    // Maps media id to inner map of task index to set of action indices
+    private final SortedMap<Long, SortedMap<Integer, SortedSet<Integer>>> _processedActions = new TreeMap();
+    public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex) {
+        if (!_processedActions.containsKey(mediaId)) {
+            return false;
+        }
+        var tasks = _processedActions.get(mediaId);
+        if (!tasks.containsKey(taskIndex)) {
+            return false;
+        }
+        return tasks.get(taskIndex).contains(actionIndex);
+    }
+    public void setProcessedAction(long mediaId, int taskIndex, int actionIndex) {
+        if (!_processedActions.containsKey(mediaId)) {
+            _processedActions.put(mediaId, new TreeMap());
+        }
+        var tasks = _processedActions.get(mediaId);
+        if (!tasks.containsKey(taskIndex)) {
+            tasks.put(taskIndex, new TreeSet());
+        }
+        tasks.get(taskIndex).add(actionIndex);
+    }
+    public int getLastProcessedTaskIndex(long mediaId) {
+        if (!_processedActions.containsKey(mediaId)) {
+            return -1;
+        }
+        return _processedActions.get(mediaId).lastKey();
+    }
+
+
     private final String _externalId;
     @Override
     public Optional<String> getExternalId() { return Optional.ofNullable(_externalId); }
@@ -87,7 +117,7 @@ public class BatchJobImpl implements BatchJob {
     public ImmutableCollection<MediaImpl> getMedia() {
         return ImmutableSet.<MediaImpl>builder()
                     .addAll(_media.values())
-                    .addAll(_derivativeMediaById.values())
+                    .addAll(_derivativeMedia.values())
                     .build();
     }
     @Override
@@ -95,21 +125,15 @@ public class BatchJobImpl implements BatchJob {
         if (_media.containsKey(mediaId)){
             return _media.get(mediaId);
         }
-        return _derivativeMediaById.get(mediaId);
+        return _derivativeMedia.get(mediaId);
     }
 
 
 
-    private final SortedMap<Long, MediaImpl> _derivativeMediaById = new TreeMap<>();
-    private final SortedMap<String, MediaImpl> _derivativeMediaByUri = new TreeMap<>();
+    private final SortedMap<Long, MediaImpl> _derivativeMedia = new TreeMap<>();
     @Override
     public void addDerivativeMedia(Media media) {
-        _derivativeMediaById.put(media.getId(), MediaImpl.toMediaImpl(media));
-        _derivativeMediaByUri.put(media.getUri(), MediaImpl.toMediaImpl(media));
-    }
-    @Override
-    public Media getDerivativeMedia(String uri) {
-        return _derivativeMediaByUri.get(uri);
+        _derivativeMedia.put(media.getId(), MediaImpl.toMediaImpl(media));
     }
 
 

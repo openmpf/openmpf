@@ -253,7 +253,7 @@ public class TestTiesDbService {
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Set.of(1));
+                .thenReturn(Map.of(1, 0));
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -318,7 +318,7 @@ public class TestTiesDbService {
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Set.of(2));
+                .thenReturn(Map.of(2, 1));
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -403,7 +403,7 @@ public class TestTiesDbService {
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Set.of(1));
+                .thenReturn(Map.of(1, 0));
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -486,7 +486,8 @@ public class TestTiesDbService {
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Set.of(1, 2));
+                .thenReturn(Map.of(1, 0,
+                                   2, 1));
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(

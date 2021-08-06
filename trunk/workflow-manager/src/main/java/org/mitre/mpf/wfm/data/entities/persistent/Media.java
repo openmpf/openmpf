@@ -44,6 +44,8 @@ public interface Media {
     /** The unique identifier for this file. */
     public long getId();
 
+    public long getParentId();
+
     public String getUri();
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */

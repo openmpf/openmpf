@@ -366,7 +366,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(),
+            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
+                    media.getId(), media.getParentId(), media.getUri(),
                     media.getType() != null ? media.getType().toString() : null,
                     media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
@@ -376,14 +377,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     mediaOutputObject.getMediaProperties());
 
             MarkupResult markupResult = markupResultDao.findByJobIdAndMediaIndex(jobId, mediaIndex);
-            if(markupResult != null) {
+            if (markupResult != null) {
                 mediaOutputObject.setMarkupResult(new JsonMarkupOutputObject(markupResult.getId(),
                         markupResult.getMarkupUri(), markupResult.getMarkupStatus().name(), markupResult.getMessage()));
             }
 
 
             Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
-            Set<Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+            Map<Integer, Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
 
             String prevUnmergedTaskType = null;
             String prevUnmergedAlgorithm = null;
@@ -392,6 +393,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 Task task = job.getPipelineElements().getTask(taskIndex);
 
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+
+                    if (!job.wasActionProcessed(media.getId(), taskIndex, actionIndex)) {
+                        continue;
+                    }
+
                     Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
@@ -429,7 +435,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     if (tracks.isEmpty()) {
                         // Always include detection actions in the output object,
                         // even if they do not generate any results.
-                        if (tasksToMerge.contains(taskIndex)) {
+                        if (tasksToMerge.containsKey(taskIndex)) {
                             addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
                                                 prevUnmergedAlgorithm, mediaOutputObject);
                         }
@@ -442,8 +448,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);
                     }
-                    else if (tasksToMerge.contains(taskIndex + 1)) {
-                        // This task will be merged with the next one.
+                    else if (tasksToMerge.values().contains(taskIndex)) {
+                        // This task will be merged with one that follows.
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);
                     }
@@ -451,9 +457,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         for (Track track : tracks) {
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
-                            String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
+                            String type = tasksToMerge.containsKey(taskIndex) ? prevUnmergedTaskType :
                                     track.getType();
-                            String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
+                            String algo = tasksToMerge.containsKey(taskIndex) ? prevUnmergedAlgorithm :
                                     action.getAlgorithm();
 
                             JsonTrackOutputObject jsonTrackOutputObject
@@ -481,7 +487,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         }
                     }
 
-                    if (!tasksToMerge.contains(taskIndex)) {
+                    if (!tasksToMerge.containsKey(taskIndex)) {
                         // NOTE: If and when we support parallel actions in tasks other then the final one in a
                         // pipeline, this code will need to be updated.
                         prevUnmergedTaskType = tracks.isEmpty() ? JsonActionOutputObject.NO_TRACKS_TYPE :

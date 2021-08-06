@@ -49,6 +49,10 @@ public class MediaImpl implements Media {
     @Override
     public long getId() { return _id; }
 
+    private long _parentId = -1l;
+    @Override
+    public long getParentId() { return _parentId; }
+    public void setParentId(long parentId) { _parentId = parentId; }
 
     private final String _uri;
     @Override

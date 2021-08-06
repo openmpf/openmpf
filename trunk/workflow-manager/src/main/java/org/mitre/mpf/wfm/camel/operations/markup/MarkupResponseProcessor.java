@@ -105,6 +105,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
             inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP, warningMessage,
                                       IssueSources.MARKUP);
         }
+
+        job.setProcessedAction(markupResponse.getMediaId(), markupResponse.getTaskIndex(), markupResponse.getActionIndex());
+
         return null;
     }
 }

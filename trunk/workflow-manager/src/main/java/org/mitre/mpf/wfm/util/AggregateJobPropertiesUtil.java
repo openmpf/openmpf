@@ -40,7 +40,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -418,9 +419,10 @@ public class AggregateJobPropertiesUtil {
 
 
 
-    // Get collection of tasks that need to be merged with the tasks that come immediately before them.
-    public Set<Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new HashSet<Integer>();
+    // Get map of tasks that need to be merged. Values are the previous tasks to merge with.
+    public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
+        var tasksToMerge = new TreeMap<Integer, Integer>();
+
         for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);
 
@@ -428,11 +430,19 @@ public class AggregateJobPropertiesUtil {
                 Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
                 ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
 
-                boolean shouldMergeWithPreviousTask = Boolean.parseBoolean(
+                boolean shouldMerge = Boolean.parseBoolean(
                         getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action));
 
-                if (actionType == ActionType.DETECTION && shouldMergeWithPreviousTask) {
-                    tasksToMerge.add(taskIndex);
+                int mergeWithPrevTaskIndex = -1;
+                for (int prevTaskIndex = taskIndex - 1; prevTaskIndex >= 0; prevTaskIndex--) {
+                    if (job.wasActionProcessed(media.getId(), prevTaskIndex, 0)) {
+                        mergeWithPrevTaskIndex = prevTaskIndex;
+                        break;
+                    }
+                }
+
+                if (actionType == ActionType.DETECTION && shouldMerge && mergeWithPrevTaskIndex != -1) {
+                    tasksToMerge.put(taskIndex, mergeWithPrevTaskIndex);
                 }
             }
         }

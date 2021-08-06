@@ -92,7 +92,6 @@ public class MarkupSplitter {
 
         List<Message> messages = new ArrayList<>(job.getMedia().size());
 
-        int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getPipelineElements());
         // Markup tasks always have one action.
         var actionName = markupTask.getActions().get(0);
         var markupAction = job.getPipelineElements().getAction(actionName);
@@ -114,8 +113,8 @@ public class MarkupSplitter {
             var markupProperties = _aggregateJobPropertiesUtil.getPropertyMap(
                     job, media, markupAction);
 
-            List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList = createMapEntries(
-                    job, media, lastDetectionTaskIndex, markupProperties);
+            List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
+                    = createMapEntries(job, media, markupProperties);
 
             Path destinationPath;
             if (boundingBoxMapEntryList.isEmpty()) {
@@ -185,8 +184,7 @@ public class MarkupSplitter {
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
     private List<Markup.BoundingBoxMapEntry> createMapEntries(
-            BatchJob job, Media media, int taskToMarkupIndex,
-            Map<String, String> markupProperties) {
+            BatchJob job, Media media, Map<String, String> markupProperties) {
 
         var labelFromDetections = Boolean.parseBoolean(markupProperties.get(
                 MpfConstants.MARKUP_LABELS_FROM_DETECTIONS));
@@ -198,15 +196,14 @@ public class MarkupSplitter {
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 
-        int actionCount = job.getPipelineElements().getTask(taskToMarkupIndex).getActions().size();
-        for (int actionIndex = 0; actionIndex < actionCount; actionIndex++) {
-            SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
-                    job.getId(), media.getId(), taskToMarkupIndex, actionIndex);
-            for (Track track : tracks) {
-                addTrackToBoundingBoxMap(
-                        track, boundingBoxMap, trackColors.next(), labelFromDetections,
-                        labelTextPropToShow, labelNumericPropToShow);
-            }
+        int taskToMarkupIndex = findLastDetectionTaskIndex(job.getPipelineElements());
+        // PipelineValidator made sure taskToMarkupIndex only has one action.
+        SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
+                job.getId(), media.getId(), taskToMarkupIndex, 0);
+        for (Track track : tracks) {
+            addTrackToBoundingBoxMap(
+                    track, boundingBoxMap, trackColors.next(), labelFromDetections,
+                    labelTextPropToShow, labelNumericPropToShow);
         }
 
         return boundingBoxMap.toBoundingBoxMapEntryList();

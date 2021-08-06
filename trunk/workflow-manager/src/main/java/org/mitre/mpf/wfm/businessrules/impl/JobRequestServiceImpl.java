@@ -57,6 +57,7 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.joining;
 
@@ -157,7 +158,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .filter(m -> !("TRUE".equals(m.getMediaSpecificProperties().get("IS_DERIVATIVE_MEDIA"))))
+                .filter(Predicate.not(Media::isDerivative))
                 .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties(), m.getProvidedMetadata()))
                 .collect(ImmutableList.toImmutableList());
 

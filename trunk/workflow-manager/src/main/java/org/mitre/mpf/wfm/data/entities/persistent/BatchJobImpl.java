@@ -87,7 +87,7 @@ public class BatchJobImpl implements BatchJob {
     public ImmutableCollection<MediaImpl> getMedia() {
         return ImmutableSet.<MediaImpl>builder()
                     .addAll(_media.values())
-                    .addAll(_derivative_media.values())
+                    .addAll(_derivativeMediaById.values())
                     .build();
     }
     @Override
@@ -95,15 +95,21 @@ public class BatchJobImpl implements BatchJob {
         if (_media.containsKey(mediaId)){
             return _media.get(mediaId);
         }
-        return _derivative_media.get(mediaId);
+        return _derivativeMediaById.get(mediaId);
     }
 
 
 
-    private final SortedMap<Long, MediaImpl> _derivative_media = new TreeMap<>();
+    private final SortedMap<Long, MediaImpl> _derivativeMediaById = new TreeMap<>();
+    private final SortedMap<String, MediaImpl> _derivativeMediaByUri = new TreeMap<>();
     @Override
-    public void addDerivativeMedia(long mediaId, Media media) {
-        _derivative_media.put(mediaId, MediaImpl.toMediaImpl(media));
+    public void addDerivativeMedia(Media media) {
+        _derivativeMediaById.put(media.getId(), MediaImpl.toMediaImpl(media));
+        _derivativeMediaByUri.put(media.getUri(), MediaImpl.toMediaImpl(media));
+    }
+    @Override
+    public Media getDerivativeMedia(String uri) {
+        return _derivativeMediaByUri.get(uri);
     }
 
 

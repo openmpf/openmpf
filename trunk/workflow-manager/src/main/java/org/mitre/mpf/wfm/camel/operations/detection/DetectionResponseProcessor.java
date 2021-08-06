@@ -33,11 +33,13 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.transients.*;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -46,9 +48,9 @@ import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
 
 /** Processes the responses which have been returned from a detection component. */
@@ -56,18 +58,23 @@ import java.util.*;
 public class DetectionResponseProcessor
         extends ResponseProcessor<DetectionProtobuf.DetectionResponse> {
     public static final String REF = "detectionResponseProcessor";
+
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private static final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
 
-    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
+    private static AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private static InProgressBatchJobsService _inProgressJobs;
+    private static MediaInspectionHelper _mediaInspectionHelper;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
-
-    public DetectionResponseProcessor() {
+    @Inject
+    public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+                                      InProgressBatchJobsService inProgressBatchJobs,
+                                      MediaInspectionHelper mediaInspectionHelper) {
         super(DetectionProtobuf.DetectionResponse.class);
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _inProgressJobs = inProgressBatchJobs;
+        _mediaInspectionHelper = mediaInspectionHelper;
     }
 
     @Override
@@ -84,7 +91,7 @@ public class DetectionResponseProcessor
         }
 
         if (totalResponses != 0) {
-            BatchJob job = inProgressJobs.getJob(jobId);
+            BatchJob job = _inProgressJobs.getJob(jobId);
             Media media = job.getMedia()
                     .stream()
                     .filter(m -> m.getId() == detectionResponse.getMediaId())
@@ -114,7 +121,7 @@ public class DetectionResponseProcessor
     }
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {
-        String confidenceThresholdProperty = aggregateJobPropertiesUtil.getValue(
+        String confidenceThresholdProperty = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action);
 
         try {
@@ -176,7 +183,7 @@ public class DetectionResponseProcessor
                         detections,
                         toMap(objectTrack.getDetectionPropertiesList()));
 
-                inProgressJobs.addTrack(track);
+                _inProgressJobs.addTrack(track);
             }
         }
     }
@@ -225,7 +232,7 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(detection),
                         properties);
 
-                inProgressJobs.addTrack(track);
+                _inProgressJobs.addTrack(track);
             }
         }
     }
@@ -254,7 +261,7 @@ public class DetectionResponseProcessor
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
                         toMap(location.getDetectionPropertiesList()));
-                inProgressJobs.addTrack(track);
+                _inProgressJobs.addTrack(track);
             }
         }
     }
@@ -269,9 +276,12 @@ public class DetectionResponseProcessor
 
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
-            if (objectTrack.getConfidence() >= confidenceThreshold) {
-                SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+            SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
 
+            // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
+            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, properties);
+
+            if (hasDerivativeMedia || objectTrack.getConfidence() >= confidenceThreshold) {
                 Detection detection = new Detection(
                         0,
                         0,
@@ -296,7 +306,7 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(detection),
                         properties);
 
-                inProgressJobs.addTrack(track);
+                _inProgressJobs.addTrack(track);
             }
         }
     }
@@ -310,18 +320,18 @@ public class DetectionResponseProcessor
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
                 log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
-                inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
+                _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorCode = MpfConstants.REQUEST_CANCELLED;
                 errorMessage = "Successfully cancelled.";
             }
             else {
                 log.error("[{}] Encountered a detection error while processing {}: {}",
                         getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
-                inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
+                _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
                 errorCode = Objects.toString(detectionResponse.getError());
                 errorMessage = detectionResponse.getErrorMessage();
             }
-            inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
+            _inProgressJobs.addDetectionProcessingError(new DetectionProcessingError(
                     jobId,
                     detectionResponse.getMediaId(),
                     detectionResponse.getTaskIndex(),
@@ -370,5 +380,25 @@ public class DetectionResponseProcessor
     private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {
         return String.format("Media #%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
+    }
+
+    // TODO: Indicate if derivate media / source media in the Media popup in the web UI. Show ids. Link to parent id.
+    private boolean checkDerivativeMedia(long jobId, SortedMap<String, String> properties) {
+        boolean hasDerivativeMedia = properties.containsKey("DERIVATIVE_MEDIA_URI");
+        if (hasDerivativeMedia) {
+            // TODO: Change DERIVATIVE_MEDIA_URI to DERIVATIVE_MEDIA_PATH
+            String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_URI");
+
+            log.info("Initializing derivative media from {}. Beginning inspection.", uriStr);
+            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(uriStr);
+
+            _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
+
+            log.info("Added media ID {} to job ID {}. Beginning inspection.", derivativeMedia.getId(), jobId);
+            _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
+
+            // TODO: Upload to S3 here and update DERIVATIVE_MEDIA_URI in "properties"
+        }
+        return hasDerivativeMedia;
     }
 }

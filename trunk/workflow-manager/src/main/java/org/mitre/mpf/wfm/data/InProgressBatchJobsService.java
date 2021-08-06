@@ -279,8 +279,21 @@ public class InProgressBatchJobsService {
     private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
 
-    public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties,
+    public synchronized Media initMedia(String uriStr,
+                                        Map<String, String> mediaSpecificProperties,
                                         Map<String, String> providedMetadataProperties) {
+        return initMediaImpl(uriStr, mediaSpecificProperties, providedMetadataProperties);
+    }
+
+    public synchronized Media initDerivativeMedia(String uriStr) {
+        MediaImpl media = initMediaImpl(uriStr, Collections.emptyMap(), Collections.emptyMap());
+        media.addMetadata("IS_DERIVATIVE_MEDIA", "TRUE");
+        return media;
+    }
+
+    private synchronized MediaImpl initMediaImpl(String uriStr,
+                                                 Map<String, String> mediaSpecificProperties,
+                                                 Map<String, String> providedMetadataProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -327,9 +340,8 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void addMediaInspectionInfo(
-            long jobId, long mediaId, String sha256, MediaType mediaType, String mimeType, int length,
-            Map<String, String> metadata) {
+    public synchronized void addMediaInspectionInfo(long jobId, long mediaId, String sha256, MediaType mediaType,
+                                                    String mimeType, int length, Map<String, String> metadata) {
         LOG.info("Adding media metadata to job {}'s media {}.", jobId, mediaId);
         MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);
@@ -352,7 +364,7 @@ public class InProgressBatchJobsService {
         getMediaImpl(jobId, mediaId).setFrameTimeInfo(frameTimeInfo);
     }
 
-    private MediaImpl getMediaImpl(long jobId, long mediaId) {
+    private synchronized MediaImpl getMediaImpl(long jobId, long mediaId) {
         MediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));

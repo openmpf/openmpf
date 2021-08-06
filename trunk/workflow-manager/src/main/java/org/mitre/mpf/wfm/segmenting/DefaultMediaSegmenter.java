@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -61,7 +60,8 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
     public static final String REF = "defaultMediaSegmenter";
 
     @Inject
-    public DefaultMediaSegmenter(MediaInspectionHelper mediaInspectionHelper, InProgressBatchJobsService inProgressJobs)
+    public DefaultMediaSegmenter(MediaInspectionHelper mediaInspectionHelper,
+                                 InProgressBatchJobsService inProgressJobs)
     {
         _mediaInspectionHelper = mediaInspectionHelper;
         _inProgressJobs = inProgressJobs;
@@ -109,43 +109,13 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
             DetectionProtobuf.GenericTrack.Builder genericTrackBuilder = genericRequest.getFeedForwardTrackBuilder()
                     .setConfidence(exemplar.getConfidence());
 
-            boolean processMedia = false;
-            String uriStr = "";
-
             for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
-                if (entry.getKey().equals("MPF_DERIVATIVE_MEDIA_INSPECTION") && Boolean.valueOf(entry.getValue())) {
-                    log.warn("Identified derivative media track.");
-                    processMedia = true;
-                    continue;
-                }
-
-                if (entry.getKey().equals("DERIVATIVE_MEDIA_URI")) {
-                    uriStr="file://" + entry.getValue();
-                }
-
                 genericTrackBuilder.addDetectionPropertiesBuilder()
                         .setKey(entry.getKey())
                         .setValue(entry.getValue());
             }
 
-            if (processMedia) {
-
-                log.warn("Initializing derivative media from {}. Beginning inspection.", uriStr);
-
-                Media derivative_media = _inProgressJobs.initMedia(uriStr, ImmutableMap.of("IS_DERIVATIVE_MEDIA", "TRUE"), Collections.emptyMap());
-
-                _inProgressJobs.getJob(context.getJobId()).addDerivativeMedia(derivative_media.getId(), derivative_media);
-
-                log.info("Added media ID {} to job ID {}. Beginning inspection.", derivative_media.getId(), context.getJobId());
-
-                _mediaInspectionHelper.inspectMedia(derivative_media, context.getJobId(), derivative_media.getId());
-
-                log.info("Media ID {} inspection complete.", derivative_media.getId());
-
-                messages.add(createProtobufMessage(derivative_media, context, genericRequest.build()));
-            } else {
-                messages.add(createProtobufMessage(media, context, genericRequest.build()));
-            }
+            messages.add(createProtobufMessage(media, context, genericRequest.build()));
         }
         return messages;
     }

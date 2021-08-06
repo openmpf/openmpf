@@ -101,7 +101,7 @@ public class MediaInspectionHelper{
         _mediaMetadataValidator = mediaMetadataValidator;
     }
 
-    public void inspectMedia(Media media, long jobId, long mediaId) throws WfmProcessingException {
+    public void inspectMedia(Media media, long jobId) throws WfmProcessingException {
         if (!media.isFailed()) {
             // Any request to pull a remote file should have already populated the local uri.
             assert media.getLocalPath() != null : "Media being processed by the MediaInspectionProcessor must have a local URI associated with them.";
@@ -110,11 +110,16 @@ public class MediaInspectionHelper{
                 return;
             }
 
+            long mediaId = media.getId();
             String sha = null;
             String mimeType = null;
-            Map<String, String> mediaMetadata = new HashMap<>();
             int length = -1;
             MediaType mediaType = MediaType.UNKNOWN;
+
+            Map<String, String> mediaMetadata = new HashMap<>();
+            if (media.isDerivative()) {
+                mediaMetadata.putAll(media.getMetadata());
+            }
 
             try {
                 Path localPath = media.getLocalPath();
@@ -184,7 +189,8 @@ public class MediaInspectionHelper{
             LOG.info("[Job {}] Media with URI {} (id={}) has data type {} and mime type {}.",
                      jobId, media.getUri(), media.getId(), media.getType(), media.getMimeType());
         } else {
-            LOG.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId, mediaId);
+            LOG.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId,
+                    media.getId());
         }
 
         if (media.isFailed()) {

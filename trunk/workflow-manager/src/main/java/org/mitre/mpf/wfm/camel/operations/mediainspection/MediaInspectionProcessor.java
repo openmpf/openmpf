@@ -90,7 +90,7 @@ public class MediaInspectionProcessor extends WfmProcessor {
         long mediaId = exchange.getIn().getHeader(MpfHeaders.MEDIA_ID, Long.class);
 
         Media media = _inProgressJobs.getJob(jobId).getMedia(mediaId);
-        _mediaInspectionHelper.inspectMedia(media, jobId, mediaId);
+        _mediaInspectionHelper.inspectMedia(media, jobId);
         setHeaders(exchange, jobId, mediaId);
 
         if (media.isFailed()) {

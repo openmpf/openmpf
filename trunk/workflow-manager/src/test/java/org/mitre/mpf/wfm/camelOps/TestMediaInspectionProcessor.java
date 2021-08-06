@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -71,9 +72,12 @@ public class TestMediaInspectionProcessor {
     private final MediaMetadataValidator _mockMediaMetadataValidator
             = mock(MediaMetadataValidator.class);
 
+    private final MediaInspectionHelper _mockMediaInspectionHelper
+            = mock(MediaInspectionHelper.class);
+
     private final MediaInspectionProcessor _mediaInspectionProcessor
             = new MediaInspectionProcessor(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                           _mockMediaMetadataValidator);
+                                           _mockMediaMetadataValidator, _mockMediaInspectionHelper);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();

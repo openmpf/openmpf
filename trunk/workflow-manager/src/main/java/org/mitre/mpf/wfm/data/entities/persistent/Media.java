@@ -88,4 +88,6 @@ public interface Media {
     public String getSha256();
 
     public FrameTimeInfo getFrameTimeInfo();
+
+    public boolean isDerivative();
 }

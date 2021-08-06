@@ -155,6 +155,8 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
+    @JsonIgnore
+    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get("IS_DERIVATIVE_MEDIA")); }
 
     public MediaImpl(
             long id,

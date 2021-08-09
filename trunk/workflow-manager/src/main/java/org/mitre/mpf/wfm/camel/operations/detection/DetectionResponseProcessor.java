@@ -111,7 +111,8 @@ public class DetectionResponseProcessor
             } else {
                 processGenericResponse(jobId, detectionResponse, detectionResponse.getGenericResponses(0), confidenceThreshold);
             }
-        } else {
+        }
+        else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
             log.warn("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
@@ -256,7 +257,7 @@ public class DetectionResponseProcessor
                         detectionResponse.getTaskIndex(),
                         detectionResponse.getActionIndex(),
                         0,
-                        1,
+                        0,
                         0,
                         0,
                         imageResponse.getDetectionType(),
@@ -322,14 +323,12 @@ public class DetectionResponseProcessor
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
                 log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
-                _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.CANCELLING);
                 errorCode = MpfConstants.REQUEST_CANCELLED;
                 errorMessage = "Successfully cancelled.";
             }
             else {
                 log.error("[{}] Encountered a detection error while processing {}: {}",
                         getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
-                _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS_ERRORS);
                 errorCode = Objects.toString(detectionResponse.getError());
                 errorMessage = detectionResponse.getErrorMessage();
             }

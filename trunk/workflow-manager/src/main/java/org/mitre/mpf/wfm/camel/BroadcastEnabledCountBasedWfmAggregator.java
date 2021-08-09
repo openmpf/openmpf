@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -38,16 +37,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component(BroadcastEnabledStringCountBasedWfmAggregator.REF)
-public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBasedWfmAggregator {
-    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledStringCountBasedWfmAggregator.class);
-    public static final String REF = "broadcastEnabledStringCountBasedWfmAggregator";
+@Component(BroadcastEnabledCountBasedWfmAggregator.REF)
+public class BroadcastEnabledCountBasedWfmAggregator extends CountBasedWfmAggregator {
+    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledCountBasedWfmAggregator.class);
+    public static final String REF = "broadcastEnabledCountBasedWfmAggregator";
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;
-
-    @Autowired
-    private JobRequestDao hibernateJobRequestDao;
 
     @Autowired
     private JobProgress jobProgressStore;
@@ -57,7 +53,6 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
 
     @Override
     public void onResponse(Exchange newExchange) {
-        super.onResponse(newExchange);
         Object suppressBroadcast = newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST);
         if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
             return;
@@ -72,7 +67,10 @@ public class BroadcastEnabledStringCountBasedWfmAggregator extends StringCountBa
             int tasksCompleted = job.getCurrentTaskIndex();
             int totalTasks = job.getPipelineElements().getTaskCount();
             float progressInCurrentTask = (float) aggregateCount / splitSize;
-            float jobProgress = (tasksCompleted + progressInCurrentTask) / totalTasks * 100;
+            // Make sure job progress never gets to 100% before the job is actually complete.
+            float jobProgress = Math.min(
+                    99,
+                    (tasksCompleted + progressInCurrentTask) / totalTasks * 100);
 
             jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
             jobProgressStore.setJobProgress(jobId, jobProgress);

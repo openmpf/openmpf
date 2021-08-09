@@ -182,6 +182,7 @@ public class DetectionTaskSplitter {
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
+                        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("[Job {}|{}|{}] Created {} work units for Media #{} and associated new derivatives.",
@@ -191,10 +192,11 @@ public class DetectionTaskSplitter {
                             detectionRequestMessages.size(), media.getId());
                 }
             } catch (WfmProcessingException e) {
-                _inProgressBatchJobs.setJobStatus(job.getId(), BatchJobStatusType.IN_PROGRESS_ERRORS);
-                _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER, e.getMessage());
+                inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER,
+                                             e.getMessage());
             }
         }
+
         return messages;
     }
 

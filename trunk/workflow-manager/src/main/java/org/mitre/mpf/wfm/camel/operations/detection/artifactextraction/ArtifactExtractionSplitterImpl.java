@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
@@ -37,8 +36,8 @@ import org.mitre.mpf.wfm.camel.WfmSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
@@ -47,7 +46,6 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -67,19 +65,15 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    private final PropertiesUtil _propertiesUtil;
-
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
     ArtifactExtractionSplitterImpl(
             JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
-            PropertiesUtil propertiesUtil,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
-        _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
@@ -200,7 +194,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                     break;
                 }
                 case VISUAL_TYPES_ONLY:
-                    if (isNonVisualObjectType(track.getType())) {
+                    if (_aggregateJobPropertiesUtil.isNonVisualObjectType(track.getType())) {
                         break;
                     }
                     // fall through
@@ -340,14 +334,6 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 .collect(Collectors.toCollection(TreeSet::new));
         return detections;
 
-    }
-
-    private boolean isNonVisualObjectType(String type) {
-        for (String propType : _propertiesUtil.getArtifactExtractionNonVisualTypesList()) {
-            if (StringUtils.equalsIgnoreCase(type, propType))
-                return true;
-        }
-        return false;
     }
 
     private static JsonDetectionOutputObject createDetectionOutputObject(Detection detection) {

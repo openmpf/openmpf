@@ -24,54 +24,67 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.Exchange;
-import org.mitre.mpf.wfm.WfmProcessingException;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+package org.mitre.mpf.mvc;
+
 import org.springframework.stereotype.Component;
 
-@Component(EndOfTaskProcessor.REF)
-public class EndOfTaskProcessor extends WfmProcessor {
-    public static final String REF = "endOfTaskProcessor";
-    private static final Logger log = LoggerFactory.getLogger(EndOfTaskProcessor.class);
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressBatchJobs;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
-    @Autowired
-    private JobProgress jobProgressStore;
+@Component("corsFilter")
+public class CorsFilter implements Filter {
 
-    @Autowired
-    private JobStatusBroadcaster jobStatusBroadcaster;
+    private static final Set<String> CORS_ALLOWED_ORIGINS = getCorsAllowedOrigins();
+
 
     @Override
-    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        inProgressBatchJobs.incrementTask(jobId);
-        BatchJob job = inProgressBatchJobs.getJob(jobId);
-
-        log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
-                 jobId,
-                 job.getCurrentTaskIndex() - 1,
-                 job.getCurrentTaskIndex(),
-                 job.getPipelineElements().getTaskCount());
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        addCorsHeadersIfAllowed((HttpServletRequest) request, (HttpServletResponse) response);
+        chain.doFilter(request, response);
+    }
 
 
-        if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
-            jobProgressStore.setJobProgress(jobId, 99.0f);
-            jobStatusBroadcaster.broadcast(jobId, job.getStatus());
-            log.debug("[Job {}|*|*] All tasks have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
-            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
+    public static boolean addCorsHeadersIfAllowed(HttpServletRequest request,
+                                                  HttpServletResponse response) {
+        var origin = request.getHeader("Origin");
+        if (origin == null || !CORS_ALLOWED_ORIGINS.contains(origin)) {
+            return false;
         }
+        response.addHeader("Access-Control-Allow-Origin", origin);
+        response.addHeader("Access-Control-Allow-Credentials", "true");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+        var acRequestHeaders = request.getHeader("Access-Control-Request-Headers");
+        if (acRequestHeaders != null) {
+            response.addHeader("Access-Control-Allow-Headers", acRequestHeaders);
+        }
+        return true;
+    }
 
-        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+
+    private static Set<String> getCorsAllowedOrigins() {
+        return Optional.ofNullable(System.getenv("CORS_ALLOWED_ORIGINS"))
+                .stream()
+                .flatMap(s -> Stream.of(s.split(",")))
+                .map(String::strip)
+                .filter(s -> !s.isBlank())
+                .collect(toUnmodifiableSet());
+    }
+
+
+    @Override
+    public void init(FilterConfig filterConfig) {
+    }
+
+    @Override
+    public void destroy() {
     }
 }

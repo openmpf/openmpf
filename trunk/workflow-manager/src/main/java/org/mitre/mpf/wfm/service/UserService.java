@@ -95,8 +95,7 @@ public class UserService implements UserDetailsService {
             userName = it.next();
             value = propertiesConfig.getString(userName);
 
-            User user = _userDao.findByUserName(userName);
-            if (user != null) {
+            if (_userDao.findByUserName(userName).isPresent()) {
                 continue; // this user already exists
             }
 
@@ -142,7 +141,7 @@ public class UserService implements UserDetailsService {
                 break;
             }
 
-            user = new User(userName, role, encodedPassword);
+            User user = new User(userName, role, encodedPassword);
 
             log.info("Creating user \"" + user.getUserName() + "\" with roles: " +
                     user.getUserRoles().stream()
@@ -160,17 +159,24 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     @Override
-    public org.springframework.security.core.userdetails.User loadUserByUsername(final String userName) throws UsernameNotFoundException {
+    public org.springframework.security.core.userdetails.User loadUserByUsername(
+            final String userName) {
         log.debug("Loading user \"{}\".", userName);
-        User user = _userDao.findByUserName(userName);
+        return _userDao.findByUserName(userName)
+                .map(UserService::toSpringUser)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        String.format("No user %s found.", userName)));
+    }
 
-        if (user == null) {
-            log.debug("No user \"{}\" found.", userName);
-            throw new UsernameNotFoundException(String.format("No user %s found.", userName));
-        }
-
-        return new org.springframework.security.core.userdetails.User(user.getUserName(),
-                user.getPassword(), true, true, true, true, buildUserAuthorities(user.getUserRoles()));
+    private static org.springframework.security.core.userdetails.User toSpringUser(User user) {
+        return new org.springframework.security.core.userdetails.User(
+                user.getUserName(),
+                user.getPassword(),
+                true,
+                true,
+                true,
+                true,
+                buildUserAuthorities(user.getUserRoles()));
     }
 
     private static List<GrantedAuthority> buildUserAuthorities(Set<UserRole> userRoles) {

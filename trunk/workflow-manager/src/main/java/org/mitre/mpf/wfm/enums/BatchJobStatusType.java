@@ -38,74 +38,303 @@ public enum BatchJobStatusType {
     /**
      * Default: The status of the job is unknown.
      **/
-    UNKNOWN(false),
+    UNKNOWN(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return IN_PROGRESS_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return ERROR;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    },
 
     /**
      * The job has been initialized but not started.
      */
-    INITIALIZED(false),
+    INITIALIZED(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return IN_PROGRESS_WARNINGS;
+        }
 
-    /**
-     * Indicates that a job was received, but a job could not be created from the contents of
-     * the request. For example, this is used when an invalid pipeline is specified.
-     */
-    JOB_CREATION_ERROR(true),
+        @Override
+        public BatchJobStatusType onError() {
+            return IN_PROGRESS_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return COMPLETE;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    },
 
     /**
      * Indicates the job is in progress.
      */
-    IN_PROGRESS(false),
+    IN_PROGRESS(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return IN_PROGRESS_WARNINGS;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return IN_PROGRESS_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return COMPLETE;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    },
 
     /**
      * Indicates the job is in progress with errors.
      */
-    IN_PROGRESS_ERRORS(false),
+    IN_PROGRESS_ERRORS(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return COMPLETE_WITH_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    },
 
     /**
      * Indicates the job is in progress with warnings.
      */
-    IN_PROGRESS_WARNINGS(false),
+    IN_PROGRESS_WARNINGS(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
 
-    /**
-     * Indicates that the job is having its output object built.
-     */
-    BUILDING_OUTPUT_OBJECT(false),
+        @Override
+        public BatchJobStatusType onError() {
+            return IN_PROGRESS_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return COMPLETE_WITH_WARNINGS;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    },
 
     /**
      * Indicates the job has completed.
      */
-    COMPLETE(true),
+    COMPLETE(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return COMPLETE_WITH_WARNINGS;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return COMPLETE_WITH_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job has completed, but with processing errors.
      */
-    COMPLETE_WITH_ERRORS(true),
+    COMPLETE_WITH_ERRORS(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job has completed, but with warnings.
      */
-    COMPLETE_WITH_WARNINGS(true),
+    COMPLETE_WITH_WARNINGS(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return COMPLETE_WITH_ERRORS;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job is in the middle of cancellation.
      */
-    CANCELLING(false),
+    CANCELLING(false) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return CANCELLED;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job was cancelled as a result of a system shutdown.
      */
-    CANCELLED_BY_SHUTDOWN(true),
+    CANCELLED_BY_SHUTDOWN(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job was cancelled by a user-initiated process.
      */
-    CANCELLED(true),
+    CANCELLED(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return this;
+        }
+    },
 
     /**
      * Indicates the job is in an error state. This is used for unknown/unrecoverable
      * errors, and when a piece of media is not available or cannot be retrieved.
      */
-    ERROR(true);
+    ERROR(true) {
+        @Override
+        public BatchJobStatusType onWarning() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onError() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onComplete() {
+            return this;
+        }
+
+        @Override
+        public BatchJobStatusType onCancel() {
+            return CANCELLING;
+        }
+    };
 
     private final boolean _terminal;
 
@@ -141,5 +370,16 @@ public enum BatchJobStatusType {
         return jobStatuses;
     }
 
+    public abstract BatchJobStatusType onWarning();
+
+    public abstract BatchJobStatusType onError();
+
+    public abstract BatchJobStatusType onComplete();
+
+    public abstract BatchJobStatusType onCancel();
+
+    public BatchJobStatusType onFatalError() {
+        return ERROR;
+    }
 
 }

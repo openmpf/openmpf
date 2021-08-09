@@ -28,12 +28,9 @@ package org.mitre.mpf.wfm.camel.operations.markup;
 
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.mime.MimeTypes;
 import org.javasimon.aop.Monitored;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
@@ -42,7 +39,6 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.access.hibernate.HibernateMarkupResultDaoImpl;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -52,14 +48,13 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.MarkupJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.nio.file.Path;
 import java.util.List;
@@ -71,83 +66,101 @@ import java.util.stream.DoubleStream;
 public class MarkupSplitter {
     private static final Logger log = LoggerFactory.getLogger(MarkupSplitter.class);
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final PropertiesUtil _propertiesUtil;
 
-    @Autowired
-    @Qualifier(HibernateMarkupResultDaoImpl.REF)
-    private MarkupResultDao hibernateMarkupResultDao;
+    private final MarkupResultDao _markupResultDao;
 
-    @Autowired
-    private MarkupJobPropertiesUtil markupJobPropertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
+    @Inject
+    public MarkupSplitter(
+            InProgressBatchJobsService inProgressBatchJobs,
+            PropertiesUtil propertiesUtil,
+            MarkupResultDao markupResultDao,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _propertiesUtil = propertiesUtil;
+        _markupResultDao = markupResultDao;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+    }
 
 
-    public List<Message> performSplit(BatchJob job, Task task) {
-        List<Message> messages = new ArrayList<>();
+    public List<Message> performSplit(BatchJob job, Task markupTask) {
+        _markupResultDao.deleteByJobId(job.getId());
 
-        int lastDetectionTaskIndex = findLastDetectionTaskIndex(job.getPipelineElements());
+        List<Message> messages = new ArrayList<>(job.getMedia().size());
 
-        hibernateMarkupResultDao.deleteByJobId(job.getId());
+        // Markup tasks always have one action.
+        var actionName = markupTask.getActions().get(0);
+        var markupAction = job.getPipelineElements().getAction(actionName);
 
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            String actionName = task.getActions().get(actionIndex);
-            Action action = job.getPipelineElements().getAction(actionName);
-            int mediaIndex = -1;
-            for (Media media : job.getMedia()) {
-                mediaIndex++;
-                if (media.isFailed()) {
-                    log.debug("Skipping '{}: {}' - it is in an error state.", media.getId(), media.getLocalPath());
-                } else if(media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
-                    log.debug("Skipping Media {} - only image and video files are eligible for markup.", media.getId());
-                } else {
-                    List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
-                            = createMap(job, media, lastDetectionTaskIndex,
-                                        job.getPipelineElements().getTask(lastDetectionTaskIndex))
-                            .toBoundingBoxMapEntryList();
-
-                    Path destinationPath;
-                    if (boundingBoxMapEntryList.isEmpty()) {
-                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
-                                getFileExtension(media.getMimeType()));
-                    } else {
-                        destinationPath = propertiesUtil.createMarkupPath(job.getId(), media.getId(),
-                                getMarkedUpMediaExtensionForMediaType(job, media));
-                    }
-
-                    Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
-                            .setMediaIndex(mediaIndex)
-                            .setTaskIndex(job.getCurrentTaskIndex())
-                            .setActionIndex(actionIndex)
-                            .setMediaId(media.getId())
-                            .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
-                            .setRequestId(IdGenerator.next())
-                            .setSourceUri(media.getProcessingPath().toUri().toString())
-                            .setDestinationUri(destinationPath.toUri().toString())
-                            .addAllMapEntries(boundingBoxMapEntryList);
-
-                    for (var entry : media.getMetadata().entrySet()) {
-                        requestBuilder.addMediaMetadataBuilder()
-                                .setKey(entry.getKey())
-                                .setValue(entry.getValue());
-                    }
-
-                    for (var entry : markupJobPropertiesUtil.getPropertyMap(job, media, action).entrySet()) {
-                        requestBuilder.addMarkupPropertiesBuilder()
-                                .setKey(entry.getKey())
-                                .setValue(entry.getValue());
-                    }
-
-                    Algorithm algorithm = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
-                    DefaultMessage message = new DefaultMessage(); // We will sort out the headers later.
-                    message.setHeader(MpfHeaders.RECIPIENT_QUEUE, String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(), action.getAlgorithm()));
-                    message.setHeader(MpfHeaders.JMS_REPLY_TO, StringUtils.replace(MpfEndpoints.COMPLETED_MARKUP, "jms:", ""));
-                    message.setBody(requestBuilder.build());
-                    messages.add(message);
-                }
+        int mediaIndex = -1;
+        for (var media : job.getMedia()) {
+            mediaIndex++;
+            if (media.isFailed()) {
+                log.warn("Skipping '{}: {}' - it is in an error state.",
+                         media.getId(), media.getLocalPath());
+                continue;
             }
+            if (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
+                log.debug("Skipping Media {} - only image and video files are eligible for markup.",
+                          media.getId());
+                continue;
+            }
+
+            var markupProperties = _aggregateJobPropertiesUtil.getPropertyMap(
+                    job, media, markupAction);
+
+            List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
+                    = createMapEntries(job, media, markupProperties);
+
+            Path destinationPath;
+            if (boundingBoxMapEntryList.isEmpty()) {
+                destinationPath = _propertiesUtil.createMarkupPath(
+                        job.getId(), media.getId(), getFileExtension(media.getMimeType()));
+            }
+            else {
+                destinationPath = _propertiesUtil.createMarkupPath(
+                        job.getId(), media.getId(),
+                        getMarkedUpMediaExtensionForMediaType(media, markupProperties));
+            }
+
+
+            Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
+                    .setMediaIndex(mediaIndex)
+                    .setTaskIndex(job.getCurrentTaskIndex())
+                    .setActionIndex(0)
+                    .setMediaId(media.getId())
+                    .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
+                    .setRequestId(IdGenerator.next())
+                    .setSourceUri(media.getProcessingPath().toUri().toString())
+                    .setDestinationUri(destinationPath.toUri().toString())
+                    .addAllMapEntries(boundingBoxMapEntryList);
+
+            for (var entry : media.getMetadata().entrySet()) {
+                requestBuilder.addMediaMetadataBuilder()
+                        .setKey(entry.getKey())
+                        .setValue(entry.getValue());
+            }
+
+            for (var entry : markupProperties.entrySet()) {
+                requestBuilder.addMarkupPropertiesBuilder()
+                        .setKey(entry.getKey())
+                        .setValue(entry.getValue());
+            }
+
+            var algorithm = job.getPipelineElements().getAlgorithm(markupAction.getAlgorithm());
+            var message = new DefaultMessage();
+            message.setHeader(
+                    MpfHeaders.RECIPIENT_QUEUE,
+                    String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(),
+                                  markupAction.getAlgorithm()));
+            message.setHeader(MpfHeaders.JMS_REPLY_TO,
+                              MpfEndpoints.COMPLETED_MARKUP.replace("jms:", ""));
+            message.setBody(requestBuilder.build());
+            messages.add(message);
         }
 
         return messages;
@@ -170,24 +183,30 @@ public class MarkupSplitter {
     }
 
     /** Creates a BoundingBoxMap containing all of the tracks which were produced by the specified action history keys. */
-    private BoundingBoxMap createMap(BatchJob job, Media media, int taskIndex, Task task) {
-        boolean labelFromDetections = Boolean.parseBoolean(
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_FROM_DETECTIONS, job, media));
-        String labelTextPropToShow =
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW, job, media);
-        String labelNumericPropToShow =
-                markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW, job, media);
+    private List<Markup.BoundingBoxMapEntry> createMapEntries(
+            BatchJob job, Media media, Map<String, String> markupProperties) {
+
+        var labelFromDetections = Boolean.parseBoolean(markupProperties.get(
+                MpfConstants.MARKUP_LABELS_FROM_DETECTIONS));
+        var labelTextPropToShow = markupProperties.get(
+                MpfConstants.MARKUP_LABELS_TEXT_PROP_TO_SHOW);
+        var labelNumericPropToShow = markupProperties.get(
+                MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW);
+
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
-        long mediaId = media.getId();
-        for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-            SortedSet<Track> tracks = inProgressJobs.getTracks(job.getId(), mediaId, taskIndex, actionIndex);
-            for (Track track : tracks) {
-                addTrackToBoundingBoxMap(track, boundingBoxMap, trackColors.next(), labelFromDetections,
-                        labelTextPropToShow, labelNumericPropToShow);
-            }
+
+        int taskToMarkupIndex = findLastDetectionTaskIndex(job.getPipelineElements());
+        // PipelineValidator made sure taskToMarkupIndex only has one action.
+        SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
+                job.getId(), media.getId(), taskToMarkupIndex, 0);
+        for (Track track : tracks) {
+            addTrackToBoundingBoxMap(
+                    track, boundingBoxMap, trackColors.next(), labelFromDetections,
+                    labelTextPropToShow, labelNumericPropToShow);
         }
-        return boundingBoxMap;
+
+        return boundingBoxMap.toBoundingBoxMapEntryList();
     }
 
 
@@ -205,9 +224,9 @@ public class MarkupSplitter {
                 .map(s -> Boolean.parseBoolean(s.strip()));
     }
 
-    private static void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
-                                                 boolean labelFromDetections, String labelTextPropToShow,
-                                                 String labelNumericPropToShow) {
+    private void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
+                                          boolean labelFromDetections, String labelTextPropToShow,
+                                          String labelNumericPropToShow) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
@@ -253,8 +272,7 @@ public class MarkupSplitter {
                     track.getExemplar().equals(detection),
                     label);
 
-            String objectType = track.getType();
-            if ("SPEECH".equalsIgnoreCase(objectType) || "AUDIO".equalsIgnoreCase(objectType)) {
+            if (_aggregateJobPropertiesUtil.isExemptFromIllFormedDetectionRemoval(track.getType())) {
                 // Special case: Speech doesn't populate object locations for each frame in the video, so you have to
                 // go by the track start and stop frames.
                 boundingBoxMap.putOnFrames(track.getStartOffsetFrameInclusive(),
@@ -310,28 +328,26 @@ public class MarkupSplitter {
 
 
     /** Returns the appropriate markup extension for a given {@link MediaType}. */
-    private String getMarkedUpMediaExtensionForMediaType(BatchJob job, Media media) {
-        switch (media.getType()) {
-            case IMAGE:
-                return ".png";
-            case VIDEO:
-                String encoder = markupJobPropertiesUtil.getValue(MpfConstants.MARKUP_VIDEO_ENCODER, job, media)
-                        .toLowerCase();
-                switch (encoder) {
-                    case ("vp9"):
-                        return ".webm";
-                    case ("h264"):
-                        return ".mp4";
-                    case ("mjpeg"):
-                        return ".avi";
-                    default:
-                        log.warn("\"" + encoder + "\" is not a valid encoder. Defaulting to mjpeg.");
-                        return ".avi";
-                }
-            case AUDIO: // Falls through
-            case UNKNOWN: // Falls through
+    private static String getMarkedUpMediaExtensionForMediaType(
+            Media media, Map<String, String> markupProperties) {
+
+        if (media.getType() == MediaType.IMAGE) {
+            return ".png";
+        }
+        // Already verified media is image or video.
+        assert media.getType() == MediaType.VIDEO;
+
+        var encoder = markupProperties.get(MpfConstants.MARKUP_VIDEO_ENCODER).toLowerCase();
+        switch (encoder) {
+            case "vp9":
+                return ".webm";
+            case "h264":
+                return ".mp4";
+            case "mjpeg":
+                return ".avi";
             default:
-                return ".bin";
+                log.warn("\"{}\" is not a valid encoder. Defaulting to mjpeg.", encoder);
+                return ".avi";
         }
     }
 

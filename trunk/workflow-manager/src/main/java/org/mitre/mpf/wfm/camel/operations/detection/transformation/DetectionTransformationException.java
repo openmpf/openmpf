@@ -24,32 +24,16 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
-@Component
-public class DefaultJobErrorHandler implements Processor {
-	private static final Logger log = LoggerFactory.getLogger(DefaultJobErrorHandler.class);
+public class DetectionTransformationException extends Exception {
 
-	@Override
-	public void process(Exchange exchange) throws Exception {
-		// May be null.
-		Long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+    public DetectionTransformationException(String message) {
+        super(message);
+    }
 
-		// May be null.
-		Throwable throwable = exchange.getProperty(Exchange.EXCEPTION_CAUGHT, Throwable.class);
-
-		if(jobId == null) {
-			log.warn("An error was encountered while processing a job, but not enough information has been provided to determine which job produced this error.", throwable);
-		} else {
-			log.warn("An error was encountered while processing Job #{}. The Job will be marked as {}.", jobId, BatchJobStatusType.ERROR, throwable);
-		}
-	}
+    public DetectionTransformationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

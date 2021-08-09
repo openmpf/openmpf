@@ -28,7 +28,9 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.*;
+import org.mitre.mpf.wfm.camel.CountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -64,8 +66,8 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 
 	/** The aggregator to use for collecting inspection results. */
 	@Autowired
-	@Qualifier(StringCountBasedWfmAggregator.REF)
-	private WfmAggregator<String> aggregator;
+	@Qualifier(CountBasedWfmAggregator.REF)
+	private WfmAggregator aggregator;
 
 	private final String entryPoint, exitPoint, routeId;
 

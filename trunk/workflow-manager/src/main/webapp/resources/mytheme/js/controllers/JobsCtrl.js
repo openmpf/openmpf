@@ -93,9 +93,12 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     {
                         data: "endDate",
                         render: function (data, type, job) {
-                            if (job.endDate && job.jobStatus.startsWith('COMPLETE'))
-                                return (moment(job.endDate).format("YYYY-MM-DD HH:mm:ss"));
-                            return "";
+                            if (job.endDate) {
+                                return moment(job.endDate).format("YYYY-MM-DD HH:mm:ss");
+                            }
+                            else {
+                                return "";
+                            }
                         }
                     },
                     {
@@ -109,11 +112,16 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
+                            var jobStatus = job.jobStatus;
+                            if (job.hasCallbacksInProgress) {
+                                jobStatus += ' (callbacks in progress)';
+                            }
+
                             var hideProgress = 'style="display:none;"';
                             if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
                             var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + jobStatus + '</span>' + progressDiv;
                         }
                     },
                     {
@@ -126,9 +134,14 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         data: "null", "defaultContent": '', orderable: false,
                         render: function (data, type, job) {
                             var cancel_disabled = "";
-                            if (job.terminal || job.jobStatus == 'CANCELLING' || job.jobStatus == 'COMPLETE') cancel_disabled = "disabled=disabled";
-                            var isterminal = "";
-                            if (!job.terminal) isterminal = "disabled=disabled";
+                            if (job.terminal || job.jobStatus === 'CANCELLING' ||
+                                    job.hasCallbacksInProgress) {
+                                cancel_disabled = "disabled=disabled";
+                            }
+                            var resubmit_disabled = "";
+                            if (!job.terminal || job.hasCallbacksInProgress) {
+                                resubmit_disabled = "disabled=disabled" ;
+                            }
                             var hasOutput = "disabled=disabled";
                             var output_link = "";
                             if (job.outputFileExists) {
@@ -136,7 +149,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             }
                             return '<div class="btn-group btn-group-sm" role="group" >' +
                                 '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + isterminal + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
+                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + resubmit_disabled + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
                                 '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
                                 '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" id="jsonBtn' + job.jobId + '" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
                         }
@@ -186,7 +199,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         $(".resubmitBtn").click(function () {
             resubmitJob(getJobFromTableEle(this));
         });
-        $("#infoModalBtn").click(function () {
+        $("#infoModalBtn").click(function (evt) {
+            // Prevent table from sorting by status when clicking info icon.
+            evt.stopPropagation();
             $("#infoModal").modal('show');
         });
     };
@@ -301,10 +316,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
 
         //send -1 and -1 on connect
         if (job.id != -1 && job.progress != -1) {
-            if (!$("#jobStatusCell" + job.id).length) {//missing the new job
+            var progress = Math.floor(job.progress);
+            if ($("#jobStatusCell" + job.id).length === 0 || progress === 0) {//missing the new job
                 jobTable.ajax.reload(null, false);
             }
-            var progress = job.progress.toFixed();
             $("#jobStatusCell" + job.id).html(job.jobStatus);
 
             //keep the job progress val at 99% until it is complete or cancelled
@@ -316,6 +331,18 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             }
 
             if (progress < 100) {
+                var statusCell = $('#jobStatusCell' + job.id);
+                statusCell.removeClass('label-default label-danger label-warning label-primary');
+                if (job.jobStatus === 'IN_PROGRESS_WARNINGS') {
+                    statusCell.addClass('label-warning');
+                }
+                else if (job.jobStatus === 'IN_PROGRESS_ERRORS') {
+                    statusCell.addClass('label-danger');
+                }
+                else {
+                    statusCell.addClass('label-default');
+                }
+
                 $("#jobProgress" + job.id).parent().show();
                 $("#jobProgress" + job.id).html(progress + "%");
                 $("#jobProgress" + job.id).css("width", progress + "%");
@@ -339,13 +366,22 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
 
     var resubmitJob = function (job) {
         $log.debug("resubmitJob:", job);
-        $("#jobStatusCell" + job.jobId).html("RESUBMITTING");
+        var statusCell = $("#jobStatusCell" + job.jobId);
+        var prevClasses = statusCell.attr('class');
+        var prevHtml = statusCell.html();
+        statusCell.html("RESUBMITTING");
+        statusCell.removeClass('label-danger label-warning label-primary');
+        statusCell.addClass('label-default');
+
         $("#resubmitBtn" + job.jobId).attr("disabled", "disabled");
         JobsService.resubmitJob(job.jobId, job.jobPriority).then(function (resp) {
             if (resp && resp.hasOwnProperty("mpfResponse") &&
                 resp.hasOwnProperty("jobId")) {
                 if (resp.mpfResponse.responseCode != 0) {
                     NotificationSvc.error(resp.mpfResponse.message);
+                    statusCell.attr('class', prevClasses);
+                    statusCell.html(prevHtml);
+                    $("#resubmitBtn" + job.jobId).removeAttr("disabled");
                 } else {
                     NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
                 }

@@ -34,6 +34,7 @@ import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
@@ -95,6 +96,9 @@ public class JobController {
 
     @Autowired
     private S3StorageBackend s3StorageBackend;
+
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
 
     /*
      *	POST /jobs
@@ -180,8 +184,8 @@ public class JobController {
             = ImmutableMap.<String, String>builder()
             .put("0", "id")
             .put("1", "pipeline")
-            .put("2", "time_received")
-            .put("3", "time_completed")
+            .put("2", "timeReceived")
+            .put("3", "timeCompleted")
             .put("4", "status")
             .put("5", "priority")
             .build();
@@ -464,9 +468,17 @@ public class JobController {
         }
 
         return new SingleJobInfo(
-                job.getId(), job.getPipeline(), job.getPriority(), job.getStatus().toString(), jobProgressVal,
-                job.getTimeReceived(), job.getTimeCompleted(), job.getOutputObjectPath(),
-                job.getStatus().isTerminal(), mediaUris);
+                job.getId(),
+                job.getPipeline(),
+                job.getPriority(),
+                job.getStatus().toString(),
+                jobProgressVal,
+                job.getTimeReceived(),
+                job.getTimeCompleted(),
+                job.getOutputObjectPath(),
+                inProgressJobs.jobHasCallbacksInProgress(job.getId()),
+                job.getStatus().isTerminal(),
+                mediaUris);
     }
 
 

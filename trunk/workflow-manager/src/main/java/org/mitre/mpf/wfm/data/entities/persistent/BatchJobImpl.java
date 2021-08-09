@@ -149,11 +149,18 @@ public class BatchJobImpl implements BatchJob {
     public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
 
 
-    private boolean _cancelled;
     @Override
-    public boolean isCancelled() { return _cancelled; }
-    public void setCancelled(boolean isCancelled) { _cancelled = isCancelled; }
-
+    @JsonIgnore
+    public boolean isCancelled() {
+        switch (getStatus()) {
+            case CANCELLED:
+            case CANCELLING:
+            case CANCELLED_BY_SHUTDOWN:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     private final String _callbackUrl;
     @Override

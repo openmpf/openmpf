@@ -58,7 +58,7 @@ public class MarkupResultConvertedModel {
 	}
 
     public long getParentMediaId() {
-        return mediaId;
+        return parentMediaId;
     }
 
     public String getPipeline() {

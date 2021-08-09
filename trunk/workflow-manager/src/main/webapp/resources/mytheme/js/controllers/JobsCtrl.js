@@ -441,6 +441,16 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     className: "smart-wrap"
                 },
                 {
+                    data: "parentMediaId",
+                    className: "smart-wrap",
+                    render: function (data, type, obj) {
+                        if (obj.parentMediaId == -1) {
+                            return '<p class="text-muted">N/A</p>'
+                        }
+                        return '<p>' + obj.parentMediaId + '</p>'
+                    }
+                },
+                {
                     data: "sourceImg",
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {

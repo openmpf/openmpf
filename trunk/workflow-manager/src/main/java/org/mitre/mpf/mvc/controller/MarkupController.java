@@ -70,10 +70,7 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
@@ -182,7 +179,7 @@ public class MarkupController {
         }
 
         //handle search
-        List<MarkupResultConvertedModel> markupResultModelsFinal = new ArrayList<MarkupResultConvertedModel>();
+        List<MarkupResultConvertedModel> markupResultModelsFinal = new ArrayList();
         for (MarkupResultConvertedModel markupResult : markupResultModels) {
             if (search != null && search.length() > 0) {
                 search = search.toLowerCase();
@@ -203,13 +200,11 @@ public class MarkupController {
         int end = start + length;
         end = (end > markupResultModelsFinal.size()) ? markupResultModelsFinal.size() : end;
         start = (start <= end) ? start : end;
-        List<MarkupResultConvertedModel> modelsFiltered = markupResultModelsFinal.subList(start,end);
+        List<MarkupResultConvertedModel> modelsFiltered = markupResultModelsFinal.subList(start, end);
 
-        //build output
-        String error = null;
-        MarkupPageListModel model = new MarkupPageListModel(draw,records_total,records_filtered,error,modelsFiltered);
+        Collections.sort(modelsFiltered, Comparator.comparingLong(MarkupResultConvertedModel::getMediaId));
 
-        return model;
+        return new MarkupPageListModel(draw, records_total, records_filtered, null, modelsFiltered);
     }
 
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
@@ -357,7 +352,7 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), markupResult.getJobId(), markupResult.getPipeline(),
+                markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), markupResult.getPipeline(),
                 markupResult.getMarkupUri(), markupUriContentType, markupImgUrl, markupDownloadUrl,
                 markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
                 sourceDownloadUrl, sourceFileAvailable);

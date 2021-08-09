@@ -100,6 +100,6 @@ public class MarkupResult {
 
 	public String toString() {
 		return String.format("%s#<id=%d, mediaId=%d, jobId=%d, taskIndex=%d, actionIndex=%d, mediaIndex=%d, sourceUri='%s', markupUri='%s', pipeline='%s', markupStatus='%s', message='%s'>",
-				getClass().getSimpleName(), getMediaId(), getJobId(), getTaskIndex(), getActionIndex(), getMediaIndex(), getId(), getSourceUri(), getMarkupUri(), getPipeline(), getMarkupStatus(), message);
+				getClass().getSimpleName(), getId(), getMediaId(), getJobId(), getTaskIndex(), getActionIndex(), getMediaIndex(), getSourceUri(), getMarkupUri(), getPipeline(), getMarkupStatus(), message);
 	}
 }

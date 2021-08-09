@@ -31,16 +31,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
+import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+
+import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
 
 public class MediaImpl implements Media {
 
@@ -225,6 +226,17 @@ public class MediaImpl implements Media {
     }
 
 
+    private static final Comparator<Media> DEFAULT_COMPARATOR = Comparator
+            .nullsFirst(Comparator
+                    .comparingLong(Media::getParentId)
+                    .thenComparingLong(Media::getId));
+
+    @Override
+    public int compareTo(Media other) {
+        return DEFAULT_COMPARATOR.compare(this, other);
+    }
+
+
     @Override
     public String toString() {
         return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%d, sha256='%s'>",
@@ -239,5 +251,4 @@ public class MediaImpl implements Media {
                              _length,
                              _sha256);
     }
-
 }

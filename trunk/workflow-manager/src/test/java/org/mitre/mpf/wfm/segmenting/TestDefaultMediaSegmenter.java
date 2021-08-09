@@ -130,8 +130,7 @@ public class TestDefaultMediaSegmenter {
 
 
 	private static List<DetectionRequest> runDefaultSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new DefaultMediaSegmenter(mock(MediaInspectionHelper.class),
-				mock(InProgressBatchJobsService.class));
+		MediaSegmenter segmenter = new DefaultMediaSegmenter();
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}

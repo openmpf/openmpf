@@ -29,12 +29,11 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -115,7 +114,7 @@ public class BatchJobImpl implements BatchJob {
     private final ImmutableSortedMap<Long, MediaImpl> _media;
     @Override
     public ImmutableCollection<MediaImpl> getMedia() {
-        return ImmutableSet.<MediaImpl>builder()
+        return ImmutableSortedSet.<MediaImpl>naturalOrder()
                     .addAll(_media.values())
                     .addAll(_derivativeMedia.values())
                     .build();

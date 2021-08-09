@@ -347,7 +347,7 @@ public class InProgressBatchJobsService {
         media.setParentId(parentMediaId);
 
         var metadata = new TreeMap<>(properties); // include page number and other info, if available
-        metadata.remove("DERIVATIVE_MEDIA_URI"); // this would just be redundant
+        metadata.remove("DERIVATIVE_MEDIA_URI"); // the URI is now part of the object itself
         media.addMetadata("IS_DERIVATIVE_MEDIA", "TRUE");
         media.addMetadata(metadata);
 

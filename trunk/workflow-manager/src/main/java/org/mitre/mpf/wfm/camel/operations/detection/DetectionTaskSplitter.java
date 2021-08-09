@@ -86,7 +86,7 @@ public class DetectionTaskSplitter {
     public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
-        for (Media media : job.getMedia()) { // this includes derivative media
+        for (Media media : job.getMedia()) { // this may include derivative media
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
@@ -185,14 +185,14 @@ public class DetectionTaskSplitter {
                         message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
                     }
                     messages.addAll(detectionRequestMessages);
-                    log.debug("[Job {}|{}|{}] Created {} work units for Media #{} and associated new derivatives.",
+                    log.debug("[Job {}|{}|{}] Created {} work units for Media #{}.",
                             job.getId(),
                             job.getCurrentTaskIndex(),
                             actionIndex,
                             detectionRequestMessages.size(), media.getId());
                 }
             } catch (WfmProcessingException e) {
-                inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER,
+                _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER,
                                              e.getMessage());
             }
         }
@@ -310,7 +310,6 @@ public class DetectionTaskSplitter {
     /**
      * Returns {@literal true} iff the current task of this job is the first detection task in the job for the media.
      */
-    // TODO: parentMediaId
     private static boolean isFirstDetectionTask(BatchJob job, Media media) {
         for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
             // Only need to check the first action. We would not be here in the splitter after a parellel action,

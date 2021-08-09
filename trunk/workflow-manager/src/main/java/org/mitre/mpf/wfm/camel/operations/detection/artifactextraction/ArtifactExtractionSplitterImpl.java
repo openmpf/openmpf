@@ -126,12 +126,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 continue;
             }
 
-            // If the user has requested that this task be merged with the next one, then skip media extraction.
+            // If the user has requested that this task be merged with one that follows, then skip media extraction.
             // Media extraction will be performed for the next task this one is merged with.
             Map<Integer, Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-            if (tasksToMerge.containsKey(taskIndex + 1)) {
+            if (tasksToMerge.values().contains(taskIndex)) {
                 LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to being merged with the following task.",
+                                " due to being merged with a following task.",
                         job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId());
                 continue;
             }

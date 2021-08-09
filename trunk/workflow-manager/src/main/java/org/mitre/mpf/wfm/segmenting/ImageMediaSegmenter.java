@@ -31,9 +31,8 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -75,7 +74,6 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 
 		Message message = new DefaultMessage();
 		message.setBody(detectionRequest);
-		message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
 		return message;
 	}
 

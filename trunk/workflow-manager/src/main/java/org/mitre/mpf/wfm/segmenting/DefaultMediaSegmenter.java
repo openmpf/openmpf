@@ -30,17 +30,13 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,18 +50,7 @@ import java.util.Map;
 public class DefaultMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(DefaultMediaSegmenter.class);
 
-    private static MediaInspectionHelper _mediaInspectionHelper;
-    private static InProgressBatchJobsService _inProgressJobs;
-
     public static final String REF = "defaultMediaSegmenter";
-
-    @Inject
-    public DefaultMediaSegmenter(MediaInspectionHelper mediaInspectionHelper,
-                                 InProgressBatchJobsService inProgressJobs)
-    {
-        _mediaInspectionHelper = mediaInspectionHelper;
-        _inProgressJobs = inProgressJobs;
-    }
 
     @Override
     public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
@@ -94,7 +79,6 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
         Message message = new DefaultMessage();
         message.setBody(detectionRequest);
-        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
         return message;
     }
 

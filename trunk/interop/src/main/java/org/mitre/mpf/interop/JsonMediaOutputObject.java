@@ -162,7 +162,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(mediaId, parentMediaId, path, sha256, length, status, type, mimeType);
+		return Objects.hash(parentMediaId, mediaId, path, sha256, length, status, type, mimeType);
 	}
 
 	@Override
@@ -172,8 +172,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	private static final Comparator<JsonMediaOutputObject> DEFAULT_COMPARATOR = Comparator
 			.nullsFirst(
-					comparingLong(JsonMediaOutputObject::getMediaId)
-					.thenComparingInt(JsonMediaOutputObject::getParentMediaId)
+					comparingLong(JsonMediaOutputObject::getParentMediaId)
+					.thenComparingLong(JsonMediaOutputObject::getMediaId)
 					.thenComparing(stringCompare(JsonMediaOutputObject::getPath))
 					.thenComparing(stringCompare(JsonMediaOutputObject::getSha256))
 					.thenComparingInt(JsonMediaOutputObject::getLength)

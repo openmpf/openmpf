@@ -437,6 +437,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             renderer: "bootstrap",
             columns: [
                 {
+                    data: "mediaId",
+                    className: "smart-wrap"
+                },
+                {
                     data: "sourceImg",
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {

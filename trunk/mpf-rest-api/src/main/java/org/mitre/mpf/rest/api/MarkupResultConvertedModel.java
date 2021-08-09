@@ -109,6 +109,10 @@ public class MarkupResultConvertedModel {
         this.jobId = jobId;
     }
 
+    public void setMediaId(long mediaId) {
+        this.mediaId = mediaId;
+    }
+
     public void setPipeline(String pipeline) {
         this.pipeline = pipeline;
     }

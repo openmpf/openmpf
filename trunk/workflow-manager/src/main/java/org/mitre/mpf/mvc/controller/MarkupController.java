@@ -151,6 +151,7 @@ public class MarkupController {
             for (Media med : job.getMedia()) {
                 MarkupResultConvertedModel model = new MarkupResultConvertedModel();
                 model.setJobId(jobId);
+                model.setMediaId(med.getId());
                 model.setPipeline(job.getPipelineElements().getName());
                 model.setSourceUri(med.getUri());
                 model.setSourceFileAvailable(false);

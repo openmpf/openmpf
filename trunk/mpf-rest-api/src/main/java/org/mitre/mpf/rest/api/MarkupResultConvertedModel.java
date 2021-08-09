@@ -30,6 +30,7 @@ public class MarkupResultConvertedModel {
     private long id;
     private long jobId;
     private long mediaId;
+    private long parentMediaId;
     private String pipeline;
     private String markupUri;
 
@@ -55,6 +56,10 @@ public class MarkupResultConvertedModel {
 	public long getMediaId() {
 		return mediaId;
 	}
+
+    public long getParentMediaId() {
+        return mediaId;
+    }
 
     public String getPipeline() {
         return pipeline;
@@ -113,6 +118,10 @@ public class MarkupResultConvertedModel {
         this.mediaId = mediaId;
     }
 
+    public void setParentMediaId(long parentMediaId) {
+        this.parentMediaId = parentMediaId;
+    }
+
     public void setPipeline(String pipeline) {
         this.pipeline = pipeline;
     }
@@ -157,13 +166,15 @@ public class MarkupResultConvertedModel {
     public MarkupResultConvertedModel() {
     }
 
-	public MarkupResultConvertedModel(long id, long jobId, long mediaId, String pipeline, String markupUri,
-									  String markupUriContentType, String markupImgUrl, String markupDownloadUrl,
-									  boolean markupFileAvailable, String sourceUri, String sourceURIContentType,
-									  String sourceImgUrl, String sourceDownloadUrl, boolean sourceFileAvailable) {
+	public MarkupResultConvertedModel(long id, long jobId, long mediaId, long parentMediaId,
+                                      String pipeline, String markupUri, String markupUriContentType,
+                                      String markupImgUrl, String markupDownloadUrl, boolean markupFileAvailable,
+                                      String sourceUri, String sourceURIContentType, String sourceImgUrl,
+                                      String sourceDownloadUrl, boolean sourceFileAvailable) {
 		this.id = id;
 		this.jobId = jobId;
 		this.mediaId = mediaId;
+		this.parentMediaId = parentMediaId;
 		this.pipeline = pipeline;
 		this.markupUri = markupUri;
 		this.markupUriContentType = markupUriContentType;

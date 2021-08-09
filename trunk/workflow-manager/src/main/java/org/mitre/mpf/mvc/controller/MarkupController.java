@@ -132,80 +132,79 @@ public class MarkupController {
                                            @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
-        //all MarkupResult objects
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
-        Collections.reverse(markupResults);
-
-        //convert markup objects
-        List<MarkupResultConvertedModel> markupResultModels = new ArrayList<MarkupResultConvertedModel>();
-        for (MarkupResult markupResult : markupResults) {
-            MarkupResultConvertedModel model = convertMarkupResultWithContentType(markupResult);
-            markupResultModels.add(model);
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        if (jobRequest == null) {
+            return new MarkupPageListModel(draw, 0, 0, null, List.of());
         }
 
-        //add job media that may exist without markup
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest != null) {
-            BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+        BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-            for (Media med : job.getMedia()) {
-                MarkupResultConvertedModel model = new MarkupResultConvertedModel();
-                model.setJobId(jobId);
-                model.setMediaId(med.getId());
-                model.setPipeline(job.getPipelineElements().getName());
-                model.setSourceUri(med.getUri());
-                model.setSourceFileAvailable(false);
-                if (med.getUri() != null) {
-                    Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
-                    if (path == null || Files.exists(path)) {
-                        String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                                .queryParam("sourceUri", med.getUri())
-                                .queryParam("jobId", jobId)
-                                .toUriString();
-                        model.setSourceDownloadUrl(downloadUrl);
-                        model.setSourceFileAvailable(true);
-                    }
-                    if (path != null && Files.exists(path)) {
-                        model.setSourceURIContentType(med.getMimeType());
-                        model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
-                    }
-                }
-                //add to the list
-                boolean found = false;
-                for (MarkupResultConvertedModel existing : markupResultModels) {
-                    if (existing.getSourceUri().equals(model.getSourceUri())) found = true;
-                }
-                if (!found) markupResultModels.add(model);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
+
+        //convert markup objects
+        Map<Long, MarkupResultConvertedModel> markupResultModels = new HashMap();
+        for (MarkupResult markupResult : markupResults) {
+            MarkupResultConvertedModel model =
+                    convertMarkupResultWithContentType(markupResult, job.getMedia(markupResult.getMediaId()));
+            markupResultModels.put(model.getMediaId(), model);
+        }
+
+        //add media that doesn't have markup
+        for (Media med : job.getMedia()) {
+            if (markupResultModels.containsKey(med.getId())) {
+                continue;
             }
+
+            MarkupResultConvertedModel model = new MarkupResultConvertedModel();
+            model.setJobId(jobId);
+            model.setMediaId(med.getId());
+            model.setParentMediaId(med.getParentId());
+            model.setPipeline(job.getPipelineElements().getName());
+            model.setSourceUri(med.getUri());
+            model.setSourceFileAvailable(false);
+            if (med.getUri() != null) {
+                Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
+                if (path == null || Files.exists(path)) {
+                    String downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                            .queryParam("sourceUri", med.getUri())
+                            .queryParam("jobId", jobId)
+                            .toUriString();
+                    model.setSourceDownloadUrl(downloadUrl);
+                    model.setSourceFileAvailable(true);
+                }
+                if (path != null && Files.exists(path)) {
+                    model.setSourceURIContentType(med.getMimeType());
+                    model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
+                }
+            }
+            markupResultModels.put(med.getId(), model);
         }
 
         //handle search
-        List<MarkupResultConvertedModel> markupResultModelsFinal = new ArrayList();
-        for (MarkupResultConvertedModel markupResult : markupResultModels) {
+        List<MarkupResultConvertedModel> markupResultModelsFiltered = new ArrayList();
+        for (MarkupResultConvertedModel markupResult : markupResultModels.values()) {
             if (search != null && search.length() > 0) {
                 search = search.toLowerCase();
                 if ((markupResult.getJobId() + "").toLowerCase().contains(search) ||
                         (markupResult.getMarkupUri() != null && markupResult.getMarkupUri().toLowerCase().contains(search)) ||
                         (markupResult.getSourceUri() != null && markupResult.getSourceUri().toLowerCase().contains(search))) {
-                    markupResultModelsFinal.add(markupResult);
+                    markupResultModelsFiltered.add(markupResult);
                 }
             } else {
-                markupResultModelsFinal.add(markupResult);
+                markupResultModelsFiltered.add(markupResult);
             }
         }
 
-        int records_total = markupResultModelsFinal.size();
-        int records_filtered = records_total;// Total records, after filtering (i.e. the total number of records after filtering has been applied - not just the number of records being returned for this page of data).
-
         //handle paging
         int end = start + length;
-        end = (end > markupResultModelsFinal.size()) ? markupResultModelsFinal.size() : end;
+        end = (end > markupResultModelsFiltered.size()) ? markupResultModelsFiltered.size() : end;
         start = (start <= end) ? start : end;
-        List<MarkupResultConvertedModel> modelsFiltered = markupResultModelsFinal.subList(start, end);
+        List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered.subList(start, end);
 
-        Collections.sort(modelsFiltered, Comparator.comparingLong(MarkupResultConvertedModel::getMediaId));
+        Collections.sort(markupResultModelsFinal, Comparator.comparingLong(MarkupResultConvertedModel::getMediaId));
 
-        return new MarkupPageListModel(draw, records_total, records_filtered, null, modelsFiltered);
+        return new MarkupPageListModel(draw, markupResultModels.size(), markupResultModelsFiltered.size(), null,
+                markupResultModelsFinal);
     }
 
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
@@ -312,7 +311,7 @@ public class MarkupController {
                                      markupResult.getSourceUri(), isImage, fileExists);
     }
 
-    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
+    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
         String markupUriContentType = "";
         String markupImgUrl = "";
         String markupDownloadUrl ="";
@@ -353,9 +352,9 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), markupResult.getPipeline(),
-                markupResult.getMarkupUri(), markupUriContentType, markupImgUrl, markupDownloadUrl,
-                markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
+                markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), media.getParentId(),
+                markupResult.getPipeline(), markupResult.getMarkupUri(), markupUriContentType, markupImgUrl,
+                markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
                 sourceDownloadUrl, sourceFileAvailable);
     }
 }

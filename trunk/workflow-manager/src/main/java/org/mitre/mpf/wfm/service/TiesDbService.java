@@ -54,7 +54,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -112,7 +111,7 @@ public class TiesDbService {
                     continue;
                 }
 
-                if (tasksToMerge.values().contains(jobPart.getTaskIndex())) {
+                if (tasksToMerge.values().contains(jobPart.getTaskIndex())) { // this task will be merged away
                     continue;
                 }
 
@@ -126,8 +125,13 @@ public class TiesDbService {
                         jobPart.getMedia().getId(),
                         jobPart.getTaskIndex(),
                         jobPart.getActionIndex());
+
+                if (trackCountEntry == null) { // this part of the job was not performed on this media
+                    continue;
+                }
+
                 var algoAndDetectionType = getAlgoAndTypeToUse(
-                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge.keySet());
+                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
 
                 futures.add(addActionAssertion(
                         jobPart,
@@ -149,11 +153,13 @@ public class TiesDbService {
             JobPart jobPart,
             int trackCount,
             TrackCounter trackCounter,
-            Collection<Integer> tasksToMerge) {
+            Map<Integer, Integer> tasksToMerge) {
         int taskIndexToUse = jobPart.getTaskIndex();
         int actionIndexToUse = jobPart.getActionIndex();
-        while (tasksToMerge.contains(taskIndexToUse) && taskIndexToUse > 0) {
-            taskIndexToUse -= 1;
+
+        // traverse the chain of merged tasks backwards to find the first one in the chain
+        while (tasksToMerge.containsKey(taskIndexToUse)) {
+            taskIndexToUse = tasksToMerge.get(taskIndexToUse);
             actionIndexToUse = 0;
         }
 

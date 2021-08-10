@@ -237,12 +237,12 @@ public abstract class TestSystem {
         return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
     }
 
-
-    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media, boolean buildOutput,
+    protected long runPipelineOnMedia(String pipelineName,
+                                      List<JobCreationMediaData> media,
+                                      Map<String, String> jobProperties,
                                       int priority) {
-        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), buildOutput, priority);
+        return runPipelineOnMedia(pipelineName, media, jobProperties, true, priority);
     }
-
 
     protected long runPipelineOnMedia(
             String pipelineName,
@@ -307,8 +307,7 @@ public abstract class TestSystem {
             mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
         }
 
-        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
-                                        propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.getJmsPriority());
         if (!DISABLE_OUTPUT_CHECKING) {
             URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
             log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);

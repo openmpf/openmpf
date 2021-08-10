@@ -135,7 +135,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 ioUtils.findFile("/samples/person/video_02.mp4"));
 
         long jobId = runPipelineOnMedia("MOG MOTION DETECTION (WITH TRACKING) PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+                propertiesUtil.getJmsPriority());
     }
 
     @Test(timeout = 5*MINUTES)
@@ -147,7 +147,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     @Test(timeout = 4*MINUTES, expected = InvalidPipelineException.class)
     public void testBadPipeline() throws Exception {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"));
-        long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(), propertiesUtil.isOutputObjectsEnabled(),
+        long jobId = runPipelineOnMedia("X", media, Collections.emptyMap(),
                 propertiesUtil.getJmsPriority());
     }
 
@@ -157,7 +157,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
         long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+                propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
@@ -174,7 +174,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = new LinkedList<>();
         media.add(new JobCreationMediaData("/not/a/file.txt"));
         long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+                propertiesUtil.getJmsPriority());
     }
 
     @Ignore // TODO: fix me!
@@ -182,7 +182,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testTiffImageMarkup() throws Exception {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/meds-aa-S001-01.tif"));
         long jobId = runPipelineOnMedia("OCV FACE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+                                        propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class)
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
@@ -217,7 +217,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/person/video_02.mp4"));
         long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), // use this line to generate output using the custom pipeline
 //      long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),  // use this line to generate default output
-                propertiesUtil.isOutputObjectsEnabled(), propertiesUtil.getJmsPriority());
+                propertiesUtil.getJmsPriority());
         // Compare the normal Ocv pipeline output with this output.  The custom pipeline output should have fewer track sets
         // on this video (requires a video with some small faces)
         URI defaultOutputPath = (getClass().getClassLoader().getResource("output/face/runFaceOcvCustomDetectVideo-defaultCompare.json")).toURI();

@@ -342,12 +342,12 @@ public class InProgressBatchJobsService {
     }
 
     public synchronized Media initDerivativeMedia(long parentMediaId, SortedMap<String, String> properties) {
-        String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_URI");
+        String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_PATH");
         MediaImpl media = initMediaImpl(uriStr, Collections.emptyMap(), Collections.emptyMap());
         media.setParentId(parentMediaId);
 
         var metadata = new TreeMap<>(properties); // include page number and other info, if available
-        metadata.remove("DERIVATIVE_MEDIA_URI"); // the URI is now part of the object itself
+        metadata.remove("DERIVATIVE_MEDIA_PATH"); // the URI is now part of the object itself
         media.addMetadata("IS_DERIVATIVE_MEDIA", "TRUE");
         media.addMetadata(metadata);
 

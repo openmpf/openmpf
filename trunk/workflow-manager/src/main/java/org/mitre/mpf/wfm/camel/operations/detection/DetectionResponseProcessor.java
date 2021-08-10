@@ -40,7 +40,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
@@ -383,10 +382,8 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    // TODO: Indicate if derivate media / source media in the Media popup in the web UI. Show ids. Link to parent id.
     private boolean checkDerivativeMedia(long jobId, long parentMediaId, SortedMap<String, String> properties) {
-        // TODO: Change DERIVATIVE_MEDIA_URI to DERIVATIVE_MEDIA_PATH
-        boolean hasDerivativeMedia = properties.containsKey("DERIVATIVE_MEDIA_URI");
+        boolean hasDerivativeMedia = properties.containsKey("DERIVATIVE_MEDIA_PATH");
         if (hasDerivativeMedia) {
             Media derivativeMedia = _inProgressJobs.initDerivativeMedia(parentMediaId, properties);
             _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
@@ -394,7 +391,7 @@ public class DetectionResponseProcessor
             log.info("Initialized derivative media from {}. Beginning inspection.", derivativeMedia.getUri());
             _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
 
-            // TODO: Upload to S3 here and update DERIVATIVE_MEDIA_URI in "properties"
+            // TODO: Upload to S3 here and update DERIVATIVE_MEDIA_PATH in "properties"
         }
         return hasDerivativeMedia;
     }

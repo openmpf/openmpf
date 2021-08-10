@@ -121,8 +121,6 @@ public class DetectionTaskSplitter {
                     var combinedProperties = new HashMap<>(
                             _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    // TODO: Test case where no derivative media is generated
-                    // TODO: Final keyword tagging task for both source and derivative media
                     if (Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")) &&
                             !media.isDerivative()) {
                         continue;

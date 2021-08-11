@@ -741,10 +741,6 @@ public class PropertiesUtil {
         return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
     }
 
-    public Resource getMarkupPropertiesFile() {
-        return appContext.getResource(mpfPropertiesConfig.getString("markup.properties.file"));
-    }
-
     public boolean dockerProfileEnabled() {
         return springEnvironment.acceptsProfiles("docker");
     }

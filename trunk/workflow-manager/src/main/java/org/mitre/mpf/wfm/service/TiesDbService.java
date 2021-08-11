@@ -32,14 +32,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.*;
@@ -54,6 +59,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -100,6 +106,14 @@ public class TiesDbService {
                                                  TrackCounter trackCounter) {
         var futures = new ArrayList<CompletableFuture<Void>>();
 
+        var parentTrackCounter = new TrackCounter();
+        var derivativeTrackCounter = new TrackCounter();
+
+        // Map <media id, algorithm name, detection type> to <TiesDb URL, track count>.
+        // Each entry tallies parent and derivative media tracks.
+        Map<Triple<Long, String, String>, Pair<String, Integer>> finalTrackCounts = new HashMap();
+
+        // Create one entry for each task merge chain. Don't include suppressed tasks.
         for (var media : job.getMedia()) {
             boolean outputLastTaskOnly
                     = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
@@ -107,25 +121,15 @@ public class TiesDbService {
 
             for (var jobPart : JobPartsIter.of(job, media)) {
                 if (outputLastTaskOnly
-                        && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) {
+                        && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) { // suppressed
                     continue;
                 }
 
-                if (tasksToMerge.values().contains(jobPart.getTaskIndex())) { // this task will be merged away
+                if (tasksToMerge.values().contains(jobPart.getTaskIndex())) { // task will be merged away
                     continue;
                 }
 
-                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
-                        "TIES_DB_URL", jobPart);
-                if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
-                    continue;
-                }
-
-                var trackCountEntry = trackCounter.get(
-                        jobPart.getMedia().getId(),
-                        jobPart.getTaskIndex(),
-                        jobPart.getActionIndex());
-
+                var trackCountEntry = trackCounter.get(jobPart);
                 if (trackCountEntry == null) { // this part of the job was not performed on this media
                     continue;
                 }
@@ -133,18 +137,75 @@ public class TiesDbService {
                 var algoAndDetectionType = getAlgoAndTypeToUse(
                         jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
 
-                futures.add(addActionAssertion(
-                        jobPart,
-                        jobStatus,
-                        timeCompleted,
-                        outputObjectLocation,
-                        outputObjectSha,
-                        algoAndDetectionType.getLeft(),
-                        algoAndDetectionType.getRight(),
-                        trackCountEntry.getCount(),
-                        tiesDbUrl));
+                var mergedTrackCounter = (media.isDerivative() ? derivativeTrackCounter : parentTrackCounter);
+
+                mergedTrackCounter.set(jobPart, algoAndDetectionType.getRight(), trackCountEntry.getCount());
             }
         }
+
+        // Create parent track counts.
+        for (var entry : parentTrackCounter.values()) {
+            Media media = job.getMedia(entry.getMediaId());
+            Action action = job.getPipelineElements().getAction(entry.getTaskIdx(), entry.getActionIdx());
+
+            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, action);
+            var tiesDbUrlToUse = (StringUtils.isNotBlank(tiesDbUrl) ? tiesDbUrl : null);
+
+            Triple key = Triple.of(media.getId(), action.getAlgorithm(), entry.getTrackType());
+
+            finalTrackCounts.put(key, ImmutablePair.of(tiesDbUrlToUse, entry.getCount()));
+        }
+
+        // Add derivative media track counts to parent counts.
+        for (var entry : derivativeTrackCounter.values()) {
+            Media media = job.getMedia(entry.getMediaId());
+            Action action = job.getPipelineElements().getAction(entry.getTaskIdx(), entry.getActionIdx());
+
+            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, action);
+            var derivativeTiesDbUrl = (StringUtils.isNotBlank(tiesDbUrl) ? tiesDbUrl : null);
+
+            Triple key = Triple.of(media.getParentId(), action.getAlgorithm(), entry.getTrackType());
+            var value = finalTrackCounts.get(key);
+
+            if (value == null) {
+                finalTrackCounts.put(key, ImmutablePair.of(derivativeTiesDbUrl, entry.getCount()));
+                continue;
+            }
+
+            String tiesDbUrlToUse = value.getLeft(); // parent
+            if (tiesDbUrlToUse == null && derivativeTiesDbUrl != null) {
+                tiesDbUrlToUse = derivativeTiesDbUrl;
+                LOG.warn("Parent media {} did not specify a valid TiesDb URL. " +
+                         "Using derivative media {} TiesDb URL of {} for the {} algorithm.",
+                         media.getParentId(), media.getId(), tiesDbUrlToUse, key.getMiddle());
+            } else if (tiesDbUrlToUse != null && derivativeTiesDbUrl != null) {
+                LOG.warn("Using parent media {} TiesDb URL of {} instead of derivative media {} TiesDb URL of {} " +
+                         "for the {} algorithm.",
+                         media.getParentId(), tiesDbUrlToUse, media.getId(), derivativeTiesDbUrl, key.getMiddle());
+            }
+
+            int newCount = finalTrackCounts.get(key).getRight() + entry.getCount(); // accumulate
+            finalTrackCounts.put(key, ImmutablePair.of(tiesDbUrlToUse, newCount));
+        }
+
+        // Post to TiesDb.
+        for (var entry : finalTrackCounts.entrySet()) {
+            String tiesDbUrl = entry.getValue().getLeft();
+            if (StringUtils.isNotBlank(tiesDbUrl)) {
+                futures.add(addActionAssertion(
+                            job,
+                            jobStatus,
+                            timeCompleted,
+                            outputObjectLocation,
+                            outputObjectSha,
+                            job.getMedia(entry.getKey().getLeft()),
+                            tiesDbUrl,
+                            entry.getKey().getMiddle(),
+                            entry.getKey().getRight(),
+                            entry.getValue().getRight()));
+            }
+        }
+
         return ThreadUtil.allOf(futures);
     }
 
@@ -157,7 +218,7 @@ public class TiesDbService {
         int taskIndexToUse = jobPart.getTaskIndex();
         int actionIndexToUse = jobPart.getActionIndex();
 
-        // traverse the chain of merged tasks backwards to find the first one in the chain
+        // Traverse the chain of merged tasks backwards to find the first one in the chain.
         while (tasksToMerge.containsKey(taskIndexToUse)) {
             taskIndexToUse = tasksToMerge.get(taskIndexToUse);
             actionIndexToUse = 0;
@@ -180,21 +241,22 @@ public class TiesDbService {
 
 
     private CompletableFuture<Void> addActionAssertion(
-            JobPart jobPart,
+            BatchJob job,
             BatchJobStatusType jobStatus,
             Instant timeCompleted,
             URI outputObjectLocation,
             String outputObjectSha,
-            String algoName,
+            Media media,
+            String tiesDbUrl,
+            String algorithm,
             String trackType,
-            int trackCount,
-            String tiesDbUrl) {
+            int trackCount) {
 
         var dataObject = Map.ofEntries(
-                Map.entry("pipeline", jobPart.getPipeline().getName()),
-                Map.entry("algorithm", algoName),
+                Map.entry("pipeline", job.getPipelineElements().getName()),
+                Map.entry("algorithm", algorithm),
                 Map.entry("outputType", trackType),
-                Map.entry("jobId", jobPart.getJob().getId()),
+                Map.entry("jobId", job.getId()),
                 Map.entry("outputUri", outputObjectLocation.toString()),
                 Map.entry("sha256OutputHash", outputObjectSha),
                 Map.entry("processDate", timeCompleted),
@@ -205,9 +267,10 @@ public class TiesDbService {
         );
 
         var assertionId = getAssertionId(
-                jobPart.getJob().getId(),
+                job.getId(),
                 trackType,
-                jobPart.getAlgorithm().getName(), timeCompleted);
+                algorithm,
+                timeCompleted);
 
         var assertion = Map.of(
                 "assertionId", assertionId,
@@ -216,13 +279,13 @@ public class TiesDbService {
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
-        LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
-                 jobPart.getJob().getId(), jobPart.getAction().getName());
+        LOG.info("[Job {}] Posting assertion to TiesDb for the {} algorithm.",
+                 job.getId(), algorithm);
 
-        return postAssertion(jobPart.getJob().getId(),
-                             jobPart.getAction().getName(),
+        return postAssertion(job.getId(),
+                             algorithm,
                              tiesDbUrl,
-                             jobPart.getMedia().getSha256(),
+                             media.getSha256(),
                              assertion);
     }
 
@@ -246,7 +309,7 @@ public class TiesDbService {
 
 
     private CompletableFuture<Void> postAssertion(long jobId,
-                                                  String action,
+                                                  String algorithm,
                                                   String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
@@ -259,7 +322,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            handleHttpError(jobId, action, tiesDbUrl, e);
+            handleHttpError(jobId, algorithm, tiesDbUrl, e);
             return ThreadUtil.completedFuture(null);
         }
 
@@ -278,11 +341,11 @@ public class TiesDbService {
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(TiesDbService::checkResponse)
-                    .exceptionally(err -> handleHttpError(jobId, action, fullUrl.toString(),
+                    .exceptionally(err -> handleHttpError(jobId, algorithm, fullUrl.toString(),
                                                           err));
         }
         catch (JsonProcessingException e) {
-            handleHttpError(jobId, action, fullUrl.toString(), e);
+            handleHttpError(jobId, algorithm, fullUrl.toString(), e);
             return ThreadUtil.completedFuture(null);
         }
     }
@@ -307,13 +370,13 @@ public class TiesDbService {
     }
 
 
-    private static Void handleHttpError(long jobId, String url, String action, Throwable error) {
+    private static Void handleHttpError(long jobId, String url, String algorithm, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var warningMessage = String.format(
                 "[Job %s] Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
-                jobId, url, action, error);
+                jobId, url, algorithm, error);
         LOG.warn(warningMessage, error);
         return null;
     }

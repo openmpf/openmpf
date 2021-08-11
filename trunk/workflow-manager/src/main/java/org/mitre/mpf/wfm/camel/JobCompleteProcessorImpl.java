@@ -426,8 +426,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
                     else {
                         var type = tracks.iterator().next().getType();
-                        trackCounter.set(media.getId(), taskIndex, actionIndex, type,
-                                         tracks.size());
+                        trackCounter.set(media.getId(), taskIndex, actionIndex, type, tracks.size());
                     }
 
                     if (tracks.isEmpty()) {

@@ -63,6 +63,10 @@ public interface BatchJob {
 
     public ImmutableCollection<? extends Media> getMedia();
 
+    public ImmutableCollection<? extends Media> getSourceMedia();
+
+    public ImmutableCollection<? extends Media> getDerivativeMedia();
+
     public Media getMedia(long mediaId);
 
     public void addDerivativeMedia(Media media);

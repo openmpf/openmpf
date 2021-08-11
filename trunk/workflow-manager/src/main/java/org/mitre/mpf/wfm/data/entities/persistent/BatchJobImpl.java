@@ -115,9 +115,23 @@ public class BatchJobImpl implements BatchJob {
     @Override
     public ImmutableCollection<MediaImpl> getMedia() {
         return ImmutableSortedSet.<MediaImpl>naturalOrder()
-                    .addAll(_media.values())
-                    .addAll(_derivativeMedia.values())
-                    .build();
+                .addAll(_media.values())
+                .addAll(_derivativeMedia.values())
+                .build();
+    }
+    @Override
+    @JsonIgnore
+    public ImmutableCollection<MediaImpl> getSourceMedia() {
+        return ImmutableSortedSet.<MediaImpl>naturalOrder()
+                .addAll(_media.values())
+                .build();
+    }
+    @Override
+    @JsonIgnore
+    public ImmutableCollection<MediaImpl> getDerivativeMedia() {
+        return ImmutableSortedSet.<MediaImpl>naturalOrder()
+                .addAll(_derivativeMedia.values())
+                .build();
     }
     @Override
     public MediaImpl getMedia(long mediaId) {

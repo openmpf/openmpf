@@ -83,6 +83,8 @@ public class TestMarkupResponseProcessor {
         assertNull(markupResult.getMessage());
         assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
 
+        verify(_mockStorageService)
+                .store(markupResult);
         verify(_mockInProgressJobs, never())
                 .setJobStatus(anyLong(), any());
     }
@@ -99,6 +101,8 @@ public class TestMarkupResponseProcessor {
         assertEquals(errorMessage, markupResult.getMessage());
         assertEquals(MarkupStatus.FAILED, markupResult.getMarkupStatus());
 
+        verify(_mockStorageService, never())
+                .store(any());
         verify(_mockInProgressJobs)
                 .addError(TEST_JOB_ID, 1532, IssueCodes.MARKUP, errorMessage,
                           IssueSources.MARKUP);
@@ -119,6 +123,8 @@ public class TestMarkupResponseProcessor {
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
 
+        verify(_mockStorageService)
+                .store(markupResult);
         verify(_mockInProgressJobs)
                 .addWarning(TEST_JOB_ID, 1532, IssueCodes.MARKUP, "COMPLETE_WITH_WARNING",
                             IssueSources.MARKUP);
@@ -166,16 +172,11 @@ public class TestMarkupResponseProcessor {
 
         _markupResponseProcessor.process(exchange);
 
-        ArgumentCaptor<MarkupResult> markupCaptor1 = ArgumentCaptor.forClass(MarkupResult.class);
-        verify(_mockStorageService)
-                .store(markupCaptor1.capture());
-
-        ArgumentCaptor<MarkupResult> markupCaptor2 = ArgumentCaptor.forClass(MarkupResult.class);
+        ArgumentCaptor<MarkupResult> markupCaptor = ArgumentCaptor.forClass(MarkupResult.class);
         verify(_mockMarkupResultDao)
-                .persist(markupCaptor2.capture());
+                .persist(markupCaptor.capture());
 
-        MarkupResult markupResult = markupCaptor2.getValue();
-        assertSame(markupResult, markupCaptor1.getValue());
+        MarkupResult markupResult = markupCaptor.getValue();
         assertEquals(TEST_JOB_ID, markupResult.getJobId());
         assertEquals("output.txt", markupResult.getMarkupUri());
         assertEquals(taskIndex, markupResult.getTaskIndex());

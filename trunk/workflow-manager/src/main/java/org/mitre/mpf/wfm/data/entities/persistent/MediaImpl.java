@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -55,13 +56,17 @@ public class MediaImpl implements Media {
     public long getParentId() { return _parentId; }
     public void setParentId(long parentId) { _parentId = parentId; }
 
-    private final String _uri;
+    /** URI may change if uploaded to remote storage. */
+    private String _uri;
     @Override
     public String getUri() { return _uri; }
-
+    public void setUri(URI uri) {
+        _uri = IoUtils.normalizeUri(uri.toString());
+        _uriScheme = UriScheme.parse(uri.getScheme());
+    }
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
-    private final UriScheme _uriScheme;
+    private UriScheme _uriScheme;
     @Override
     public UriScheme getUriScheme() { return _uriScheme; }
 

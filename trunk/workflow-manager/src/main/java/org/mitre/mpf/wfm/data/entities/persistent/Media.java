@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +48,7 @@ public interface Media extends Comparable<Media> {
     public long getParentId();
 
     public String getUri();
+    public void setUri(URI uri);
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
     public UriScheme getUriScheme();

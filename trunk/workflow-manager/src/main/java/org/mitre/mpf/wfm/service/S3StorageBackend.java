@@ -201,6 +201,25 @@ public class S3StorageBackend implements StorageBackend {
         markupResult.setMarkupUri(uploadedUri.toString());
     }
 
+
+    @Override
+    public boolean canStore(long jobId, Media media) throws StorageException {
+        BatchJob job = _inProgressJobs.getJob(jobId);
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        return requiresS3ResultUpload(combinedProperties);
+    }
+
+    @Override
+    public void store(long jobId, Media media) throws StorageException, IOException {
+        _localStorageBackend.store(jobId, media);
+        BatchJob job = _inProgressJobs.getJob(jobId);
+        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+
+        URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
+        media.setUri(uploadedUri);
+    }
+
+
     /**
      * Ensures that the S3-related properties are valid.
      * @param properties Properties to validate

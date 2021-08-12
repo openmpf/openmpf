@@ -37,6 +37,7 @@ import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -117,5 +118,16 @@ public class LocalStorageBackend implements StorageBackend {
 
         Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
         return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
+    }
+
+
+    @Override
+    public boolean canStore(long jobId, Media media) {
+        return true;
+    }
+
+    @Override
+    public void store(long jobId, Media media) {
+        // No-op: derivative media is stored locally by the component that performs the extraction.
     }
 }

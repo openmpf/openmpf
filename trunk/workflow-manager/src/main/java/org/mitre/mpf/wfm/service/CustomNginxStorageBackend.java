@@ -50,6 +50,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -168,6 +169,24 @@ public class CustomNginxStorageBackend implements StorageBackend {
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException {
         URI serviceUri = getServiceUri(request.getJobId());
         return StreamableFrameExtractor.run(request, inStream -> store(serviceUri, inStream));
+    }
+
+
+    @Override
+    public boolean canStore(long jobId, Media media) throws StorageException {
+        return canStore(jobId);
+    }
+
+
+    @Override
+    public void store(long jobId, Media media) throws IOException, StorageException {
+        URI serviceUri = getServiceUri(jobId);
+        URI newLocation;
+        try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
+            newLocation = store(serviceUri, inputStream);
+        }
+        media.setUri(newLocation);
+        Files.delete(media.getLocalPath());
     }
 
 

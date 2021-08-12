@@ -390,8 +390,6 @@ public class DetectionResponseProcessor
 
             log.info("Initialized derivative media from {}. Beginning inspection.", derivativeMedia.getUri());
             _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
-
-            // TODO: Upload to S3 here and update DERIVATIVE_MEDIA_PATH in "properties"
         }
         return hasDerivativeMedia;
     }

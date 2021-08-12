@@ -261,7 +261,7 @@ public class MarkupController {
 
         var media = job.getMedia()
                 .stream()
-                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .filter(m -> m.getId() == markupResult.getMediaId())
                 .findAny()
                 .orElse(null);
         if (media == null) {
@@ -335,12 +335,16 @@ public class MarkupController {
             }
         }
 
-        if (markupResult.getSourceUri() != null) {
-            Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
+        // Derivative media may have been uploaded to remote storage,
+        // so the source URI may have changed since the markup result was generated.
+        String markupResultSourceUri = media.getUri();
+
+        if (markupResultSourceUri != null) {
+            Path path = IoUtils.toLocalPath(markupResultSourceUri).orElse(null);
             if (path == null || Files.exists(path)) {
                 sourceDownloadUrl = UriComponentsBuilder
                         .fromPath("server/download")
-                        .queryParam("sourceUri", markupResult.getSourceUri())
+                        .queryParam("sourceUri", markupResultSourceUri)
                         .queryParam("jobId", markupResult.getJobId())
                         .toUriString();
                 sourceFileAvailable = true;
@@ -352,9 +356,20 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), media.getParentId(),
-                markupResult.getPipeline(), markupResult.getMarkupUri(), markupUriContentType, markupImgUrl,
-                markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
-                sourceDownloadUrl, sourceFileAvailable);
+                markupResult.getId(),
+                markupResult.getJobId(),
+                markupResult.getMediaId(),
+                media.getParentId(),
+                markupResult.getPipeline(),
+                markupResult.getMarkupUri(),
+                markupUriContentType,
+                markupImgUrl,
+                markupDownloadUrl,
+                markupFileAvailable,
+                markupResultSourceUri,
+                sourceUriContentType,
+                sourceImgUrl,
+                sourceDownloadUrl,
+                sourceFileAvailable);
     }
 }

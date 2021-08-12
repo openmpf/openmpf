@@ -35,7 +35,11 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -173,5 +177,30 @@ public class StorageService {
                                        IssueCodes.REMOTE_STORAGE_UPLOAD, message);
         }
         _localBackend.store(markupResult);
+    }
+
+
+    public void store(long jobId, Media media) {
+        try {
+            for (StorageBackend remoteBackend : _remoteBackends) {
+                if (remoteBackend.canStore(jobId, media)) {
+                    remoteBackend.store(jobId, media);
+                    return;
+                }
+            }
+        }
+        catch (IOException | StorageException ex) {
+            handleRemoteStorageFailure(jobId, media, ex);
+        }
+        _localBackend.store(jobId, media);
+    }
+
+
+    private void handleRemoteStorageFailure(long jobId, Media media, Exception e) {
+        LOG.warn(String.format("Failed to store media %d for job id %d. It will be stored locally instead.",
+                media.getId(), jobId), e);
+        _inProgressJobs.addWarning(
+                jobId, media.getId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
+                "Media was stored locally because storing it remotely failed due to: " + e);
     }
 }

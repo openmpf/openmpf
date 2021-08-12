@@ -27,8 +27,6 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
-import org.mitre.mpf.wfm.util.JobPart;
-
 import java.util.Objects;
 
 public class TrackCountKey {
@@ -37,12 +35,6 @@ public class TrackCountKey {
     private final int _taskIdx;
 
     private final int _actionIdx;
-
-    public TrackCountKey(JobPart jobPart) {
-        _mediaId = jobPart.getMedia().getId();
-        _taskIdx = jobPart.getTaskIndex();
-        _actionIdx = jobPart.getActionIndex();
-    }
 
     public TrackCountKey(long mediaId, int taskIdx, int actionIdx) {
         _mediaId = mediaId;

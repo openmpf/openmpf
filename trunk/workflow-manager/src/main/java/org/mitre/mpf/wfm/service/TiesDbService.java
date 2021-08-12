@@ -33,16 +33,13 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
@@ -106,17 +103,12 @@ public class TiesDbService {
                                                  TrackCounter trackCounter) {
         var futures = new ArrayList<CompletableFuture<Void>>();
 
-        var parentTrackCounter = new TrackCounter();
-        var derivativeTrackCounter = new TrackCounter();
-
-        // Map <media id, algorithm name, detection type> to <TiesDb URL, track count>.
         // Each entry tallies parent and derivative media tracks.
-        Map<Triple<Long, String, String>, Pair<String, Integer>> finalTrackCounts = new HashMap();
+        Map<TiesDbEntryKey, TiesDbEntry> tiesDbEntries = new HashMap();
+        Map<TiesDbEntryKey, TiesDbEntry> noTracksTiesDbEntries = new HashMap();
 
-        // Create one entry for each task merge chain. Don't include suppressed tasks.
-        for (var media : job.getMedia()) {
-            boolean outputLastTaskOnly
-                    = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
+        for (var media : job.getMedia()) { // parent media will always come before derivative media
+            boolean outputLastTaskOnly = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
             var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
 
             for (var jobPart : JobPartsIter.of(job, media)) {
@@ -136,73 +128,67 @@ public class TiesDbService {
 
                 var algoAndDetectionType = getAlgoAndTypeToUse(
                         jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
+                String algorithmName = algoAndDetectionType.getLeft();
+                String trackType = algoAndDetectionType.getRight();
 
-                var mergedTrackCounter = (media.isDerivative() ? derivativeTrackCounter : parentTrackCounter);
+                var tiesDbEntriesToUse = (trackType.equals("NO TRACKS") ? noTracksTiesDbEntries : tiesDbEntries);
 
-                mergedTrackCounter.set(jobPart, algoAndDetectionType.getRight(), trackCountEntry.getCount());
+                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, jobPart.getAction());
+
+                if (!media.isDerivative()) {
+                    tiesDbEntriesToUse.put(
+                            new TiesDbEntryKey(media.getId(), algorithmName, trackType),
+                            new TiesDbEntry(tiesDbUrl, trackCountEntry.getCount()));
+                    continue;
+                }
+
+                var parentKey = new TiesDbEntryKey(media.getParentId(), algorithmName, trackType);
+                var parentValue = tiesDbEntriesToUse.get(parentKey);
+
+                if (parentValue == null) {
+                    tiesDbEntriesToUse.put(parentKey, new TiesDbEntry(tiesDbUrl, trackCountEntry.getCount()));
+                    continue;
+                }
+
+                String parentTiesDbUrl = parentValue.getTiesDbUrl();
+                if (StringUtils.isBlank(tiesDbUrl)) {
+                    tiesDbUrl = parentTiesDbUrl;
+                } else if (StringUtils.isBlank(parentTiesDbUrl)) {
+                    LOG.warn("Parent media {} did not specify a valid TiesDb URL. " +
+                                    "Using derivative media {} TiesDb URL of {} for the {} algorithm.",
+                            media.getParentId(), media.getId(), tiesDbUrl, algorithmName);
+                } else if (!parentTiesDbUrl.equals(tiesDbUrl)) {
+                    LOG.warn("Using parent media {} TiesDb URL of {} instead of derivative media {} TiesDb URL of {} " +
+                                    "for the {} algorithm.",
+                            media.getParentId(), parentTiesDbUrl, media.getId(), tiesDbUrl, algorithmName);
+                    tiesDbUrl = parentTiesDbUrl;
+                }
+
+                int newTrackCount = parentValue.getTrackCount() + trackCountEntry.getCount();
+                tiesDbEntriesToUse.put(parentKey, new TiesDbEntry(tiesDbUrl, newTrackCount));
             }
         }
 
-        // Create parent track counts.
-        for (var entry : parentTrackCounter.values()) {
-            Media media = job.getMedia(entry.getMediaId());
-            Action action = job.getPipelineElements().getAction(entry.getTaskIdx(), entry.getActionIdx());
-
-            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, action);
-            var tiesDbUrlToUse = (StringUtils.isNotBlank(tiesDbUrl) ? tiesDbUrl : null);
-
-            Triple key = Triple.of(media.getId(), action.getAlgorithm(), entry.getTrackType());
-
-            finalTrackCounts.put(key, ImmutablePair.of(tiesDbUrlToUse, entry.getCount()));
+        // Remove "NO TRACKS" entries for algorithms that generated tracks for derivative media.
+        for (var key : tiesDbEntries.keySet()) {
+            noTracksTiesDbEntries.remove(new TiesDbEntryKey(key.getMediaId(), key.getAlgorithmName(), "NO TRACKS"));
         }
+        tiesDbEntries.putAll(noTracksTiesDbEntries);
 
-        // Add derivative media track counts to parent counts.
-        for (var entry : derivativeTrackCounter.values()) {
-            Media media = job.getMedia(entry.getMediaId());
-            Action action = job.getPipelineElements().getAction(entry.getTaskIdx(), entry.getActionIdx());
-
-            var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, action);
-            var derivativeTiesDbUrl = (StringUtils.isNotBlank(tiesDbUrl) ? tiesDbUrl : null);
-
-            Triple key = Triple.of(media.getParentId(), action.getAlgorithm(), entry.getTrackType());
-            var value = finalTrackCounts.get(key);
-
-            if (value == null) {
-                finalTrackCounts.put(key, ImmutablePair.of(derivativeTiesDbUrl, entry.getCount()));
-                continue;
-            }
-
-            String tiesDbUrlToUse = value.getLeft(); // parent
-            if (tiesDbUrlToUse == null && derivativeTiesDbUrl != null) {
-                tiesDbUrlToUse = derivativeTiesDbUrl;
-                LOG.warn("Parent media {} did not specify a valid TiesDb URL. " +
-                         "Using derivative media {} TiesDb URL of {} for the {} algorithm.",
-                         media.getParentId(), media.getId(), tiesDbUrlToUse, key.getMiddle());
-            } else if (tiesDbUrlToUse != null && derivativeTiesDbUrl != null) {
-                LOG.warn("Using parent media {} TiesDb URL of {} instead of derivative media {} TiesDb URL of {} " +
-                         "for the {} algorithm.",
-                         media.getParentId(), tiesDbUrlToUse, media.getId(), derivativeTiesDbUrl, key.getMiddle());
-            }
-
-            int newCount = finalTrackCounts.get(key).getRight() + entry.getCount(); // accumulate
-            finalTrackCounts.put(key, ImmutablePair.of(tiesDbUrlToUse, newCount));
-        }
-
-        // Post to TiesDb.
-        for (var entry : finalTrackCounts.entrySet()) {
-            String tiesDbUrl = entry.getValue().getLeft();
+        for (var pair : tiesDbEntries.entrySet()) {
+            String tiesDbUrl = pair.getValue().getTiesDbUrl();
             if (StringUtils.isNotBlank(tiesDbUrl)) {
                 futures.add(addActionAssertion(
-                            job,
-                            jobStatus,
-                            timeCompleted,
-                            outputObjectLocation,
-                            outputObjectSha,
-                            job.getMedia(entry.getKey().getLeft()),
-                            tiesDbUrl,
-                            entry.getKey().getMiddle(),
-                            entry.getKey().getRight(),
-                            entry.getValue().getRight()));
+                        job,
+                        jobStatus,
+                        timeCompleted,
+                        outputObjectLocation,
+                        outputObjectSha,
+                        job.getMedia(pair.getKey().getMediaId()),
+                        tiesDbUrl,
+                        pair.getKey().getAlgorithmName(),
+                        pair.getKey().getTrackType(),
+                        pair.getValue().getTrackCount()));
             }
         }
 
@@ -379,5 +365,67 @@ public class TiesDbService {
                 jobId, url, algorithm, error);
         LOG.warn(warningMessage, error);
         return null;
+    }
+
+
+    private class TiesDbEntryKey {
+        private final long _mediaId;
+        private final String _algorithmName;
+        private final String _trackType;
+
+        public long getMediaId() {
+            return _mediaId;
+        }
+
+        public String getAlgorithmName() {
+            return _algorithmName;
+        }
+
+        public String getTrackType() {
+            return _trackType;
+        }
+
+        public TiesDbEntryKey(long mediaId, String algorithmName, String trackType) {
+            _mediaId = mediaId;
+            _algorithmName = algorithmName;
+            _trackType = trackType;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o instanceof TiesDbEntryKey) {
+                var that = (TiesDbEntryKey) o;
+                return _mediaId == that._mediaId
+                        && Objects.equals(_algorithmName, that._algorithmName)
+                        && Objects.equals(_trackType, that._trackType);
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(_mediaId, _algorithmName, _trackType);
+        }
+    }
+
+    private class TiesDbEntry {
+        private final String _tiesDbUrl;
+        private final int _trackCount;
+
+        public TiesDbEntry(String tiesDbUrl, int trackCount) {
+            _tiesDbUrl = tiesDbUrl;
+            _trackCount = trackCount;
+        }
+
+        public String getTiesDbUrl() {
+            return _tiesDbUrl;
+        }
+
+        public int getTrackCount() {
+            return _trackCount;
+        }
     }
 }

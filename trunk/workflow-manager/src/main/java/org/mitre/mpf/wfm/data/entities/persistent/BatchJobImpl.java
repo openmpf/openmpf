@@ -120,27 +120,12 @@ public class BatchJobImpl implements BatchJob {
                 .build();
     }
     @Override
-    @JsonIgnore
-    public ImmutableCollection<MediaImpl> getSourceMedia() {
-        return ImmutableSortedSet.<MediaImpl>naturalOrder()
-                .addAll(_media.values())
-                .build();
-    }
-    @Override
-    @JsonIgnore
-    public ImmutableCollection<MediaImpl> getDerivativeMedia() {
-        return ImmutableSortedSet.<MediaImpl>naturalOrder()
-                .addAll(_derivativeMedia.values())
-                .build();
-    }
-    @Override
     public MediaImpl getMedia(long mediaId) {
         if (_media.containsKey(mediaId)){
             return _media.get(mediaId);
         }
         return _derivativeMedia.get(mediaId);
     }
-
 
 
     private final SortedMap<Long, MediaImpl> _derivativeMedia = new TreeMap<>();

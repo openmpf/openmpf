@@ -47,15 +47,6 @@ public class TrackCounter {
         return _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx));
     }
 
-    public void set(JobPart jobPart, String trackType, int count) {
-        _counts.put(new TrackCountKey(jobPart),
-                    new TrackCountEntry(jobPart.getMedia().getId(),
-                                        jobPart.getTaskIndex(),
-                                        jobPart.getActionIndex(),
-                                        trackType,
-                                        count));
-    }
-
     public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
         _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
                     new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));

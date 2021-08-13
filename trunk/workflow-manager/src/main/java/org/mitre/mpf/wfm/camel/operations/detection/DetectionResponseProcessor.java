@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -409,7 +408,11 @@ public class DetectionResponseProcessor
             // TODO: Do in parallel with futures like with artifacts?
             // TODO: Prevent multiple warnings in JSON output (one per failed upload). Use: e.getCause().getMessage()
             Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
-            URI uploadedUri = _storageService.storeDerivativeMedia(jobId, parentMediaId, localPath);
+
+            var uploadedUriAndLocalPath = _storageService.storeDerivativeMedia(jobId, parentMediaId, localPath);
+            var uploadedUri = uploadedUriAndLocalPath.getLeft();
+            localPath = uploadedUriAndLocalPath.getRight();
+
             trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, uploadedUri.toString()); // update track properties
 
             Media derivativeMedia = _inProgressJobs.initDerivativeMedia(uploadedUri, localPath, parentMediaId,

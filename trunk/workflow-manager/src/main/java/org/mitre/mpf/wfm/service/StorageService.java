@@ -30,6 +30,7 @@ package org.mitre.mpf.wfm.service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -39,6 +40,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -46,8 +48,10 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class StorageService {
@@ -56,6 +60,8 @@ public class StorageService {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final  PropertiesUtil _propertiesUtil;
+
     private final List<StorageBackend> _remoteBackends;
 
     private final LocalStorageBackend _localBackend;
@@ -63,11 +69,12 @@ public class StorageService {
     @Inject
     StorageService(
             InProgressBatchJobsService inProgressJobs,
+            PropertiesUtil propertiesUtil,
             S3StorageBackend s3StorageBackend,
             CustomNginxStorageBackend nginxStorageBackend,
             LocalStorageBackend localStorageBackend) {
-
         _inProgressJobs = inProgressJobs;
+        _propertiesUtil = propertiesUtil;
         _remoteBackends = ImmutableList.of(s3StorageBackend, nginxStorageBackend);
         _localBackend = localStorageBackend;
     }
@@ -180,19 +187,27 @@ public class StorageService {
     }
 
 
-    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
+    public Pair<URI, Path> storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
                 if (remoteBackend.canStoreDerivativeMedia(jobId, parentMediaId)) {
-                    return remoteBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
+                    var uploadedUri = remoteBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
+
+                    // Move media to tmp directory so it gets cleaned up when the job terminates.
+                    var tempPath = _propertiesUtil.getTemporaryMediaDirectory()
+                            .toPath()
+                            .resolve(UUID.randomUUID().toString())
+                            .toAbsolutePath();
+                    Files.move(localPath, tempPath);
+
+                    return Pair.of(uploadedUri, tempPath);
                 }
             }
-            // TODO: move media to tmp directory so it gets cleaned up later
-            // TODO: if derivative media directory is empty, delete it
         } catch (IOException | StorageException ex) {
             handleRemoteStorageFailure(jobId, parentMediaId, ex);
         }
-        return _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
+        URI localUri = _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
+        return Pair.of(localUri, localPath);
     }
 
 

@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -161,6 +162,7 @@ public class InProgressBatchJobsService {
         _redis.clearTracks(job);
         _jobs.remove(jobId);
         _jobsWithCallbacksInProgress.remove(jobId);
+
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
@@ -184,6 +186,21 @@ public class InProgressBatchJobsService {
                                     "it must be manually deleted.",
                             media.getConvertedMediaPath().get()), e);
                 }
+            }
+        }
+
+        // Clean up derivative media directory for this job in case any media was moved to remote storage.
+        boolean hasDerivativeMedia = job.getMedia().stream().anyMatch(Media::isDerivative);
+        Path derivativeMediaPath = _propertiesUtil.getDerivativeMediaDirectory().toPath().resolve(Long.toString(jobId));
+        if (hasDerivativeMedia) {
+            try {
+                Files.walk(derivativeMediaPath)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .filter(File::isDirectory)
+                        .forEach(File::delete); // only deletes empty directories
+            } catch (IOException e) {
+                LOG.warn("Unable to clean up derivative media directories for job {}.", jobId, e);
             }
         }
     }

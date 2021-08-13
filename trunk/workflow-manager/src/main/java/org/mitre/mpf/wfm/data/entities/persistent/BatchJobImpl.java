@@ -30,10 +30,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -66,33 +63,23 @@ public class BatchJobImpl implements BatchJob {
     public void setCurrentTaskIndex(int currentTaskIndex) { _currentTaskIndex = currentTaskIndex; }
 
 
-    // Maps media id to inner map of task index to set of action indices
-    private final SortedMap<Long, SortedMap<Integer, SortedSet<Integer>>> _processedActions = new TreeMap();
+    // Table of media id and task index to set of action indices
+    private final Table<Long, Integer, Set<Integer>> _mediaAndTaskToActions = HashBasedTable.create();
     public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex) {
-        if (!_processedActions.containsKey(mediaId)) {
+        if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
             return false;
         }
-        var tasks = _processedActions.get(mediaId);
-        if (!tasks.containsKey(taskIndex)) {
-            return false;
-        }
-        return tasks.get(taskIndex).contains(actionIndex);
+        return _mediaAndTaskToActions.get(mediaId, taskIndex).contains(actionIndex);
     }
     public void setProcessedAction(long mediaId, int taskIndex, int actionIndex) {
-        if (!_processedActions.containsKey(mediaId)) {
-            _processedActions.put(mediaId, new TreeMap());
+        if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
+            _mediaAndTaskToActions.put(mediaId, taskIndex, new HashSet());
         }
-        var tasks = _processedActions.get(mediaId);
-        if (!tasks.containsKey(taskIndex)) {
-            tasks.put(taskIndex, new TreeSet());
-        }
-        tasks.get(taskIndex).add(actionIndex);
+        _mediaAndTaskToActions.get(mediaId, taskIndex).add(actionIndex);
     }
     public int getLastProcessedTaskIndex(long mediaId) {
-        if (!_processedActions.containsKey(mediaId)) {
-            return -1;
-        }
-        return _processedActions.get(mediaId).lastKey();
+        var tasks = _mediaAndTaskToActions.row(mediaId).keySet();
+        return tasks.isEmpty() ? -1 : Collections.max(tasks);
     }
 
 

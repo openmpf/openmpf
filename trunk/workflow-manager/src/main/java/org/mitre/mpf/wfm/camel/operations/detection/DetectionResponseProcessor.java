@@ -419,7 +419,6 @@ public class DetectionResponseProcessor
                     trackProperties);
             _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 
-            log.info("Initialized derivative media from {}. Beginning inspection.", derivativeMedia.getUri());
             _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
         }
         return hasDerivativeMedia;

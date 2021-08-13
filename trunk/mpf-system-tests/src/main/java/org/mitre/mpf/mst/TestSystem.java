@@ -227,28 +227,26 @@ public abstract class TestSystem {
     }
 
     protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media) {
-        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), true,
+        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(),
                                   propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
-                                      Map<String, String> jobProperties,
-                                      List<JobCreationMediaData> media) {
-        return runPipelineOnMedia(pipelineName, media, jobProperties, true, propertiesUtil.getJmsPriority());
+                                      List<JobCreationMediaData> media,
+                                      Map<String, String> jobProperties) {
+        return runPipelineOnMedia(pipelineName, media, jobProperties, propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
                                       List<JobCreationMediaData> media,
-                                      Map<String, String> jobProperties,
                                       int priority) {
-        return runPipelineOnMedia(pipelineName, media, jobProperties, true, priority);
+        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), priority);
     }
 
     protected long runPipelineOnMedia(
             String pipelineName,
             List<JobCreationMediaData> media,
             Map<String, String> jobProperties,
-            boolean buildOutput,
             int priority) {
 
         var jobRequest = new JobCreationRequest();
@@ -256,7 +254,6 @@ public abstract class TestSystem {
         jobRequest.setPipelineName(pipelineName);
         jobRequest.setMedia(media);
         jobRequest.setJobProperties(jobProperties);
-        jobRequest.setBuildOutput(buildOutput);
         jobRequest.setPriority(priority);
 
         long jobRequestId = jobRequestService.run(jobRequest).getId();

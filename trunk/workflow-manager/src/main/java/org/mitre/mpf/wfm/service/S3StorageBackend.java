@@ -112,7 +112,7 @@ public class S3StorageBackend implements StorageBackend {
             outputSha.setValue(hashExistingFile(Paths.get(localUri)));
         }
         return putInS3IfAbsent(Paths.get(localUri), outputSha.getValue(),
-                               job.getJobProperties()::get);
+                               job.getJobProperties()::get, true);
     }
 
 
@@ -167,7 +167,7 @@ public class S3StorageBackend implements StorageBackend {
             }
 
             var future = ThreadUtil.callAsync(
-                    () -> putInS3IfAbsent(Path.of(entry.getValue()), combinedProperties));
+                    () -> putInS3IfAbsent(Path.of(entry.getValue()), combinedProperties, true));
             future.whenComplete((x, y) -> semaphore.release());
             futures.put(entry.getRowKey(), entry.getColumnKey(), future);
         }
@@ -197,26 +197,26 @@ public class S3StorageBackend implements StorageBackend {
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
-        URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
+        URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties, true);
         markupResult.setMarkupUri(uploadedUri.toString());
     }
 
 
     @Override
-    public boolean canStore(long jobId, Media media) throws StorageException {
+    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(jobId);
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        Function<String, String> combinedProperties =
+                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
         return requiresS3ResultUpload(combinedProperties);
     }
 
     @Override
-    public void store(long jobId, Media media) throws StorageException, IOException {
-        _localStorageBackend.store(jobId, media);
+    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws StorageException, IOException {
+        _localStorageBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
         BatchJob job = _inProgressJobs.getJob(jobId);
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
-
-        URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
-        media.setUri(uploadedUri);
+        Function<String, String> combinedProperties =
+                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
+        return putInS3IfAbsent(localPath, combinedProperties, false);
     }
 
 
@@ -341,11 +341,13 @@ public class S3StorageBackend implements StorageBackend {
         return parts;
     }
 
-    private URI putInS3IfAbsent(Path path, Function<String, String> properties) throws IOException, StorageException {
-        return putInS3IfAbsent(path, hashExistingFile(path), properties);
+    private URI putInS3IfAbsent(Path path, Function<String, String> properties, boolean deleteLocal)
+            throws IOException, StorageException {
+        return putInS3IfAbsent(path, hashExistingFile(path), properties, deleteLocal);
     }
 
-    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties) throws IOException, StorageException {
+    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties, boolean deleteLocal)
+            throws IOException, StorageException {
         String objectName = getObjectName(hash);
         URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY));
         String resultsBucket = getResultsBucketName(bucketUri);
@@ -368,7 +370,11 @@ public class S3StorageBackend implements StorageBackend {
             URI objectUri = new URIBuilder(bucketUri)
                     .setPath(bucketUri.getPath() + '/' + objectName)
                     .build();
-            Files.delete(path);
+
+            if (deleteLocal) {
+                Files.delete(path);
+            }
+
             return objectUri;
         }
         catch (SdkClientException e) {

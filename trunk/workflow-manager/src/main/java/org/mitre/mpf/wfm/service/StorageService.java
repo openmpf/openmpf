@@ -35,7 +35,6 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
 import org.mitre.mpf.wfm.enums.MarkupStatus;
@@ -47,6 +46,7 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 
 @Service
@@ -180,27 +180,28 @@ public class StorageService {
     }
 
 
-    public void store(long jobId, Media media) {
+    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
-                if (remoteBackend.canStore(jobId, media)) {
-                    remoteBackend.store(jobId, media);
-                    return;
+                if (remoteBackend.canStoreDerivativeMedia(jobId, parentMediaId)) {
+                    return remoteBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
                 }
             }
+            // TODO: move media to tmp directory so it gets cleaned up later
+            // TODO: if derivative media directory is empty, delete it
+        } catch (IOException | StorageException ex) {
+            handleRemoteStorageFailure(jobId, parentMediaId, ex);
         }
-        catch (IOException | StorageException ex) {
-            handleRemoteStorageFailure(jobId, media, ex);
-        }
-        _localBackend.store(jobId, media);
+        return _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
     }
 
 
-    private void handleRemoteStorageFailure(long jobId, Media media, Exception e) {
-        LOG.warn(String.format("Failed to store media %d for job id %d. It will be stored locally instead.",
-                media.getId(), jobId), e);
+    private void handleRemoteStorageFailure(long jobId, long parentMediaId, Exception e) {
+        LOG.warn(String.format("Failed to store derivative media for job id %d and parent media id %d. " +
+                        "File will be stored locally instead.",
+                jobId, parentMediaId), e);
         _inProgressJobs.addWarning(
-                jobId, media.getId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Media was stored locally because storing it remotely failed due to: " + e);
+                jobId, parentMediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
+                "Derivative media was stored locally because storing it remotely failed due to: " + e);
     }
 }

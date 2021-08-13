@@ -122,12 +122,12 @@ public class LocalStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(long jobId, Media media) {
+    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) {
         return true;
     }
 
     @Override
-    public void store(long jobId, Media media) {
-        // No-op: derivative media is stored locally by the component that performs the extraction.
+    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
+        return localPath.toUri(); // file is already stored locally.
     }
 }

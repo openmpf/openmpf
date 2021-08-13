@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -50,7 +51,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** Processes the responses which have been returned from a detection component. */
 @Component(DetectionResponseProcessor.REF)
@@ -65,15 +70,18 @@ public class DetectionResponseProcessor
     private static AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
     private static InProgressBatchJobsService _inProgressJobs;
     private static MediaInspectionHelper _mediaInspectionHelper;
+    private static StorageService _storageService;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressBatchJobs,
-                                      MediaInspectionHelper mediaInspectionHelper) {
+                                      MediaInspectionHelper mediaInspectionHelper,
+                                      StorageService storageService) {
         super(DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressBatchJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
+        _storageService = storageService;
     }
 
     @Override
@@ -183,7 +191,7 @@ public class DetectionResponseProcessor
                         videoResponse.getDetectionType(),
                         objectTrack.getConfidence(),
                         detections,
-                        toMap(objectTrack.getDetectionPropertiesList()));
+                        toImmutableMap(objectTrack.getDetectionPropertiesList()));
 
                 _inProgressJobs.addTrack(track);
             }
@@ -209,7 +217,7 @@ public class DetectionResponseProcessor
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
             if (objectTrack.getConfidence() >= confidenceThreshold) {
-                SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+                SortedMap<String, String> properties = toImmutableMap(objectTrack.getDetectionPropertiesList());
                 Detection detection = new Detection(
                         0,
                         0,
@@ -262,7 +270,7 @@ public class DetectionResponseProcessor
                         imageResponse.getDetectionType(),
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
-                        toMap(location.getDetectionPropertiesList()));
+                        toImmutableMap(location.getDetectionPropertiesList()));
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -278,10 +286,12 @@ public class DetectionResponseProcessor
 
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
-            SortedMap<String, String> properties = toMap(objectTrack.getDetectionPropertiesList());
+            SortedMap<String, String> properties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
             // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
-            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, detectionResponse.getMediaId(), properties);
+            // TODO: Write equals and hashcode for Media comparison.
+            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, detectionResponse.getMediaId(),
+                    genericResponse.getDetectionType(), properties);
 
             if (hasDerivativeMedia || objectTrack.getConfidence() >= confidenceThreshold) {
                 Detection detection = new Detection(
@@ -353,7 +363,7 @@ public class DetectionResponseProcessor
     }
 
     private static Detection toDetection(DetectionProtobuf.ImageLocation location, int frameNumber, int time) {
-        SortedMap<String, String> detectionProperties = toMap(location.getDetectionPropertiesList());
+        SortedMap<String, String> detectionProperties = toImmutableMap(location.getDetectionPropertiesList());
         return new Detection(
                 location.getXLeftUpper(),
                 location.getYLeftUpper(),
@@ -365,12 +375,21 @@ public class DetectionResponseProcessor
                 detectionProperties);
     }
 
-    private static SortedMap<String, String> toMap(Collection<DetectionProtobuf.PropertyMap> properties) {
+    private static SortedMap<String, String> toImmutableMap(Collection<DetectionProtobuf.PropertyMap> properties) {
         return properties.stream()
                 .collect(ImmutableSortedMap.toImmutableSortedMap(
                         Comparator.naturalOrder(),
                         DetectionProtobuf.PropertyMap::getKey,
                         DetectionProtobuf.PropertyMap::getValue));
+    }
+
+    private static SortedMap<String, String> toMutableMap(Collection<DetectionProtobuf.PropertyMap> properties) {
+        return properties.stream()
+                .collect(Collectors.toMap(
+                        DetectionProtobuf.PropertyMap::getKey,
+                        DetectionProtobuf.PropertyMap::getValue,
+                        (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
+                        TreeMap::new));
     }
 
     private static String getLogLabel(long jobId, DetectionProtobuf.DetectionResponse detectionResponse) {
@@ -382,10 +401,19 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    private boolean checkDerivativeMedia(long jobId, long parentMediaId, SortedMap<String, String> properties) {
-        boolean hasDerivativeMedia = properties.containsKey("DERIVATIVE_MEDIA_PATH");
+    private boolean checkDerivativeMedia(long jobId, long parentMediaId, String detectionType,
+                                         SortedMap<String, String> trackProperties) {
+        boolean hasDerivativeMedia =
+                detectionType.equals("MEDIA") && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
         if (hasDerivativeMedia) {
-            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(parentMediaId, properties);
+            // TODO: Do in parallel with futures like with artifacts?
+            // TODO: Prevent multiple warnings in JSON output (one per failed upload). Use: e.getCause().getMessage()
+            Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
+            URI uploadedUri = _storageService.storeDerivativeMedia(jobId, parentMediaId, localPath);
+            trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, uploadedUri.toString()); // update track properties
+
+            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(uploadedUri, localPath, parentMediaId,
+                    trackProperties);
             _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 
             log.info("Initialized derivative media from {}. Beginning inspection.", derivativeMedia.getUri());

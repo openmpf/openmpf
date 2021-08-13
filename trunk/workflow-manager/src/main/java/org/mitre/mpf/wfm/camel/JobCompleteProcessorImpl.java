@@ -137,10 +137,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setTimeCompleted(Instant.now());
 
             BatchJob job = inProgressBatchJobs.getJob(jobId);
-            job.getMedia().stream()
-                    .filter(Media::isDerivative)
-                    .forEach(m -> storageService.store(jobId, m)); // TODO: Update track content
-
             var completionStatus = job.getStatus().onComplete();
             URI outputObjectUri = null;
             var outputSha = new MutableObject<String>();
@@ -505,7 +501,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             mediaIndex++;
         }
 
-        // Remote storage may update the job status.
+        // this may update the job status
         return storageService.store(jsonOutputObject, outputSha);
     }
 

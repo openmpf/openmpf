@@ -173,20 +173,19 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStore(long jobId, Media media) throws StorageException {
+    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) throws StorageException {
         return canStore(jobId);
     }
 
 
     @Override
-    public void store(long jobId, Media media) throws IOException, StorageException {
+    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws IOException, StorageException {
         URI serviceUri = getServiceUri(jobId);
         URI newLocation;
-        try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
+        try (InputStream inputStream = Files.newInputStream(localPath)) {
             newLocation = store(serviceUri, inputStream);
         }
-        media.setUri(newLocation);
-        Files.delete(media.getLocalPath());
+        return newLocation;
     }
 
 

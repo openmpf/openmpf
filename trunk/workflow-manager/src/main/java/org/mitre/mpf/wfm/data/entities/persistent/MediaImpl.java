@@ -31,18 +31,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
-import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
-
-import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
 
 public class MediaImpl implements Media {
 
@@ -56,17 +52,13 @@ public class MediaImpl implements Media {
     public long getParentId() { return _parentId; }
     public void setParentId(long parentId) { _parentId = parentId; }
 
-    /** URI may change if uploaded to remote storage. */
-    private String _uri;
+    private final String _uri;
     @Override
     public String getUri() { return _uri; }
-    public void setUri(URI uri) {
-        _uri = IoUtils.normalizeUri(uri.toString());
-        _uriScheme = UriScheme.parse(uri.getScheme());
-    }
+
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
-    private UriScheme _uriScheme;
+    private final UriScheme _uriScheme;
     @Override
     public UriScheme getUriScheme() { return _uriScheme; }
 
@@ -166,7 +158,7 @@ public class MediaImpl implements Media {
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
     @JsonIgnore
-    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get("IS_DERIVATIVE_MEDIA")); }
+    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }
 
     public MediaImpl(
             long id,
@@ -182,6 +174,29 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
+        if (StringUtils.isNotEmpty(errorMessage)) {
+            _errorMessage = createErrorMessage(id, uri, errorMessage);
+            _failed = true;
+        }
+    }
+
+
+    public MediaImpl(
+            long id,
+            long parentId,
+            String uri,
+            UriScheme uriScheme,
+            Path localPath,
+            Map<String, String> metadata,
+            String errorMessage) {
+        _id = id;
+        _parentId = parentId;
+        _uri = IoUtils.normalizeUri(uri);
+        _uriScheme = uriScheme;
+        _localPath = localPath;
+        _mediaSpecificProperties = ImmutableMap.of();
+        _providedMetadata = ImmutableMap.of();
+        _metadata.putAll(metadata);
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;

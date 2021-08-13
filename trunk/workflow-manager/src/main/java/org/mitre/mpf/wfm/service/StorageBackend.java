@@ -32,10 +32,10 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 
 public interface StorageBackend {
 
@@ -48,6 +48,6 @@ public interface StorageBackend {
     public boolean canStore(MarkupResult markupResult) throws StorageException;
     public void store(MarkupResult markupResult) throws IOException, StorageException;
 
-    public boolean canStore(long jobId, Media media) throws StorageException;
-    public void store(long jobId, Media media) throws IOException, StorageException;
+    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) throws StorageException;
+    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws IOException, StorageException;
 }

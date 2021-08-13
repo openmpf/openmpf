@@ -338,25 +338,6 @@ public class InProgressBatchJobsService {
     public synchronized Media initMedia(String uriStr,
                                         Map<String, String> mediaSpecificProperties,
                                         Map<String, String> providedMetadataProperties) {
-        return initMediaImpl(uriStr, mediaSpecificProperties, providedMetadataProperties);
-    }
-
-    public synchronized Media initDerivativeMedia(long parentMediaId, SortedMap<String, String> properties) {
-        String uriStr = "file://" + properties.get("DERIVATIVE_MEDIA_PATH");
-        MediaImpl media = initMediaImpl(uriStr, Collections.emptyMap(), Collections.emptyMap());
-        media.setParentId(parentMediaId);
-
-        var metadata = new TreeMap<>(properties); // include page number and other info, if available
-        metadata.remove("DERIVATIVE_MEDIA_PATH"); // the URI is now part of the object itself
-        media.addMetadata("IS_DERIVATIVE_MEDIA", "TRUE");
-        media.addMetadata(metadata);
-
-        return media;
-    }
-
-    private synchronized MediaImpl initMediaImpl(String uriStr,
-                                                 Map<String, String> mediaSpecificProperties,
-                                                 Map<String, String> providedMetadataProperties) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -384,12 +365,39 @@ public class InProgressBatchJobsService {
             }
 
             return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                                 providedMetadataProperties, errorMessage);
+                    providedMetadataProperties, errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                                 mediaSpecificProperties, providedMetadataProperties, e.getMessage());
+                    mediaSpecificProperties, providedMetadataProperties, e.getMessage());
         }
+    }
+
+    public synchronized Media initDerivativeMedia(URI uri,
+                                                  Path localPath,
+                                                  long parentMediaId,
+                                                  SortedMap<String, String> trackProperties) {
+        long mediaId = IdGenerator.next();
+        LOG.info("Initializing derivative media from {} with id {}", uri.toString(), mediaId);
+
+        UriScheme uriScheme = UriScheme.parse(uri.getScheme());
+        String errorMessage = null;
+
+        if (uriScheme == UriScheme.UNDEFINED) {
+            errorMessage = NOT_DEFINED_URI_SCHEME;
+        }
+        else if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
+            errorMessage = NOT_SUPPORTED_URI_SCHEME;
+        }
+        else {
+            errorMessage = checkForLocalFileError(localPath);
+        }
+
+        var metadata = new HashMap<>(trackProperties); // include page number and other info, if available
+        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_PATH); // the URI is now a class data member
+        metadata.put(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE");
+
+        return new MediaImpl(mediaId, parentMediaId, uri.toString(), uriScheme, localPath, metadata, errorMessage);
     }
 
     private static String checkForLocalFileError(Path path) {

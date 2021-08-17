@@ -183,7 +183,9 @@ public class MarkupController {
         for (MarkupResultConvertedModel markupResult : markupResultModels.values()) {
             if (search != null && search.length() > 0) {
                 search = search.toLowerCase();
-                if ((markupResult.getJobId() + "").toLowerCase().contains(search) ||
+                if ((markupResult.getJobId() + "").contains(search) ||
+                        (markupResult.getParentMediaId() + "").contains(search) ||
+                        (markupResult.getMediaId() + "").contains(search) ||
                         (markupResult.getMarkupUri() != null && markupResult.getMarkupUri().toLowerCase().contains(search)) ||
                         (markupResult.getSourceUri() != null && markupResult.getSourceUri().toLowerCase().contains(search))) {
                     markupResultModelsFiltered.add(markupResult);
@@ -193,13 +195,15 @@ public class MarkupController {
             }
         }
 
+        Collections.sort(markupResultModelsFiltered,
+                Comparator.comparingLong(MarkupResultConvertedModel::getParentMediaId)
+                        .thenComparingLong(MarkupResultConvertedModel::getMediaId));
+
         //handle paging
         int end = start + length;
         end = (end > markupResultModelsFiltered.size()) ? markupResultModelsFiltered.size() : end;
         start = (start <= end) ? start : end;
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered.subList(start, end);
-
-        Collections.sort(markupResultModelsFinal, Comparator.comparingLong(MarkupResultConvertedModel::getMediaId));
 
         return new MarkupPageListModel(draw, markupResultModels.size(), markupResultModelsFiltered.size(), null,
                 markupResultModelsFinal);

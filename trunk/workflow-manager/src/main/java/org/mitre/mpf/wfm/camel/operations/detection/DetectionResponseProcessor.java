@@ -288,8 +288,6 @@ public class DetectionResponseProcessor
             SortedMap<String, String> properties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
             // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
-            // TODO: Write equals and hashcode for Media comparison.
-            // TODO: Show markup and source media in markup dialog even if on S3 (no password is required if you have link). Test broken link.
             boolean hasDerivativeMedia = checkDerivativeMedia(jobId, detectionResponse.getMediaId(),
                     genericResponse.getDetectionType(), properties);
 

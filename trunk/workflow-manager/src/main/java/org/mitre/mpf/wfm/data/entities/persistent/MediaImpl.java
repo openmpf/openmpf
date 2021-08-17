@@ -29,8 +29,12 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Comparators;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -39,6 +43,9 @@ import org.mitre.mpf.wfm.util.IoUtils;
 
 import java.nio.file.Path;
 import java.util.*;
+
+import static java.util.Comparator.*;
+import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 public class MediaImpl implements Media {
 
@@ -231,11 +238,15 @@ public class MediaImpl implements Media {
                 originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
                 originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
 
+        result.setParentId(originalMedia.getParentId());
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
+        result.addMetadata(originalMedia.getMetadata());
+
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
+
         return result;
     }
 
@@ -246,10 +257,35 @@ public class MediaImpl implements Media {
     }
 
 
-    private static final Comparator<Media> DEFAULT_COMPARATOR = Comparator
-            .nullsFirst(Comparator
-                    .comparingLong(Media::getParentId)
-                    .thenComparingLong(Media::getId));
+    @Override
+    public int hashCode() {
+        return Objects.hash(_parentId, _id, _uriScheme, _uri, _localPath, _convertedMediaPath, _sha256, _length, _type,
+                _mimeType, _metadata, _providedMetadata, _mediaSpecificProperties, _failed, _errorMessage);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Media && compareTo((Media) obj) == 0;
+    }
+
+    private static final Comparator<Media> DEFAULT_COMPARATOR =
+            nullsFirst(
+                    comparingLong(Media::getParentId)
+                            .thenComparingLong(Media::getId)
+                            .thenComparing(nullsFirst(comparing(Media::getUriScheme)))
+                            .thenComparing(stringCompare(Media::getUri))
+                            .thenComparing(nullsFirst(comparing(Media::getLocalPath)))
+                            .thenComparing(Media::getConvertedMediaPath, Comparators.emptiesFirst(Path::compareTo))
+                            .thenComparing(stringCompare(Media::getSha256))
+                            .thenComparingInt(Media::getLength)
+                            .thenComparing(nullsFirst(comparing(Media::getType)))
+                            .thenComparing(stringCompare(Media::getMimeType))
+                            .thenComparing(Media::getMetadata, CompareUtils.MAP_COMPARATOR)
+                            .thenComparing(Media::getProvidedMetadata, CompareUtils.MAP_COMPARATOR)
+                            .thenComparing(Media::getMediaSpecificProperties, CompareUtils.MAP_COMPARATOR)
+                            .thenComparing(Media::isFailed)
+                            .thenComparing(stringCompare(Media::getErrorMessage)));
+
 
     @Override
     public int compareTo(Media other) {

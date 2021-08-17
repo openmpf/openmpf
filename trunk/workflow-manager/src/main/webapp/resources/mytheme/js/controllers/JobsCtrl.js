@@ -437,10 +437,6 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             renderer: "bootstrap",
             columns: [
                 {
-                    data: "mediaId",
-                    className: "smart-wrap"
-                },
-                {
                     data: "parentMediaId",
                     className: "smart-wrap",
                     render: function (data, type, obj) {
@@ -449,6 +445,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         }
                         return '<p>' + obj.parentMediaId + '</p>'
                     }
+                },
+                {
+                    data: "mediaId",
+                    className: "smart-wrap"
                 },
                 {
                     data: "sourceImgUrl",

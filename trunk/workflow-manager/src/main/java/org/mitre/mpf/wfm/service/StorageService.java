@@ -154,7 +154,7 @@ public class StorageService {
                                request.getJobId()), e);
         _inProgressJobs.addWarning(
                 request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Artifacts were stored locally because storing them remotely failed due to: " + e);
+                "Some artifacts were stored locally because storing them remotely failed due to: " + e);
     }
 
 
@@ -172,14 +172,11 @@ public class StorageService {
                     "Failed to remotely store markup for job id %d. It will be stored locally instead.",
                     markupResult.getJobId()), ex);
 
-
-            String message = "Markup was stored locally because storing it remotely failed due to: " + ex;
+            String message = "Some markup was stored locally because storing it remotely failed due to: " + ex;
             String existingMessage = markupResult.getMessage();
             if (existingMessage != null && !existingMessage.isEmpty()) {
                 message = existingMessage + "; " + message;
             }
-            markupResult.setMessage(message);
-            markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
             _inProgressJobs.addWarning(markupResult.getJobId(), markupResult.getMediaId(),
                                        IssueCodes.REMOTE_STORAGE_UPLOAD, message);
         }
@@ -217,6 +214,6 @@ public class StorageService {
                 jobId, parentMediaId), e);
         _inProgressJobs.addWarning(
                 jobId, parentMediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Derivative media was stored locally because storing it remotely failed due to: " + e);
+                "Some derivative media was stored locally because storing it remotely failed due to: " + e);
     }
 }

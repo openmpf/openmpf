@@ -26,8 +26,10 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Table;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -42,18 +44,19 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.FrameTimeInfo;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Processes the responses which have been returned from a detection component. */
@@ -275,6 +278,7 @@ public class DetectionResponseProcessor
         }
     }
 
+    // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
     private void processGenericResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
                                         DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
                                         double confidenceThreshold) {
@@ -283,15 +287,19 @@ public class DetectionResponseProcessor
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 
+        var futures = new HashSet<CompletableFuture<Void>>();
+        var tracks = new HashSet<Track>();
+
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
             SortedMap<String, String> properties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
-            // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
-            boolean hasDerivativeMedia = checkDerivativeMedia(jobId, detectionResponse.getMediaId(),
-                    genericResponse.getDetectionType(), properties);
+            var future = ThreadUtil.callAsync(
+                    () -> checkDerivativeMedia(jobId, detectionResponse.getMediaId(),
+                                               genericResponse.getDetectionType(), properties));
+            futures.add(future);
 
-            if (hasDerivativeMedia || objectTrack.getConfidence() >= confidenceThreshold) {
+            if (objectTrack.getConfidence() >= confidenceThreshold) {
                 Detection detection = new Detection(
                         0,
                         0,
@@ -316,9 +324,17 @@ public class DetectionResponseProcessor
                         ImmutableSortedSet.of(detection),
                         properties);
 
-                _inProgressJobs.addTrack(track);
+                tracks.add(track);
             }
         }
+
+        ThreadUtil.allOf(futures).join();
+
+        _inProgressJobs.setTracks(jobId,
+                detectionResponse.getMediaId(),
+                detectionResponse.getTaskIndex(),
+                detectionResponse.getActionIndex(),
+                tracks);
     }
 
     private void checkErrors(long jobId, String mediaLabel, DetectionProtobuf.DetectionResponse detectionResponse,
@@ -399,7 +415,7 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    private boolean checkDerivativeMedia(long jobId, long parentMediaId, String detectionType,
+    private Void checkDerivativeMedia(long jobId, long parentMediaId, String detectionType,
                                          SortedMap<String, String> trackProperties) {
         boolean hasDerivativeMedia =
                 detectionType.equals("MEDIA") && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
@@ -420,6 +436,6 @@ public class DetectionResponseProcessor
 
             _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
         }
-        return hasDerivativeMedia;
+        return null;
     }
 }

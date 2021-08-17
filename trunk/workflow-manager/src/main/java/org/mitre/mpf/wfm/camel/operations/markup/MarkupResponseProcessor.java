@@ -101,9 +101,6 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
         markupResult.setPipeline(job.getPipelineElements().getName());
         markupResult.setSourceUri(media.getUri());
 
-        storageService.store(markupResult);
-        markupResultDao.persist(markupResult);
-
         switch (markupResult.getMarkupStatus()) {
             case FAILED:
                 inProgressJobs.addError(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
@@ -119,6 +116,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
                 inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
                                           warningMessage, IssueSources.MARKUP);
         }
+
+        storageService.store(markupResult);
+        markupResultDao.persist(markupResult);
 
         job.setProcessedAction(markupResponse.getMediaId(), markupResponse.getTaskIndex(), markupResponse.getActionIndex());
 

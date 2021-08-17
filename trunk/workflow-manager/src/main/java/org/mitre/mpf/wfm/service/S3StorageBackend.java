@@ -142,7 +142,8 @@ public class S3StorageBackend implements StorageBackend {
             catch (CompletionException e) {
                 _inProgressJobs.addWarning(
                         request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                        "Artifact stored locally due to: " + e.getCause().getMessage());
+                        "Some artifacts were stored locally because storing them remotely failed due to: " +
+                                e.getCause().getMessage());
 
                 resultUri = localResults.get(cell.getRowKey(), cell.getColumnKey());
             }
@@ -378,9 +379,9 @@ public class S3StorageBackend implements StorageBackend {
             return objectUri;
         }
         catch (SdkClientException e) {
-            var errorMsg = String.format("Failed to upload %s due to S3 error: %s", path, e);
-            LOG.error(errorMsg, e);
-            throw new StorageException(errorMsg, e);
+            LOG.error("Failed to upload {} due to S3 error: {}", path, e);
+            // Don't include path so multiple failures appear as one issue in JSON output object.
+            throw new StorageException("Failed to upload due to S3 error: " + e, e);
         }
         catch (URISyntaxException e) {
             var errorMsg = "Couldn't build uri: " + e;

@@ -170,7 +170,7 @@ public class MarkupController {
                             .queryParam("jobId", jobId)
                             .toUriString();
                     model.setSourceDownloadUrl(downloadUrl);
-                    model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
+                    model.setSourceImgUrl(downloadUrl);
                     model.setSourceFileAvailable(true);
                     model.setSourceMediaType(med.getType().toString());
                 }
@@ -205,6 +205,7 @@ public class MarkupController {
                 markupResultModelsFinal);
     }
 
+    // TODO: Remove this?
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
     public void serve(HttpServletResponse response, @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
@@ -272,20 +273,34 @@ public class MarkupController {
         Function<String, String> combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+            try {
+                S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
+                try (InputStream inputStream = s3Object.getObjectContent()) {
+                    ObjectMetadata metadata = s3Object.getObjectMetadata();
+                    IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
+                            metadata.getContentLength());
+                }
+                return;
+            } catch (StorageException e) {
+                log.error("Markup with id " + id + " download failed: " + e.getMessage());
+                response.setStatus(500);
+                response.flushBuffer();
+                return;
             }
-            return;
         }
 
-        URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
-        URLConnection urlConnection = mediaUrl.openConnection();
-        try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                                       urlConnection.getContentLength());
+        try {
+            URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
+            URLConnection urlConnection = mediaUrl.openConnection();
+            try (InputStream inputStream = urlConnection.getInputStream()) {
+                IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
+                        urlConnection.getContentLength());
+            }
+        } catch (IOException e) {
+            log.error("Markup with id " + id + " download failed: " + e.getMessage());
+            response.setStatus(500);
+            response.flushBuffer();
+            return;
         }
     }
 
@@ -323,13 +338,13 @@ public class MarkupController {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
             if (path != null && Files.exists(path)) { // if available local markup // TODO: Test me!
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-                markupImgUrl = "markup/content?id=" + markupResult.getId();
+                markupImgUrl = markupDownloadUrl;
                 markupFileAvailable = true;
                 markupMediaType = media.getType().toString(); // markup type is the same as media type
             }
             if (path == null) { // if remote markup // TODO: Test me!
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-                markupImgUrl = markupResult.getMarkupUri();
+                markupImgUrl = markupDownloadUrl;
                 markupFileAvailable = true;
                 markupMediaType = media.getType().toString(); // markup type is the same as media type
             }
@@ -343,7 +358,7 @@ public class MarkupController {
                         .queryParam("sourceUri", markupResult.getSourceUri())
                         .queryParam("jobId", markupResult.getJobId())
                         .toUriString();
-                sourceImgUrl = "server/node-image?nodeFullPath=" + path;
+                sourceImgUrl = sourceDownloadUrl;
                 sourceFileAvailable = true;
                 sourceMediaType = media.getType().toString();
             }
@@ -353,7 +368,7 @@ public class MarkupController {
                         .queryParam("sourceUri", markupResult.getSourceUri())
                         .queryParam("jobId", markupResult.getJobId())
                         .toUriString();
-                sourceImgUrl = markupResult.getSourceUri();
+                sourceImgUrl = sourceDownloadUrl;
                 sourceFileAvailable = true;
                 sourceMediaType = media.getType().toString();
             }

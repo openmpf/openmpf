@@ -164,17 +164,15 @@ public class MarkupController {
             model.setSourceFileAvailable(false);
             if (med.getUri() != null) {
                 Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
-                if (path == null || Files.exists(path)) {
+                if (path == null || Files.exists(path)) { // if remote media or available local media // TODO: Test me!
                     String downloadUrl = UriComponentsBuilder.fromPath("server/download")
                             .queryParam("sourceUri", med.getUri())
                             .queryParam("jobId", jobId)
                             .toUriString();
                     model.setSourceDownloadUrl(downloadUrl);
-                    model.setSourceFileAvailable(true);
-                }
-                if (path != null && Files.exists(path)) {
-                    model.setSourceURIContentType(med.getMimeType());
                     model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
+                    model.setSourceFileAvailable(true);
+                    model.setSourceMediaType(med.getType().toString());
                 }
             }
             markupResultModels.put(med.getId(), model);
@@ -312,10 +310,10 @@ public class MarkupController {
     }
 
     private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
-        String markupUriContentType = "";
+        String markupMediaType = "";
         String markupImgUrl = "";
         String markupDownloadUrl ="";
-        String sourceUriContentType="";
+        String sourceMediaType="";
         String sourceImgUrl = "";
         String sourceDownloadUrl ="";
         boolean markupFileAvailable = false;
@@ -323,38 +321,48 @@ public class MarkupController {
 
         if (markupResult.getMarkupUri() != null) {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-            if (path != null && Files.exists(path)) {
-                markupUriContentType = ioUtils.getPathContentType(path);
-                markupFileAvailable = true;
-                markupImgUrl = "markup/content?id=" + markupResult.getId();
+            if (path != null && Files.exists(path)) { // if available local markup // TODO: Test me!
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-            }
-            if (path == null) {
+                markupImgUrl = "markup/content?id=" + markupResult.getId();
                 markupFileAvailable = true;
-                markupDownloadUrl = markupResult.getMarkupUri();
+                markupMediaType = media.getType().toString(); // markup type is the same as media type
+            }
+            if (path == null) { // if remote markup // TODO: Test me!
+                markupDownloadUrl = "markup/download?id=" + markupResult.getId();
+                markupImgUrl = markupResult.getMarkupUri();
+                markupFileAvailable = true;
+                markupMediaType = media.getType().toString(); // markup type is the same as media type
             }
         }
 
         if (markupResult.getSourceUri() != null) {
             Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
-            if (path == null || Files.exists(path)) {
+            if (path != null && Files.exists(path))  { // if available local media // TODO: Test me!
                 sourceDownloadUrl = UriComponentsBuilder
                         .fromPath("server/download")
                         .queryParam("sourceUri", markupResult.getSourceUri())
                         .queryParam("jobId", markupResult.getJobId())
                         .toUriString();
-                sourceFileAvailable = true;
-            }
-            if (path != null && Files.exists(path))  {
-                sourceUriContentType = ioUtils.getPathContentType(path);
                 sourceImgUrl = "server/node-image?nodeFullPath=" + path;
+                sourceFileAvailable = true;
+                sourceMediaType = media.getType().toString();
+            }
+            if (path == null) { // if remote media // TODO: Test me!
+                sourceDownloadUrl = UriComponentsBuilder
+                        .fromPath("server/download")
+                        .queryParam("sourceUri", markupResult.getSourceUri())
+                        .queryParam("jobId", markupResult.getJobId())
+                        .toUriString();
+                sourceImgUrl = markupResult.getSourceUri();
+                sourceFileAvailable = true;
+                sourceMediaType = media.getType().toString();
             }
         }
 
         return new MarkupResultConvertedModel(
                 markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), media.getParentId(),
-                markupResult.getPipeline(), markupResult.getMarkupUri(), markupUriContentType, markupImgUrl,
-                markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
+                markupResult.getPipeline(), markupResult.getMarkupUri(), markupMediaType, markupImgUrl,
+                markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(), sourceMediaType, sourceImgUrl,
                 sourceDownloadUrl, sourceFileAvailable);
     }
 }

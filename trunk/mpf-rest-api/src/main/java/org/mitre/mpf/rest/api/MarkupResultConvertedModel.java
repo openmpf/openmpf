@@ -34,13 +34,13 @@ public class MarkupResultConvertedModel {
     private String pipeline;
     private String markupUri;
 
-    private String markupUriContentType;
+    private String markupMediaType;
     private boolean markupFileAvailable;
     private String markupImgUrl;
     private String markupDownloadUrl;
 
     private String sourceUri;
-    private String sourceURIContentType;
+    private String sourceMediaType;
     private boolean sourceFileAvailable;
     private String sourceImgUrl;
     private String sourceDownloadUrl;
@@ -69,8 +69,8 @@ public class MarkupResultConvertedModel {
         return markupUri;
     }
 
-    public String getMarkupUriContentType() {
-        return markupUriContentType;
+    public String getMarkupMediaType() {
+        return markupMediaType;
     }
 
     public boolean isMarkupFileAvailable() {
@@ -90,8 +90,8 @@ public class MarkupResultConvertedModel {
         return sourceUri;
     }
 
-    public String getSourceUriContentType() {
-        return sourceURIContentType;
+    public String getSourceMediaType() {
+        return sourceMediaType;
     }
 
     public boolean isSourceFileAvailable() {
@@ -130,8 +130,8 @@ public class MarkupResultConvertedModel {
         this.markupUri = markupUri;
     }
 
-    public void setMarkupUriContentType(String markupUriContentType) {
-        this.markupUriContentType = markupUriContentType;
+    public void setMarkupMediaType(String markupMediaType) {
+        this.markupMediaType = markupMediaType;
     }
 
     public void setMarkupFileAvailable(boolean markupFileAvailable) {
@@ -150,8 +150,8 @@ public class MarkupResultConvertedModel {
         this.sourceUri = sourceUri;
     }
 
-    public void setSourceURIContentType(String sourceURIContentType) {
-        this.sourceURIContentType = sourceURIContentType;
+    public void setSourceMediaType(String sourceMediaType) {
+        this.sourceMediaType = sourceMediaType;
     }
 
     public void setSourceFileAvailable(boolean sourceFileAvailable) {
@@ -167,9 +167,9 @@ public class MarkupResultConvertedModel {
     }
 
 	public MarkupResultConvertedModel(long id, long jobId, long mediaId, long parentMediaId,
-                                      String pipeline, String markupUri, String markupUriContentType,
+                                      String pipeline, String markupUri, String markupMediaType,
                                       String markupImgUrl, String markupDownloadUrl, boolean markupFileAvailable,
-                                      String sourceUri, String sourceURIContentType, String sourceImgUrl,
+                                      String sourceUri, String sourceMediaType, String sourceImgUrl,
                                       String sourceDownloadUrl, boolean sourceFileAvailable) {
 		this.id = id;
 		this.jobId = jobId;
@@ -177,12 +177,12 @@ public class MarkupResultConvertedModel {
 		this.parentMediaId = parentMediaId;
 		this.pipeline = pipeline;
 		this.markupUri = markupUri;
-		this.markupUriContentType = markupUriContentType;
+		this.markupMediaType = markupMediaType;
 		this.markupFileAvailable = markupFileAvailable;
 		this.markupImgUrl = markupImgUrl;
 		this.markupDownloadUrl = markupDownloadUrl;
 		this.sourceUri = sourceUri;
-		this.sourceURIContentType = sourceURIContentType;
+		this.sourceMediaType = sourceMediaType;
 		this.sourceFileAvailable = sourceFileAvailable;
 		this.sourceImgUrl = sourceImgUrl;
 		this.sourceDownloadUrl = sourceDownloadUrl;

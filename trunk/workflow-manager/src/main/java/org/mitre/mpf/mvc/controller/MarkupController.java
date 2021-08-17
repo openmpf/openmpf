@@ -164,7 +164,7 @@ public class MarkupController {
             model.setSourceFileAvailable(false);
             if (med.getUri() != null) {
                 Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
-                if (path == null || Files.exists(path)) { // if remote media or available local media // TODO: Test me!
+                if (path == null || Files.exists(path)) { // if remote media or available local media
                     String downloadUrl = UriComponentsBuilder.fromPath("server/download")
                             .queryParam("sourceUri", med.getUri())
                             .queryParam("jobId", jobId)
@@ -336,13 +336,7 @@ public class MarkupController {
 
         if (markupResult.getMarkupUri() != null) {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-            if (path != null && Files.exists(path)) { // if available local markup // TODO: Test me!
-                markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-                markupImgUrl = markupDownloadUrl;
-                markupFileAvailable = true;
-                markupMediaType = media.getType().toString(); // markup type is the same as media type
-            }
-            if (path == null) { // if remote markup // TODO: Test me!
+            if (path == null || Files.exists(path)) { // if remote markup or available local markup
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
                 markupImgUrl = markupDownloadUrl;
                 markupFileAvailable = true;
@@ -352,17 +346,7 @@ public class MarkupController {
 
         if (markupResult.getSourceUri() != null) {
             Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
-            if (path != null && Files.exists(path))  { // if available local media // TODO: Test me!
-                sourceDownloadUrl = UriComponentsBuilder
-                        .fromPath("server/download")
-                        .queryParam("sourceUri", markupResult.getSourceUri())
-                        .queryParam("jobId", markupResult.getJobId())
-                        .toUriString();
-                sourceImgUrl = sourceDownloadUrl;
-                sourceFileAvailable = true;
-                sourceMediaType = media.getType().toString();
-            }
-            if (path == null) { // if remote media // TODO: Test me!
+            if (path == null || Files.exists(path))  { // if remote media or available local media
                 sourceDownloadUrl = UriComponentsBuilder
                         .fromPath("server/download")
                         .queryParam("sourceUri", markupResult.getSourceUri())

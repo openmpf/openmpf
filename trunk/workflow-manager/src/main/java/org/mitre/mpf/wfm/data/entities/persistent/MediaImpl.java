@@ -264,8 +264,9 @@ public class MediaImpl implements Media {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Media && compareTo((Media) obj) == 0;
+    public boolean equals(Object other) {
+        return this == other
+                || (other instanceof Media && compareTo((Media) other) == 0);
     }
 
     private static final Comparator<Media> DEFAULT_COMPARATOR =

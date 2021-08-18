@@ -133,7 +133,7 @@ public class TiesDbService {
 
                 var tiesDbEntriesToUse = (trackType.equals("NO TRACKS") ? noTracksTiesDbEntries : tiesDbEntries);
 
-                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", job, media, jobPart.getAction());
+                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", jobPart);
 
                 if (!media.isDerivative()) {
                     tiesDbEntriesToUse.put(

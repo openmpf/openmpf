@@ -307,6 +307,7 @@ public class DetectionResponseProcessor
             if (!hasDerivativeMedia) {
                 processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
                         trackProperties, newTracks);
+                continue;
             }
 
             try {

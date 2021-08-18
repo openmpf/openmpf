@@ -332,7 +332,7 @@ public class MarkupController {
         String markupMediaType = "";
         String markupImgUrl = "";
         String markupDownloadUrl ="";
-        String sourceMediaType="";
+        String sourceMediaType= "";
         String sourceImgUrl = "";
         String sourceDownloadUrl ="";
         boolean markupFileAvailable = false;

@@ -560,16 +560,5 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         });
     };
 
-    var getMarkupType = function (content_type) {
-        if (content_type != null) {
-            var type = content_type.split("/")[0].toLowerCase();
-            if ((type == "image" && content_type.indexOf("tif") == -1) || type == "audio" || type == "video") {
-                return type;
-            }
-            return "file";
-        }
-        return null;
-    };
-
     init();
 };

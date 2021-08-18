@@ -323,14 +323,14 @@
     },
     {
         "name": "SOURCE_MEDIA_ONLY",
-        "description": "When provided, the action will only be executed on the source media, not derivative media.",
+        "description": "When set to true, the action will only be executed on the source media, not derivative media.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
         "name": "DERIVATIVE_MEDIA_ONLY",
-        "description": "When provided, the action will only be executed on derivative media, not the source media.",
+        "description": "When set to true, the action will only be executed on derivative media, not the source media.",
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

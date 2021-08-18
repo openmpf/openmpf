@@ -212,7 +212,7 @@ public class StorageService {
                         "job id %d. File will be stored locally instead.",
                 mediaId, parentMediaId, jobId), e);
         _inProgressJobs.addWarning(
-                jobId, parentMediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Some derivative media was stored locally because storing it remotely failed due to: " + e);
+                jobId, mediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
+                "Media was stored locally because storing it remotely failed due to: " + e);
     }
 }

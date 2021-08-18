@@ -169,7 +169,8 @@ public class TiesDbService {
             }
         }
 
-        // Remove "NO TRACKS" entries for algorithms that generated tracks for derivative media.
+        // It's possible that derivative media may have generated tracks for an algorithm, but the parent media did not,
+        // and/or only some of the derivative media generated tracks. In such cases, remove the "NO TRACKS" entries.
         for (var key : tiesDbEntries.keySet()) {
             noTracksTiesDbEntries.remove(new TiesDbEntryKey(key.getMediaId(), key.getAlgorithmName(), "NO TRACKS"));
         }

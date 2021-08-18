@@ -51,8 +51,4 @@ public class TrackCounter {
         _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
                     new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));
     }
-
-    public Collection<TrackCountEntry> values() {
-        return _counts.values();
-    }
 }

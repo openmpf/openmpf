@@ -73,11 +73,11 @@ public class TestMediaInspectionProcessor {
             = mock(MediaMetadataValidator.class);
 
     private final MediaInspectionHelper _mockMediaInspectionHelper
-            = mock(MediaInspectionHelper.class);
+            = new MediaInspectionHelper(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
+                                        _mockMediaMetadataValidator);
 
     private final MediaInspectionProcessor _mediaInspectionProcessor
-            = new MediaInspectionProcessor(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                           _mockMediaMetadataValidator, _mockMediaInspectionHelper);
+            = new MediaInspectionProcessor(_mockInProgressJobs, _mockMediaInspectionHelper);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();

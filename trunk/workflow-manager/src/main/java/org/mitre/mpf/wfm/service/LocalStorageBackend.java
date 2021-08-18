@@ -128,6 +128,6 @@ public class LocalStorageBackend implements StorageBackend {
 
     @Override
     public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
-        return localPath.toUri(); // file is already stored locally.
+        return localPath.toUri(); // file is already stored locally
     }
 }

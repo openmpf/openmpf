@@ -41,48 +41,21 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-// TODO: Test PP5 --> OCV FACE
-
-/**
- * Class used to extract metadata about a piece of media. Media inspection will be skipped if the appropriate media
- * metadata properties are provided as job inputs.
- *
- * If a piece of media with a "video/*" MIME type has a video stream we will treat it as a VIDEO data type. Otherwise,
- * we determine if we can treat it as an AUDIO data type.
- *
- * If a piece of media with an "audio/*" MIME type (or "video/*" MIME type without an video stream) has an audio
- * stream we will treat it as an AUDIO data type. Otherwise, we will treat it as an UNKNOWN data type.
- *
- * To summarize, fallback is performed in this order: VIDEO --> AUDIO --> UNKNOWN. This is to handle cases where
- * a video container format can contain zero or more video/audio/subtitle/attachment/data streams.
- *
- * There is no fallback for the IMAGE data type. "image/*" MIME types are not containers like "video/*" MIME types.
- */
 @Component(MediaInspectionProcessor.REF)
 public class MediaInspectionProcessor extends WfmProcessor {
     public static final String REF = "mediaInspectionProcessor";
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaInspectionProcessor.class);
 
-    private final PropertiesUtil _propertiesUtil;
-
     private final MediaInspectionHelper _mediaInspectionHelper;
 
     private final InProgressBatchJobsService _inProgressJobs;
 
-    private final IoUtils _ioUtils;
-
-    private final MediaMetadataValidator _mediaMetadataValidator;
-
     @Inject
     public MediaInspectionProcessor(
-            PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
-            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator,
+            InProgressBatchJobsService inProgressJobs,
             MediaInspectionHelper mediaInspectionHelper) {
-        _propertiesUtil = propertiesUtil;
         _inProgressJobs = inProgressJobs;
-        _ioUtils = ioUtils;
-        _mediaMetadataValidator = mediaMetadataValidator;
         _mediaInspectionHelper = mediaInspectionHelper;
     }
 

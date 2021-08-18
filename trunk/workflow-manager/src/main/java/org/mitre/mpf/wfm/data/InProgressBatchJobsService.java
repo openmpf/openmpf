@@ -191,9 +191,10 @@ public class InProgressBatchJobsService {
 
         // Clean up derivative media directory for this job in case any media was moved to remote storage.
         boolean hasDerivativeMedia = job.getMedia().stream().anyMatch(Media::isDerivative);
-        Path derivativeMediaPath = _propertiesUtil.getDerivativeMediaDirectory().toPath().resolve(Long.toString(jobId));
         if (hasDerivativeMedia) {
             try {
+                Path derivativeMediaPath =
+                        _propertiesUtil.getDerivativeMediaDirectory().toPath().resolve(Long.toString(jobId));
                 Files.walk(derivativeMediaPath)
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)

@@ -80,7 +80,7 @@ import java.util.UUID;
  * There is no fallback for the IMAGE data type. "image/*" MIME types are not containers like "video/*" MIME types.
  */
 @Component
-public class MediaInspectionHelper{
+public class MediaInspectionHelper {
     private static final Logger LOG = LoggerFactory.getLogger(MediaInspectionHelper.class);
 
     private final PropertiesUtil _propertiesUtil;

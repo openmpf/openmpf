@@ -323,7 +323,7 @@ public class DetectionResponseProcessor
 
         for (var entry : futures.entrySet()) {
             var objectTrack = entry.getKey();
-            var future= entry.getValue();
+            var future = entry.getValue();
 
             var trackProperties = future.join();
 

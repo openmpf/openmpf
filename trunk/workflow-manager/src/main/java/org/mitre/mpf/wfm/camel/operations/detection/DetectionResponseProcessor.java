@@ -26,16 +26,15 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Table;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
+import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
@@ -50,13 +49,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Processes the responses which have been returned from a detection component. */
@@ -73,21 +70,26 @@ public class DetectionResponseProcessor
     private static InProgressBatchJobsService _inProgressJobs;
     private static MediaInspectionHelper _mediaInspectionHelper;
     private static StorageService _storageService;
+    private static PropertiesUtil _propertiesUtil;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressBatchJobs,
                                       MediaInspectionHelper mediaInspectionHelper,
-                                      StorageService storageService) {
+                                      StorageService storageService,
+                                      PropertiesUtil propertiesUtil) {
         super(DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressBatchJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
         _storageService = storageService;
+        _propertiesUtil = propertiesUtil;
     }
 
     @Override
-    public Object processResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse, Map<String, Object> headers) throws WfmProcessingException {
+    public Object processResponse(long jobId,
+                                  DetectionProtobuf.DetectionResponse detectionResponse,
+                                  Map<String, Object> headers) throws WfmProcessingException {
         int totalResponses = detectionResponse.getVideoResponsesCount() +
                 detectionResponse.getAudioResponsesCount() +
                 detectionResponse.getImageResponsesCount() +
@@ -146,7 +148,8 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processVideoResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+    private void processVideoResponse(long jobId,
+                                      DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
                                       double confidenceThreshold, Media media) {
         int startFrame = videoResponse.getStartFrame();
@@ -200,7 +203,8 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processAudioResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+    private void processAudioResponse(long jobId,
+                                      DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.AudioResponse audioResponse,
                                       double confidenceThreshold) {
 
@@ -249,7 +253,8 @@ public class DetectionResponseProcessor
         }
     }
 
-    private void processImageResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+    private void processImageResponse(long jobId,
+                                      DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
                                       double confidenceThreshold) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
@@ -279,7 +284,8 @@ public class DetectionResponseProcessor
     }
 
     // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
-    private void processGenericResponse(long jobId, DetectionProtobuf.DetectionResponse detectionResponse,
+    private void processGenericResponse(long jobId,
+                                        DetectionProtobuf.DetectionResponse detectionResponse,
                                         DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
                                         double confidenceThreshold) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
@@ -287,54 +293,86 @@ public class DetectionResponseProcessor
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 
-        var futures = new HashSet<CompletableFuture<Void>>();
-        var tracks = new HashSet<Track>();
+        var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
+        var futures = new HashMap<DetectionProtobuf.GenericTrack, CompletableFuture<SortedMap<String, String>>>();
+        var newTracks = new HashSet<Track>();
 
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
-            SortedMap<String, String> properties = toMutableMap(objectTrack.getDetectionPropertiesList());
+            SortedMap<String, String> trackProperties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
-            var future = ThreadUtil.callAsync(
-                    () -> checkDerivativeMedia(jobId, detectionResponse.getMediaId(),
-                                               genericResponse.getDetectionType(), properties));
-            futures.add(future);
+            boolean hasDerivativeMedia = genericResponse.getDetectionType().equals("MEDIA") &&
+                    trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
 
-            if (objectTrack.getConfidence() >= confidenceThreshold) {
-                Detection detection = new Detection(
-                        0,
-                        0,
-                        0,
-                        0,
-                        objectTrack.getConfidence(),
-                        0,
-                        0,
-                        properties);
-
-                Track track = new Track(
-                        jobId,
-                        detectionResponse.getMediaId(),
-                        detectionResponse.getTaskIndex(),
-                        detectionResponse.getActionIndex(),
-                        0,
-                        0,
-                        0,
-                        0,
-                        genericResponse.getDetectionType(),
-                        objectTrack.getConfidence(),
-                        ImmutableSortedSet.of(detection),
-                        properties);
-
-                tracks.add(track);
+            if (!hasDerivativeMedia) {
+                processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
+                        trackProperties, newTracks);
             }
+
+            try {
+                semaphore.acquire();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+            var future = ThreadUtil.callAsync(
+                    () -> processDerivativeMedia(jobId, detectionResponse.getMediaId(), trackProperties));
+            future.whenComplete((x, y) -> semaphore.release());
+            futures.put(objectTrack, future);
         }
 
-        ThreadUtil.allOf(futures).join();
+        for (var entry : futures.entrySet()) {
+            var objectTrack = entry.getKey();
+            var future= entry.getValue();
+
+            var trackProperties = future.join();
+
+            processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
+                    trackProperties, newTracks);
+        }
 
         _inProgressJobs.setTracks(jobId,
                 detectionResponse.getMediaId(),
                 detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex(),
-                tracks);
+                newTracks);
+    }
+
+
+    private void processGenericTrack(long jobId,
+                                     DetectionProtobuf.DetectionResponse detectionResponse,
+                                     DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
+                                     DetectionProtobuf.GenericTrack objectTrack,
+                                     double confidenceThreshold,
+                                     SortedMap<String, String> trackProperties,
+                                     Set<Track> newTracks) {
+        if (objectTrack.getConfidence() >= confidenceThreshold) {
+            Detection detection = new Detection(
+                    0,
+                    0,
+                    0,
+                    0,
+                    objectTrack.getConfidence(),
+                    0,
+                    0,
+                    trackProperties);
+
+            Track track = new Track(
+                    jobId,
+                    detectionResponse.getMediaId(),
+                    detectionResponse.getTaskIndex(),
+                    detectionResponse.getActionIndex(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    genericResponse.getDetectionType(),
+                    objectTrack.getConfidence(),
+                    ImmutableSortedSet.of(detection),
+                    trackProperties);
+
+            newTracks.add(track);
+        }
     }
 
     private void checkErrors(long jobId, String mediaLabel, DetectionProtobuf.DetectionResponse detectionResponse,
@@ -415,27 +453,27 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    private Void checkDerivativeMedia(long jobId, long parentMediaId, String detectionType,
-                                         SortedMap<String, String> trackProperties) {
-        boolean hasDerivativeMedia =
-                detectionType.equals("MEDIA") && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
-        if (hasDerivativeMedia) {
-            // TODO: Do in parallel with futures like with artifacts?
-            // TODO: Prevent multiple warnings in JSON output (one per failed upload). Use: e.getCause().getMessage()
-            Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
+    private SortedMap<String, String> processDerivativeMedia(long jobId, 
+                                                             long parentMediaId,
+                                                             SortedMap<String, String> trackProperties) {
+        Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
 
-            var uploadedUriAndLocalPath = _storageService.storeDerivativeMedia(jobId, parentMediaId, localPath);
-            var uploadedUri = uploadedUriAndLocalPath.getLeft();
-            localPath = uploadedUriAndLocalPath.getRight();
+        long mediaId = IdGenerator.next();
 
-            trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, uploadedUri.toString()); // update track properties
+        // Derivative media may be stored remotely.
+        var newUriAndLocalPath = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
+        var newUri = newUriAndLocalPath.getLeft();
+        var newLocalPath = newUriAndLocalPath.getRight();
 
-            Media derivativeMedia = _inProgressJobs.initDerivativeMedia(uploadedUri, localPath, parentMediaId,
-                    trackProperties);
-            _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
+        trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, newUri.toString()); // update track properties
 
-            _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
-        }
-        return null;
+        Media derivativeMedia = _inProgressJobs.initDerivativeMedia(mediaId, parentMediaId, newUri, newLocalPath,
+                trackProperties);
+
+        _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
+
+        _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
+
+        return trackProperties;
     }
 }

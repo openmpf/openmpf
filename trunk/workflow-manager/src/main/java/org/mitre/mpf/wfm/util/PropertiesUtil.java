@@ -424,6 +424,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
     }
 
+    public int getDerivativeMediaParallelUploadCount() {
+        return mpfPropertiesConfig.getInt("detection.derivative.media.parallel.upload.count");
+    }
+
     public int getSamplingInterval() {
         return mpfPropertiesConfig.getInt("detection.sampling.interval");
     }

@@ -390,11 +390,11 @@ public class InProgressBatchJobsService {
         }
     }
 
-    public synchronized Media initDerivativeMedia(URI uri,
-                                                  Path localPath,
+    public synchronized Media initDerivativeMedia(long mediaId,
                                                   long parentMediaId,
+                                                  URI uri,
+                                                  Path localPath,
                                                   SortedMap<String, String> trackProperties) {
-        long mediaId = IdGenerator.next();
         LOG.info("Initializing derivative media from {} with id {}", uri.toString(), mediaId);
 
         UriScheme uriScheme = UriScheme.parse(uri.getScheme());

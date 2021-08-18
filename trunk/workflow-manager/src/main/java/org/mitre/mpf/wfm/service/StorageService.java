@@ -38,7 +38,6 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
-import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -184,7 +183,7 @@ public class StorageService {
     }
 
 
-    public Pair<URI, Path> storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) {
+    public Pair<URI, Path> storeDerivativeMedia(long jobId, long mediaId, long parentMediaId, Path localPath) {
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
                 if (remoteBackend.canStoreDerivativeMedia(jobId, parentMediaId)) {
@@ -201,17 +200,17 @@ public class StorageService {
                 }
             }
         } catch (IOException | StorageException ex) {
-            handleRemoteStorageFailure(jobId, parentMediaId, ex);
+            handleDerivativeMediaRemoteStorageFailure(jobId, mediaId, parentMediaId, ex);
         }
         URI localUri = _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
         return Pair.of(localUri, localPath);
     }
 
 
-    private void handleRemoteStorageFailure(long jobId, long parentMediaId, Exception e) {
-        LOG.warn(String.format("Failed to store derivative media for job id %d and parent media id %d. " +
-                        "File will be stored locally instead.",
-                jobId, parentMediaId), e);
+    private void handleDerivativeMediaRemoteStorageFailure(long jobId, long mediaId, long parentMediaId, Exception e) {
+        LOG.warn(String.format("Failed to store derivative media with media id %d and parent media id %d for " +
+                        "job id %d. File will be stored locally instead.",
+                mediaId, parentMediaId, jobId), e);
         _inProgressJobs.addWarning(
                 jobId, parentMediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
                 "Some derivative media was stored locally because storing it remotely failed due to: " + e);

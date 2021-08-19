@@ -393,6 +393,7 @@ public class InProgressBatchJobsService {
 
     public synchronized Media initDerivativeMedia(long mediaId,
                                                   long parentMediaId,
+                                                  int taskIndex,
                                                   URI uri,
                                                   Path localPath,
                                                   SortedMap<String, String> trackProperties) {
@@ -415,7 +416,8 @@ public class InProgressBatchJobsService {
         metadata.remove(MpfConstants.DERIVATIVE_MEDIA_PATH); // the URI is now a class data member
         metadata.put(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE");
 
-        return new MediaImpl(mediaId, parentMediaId, uri.toString(), uriScheme, localPath, metadata, errorMessage);
+        return new MediaImpl(mediaId, parentMediaId, taskIndex, uri.toString(), uriScheme, localPath, metadata,
+                errorMessage);
     }
 
     private static String checkForLocalFileError(Path path) {

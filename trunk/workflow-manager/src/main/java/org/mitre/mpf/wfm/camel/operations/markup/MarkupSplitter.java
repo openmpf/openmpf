@@ -113,6 +113,10 @@ public class MarkupSplitter {
             var markupProperties = _aggregateJobPropertiesUtil.getPropertyMap(
                     job, media, markupAction);
 
+            if (_aggregateJobPropertiesUtil.canSkipAction(media, markupProperties)) {
+                continue;
+            }
+
             List<Markup.BoundingBoxMapEntry> boundingBoxMapEntryList
                     = createMapEntries(job, media, markupProperties);
 

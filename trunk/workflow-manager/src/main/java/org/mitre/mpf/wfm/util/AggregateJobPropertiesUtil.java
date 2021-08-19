@@ -471,4 +471,18 @@ public class AggregateJobPropertiesUtil {
         return _propertiesUtil.getTrackMergingExemptionList().stream()
                 .anyMatch(type::equalsIgnoreCase);
     }
+
+    public static boolean canSkipAction(Media media, Map<String, String> combinedProperties) {
+        if (Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")) &&
+                !media.isDerivative()) {
+            return true;
+        }
+
+        if (Boolean.parseBoolean(combinedProperties.get("SOURCE_MEDIA_ONLY")) &&
+                media.isDerivative()) {
+            return true;
+        }
+
+        return false;
+    }
 }

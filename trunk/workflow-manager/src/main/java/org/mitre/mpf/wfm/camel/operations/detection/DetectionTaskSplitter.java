@@ -34,7 +34,6 @@ import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -72,8 +71,7 @@ public class DetectionTaskSplitter {
                                  MediaSegmenter imageMediaSegmenter,
                                  MediaSegmenter videoMediaSegmenter,
                                  MediaSegmenter audioMediaSegmenter,
-                                 MediaSegmenter defaultMediaSegmenter,
-                                 MediaInspectionHelper mediaInspectionHelper)
+                                 MediaSegmenter defaultMediaSegmenter)
     {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressBatchJobs = inProgressBatchJobs;
@@ -121,13 +119,7 @@ public class DetectionTaskSplitter {
                     var combinedProperties = new HashMap<>(
                             _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    if (Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")) &&
-                            !media.isDerivative()) {
-                        continue;
-                    }
-
-                    if (Boolean.parseBoolean(combinedProperties.get("SOURCE_MEDIA_ONLY")) &&
-                            media.isDerivative()) {
+                    if (_aggregateJobPropertiesUtil.canSkipAction(media, combinedProperties)) {
                         continue;
                     }
 

@@ -59,6 +59,16 @@ public class MediaImpl implements Media {
     public long getParentId() { return _parentId; }
     public void setParentId(long parentId) { _parentId = parentId; }
 
+    private int _creationTaskIndex = -1;
+    @Override
+    @JsonIgnore
+    public int getCreationTask() { return _creationTaskIndex; }
+    public void setCreationTask(int creationTaskIndex) { _creationTaskIndex = creationTaskIndex; }
+
+    @Override
+    @JsonIgnore
+    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }
+
     private final String _uri;
     @Override
     public String getUri() { return _uri; }
@@ -164,9 +174,6 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
-    @JsonIgnore
-    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }
-
     public MediaImpl(
             long id,
             String uri,
@@ -191,6 +198,7 @@ public class MediaImpl implements Media {
     public MediaImpl(
             long id,
             long parentId,
+            int creationTaskIndex,
             String uri,
             UriScheme uriScheme,
             Path localPath,
@@ -198,6 +206,7 @@ public class MediaImpl implements Media {
             String errorMessage) {
         _id = id;
         _parentId = parentId;
+        _creationTaskIndex = creationTaskIndex;
         _uri = IoUtils.normalizeUri(uri);
         _uriScheme = uriScheme;
         _localPath = localPath;
@@ -239,6 +248,7 @@ public class MediaImpl implements Media {
                 originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
 
         result.setParentId(originalMedia.getParentId());
+        result.setCreationTask(originalMedia.getCreationTask());
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());
@@ -259,8 +269,9 @@ public class MediaImpl implements Media {
 
     @Override
     public int hashCode() {
-        return Objects.hash(_parentId, _id, _uriScheme, _uri, _localPath, _convertedMediaPath, _sha256, _length, _type,
-                _mimeType, _metadata, _providedMetadata, _mediaSpecificProperties, _failed, _errorMessage);
+        return Objects.hash(_parentId, _id, _creationTaskIndex, _uriScheme, _uri, _localPath, _convertedMediaPath,
+                _sha256, _length, _type, _mimeType, _metadata, _providedMetadata, _mediaSpecificProperties, _failed,
+                _errorMessage);
     }
 
     @Override
@@ -273,6 +284,7 @@ public class MediaImpl implements Media {
             nullsFirst(
                     comparingLong(Media::getParentId)
                             .thenComparingLong(Media::getId)
+                            .thenComparingInt(Media::getCreationTask)
                             .thenComparing(nullsFirst(comparing(Media::getUriScheme)))
                             .thenComparing(stringCompare(Media::getUri))
                             .thenComparing(nullsFirst(comparing(Media::getLocalPath)))

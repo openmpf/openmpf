@@ -46,6 +46,10 @@ public interface Media extends Comparable<Media> {
 
     public long getParentId();
 
+    public int getCreationTask();
+
+    public boolean isDerivative();
+
     public String getUri();
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
@@ -90,6 +94,4 @@ public interface Media extends Comparable<Media> {
     public String getSha256();
 
     public FrameTimeInfo getFrameTimeInfo();
-
-    public boolean isDerivative();
 }

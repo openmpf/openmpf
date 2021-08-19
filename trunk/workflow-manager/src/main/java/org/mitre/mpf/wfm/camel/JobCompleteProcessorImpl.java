@@ -387,16 +387,20 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             String prevUnmergedTaskType = null;
             String prevUnmergedAlgorithm = null;
 
-            for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
                 Task task = job.getPipelineElements().getTask(taskIndex);
 
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+                    String actionName = task.getActions().get(actionIndex);
+                    Action action = job.getPipelineElements().getAction(actionName);
 
-                    if (!job.wasActionProcessed(media.getId(), taskIndex, actionIndex)) {
+                    var combinedProperties = new HashMap<>(
+                            aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
+
+                    if (aggregateJobPropertiesUtil.canSkipAction(media, combinedProperties)) {
                         continue;
                     }
 
-                    Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
                     String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(

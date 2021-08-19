@@ -317,7 +317,8 @@ public class DetectionResponseProcessor
                 throw new IllegalStateException(e);
             }
             var future = ThreadUtil.callAsync(
-                    () -> processDerivativeMedia(jobId, detectionResponse.getMediaId(), trackProperties));
+                    () -> processDerivativeMedia(jobId, detectionResponse.getMediaId(),
+                            detectionResponse.getTaskIndex(), trackProperties));
             future.whenComplete((x, y) -> semaphore.release());
             futures.put(objectTrack, future);
         }
@@ -456,6 +457,7 @@ public class DetectionResponseProcessor
 
     private SortedMap<String, String> processDerivativeMedia(long jobId, 
                                                              long parentMediaId,
+                                                             int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
         Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
 
@@ -468,8 +470,8 @@ public class DetectionResponseProcessor
 
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, newUri.toString()); // update track properties
 
-        Media derivativeMedia = _inProgressJobs.initDerivativeMedia(mediaId, parentMediaId, newUri, newLocalPath,
-                trackProperties);
+        Media derivativeMedia = _inProgressJobs.initDerivativeMedia(mediaId, parentMediaId, taskIndex, newUri,
+                newLocalPath, trackProperties);
 
         _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 

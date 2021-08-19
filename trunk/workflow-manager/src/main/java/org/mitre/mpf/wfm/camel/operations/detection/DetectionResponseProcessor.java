@@ -295,7 +295,6 @@ public class DetectionResponseProcessor
 
         var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
         var futures = new HashMap<DetectionProtobuf.GenericTrack, CompletableFuture<SortedMap<String, String>>>();
-        var newTracks = new HashSet<Track>();
 
         // Begin iterating through the tracks that were found by the detector.
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
@@ -306,7 +305,7 @@ public class DetectionResponseProcessor
 
             if (!hasDerivativeMedia) {
                 processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
-                        trackProperties, newTracks);
+                        trackProperties);
                 continue;
             }
 
@@ -330,14 +329,8 @@ public class DetectionResponseProcessor
             var trackProperties = future.join();
 
             processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
-                    trackProperties, newTracks);
+                    trackProperties);
         }
-
-        _inProgressJobs.setTracks(jobId,
-                detectionResponse.getMediaId(),
-                detectionResponse.getTaskIndex(),
-                detectionResponse.getActionIndex(),
-                newTracks);
     }
 
 
@@ -346,8 +339,7 @@ public class DetectionResponseProcessor
                                      DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
                                      DetectionProtobuf.GenericTrack objectTrack,
                                      double confidenceThreshold,
-                                     SortedMap<String, String> trackProperties,
-                                     Set<Track> newTracks) {
+                                     SortedMap<String, String> trackProperties) {
         if (objectTrack.getConfidence() >= confidenceThreshold) {
             Detection detection = new Detection(
                     0,
@@ -373,7 +365,7 @@ public class DetectionResponseProcessor
                     ImmutableSortedSet.of(detection),
                     trackProperties);
 
-            newTracks.add(track);
+            _inProgressJobs.addTrack(track);
         }
     }
 

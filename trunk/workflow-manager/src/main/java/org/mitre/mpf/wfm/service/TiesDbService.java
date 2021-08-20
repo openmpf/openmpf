@@ -107,6 +107,34 @@ public class TiesDbService {
         Map<TiesDbEntryKey, TiesDbEntry> tiesDbEntries = new HashMap();
         Map<TiesDbEntryKey, TiesDbEntry> noTracksTiesDbEntries = new HashMap();
 
+        // For each parent media, create a "NO TRACKS" entry for every algorithm that isn't suppressed or hidden
+        // by merging. This ensures that TiesDB entries are generated even if:
+        //  1. There is no derivative media.
+        //  2. The action was never performed because no tracks were generated in previous tasks.
+        // These will be removed later if necessary.
+        for (var media : job.getMedia()) {
+            if (media.isDerivative()) {
+                continue;
+            }
+            boolean outputLastTaskOnly = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
+
+            for (var jobPart : JobPartsIter.of(job, media)) {
+                if (outputLastTaskOnly
+                        && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) { // suppressed
+                    continue;
+                }
+
+                boolean mergeWithPrevTask = Boolean.parseBoolean(
+                        _aggregateJobPropertiesUtil.getValue("OUTPUT_MERGE_WITH_PREVIOUS_TASK", jobPart));
+                if (!mergeWithPrevTask) {
+                    var parentKey = new TiesDbEntryKey(media.getId(), jobPart.getAlgorithm().getName(), "NO TRACKS");
+                    var tiesDbUrl = _aggregateJobPropertiesUtil.getValue("TIES_DB_URL", jobPart);
+                    noTracksTiesDbEntries.put(parentKey, new TiesDbEntry(tiesDbUrl, 0));
+                }
+            }
+        }
+
+	// For each piece of media, create TiesDb entries based on track counts.
         for (var media : job.getMedia()) { // parent media will always come before derivative media
             boolean outputLastTaskOnly = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
             var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
@@ -169,8 +197,7 @@ public class TiesDbService {
             }
         }
 
-        // It's possible that derivative media may have generated tracks for an algorithm, but the parent media did not,
-        // and/or only some of the derivative media generated tracks. In such cases, remove the "NO TRACKS" entries.
+        // Remove placeholder "NO TRACKS" entries.
         for (var key : tiesDbEntries.keySet()) {
             noTracksTiesDbEntries.remove(new TiesDbEntryKey(key.getMediaId(), key.getAlgorithmName(), "NO TRACKS"));
         }
@@ -267,13 +294,13 @@ public class TiesDbService {
                 "dataObject", dataObject);
 
         LOG.info("[Job {}] Posting assertion to TiesDb for the {} algorithm.",
-                 job.getId(), algorithm);
+                job.getId(), algorithm);
 
         return postAssertion(job.getId(),
-                             algorithm,
-                             tiesDbUrl,
-                             media.getSha256(),
-                             assertion);
+                algorithm,
+                tiesDbUrl,
+                media.getSha256(),
+                assertion);
     }
 
 
@@ -326,10 +353,10 @@ public class TiesDbService {
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
 
             return _callbackUtils.executeRequest(postRequest,
-                                                 _propertiesUtil.getHttpCallbackRetryCount())
+                            _propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(TiesDbService::checkResponse)
                     .exceptionally(err -> handleHttpError(jobId, algorithm, fullUrl.toString(),
-                                                          err));
+                            err));
         }
         catch (JsonProcessingException e) {
             handleHttpError(jobId, algorithm, fullUrl.toString(), e);
@@ -345,7 +372,7 @@ public class TiesDbService {
         }
         try {
             var responseContent = IOUtils.toString(response.getEntity().getContent(),
-                                                   StandardCharsets.UTF_8);
+                    StandardCharsets.UTF_8);
             throw new IllegalStateException(String.format(
                     "TiesDb responded with a non-200 status code of %s and body: %s",
                     statusCode, responseContent));

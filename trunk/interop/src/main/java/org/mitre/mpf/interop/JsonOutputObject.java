@@ -65,6 +65,11 @@ public class JsonOutputObject {
     private String siteId;
     public String getSiteId() { return siteId; }
 
+    @JsonProperty("OpenMPFVersion")
+    @JsonPropertyDescription("The semantic version number of the OpenMPF system that executed this job and generated this output object.")
+    private String OpenMPFVersion;
+    public String getOpenMPFVersion() { return OpenMPFVersion; }
+
     @JsonProperty("timeStart")
     @JsonPropertyDescription("The timestamp indicating when this job was received.")
     private Instant timeStart;
@@ -116,12 +121,13 @@ public class JsonOutputObject {
 
 
     public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
-                            String externalJobId, Instant timeStart, Instant timeStop, String status) {
+                            String OpenMPFVersion, String externalJobId, Instant timeStart, Instant timeStop, String status) {
         this.jobId = jobId;
         this.objectId = objectId;
         this.pipeline = pipeline;
         this.priority = priority;
         this.siteId = siteId;
+        this.OpenMPFVersion = OpenMPFVersion;
         this.externalJobId = externalJobId;
         this.timeStart = timeStart;
         this.timeStop = timeStop;
@@ -141,6 +147,7 @@ public class JsonOutputObject {
             @JsonProperty("pipeline") JsonPipeline pipeline,
             @JsonProperty("priority") int priority,
             @JsonProperty("siteId") String siteId,
+            @JsonProperty("OpenMPFVersion") String OpenMPFVersion,
             @JsonProperty("externalJobId") String externalJobId,
             @JsonProperty("timeStart") Instant timeStart,
             @JsonProperty("timeStop") Instant timeStop,
@@ -153,7 +160,7 @@ public class JsonOutputObject {
             @JsonProperty("warnings") Collection<JsonMediaIssue> warnings) {
 
         JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId,
-                                                             externalJobId, timeStart, timeStop, status);
+                                                             OpenMPFVersion, externalJobId, timeStart, timeStop, status);
         if(media != null) {
             outputObject.media.addAll(media);
         }

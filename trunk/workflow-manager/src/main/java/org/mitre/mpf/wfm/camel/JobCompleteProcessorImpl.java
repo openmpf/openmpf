@@ -335,6 +335,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 convertPipeline(job.getPipelineElements()),
                 job.getPriority(),
                 propertiesUtil.getSiteId(),
+                propertiesUtil.getSemanticVersion(),
                 job.getExternalId().orElse(null),
                 timeReceived,
                 timeCompleted,

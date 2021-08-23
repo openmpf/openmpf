@@ -134,7 +134,7 @@ public class TiesDbService {
             }
         }
 
-	// For each piece of media, create TiesDb entries based on track counts.
+        // For each piece of media, create TiesDb entries based on track counts.
         for (var media : job.getMedia()) { // parent media will always come before derivative media
             boolean outputLastTaskOnly = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
             var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);

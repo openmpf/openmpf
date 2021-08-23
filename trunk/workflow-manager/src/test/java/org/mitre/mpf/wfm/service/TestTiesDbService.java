@@ -29,7 +29,7 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.tuple.Pair;
+import com.uwyn.jhighlight.fastutil.Hash;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpPost;
@@ -49,6 +49,8 @@ import org.mitre.mpf.wfm.util.*;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -56,13 +58,17 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class TestTiesDbService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TestTiesDbService.class);
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -224,34 +230,36 @@ public class TestTiesDbService {
 
     @Test
     public void testTaskMerging() {
-        testTwoStageTrackMerging("TYPE1", 451, 452);
+        testTwoStageTaskMerging("TYPE1", 451, 452);
     }
 
     @Test
     public void testTaskMergingLastTaskNoTracks() {
-        testTwoStageTrackMerging("NO TRACKS", 451, 0);
+        testTwoStageTaskMerging("NO TRACKS", 451, 0);
     }
 
     @Test
     public void testTaskMergingFirstTaskNoTracks() {
-        testTwoStageTrackMerging("TYPE1", 0, 452);
+        testTwoStageTaskMerging("TYPE1", 0, 452);
     }
 
     @Test
     public void testTaskMergingNoTracks() {
-        testTwoStageTrackMerging("NO TRACKS", 0, 0);
+        testTwoStageTaskMerging("NO TRACKS", 0, 0);
     }
 
 
-    private void testTwoStageTrackMerging(String expectedType,
-                                          int task1TrackCount, int task2TrackCount) {
-        var job = createTwoStageTestJob();
+    private void testTwoStageTaskMerging(String expectedType,
+                                         int task1TrackCount, int task2TrackCount) {
+        var tasksToMerge = Map.of(1, 0);
+        var job = createTwoStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
+
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Map.of(1, 0));
+                .thenReturn(tasksToMerge);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -309,14 +317,15 @@ public class TestTiesDbService {
 
 
     private void runThreeStageMergeLastTest(boolean verifyAlgo1Request) {
-        var job = createThreeStageTestJob();
+        var tasksToMerge = Map.of(2, 1);
+        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Map.of(2, 1));
+                .thenReturn(tasksToMerge);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -394,14 +403,15 @@ public class TestTiesDbService {
 
 
     private void runMergeMiddleTest(boolean verifyAlgo1Request) {
-        var job = createThreeStageTestJob();
+        var tasksToMerge = Map.of(1, 0);
+        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Map.of(1, 0));
+                .thenReturn(tasksToMerge);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -477,15 +487,15 @@ public class TestTiesDbService {
     }
 
     private void runMergeLastTwoTest() {
-        var job = createThreeStageTestJob();
+        var tasksToMerge = Map.of(1, 0,  2, 1);
+        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
-                .thenReturn(Map.of(1, 0,
-                                   2, 1));
+                .thenReturn(tasksToMerge);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -531,7 +541,7 @@ public class TestTiesDbService {
 
     @Test
     public void canHandleInvalidUri() {
-        var job = createTwoStageTestJob();
+        var job = createTwoStageTestJob(Set.of());
         var media = job.getMedia().iterator().next();
         var badAction = job.getPipelineElements().getAction(0, 0);
         var goodAction = job.getPipelineElements().getAction(1, 0);
@@ -595,7 +605,7 @@ public class TestTiesDbService {
 
     @Test
     public void canHandleHttpError() {
-        var job = createTwoStageTestJob();
+        var job = createTwoStageTestJob(Set.of());
         var media = job.getMedia().iterator().next();
 
         String url = "http://localhost:81/qwer";
@@ -670,15 +680,20 @@ public class TestTiesDbService {
     }
 
 
-    private static BatchJob createTwoStageTestJob() {
+    private static BatchJob createTwoStageTestJob(Set<Integer> tasksToMerge) {
         var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
         var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
 
-        var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
-        var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
+        var mergeProperties =
+                List.of(new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE"));
+
+        var action1 = new Action("ACTION1", null, algo1.getName(),
+                tasksToMerge.contains(0) ? mergeProperties : List.of());
+        var action2 = new Action("ACTION2", null, algo2.getName(),
+                tasksToMerge.contains(1) ? mergeProperties : List.of());
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
@@ -694,7 +709,7 @@ public class TestTiesDbService {
     }
 
 
-    private static BatchJob createThreeStageTestJob() {
+    private static BatchJob createThreeStageTestJob(Set<Integer> tasksToMerge) {
         var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
         media.setSha256("MEDIA1_SHA");
 
@@ -702,9 +717,15 @@ public class TestTiesDbService {
         var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
         var algo3 = new Algorithm("ALGO3", null, null, null, null, true, false);
 
-        var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
-        var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
-        var action3 = new Action("ACTION3", null, algo3.getName(), List.of());
+        var mergeProperties =
+                List.of(new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE"));
+
+        var action1 = new Action("ACTION1", null, algo1.getName(),
+                tasksToMerge.contains(0) ? mergeProperties : List.of());
+        var action2 = new Action("ACTION2", null, algo2.getName(),
+                tasksToMerge.contains(1) ? mergeProperties : List.of());
+        var action3 = new Action("ACTION3", null, algo3.getName(),
+                tasksToMerge.contains(2) ? mergeProperties : List.of());
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
@@ -758,10 +779,15 @@ public class TestTiesDbService {
         assertEquals("OpenMPF", assertion.get("system").textValue());
 
         var dataObject = assertion.get("dataObject");
+
+        LOG.info("httpRequestMatcher: Comparing [{}, {}, {}] to [{}, {}, {}].",
+                algorithm, trackType, trackCount,
+                dataObject.get("algorithm").textValue(), dataObject.get("outputType").textValue(),
+                dataObject.get("trackCount")); // DEBUG
+
         assertEquals("1.5", dataObject.get("systemVersion").textValue());
         assertFalse(dataObject.get("systemHostname").textValue().isBlank());
         assertEquals("PIPELINE", dataObject.get("pipeline").textValue());
-
 
         // Assertions specific to given arguments
         var requestUri = httpRequest.getURI().toString();
@@ -804,18 +830,166 @@ public class TestTiesDbService {
     }
 
 
-    @Test
-    public void testDerivativeMediaNoMerging() {
-        testSourceAndDerivativeMediaTasks(
-                Pair.of("MEDIA", 2),
-                Pair.of("SOURCE_TYPE", 1),
-                Pair.of("DERIVATIVE_TYPE", 2));
+    private class AssertionEntry {
+        private final String _algoName;
+        public String getAlgoName() { return _algoName; }
+
+        private final String _detectionType;
+        public String getDetectionType() { return _detectionType; }
+
+        private final int _count;
+        public int getCount() { return _count; }
+
+        public AssertionEntry(String algoName, String detectionType, int count) {
+            _algoName = algoName;
+            _detectionType = detectionType;
+            _count = count;
+        }
     }
 
-    private void testSourceAndDerivativeMediaTasks(Pair<String, Integer> task1TrackTypeAndCount,
-                                                   Pair<String, Integer> task2TrackTypeAndCount,
-                                                   Pair<String, Integer> task3TrackTypeAndCount) {
-        var job = createDerivativeMediaTestJob();
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaDiffTasks() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE", 1); // parent
+        trackCounter.set(701, 2, 0, "DERIVATIVE_TYPE", 2); // child1
+        trackCounter.set(702, 2, 0, "DERIVATIVE_TYPE", 3); // child2
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 1));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5)); // sum of child tracks
+
+        runSourceAndDerivativeMediaDiffTasks(true, trackCounter, assertionEntries);
+    }
+
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaNoSourceTracks() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE", 0); // parent
+        trackCounter.set(701, 2, 0, "DERIVATIVE_TYPE", 2); // child1
+        trackCounter.set(702, 2, 0, "DERIVATIVE_TYPE", 3); // child2
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "NO TRACKS", 0));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5));
+
+        runSourceAndDerivativeMediaDiffTasks(true, trackCounter, assertionEntries);
+    }
+
+    @Test
+    public void testNoMergingNoDerivatives() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 0); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE", 3); // parent
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 3));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "NO TRACKS", 0));
+
+        runSourceAndDerivativeMediaDiffTasks(false, trackCounter, assertionEntries);
+    }
+
+    private void runSourceAndDerivativeMediaDiffTasks(boolean createChildren, TrackCounter trackCounter,
+                                                               Set<AssertionEntry> assertionEntries) {
+        var job = createDerivativeMediaThreeStageTestJobDiffTasks(createChildren);
+        String url = "http://localhost:81/qwer";
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+                .thenReturn(url);
+
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+                .thenReturn(ThreadUtil.completedFuture(
+                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
+
+        var timeCompleted = Instant.ofEpochSecond(1622724824);
+        var outputObjectLocation = URI.create("http://localhost:321/asdf");
+        var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                timeCompleted,
+                outputObjectLocation,
+                outputSha,
+                trackCounter);
+
+        result.join();
+
+        for (var assertionEntry : assertionEntries) {
+            verify(_mockCallbackUtils)
+                    .executeRequest(
+                            argThat(req -> httpRequestMatcher(
+                                    job.getId(),
+                                    BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                                    job.getMedia(700), // parent
+                                    url,
+                                    assertionEntry.getAlgoName(),
+                                    assertionEntry.getDetectionType(),
+                                    assertionEntry.getCount(),
+                                    outputObjectLocation,
+                                    outputSha,
+                                    timeCompleted,
+                                    req)),
+                            eq(3));
+        }
+
+        verifyNoMoreInteractions(_mockCallbackUtils);
+    }
+
+    private static BatchJob createDerivativeMediaThreeStageTestJobDiffTasks(boolean createChildren) {
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        parentMedia.setSha256("PARENT_SHA");
+
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
+        var algo2 = new Algorithm("PARENT_ALGO", null, null, null, null, true, false);
+        var algo3 = new Algorithm("CHILD_ALGO", null, null, null, null, true, false);
+
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
+        var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
+                List.of(new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE")));
+        var action3 = new Action("CHILD_ACTION", null, algo3.getName(),
+                List.of(new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE")));
+
+        var task1 = new Task("TASK1", null, List.of(action1.getName()));
+        var task2 = new Task("TASK2", null, List.of(action2.getName()));
+        var task3 = new Task("TASK3", null, List.of(action3.getName()));
+
+        var pipeline = new Pipeline("PIPELINE", null,
+                List.of(task1.getName(), task2.getName(), task3.getName()));
+        var pipelineElements = new JobPipelineElements(
+                pipeline,
+                List.of(task1, task2, task3),
+                List.of(action1, action2, action3),
+                List.of(algo1, algo2, algo3));
+
+        BatchJob job = new BatchJobImpl(
+                123, null, null, pipelineElements, 4,
+                true, null, null, List.of(parentMedia),
+                Map.of(), Map.of());
+
+        if (createChildren) {
+            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+            childMedia1.setSha256("CHILD1_SHA");
+
+            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+            childMedia2.setSha256("CHILD2_SHA");
+
+            job.addDerivativeMedia(childMedia1);
+            job.addDerivativeMedia(childMedia2);
+        }
+
+        return job;
+    }
+
+
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaDiffTasksSharedAlgo() {
+        var job = createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo();
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
@@ -825,9 +999,10 @@ public class TestTiesDbService {
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
         var trackCounter = new TrackCounter();
-        trackCounter.set(700, 0, 0, task1TrackTypeAndCount.getLeft(), task1TrackTypeAndCount.getRight());
-        trackCounter.set(701, 1, 0, task2TrackTypeAndCount.getLeft(), task2TrackTypeAndCount.getRight());
-        trackCounter.set(702, 2, 0, task3TrackTypeAndCount.getLeft(), task3TrackTypeAndCount.getRight());
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 2, 0, "SHARED_TYPE", 2); // child1
+        trackCounter.set(702, 2, 0, "SHARED_TYPE", 3); // child2
 
         var timeCompleted = Instant.ofEpochSecond(1622724824);
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
@@ -851,8 +1026,8 @@ public class TestTiesDbService {
                                 job.getMedia(700), // parent
                                 url,
                                 "EXTRACT_ALGO",
-                                task1TrackTypeAndCount.getLeft(),
-                                task1TrackTypeAndCount.getRight(),
+                                "MEDIA",
+                                2,
                                 outputObjectLocation,
                                 outputSha,
                                 timeCompleted,
@@ -866,25 +1041,9 @@ public class TestTiesDbService {
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
-                                "PARENT_ALGO",
-                                task2TrackTypeAndCount.getLeft(),
-                                task2TrackTypeAndCount.getRight(),
-                                outputObjectLocation,
-                                outputSha,
-                                timeCompleted,
-                                req)),
-                        eq(3));
-
-        verify(_mockCallbackUtils)
-                .executeRequest(
-                        argThat(req -> httpRequestMatcher(
-                                job.getId(),
-                                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
-                                job.getMedia(700), // parent
-                                url,
-                                "CHILD_ALGO",
-                                task3TrackTypeAndCount.getLeft(),
-                                task3TrackTypeAndCount.getRight(),
+                                "SHARED_ALGO",
+                                "SHARED_TYPE",
+                                10, // sum of parent and child tracks
                                 outputObjectLocation,
                                 outputSha,
                                 timeCompleted,
@@ -894,7 +1053,7 @@ public class TestTiesDbService {
         verifyNoMoreInteractions(_mockCallbackUtils);
     }
 
-    private static BatchJob createDerivativeMediaTestJob() {
+    private static BatchJob createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo() {
         var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
         parentMedia.setSha256("PARENT_SHA");
 
@@ -907,13 +1066,12 @@ public class TestTiesDbService {
         childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
-        var algo2 = new Algorithm("PARENT_ALGO", null, null, null, null, true, false);
-        var algo3 = new Algorithm("CHILD_ALGO", null, null, null, null, true, false);
+        var algo2 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
         var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
                 List.of(new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE")));
-        var action3 = new Action("CHILD_ACTION", null, algo3.getName(),
+        var action3 = new Action("CHILD_ACTION", null, algo2.getName(),
                 List.of(new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE")));
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
@@ -926,7 +1084,287 @@ public class TestTiesDbService {
                 pipeline,
                 List.of(task1, task2, task3),
                 List.of(action1, action2, action3),
-                List.of(algo1, algo2, algo3));
+                List.of(algo1, algo2));
+
+        BatchJob job = new BatchJobImpl(
+                123, null, null, pipelineElements, 4,
+                true, null, null, List.of(parentMedia),
+                Map.of(), Map.of());
+
+        job.addDerivativeMedia(childMedia1);
+        job.addDerivativeMedia(childMedia2);
+
+        return job;
+    }
+
+
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaSharedTask() {
+        var job = createDerivativeMediaTwoStageTestJobSharedTask();
+        String url = "http://localhost:81/qwer";
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+                .thenReturn(url);
+
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+                .thenReturn(ThreadUtil.completedFuture(
+                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
+
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 1, 0, "SHARED_TYPE", 2); // child1
+        trackCounter.set(702, 1, 0, "SHARED_TYPE", 3); // child2
+
+        var timeCompleted = Instant.ofEpochSecond(1622724824);
+        var outputObjectLocation = URI.create("http://localhost:321/asdf");
+        var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                timeCompleted,
+                outputObjectLocation,
+                outputSha,
+                trackCounter);
+
+        result.join();
+
+        verify(_mockCallbackUtils)
+                .executeRequest(
+                        argThat(req -> httpRequestMatcher(
+                                job.getId(),
+                                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                                job.getMedia(700), // parent
+                                url,
+                                "EXTRACT_ALGO",
+                                "MEDIA",
+                                2,
+                                outputObjectLocation,
+                                outputSha,
+                                timeCompleted,
+                                req)),
+                        eq(3));
+
+        verify(_mockCallbackUtils)
+                .executeRequest(
+                        argThat(req -> httpRequestMatcher(
+                                job.getId(),
+                                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                                job.getMedia(700), // parent
+                                url,
+                                "SHARED_ALGO",
+                                "SHARED_TYPE",
+                                10, // combined parent and children
+                                outputObjectLocation,
+                                outputSha,
+                                timeCompleted,
+                                req)),
+                        eq(3));
+
+        verifyNoMoreInteractions(_mockCallbackUtils);
+    }
+
+    private static BatchJob createDerivativeMediaTwoStageTestJobSharedTask() {
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        parentMedia.setSha256("PARENT_SHA");
+
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia1.setSha256("CHILD1_SHA");
+
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia2.setSha256("CHILD2_SHA");
+
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
+        var algo2 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
+
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
+        var action2 = new Action("SHARED_ACTION", null, algo2.getName(), List.of());
+
+        var task1 = new Task("TASK1", null, List.of(action1.getName()));
+        var task2 = new Task("TASK2", null, List.of(action2.getName()));
+
+        var pipeline = new Pipeline("PIPELINE", null,
+                List.of(task1.getName(), task2.getName()));
+        var pipelineElements = new JobPipelineElements(
+                pipeline,
+                List.of(task1, task2),
+                List.of(action1, action2),
+                List.of(algo1, algo2));
+
+        BatchJob job = new BatchJobImpl(
+                123, null, null, pipelineElements, 4,
+                true, null, null, List.of(parentMedia),
+                Map.of(), Map.of());
+
+        job.addDerivativeMedia(childMedia1);
+        job.addDerivativeMedia(childMedia2);
+
+        return job;
+    }
+
+
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaFlows() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
+        trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
+        trackCounter.set(701, 3, 0, "DERIVATIVE_TYPE1", 7); // child1
+        trackCounter.set(702, 3, 0, "DERIVATIVE_TYPE1", 5); // child2
+        trackCounter.set(701, 4, 0, "DERIVATIVE_TYPE2", 8); // child1
+        trackCounter.set(702, 4, 0, "DERIVATIVE_TYPE2", 2); // child2
+        trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
+        trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 2));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO2", "SOURCE_TYPE2", 3));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 12));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO2", "DERIVATIVE_TYPE2", 10));
+        assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14));
+
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Set.of());
+    }
+
+    @Test
+    public void testMergingSourceAndDerivativeMediaFlowsDiffTypes() {
+        var parentTasksToMerge = Map.of(5, 2,  2, 1);
+        var childTasksToMerge = Map.of(5, 4,  4, 3);
+
+        var tasksToMerge = new HashSet();
+        tasksToMerge.addAll(parentTasksToMerge.keySet());
+        tasksToMerge.addAll(childTasksToMerge.keySet());
+
+        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
+                argThat(m -> m != null && m.getId() == 700), any())) // parent
+                .thenReturn(parentTasksToMerge);
+
+        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
+                argThat(m -> m != null && m.getId() != 700), any())) // children
+                .thenReturn(childTasksToMerge);
+
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
+        trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
+        trackCounter.set(701, 3, 0, "DERIVATIVE_TYPE1", 7); // child1
+        trackCounter.set(702, 3, 0, "DERIVATIVE_TYPE1", 5); // child2
+        trackCounter.set(701, 4, 0, "DERIVATIVE_TYPE2", 8); // child1
+        trackCounter.set(702, 4, 0, "DERIVATIVE_TYPE2", 2); // child2
+        trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
+        trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9));
+
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, tasksToMerge);
+    }
+
+    private void runMergingLastSourceAndDerivativeMediaTasks(TrackCounter trackCounter,
+                                                             Set<AssertionEntry> assertionEntries,
+                                                             Set<Integer> tasksToMerge) {
+        var job = createDerivativeMediaSixStageTestJob(tasksToMerge);
+        String url = "http://localhost:81/qwer";
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+                .thenReturn(url);
+
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+                .thenReturn(ThreadUtil.completedFuture(
+                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
+
+        var timeCompleted = Instant.ofEpochSecond(1622724824);
+        var outputObjectLocation = URI.create("http://localhost:321/asdf");
+        var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                timeCompleted,
+                outputObjectLocation,
+                outputSha,
+                trackCounter);
+
+        result.join();
+
+        for (var assertionEntry : assertionEntries) {
+            verify(_mockCallbackUtils)
+                    .executeRequest(
+                            argThat(req -> httpRequestMatcher(
+                                    job.getId(),
+                                    BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                                    job.getMedia(700), // parent
+                                    url,
+                                    assertionEntry.getAlgoName(),
+                                    assertionEntry.getDetectionType(),
+                                    assertionEntry.getCount(),
+                                    outputObjectLocation,
+                                    outputSha,
+                                    timeCompleted,
+                                    req)),
+                            eq(3));
+        }
+
+        verifyNoMoreInteractions(_mockCallbackUtils);
+    }
+
+    private static BatchJob createDerivativeMediaSixStageTestJob(Set<Integer> tasksToMerge) {
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        parentMedia.setSha256("PARENT_SHA");
+
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia1.setSha256("CHILD1_SHA");
+
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia2.setSha256("CHILD2_SHA");
+
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
+        var algo2 = new Algorithm("PARENT_ALGO1", null, null, null, null, true, false);
+        var algo3 = new Algorithm("PARENT_ALGO2", null, null, null, null, true, false);
+        var algo4 = new Algorithm("CHILD_ALGO1", null, null, null, null, true, false);
+        var algo5 = new Algorithm("CHILD_ALGO2", null, null, null, null, true, false);
+        var algo6 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
+
+        var sourceOnlyProperty = new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE");
+        var derivativeOnlyProperty = new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE");
+        var mergeProperty = new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE");
+
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(),
+                tasksToMerge.contains(0) ? List.of(mergeProperty) : List.of());
+        var action2 = new Action("PARENT_ACTION1", null, algo2.getName(),
+                tasksToMerge.contains(1) ? List.of(sourceOnlyProperty, mergeProperty) : List.of(sourceOnlyProperty));
+        var action3 = new Action("PARENT_ACTION2", null, algo3.getName(),
+                tasksToMerge.contains(2) ? List.of(sourceOnlyProperty, mergeProperty) : List.of(sourceOnlyProperty));
+        var action4 = new Action("CHILD_ACTION1", null, algo4.getName(),
+                tasksToMerge.contains(3) ? List.of(derivativeOnlyProperty, mergeProperty) : List.of(derivativeOnlyProperty));
+        var action5 = new Action("CHILD_ACTION2", null, algo5.getName(),
+                tasksToMerge.contains(4) ? List.of(derivativeOnlyProperty, mergeProperty) : List.of(derivativeOnlyProperty));
+        var action6 = new Action("SHARED_ACTION", null, algo6.getName(),
+                tasksToMerge.contains(5) ? List.of(mergeProperty) : List.of());
+
+        var task1 = new Task("TASK1", null, List.of(action1.getName()));
+        var task2 = new Task("TASK2", null, List.of(action2.getName()));
+        var task3 = new Task("TASK3", null, List.of(action3.getName()));
+        var task4 = new Task("TASK4", null, List.of(action4.getName()));
+        var task5 = new Task("TASK5", null, List.of(action5.getName()));
+        var task6 = new Task("TASK6", null, List.of(action6.getName()));
+
+        var pipeline = new Pipeline("PIPELINE", null,
+                List.of(task1.getName(), task2.getName(), task3.getName(), task4.getName(), task5.getName(),
+                        task6.getName()));
+        var pipelineElements = new JobPipelineElements(
+                pipeline,
+                List.of(task1, task2, task3, task4, task5, task6),
+                List.of(action1, action2, action3, action4, action5, action6),
+                List.of(algo1, algo2, algo3, algo4, algo5, algo6));
 
         BatchJob job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,

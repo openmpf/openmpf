@@ -117,6 +117,7 @@ public class TiesDbService {
                 continue;
             }
             boolean outputLastTaskOnly = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
+            var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
 
             for (var jobPart : JobPartsIter.of(job, media)) {
                 if (outputLastTaskOnly

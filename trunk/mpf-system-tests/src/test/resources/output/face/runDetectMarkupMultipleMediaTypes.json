@@ -39,7 +39,7 @@
           {
             "algorithm": "MARKUPCV",
             "name": "OCV GENERIC MARKUP ACTION",
-            "description": "Marks up all of the objects detected in the given video.",
+            "description": "Performs object markup in images and videos.",
             "properties": {}
           }
         ]

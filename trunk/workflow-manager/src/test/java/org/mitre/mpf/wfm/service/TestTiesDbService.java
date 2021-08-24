@@ -24,7 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -131,7 +130,6 @@ public class TestTiesDbService {
                 123, null, null, pipelineElements, 4,
                 true, null, null, List.of(media1, media2),
                 Map.of(), Map.of());
-
 
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
@@ -253,8 +251,8 @@ public class TestTiesDbService {
                                          int task1TrackCount, int task2TrackCount) {
         var job = createTwoStageTestJob();
         var tasksToMerge = Map.of(1, 0);
-        String url = "http://localhost:81/qwer";
 
+        String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
@@ -325,8 +323,8 @@ public class TestTiesDbService {
     private void runThreeStageMergeLastTest(boolean verifyAlgo1Request) {
         var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(2, 1);
-        String url = "http://localhost:81/qwer";
 
+        String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
@@ -417,8 +415,8 @@ public class TestTiesDbService {
     private void runMergeMiddleTest(boolean verifyAlgo1Request) {
         var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(1, 0);
-        String url = "http://localhost:81/qwer";
 
+        String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
@@ -507,8 +505,8 @@ public class TestTiesDbService {
     private void runMergeLastTwoTest() {
         var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(1, 0,  2, 1);
-        String url = "http://localhost:81/qwer";
 
+        String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
 
@@ -909,6 +907,7 @@ public class TestTiesDbService {
     private void runSourceAndDerivativeMediaDiffTasks(boolean createChildren, TrackCounter trackCounter,
                                                                Set<AssertionEntry> assertionEntries) {
         var job = createDerivativeMediaThreeStageTestJobDiffTasks(createChildren);
+
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
@@ -1001,10 +1000,12 @@ public class TestTiesDbService {
 
 
     @Test
-    public void testNoMergingSourceAndDerivativeMediaDiffTasksSharedAlgo() {
+    public void testNoMergingSourceAndDerivativeMediaDiffTasksSharedAlgoNoChildUri() {
         var job = createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo();
+
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().getId() == 700))) // parent
                 .thenReturn(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
@@ -1046,6 +1047,59 @@ public class TestTiesDbService {
                                 timeCompleted,
                                 req)),
                         eq(3));
+
+        verify(_mockCallbackUtils)
+                .executeRequest(
+                        argThat(req -> httpRequestMatcher(
+                                job.getId(),
+                                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                                job.getMedia(700), // parent
+                                url,
+                                "SHARED_ALGO",
+                                "SHARED_TYPE",
+                                10, // sum of parent and child tracks
+                                outputObjectLocation,
+                                outputSha,
+                                timeCompleted,
+                                req)),
+                        eq(3));
+
+        verifyNoMoreInteractions(_mockCallbackUtils);
+    }
+
+
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaDiffTasksSharedAlgoNoParentUri() {
+        var job = createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo();
+
+        String url = "http://localhost:81/qwer";
+        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"),
+                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().getId() != 700))) // children
+                .thenReturn(url);
+
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+                .thenReturn(ThreadUtil.completedFuture(
+                        new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
+
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 2, 0, "SHARED_TYPE", 2); // child1
+        trackCounter.set(702, 2, 0, "SHARED_TYPE", 3); // child2
+
+        var timeCompleted = Instant.ofEpochSecond(1622724824);
+        var outputObjectLocation = URI.create("http://localhost:321/asdf");
+        var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                timeCompleted,
+                outputObjectLocation,
+                outputSha,
+                trackCounter);
+
+        result.join();
 
         verify(_mockCallbackUtils)
                 .executeRequest(
@@ -1114,6 +1168,7 @@ public class TestTiesDbService {
     @Test
     public void testNoMergingSourceAndDerivativeMediaSharedTask() {
         var job = createDerivativeMediaTwoStageTestJobSharedTask();
+
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
@@ -1395,4 +1450,3 @@ public class TestTiesDbService {
         return job;
     }
 }
-

@@ -87,7 +87,7 @@ public class TestDetectionTaskSplitter {
     }
 
     @Test
-    public void testDetectionSplitter() {
+    public void testMediaVideoLengthNotSet() {
         final long testId = 12345;
         final String testExternalId = "externID";
         final int testPriority = 4;
@@ -104,6 +104,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setMimeType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
         testMedia.addMetadata("FPS", "30");
+        // Note that because media length is not set, the split will result in no responses later.
 
         Algorithm algorithm = new Algorithm(
                 "detectionAlgo",
@@ -888,4 +889,75 @@ public class TestDetectionTaskSplitter {
         checkCalcFrameInterval(-1,-1, null,null, null,null, 3,6, -1,-1, 30, 1);
     }
 
+    @Test
+    public void testSourceOnlyAndDerivativeMediaOnly() {
+        var parentMedia = new MediaImpl(700, "file:///parent", UriScheme.FILE, Paths.get("/local/path/parent"),
+                Map.of(), Map.of(), null);
+        parentMedia.setType(MediaType.UNKNOWN);
+        parentMedia.setMimeType("application/pdf");
+
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION,
+                new Algorithm.Requires(Collections.emptyList()),
+                new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
+
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
+        var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
+                List.of(new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE")));
+        var action3 = new Action("CHILD_ACTION", null, algo3.getName(),
+                List.of(new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE")));
+        var action4 = new Action("SHARED_ACTION", null, algo4.getName(), List.of());
+
+        var task1 = new Task("TASK1", null, List.of(action1.getName()));
+        var task2 = new Task("TASK2", null, List.of(action2.getName()));
+        var task3 = new Task("TASK3", null, List.of(action3.getName()));
+        var task4 = new Task("TASK4", null, List.of(action4.getName()));
+
+        var pipeline = new Pipeline("PIPELINE", null,
+                List.of(task1.getName(), task2.getName(), task3.getName(), task4.getName()));
+        var pipelineElements = new JobPipelineElements(
+                pipeline,
+                List.of(task1, task2, task3, task4),
+                List.of(action1, action2, action3, action4),
+                List.of(algo1, algo2, algo3, algo4));
+
+        BatchJob job = new BatchJobImpl(
+                123, null, null, pipelineElements, 4,
+                true, null, null, List.of(parentMedia),
+                Map.of(), Map.of());
+
+        List<Message> responseList = detectionSplitter.performSplit(job, task1);
+        Assert.assertEquals(1, responseList.size()); // parent only
+
+        // Children will be added after the extraction task in a real job.
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia1.setType(MediaType.IMAGE);
+        childMedia1.setMimeType("image/png");
+
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+        childMedia2.setType(MediaType.IMAGE);
+        childMedia2.setMimeType("image/jpeg");
+
+        job.addDerivativeMedia(childMedia1);
+        job.addDerivativeMedia(childMedia2);
+
+        responseList = detectionSplitter.performSplit(job, task2);
+        Assert.assertEquals(1, responseList.size()); // parent only
+
+        responseList = detectionSplitter.performSplit(job, task3);
+        Assert.assertEquals(2, responseList.size()); // children only
+
+        responseList = detectionSplitter.performSplit(job, task4);
+        Assert.assertEquals(3, responseList.size()); // parent and children
+    }
 }

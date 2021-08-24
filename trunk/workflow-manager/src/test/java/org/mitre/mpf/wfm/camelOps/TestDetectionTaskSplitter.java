@@ -890,7 +890,7 @@ public class TestDetectionTaskSplitter {
     }
 
     @Test
-    public void testSourceOnlyAndDerivativeMediaOnly() {
+    public void testSourceMediaOnlyAndDerivativeMediaOnly() {
         var parentMedia = new MediaImpl(700, "file:///parent", UriScheme.FILE, Paths.get("/local/path/parent"),
                 Map.of(), Map.of(), null);
         parentMedia.setType(MediaType.UNKNOWN);

@@ -379,7 +379,9 @@ public class PropertiesUtil {
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
     private File derivativeMediaDirectory;
-    public File getDerivativeMediaDirectory() { return derivativeMediaDirectory; }
+    public File getJobDerivativeMediaDirectory(long jobId) {
+        return new File(derivativeMediaDirectory, String.valueOf(jobId));
+    }
 
     private File markupDirectory;
     public File getJobMarkupDirectory(long jobId) {

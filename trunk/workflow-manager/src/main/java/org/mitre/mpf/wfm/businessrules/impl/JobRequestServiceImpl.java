@@ -174,6 +174,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobArtifactsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobMarkupDirectory(jobId));
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobDerivativeMediaDirectory(jobId));
 
         submit(jobRequestEntity);
         return jobRequestEntity;

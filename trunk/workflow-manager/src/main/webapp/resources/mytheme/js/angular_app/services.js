@@ -837,6 +837,7 @@ AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
 
 AppServices.factory('NotificationSvc', [
     function () {
+        var _lastMsgHtml;
 
         // Wrap lines in divs so they show up in separate lines in the notification
         var wrapLinesInDiv = function (message) {
@@ -845,11 +846,17 @@ AppServices.factory('NotificationSvc', [
                 return "<div>" + line + "</div>"
             });
             return msgDivList.join('');
-
         };
 
         var generateNotyAlert = function (type, message, layout) {
             var msgHtml = wrapLinesInDiv(message);
+
+            // Prevent duplicates
+            if (msgHtml == _lastMsgHtml) {
+                return;
+            }
+            _lastMsgHtml = msgHtml;
+
             noty({
                 text: msgHtml,
                 type: type,
@@ -862,6 +869,9 @@ AppServices.factory('NotificationSvc', [
                         text: 'Ok',
                         onClick: function (notification) {
                             notification.close();
+                            if (this.text == _lastMsgHtml) {
+                                _lastMsgHtml = null;
+                            }
                         }
                     },
                     {
@@ -869,6 +879,7 @@ AppServices.factory('NotificationSvc', [
                         text: 'Close All',
                         onClick: function () {
                             $.noty.closeAll();
+                            _lastMsgHtml = null;
                         }
                     }
                 ]

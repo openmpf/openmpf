@@ -193,8 +193,7 @@ public class InProgressBatchJobsService {
         boolean hasDerivativeMedia = job.getMedia().stream().anyMatch(Media::isDerivative);
         if (hasDerivativeMedia) {
             try {
-                Path derivativeMediaPath =
-                        _propertiesUtil.getDerivativeMediaDirectory().toPath().resolve(Long.toString(jobId));
+                Path derivativeMediaPath = _propertiesUtil.getJobDerivativeMediaDirectory(jobId).toPath();
                 Files.walk(derivativeMediaPath)
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)

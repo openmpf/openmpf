@@ -41,6 +41,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -468,6 +470,11 @@ public class DetectionResponseProcessor
         _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 
         _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
+
+        if (derivativeMedia.isFailed()) {
+            _inProgressJobs.addError(jobId, derivativeMedia.getId(), IssueCodes.MEDIA_INITIALIZATION,
+                    derivativeMedia.getErrorMessage());
+        }
 
         return trackProperties;
     }

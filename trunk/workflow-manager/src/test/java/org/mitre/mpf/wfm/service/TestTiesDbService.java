@@ -251,8 +251,8 @@ public class TestTiesDbService {
 
     private void testTwoStageTaskMerging(String expectedType,
                                          int task1TrackCount, int task2TrackCount) {
+        var job = createTwoStageTestJob();
         var tasksToMerge = Map.of(1, 0);
-        var job = createTwoStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
@@ -260,6 +260,12 @@ public class TestTiesDbService {
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
+
+        for (int taskIndex : tasksToMerge.keySet()) {
+            when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    argThat(jp -> jp.getJob().equals(job) && jp.getTaskIndex() == taskIndex)))
+                    .thenReturn("TRUE");
+        }
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -317,8 +323,8 @@ public class TestTiesDbService {
 
 
     private void runThreeStageMergeLastTest(boolean verifyAlgo1Request) {
+        var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(2, 1);
-        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
@@ -326,6 +332,12 @@ public class TestTiesDbService {
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
+
+        for (int taskIndex : tasksToMerge.keySet()) {
+            when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    argThat(jp -> jp.getJob().equals(job) && jp.getTaskIndex() == taskIndex)))
+                    .thenReturn("TRUE");
+        }
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -403,8 +415,8 @@ public class TestTiesDbService {
 
 
     private void runMergeMiddleTest(boolean verifyAlgo1Request) {
+        var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(1, 0);
-        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
@@ -412,6 +424,12 @@ public class TestTiesDbService {
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
+
+        for (int taskIndex : tasksToMerge.keySet()) {
+            when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    argThat(jp -> jp.getJob().equals(job) && jp.getTaskIndex() == taskIndex)))
+                    .thenReturn("TRUE");
+        }
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -487,8 +505,8 @@ public class TestTiesDbService {
     }
 
     private void runMergeLastTwoTest() {
+        var job = createThreeStageTestJob();
         var tasksToMerge = Map.of(1, 0,  2, 1);
-        var job = createThreeStageTestJob(tasksToMerge.keySet());
         String url = "http://localhost:81/qwer";
 
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
@@ -496,6 +514,12 @@ public class TestTiesDbService {
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
+
+        for (int taskIndex : tasksToMerge.keySet()) {
+            when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    argThat(jp -> jp.getJob().equals(job) && jp.getTaskIndex() == taskIndex)))
+                    .thenReturn("TRUE");
+        }
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -541,7 +565,7 @@ public class TestTiesDbService {
 
     @Test
     public void canHandleInvalidUri() {
-        var job = createTwoStageTestJob(Set.of());
+        var job = createTwoStageTestJob();
         var media = job.getMedia().iterator().next();
         var badAction = job.getPipelineElements().getAction(0, 0);
         var goodAction = job.getPipelineElements().getAction(1, 0);
@@ -605,7 +629,7 @@ public class TestTiesDbService {
 
     @Test
     public void canHandleHttpError() {
-        var job = createTwoStageTestJob(Set.of());
+        var job = createTwoStageTestJob();
         var media = job.getMedia().iterator().next();
 
         String url = "http://localhost:81/qwer";
@@ -680,20 +704,15 @@ public class TestTiesDbService {
     }
 
 
-    private static BatchJob createTwoStageTestJob(Set<Integer> tasksToMerge) {
+    private static BatchJob createTwoStageTestJob() {
         var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
         var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
 
-        var mergeProperties =
-                List.of(new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE"));
-
-        var action1 = new Action("ACTION1", null, algo1.getName(),
-                tasksToMerge.contains(0) ? mergeProperties : List.of());
-        var action2 = new Action("ACTION2", null, algo2.getName(),
-                tasksToMerge.contains(1) ? mergeProperties : List.of());
+        var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
+        var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
@@ -709,7 +728,7 @@ public class TestTiesDbService {
     }
 
 
-    private static BatchJob createThreeStageTestJob(Set<Integer> tasksToMerge) {
+    private static BatchJob createThreeStageTestJob() {
         var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
         media.setSha256("MEDIA1_SHA");
 
@@ -717,15 +736,9 @@ public class TestTiesDbService {
         var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
         var algo3 = new Algorithm("ALGO3", null, null, null, null, true, false);
 
-        var mergeProperties =
-                List.of(new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE"));
-
-        var action1 = new Action("ACTION1", null, algo1.getName(),
-                tasksToMerge.contains(0) ? mergeProperties : List.of());
-        var action2 = new Action("ACTION2", null, algo2.getName(),
-                tasksToMerge.contains(1) ? mergeProperties : List.of());
-        var action3 = new Action("ACTION3", null, algo3.getName(),
-                tasksToMerge.contains(2) ? mergeProperties : List.of());
+        var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
+        var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
+        var action3 = new Action("ACTION3", null, algo3.getName(), List.of());
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));
@@ -780,10 +793,10 @@ public class TestTiesDbService {
 
         var dataObject = assertion.get("dataObject");
 
-        LOG.info("httpRequestMatcher: Comparing [{}, {}, {}] to [{}, {}, {}].",
+        LOG.debug("httpRequestMatcher: Comparing [{}, {}, {}] to [{}, {}, {}].",
                 algorithm, trackType, trackCount,
                 dataObject.get("algorithm").textValue(), dataObject.get("outputType").textValue(),
-                dataObject.get("trackCount")); // DEBUG
+                dataObject.get("trackCount"));
 
         assertEquals("1.5", dataObject.get("systemVersion").textValue());
         assertFalse(dataObject.get("systemHostname").textValue().isBlank());
@@ -1227,7 +1240,7 @@ public class TestTiesDbService {
         assertionEntries.add(new AssertionEntry("CHILD_ALGO2", "DERIVATIVE_TYPE2", 10));
         assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14));
 
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Set.of());
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Map.of(), Map.of());
     }
 
     @Test
@@ -1238,14 +1251,6 @@ public class TestTiesDbService {
         var tasksToMerge = new HashSet();
         tasksToMerge.addAll(parentTasksToMerge.keySet());
         tasksToMerge.addAll(childTasksToMerge.keySet());
-
-        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
-                argThat(m -> m != null && m.getId() == 700), any())) // parent
-                .thenReturn(parentTasksToMerge);
-
-        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
-                argThat(m -> m != null && m.getId() != 700), any())) // children
-                .thenReturn(childTasksToMerge);
 
         var trackCounter = new TrackCounter();
         trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
@@ -1264,16 +1269,36 @@ public class TestTiesDbService {
         assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
         assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9));
 
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, tasksToMerge);
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, parentTasksToMerge,
+                childTasksToMerge);
     }
 
     private void runMergingLastSourceAndDerivativeMediaTasks(TrackCounter trackCounter,
                                                              Set<AssertionEntry> assertionEntries,
-                                                             Set<Integer> tasksToMerge) {
-        var job = createDerivativeMediaSixStageTestJob(tasksToMerge);
+                                                             Map<Integer, Integer> parentTasksToMerge,
+                                                             Map<Integer, Integer> childTasksToMerge) {
+        var job = createDerivativeMediaSixStageTestJob();
+
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
                 .thenReturn(url);
+
+        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
+                argThat(m -> m != null && m.getId() == 700), any())) // parent
+                .thenReturn(parentTasksToMerge);
+
+        when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
+                argThat(m -> m != null && m.getId() != 700), any())) // children
+                .thenReturn(childTasksToMerge);
+
+        Set<Integer> tasksToMerge = new HashSet<>(parentTasksToMerge.keySet());
+        tasksToMerge.addAll(childTasksToMerge.keySet());
+
+        for (int taskIndex : tasksToMerge) {
+            when(_mockAggregateJobPropertiesUtil.getValue(eq(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY),
+                    argThat(jp -> jp.getJob().equals(job) && jp.getTaskIndex() == taskIndex)))
+                    .thenReturn("TRUE");
+        }
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1314,7 +1339,7 @@ public class TestTiesDbService {
         verifyNoMoreInteractions(_mockCallbackUtils);
     }
 
-    private static BatchJob createDerivativeMediaSixStageTestJob(Set<Integer> tasksToMerge) {
+    private static BatchJob createDerivativeMediaSixStageTestJob() {
         var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
         parentMedia.setSha256("PARENT_SHA");
 
@@ -1335,20 +1360,13 @@ public class TestTiesDbService {
 
         var sourceOnlyProperty = new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE");
         var derivativeOnlyProperty = new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE");
-        var mergeProperty = new ActionProperty(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, "TRUE");
 
-        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(),
-                tasksToMerge.contains(0) ? List.of(mergeProperty) : List.of());
-        var action2 = new Action("PARENT_ACTION1", null, algo2.getName(),
-                tasksToMerge.contains(1) ? List.of(sourceOnlyProperty, mergeProperty) : List.of(sourceOnlyProperty));
-        var action3 = new Action("PARENT_ACTION2", null, algo3.getName(),
-                tasksToMerge.contains(2) ? List.of(sourceOnlyProperty, mergeProperty) : List.of(sourceOnlyProperty));
-        var action4 = new Action("CHILD_ACTION1", null, algo4.getName(),
-                tasksToMerge.contains(3) ? List.of(derivativeOnlyProperty, mergeProperty) : List.of(derivativeOnlyProperty));
-        var action5 = new Action("CHILD_ACTION2", null, algo5.getName(),
-                tasksToMerge.contains(4) ? List.of(derivativeOnlyProperty, mergeProperty) : List.of(derivativeOnlyProperty));
-        var action6 = new Action("SHARED_ACTION", null, algo6.getName(),
-                tasksToMerge.contains(5) ? List.of(mergeProperty) : List.of());
+        var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
+        var action2 = new Action("PARENT_ACTION1", null, algo2.getName(), List.of(sourceOnlyProperty));
+        var action3 = new Action("PARENT_ACTION2", null, algo3.getName(), List.of(sourceOnlyProperty));
+        var action4 = new Action("CHILD_ACTION1", null, algo4.getName(), List.of(derivativeOnlyProperty));
+        var action5 = new Action("CHILD_ACTION2", null, algo5.getName(), List.of(derivativeOnlyProperty));
+        var action6 = new Action("SHARED_ACTION", null, algo6.getName(), List.of());
 
         var task1 = new Task("TASK1", null, List.of(action1.getName()));
         var task2 = new Task("TASK2", null, List.of(action2.getName()));

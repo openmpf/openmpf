@@ -567,19 +567,19 @@ AppServices.factory('ServerSidePush',
                                             if (job) {
                                                 if (msg.jobStatus == 'COMPLETE') {
                                                     console.log('job complete for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete!');
+                                                    NotificationSvc.jobSuccess(msg.id, 'Job ' + msg.id + ' is now complete!');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
                                                     console.log('job complete (with errors) for id: ' + msg.id);
-                                                    NotificationSvc.error('Job ' + msg.id + ' is now complete (with errors).');
+                                                    NotificationSvc.jobError(msg.id, 'Job ' + msg.id + ' is now complete (with errors).');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
                                                     console.log('job complete (with warnings) for id: ' + msg.id);
-                                                    NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
+                                                    NotificationSvc.jobWarning(msg.id, 'Job ' + msg.id + ' is now complete (with warnings).');
                                                 } else if (msg.jobStatus == 'ERROR') {
-                                                    console.log('job ' + msg.id + ' terminated due to an error');
-                                                    NotificationSvc.error('Job ' + msg.id + ' terminated due to an error. Check the Workflow Manager log for details.');
+                                                    console.log('job ' + msg.id + ' is in a critical error state');
+                                                    NotificationSvc.jobError(msg.id, 'Job ' + msg.id + ' is in a critical error state. Check the Workflow Manager log for details.');
                                                 } else if (msg.jobStatus == 'UNKNOWN') {
                                                     console.log('job ' + msg.id + ' is in an unknown state');
-                                                    NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
+                                                    NotificationSvc.jobInfo(msg.id, 'Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
                                                 }
                                             }
                                         });
@@ -837,7 +837,7 @@ AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
 
 AppServices.factory('NotificationSvc', [
     function () {
-        var _lastMsgHtml;
+        var lastJobMsgs = new Map();
 
         // Wrap lines in divs so they show up in separate lines in the notification
         var wrapLinesInDiv = function (message) {
@@ -846,17 +846,18 @@ AppServices.factory('NotificationSvc', [
                 return "<div>" + line + "</div>"
             });
             return msgDivList.join('');
+
+        };
+
+        var generateJobNotyAlert = function (type, jobId, message, layout) {
+            if (lastJobMsgs.get(jobId) != message) { // prevent immediate duplicates
+                lastJobMsgs.set(jobId, message);
+                generateNotyAlert(type, message, layout);
+            }
         };
 
         var generateNotyAlert = function (type, message, layout) {
             var msgHtml = wrapLinesInDiv(message);
-
-            // Prevent duplicates
-            if (msgHtml == _lastMsgHtml) {
-                return;
-            }
-            _lastMsgHtml = msgHtml;
-
             noty({
                 text: msgHtml,
                 type: type,
@@ -869,9 +870,6 @@ AppServices.factory('NotificationSvc', [
                         text: 'Ok',
                         onClick: function (notification) {
                             notification.close();
-                            if (this.text == _lastMsgHtml) {
-                                _lastMsgHtml = null;
-                            }
                         }
                     },
                     {
@@ -879,7 +877,6 @@ AppServices.factory('NotificationSvc', [
                         text: 'Close All',
                         onClick: function () {
                             $.noty.closeAll();
-                            _lastMsgHtml = null;
                         }
                     }
                 ]
@@ -887,6 +884,19 @@ AppServices.factory('NotificationSvc', [
         };
 
         return {
+            jobError: function (jobId, message, layout) {
+                generateJobNotyAlert("error", jobId, message, layout);
+            },
+            jobWarning: function (jobId, message, layout) {
+                generateJobNotyAlert("warning", jobId, message, layout);
+            },
+            jobSuccess: function (jobId, message, layout) {
+                generateJobNotyAlert("success", jobId, message, layout);
+            },
+            jobInfo: function (jobId, message, layout) {
+                generateJobNotyAlert("information", jobId, message, layout);
+            },
+
             error: function (message, layout) {
                 generateNotyAlert("error", message, layout);
             },

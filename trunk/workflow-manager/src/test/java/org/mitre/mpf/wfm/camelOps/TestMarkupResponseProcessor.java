@@ -105,26 +105,6 @@ public class TestMarkupResponseProcessor {
     }
 
 
-    @Test
-    public void canHandleMarkupWarning() {
-        doAnswer(invocation -> {
-            invocation.getArgument(0, MarkupResult.class)
-                    .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
-            return null;
-        }).when(_mockStorageService).store(any(MarkupResult.class));
-
-        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
-                .setHasError(false);
-
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
-        assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
-
-        verify(_mockInProgressJobs)
-                .addWarning(TEST_JOB_ID, 1532, IssueCodes.MARKUP, "COMPLETE_WITH_WARNING",
-                            IssueSources.MARKUP);
-    }
-
-
     private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder) {
         long mediaId = 1532;
         int mediaIndex = 2;

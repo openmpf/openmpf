@@ -359,7 +359,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
 
             if (job.jobStatus == 'CANCELLED') {
                 console.log('job cancellation complete for id: ' + job.id);
-                NotificationSvc.info('Job cancellation of job ' + job.id + ' is now complete.');
+                NotificationSvc.jobInfo(job.jobId, 'Job cancellation of job ' + job.id + ' is now complete.');
             }
         }
     });
@@ -378,15 +378,15 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             if (resp && resp.hasOwnProperty("mpfResponse") &&
                 resp.hasOwnProperty("jobId")) {
                 if (resp.mpfResponse.responseCode != 0) {
-                    NotificationSvc.error(resp.mpfResponse.message);
+                    NotificationSvc.jobError(job.jobId, resp.mpfResponse.message);
                     statusCell.attr('class', prevClasses);
                     statusCell.html(prevHtml);
                     $("#resubmitBtn" + job.jobId).removeAttr("disabled");
                 } else {
-                    NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
+                    NotificationSvc.jobSuccess(job.jobId, 'Job ' + job.jobId + ' has been resubmitted!');
                 }
             } else {
-                NotificationSvc.error('Failed to send a resubmit request');
+                NotificationSvc.jobError(job.jobId, 'Failed to send a resubmit request');
             }
         });
     };
@@ -397,12 +397,12 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             if (resp && resp.hasOwnProperty("responseCode") &&
                 resp.hasOwnProperty("message")) {
                 if (resp.responseCode != 0) {
-                    NotificationSvc.error('Error with cancellation request with message: ' + mpfResponse.message);
+                    NotificationSvc.jobError(job.jobId, 'Error with cancellation request with message: ' + mpfResponse.message);
                 } else {
-                    NotificationSvc.success('A job cancellation request for job ' + job.jobId + ' has been sent.');
+                    NotificationSvc.jobSuccess(job.jobId, 'A job cancellation request for job ' + job.jobId + ' has been sent.');
                 }
             } else {
-                NotificationSvc.error('Failed to send a cancellation request');
+                NotificationSvc.jobError(job.jobId, 'Failed to send a cancellation request');
             }
         });
     };

@@ -42,9 +42,9 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.Map;
 
 @Component(MarkupResponseProcessor.REF)
@@ -52,18 +52,19 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
     public static final String REF = "markupResponseProcessor";
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
-    public MarkupResponseProcessor() {
-        super(Markup.MarkupResponse.class);
+    private static InProgressBatchJobsService _inProgressJobs;
+    private static MarkupResultDao _markupResultDao;
+    private static StorageService _storageService;
+
+    @Inject
+    public MarkupResponseProcessor(InProgressBatchJobsService inProgressJobs,
+                                   MarkupResultDao markupResultDao,
+                                   StorageService storageService) {
+        super(inProgressJobs, Markup.MarkupResponse.class);
+        _inProgressJobs = inProgressJobs;
+        _markupResultDao = markupResultDao;
+        _storageService = storageService;
     }
-
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
-
-    @Autowired
-    private MarkupResultDao markupResultDao;
-
-    @Autowired
-    private StorageService storageService;
 
     @Override
     public Object processResponse(long jobId, Markup.MarkupResponse markupResponse, Map<String, Object> headers) throws WfmProcessingException {
@@ -96,29 +97,29 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
             markupResult.setMarkupStatus(MarkupStatus.COMPLETE);
         }
 
-        BatchJob job = inProgressJobs.getJob(jobId);
+        BatchJob job = _inProgressJobs.getJob(jobId);
         Media media = job.getMedia(markupResponse.getMediaId());
         markupResult.setPipeline(job.getPipelineElements().getName());
         markupResult.setSourceUri(media.getUri());
 
         switch (markupResult.getMarkupStatus()) {
             case FAILED:
-                inProgressJobs.addError(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
+                _inProgressJobs.addError(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
                                         markupResult.getMessage(), IssueSources.MARKUP);
                 break;
             case CANCELLED:
-                inProgressJobs.handleMarkupCancellation(jobId, markupResult.getMediaId());
+                _inProgressJobs.handleMarkupCancellation(jobId, markupResult.getMediaId());
                 break;
             case COMPLETE_WITH_WARNING:
                 var warningMessage = markupResponse.hasErrorMessage()
                         ? markupResponse.getErrorMessage()
                         : "COMPLETE_WITH_WARNING";
-                inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
+                _inProgressJobs.addWarning(jobId, markupResult.getMediaId(), IssueCodes.MARKUP,
                                           warningMessage, IssueSources.MARKUP);
         }
 
-        storageService.store(markupResult);
-        markupResultDao.persist(markupResult);
+        _storageService.store(markupResult);
+        _markupResultDao.persist(markupResult);
 
         job.setProcessedAction(markupResponse.getMediaId(), markupResponse.getTaskIndex(), markupResponse.getActionIndex());
 

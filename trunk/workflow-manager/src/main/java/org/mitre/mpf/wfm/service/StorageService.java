@@ -38,6 +38,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
+import org.mitre.mpf.wfm.enums.MarkupStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -176,6 +177,9 @@ public class StorageService {
             if (existingMessage != null && !existingMessage.isEmpty()) {
                 message = existingMessage + "; " + message;
             }
+            markupResult.setMessage(message);
+            // TODO: Ensure that we don't transition from an error state back to a warning state
+            markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
             _inProgressJobs.addWarning(markupResult.getJobId(), markupResult.getMediaId(),
                                        IssueCodes.REMOTE_STORAGE_UPLOAD, message);
         }

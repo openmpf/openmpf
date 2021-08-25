@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -76,13 +75,13 @@ public class DetectionResponseProcessor
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
-                                      InProgressBatchJobsService inProgressBatchJobs,
+                                      InProgressBatchJobsService inProgressJobs,
                                       MediaInspectionHelper mediaInspectionHelper,
                                       StorageService storageService,
                                       PropertiesUtil propertiesUtil) {
-        super(DetectionProtobuf.DetectionResponse.class);
+        super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
-        _inProgressJobs = inProgressBatchJobs;
+        _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
         _storageService = storageService;
         _propertiesUtil = propertiesUtil;

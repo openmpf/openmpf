@@ -736,13 +736,13 @@
                     //finally submit the job
                     MediaService.createJobFromMedia(jobCreationRequest).then(function (jobCreationResponse) {
                         if (jobCreationResponse.mpfResponse.responseCode == 0) {
-                            NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                            NotificationSvc.jobSuccess(jobCreationResponse.jobId, 'Job ' + jobCreationResponse.jobId + ' created!');
                             $log.info('successful job creation - switch to jobs view');
 
                             $location.path('/jobs');//go to jobs view
                             if (!$scope.$$phase) $scope.$apply()
                         } else {
-                            NotificationSvc.error(jobCreationResponse.mpfResponse.message);
+                            NotificationSvc.jobError(jobCreationResponse.jobId, jobCreationResponse.mpfResponse.message);
                         }
                     });
                 } else {

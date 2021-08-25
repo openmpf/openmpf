@@ -36,6 +36,7 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -43,6 +44,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.mockito.*;
@@ -68,6 +70,15 @@ public class TestDetectionResponseProcessor {
 
     @Mock
     private AggregateJobPropertiesUtil mockAggregateJobPropertiesUtil;
+
+    @Mock
+    private MediaInspectionHelper mockMediaInspectionHelper; // for DetectionResponseProcessor
+
+    @Mock
+    private StorageService mockStorageService; // for DetectionResponseProcessor
+
+    @Mock
+    private PropertiesUtil mockPropertiesUtil; // for DetectionResponseProcessor
 
     @InjectMocks
     private DetectionResponseProcessor detectionResponseProcessor;

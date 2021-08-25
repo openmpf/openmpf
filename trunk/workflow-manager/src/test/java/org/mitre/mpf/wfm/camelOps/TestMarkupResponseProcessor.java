@@ -79,7 +79,7 @@ public class TestMarkupResponseProcessor {
         Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
                 .setHasError(false)
                 .clearErrorMessage();
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder, true);
         assertNull(markupResult.getMessage());
         assertEquals(MarkupStatusType.COMPLETE, markupResult.getMarkupStatus());
 
@@ -95,7 +95,7 @@ public class TestMarkupResponseProcessor {
                 .setHasError(true)
                 .setErrorMessage(errorMessage);
 
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder, false);
         assertEquals(errorMessage, markupResult.getMessage());
         assertEquals(MarkupStatusType.FAILED, markupResult.getMarkupStatus());
 
@@ -105,7 +105,7 @@ public class TestMarkupResponseProcessor {
     }
 
 
-    private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder) {
+    private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder, boolean storeMarkup) {
         long mediaId = 1532;
         int mediaIndex = 2;
         int taskIndex = 4;
@@ -146,16 +146,11 @@ public class TestMarkupResponseProcessor {
 
         _markupResponseProcessor.process(exchange);
 
-        ArgumentCaptor<MarkupResult> markupCaptor1 = ArgumentCaptor.forClass(MarkupResult.class);
-        verify(_mockStorageService)
-                .store(markupCaptor1.capture());
-
-        ArgumentCaptor<MarkupResult> markupCaptor2 = ArgumentCaptor.forClass(MarkupResult.class);
+        ArgumentCaptor<MarkupResult> markupCaptor = ArgumentCaptor.forClass(MarkupResult.class);
         verify(_mockMarkupResultDao)
-                .persist(markupCaptor2.capture());
+                .persist(markupCaptor.capture());
 
-        MarkupResult markupResult = markupCaptor2.getValue();
-        assertSame(markupResult, markupCaptor1.getValue());
+        MarkupResult markupResult = markupCaptor.getValue();
         assertEquals(TEST_JOB_ID, markupResult.getJobId());
         assertEquals("output.txt", markupResult.getMarkupUri());
         assertEquals(taskIndex, markupResult.getTaskIndex());
@@ -164,6 +159,14 @@ public class TestMarkupResponseProcessor {
         assertEquals(mediaIndex, markupResult.getMediaIndex());
         assertEquals(mediaUri.toString(), markupResult.getSourceUri());
         assertEquals("TEST_MARKUP_PIPELINE", markupResult.getPipeline());
+
+        if (storeMarkup) {
+            ArgumentCaptor<MarkupResult> markupCaptorForStorage = ArgumentCaptor.forClass(MarkupResult.class);
+            verify(_mockStorageService)
+                    .store(markupCaptorForStorage.capture());
+
+            assertSame(markupResult, markupCaptorForStorage.getValue());
+        }
 
         return markupResult;
     }

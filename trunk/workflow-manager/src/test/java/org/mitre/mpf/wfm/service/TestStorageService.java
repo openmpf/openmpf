@@ -408,6 +408,8 @@ public class TestStorageService {
                 .thenReturn(jobId);
         when(markup.getMediaId())
                 .thenReturn(mediaId);
+        when(markup.getMarkupStatus())
+                .thenReturn(MarkupStatusType.COMPLETE);
 
         when(_mockS3Backend.canStore(markup))
                 .thenReturn(true);

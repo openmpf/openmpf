@@ -81,7 +81,7 @@ public class TestMarkupResponseProcessor {
                 .clearErrorMessage();
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertNull(markupResult.getMessage());
-        assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.COMPLETE, markupResult.getMarkupStatus());
 
         verify(_mockInProgressJobs, never())
                 .setJobStatus(anyLong(), any());
@@ -97,7 +97,7 @@ public class TestMarkupResponseProcessor {
 
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertEquals(errorMessage, markupResult.getMessage());
-        assertEquals(MarkupStatus.FAILED, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.FAILED, markupResult.getMarkupStatus());
 
         verify(_mockInProgressJobs)
                 .addError(TEST_JOB_ID, 1532, IssueCodes.MARKUP, errorMessage,

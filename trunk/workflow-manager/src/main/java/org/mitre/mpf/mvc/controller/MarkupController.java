@@ -162,7 +162,7 @@ public class MarkupController {
             model.setPipeline(job.getPipelineElements().getName());
             model.setSourceUri(med.getUri());
             model.setSourceFileAvailable(false);
-            if (med.getUri() != null) {
+            if (!StringUtils.isBlank(med.getUri())) {
                 Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
                 if (path == null || Files.exists(path)) { // if remote media or available local media
                     String downloadUrl = UriComponentsBuilder.fromPath("server/download")
@@ -331,14 +331,14 @@ public class MarkupController {
     private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
         String markupMediaType = "";
         String markupImgUrl = "";
-        String markupDownloadUrl ="";
-        String sourceMediaType= "";
+        String markupDownloadUrl = "";
+        String sourceMediaType = "";
         String sourceImgUrl = "";
         String sourceDownloadUrl ="";
         boolean markupFileAvailable = false;
         boolean sourceFileAvailable = false;
 
-        if (markupResult.getMarkupUri() != null) {
+        if (!StringUtils.isBlank(markupResult.getMarkupUri())) {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
             if (path == null || Files.exists(path)) { // if remote markup or available local markup
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
@@ -348,7 +348,7 @@ public class MarkupController {
             }
         }
 
-        if (markupResult.getSourceUri() != null) {
+        if (!StringUtils.isBlank(markupResult.getSourceUri())) {
             Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
             if (path == null || Files.exists(path))  { // if remote media or available local media
                 sourceDownloadUrl = UriComponentsBuilder

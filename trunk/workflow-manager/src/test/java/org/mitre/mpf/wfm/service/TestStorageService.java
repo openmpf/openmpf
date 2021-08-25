@@ -424,7 +424,7 @@ public class TestStorageService {
         verify(markup)
                 .setMessage(nonBlank());
         verify(markup)
-                .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+                .setMarkupStatus(MarkupStatusType.COMPLETE_WITH_WARNING);
     }
 
 

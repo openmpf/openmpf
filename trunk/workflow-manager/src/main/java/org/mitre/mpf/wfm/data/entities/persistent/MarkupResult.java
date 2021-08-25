@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.data.entities.persistent;
 
-import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.enums.MarkupStatusType;
 
 import javax.persistence.*;
 
@@ -89,9 +89,9 @@ public class MarkupResult {
 
 	@Column
 	@Enumerated(EnumType.STRING)
-	private MarkupStatus markupStatus = MarkupStatus.UNKNOWN;
-	public MarkupStatus getMarkupStatus() { return (markupStatus == null) ? MarkupStatus.UNKNOWN : markupStatus; }
-	public void setMarkupStatus(MarkupStatus markupStatus) { this.markupStatus = markupStatus; }
+	private MarkupStatusType markupStatus = MarkupStatusType.UNKNOWN;
+	public MarkupStatusType getMarkupStatus() { return (markupStatus == null) ? MarkupStatusType.UNKNOWN : markupStatus; }
+	public void setMarkupStatus(MarkupStatusType markupStatus) { this.markupStatus = markupStatus; }
 
 	@Column
 	private String message;

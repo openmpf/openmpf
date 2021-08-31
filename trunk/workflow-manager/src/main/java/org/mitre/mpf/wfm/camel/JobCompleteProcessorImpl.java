@@ -181,7 +181,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             }
 
         if (job.getCallbackUrl().isPresent()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);final var finalOutputUri = outputObjectUri;
+            inProgressBatchJobs.setCallbacksInProgress(jobId);
+            final var finalOutputUri = outputObjectUri;
             tiesDbFuture
                     .whenCompleteAsync(
                             (x, err) -> sendCallbackAsync(job, finalOutputUri).join())

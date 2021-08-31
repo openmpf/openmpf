@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.util;
 
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -48,6 +49,10 @@ public class TestCloseableMdc {
         ThreadUtil.start();
     }
 
+    @After
+    public void cleanup() {
+        MDC.clear();
+    }
 
     @Test
     public void testNesting() {
@@ -136,7 +141,6 @@ public class TestCloseableMdc {
 
         assertTrue(MDC.getCopyOfContextMap().isEmpty());
         // Make sure threads in pool do not retain context after a job completes.
-        MDC.clear();
         var threadCtxSize = ThreadUtil.callAsync(
                 () -> MDC.getCopyOfContextMap().size());
         assertEquals(0, threadCtxSize.join().intValue());
@@ -178,8 +182,8 @@ public class TestCloseableMdc {
         assertEquals("1123", job1123.join());
         assertEquals("1456", job1456.join());
 
+        assertTrue(MDC.getCopyOfContextMap().isEmpty());
         // Make sure threads in pool do not retain context after a job completes.
-        MDC.clear();
         var threadCtxSize = ThreadUtil.callAsync(
                 () -> MDC.getCopyOfContextMap().size());
         assertEquals(0, threadCtxSize.join().intValue());

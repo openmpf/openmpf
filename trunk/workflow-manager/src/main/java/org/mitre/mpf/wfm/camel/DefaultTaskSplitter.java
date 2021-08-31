@@ -72,9 +72,7 @@ public class DefaultTaskSplitter extends WfmSplitter {
         ActionType actionType = job.getPipelineElements()
                 .getAlgorithm(job.getCurrentTaskIndex(), 0)
                 .getActionType();
-        log.info("[Job {}|{}|*] Task {}/{} - Operation: {} - ActionType: {}.",
-                 job.getId(),
-                 job.getCurrentTaskIndex(),
+        log.info("Task {}/{} - Operation: {} - ActionType: {}.",
                  job.getCurrentTaskIndex() + 1,
                  job.getPipelineElements().getTaskCount(),
                  actionType,
@@ -83,8 +81,8 @@ public class DefaultTaskSplitter extends WfmSplitter {
         if (job.isCancelled()) {
             // Check if this job has been cancelled prior to performing the split.
             // If it has been, do not produce any work units.
-            log.warn("[Job {}|{}|*] This job has been cancelled. No work will be performed in this task.",
-                     job.getId(), job.getCurrentTaskIndex());
+            log.warn("This job has been cancelled. No work will be performed in task {}.",
+                     job.getCurrentTaskIndex());
             return List.of();
         }
 
@@ -94,10 +92,9 @@ public class DefaultTaskSplitter extends WfmSplitter {
             case MARKUP:
                 return markupSplitter.performSplit(job, task);
             default:
-                log.warn("[Job {}|{}|*] Task {} calls an unsupported operation '{}'. " +
+                log.warn("Task {} calls an unsupported operation '{}'. " +
                                  "No work will be performed in this task.",
-                         job.getId(), job.getCurrentTaskIndex(), job.getCurrentTaskIndex(),
-                         task.getName());
+                         job.getCurrentTaskIndex(), task.getName());
                 return List.of();
         }
     }

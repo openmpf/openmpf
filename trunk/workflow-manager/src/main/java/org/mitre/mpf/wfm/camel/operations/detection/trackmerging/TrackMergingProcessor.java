@@ -138,8 +138,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     int initialSize = tracks.size();
                     tracks = new TreeSet<>(combine(tracks, trackMergingPlan));
 
-                    log.debug("[Job {}|{}|{}] Merging {} tracks down to {} in Media {}.",
-                              trackMergingContext.getJobId(), trackMergingContext.getTaskIndex(), actionIndex,
+                    log.debug("Merging {} tracks down to {} in Media {}.",
                               initialSize, tracks.size(), media.getId());
                 }
 
@@ -150,8 +149,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                             .filter(t -> t.getEndOffsetFrameInclusive() - t.getStartOffsetFrameInclusive() >= minTrackLength - 1)
                             .collect(toCollection(TreeSet::new));
 
-                    log.debug("[Job {}|{}|{}] Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
-                              trackMergingContext.getJobId(), trackMergingContext.getTaskIndex(), actionIndex,
+                    log.debug("Pruning {} tracks down to {} tracks at least {} frames long in Media {}.",
                               initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 

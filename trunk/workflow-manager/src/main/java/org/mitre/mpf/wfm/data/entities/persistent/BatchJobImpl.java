@@ -30,14 +30,14 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.wfm.util.TimePair;
 
+import java.sql.Time;
 import java.util.*;
 import java.util.function.Function;
 
@@ -99,6 +99,14 @@ public class BatchJobImpl implements BatchJob {
     private final ImmutableMap<String, String> _jobProperties;
     @Override
     public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
+
+    private final ImmutableRangeSet<Integer> _segmentFrameBoundaries;
+    @Override
+    public ImmutableRangeSet<Integer> getSegmentFrameBoundaries() {return _segmentFrameBoundaries; }
+
+    private final ImmutableRangeSet<Integer> _segmentTimeBoundaries;
+    @Override
+    public ImmutableRangeSet<Integer> getSegmentTimeBoundaries() {return _segmentTimeBoundaries; }
 
 
     @Override
@@ -174,9 +182,12 @@ public class BatchJobImpl implements BatchJob {
             String callbackMethod,
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
+            RangeSet<Integer> segmentFrameBoundaries,
+            RangeSet<Integer> segmentTimeBoundaries) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, outputEnabled, callbackUrl,
-             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), Map.of(), Map.of());
+                callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
+                segmentFrameBoundaries, segmentTimeBoundaries, List.of(), Map.of(), Map.of());
     }
 
 
@@ -194,6 +205,8 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
+            @JsonProperty("segmentFrameBoundaries") RangeSet<Integer> segmentFrameBoundaries,
+            @JsonProperty("segmentTimeBoundaries") RangeSet<Integer> segmentTimeBoundaries,
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
             @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings) {
@@ -219,6 +232,19 @@ public class BatchJobImpl implements BatchJob {
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
+
+        if (!segmentFrameBoundaries.isEmpty()) {
+            _segmentFrameBoundaries = new ImmutableRangeSet.Builder<Integer>().addAll(segmentFrameBoundaries).build();
+        }
+        else {
+            _segmentFrameBoundaries = ImmutableRangeSet.of();
+        }
+        if (!segmentTimeBoundaries.isEmpty()) {
+            _segmentTimeBoundaries = new ImmutableRangeSet.Builder<Integer>().addAll(segmentTimeBoundaries).build();
+        }
+        else {
+            _segmentTimeBoundaries = ImmutableRangeSet.of();
+        }
 
         _errors = new HashMap<>();
         // Can't just pass errors to HashMap constructor because we also want to copy the sets.

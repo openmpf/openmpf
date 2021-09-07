@@ -38,6 +38,8 @@ import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.Range;
 
 import java.util.*;
 
@@ -67,11 +69,27 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     private static List<Message> createTimePairMessages(
             Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
 
-        List<TimePair> segments = MediaSegmenter.createSegments(
-                trackTimePairs,
-                context.getSegmentingPlan().getTargetSegmentLength(),
-                context.getSegmentingPlan().getMinSegmentLength(),
-                context.getSegmentingPlan().getMinGapBetweenSegments());
+        List<TimePair> segments = new ArrayList<>();
+        if (context.getSegmentingPlan().hasSegmentBoundaries) {
+            if (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty()) {
+                for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
+                    segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
+                }
+            }
+            if (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty()) {
+                for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
+                    segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
+                }
+            }
+
+        }
+        else {
+            segments = MediaSegmenter.createSegments(
+                    trackTimePairs,
+                    context.getSegmentingPlan().getTargetSegmentLength(),
+                    context.getSegmentingPlan().getMinSegmentLength(),
+                    context.getSegmentingPlan().getMinGapBetweenSegments());
+        }
 
         List<Message> messages = new ArrayList<>(segments.size());
         for(TimePair segment : segments) {

@@ -27,11 +27,15 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationSegmentBoundary;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
@@ -57,6 +61,7 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
@@ -119,12 +124,29 @@ public class JobRequestServiceImpl implements JobRequestService {
         boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
                 .orElseGet(_propertiesUtil::isOutputObjectsEnabled);
 
+        RangeSet<Integer> jobSegmentFrameBoundaries = TreeRangeSet.create();
+        if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
+            for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
+                jobSegmentFrameBoundaries.add(Range.closed(b.getStart(), b.getStop()));
+            }
+        }
+
+        RangeSet<Integer> jobSegmentTimeBoundaries = TreeRangeSet.create();
+        if (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty()) {
+            for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentTimeBoundaries()) {
+                jobSegmentTimeBoundaries.add(Range.closed(b.getStart(), b.getStop()));
+            }
+        }
+
+
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
                 jobCreationRequest.getPipelineName(),
                 media,
                 jobCreationRequest.getJobProperties(),
                 jobCreationRequest.getAlgorithmProperties(),
+                jobSegmentFrameBoundaries,
+                jobSegmentTimeBoundaries,
                 jobCreationRequest.getExternalId(),
                 buildOutput,
                 priority,
@@ -164,6 +186,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
+                    originalJob.getSegmentFrameBoundaries(),
+                    originalJob.getSegmentTimeBoundaries(),
                     originalJob.getExternalId().orElse(null),
                     originalJob.isOutputEnabled(),
                     priority > 0 ? priority : originalJob.getPriority(),
@@ -187,6 +211,8 @@ public class JobRequestServiceImpl implements JobRequestService {
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
+            RangeSet<Integer> segmentFrameBoundaries,
+            RangeSet<Integer> segmentTimeBoundaries,
             String externalId,
             boolean buildOutput,
             int priority,
@@ -229,7 +255,9 @@ public class JobRequestServiceImpl implements JobRequestService {
                     callbackMethod,
                     media,
                     jobProperties,
-                    overriddenAlgoProps);
+                    overriddenAlgoProps,
+                    segmentFrameBoundaries,
+                    segmentTimeBoundaries);
 
             try {
                 jobRequestEntity.setId(jobId);

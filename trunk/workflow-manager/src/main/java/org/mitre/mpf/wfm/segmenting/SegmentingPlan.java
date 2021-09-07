@@ -26,6 +26,13 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+import org.mitre.mpf.wfm.util.TimePair;
+
+import java.util.List;
+
 public class SegmentingPlan {
 	/** The preferred length of a segment. This must be at least 1. */
 	private int targetSegmentLength;
@@ -43,6 +50,23 @@ public class SegmentingPlan {
 	private int minGapBetweenSegments;
 	public int getMinGapBetweenSegments() { return minGapBetweenSegments; }
 
+	// One or the other, or both, of these lists may be empty.
+	private RangeSet<Integer> segmentFrameBoundaries;
+	public void addSegmentFrameBoundaries(RangeSet<Integer> frameBoundaries) {
+		segmentFrameBoundaries = frameBoundaries;
+		hasSegmentBoundaries = true;
+	}
+	public RangeSet<Integer> getSegmentFrameBoundaries() { return segmentFrameBoundaries; }
+
+	private RangeSet<Integer> segmentTimeBoundaries;
+	public void addSegmentTimeBoundaries(RangeSet<Integer> timeBoundaries) {
+		segmentTimeBoundaries = timeBoundaries;
+		hasSegmentBoundaries = true;
+	}
+	public RangeSet<Integer> getSegmentTimeBoundaries() { return segmentTimeBoundaries; }
+
+	public boolean hasSegmentBoundaries;
+
 	/**
 	 * Creates a new instance using the provided parameters.
 	 * @param targetSegmentLength The preferred length of a segment. This must be at least 1.
@@ -50,11 +74,12 @@ public class SegmentingPlan {
 	 * @param samplingInterval The interval at which the media was sampled clamped to the range [1, targetSegmentLength].
 	 * @param minGapBetweenSegments The minimum gap between any two segments which must be strictly greater than the sampling interval.
 	 */
-	public SegmentingPlan(int targetSegmentLength, int minSegmentLength, int samplingInterval, int minGapBetweenSegments) {
+	public SegmentingPlan(int targetSegmentLength, int minSegmentLength, int samplingInterval, int minGapBetweenSegments,) {
 		this.targetSegmentLength = targetSegmentLength;
 		this.minSegmentLength = Math.min(targetSegmentLength, Math.max(minSegmentLength, 1));
 		this.samplingInterval = Math.min(targetSegmentLength, Math.max(samplingInterval, 1));
 		this.minGapBetweenSegments = Math.max(this.samplingInterval + 1, minGapBetweenSegments);
+		this.hasSegmentBoundaries = false;
 	}
 
 	@Override

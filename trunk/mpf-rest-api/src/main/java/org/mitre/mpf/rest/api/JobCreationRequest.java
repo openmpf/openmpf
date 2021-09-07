@@ -26,15 +26,15 @@
 
 package org.mitre.mpf.rest.api;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class JobCreationRequest {
 	private List<JobCreationMediaData> media = new LinkedList<>();
 	private Map<String, String> jobProperties = new HashMap<>();
 	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
+	// Normally, one or the other of these segment boundary lists will be set, not both.
+	private List<JobCreationSegmentBoundary> segmentFrameBoundaries = new ArrayList<>();
+	private List<JobCreationSegmentBoundary> segmentTimeBoundaries = new ArrayList<>();
 	private String externalId = null;
 	private String pipelineName = null;
 	private Boolean buildOutput = null; //will use a server side property if null
@@ -63,6 +63,12 @@ public class JobCreationRequest {
 	public void setAlgorithmProperties(Map<String, Map<String, String>> algorithmProperties) {
 		this.algorithmProperties = algorithmProperties;
 	}
+
+	public List<JobCreationSegmentBoundary> getSegmentFrameBoundaries() { return segmentFrameBoundaries; }
+	public void setSegmentFrameBoundaries(List<JobCreationSegmentBoundary> segments) { this.segmentFrameBoundaries = segments; }
+
+	public List<JobCreationSegmentBoundary> getSegmentTimeBoundaries() { return segmentTimeBoundaries; }
+	public void setSegmentTimeBoundaries(List<JobCreationSegmentBoundary> segments) { this.segmentTimeBoundaries = segments; }
 
 	public String getExternalId() {
 		return externalId;

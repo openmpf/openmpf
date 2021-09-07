@@ -28,9 +28,12 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableRangeSet;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.util.TimePair;
 
 import java.util.List;
 import java.util.Map;
@@ -63,6 +66,9 @@ public interface BatchJob {
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
 
     public ImmutableMap<String, String> getJobProperties();
+
+    public ImmutableRangeSet<Integer> getSegmentFrameBoundaries();
+    public ImmutableRangeSet<Integer> getSegmentTimeBoundaries();
 
     public boolean isCancelled();
 

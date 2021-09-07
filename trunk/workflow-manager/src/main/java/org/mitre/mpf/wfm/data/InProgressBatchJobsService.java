@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.RangeSet;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -38,6 +39,7 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -96,7 +98,9 @@ public class InProgressBatchJobsService {
             String callbackMethod,
             Collection<Media> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties) {
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            RangeSet<Integer> segmentFrameBoundaries,
+            RangeSet<Integer> segmentTimeBoundaries) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
@@ -123,7 +127,9 @@ public class InProgressBatchJobsService {
                 callbackMethod,
                 mediaImpls,
                 jobProperties,
-                algorithmProperties);
+                algorithmProperties,
+                segmentFrameBoundaries,
+                segmentTimeBoundaries);
         _jobs.put(jobId, job);
 
         media.stream()

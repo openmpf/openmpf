@@ -41,27 +41,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
-/**
- * NOTE: Please keep the tests in this class in alphabetical order.  While they will automatically run that way regardless
- * of the order in the source code, keeping them in that order helps when correlating jenkins-produced output, which is
- * by job number, with named output, e.g., .../share/output-objects/5/detection.json and motion/runMotionMogDetectVideo.json
- *
- * This class contains tests that were formerly in TestEndToEnd.  The main changes are 3 inputs vs. 2 inputs, inputs
- * are tailored to the type of detection at hand and there is output checking (comparing previously saved expected results
- * against actual results).  Because for some tests, the output as produced on Jenkins is different than the output
- * produced in a local VM, we included a way to run the tests without output checking.  Output checking is not done
- * by default; it is done when run on Jenkins via the addition of '-Pjenkins' in the maven properties for the run; it
- * can be done locally if desired by adding '-Djenkins=true' to the command line (if running via command line) or by
- * adding the same to the Run Configuration, if running via IntelliJ.  To verify if output checking is running or not: if
- * you see 'Deserializing ...' in the console or log output, it IS running; if you don't see it, it IS NOT running.
- *
- * If the structure of the output changes or if an algorithm changes, output checking will undoubtedly fail.  Once it is
- * confirmed that the failure is expected, the outputs should just be regenerated and committed to the repository for
- * future checking. Output checking is designed to catch unintentional or erroneous changes. There are two scripts in the
- * bin directory to help 'ease the pain' of having to do redo expected output files. Note that if tests are added or deleted,
- * the correspondence between output file and expected results file may change, so that should be verified (or just use
- * the scripts to cut and paste the desired command).
- */
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
@@ -643,12 +622,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
             "MODEL_NAME", "tiny yolo");
 
 
-    private static Map<String, String> getTinyYoloConfig(Map<String, String> otherProperties) {
-        Map<String, String> result = new HashMap<>(otherProperties);
-        result.putAll(TINY_YOLO_CONFIG);
-        return result;
-    }
-
 
     @Test(timeout = 5 * MINUTES)
     public void runMogThenOalprFeedForwardRegionTest() {
@@ -1182,7 +1155,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 15 * MINUTES)
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
-        String multipleActionTaskName = "TEST MULTIPLE-ACTION DETECTION TASK 2";
+        String multipleActionTaskName = "TEST MULTIPLE-ACTION TASK 2";
         addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
         String pipelineName = "TEST MULTIPLE-ACTION DETECTION PIPELINE 2";

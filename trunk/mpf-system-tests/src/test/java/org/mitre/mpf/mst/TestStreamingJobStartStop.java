@@ -58,9 +58,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -98,9 +96,6 @@ public class TestStreamingJobStartStop {
 
     @Autowired(required = false)
     private MasterNode _masterNode;
-
-    @Autowired
-    private ObjectMapper _objectMapper;
 
     @Autowired
     private IoUtils _ioUtils;
@@ -207,15 +202,6 @@ public class TestStreamingJobStartStop {
                 Collections.emptyMap(), Collections.emptyMap());
     }
 
-
-    private static boolean tracksMatch(JsonTrackOutputObject expectedTrack,
-                                       JsonStreamingTrackOutputObject actualTrack) {
-        return actualTrack.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
-                && actualTrack.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
-                && Math.abs(actualTrack.getConfidence() - expectedTrack.getConfidence()) < 0.01
-                && actualTrack.getTrackProperties().equals(expectedTrack.getTrackProperties())
-                && exemplarsMatch(expectedTrack, actualTrack);
-    }
 
     private static boolean exemplarsMatch(JsonTrackOutputObject expectedTrack,
                                           JsonStreamingTrackOutputObject actualTrack) {

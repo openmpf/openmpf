@@ -56,15 +56,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- *
- * NOTE: Please keep the tests in this class in alphabetical order.  While they will automatically run that way regardless
- * of the order in the source code, keeping them in that order helps when correlating jenkins-produced output, which is
- * by job number, with named output, e.g., .../share/output-objects/2/detection.json and face/runFaceCombinedDetectImage.json
- *
- * This class contains tests that were formerly in TestEndToEndJenkins.  See comments in TestSystemOnDiff for information
- * about output checking
- */
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private static final Logger log = LoggerFactory.getLogger(TestSystemNightly.class);

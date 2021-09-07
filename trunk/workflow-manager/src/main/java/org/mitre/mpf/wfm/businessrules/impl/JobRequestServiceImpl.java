@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -130,8 +131,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.getCallbackURL(),
                 jobCreationRequest.getCallbackMethod());
 
-        submit(jobRequestEntity);
-        return jobRequestEntity;
+        try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
+            submit(jobRequestEntity);
+            return jobRequestEntity;
+        }
     }
 
 
@@ -214,38 +217,40 @@ public class JobRequestServiceImpl implements JobRequestService {
                 ? jobRequestEntity.getId()
                 : _jobRequestDao.getNextId();
 
-        BatchJob job = _inProgressJobs.addJob(
-                jobId,
-                externalId,
-                systemPropertiesSnapshot,
-                pipelineElements,
-                priority,
-                buildOutput,
-                callbackUrl,
-                callbackMethod,
-                media,
-                jobProperties,
-                overriddenAlgoProps);
+        try (var mdc = CloseableMdc.job(jobId)) {
+            BatchJob job = _inProgressJobs.addJob(
+                    jobId,
+                    externalId,
+                    systemPropertiesSnapshot,
+                    pipelineElements,
+                    priority,
+                    buildOutput,
+                    callbackUrl,
+                    callbackMethod,
+                    media,
+                    jobProperties,
+                    overriddenAlgoProps);
 
-        try {
-            jobRequestEntity.setId(jobId);
-            jobRequestEntity.setPriority(priority);
-            jobRequestEntity.setStatus(jobStatus);
-            jobRequestEntity.setTimeReceived(Instant.now());
-            jobRequestEntity.setPipeline(pipelineElements.getName());
-            jobRequestEntity.setTimeCompleted(null);
-            jobRequestEntity.setOutputObjectPath(null);
-            jobRequestEntity.setOutputObjectVersion(null);
+            try {
+                jobRequestEntity.setId(jobId);
+                jobRequestEntity.setPriority(priority);
+                jobRequestEntity.setStatus(jobStatus);
+                jobRequestEntity.setTimeReceived(Instant.now());
+                jobRequestEntity.setPipeline(pipelineElements.getName());
+                jobRequestEntity.setTimeCompleted(null);jobRequestEntity.setOutputObjectPath(null);
+                jobRequestEntity.setOutputObjectVersion(null);
 
-            jobRequestEntity.setJob(_jsonUtils.serialize(job));
 
-            jobRequestEntity = _jobRequestDao.persist(jobRequestEntity);
-            _inProgressJobs.setJobStatus(job.getId(), jobStatus);
-            return jobRequestEntity;
-        }
-        catch (Exception e) {
-            _inProgressJobs.clearOnInitializationError(jobId);
-            throw e;
+                jobRequestEntity.setJob(_jsonUtils.serialize(job));
+
+                jobRequestEntity = _jobRequestDao.persist(jobRequestEntity);
+                _inProgressJobs.setJobStatus(job.getId(),  jobStatus);
+                return jobRequestEntity;
+            }
+            catch (Exception e) {
+                _inProgressJobs.clearOnInitializationError(jobId);
+                throw e;
+            }
         }
     }
 
@@ -255,8 +260,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                 MpfHeaders.JOB_ID, jobRequestEntity.getId(),
                 MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, jobRequestEntity.getPriority())));
 
-        LOG.info("[Job {}|*|*] Job has started and is running at priority {}.",
-                 jobRequestEntity.getId(), headers.get(MpfHeaders.JMS_PRIORITY));
+        LOG.info("Job has started and is running at priority {}.",
+                 headers.get(MpfHeaders.JMS_PRIORITY));
 
         _jobRequestProducerTemplate.sendBodyAndHeaders(
                 MediaRetrieverRouteBuilder.ENTRY_POINT,
@@ -339,7 +344,7 @@ public class JobRequestServiceImpl implements JobRequestService {
      */
     @Override
     public synchronized boolean cancel(long jobId) throws WfmProcessingException {
-        LOG.debug("[Job {}:*:*] Received request to cancel this job.", jobId);
+        LOG.debug("Received request to cancel this job.");
         JobRequest jobRequest = _jobRequestDao.findById(jobId);
         if (jobRequest == null) {
             throw new WfmProcessingException(String.format("A job with the id %d is not known to the system.", jobId));
@@ -350,10 +355,11 @@ public class JobRequestServiceImpl implements JobRequestService {
         }
 
         if (jobRequest.getStatus().isTerminal() || jobRequest.getStatus() == BatchJobStatusType.CANCELLING) {
-            LOG.warn("[Job {}:*:*] This job is in the state of '{}' and cannot be cancelled at this time.", jobId, jobRequest.getStatus().name());
+            LOG.warn("This job is in the state of '{}' and cannot be cancelled at this time.",
+                     jobRequest.getStatus().name());
             return false;
         } else {
-            LOG.info("[Job {}:*:*] Cancelling job.", jobId);
+            LOG.info("Cancelling job.");
 
 
             if (_inProgressJobs.cancelJob(jobId)) {
@@ -364,13 +370,15 @@ public class JobRequestServiceImpl implements JobRequestService {
                     // the system should not be affected, but the job may not complete any faster.
                     _jmsUtils.cancel(jobId);
                 } catch (Exception exception) {
-                    LOG.warn("[Job {}:*:*] Failed to remove the pending work elements in the message broker for this job. The job must complete the pending work elements before it will cancel the job.", jobId, exception);
+                    LOG.warn("Failed to remove the pending work elements in the message broker " +
+                                 "for this job. The job must complete the pending work " +
+                                 "elements before it will cancel the job.", exception);
                 }
                 jobRequest.setStatus(BatchJobStatusType.CANCELLING);
                 jobRequest.setJob(_jsonUtils.serialize(_inProgressJobs.getJob(jobId)));
                 _jobRequestDao.persist(jobRequest);
             } else {
-                LOG.warn("[Job {}:*:*] The job is not in progress and cannot be cancelled at this time.", jobId);
+                LOG.warn("The job is not in progress and cannot be cancelled at this time.");
             }
             return true;
         }

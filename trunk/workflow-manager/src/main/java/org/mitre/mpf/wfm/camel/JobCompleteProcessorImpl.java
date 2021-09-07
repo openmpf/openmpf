@@ -127,78 +127,69 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.",
                 MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
-        if(jobId == Long.MIN_VALUE) {
-            // If we receive a very large negative Job ID, it means an exception was encountered during processing of a job,
-            // and none of the provided error handling logic could fix it. Further processing should not be performed.
-            log.warn("[Job {}:*:*] An error prevents a job from completing successfully." +
-                    " Please review the logs for additional information.", jobId);
-        } else {
-            JobRequest jobRequest = jobRequestDao.findById(jobId);
-            jobRequest.setTimeCompleted(Instant.now());
+        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        jobRequest.setTimeCompleted(Instant.now());
 
-            BatchJob job = inProgressBatchJobs.getJob(jobId);
-            var completionStatus = job.getStatus().onComplete();
-            URI outputObjectUri = null;
-            var outputSha = new MutableObject<String>();
-            var trackCounter = new TrackCounter();
-            try {
-                outputObjectUri = createOutputObject(
-                        job,
-                        jobRequest.getTimeReceived(),
-                        jobRequest.getTimeCompleted(),
-                        completionStatus,
-                        outputSha,
-                        trackCounter); // this may update the job status
-                jobRequest.setOutputObjectPath(outputObjectUri.toString());
-                jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
-            }
-            catch (Exception exception) {
-                var message = "Failed to create the output object due to: " + exception;
-                log.error(message, exception);
-                inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
-            }
-            completionStatus = job.getStatus().onComplete();
-
-            jobProgressStore.setJobProgress(jobId, 100);
-            inProgressBatchJobs.setJobStatus(jobId, completionStatus);
-            jobRequest.setStatus(completionStatus);
-            jobRequest.setJob(jsonUtils.serialize(job));
-            jobRequestDao.persist(jobRequest);
-
-            IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
-            IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
-            IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
-
-            try {
-                jmsUtils.destroyCancellationRoutes(jobId);
-            }
-            catch (Exception exception) {
-                log.warn(String.format("Failed to destroy the cancellation routes associated with job %d." +
-                                " If this job is resubmitted, it will likely not complete again!", jobId), exception);
-            }
-
-            var tiesDbFuture = tiesDbService.addAssertions(
+        BatchJob job = inProgressBatchJobs.getJob(jobId);
+        var completionStatus = job.getStatus().onComplete();
+        URI outputObjectUri = null;
+        var outputSha = new MutableObject<String>();
+        var trackCounter = new TrackCounter();
+        try {
+            outputObjectUri = createOutputObject(
                     job,
-                    completionStatus,
+                    jobRequest.getTimeReceived(),
                     jobRequest.getTimeCompleted(),
-                    outputObjectUri,
-                    outputSha.getValue(),
-                    trackCounter);
-            if (!tiesDbFuture.isDone()) {
+                    completionStatus,
+                    outputSha,
+                    trackCounter); // this may update the job status
+            jobRequest.setOutputObjectPath(outputObjectUri.toString());
+            jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
+        } catch (Exception exception) {
+            var message = "Failed to create the output object due to: " + exception;
+                     log.error(message, exception);
+            inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
+                                            }
+        completionStatus = job.getStatus().onComplete();
+
+        jobProgressStore.setJobProgress(jobId, 100);
+            inProgressBatchJobs.setJobStatus(jobId, completionStatus);
+        jobRequest.setStatus(completionStatus);
+        jobRequest.setJob(jsonUtils.serialize(job));
+        jobRequestDao.persist(jobRequest);
+
+        IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
+        IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
+        IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobOutputObjectsDirectory(jobId).toPath());
+
+        try {
+            jmsUtils.destroyCancellationRoutes(jobId);
+        }
+        catch (Exception exception) {
+            log.warn(String.format("Failed to destroy the cancellation routes associated with job %d." +
+                            " If this job is resubmitted, it will likely not complete again!", jobId), exception);
+        }
+
+        var tiesDbFuture = tiesDbService.addAssertions(
+                job,
+                completionStatus,
+                jobRequest.getTimeCompleted(),
+                outputObjectUri,
+                outputSha.getValue(),
+                trackCounter);if (!tiesDbFuture.isDone()) {
                 inProgressBatchJobs.setCallbacksInProgress(jobId);
             }
 
-            if (job.getCallbackUrl().isPresent()) {
-                inProgressBatchJobs.setCallbacksInProgress(jobId);
-                final var finalOutputUri = outputObjectUri;
-                tiesDbFuture
-                        .whenCompleteAsync(
-                                (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
-                        .whenCompleteAsync((x, err) -> completeJob(job));
-            }
-            else {
-                tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job));
-            }
+        if (job.getCallbackUrl().isPresent()) {
+            inProgressBatchJobs.setCallbacksInProgress(jobId);
+            final var finalOutputUri = outputObjectUri;
+            tiesDbFuture
+                    .whenCompleteAsync(
+                            (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
+                    .whenCompleteAsync((x, err) -> completeJob(job));
+        }
+        else {
+            tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job));
         }
     }
 
@@ -225,7 +216,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
 
         jobProgressStore.removeJob(job.getId());
-        log.info("[Job {}] Job complete with status: {}", job.getId(), job.getStatus());
+        log.info("Job complete with status: {}", job.getStatus());
     }
 
 
@@ -312,8 +303,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .orElseThrow();
 
         log.warn(String.format(
-                    "[Job %s] Sending HTTP %s callback to \"%s\" failed due to: %s",
-                    job.getId(), callbackMethod, callbackUrl, callbackError),
+                    "Sending HTTP %s callback to \"%s\" failed due to: %s",
+                    callbackMethod, callbackUrl, callbackError),
                  callbackError);
 
         return null;

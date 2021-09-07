@@ -75,8 +75,8 @@ public class RemoteMediaSplitter extends WfmSplitter {
 				}
 			}
 		} else {
-			log.warn("[Job {}|*|*] Remote media inspection will not be performed because this job has been cancelled.",
-			         job.getId());
+			log.warn("Remote media inspection will not be performed because this job has been " +
+					         "cancelled.");
 		}
 
 		return messages;

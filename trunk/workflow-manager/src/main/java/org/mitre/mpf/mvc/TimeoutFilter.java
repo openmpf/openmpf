@@ -29,6 +29,7 @@ package org.mitre.mpf.mvc;
 import org.mitre.mpf.mvc.controller.AtmosphereController;
 import org.mitre.mpf.mvc.controller.TimeoutController;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class TimeoutFilter implements Filter {
 
     // session timeout in minutes
     private int webSessionTimeout;
-    
+
     @Autowired
     private PropertiesUtil propertiesUtil;
 
@@ -76,11 +77,16 @@ public class TimeoutFilter implements Filter {
         webSessionTimeout = propertiesUtil.getWebSessionTimeout();
     }
 
-
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
+    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+            throws IOException, ServletException {
+        try (var mdc = CloseableMdc.all()) {
+            doHttpFilter((HttpServletRequest) req, (HttpServletResponse) res, chain);
+        }
+    }
+
+    private void doHttpFilter(HttpServletRequest request, HttpServletResponse response,
+                              FilterChain chain) throws IOException, ServletException {
         HttpSession session = request.getSession(false);
 
         log.debug("request.getRequestURI()={}", request.getRequestURI());

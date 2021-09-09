@@ -35,7 +35,7 @@
 pidfile=$1
 logfile=$2
 
-jarfile="${MPF_HOME}/jars/mpf-nodemanager-6.2.jar"
+jarfile="${MPF_HOME}/jars/mpf-nodemanager-6.3.jar"
 
 # for debugging
 # log_debug "Environment:\n`env`" "${logfile}" false

@@ -3,7 +3,7 @@
     "serviceName":"Markup",
     "cmd":"${MPF_HOME}/bin/start-service-java.sh",
     "args":[
-      "-jar mpf-markup-6.2.jar"
+      "-jar mpf-markup-6.3.jar"
     ],
     "workingDirectory":"${MPF_HOME}/jars",
     "serviceCount":1,

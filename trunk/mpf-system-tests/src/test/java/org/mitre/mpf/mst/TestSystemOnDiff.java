@@ -1158,7 +1158,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         String multipleActionTaskName = "TEST MULTIPLE-ACTION TASK 2";
         addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
-        String pipelineName = "TEST MULTIPLE-ACTION DETECTION PIPELINE 2";
+        String pipelineName = "TEST MULTIPLE-ACTION TASK PIPELINE 2";
         addPipeline(pipelineName, multipleActionTaskName);
 
         runSystemTest(pipelineName,

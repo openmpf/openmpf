@@ -59,9 +59,8 @@ New processing nodes can easily be added to increase processing throughput and n
 
 OpenMPF includes open-source algorithms for detecting and tracking:
 
-- Faces - Dlib, LBP-Based OpenCV
+- Faces - LBP-Based OpenCV
 - Motion - MOG, SuBSENSE
-- People - HOG-Based OpenCV
 - Objects - OpenCV DNN
 - Scene Changes - OpenCV
 - License Plates - OpenALPR
@@ -106,7 +105,7 @@ This enables users to create pipelines based on performance (fast -&gt; slow) to
 - Non-Proprietary Nature
   - Allows for integration of 'best of breed' algorithms without a pre-defined list of vendors or algorithms.
 - Extendable Plugin Framework
-  - Out of the box support for well-known algorithms such as Caffe, and DLib and OpenCV face detection.
+  - Out of the box support for well-known algorithms such as Caffe and OpenCV face detection.
   - Enables rapid integration of commercial or open-source algorithms.
 - Scalable, Web-friendly Architecture
   - REST Web Services and a modern UI provide the capability to manage jobs, manage deployed components, and monitor system status.

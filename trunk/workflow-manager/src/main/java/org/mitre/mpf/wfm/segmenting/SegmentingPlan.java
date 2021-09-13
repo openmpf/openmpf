@@ -74,7 +74,7 @@ public class SegmentingPlan {
 	 * @param samplingInterval The interval at which the media was sampled clamped to the range [1, targetSegmentLength].
 	 * @param minGapBetweenSegments The minimum gap between any two segments which must be strictly greater than the sampling interval.
 	 */
-	public SegmentingPlan(int targetSegmentLength, int minSegmentLength, int samplingInterval, int minGapBetweenSegments,) {
+	public SegmentingPlan(int targetSegmentLength, int minSegmentLength, int samplingInterval, int minGapBetweenSegments) {
 		this.targetSegmentLength = targetSegmentLength;
 		this.minSegmentLength = Math.min(targetSegmentLength, Math.max(minSegmentLength, 1));
 		this.samplingInterval = Math.min(targetSegmentLength, Math.max(samplingInterval, 1));

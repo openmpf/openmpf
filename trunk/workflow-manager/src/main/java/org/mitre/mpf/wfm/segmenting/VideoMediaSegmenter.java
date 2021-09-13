@@ -71,12 +71,14 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
         List<TimePair> segments = new ArrayList<>();
         if (context.getSegmentingPlan().hasSegmentBoundaries) {
+            // Do we have frame boundaries, or time boundaries?
             if (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty()) {
                 for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
                     segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
                 }
             }
-            if (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty()) {
+            else if (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty()) {
+                // Convert time boundaries to frame boundaries.
                 for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
                     segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
                 }

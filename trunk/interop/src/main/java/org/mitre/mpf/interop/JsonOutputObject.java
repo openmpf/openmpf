@@ -32,7 +32,7 @@ import java.time.Instant;
 import java.util.*;
 
 @JsonTypeName("OutputObject")
-@JsonPropertyOrder({"jobId", "errors", "warnings"})
+@JsonPropertyOrder({"openmpfVersion", "jobId", "errors", "warnings"})
 public class JsonOutputObject {
 
     @JsonProperty("jobId")
@@ -65,10 +65,10 @@ public class JsonOutputObject {
     private String siteId;
     public String getSiteId() { return siteId; }
 
-    @JsonProperty("OpenMPFVersion")
+    @JsonProperty("openmpfVersion")
     @JsonPropertyDescription("The semantic version number of the OpenMPF system that executed this job and generated this output object.")
-    private String OpenMPFVersion;
-    public String getOpenMPFVersion() { return OpenMPFVersion; }
+    private String openmpfVersion;
+    public String getOpenmpfVersion() { return openmpfVersion; }
 
     @JsonProperty("timeStart")
     @JsonPropertyDescription("The timestamp indicating when this job was received.")
@@ -127,7 +127,7 @@ public class JsonOutputObject {
         this.pipeline = pipeline;
         this.priority = priority;
         this.siteId = siteId;
-        this.OpenMPFVersion = OpenMPFVersion;
+        this.openmpfVersion = OpenMPFVersion;
         this.externalJobId = externalJobId;
         this.timeStart = timeStart;
         this.timeStop = timeStop;

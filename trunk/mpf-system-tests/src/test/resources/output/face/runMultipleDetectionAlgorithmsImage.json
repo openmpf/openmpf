@@ -1,34 +1,31 @@
 {
-  "jobId": 44,
-  "jobErrors": [],
-  "jobWarnings": [],
-  "objectId": "3b45987a-4ed3-4703-8329-0a466fe45791",
+  "jobId": 3270,
+  "errors": [],
+  "warnings": [],
+  "objectId": "e7c14fd9-79f3-4c47-98cc-c9c4e1e28d02",
   "pipeline": {
-    "name": "TEST MULTIPLE FACE DETECTION PIPELINE",
-    "description": "TEST MULTIPLE FACE DETECTION PIPELINE",
-    "stages": [
+    "name": "TEST MULTIPLE-ACTION TASK PIPELINE",
+    "description": "TEST MULTIPLE-ACTION TASK PIPELINE",
+    "tasks": [
       {
         "actionType": "DETECTION",
-        "name": "TEST MULTIPLE FACE DETECTION TASK",
-        "description": "TEST MULTIPLE FACE DETECTION TASK",
+        "name": "TEST MULTIPLE-ACTION TASK",
+        "description": "TEST MULTIPLE-ACTION TASK",
         "actions": [
           {
             "algorithm": "FACECV",
             "name": "OCV FACE DETECTION ACTION",
             "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": {}
+            "properties": null
           },
           {
-            "algorithm": "DLIB",
-            "name": "DLIB FACE DETECTION ACTION",
-            "description": "Executes the dlib face detection algorithm using the default parameters.",
-            "properties": {}
-          },
-          {
-            "algorithm": "PERSONCV",
-            "name": "OCV PERSON DETECTION ACTION",
-            "description": "Executes the OpenCV person detection algorithm using the default parameters.",
-            "properties": {}
+            "algorithm": "OCVYOLO",
+            "name": "OCV TINY YOLO OBJECT DETECTION ACTION",
+            "description": "Runs the Tiny YOLO object detection Darknet model.",
+            "properties": {
+              "NET_INPUT_IMAGE_SIZE": "416",
+              "MODEL_NAME": "TINY YOLO"
+            }
           }
         ]
       }
@@ -36,185 +33,481 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "f39dda0a-9c80-4edb-a3bb-f8e69368af5a",
-  "timeStart": "2019-09-25T16:50:35Z",
-  "timeStop": "2019-09-25T16:50:36Z",
+  "externalJobId": "4bca5b9b-62da-49e0-8c53-61fceb344d62",
+  "timeStart": "2021-09-10T13:00:17.668-04:00",
+  "timeStop": "2021-09-10T13:00:19.063-04:00",
   "status": "COMPLETE",
-  "algorithmProperties": {},
-  "jobProperties": {},
+  "algorithmProperties": null,
+  "jobProperties": null,
+  "environmentVariableProperties": null,
   "media": [
     {
-      "mediaId": 41,
-      "path": "file:///opt/mpf/share/samples/person/homewood-bank-robbery.jpg",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/jpeg",
-      "length": 1,
-      "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
-      "message": null,
-      "status": "COMPLETE",
-      "mediaMetadata": {
-        "FRAME_HEIGHT": "168",
-        "FRAME_WIDTH": "299",
-        "MIME_TYPE": "image/jpeg"
-      },
-      "mediaProperties": {},
-      "markupResult": null,
-      "output": {
-        "NO TRACKS": [
-          {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "algorithm": "DLIB"
-          },
-          {
-            "source": "+#OCV FACE DETECTION ACTION",
-            "algorithm": "FACECV"
-          }
-        ],
-        "PERSON": [
-          {
-            "source": "+#OCV PERSON DETECTION ACTION",
-            "algorithm": "PERSONCV",
-            "tracks": [
-              {
-                "id": "1d54a3c5adbac24cedc53d6f3cfd02e575fa7f2550795e681935651211a76d39",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 118,
-                  "y": 35,
-                  "width": 77,
-                  "height": 133,
-                  "confidence": -1,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/41/0/homewood-bank-robbery.jpg"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 118,
-                    "y": 35,
-                    "width": 77,
-                    "height": 133,
-                    "confidence": -1,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/41/0/homewood-bank-robbery.jpg"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "mediaId": 40,
-      "path": "file:///opt/mpf/share/samples/person/race.jpg",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/jpeg",
-      "length": 1,
+      "mediaId": 1,
+      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/race.jpg",
       "sha256": "49b0b640884f797cae8dc32d80110869fba24730245773a9e7ae0810b6cd6a45",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "image/jpeg",
+      "mediaType": "IMAGE",
+      "length": 1,
       "mediaMetadata": {
         "FRAME_HEIGHT": "428",
         "FRAME_WIDTH": "640",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": {},
+      "mediaProperties": null,
+      "status": "COMPLETE",
+      "detectionProcessingErrors": null,
       "markupResult": null,
       "output": {
-        "FACE": [
+        "CLASS": [
           {
-            "source": "+#DLIB FACE DETECTION ACTION",
-            "algorithm": "DLIB",
+            "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+            "algorithm": "OCVYOLO",
             "tracks": [
               {
-                "id": "7644c3d4334b3393c964b42a9f078891c691ac677164d54265eab2dd4553afb4",
+                "id": "cd09bf7dbfeb9a60b72badeecd792ea06831563caa2cda5358a5055dc3d7af9e",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 1.737665,
-                "trackProperties": {},
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.7400942,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.740094",
+                  "CLASSIFICATION LIST": "person"
+                },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 166,
-                  "y": 46,
-                  "width": 38,
-                  "height": 38,
-                  "confidence": 1.737665,
-                  "detectionProperties": {},
+                  "x": 14,
+                  "y": 72,
+                  "width": 44,
+                  "height": 176,
+                  "confidence": 0.7400942,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.740094",
+                    "CLASSIFICATION LIST": "person"
+                  },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 166,
-                    "y": 46,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 1.737665,
-                    "detectionProperties": {},
+                    "x": 14,
+                    "y": 72,
+                    "width": 44,
+                    "height": 176,
+                    "confidence": 0.7400942,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.740094",
+                      "CLASSIFICATION LIST": "person"
+                    },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/0/frame-0.png"
                   }
                 ]
               },
               {
-                "id": "c1f821dc4529c1da394c4a79320fe39816da2dac8f3850cbeb02c8249051a6fe",
+                "id": "9cb4d4bb0c15dc78f157a7ddd8fc996ec07bcc414b3f8a704900ce902685fa5b",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "FACE",
-                "source": "+#DLIB FACE DETECTION ACTION",
-                "confidence": 2.3243635,
-                "trackProperties": {},
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.7476971,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                  "CLASSIFICATION LIST": "person"
+                },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 402,
-                  "y": 42,
-                  "width": 38,
-                  "height": 38,
-                  "confidence": 2.3243635,
-                  "detectionProperties": {},
+                  "x": 52,
+                  "y": 76,
+                  "width": 47,
+                  "height": 192,
+                  "confidence": 0.7476971,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                    "CLASSIFICATION LIST": "person"
+                  },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/1/frame-0.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 402,
-                    "y": 42,
-                    "width": 38,
-                    "height": 38,
-                    "confidence": 2.3243635,
-                    "detectionProperties": {},
+                    "x": 52,
+                    "y": 76,
+                    "width": 47,
+                    "height": 192,
+                    "confidence": 0.7476971,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                      "CLASSIFICATION LIST": "person"
+                    },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/1/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "4785d438eb6315bf2f97e4efc70eda54c3bb4923fe612c0aac86b9e7f39ce37e",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.7810555,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 88,
+                  "y": 37,
+                  "width": 35,
+                  "height": 141,
+                  "confidence": 0.7810555,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/2/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 88,
+                    "y": 37,
+                    "width": 35,
+                    "height": 141,
+                    "confidence": 0.7810555,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/2/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "2de7c0b3737362ff850b36e7e36f30088479ceb633510c26963f3e7abfb274d7",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.8684121,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 263,
+                  "y": 19,
+                  "width": 41,
+                  "height": 108,
+                  "confidence": 0.8684121,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/3/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 263,
+                    "y": 19,
+                    "width": 41,
+                    "height": 108,
+                    "confidence": 0.8684121,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/3/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "d3b602e13408b137ee73ad610cd222b23b1e246bd733ef949fabeea3f910e47e",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.95451385,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 351,
+                  "y": 39,
+                  "width": 27,
+                  "height": 128,
+                  "confidence": 0.95451385,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/4/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 351,
+                    "y": 39,
+                    "width": 27,
+                    "height": 128,
+                    "confidence": 0.95451385,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/4/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "e969c23761714b772f2a6d78d98ec675da236b71d87c4662ca6f69d3f1356de1",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.9575011,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 519,
+                  "y": 40,
+                  "width": 94,
+                  "height": 235,
+                  "confidence": 0.9575011,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/5/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 519,
+                    "y": 40,
+                    "width": 94,
+                    "height": 235,
+                    "confidence": 0.9575011,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/5/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "fc182b1f4aa14aa20cd88d5976628d8ae8dad93844553c927b789e3a1803f70c",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.977645,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 141,
+                  "y": 38,
+                  "width": 119,
+                  "height": 362,
+                  "confidence": 0.977645,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/6/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 141,
+                    "y": 38,
+                    "width": 119,
+                    "height": 362,
+                    "confidence": 0.977645,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/6/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "fdc9380d9650376c083463da9ca8d109c12ab033eb9b0b2bc78771ad382be4c7",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.98001933,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 311,
+                  "y": 38,
+                  "width": 41,
+                  "height": 132,
+                  "confidence": 0.98001933,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/7/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 311,
+                    "y": 38,
+                    "width": 41,
+                    "height": 132,
+                    "confidence": 0.98001933,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/7/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "c3c7f22474bcc970d8e0e7062402f76e64a952f63e4928693d762eb48e5ebde6",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.9966697,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 366,
+                  "y": 5,
+                  "width": 143,
+                  "height": 406,
+                  "confidence": 0.9966697,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/8/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 366,
+                    "y": 5,
+                    "width": 143,
+                    "height": 406,
+                    "confidence": 0.9966697,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/8/frame-0.png"
                   }
                 ]
               }
             ]
-          },
+          }
+        ],
+        "FACE": [
           {
             "source": "+#OCV FACE DETECTION ACTION",
             "algorithm": "FACECV",
@@ -227,8 +520,8 @@
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
-                "confidence": 13,
-                "trackProperties": {},
+                "confidence": 13.0,
+                "trackProperties": null,
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -236,10 +529,10 @@
                   "y": 35,
                   "width": 50,
                   "height": 50,
-                  "confidence": 13,
-                  "detectionProperties": {},
+                  "confidence": 13.0,
+                  "detectionProperties": null,
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -249,240 +542,141 @@
                     "y": 35,
                     "width": 50,
                     "height": 50,
-                    "confidence": 13,
-                    "detectionProperties": {},
+                    "confidence": 13.0,
+                    "detectionProperties": null,
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/0/0/frame-0.png"
                   }
                 ]
               }
             ]
           }
-        ],
-        "PERSON": [
+        ]
+      }
+    },
+    {
+      "mediaId": 2,
+      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/homewood-bank-robbery.jpg",
+      "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
+      "mimeType": "image/jpeg",
+      "mediaType": "IMAGE",
+      "length": 1,
+      "mediaMetadata": {
+        "FRAME_HEIGHT": "168",
+        "FRAME_WIDTH": "299",
+        "MIME_TYPE": "image/jpeg"
+      },
+      "mediaProperties": null,
+      "status": "COMPLETE",
+      "detectionProcessingErrors": null,
+      "markupResult": null,
+      "output": {
+        "NO TRACKS": [
           {
-            "source": "+#OCV PERSON DETECTION ACTION",
-            "algorithm": "PERSONCV",
+            "source": "+#OCV FACE DETECTION ACTION",
+            "algorithm": "FACECV"
+          }
+        ],
+        "CLASS": [
+          {
+            "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+            "algorithm": "OCVYOLO",
             "tracks": [
               {
-                "id": "b20f30ac5e7a095c133f2eff1154387072e91265488fcc24a309d0a436ad51a5",
+                "id": "a1b92736c7ff4df22886ebf9862c5e0153c78bf36fa16aa308a937f56fce6102",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.96147543,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                  "CLASSIFICATION LIST": "person"
+                },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 0,
-                  "y": 36,
-                  "width": 124,
-                  "height": 259,
-                  "confidence": -1,
-                  "detectionProperties": {},
+                  "x": 16,
+                  "y": 22,
+                  "width": 96,
+                  "height": 141,
+                  "confidence": 0.96147543,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                    "CLASSIFICATION LIST": "person"
+                  },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 0,
-                    "y": 36,
-                    "width": 124,
-                    "height": 259,
-                    "confidence": -1,
-                    "detectionProperties": {},
+                    "x": 16,
+                    "y": 22,
+                    "width": 96,
+                    "height": 141,
+                    "confidence": 0.96147543,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                      "CLASSIFICATION LIST": "person"
+                    },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/0/frame-0.png"
                   }
                 ]
               },
               {
-                "id": "d83ce1dd76ba24ce4e1ad2acb1901846516982b73be8a7b80ad51f5c3866c281",
+                "id": "b28d3fb436a1b5fcf5b0f39d45d473209996f8cb4b57a38cbffb8e0e25cfe87c",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.9845105,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                  "CLASSIFICATION LIST": "person"
+                },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 97,
-                  "y": 32,
-                  "width": 194,
-                  "height": 387,
-                  "confidence": -1,
-                  "detectionProperties": {},
+                  "x": 126,
+                  "y": 46,
+                  "width": 60,
+                  "height": 120,
+                  "confidence": 0.9845105,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                    "CLASSIFICATION LIST": "person"
+                  },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/1/frame-0.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 97,
-                    "y": 32,
-                    "width": 194,
-                    "height": 387,
-                    "confidence": -1,
-                    "detectionProperties": {},
+                    "x": 126,
+                    "y": 46,
+                    "width": 60,
+                    "height": 120,
+                    "confidence": 0.9845105,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                      "CLASSIFICATION LIST": "person"
+                    },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                  }
-                ]
-              },
-              {
-                "id": "0ebc80df1ee60f204baec56ffb2d3a85fda0310460564a615e13162c48cafb12",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 191,
-                  "y": 50,
-                  "width": 109,
-                  "height": 219,
-                  "confidence": -1,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 191,
-                    "y": 50,
-                    "width": 109,
-                    "height": 219,
-                    "confidence": -1,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                  }
-                ]
-              },
-              {
-                "id": "55b03da110bcfa8e2a44fa625add5f244296395b4a3a24601af194777c802684",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 253,
-                  "y": 2,
-                  "width": 73,
-                  "height": 146,
-                  "confidence": -1,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 253,
-                    "y": 2,
-                    "width": 73,
-                    "height": 146,
-                    "confidence": -1,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                  }
-                ]
-              },
-              {
-                "id": "ce521e76ad125397924cac11a910325718f110f4f77817d82808b0b064d2beb7",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 291,
-                  "y": 21,
-                  "width": 89,
-                  "height": 178,
-                  "confidence": -1,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 291,
-                    "y": 21,
-                    "width": 89,
-                    "height": 178,
-                    "confidence": -1,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                  }
-                ]
-              },
-              {
-                "id": "f05815b00a2f89187f441148b79220a80a8d26fddd49d06330bf62cf28d66562",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "PERSON",
-                "source": "+#OCV PERSON DETECTION ACTION",
-                "confidence": -1,
-                "trackProperties": {},
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 573,
-                  "y": 44,
-                  "width": 67,
-                  "height": 247,
-                  "confidence": -1,
-                  "detectionProperties": {},
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 573,
-                    "y": 44,
-                    "width": 67,
-                    "height": 247,
-                    "confidence": -1,
-                    "detectionProperties": {},
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/44/40/0/race.jpg"
+                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/1/frame-0.png"
                   }
                 ]
               }

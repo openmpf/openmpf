@@ -89,8 +89,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
         BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
 
         if (job.isCancelled()) {
-            LOG.warn("[Job {}|*|*] Artifact extraction will not be performed because this job has been cancelled.",
-                    job.getId());
+            LOG.warn("Artifact extraction will not be performed because this job has been cancelled.");
             return Collections.emptyList();
         }
 
@@ -119,9 +118,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             boolean lastTaskOnly = Boolean.parseBoolean(
                     _aggregateJobPropertiesUtil.getValue(MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY, job, media));
             if (lastTaskOnly && notLastTask) {
-                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
+                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to {} property.",
-                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId(),
+                        pipelineElements.getTask(taskIndex).getName(), media.getId(),
                         MpfConstants.OUTPUT_LAST_TASK_ONLY_PROPERTY);
                 continue;
             }
@@ -130,9 +129,9 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             // Media extraction will be performed for the next task this one is merged with.
             Set<Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
             if (tasksToMerge.contains(taskIndex + 1)) {
-                LOG.info("[Job {}|*|*] ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
+                LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
                                 " due to being merged with the following task.",
-                        job.getId(), pipelineElements.getTask(taskIndex).getName(), media.getId());
+                        pipelineElements.getTask(taskIndex).getName(), media.getId());
                 continue;
             }
 

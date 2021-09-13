@@ -74,8 +74,7 @@ public class MediaInspectionSplitter extends WfmSplitter {
                 }
             }
         } else {
-            log.warn("[Job {}|*|*] Media inspection will not be performed because this job has been cancelled.",
-                     job.getId());
+            log.warn("Media inspection will not be performed because this job has been cancelled.");
         }
 
         return messages;

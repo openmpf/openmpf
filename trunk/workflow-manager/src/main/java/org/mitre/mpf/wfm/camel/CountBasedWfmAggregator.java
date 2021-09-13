@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,8 @@ public class CountBasedWfmAggregator implements WfmAggregator {
 
 	@Override
 	public final Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-		int aggregateCount = 1, splitSize = newExchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
+		int aggregateCount = 1;
+		int splitSize = newExchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
 
 		if(oldExchange == null) {
 			// The first time through, the output exchange's AGGREGATED_COUNT will be 1.
@@ -75,12 +77,14 @@ public class CountBasedWfmAggregator implements WfmAggregator {
 			newExchange.getOut().setHeader(MpfHeaders.SPLIT_COMPLETED, Boolean.TRUE);
 		}
 
-		try {
-			onResponse(newExchange);
-		} catch (Exception exception) {
-			log.warn("[Job {}:*:*] Exception encountered while executing onResponse.",
-					newExchange.getOut().getHeader(MpfHeaders.JOB_ID),
-					exception);
+		var jobId = newExchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		try (var ctx = CloseableMdc.job(jobId)) {
+			try {
+				onResponse(newExchange);
+			}
+			catch (Exception exception) {
+				log.warn("Exception encountered while executing onResponse.", exception);
+			}
 		}
 		return newExchange;
 	}

@@ -58,9 +58,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -98,9 +96,6 @@ public class TestStreamingJobStartStop {
 
     @Autowired(required = false)
     private MasterNode _masterNode;
-
-    @Autowired
-    private ObjectMapper _objectMapper;
 
     @Autowired
     private IoUtils _ioUtils;
@@ -182,77 +177,6 @@ public class TestStreamingJobStartStop {
     }
 
 
-    @Test(timeout = 5 * 60_000)
-    public void testDarknetStreaming() throws InterruptedException, IOException {
-        var darknetRcm = _componentStateService.getByComponentName("DarknetDetection")
-                .orElse(null);
-        assumeFalse("Skipping testDarknetStreaming because DarknetDetection component is not registered.",
-                    darknetRcm == null);
-        assumeTrue("Skipping testDarknetStreaming because DarknetDetection is registered as an unmanaged component.",
-                   darknetRcm.isManaged());
-
-        long jobId = 43234;
-        int segmentSize = 10;
-        long test_start_time = System.currentTimeMillis();
-
-        waitForCorrectNodes();
-
-        StreamingJob streamingJob = createJob(
-                jobId,
-                "DARKNET",
-                "TINY YOLO OBJECT DETECTION PIPELINE",
-                "/samples/face/video_01.mp4",
-                segmentSize,
-                0);
-
-        _jobSender.launchJob(streamingJob);
-
-        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
-                .handleNewActivityAlert(eq(jobId), geq(0L), gt(test_start_time));
-
-
-        ArgumentCaptor<JsonSegmentSummaryReport> reportCaptor = ArgumentCaptor.forClass(JsonSegmentSummaryReport.class);
-        verify(_mockStreamingJobRequestService, timeout(120_000).atLeastOnce())
-                .handleNewSummaryReport(reportCaptor.capture());
-
-        _jobSender.stopJob(jobId);
-
-
-        verify(_mockStreamingJobRequestService, timeout(120_000))
-                .handleJobStatusChange(eq(jobId),
-                                       hasStatus(StreamingJobStatusType.TERMINATED, StreamingJobStatusType.CANCELLED),
-                                       gt(test_start_time));
-
-
-        JsonSegmentSummaryReport summaryReport = reportCaptor.getValue();
-        assertEquals(jobId, summaryReport.getJobId());
-
-        List<JsonStreamingTrackOutputObject> actualTracks = summaryReport.getDetectionTypes()
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(toList());
-
-        assertTrue(actualTracks.stream()
-                           .map(t -> t.getTrackProperties().get("CLASSIFICATION"))
-                           .anyMatch("person"::equalsIgnoreCase));
-
-
-        URL expectedOutputPath = getClass().getClassLoader()
-                .getResource("output/object/runDarknetDetectVideo.json");
-        JsonOutputObject expectedOutputJson = _objectMapper.readValue(expectedOutputPath, JsonOutputObject.class);
-
-        boolean allExpectedTracksFound = expectedOutputJson.getMedia()
-                .stream()
-                .flatMap(m -> m.getDetectionTypes().values().stream())
-                .flatMap(Collection::stream)
-                .flatMap(a -> a.getTracks().stream())
-                .filter(t -> t.getStopOffsetFrame() < segmentSize)
-                .allMatch(t -> containsMatchingTrack(t, actualTracks));
-        assertTrue(allExpectedTracksFound);
-    }
-
-
     private static StreamingJobStatus hasStatus(StreamingJobStatusType... statuses) {
         return argThat(status -> Stream.of(statuses)
                         .anyMatch(t -> status.getType() == t));
@@ -278,21 +202,6 @@ public class TestStreamingJobStartStop {
                 Collections.emptyMap(), Collections.emptyMap());
     }
 
-
-    private static boolean containsMatchingTrack(JsonTrackOutputObject expectedTrack,
-                                                 Collection<JsonStreamingTrackOutputObject> actualTracks) {
-        return actualTracks.stream()
-                .anyMatch(actual -> tracksMatch(expectedTrack, actual));
-    }
-
-    private static boolean tracksMatch(JsonTrackOutputObject expectedTrack,
-                                       JsonStreamingTrackOutputObject actualTrack) {
-        return actualTrack.getStartOffsetFrame() == expectedTrack.getStartOffsetFrame()
-                && actualTrack.getStopOffsetFrame() == expectedTrack.getStopOffsetFrame()
-                && Math.abs(actualTrack.getConfidence() - expectedTrack.getConfidence()) < 0.01
-                && actualTrack.getTrackProperties().equals(expectedTrack.getTrackProperties())
-                && exemplarsMatch(expectedTrack, actualTrack);
-    }
 
     private static boolean exemplarsMatch(JsonTrackOutputObject expectedTrack,
                                           JsonStreamingTrackOutputObject actualTrack) {

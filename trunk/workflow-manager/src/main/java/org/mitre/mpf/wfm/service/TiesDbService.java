@@ -210,11 +210,10 @@ public class TiesDbService {
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
-        LOG.info("[Job {}] Posting assertion to TiesDb for the {} action.",
-                 jobPart.getJob().getId(), jobPart.getAction().getName());
+        LOG.info("Posting assertion to TiesDb for the {} action.",
+                 jobPart.getAction().getName());
 
-        return postAssertion(jobPart.getJob().getId(),
-                             jobPart.getAction().getName(),
+        return postAssertion(jobPart.getAction().getName(),
                              tiesDbUrl,
                              jobPart.getMedia().getSha256(),
                              assertion);
@@ -239,8 +238,7 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(long jobId,
-                                                  String action,
+    private CompletableFuture<Void> postAssertion(String action,
                                                   String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
@@ -253,7 +251,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            handleHttpError(jobId, action, tiesDbUrl, e);
+            handleHttpError(action, tiesDbUrl, e);
             return ThreadUtil.completedFuture(null);
         }
 
@@ -272,11 +270,10 @@ public class TiesDbService {
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
                     .thenApply(TiesDbService::checkResponse)
-                    .exceptionally(err -> handleHttpError(jobId, action, fullUrl.toString(),
-                                                          err));
+                    .exceptionally(err -> handleHttpError(action, fullUrl.toString(), err));
         }
         catch (JsonProcessingException e) {
-            handleHttpError(jobId, action, fullUrl.toString(), e);
+            handleHttpError(action, fullUrl.toString(), e);
             return ThreadUtil.completedFuture(null);
         }
     }
@@ -301,13 +298,13 @@ public class TiesDbService {
     }
 
 
-    private static Void handleHttpError(long jobId, String url, String action, Throwable error) {
+    private static Void handleHttpError(String url, String action, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var warningMessage = String.format(
-                "[Job %s] Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
-                jobId, url, action, error);
+                "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
+                url, action, error);
         LOG.warn(warningMessage, error);
         return null;
     }

@@ -56,15 +56,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- *
- * NOTE: Please keep the tests in this class in alphabetical order.  While they will automatically run that way regardless
- * of the order in the source code, keeping them in that order helps when correlating jenkins-produced output, which is
- * by job number, with named output, e.g., .../share/output-objects/2/detection.json and face/runFaceCombinedDetectImage.json
- *
- * This class contains tests that were formerly in TestEndToEndJenkins.  See comments in TestSystemOnDiff for information
- * about output checking
- */
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestSystemNightly extends TestSystemWithDefaultConfig {
     private static final Logger log = LoggerFactory.getLogger(TestSystemNightly.class);
@@ -91,10 +83,11 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5*MINUTES)
     public void runFaceCombinedDetectImage() throws Exception {
-        String taskName = "TEST CVFACE DLIB COMBINED TASK";
-        addTask(taskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION");
+        // This tests the handling of more than one output with the same data type ("FACE").
+        String taskName = "TEST OCVFACE COMBINED TASK";
+        addTask(taskName, "OCV FACE DETECTION ACTION", "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION");
 
-        String pipelineName = "TEST CVFACE DLIB COMBINED PIPELINE";
+        String pipelineName = "TEST OCVFACE COMBINED PIPELINE";
         addPipeline(pipelineName, taskName);
 
         runSystemTest(pipelineName, "output/face/runFaceCombinedDetectImage.json",
@@ -156,8 +149,8 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/face/meds-aa-S001-01.jpg"),
                 ioUtils.findFile("/samples/motion/ocv_motion_video.avi"));
-        long jobId = runPipelineOnMedia("OCV PERSON DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV TINY YOLO VEHICLE DETECTION (WITH MARKUP) PIPELINE", media, Collections.emptyMap(),
+                 propertiesUtil.getJmsPriority());
         URI outputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
 //        JsonOutputObject outputObject = objectMapper.readValue(Files.readAllBytes(Paths.get(outputPath)), JsonOutputObject.class);
         JsonOutputObject outputObject = jsonUtils.deserializeFromText(FileUtils.readFileToByteArray(new File(outputPath)), JsonOutputObject.class);
@@ -173,7 +166,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
     public void testNonUri() throws Exception {
         List<JobCreationMediaData> media = new LinkedList<>();
         media.add(new JobCreationMediaData("/not/a/file.txt"));
-        long jobRequestId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
+        long jobRequestId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
                 propertiesUtil.getJmsPriority());
     }
 

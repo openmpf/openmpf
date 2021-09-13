@@ -41,27 +41,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
-/**
- * NOTE: Please keep the tests in this class in alphabetical order.  While they will automatically run that way regardless
- * of the order in the source code, keeping them in that order helps when correlating jenkins-produced output, which is
- * by job number, with named output, e.g., .../share/output-objects/5/detection.json and motion/runMotionMogDetectVideo.json
- *
- * This class contains tests that were formerly in TestEndToEnd.  The main changes are 3 inputs vs. 2 inputs, inputs
- * are tailored to the type of detection at hand and there is output checking (comparing previously saved expected results
- * against actual results).  Because for some tests, the output as produced on Jenkins is different than the output
- * produced in a local VM, we included a way to run the tests without output checking.  Output checking is not done
- * by default; it is done when run on Jenkins via the addition of '-Pjenkins' in the maven properties for the run; it
- * can be done locally if desired by adding '-Djenkins=true' to the command line (if running via command line) or by
- * adding the same to the Run Configuration, if running via IntelliJ.  To verify if output checking is running or not: if
- * you see 'Deserializing ...' in the console or log output, it IS running; if you don't see it, it IS NOT running.
- *
- * If the structure of the output changes or if an algorithm changes, output checking will undoubtedly fail.  Once it is
- * confirmed that the failure is expected, the outputs should just be regenerated and committed to the repository for
- * future checking. Output checking is designed to catch unintentional or erroneous changes. There are two scripts in the
- * bin directory to help 'ease the pain' of having to do redo expected output files. Note that if tests are added or deleted,
- * the correspondence between output file and expected results file may change, so that should be verified (or just use
- * the scripts to cut and paste the desired command).
- */
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
@@ -514,14 +493,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 15 * MINUTES)
-    public void runDarknetDetectVideo() throws Exception {
-        runSystemTest("TINY YOLO OBJECT DETECTION PIPELINE",
-                      "output/object/runDarknetDetectVideo.json",
-                      "/samples/face/video_01.mp4");
-    }
-
-
     @Test
     public void runOcvFaceOnRotatedImage() {
         String pipelineName = "OCV FACE DETECTION PIPELINE";
@@ -647,58 +618,9 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenOcvPersonFeedForwardRegionTest() {
-        String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD SUPERSET REGION";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "PERSONCV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED SUPERSET REGION TO OCV PERSON PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
-
-        runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                 "PERSON", firstMotionFrame, maxXMotion);
-    }
-
     private static final Map<String, String> TINY_YOLO_CONFIG = ImmutableMap.of(
             "MODEL_NAME", "tiny yolo");
 
-
-    private static Map<String, String> getTinyYoloConfig(Map<String, String> otherProperties) {
-        Map<String, String> result = new HashMap<>(otherProperties);
-        result.putAll(TINY_YOLO_CONFIG);
-        return result;
-    }
-
-
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenDarknetFeedForwardRegionTest() {
-        String actionTaskName = "TEST DARKNET WITH FEED FORWARD SUPERSET REGION";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "DARKNET",
-                  getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION")));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED SUPERSET REGION TO DARKNET PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXMotion = 320 / 2; // Video is 320 x 300 and only the person on the left side of the frame moves.
-
-        runFeedForwardRegionTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                 "CLASS", firstMotionFrame, maxXMotion);
-    }
 
 
     @Test(timeout = 5 * MINUTES)
@@ -1040,49 +962,6 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     }
 
 
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenOcvPersonFeedForwardFullFrameTest() {
-        String actionTaskName = "TEST OCV PERSON WITH FEED FORWARD FULL FRAME";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "PERSONCV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED FULL FRAME TO OCV PERSON PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
-        int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
-        runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                    "PERSON", firstMotionFrame, maxXLeftDetection, minXRightDetection);
-    }
-
-
-    @Test(timeout = 5 * MINUTES)
-    public void runMogThenDarknetFeedForwardFullFrameTest() {
-        String actionTaskName = "TEST DARKNET WITH FEED FORWARD FULL FRAME";
-
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "DARKNET",
-                  getTinyYoloConfig(ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME")));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED FULL FRAME TO DARKNET PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
-
-        int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
-        int maxXLeftDetection = 320 / 2;  // Video is 320x300 and there is a person on the left side of the frame.
-        int minXRightDetection = 320 / 2;  // Video is 320x300 and there is a person on the right side of the frame.
-        runFeedForwardFullFrameTest(pipelineName, "/samples/person/ff-region-motion-person.avi",
-                                    "CLASS", firstMotionFrame, maxXLeftDetection, minXRightDetection);
-    }
-
 
     @Test(timeout = 5 * MINUTES)
     public void runMogThenOalprFeedForwardFullFrameTest() {
@@ -1262,11 +1141,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 5 * MINUTES)
     public void runMultipleDetectionAlgorithmsImage() throws Exception {
-        String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK";
-        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "DLIB FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
+        String multipleActionTaskName = "TEST MULTIPLE-ACTION TASK";
+        addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
-        String pipelineName = "TEST MULTIPLE FACE DETECTION PIPELINE";
-        addPipeline(pipelineName, multipleTaskName);
+        String pipelineName = "TEST MULTIPLE-ACTION TASK PIPELINE";
+        addPipeline(pipelineName, multipleActionTaskName);
 
         runSystemTest(pipelineName,
                       "output/face/runMultipleDetectionAlgorithmsImage.json",
@@ -1276,23 +1155,15 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
     @Test(timeout = 15 * MINUTES)
     public void runMultipleDetectionAlgorithmsVideo() throws Exception {
-        String multipleTaskName = "TEST MULTIPLE FACE DETECTION TASK 2";
-        addTask(multipleTaskName, "OCV FACE DETECTION ACTION", "OCV PERSON DETECTION ACTION");
+        String multipleActionTaskName = "TEST MULTIPLE-ACTION TASK 2";
+        addTask(multipleActionTaskName, "OCV FACE DETECTION ACTION", "OCV TINY YOLO OBJECT DETECTION ACTION");
 
-        String pipelineName = "TEST MULTIPLE FACE DETECTION PIPELINE 2";
-        addPipeline(pipelineName, multipleTaskName);
+        String pipelineName = "TEST MULTIPLE-ACTION TASK PIPELINE 2";
+        addPipeline(pipelineName, multipleActionTaskName);
 
         runSystemTest(pipelineName,
                       "output/face/runMultipleDetectionAlgorithmsVideo.json",
                       "/samples/person/video_02.mp4");
-    }
-
-    @Test(timeout = 5 * MINUTES)
-    public void runPersonOcvDetectImage() throws Exception {
-        runSystemTest("OCV PERSON DETECTION PIPELINE", "output/person/runPersonOcvDetectImage.json",
-                      "/samples/face/person_cropped_2.png",
-                      "/samples/person/race.jpg",
-                      "/samples/person/homewood-bank-robbery.jpg");
     }
 
     @Test(timeout = 5 * MINUTES)

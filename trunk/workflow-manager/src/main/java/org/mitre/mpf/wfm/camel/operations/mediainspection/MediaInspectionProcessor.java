@@ -183,7 +183,8 @@ public class MediaInspectionProcessor extends WfmProcessor {
                         break;
                 }
             } catch (Exception e) {
-                LOG.error("[Job {}|*|*] Failed to inspect {} due to an exception.", jobId, media.getUri(), e);
+                LOG.error(String.format("Failed to inspect %s due to an exception.",
+                                        media.getUri()), e);
                 if (e instanceof TikaException) {
                     _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
                                              "Tika media inspection error: " + e.getMessage());
@@ -193,10 +194,10 @@ public class MediaInspectionProcessor extends WfmProcessor {
             }
 
             _inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
-            LOG.info("[Job {}] Media with URI {} (id={}) has data type {} and mime type {}.",
-                     jobId, media.getUri(), media.getId(), media.getType(), media.getMimeType());
+            LOG.info("Media with URI {} (id={}) has data type {} and mime type {}.",
+                     media.getUri(), media.getId(), media.getType(), media.getMimeType());
         } else {
-            LOG.error("[Job {}|*|*] Skipping inspection of Media #{} as it is in an error state.", jobId, mediaId);
+            LOG.error("Skipping inspection of Media #{} as it is in an error state.", mediaId);
         }
 
         setHeaders(exchange, jobId, mediaId);

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -70,55 +71,68 @@ public abstract class WfmSplitter implements MonitoredWfmSplitter {
     @Override
     public final List<Message> split(Exchange exchange) {
         // Assume that the Job ID has been provided as a Long.
-        assert exchange.getIn().getHeaders().containsKey(MpfHeaders.JOB_ID) : String.format("The '%s' header must be provided.", MpfHeaders.JOB_ID);
-        assert exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class) != null : String.format("The '%s' header (value=%s) must be provided and convertible to Long.", MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
+        assert exchange.getIn().getHeaders().containsKey(MpfHeaders.JOB_ID) : String.format(
+                "The '%s' header must be provided.",
+                MpfHeaders.JOB_ID);
+        assert exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class) != null : String.format(
+                "The '%s' header (value=%s) must be provided and convertible to Long.",
+                MpfHeaders.JOB_ID,
+                exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
         // Get the Job ID from the headers.
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        try (var mdc = CloseableMdc.job(jobId)) {
+            // Declare a collection to hold all of the messages produced by the split.
+            List<Message> messages = null;
+            boolean failed = false;
 
-        // Declare a collection to hold all of the messages produced by the split.
-        List<Message> messages = null;
-        boolean failed = false;
+            try {
+                messages = wfmSplit(exchange);
+            }
+            catch (Exception exception) {
+                // The split operation failed. The job cannot continue.
+                // Print out the stack trace since no details will be reported in the JSON output.
+                var errorMsg =String.format(
+                        "Failed to complete the split operation for Job %s due to : %s",
+                        jobId, exception);
+                         log.error(errorMsg, exception);
+                inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
+                failed = true;
+            }
 
-        try {
-            messages = wfmSplit(exchange);
+            boolean emptySplit = messages == null || messages.isEmpty();
+            if (emptySplit) {
+                // No messages were produced. Unless a dummy message is produced, the workflow will hang.
+                Message defaultMessage = new DefaultMessage();
+                defaultMessage.setHeader(MpfHeaders.EMPTY_SPLIT, true);
+                defaultMessage.setHeader(MpfHeaders.SPLITTING_ERROR, failed);
+                defaultMessage.setHeader(MpfHeaders.JMS_PRIORITY,
+                                         exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
+                log.info("WfmSplitter class: {}|{} produced 0 work units (error = {}).",
+                         getSplitterName(), getClass().getName(), failed);
+                messages = Collections.singletonList(defaultMessage);
+            }
+
+            // Create a correlation id to associate with all messages produced by this split.
+            String correlationId = String.format("%d:%s", jobId, UUID.randomUUID().toString());
+
+            for (Message message : messages) {
+                message.setHeader(MpfHeaders.SPLIT_SIZE, messages.size());
+                message.setHeader(MpfHeaders.JOB_ID, jobId);
+                message.setHeader(MpfHeaders.JMS_PRIORITY,
+                                  exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
+                message.setHeader(MpfHeaders.CORRELATION_ID, correlationId);
+            }
+
+            int messageCount = emptySplit ? 0 : messages.size();
+            log.info(
+                    "WfmSplitter class: {}|{} produced {} work units with correlation id '{}' (error = {}).",
+                    getSplitterName(),
+                    getClass().getName(),
+                    messageCount,
+                    correlationId,
+                    failed);
+            return messages;
         }
-        catch (Exception exception) {
-            // The split operation failed. The job cannot continue.
-            // Print out the stack trace since no details will be reported in the JSON output.
-            var errorMsg = String.format(
-                    "Failed to complete the split operation for Job %s due to: %s",
-                    jobId, exception);
-            log.error(errorMsg, exception);
-            inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
-            failed = true;
-        }
-
-        boolean emptySplit = messages == null || messages.isEmpty();
-        if (emptySplit) {
-            // No messages were produced. Unless a dummy message is produced, the workflow will hang.
-            Message defaultMessage = new DefaultMessage();
-            defaultMessage.setHeader(MpfHeaders.EMPTY_SPLIT, true);
-            defaultMessage.setHeader(MpfHeaders.SPLITTING_ERROR, failed);
-            defaultMessage.setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
-            log.info("[Job {}|*|*] WfmSplitter class: {}|{} produced 0 work units (error = {}).",
-                     jobId, getSplitterName(), getClass().getName(), failed);
-            messages = Collections.singletonList(defaultMessage);
-        }
-
-        // Create a correlation id to associate with all messages produced by this split.
-        String correlationId = String.format("%d:%s", jobId, UUID.randomUUID().toString());
-
-        for (Message message : messages) {
-            message.setHeader(MpfHeaders.SPLIT_SIZE, messages.size());
-            message.setHeader(MpfHeaders.JOB_ID, jobId);
-            message.setHeader(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
-            message.setHeader(MpfHeaders.CORRELATION_ID, correlationId);
-        }
-
-        int messageCount = emptySplit ? 0 : messages.size();
-        log.info("[Job {}|*|*] WfmSplitter class: {}|{} produced {} work units with correlation id '{}' (error = {}).",
-                 jobId, getSplitterName(), getClass().getName(), messageCount, correlationId, failed);
-        return messages;
     }
 }

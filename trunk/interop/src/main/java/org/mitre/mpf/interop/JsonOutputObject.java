@@ -121,13 +121,13 @@ public class JsonOutputObject {
 
 
     public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
-                            String OpenMPFVersion, String externalJobId, Instant timeStart, Instant timeStop, String status) {
+                            String openmpfVersion, String externalJobId, Instant timeStart, Instant timeStop, String status) {
         this.jobId = jobId;
         this.objectId = objectId;
         this.pipeline = pipeline;
         this.priority = priority;
         this.siteId = siteId;
-        this.openmpfVersion = OpenMPFVersion;
+        this.openmpfVersion = openmpfVersion;
         this.externalJobId = externalJobId;
         this.timeStart = timeStart;
         this.timeStop = timeStop;
@@ -147,7 +147,7 @@ public class JsonOutputObject {
             @JsonProperty("pipeline") JsonPipeline pipeline,
             @JsonProperty("priority") int priority,
             @JsonProperty("siteId") String siteId,
-            @JsonProperty("OpenMPFVersion") String OpenMPFVersion,
+            @JsonProperty("openmpfVersion") String openmpfVersion,
             @JsonProperty("externalJobId") String externalJobId,
             @JsonProperty("timeStart") Instant timeStart,
             @JsonProperty("timeStop") Instant timeStop,
@@ -160,7 +160,7 @@ public class JsonOutputObject {
             @JsonProperty("warnings") Collection<JsonMediaIssue> warnings) {
 
         JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId,
-                                                             OpenMPFVersion, externalJobId, timeStart, timeStop, status);
+                                                             openmpfVersion, externalJobId, timeStart, timeStop, status);
         if(media != null) {
             outputObject.media.addAll(media);
         }

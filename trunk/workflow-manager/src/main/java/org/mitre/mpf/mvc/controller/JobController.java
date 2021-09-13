@@ -31,6 +31,8 @@ import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.mvc.model.SessionModel;
+import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
@@ -253,12 +255,15 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
-            log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return ResponseEntity.badRequest().body(null);
+        try (var mdc = CloseableMdc.job(jobId)) {
+            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            if (jobRequest == null) {
+                log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job " +
+                                  "with id '{}'", jobId);
+                return ResponseEntity.badRequest().body(null);
+            }
+            return ResponseEntity.ok(convertJob(jobRequest));
         }
-        return ResponseEntity.ok(convertJob(jobRequest));
     }
 
     //INTERNAL
@@ -266,16 +271,19 @@ public class JobController {
     @ResponseBody
     public SingleJobInfo getJobStatus(@PathVariable("id") long jobId,
                                       @RequestParam(value = "useSession", required = false) boolean useSession) {
-        if (useSession && !sessionModel.getSessionJobs().contains(jobId)) {
-            return null;
-        }
+        try (var mdc = CloseableMdc.job(jobId)) {
+            if (useSession && !sessionModel.getSessionJobs().contains(jobId)) {
+                return null;
+            }
 
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null) {
-            log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job with id '{}'", jobId);
-            return null;
+            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            if (jobRequest == null) {
+                log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job " +
+                                  "with id '{}'", jobId);
+                return null;
+            }
+            return convertJob(jobRequest);
         }
-        return convertJob(jobRequest);
     }
 
     /*
@@ -291,37 +299,42 @@ public class JobController {
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
-        //return 200 for successful GET and object; 404 for bad id
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
-        if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
-            return ResponseEntity.notFound().build();
-        }
-        try {
-            URI outputObjectUri = URI.create(jobRequest.getOutputObjectPath());
-            if ("file".equalsIgnoreCase(outputObjectUri.getScheme())) {
-                return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
+        try (var mdc = CloseableMdc.job(jobId)) {
+            //return 200 for successful GET and object; 404 for bad id
+            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
+                return ResponseEntity.notFound().build();
             }
+            try {
+                URI outputObjectUri = URI.create(jobRequest.getOutputObjectPath());
+                if ("file".equalsIgnoreCase(outputObjectUri.getScheme())) {
+                    return ResponseEntity.ok(new FileSystemResource(new File(outputObjectUri)));
+                }
 
-            var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
-            InputStreamResource inputStreamResource;
-            if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
-                S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                               job.getJobProperties()::get);
-                inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
+                var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+                InputStreamResource inputStreamResource;
+                if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
+                    S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
+                                                                   job.getJobProperties()::get);
+                    inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
+                }
+                else {
+                    inputStreamResource = new InputStreamResource(IoUtils.openStream(
+                            jobRequest.getOutputObjectPath()));
+                }
+                return ResponseEntity.ok(inputStreamResource);
             }
-            else {
-                inputStreamResource = new InputStreamResource(IoUtils.openStream(jobRequest.getOutputObjectPath()));
+            catch (NoSuchFileException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(String.format("The output object for job %s does not exist.", jobId));
             }
-            return ResponseEntity.ok(inputStreamResource);
-        }
-        catch (NoSuchFileException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(String.format("The output object for job %s does not exist.", jobId));
-        }
-        catch (StorageException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(String.format("An error occurred while trying to access the output object for job %s: %s",
-                                        jobId, e));
+            catch (StorageException e) {
+                var msg = String.format(
+                        "An error occurred while trying to access the output object for job %s: %s",
+                        jobId, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(msg);
+            }
         }
     }
 
@@ -329,7 +342,8 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
     public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) {
-        return new ModelAndView("output_object", "jobId", idParam);
+        return MdcUtil.job(idParam, () ->
+                new ModelAndView("output_object", "jobId", idParam));
     }
 
 
@@ -347,12 +361,16 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
-        if (resubmitResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
-            return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
-        } else {
-            log.error("Error resubmitting job with id '{}'", jobId);
-            return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
+        try (var mdc = CloseableMdc.job(jobId)) {
+            JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
+            if (resubmitResponse.getMpfResponse()
+                    .getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+                return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);
+            }
+            else {
+                log.error("Error resubmitting job with id '{}'", jobId);
+                return new ResponseEntity<>(resubmitResponse, HttpStatus.BAD_REQUEST);
+            }
         }
     }
 
@@ -362,9 +380,11 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public JobCreationResponse resubmitJob(@PathVariable("id") long jobId,
                                            @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        JobCreationResponse response = resubmitJobInternal(jobId, jobPriorityParam);
-        sessionModel.getSessionJobs().add(response.getJobId());
-        return response;
+        try (var mdc = CloseableMdc.job(jobId)) {
+            JobCreationResponse response = resubmitJobInternal(jobId, jobPriorityParam);
+            sessionModel.getSessionJobs().add(response.getJobId());
+            return response;
+        }
     }
 
     /*
@@ -379,13 +399,16 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public ResponseEntity<MpfResponse> cancelJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
-        MpfResponse mpfResponse = cancelJobInternal(jobId);
-        if (mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
-            return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
-        } else {
-            log.error("Error cancelling job with id '{}'", jobId);
-            return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<MpfResponse> cancelJobRest(
+            @ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
+        try (var mdc = CloseableMdc.job(jobId)) {
+            MpfResponse mpfResponse = cancelJobInternal(jobId);
+            if (mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
+                return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
+            } else {
+                log.error("Error cancelling job with id '{}'", jobId);
+                return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
+            }
         }
     }
 
@@ -394,21 +417,8 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public MpfResponse cancelJob(@PathVariable("id") long jobId) {
-        return cancelJobInternal(jobId);
+        return MdcUtil.job(jobId, () -> cancelJobInternal(jobId));
     }
-
-    private JobCreationResponse createJobCreationErrorResponse(String externalId,
-        String errorReason) {
-        StringBuilder errBuilder = new StringBuilder("Failure creating batch job");
-        if ( externalId != null ) {
-            errBuilder.append(String.format(" with external id '%s'", externalId));
-        }
-        errBuilder.append(" due to " + errorReason + ". Please check the request parameters against the constraints defined in the REST API.");
-        String err = errBuilder.toString();
-        log.error(err);
-        return new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, err);
-    }
-
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
@@ -442,43 +452,45 @@ public class JobController {
 
 
     private SingleJobInfo convertJob(JobRequest job) {
-        float jobProgressVal = jobProgress.getJobProgress(job.getId())
-                .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
+        try (var mdc = CloseableMdc.job(job.getId())) {
+            float jobProgressVal = jobProgress.getJobProgress(job.getId())
+                    .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-        List<String> mediaUris;
-        try {
-            // Currently, it is not possible for job.getJob() to be null, but in previous versions
-            // it was possible. We don't want the jobs page to become unusable if a user has a job
-            // from an older version.
-            if (job.getJob() == null)  {
-                log.error("Unable to determine mediaUris for job {}.", job.getId());
+            List<String> mediaUris;
+            try {
+                // Currently, it is not possible for job.getJob() to be null, but in previous
+                // versions it was possible. We don't want the jobs page to become unusable if a
+                // user has a job from an older version.
+                if (job.getJob() == null)  {
+                    log.error("Unable to determine mediaUris for job {}.", job.getId());
+                    mediaUris = List.of();
+                }
+                else {
+                    var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
+                    mediaUris = batchJob.getMedia().stream()
+                            .map(Media::getUri)
+                            .collect(toList());
+                }
+            }
+            catch (WfmProcessingException e) {
+                log.error(String.format(
+                        "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
                 mediaUris = List.of();
             }
-            else {
-                var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
-                mediaUris = batchJob.getMedia().stream()
-                        .map(Media::getUri)
-                        .collect(toList());
-            }
-        }
-        catch (WfmProcessingException e) {
-            log.error(String.format(
-                    "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
-            mediaUris = List.of();
-        }
 
-        return new SingleJobInfo(
-                job.getId(),
-                job.getPipeline(),
-                job.getPriority(),
-                job.getStatus().toString(),
-                jobProgressVal,
-                job.getTimeReceived(),
-                job.getTimeCompleted(),
-                job.getOutputObjectPath(),
-                inProgressJobs.jobHasCallbacksInProgress(job.getId()),
-                job.getStatus().isTerminal(),
-                mediaUris);
+            return new SingleJobInfo(
+                    job.getId(),
+                    job.getPipeline(),
+                    job.getPriority(),
+                    job.getStatus().toString(),
+                    jobProgressVal,
+                    job.getTimeReceived(),
+                    job.getTimeCompleted(),
+                    job.getOutputObjectPath(),
+                    inProgressJobs.jobHasCallbacksInProgress(job.getId()),
+                    job.getStatus().isTerminal(),
+                    mediaUris);
+        }
     }
 
 

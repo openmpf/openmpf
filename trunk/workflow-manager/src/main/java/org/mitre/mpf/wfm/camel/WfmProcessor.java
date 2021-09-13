@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camel;
 
 import org.apache.camel.Exchange;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 
@@ -54,8 +55,8 @@ public abstract class WfmProcessor implements WfmProcessorInterface {
 		exchange.getOut().getHeaders().put(MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 		exchange.getOut().getHeaders().put(MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 
-		// Execute the processor.
-		wfmProcess(exchange);
+		var jobId  = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+		MdcUtil.job(jobId, () -> wfmProcess(exchange));
 	}
 
 

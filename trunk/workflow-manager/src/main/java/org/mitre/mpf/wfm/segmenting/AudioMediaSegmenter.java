@@ -52,8 +52,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
     @Override
     public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
-        log.warn("[Job {}:{}:{}] Media #{} is an audio file and will not be segmented.", context.getJobId(),
-                 context.getTaskIndex(), context.getActionIndex(), media.getId());
+        log.warn("Media #{} is an audio file and will not be segmented.", media.getId());
 
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);

@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.mvc;
 
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
@@ -48,8 +49,10 @@ public class CorsFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        addCorsHeadersIfAllowed((HttpServletRequest) request, (HttpServletResponse) response);
-        chain.doFilter(request, response);
+        try (var mdc = CloseableMdc.all()) {
+            addCorsHeadersIfAllowed((HttpServletRequest) request, (HttpServletResponse) response);
+            chain.doFilter(request, response);
+        }
     }
 
 

@@ -54,10 +54,7 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     @Override
     public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
-        log.warn("[Job {}|{}|{}] Media {} is of the MIME type '{}' and will be processed generically.",
-                 context.getJobId(),
-                 context.getTaskIndex(),
-                 context.getActionIndex(),
+        log.warn("Media {} is of the MIME type '{}' and will be processed generically.",
                  media.getId(),
                  media.getMimeType());
 

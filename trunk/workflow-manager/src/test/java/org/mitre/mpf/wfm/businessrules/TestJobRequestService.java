@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
+import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.junit.Before;
@@ -224,7 +225,9 @@ public class TestJobRequestService {
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
                                       Map.of("media_prop1", "media_val1"), Map.of(), "error")),
                 Map.of("job_prop1", "job_val1"),
-                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
+                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
+                TreeRangeSet.create(),
+                TreeRangeSet.create());
         originalJob.addDetectionProcessingError(
             new DetectionProcessingError(321, 1, 0, 0, 0, 10, 0, 10,
                                              "error", "errorMessage"));
@@ -334,7 +337,7 @@ public class TestJobRequestService {
                 3, true, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"), Map.of(),
                                       Map.of(), null)),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), TreeRangeSet.create(), TreeRangeSet.create());
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);
 

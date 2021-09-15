@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+import io.swagger.models.auth.In;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
@@ -140,7 +143,9 @@ public class TestDetectionResponseProcessor {
             null,
             Collections.singletonList(media),
             Collections.emptyMap(),
-            Collections.emptyMap());
+            Collections.emptyMap(),
+            TreeRangeSet.create(),
+            TreeRangeSet.create());
 
         when(inProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);

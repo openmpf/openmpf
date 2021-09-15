@@ -135,7 +135,6 @@ public class TestDetectionResponseProcessor {
             systemPropertiesSnapshot,
             pipelineElements,
             1,
-            false,
             null,
             null,
             Collections.singletonList(media),

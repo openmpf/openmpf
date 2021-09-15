@@ -116,9 +116,6 @@ public class JobRequestServiceImpl implements JobRequestService {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
-        boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
-                .orElseGet(_propertiesUtil::isOutputObjectsEnabled);
-
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
                 jobCreationRequest.getPipelineName(),
@@ -126,7 +123,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.getJobProperties(),
                 jobCreationRequest.getAlgorithmProperties(),
                 jobCreationRequest.getExternalId(),
-                buildOutput,
                 priority,
                 jobCreationRequest.getCallbackURL(),
                 jobCreationRequest.getCallbackMethod());
@@ -165,7 +161,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
                     originalJob.getExternalId().orElse(null),
-                    originalJob.isOutputEnabled(),
                     priority > 0 ? priority : originalJob.getPriority(),
                     originalJob.getCallbackUrl().orElse(null),
                     originalJob.getCallbackMethod().orElse(null));
@@ -188,7 +183,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             String externalId,
-            boolean buildOutput,
             int priority,
             String callbackUrl,
             String callbackMethod) {
@@ -224,7 +218,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                     systemPropertiesSnapshot,
                     pipelineElements,
                     priority,
-                    buildOutput,
                     callbackUrl,
                     callbackMethod,
                     media,

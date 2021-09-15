@@ -38,7 +38,7 @@ public class StreamingJobCreationRequest {
 
 	private JobCreationStreamData stream = new JobCreationStreamData();
 
-	// true or false to write video segments to disk. Note that this is called buildOutput in other code. Will use a server side property if null
+	// true or false to write output objects to disk. Note that this is called buildOutput in other code. Will use a server side property if null
 	private Boolean enableOutputToDisk = null;
 
 	private String healthReportCallbackUri = null; // the URL to send a health report to

@@ -54,7 +54,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         jobProperties.put("ARTIFACT_EXTRACTION_POLICY_CROPPING", "false");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", jobProperties, media);
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -97,7 +97,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         jobProperties.put("ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", jobProperties, media);
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -143,7 +143,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         jobProperties.put("OUTPUT_LAST_TASK_ONLY", "true");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/ff-region-motion-face.avi"));
 
-        long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
+        long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -249,7 +249,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         jobProperties.put("ARTIFACT_EXTRACTION_POLICY", "NONE");
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/face/video_01.mp4"));
 
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", jobProperties, media);
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -284,7 +284,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 "KEYWORD TAGGING (WITH FF REGION) TASK"); // has OUTPUT_MERGE_WITH_PREVIOUS_TASK=TRUE
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/ocr/keyword-tagging.jpg"));
-        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -326,7 +326,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                 "OCV GENERIC MARKUP TASK");
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/green.wav"));
-        long jobId = runPipelineOnMedia(pipelineName, Map.of(), media);
+        long jobId = runPipelineOnMedia(pipelineName, media, Map.of());
         JsonOutputObject outputObject = getJobOutputObject(jobId);
         assertEquals(1, outputObject.getMedia().size());
 
@@ -794,7 +794,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/object/ff-exact-region-object-motion_60deg.avi"));
 
-        long jobId = runPipelineOnMedia(pipelineName, getRotationMap(60), media);
+        long jobId = runPipelineOnMedia(pipelineName, media, getRotationMap(60));
 
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
@@ -859,7 +859,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(
                 ioUtils.findFile("/samples/object/ff-exact-region-object-motion_60deg.avi"));
 
-        long jobId = runPipelineOnMedia(pipelineName, getRotationMap(60), media);
+        long jobId = runPipelineOnMedia(pipelineName, media, getRotationMap(60));
 
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
@@ -1096,7 +1096,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
 
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
-        long jobId = runPipelineOnMedia(pipelineName, jobProperties, media);
+        long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
         assertEquals(1, outputObject.getMedia().size());

@@ -939,12 +939,12 @@ public class TestDetectionTaskSplitter {
 
         // Children will be added after the extraction task in a real job.
         var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", UriScheme.FILE, Paths.get("/local/path/child1"),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia1.setType(MediaType.IMAGE);
         childMedia1.setMimeType("image/png");
 
         var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", UriScheme.FILE, Paths.get("/local/path/child2"),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                null, Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia2.setType(MediaType.IMAGE);
         childMedia2.setMimeType("image/jpeg");
 

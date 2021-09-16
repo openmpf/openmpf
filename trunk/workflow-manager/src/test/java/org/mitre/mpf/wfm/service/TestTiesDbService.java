@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.uwyn.jhighlight.fastutil.Hash;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpPost;
@@ -63,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Mockito.*;
 
 public class TestTiesDbService {
@@ -134,16 +134,17 @@ public class TestTiesDbService {
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
                 eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job)
-                        && jp.getAction().equals(action1)
-                        && (jp.getMedia().equals(media1) || jp.getMedia().equals(media2)))
+                eq(job),
+                or(eq(media1), eq(media2)),
+                eq(action1)
         )).thenReturn(url1);
 
         String url2 = "http://localhost:90/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
                 eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media1)
-                        && jp.getAction().equals(action2))
+                eq(job),
+                eq(media1),
+                eq(action2)
         )).thenReturn(url2);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
@@ -250,12 +251,10 @@ public class TestTiesDbService {
     private void testTwoStageTaskMerging(String expectedType,
                                          int task1TrackCount, int task2TrackCount) {
         var job = createTwoStageTestJob();
-        var tasksToMerge = Map.of(1, 0);
-
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
+        var tasksToMerge = Map.of(1, 0);
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
 
@@ -325,8 +324,7 @@ public class TestTiesDbService {
         var tasksToMerge = Map.of(2, 1);
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
@@ -417,8 +415,7 @@ public class TestTiesDbService {
         var tasksToMerge = Map.of(1, 0);
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
@@ -504,12 +501,11 @@ public class TestTiesDbService {
 
     private void runMergeLastTwoTest() {
         var job = createThreeStageTestJob();
-        var tasksToMerge = Map.of(1, 0,  2, 1);
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
+        var tasksToMerge = Map.of(1, 0,  2, 1);
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
 
@@ -570,15 +566,17 @@ public class TestTiesDbService {
 
         when(_mockAggregateJobPropertiesUtil.getValue(
                 eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
-                        && jp.getAction().equals(badAction)))
+                eq(job),
+                eq(media),
+                eq(badAction))
         ).thenReturn("BAD URI");
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
                 eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
-                        && jp.getAction().equals(goodAction)))
+                eq(job),
+                eq(media),
+                eq(goodAction))
         ).thenReturn(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
@@ -633,7 +631,9 @@ public class TestTiesDbService {
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
                 eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)))
+                eq(job),
+                eq(media),
+                any(Action.class))
         ).thenReturn(url);
 
         var trackCounter = new TrackCounter();
@@ -791,7 +791,7 @@ public class TestTiesDbService {
 
         var dataObject = assertion.get("dataObject");
 
-        LOG.debug("httpRequestMatcher: Comparing [{}, {}, {}] to [{}, {}, {}].",
+        LOG.info("httpRequestMatcher: Comparing expected [{}, {}, {}] to actual [{}, {}, {}].",
                 algorithm, trackType, trackCount,
                 dataObject.get("algorithm").textValue(), dataObject.get("outputType").textValue(),
                 dataObject.get("trackCount"));
@@ -856,6 +856,8 @@ public class TestTiesDbService {
             _detectionType = detectionType;
             _count = count;
         }
+
+
     }
 
     @Test
@@ -905,12 +907,11 @@ public class TestTiesDbService {
     }
 
     private void runSourceAndDerivativeMediaDiffTasks(boolean createChildren, TrackCounter trackCounter,
-                                                               Set<AssertionEntry> assertionEntries) {
+                                                      Set<AssertionEntry> assertionEntries) {
         var job = createDerivativeMediaThreeStageTestJobDiffTasks(createChildren);
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -983,11 +984,11 @@ public class TestTiesDbService {
                 Map.of(), Map.of());
 
         if (createChildren) {
-            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
                     Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
             childMedia1.setSha256("CHILD1_SHA");
 
-            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
                     Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
             childMedia2.setSha256("CHILD2_SHA");
 
@@ -1004,9 +1005,13 @@ public class TestTiesDbService {
         var job = createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo();
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().getId() == 700))) // parent
-                .thenReturn(url);
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"),
+                eq(job),
+                any(Media.class),
+                argThat(a -> a.getName().equals("EXTRACT_ACTION")
+                            || a.getName().equals("PARENT_ACTION"))
+        )).thenReturn(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1057,7 +1062,7 @@ public class TestTiesDbService {
                                 url,
                                 "SHARED_ALGO",
                                 "SHARED_TYPE",
-                                10, // sum of parent and child tracks
+                                5,
                                 outputObjectLocation,
                                 outputSha,
                                 timeCompleted,
@@ -1073,9 +1078,13 @@ public class TestTiesDbService {
         var job = createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo();
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"),
-                argThat(jp -> jp.getJob().equals(job) && jp.getMedia().getId() != 700))) // children
-                .thenReturn(url);
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"),
+                eq(job),
+                any(Media.class),
+                argThat(a -> a.getName().equals("PARENT_ACTION")
+                        || a.getName().equals("CHILD_ACTION"))
+        )).thenReturn(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1124,11 +1133,11 @@ public class TestTiesDbService {
         var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia1.setSha256("CHILD1_SHA");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia2.setSha256("CHILD2_SHA");
 
@@ -1170,8 +1179,7 @@ public class TestTiesDbService {
         var job = createDerivativeMediaTwoStageTestJobSharedTask();
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1236,11 +1244,11 @@ public class TestTiesDbService {
         var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia1.setSha256("CHILD1_SHA");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
         childMedia2.setSha256("CHILD2_SHA");
 
@@ -1295,18 +1303,11 @@ public class TestTiesDbService {
         assertionEntries.add(new AssertionEntry("CHILD_ALGO2", "DERIVATIVE_TYPE2", 10));
         assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14));
 
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Map.of(), Map.of());
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Map.of(), Map.of(), true);
     }
 
     @Test
     public void testMergingSourceAndDerivativeMediaFlowsDiffTypes() {
-        var parentTasksToMerge = Map.of(5, 2,  2, 1);
-        var childTasksToMerge = Map.of(5, 4,  4, 3);
-
-        var tasksToMerge = new HashSet();
-        tasksToMerge.addAll(parentTasksToMerge.keySet());
-        tasksToMerge.addAll(childTasksToMerge.keySet());
-
         var trackCounter = new TrackCounter();
         trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
         trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
@@ -1324,19 +1325,41 @@ public class TestTiesDbService {
         assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
         assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9));
 
+        var parentTasksToMerge = Map.of(5, 2,  2, 1);
+        var childTasksToMerge = Map.of(5, 4,  4, 3);
         runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, parentTasksToMerge,
-                childTasksToMerge);
+                childTasksToMerge, true);
+    }
+
+
+    @Test
+    public void testMergingSourceAndNoDerivativeMediaFlowsDiffTypes() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 0); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
+        trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
+        trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "NO TRACKS", 0));
+
+        var parentTasksToMerge = Map.of(5, 2,  2, 1);
+        var childTasksToMerge = Map.of(5, 4,  4, 3);
+        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, parentTasksToMerge,
+                                                    childTasksToMerge, false);
     }
 
     private void runMergingLastSourceAndDerivativeMediaTasks(TrackCounter trackCounter,
                                                              Set<AssertionEntry> assertionEntries,
                                                              Map<Integer, Integer> parentTasksToMerge,
-                                                             Map<Integer, Integer> childTasksToMerge) {
-        var job = createDerivativeMediaSixStageTestJob();
+                                                             Map<Integer, Integer> childTasksToMerge,
+                                                             boolean addChildren) {
+        var job = createDerivativeMediaSixStageTestJob(addChildren);
 
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
-                .thenReturn(url);
+        setTiesDbUrlForAll(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
                 argThat(m -> m != null && m.getId() == 700), any())) // parent
@@ -1394,17 +1417,9 @@ public class TestTiesDbService {
         verifyNoMoreInteractions(_mockCallbackUtils);
     }
 
-    private static BatchJob createDerivativeMediaSixStageTestJob() {
+    private static BatchJob createDerivativeMediaSixStageTestJob(boolean addChildren) {
         var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
         parentMedia.setSha256("PARENT_SHA");
-
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null,
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
-        childMedia1.setSha256("CHILD1_SHA");
-
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null,
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
-        childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
         var algo2 = new Algorithm("PARENT_ALGO1", null, null, null, null, true, false);
@@ -1444,9 +1459,24 @@ public class TestTiesDbService {
                 true, null, null, List.of(parentMedia),
                 Map.of(), Map.of());
 
-        job.addDerivativeMedia(childMedia1);
-        job.addDerivativeMedia(childMedia2);
+        if (addChildren) {
+            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
+                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+            childMedia1.setSha256("CHILD1_SHA");
+
+            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
+                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+            childMedia2.setSha256("CHILD2_SHA");
+            job.addDerivativeMedia(childMedia1);
+            job.addDerivativeMedia(childMedia2);
+        }
 
         return job;
+    }
+
+    private void setTiesDbUrlForAll(String url) {
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"), any(BatchJob.class), any(Media.class), any(Action.class)))
+                .thenReturn(url);
     }
 }

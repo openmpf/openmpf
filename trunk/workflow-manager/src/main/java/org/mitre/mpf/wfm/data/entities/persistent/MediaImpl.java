@@ -32,8 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Comparators;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonMediaOutputObject;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -202,6 +200,7 @@ public class MediaImpl implements Media {
             String uri,
             UriScheme uriScheme,
             Path localPath,
+            Map<String, String> mediaSpecificProperties,
             Map<String, String> metadata,
             String errorMessage) {
         _id = id;
@@ -210,7 +209,7 @@ public class MediaImpl implements Media {
         _uri = IoUtils.normalizeUri(uri);
         _uriScheme = uriScheme;
         _localPath = localPath;
-        _mediaSpecificProperties = ImmutableMap.of();
+        _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.of();
         _metadata.putAll(metadata);
         if (StringUtils.isNotEmpty(errorMessage)) {

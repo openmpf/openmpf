@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
@@ -41,6 +42,8 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import java.util.*;
 import java.util.function.Function;
 
+// Deprecated. outputEnabled is no longer a batch job property. Left for backwards compatibility.
+@JsonIgnoreProperties({ "outputEnabled" })
 public class BatchJobImpl implements BatchJob {
 
     private final long _id;

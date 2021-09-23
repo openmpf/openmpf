@@ -32,7 +32,12 @@
 #include <vector>
 #include <log4cxx/logger.h>
 #include <activemq/library/ActiveMQCPP.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <activemq/core/ActiveMQConnectionFactory.h>
+#pragma GCC diagnostic pop
+
 #include <activemq/core/PrefetchPolicy.h>
 #include <activemq/core/policies/DefaultPrefetchPolicy.h>
 #include <cms/Connection.h>

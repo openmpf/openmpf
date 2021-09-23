@@ -149,7 +149,7 @@
         <org.json.version>20140107</org.json.version>
         <javax.json.version>1.0.4</javax.json.version>
         <velocity.version>1.7</velocity.version>
-        <google.protobuf.version>2.6.1</google.protobuf.version>
+        <google.protobuf.version>3.16.0</google.protobuf.version>
         <janino.version>2.7.8</janino.version>
         <!-- this is an older version of SpringFox, but it is the only version that enables us to disable validation via an external server; -->
         <!-- for more information, see https://github.com/springfox/springfox/issues/951. Version 2.3 of SpringFox is supposed to bring     -->

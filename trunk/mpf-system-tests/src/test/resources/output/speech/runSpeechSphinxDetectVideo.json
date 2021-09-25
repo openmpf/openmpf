@@ -34,7 +34,7 @@
     "mediaType": "VIDEO",
     "length": 183,
     "mediaMetadata": {
-      "DURATION": "7086",
+      "DURATION": "7860",
       "FPS": "24.0",
       "FRAME_COUNT": "183",
       "FRAME_HEIGHT": "1080",
@@ -133,14 +133,14 @@
         }, {
           "id": "3db42becf1bd2c927d46a35f4cc2c8a03bb9064a97d5254043e176d7e71ee241",
           "startOffsetFrame": 150,
-          "stopOffsetFrame": 182,
+          "stopOffsetFrame": 188,
           "startOffsetTime": 6250,
           "stopOffsetTime": 7583,
           "type": "SPEECH",
           "source": "+#SPHINX SPEECH DETECTION ACTION",
           "confidence": -1.0,
           "trackProperties": {
-            "TRANSCRIPT": "cyril one eight zeros"
+            "TRANSCRIPT": "cyril one eight zero three"
           },
           "exemplar": {
             "offsetFrame": 150,
@@ -151,7 +151,7 @@
             "height": 0,
             "confidence": -1.0,
             "detectionProperties": {
-              "TRANSCRIPT": "cyril one eight zeros"
+              "TRANSCRIPT": "cyril one eight zero three"
             },
             "artifactExtractionStatus": "NOT_ATTEMPTED",
             "artifactPath": null
@@ -165,7 +165,7 @@
             "height": 0,
             "confidence": -1.0,
             "detectionProperties": {
-              "TRANSCRIPT": "cyril one eight zeros"
+              "TRANSCRIPT": "cyril one eight zero three"
             },
             "artifactExtractionStatus": "NOT_ATTEMPTED",
             "artifactPath": null

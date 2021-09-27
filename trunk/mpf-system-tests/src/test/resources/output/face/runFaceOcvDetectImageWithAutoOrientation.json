@@ -1,12 +1,13 @@
 {
-  "jobId": 21,
-  "jobErrors": [],
-  "jobWarnings": [],
-  "objectId": "6188d8d7-3640-44e6-b4b8-587113622d0e",
+  "openmpfVersion": "6.3",
+  "jobId": 14,
+  "errors": [],
+  "warnings": [],
+  "objectId": "16868890-5ace-42e4-be84-244540b4d732",
   "pipeline": {
     "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) PIPELINE",
     "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
-    "stages": [
+    "tasks": [
       {
         "actionType": "DETECTION",
         "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) TASK",
@@ -17,8 +18,8 @@
             "name": "OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
             "description": "Executes the OpenCV face detection algorithm and rotates and/or flips media based on EXIF data or video metadata.",
             "properties": {
-              "AUTO_ROTATE": "true",
-              "AUTO_FLIP": "true"
+              "AUTO_FLIP": "true",
+              "AUTO_ROTATE": "true"
             }
           }
         ]
@@ -27,22 +28,21 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "35bfafd7-5a6f-42b8-8925-bb71a129f22a",
-  "timeStart": "2019-09-25T16:40:42Z",
-  "timeStop": "2019-09-25T16:40:43Z",
+  "externalJobId": "0432e980-e166-486c-ab83-eefdc13cb317",
+  "timeStart": "2021-09-27T17:57:13.561Z",
+  "timeStop": "2021-09-27T17:57:13.764Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 14,
+      "mediaId": 11,
       "path": "file:///opt/mpf/share/samples/face/meds-aa-S001-01-exif-rotation.jpg",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/jpeg",
-      "length": 1,
       "sha256": "c466433bd70e9b3d2b80081f39bfe910424ff23ced17241fa217d7b226d3a8ad",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "image/jpeg",
+      "mediaType": "IMAGE",
+      "length": 1,
       "mediaMetadata": {
         "EXIF_ORIENTATION": "5",
         "FRAME_HEIGHT": "480",
@@ -52,6 +52,8 @@
         "ROTATION": "90"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "FACE": [
@@ -60,14 +62,14 @@
             "algorithm": "FACECV",
             "tracks": [
               {
-                "id": "98a104a91f1a82c6a99a791be4e73d3b23d0b87be03cac52e7f36614ee65113d",
+                "id": "e8725d9faa0fc39b9dd737abaf9939a5e4897021b5acf4cad404644b636e5c69",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
-                "confidence": 60,
+                "confidence": 60.0,
                 "trackProperties": {
                   "HORIZONTAL_FLIP": "true",
                   "ROTATION": "270.000000"
@@ -79,13 +81,13 @@
                   "y": 83,
                   "width": 286,
                   "height": 286,
-                  "confidence": 60,
+                  "confidence": 60.0,
                   "detectionProperties": {
                     "HORIZONTAL_FLIP": "true",
                     "ROTATION": "270.000000"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/14/11/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -95,13 +97,13 @@
                     "y": 83,
                     "width": 286,
                     "height": 286,
-                    "confidence": 60,
+                    "confidence": 60.0,
                     "detectionProperties": {
                       "HORIZONTAL_FLIP": "true",
                       "ROTATION": "270.000000"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/21/14/0/meds-aa-S001-01-exif-rotation.jpg"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/14/11/0/0/0/frame-0.png"
                   }
                 ]
               }

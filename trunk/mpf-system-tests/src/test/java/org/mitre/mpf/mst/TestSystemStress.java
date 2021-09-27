@@ -127,26 +127,6 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     }
 
 
-    // passed but at 3hr 51min
-    @Test(timeout = 255*MINUTES)
-    public void runPersonOcvDetectVideo() throws Exception {
-        List<JobCreationMediaData> media = new LinkedList<>();
-
-        // for testing on local VM only
-        // mediaPaths.add(ioUtils.findFile("/samples/person/video_02.mp4").toString());
-
-        // for testing on Jenkins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/2.mp4").toString())); // 220MG, 2 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/ChicagoMarathon/6.mp4").toString())); // 341MG, 3 mins
-        media.add(new JobCreationMediaData(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/motion/malaysia-scaled.mp4").toString())); // 13MG, 1 min
-
-        long jobId = runPipelineOnMedia("OCV PERSON DETECTION PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.getJmsPriority());
-        URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
-        checkOutput(actualOutputPath, media.size());
-    }
-
-
     private int manyJobsNumFilesProcessed = 0;
 
     // This test intentionally runs one file per job

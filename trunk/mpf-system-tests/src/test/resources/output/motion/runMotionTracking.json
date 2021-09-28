@@ -1,10 +1,13 @@
 {
+  "openmpfVersion": "6.3",
   "jobId": 7,
-  "objectId": "48777763-5f1f-4614-a27b-fae3c249f54d",
+  "errors": [],
+  "warnings": [],
+  "objectId": "9776ed17-99d6-4764-a29a-deedab6794a0",
   "pipeline": {
     "name": "MOG MOTION DETECTION (WITH TRACKING) PIPELINE",
     "description": "Performs MOG MOTION detection.",
-    "stages": [
+    "tasks": [
       {
         "actionType": "DETECTION",
         "name": "MOG MOTION DETECTION (WITH TRACKING) TASK",
@@ -24,23 +27,23 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "61cec8cc-525b-4ec2-8bc0-457355ad6193",
-  "timeStart": "2017-06-20T12:23:18.0-05:00",
-  "timeStop": "2017-06-20T12:23:51.0-05:00",
+  "externalJobId": "50f8760f-ca23-4f72-af61-69204320a871",
+  "timeStart": "2021-09-27T18:44:56.614Z",
+  "timeStop": "2021-09-27T18:45:25.806Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 20,
-      "path": "file:/var/jenkins/workspace/openmpf-nightly-opencv-3.2/openmpf/trunk/mpf-system-tests/target/test-classes/samples/motion/STRUCK_Test_720p.mp4",
+      "mediaId": 15,
+      "path": "file:///opt/mpf/share/samples/motion/STRUCK_Test_720p.mp4",
+      "sha256": "048354785715743c25b040699b41857492957aa509b9d115117e2ae6c8f1ef2a",
       "mimeType": "video/mp4",
+      "mediaType": "VIDEO",
       "length": 220,
-      "sha256": "ec65d671bbb9b03cb2a5383f4655ceda5faa39908f77f3fb63ef4897fc9cd763",
-      "message": null,
-      "status": "COMPLETE",
       "mediaMetadata": {
-        "DURATION": "8070",
+        "DURATION": "8700",
         "FPS": "25.28",
         "FRAME_COUNT": "220",
         "FRAME_HEIGHT": "720",
@@ -48,6 +51,8 @@
         "MIME_TYPE": "video/mp4"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "MOTION": [
@@ -56,1585 +61,1463 @@
             "algorithm": "MOG",
             "tracks": [
               {
-                "id": "db90797e271f24102ab6cd33db1e1f4fb2d8399c80fb2ccf8988a27e5377f358",
+                "id": "99a664ff572f9028f8893a19718170610a1ae7de0bc35db6e2aa0ff29624316e",
                 "startOffsetFrame": 74,
                 "stopOffsetFrame": 110,
-                "startOffsetTime": 2927,
-                "stopOffsetTime": 4351,
+                "startOffsetTime": 2318,
+                "stopOffsetTime": 4285,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
                 "confidence": -1.0,
+                "trackProperties": {},
                 "exemplar": {
+                  "offsetFrame": 74,
+                  "offsetTime": 2318,
                   "x": 0,
                   "y": 240,
                   "width": 272,
                   "height": 224,
                   "confidence": -1.0,
                   "detectionProperties": {},
-                  "offsetFrame": 74,
-                  "offsetTime": 2927,
                   "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 74
+                  "artifactPath": null
                 },
                 "detections": [
                   {
+                    "offsetFrame": 74,
+                    "offsetTime": 2318,
                     "x": 0,
                     "y": 240,
                     "width": 272,
                     "height": 224,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 74,
-                    "offsetTime": 2927,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 74
+                    "artifactPath": null
                   },
                   {
-                    "x": 0,
-                    "y": 224,
-                    "width": 272,
-                    "height": 256,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 75,
-                    "offsetTime": 2967,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 75
-                  },
-                  {
+                    "offsetTime": 2401,
                     "x": 0,
                     "y": 224,
                     "width": 272,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 76,
-                    "offsetTime": 3006,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 76
-                  },
-                  {
+                    "offsetTime": 2435,
                     "x": 0,
                     "y": 224,
                     "width": 272,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 77,
-                    "offsetTime": 3046,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 77
-                  },
-                  {
+                    "offsetTime": 2485,
                     "x": 0,
                     "y": 224,
                     "width": 272,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 78,
-                    "offsetTime": 3085,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 78
-                  },
-                  {
+                    "offsetTime": 2551,
                     "x": 0,
                     "y": 224,
                     "width": 272,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 79,
-                    "offsetTime": 3125,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 79
-                  },
-                  {
+                    "offsetTime": 2601,
                     "x": 0,
                     "y": 224,
-                    "width": 288,
+                    "width": 272,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 80,
-                    "offsetTime": 3165,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 80
-                  },
-                  {
+                    "offsetTime": 2635,
                     "x": 0,
                     "y": 224,
                     "width": 288,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 81,
-                    "offsetTime": 3204,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 81
-                  },
-                  {
+                    "offsetTime": 2735,
                     "x": 0,
                     "y": 224,
                     "width": 288,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 82,
-                    "offsetTime": 3244,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 82
-                  },
-                  {
+                    "offsetTime": 2768,
                     "x": 0,
                     "y": 224,
-                    "width": 304,
+                    "width": 288,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 83,
-                    "offsetTime": 3283,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 83
-                  },
-                  {
+                    "offsetTime": 2868,
                     "x": 0,
                     "y": 224,
                     "width": 304,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 84,
-                    "offsetTime": 3323,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 84
-                  },
-                  {
+                    "offsetTime": 2901,
                     "x": 0,
-                    "y": 208,
-                    "width": 320,
-                    "height": 272,
+                    "y": 224,
+                    "width": 304,
+                    "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 85,
-                    "offsetTime": 3362,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 85
-                  },
-                  {
+                    "offsetTime": 2951,
                     "x": 0,
                     "y": 208,
                     "width": 320,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 86,
-                    "offsetTime": 3402,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 86
-                  },
-                  {
+                    "offsetTime": 3018,
                     "x": 0,
                     "y": 208,
                     "width": 320,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 87,
-                    "offsetTime": 3441,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 87
-                  },
-                  {
+                    "offsetTime": 3051,
                     "x": 0,
                     "y": 208,
-                    "width": 352,
-                    "height": 288,
+                    "width": 320,
+                    "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 88,
-                    "offsetTime": 3481,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 88
-                  },
-                  {
+                    "offsetTime": 3101,
                     "x": 0,
                     "y": 208,
                     "width": 352,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 89,
-                    "offsetTime": 3521,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 89
-                  },
-                  {
+                    "offsetTime": 3118,
                     "x": 0,
                     "y": 208,
                     "width": 352,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 90,
-                    "offsetTime": 3560,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 90
-                  },
-                  {
+                    "offsetTime": 3218,
                     "x": 0,
                     "y": 208,
-                    "width": 384,
+                    "width": 352,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 91,
-                    "offsetTime": 3600,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 91
-                  },
-                  {
+                    "offsetTime": 3251,
                     "x": 0,
                     "y": 208,
                     "width": 384,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 92,
-                    "offsetTime": 3639,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 92
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 92,
+                    "offsetTime": 3285,
+                    "x": 0,
+                    "y": 208,
+                    "width": 384,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 93,
+                    "offsetTime": 3368,
                     "x": 16,
                     "y": 208,
                     "width": 368,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 93,
-                    "offsetTime": 3679,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 93
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 94,
+                    "offsetTime": 3401,
                     "x": 16,
                     "y": 208,
                     "width": 384,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 94,
-                    "offsetTime": 3718,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 94
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 95,
+                    "offsetTime": 3501,
                     "x": 16,
                     "y": 208,
                     "width": 400,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 95,
-                    "offsetTime": 3758,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 95
+                    "artifactPath": null
                   },
                   {
-                    "x": 16,
-                    "y": 208,
-                    "width": 416,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 96,
-                    "offsetTime": 3797,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 96
-                  },
-                  {
+                    "offsetTime": 3535,
                     "x": 16,
                     "y": 208,
                     "width": 416,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 97,
-                    "offsetTime": 3837,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 97
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 97,
+                    "offsetTime": 3551,
+                    "x": 16,
+                    "y": 208,
+                    "width": 416,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 98,
+                    "offsetTime": 3668,
                     "x": 16,
                     "y": 208,
                     "width": 448,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 98,
-                    "offsetTime": 3877,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 98
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 99,
+                    "offsetTime": 3685,
                     "x": 32,
                     "y": 208,
                     "width": 432,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 99,
-                    "offsetTime": 3916,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 99
+                    "artifactPath": null
                   },
                   {
-                    "x": 32,
-                    "y": 208,
-                    "width": 480,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 100,
-                    "offsetTime": 3956,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 100
-                  },
-                  {
+                    "offsetTime": 3735,
                     "x": 32,
                     "y": 208,
                     "width": 480,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 101,
-                    "offsetTime": 3995,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 101
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 101,
+                    "offsetTime": 3818,
+                    "x": 32,
+                    "y": 208,
+                    "width": 480,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 102,
+                    "offsetTime": 3851,
                     "x": 48,
                     "y": 208,
                     "width": 464,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 102,
-                    "offsetTime": 4035,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 102
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 103,
+                    "offsetTime": 3885,
                     "x": 48,
                     "y": 208,
                     "width": 496,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 103,
-                    "offsetTime": 4074,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 103
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 104,
+                    "offsetTime": 3968,
                     "x": 48,
                     "y": 208,
                     "width": 512,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 104,
-                    "offsetTime": 4114,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 104
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 105,
+                    "offsetTime": 4001,
                     "x": 48,
                     "y": 208,
                     "width": 224,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 105,
-                    "offsetTime": 4153,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 105
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 106,
+                    "offsetTime": 4051,
                     "x": 64,
                     "y": 208,
                     "width": 208,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 106,
-                    "offsetTime": 4193,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 106
+                    "artifactPath": null
                   },
                   {
-                    "x": 80,
-                    "y": 208,
-                    "width": 192,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 107,
-                    "offsetTime": 4233,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 107
-                  },
-                  {
+                    "offsetTime": 4135,
                     "x": 80,
                     "y": 208,
                     "width": 192,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 108,
-                    "offsetTime": 4272,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 108
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 108,
+                    "offsetTime": 4168,
+                    "x": 80,
+                    "y": 208,
+                    "width": 192,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 109,
+                    "offsetTime": 4201,
                     "x": 80,
                     "y": 208,
                     "width": 192,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 109,
-                    "offsetTime": 4312,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 109
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 110,
+                    "offsetTime": 4285,
                     "x": 96,
                     "y": 208,
                     "width": 144,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 110,
-                    "offsetTime": 4351,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 110
+                    "artifactPath": null
                   }
-                ],
-                "stopOffset": 110,
-                "startOffset": 74
+                ]
               },
               {
-                "id": "ef0b65715e34cba3efd4890614c6efbe6b6f2ef3bf606d309f1ad3fb35cb9c76",
+                "id": "032bcc3fb1fa2e6caeaddd86ad86dcea0bdb52dc4be5f81fd2fcfe0c5e747e13",
                 "startOffsetFrame": 105,
                 "stopOffsetFrame": 184,
-                "startOffsetTime": 4153,
-                "stopOffsetTime": 7278,
+                "startOffsetTime": 4001,
+                "stopOffsetTime": 7735,
                 "type": "MOTION",
                 "source": "+#MOG MOTION DETECTION (WITH TRACKING) ACTION",
                 "confidence": -1.0,
+                "trackProperties": {},
                 "exemplar": {
+                  "offsetFrame": 105,
+                  "offsetTime": 4001,
                   "x": 304,
                   "y": 208,
                   "width": 272,
                   "height": 288,
                   "confidence": -1.0,
                   "detectionProperties": {},
-                  "offsetFrame": 105,
-                  "offsetTime": 4153,
                   "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null,
-                  "offset": 105
+                  "artifactPath": null
                 },
                 "detections": [
                   {
+                    "offsetFrame": 105,
+                    "offsetTime": 4001,
                     "x": 304,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 105,
-                    "offsetTime": 4153,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 105
+                    "artifactPath": null
                   },
                   {
-                    "x": 336,
-                    "y": 208,
-                    "width": 272,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 106,
-                    "offsetTime": 4193,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 106
-                  },
-                  {
+                    "offsetTime": 4051,
                     "x": 336,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 107,
-                    "offsetTime": 4233,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 107
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 107,
+                    "offsetTime": 4135,
+                    "x": 336,
+                    "y": 208,
+                    "width": 272,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 108,
+                    "offsetTime": 4168,
                     "x": 352,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 108,
-                    "offsetTime": 4272,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 108
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 109,
+                    "offsetTime": 4201,
                     "x": 384,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 109,
-                    "offsetTime": 4312,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 109
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 110,
+                    "offsetTime": 4285,
                     "x": 400,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 110,
-                    "offsetTime": 4351,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 110
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 111,
+                    "offsetTime": 4318,
                     "x": 416,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 111,
-                    "offsetTime": 4391,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 111
+                    "artifactPath": null
                   },
                   {
-                    "x": 448,
-                    "y": 208,
-                    "width": 272,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 112,
-                    "offsetTime": 4430,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 112
-                  },
-                  {
+                    "offsetTime": 4368,
                     "x": 448,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 113,
-                    "offsetTime": 4470,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 113
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 113,
+                    "offsetTime": 4451,
+                    "x": 448,
+                    "y": 208,
+                    "width": 272,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 114,
+                    "offsetTime": 4501,
                     "x": 464,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 114,
-                    "offsetTime": 4509,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 114
+                    "artifactPath": null
                   },
                   {
-                    "x": 512,
-                    "y": 208,
-                    "width": 272,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 115,
-                    "offsetTime": 4549,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 115
-                  },
-                  {
+                    "offsetTime": 4535,
                     "x": 512,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 116,
-                    "offsetTime": 4589,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 116
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 116,
+                    "offsetTime": 4618,
+                    "x": 512,
+                    "y": 208,
+                    "width": 272,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 117,
+                    "offsetTime": 4668,
                     "x": 560,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 117,
-                    "offsetTime": 4628,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 117
+                    "artifactPath": null
                   },
                   {
-                    "x": 576,
-                    "y": 208,
-                    "width": 272,
-                    "height": 288,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 118,
-                    "offsetTime": 4668,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 118
-                  },
-                  {
+                    "offsetTime": 4768,
                     "x": 576,
                     "y": 208,
                     "width": 272,
                     "height": 288,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 119,
-                    "offsetTime": 4707,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 119
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 119,
+                    "offsetTime": 4801,
+                    "x": 576,
+                    "y": 208,
+                    "width": 272,
+                    "height": 288,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 120,
+                    "offsetTime": 4835,
                     "x": 608,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 120,
-                    "offsetTime": 4747,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 120
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 121,
+                    "offsetTime": 4935,
                     "x": 624,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 121,
-                    "offsetTime": 4786,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 121
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 122,
+                    "offsetTime": 4968,
                     "x": 640,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 122,
-                    "offsetTime": 4826,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 122
+                    "artifactPath": null
                   },
                   {
-                    "x": 672,
-                    "y": 224,
-                    "width": 272,
-                    "height": 272,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 123,
-                    "offsetTime": 4866,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 123
-                  },
-                  {
+                    "offsetTime": 5001,
                     "x": 672,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 124,
-                    "offsetTime": 4905,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 124
-                  },
-                  {
+                    "offsetTime": 5101,
                     "x": 672,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 125,
-                    "offsetTime": 4945,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 125
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 125,
+                    "offsetTime": 5135,
+                    "x": 672,
+                    "y": 224,
+                    "width": 272,
+                    "height": 272,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 126,
+                    "offsetTime": 5168,
                     "x": 704,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 126,
-                    "offsetTime": 4984,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 126
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 127,
+                    "offsetTime": 5268,
                     "x": 720,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 127,
-                    "offsetTime": 5024,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 127
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 128,
+                    "offsetTime": 5301,
                     "x": 736,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 128,
-                    "offsetTime": 5063,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 128
+                    "artifactPath": null
                   },
                   {
-                    "x": 752,
-                    "y": 224,
-                    "width": 272,
-                    "height": 272,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 129,
-                    "offsetTime": 5103,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 129
-                  },
-                  {
+                    "offsetTime": 5335,
                     "x": 752,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 130,
-                    "offsetTime": 5142,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 130
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 130,
+                    "offsetTime": 5435,
+                    "x": 752,
+                    "y": 224,
+                    "width": 272,
+                    "height": 272,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 131,
+                    "offsetTime": 5451,
                     "x": 768,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 131,
-                    "offsetTime": 5182,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 131
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 132,
+                    "offsetTime": 5501,
                     "x": 784,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 132,
-                    "offsetTime": 5222,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 132
+                    "artifactPath": null
                   },
                   {
-                    "x": 800,
-                    "y": 224,
-                    "width": 272,
-                    "height": 272,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 133,
-                    "offsetTime": 5261,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 133
-                  },
-                  {
+                    "offsetTime": 5585,
                     "x": 800,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 134,
-                    "offsetTime": 5301,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 134
-                  },
-                  {
-                    "x": 832,
+                    "offsetTime": 5618,
+                    "x": 800,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 135,
-                    "offsetTime": 5340,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 135
-                  },
-                  {
+                    "offsetTime": 5668,
                     "x": 832,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 136,
-                    "offsetTime": 5380,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 136
-                  },
-                  {
+                    "offsetTime": 5768,
                     "x": 832,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 137,
-                    "offsetTime": 5419,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 137
-                  },
-                  {
+                    "offsetTime": 5785,
                     "x": 832,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 138,
-                    "offsetTime": 5459,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 138
-                  },
-                  {
-                    "x": 848,
+                    "offsetTime": 5818,
+                    "x": 832,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 139,
-                    "offsetTime": 5498,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 139
-                  },
-                  {
+                    "offsetTime": 5901,
                     "x": 848,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 140,
-                    "offsetTime": 5538,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 140
-                  },
-                  {
-                    "x": 864,
+                    "offsetTime": 5968,
+                    "x": 848,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 141,
-                    "offsetTime": 5578,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 141
-                  },
-                  {
+                    "offsetTime": 5985,
                     "x": 864,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 142,
-                    "offsetTime": 5617,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 142
-                  },
-                  {
+                    "offsetTime": 6035,
                     "x": 864,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 143,
-                    "offsetTime": 5657,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 143
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 143,
+                    "offsetTime": 6118,
+                    "x": 864,
+                    "y": 224,
+                    "width": 272,
+                    "height": 272,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 144,
+                    "offsetTime": 6168,
                     "x": 864,
                     "y": 224,
                     "width": 288,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 144,
-                    "offsetTime": 5696,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 144
+                    "artifactPath": null
                   },
                   {
-                    "x": 880,
-                    "y": 224,
-                    "width": 272,
-                    "height": 272,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 145,
-                    "offsetTime": 5736,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 145
-                  },
-                  {
+                    "offsetTime": 6268,
                     "x": 880,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 146,
-                    "offsetTime": 5775,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 146
-                  },
-                  {
+                    "offsetTime": 6301,
                     "x": 880,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 147,
-                    "offsetTime": 5815,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 147
-                  },
-                  {
+                    "offsetTime": 6368,
                     "x": 880,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 148,
-                    "offsetTime": 5854,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 148
-                  },
-                  {
+                    "offsetTime": 6435,
                     "x": 880,
                     "y": 224,
                     "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 149,
-                    "offsetTime": 5894,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 149
-                  },
-                  {
-                    "x": 896,
+                    "offsetTime": 6468,
+                    "x": 880,
                     "y": 224,
-                    "width": 256,
+                    "width": 272,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 150,
-                    "offsetTime": 5934,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 150
-                  },
-                  {
+                    "offsetTime": 6568,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 151,
-                    "offsetTime": 5973,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 151
-                  },
-                  {
+                    "offsetTime": 6601,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 152,
-                    "offsetTime": 6013,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 152
-                  },
-                  {
+                    "offsetTime": 6651,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 153,
-                    "offsetTime": 6052,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 153
-                  },
-                  {
+                    "offsetTime": 6735,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 154,
-                    "offsetTime": 6092,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 154
-                  },
-                  {
+                    "offsetTime": 6768,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 155,
-                    "offsetTime": 6131,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 155
-                  },
-                  {
+                    "offsetTime": 6801,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 156,
-                    "offsetTime": 6171,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 156
-                  },
-                  {
+                    "offsetTime": 6901,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 157,
-                    "offsetTime": 6210,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 157
-                  },
-                  {
+                    "offsetTime": 6935,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 158,
-                    "offsetTime": 6250,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 158
-                  },
-                  {
+                    "offsetTime": 6951,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 159,
-                    "offsetTime": 6290,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 159
-                  },
-                  {
+                    "offsetTime": 6985,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 160,
-                    "offsetTime": 6329,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 160
-                  },
-                  {
+                    "offsetTime": 7035,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 161,
-                    "offsetTime": 6369,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 161
-                  },
-                  {
+                    "offsetTime": 7051,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 162,
-                    "offsetTime": 6408,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 162
-                  },
-                  {
+                    "offsetTime": 7118,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 163,
-                    "offsetTime": 6448,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 163
-                  },
-                  {
+                    "offsetTime": 7135,
                     "x": 896,
                     "y": 224,
                     "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 164,
-                    "offsetTime": 6487,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 164
-                  },
-                  {
-                    "x": 944,
+                    "offsetTime": 7151,
+                    "x": 896,
                     "y": 224,
-                    "width": 208,
+                    "width": 256,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 165,
-                    "offsetTime": 6527,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 165
-                  },
-                  {
+                    "offsetTime": 7185,
                     "x": 944,
                     "y": 224,
                     "width": 208,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 166,
-                    "offsetTime": 6566,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 166
-                  },
-                  {
+                    "offsetTime": 7201,
                     "x": 944,
                     "y": 224,
                     "width": 208,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 167,
-                    "offsetTime": 6606,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 167
-                  },
-                  {
-                    "x": 976,
+                    "offsetTime": 7251,
+                    "x": 944,
                     "y": 224,
-                    "width": 176,
+                    "width": 208,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 168,
-                    "offsetTime": 6646,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 168
-                  },
-                  {
+                    "offsetTime": 7268,
                     "x": 976,
                     "y": 224,
                     "width": 176,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 169,
-                    "offsetTime": 6685,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 169
-                  },
-                  {
+                    "offsetTime": 7285,
                     "x": 976,
                     "y": 224,
                     "width": 176,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 170,
-                    "offsetTime": 6725,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 170
-                  },
-                  {
+                    "offsetTime": 7301,
                     "x": 976,
                     "y": 224,
                     "width": 176,
                     "height": 272,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 171,
-                    "offsetTime": 6764,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 171
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 171,
+                    "offsetTime": 7335,
+                    "x": 976,
+                    "y": 224,
+                    "width": 176,
+                    "height": 272,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 172,
+                    "offsetTime": 7351,
                     "x": 992,
                     "y": 224,
                     "width": 160,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 172,
-                    "offsetTime": 6804,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 172
+                    "artifactPath": null
                   },
                   {
-                    "x": 1008,
-                    "y": 224,
-                    "width": 144,
-                    "height": 256,
-                    "confidence": -1.0,
-                    "detectionProperties": {},
                     "offsetFrame": 173,
-                    "offsetTime": 6843,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 173
-                  },
-                  {
+                    "offsetTime": 7435,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 174,
-                    "offsetTime": 6883,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 174
-                  },
-                  {
+                    "offsetTime": 7451,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 175,
-                    "offsetTime": 6922,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 175
-                  },
-                  {
+                    "offsetTime": 7468,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 176,
-                    "offsetTime": 6962,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 176
-                  },
-                  {
+                    "offsetTime": 7485,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 177,
-                    "offsetTime": 7002,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 177
-                  },
-                  {
+                    "offsetTime": 7518,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 178,
-                    "offsetTime": 7041,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 178
-                  },
-                  {
+                    "offsetTime": 7585,
                     "x": 1008,
                     "y": 224,
                     "width": 144,
                     "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 179,
-                    "offsetTime": 7081,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 179
-                  },
-                  {
-                    "x": 1024,
-                    "y": 240,
-                    "width": 128,
-                    "height": 240,
+                    "offsetTime": 7601,
+                    "x": 1008,
+                    "y": 224,
+                    "width": 144,
+                    "height": 256,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 180,
-                    "offsetTime": 7120,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 180
-                  },
-                  {
+                    "offsetTime": 7618,
                     "x": 1024,
                     "y": 240,
                     "width": 128,
                     "height": 240,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 181,
-                    "offsetTime": 7160,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 181
-                  },
-                  {
+                    "offsetTime": 7635,
                     "x": 1024,
                     "y": 240,
                     "width": 128,
                     "height": 240,
                     "confidence": -1.0,
                     "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
                     "offsetFrame": 182,
-                    "offsetTime": 7199,
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 182
-                  },
-                  {
+                    "offsetTime": 7701,
                     "x": 1024,
                     "y": 240,
                     "width": 128,
                     "height": 240,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 183,
-                    "offsetTime": 7239,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 183
+                    "artifactPath": null
                   },
                   {
+                    "offsetFrame": 183,
+                    "offsetTime": 7718,
+                    "x": 1024,
+                    "y": 240,
+                    "width": 128,
+                    "height": 240,
+                    "confidence": -1.0,
+                    "detectionProperties": {},
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  },
+                  {
+                    "offsetFrame": 184,
+                    "offsetTime": 7735,
                     "x": 1024,
                     "y": 240,
                     "width": 128,
                     "height": 224,
                     "confidence": -1.0,
                     "detectionProperties": {},
-                    "offsetFrame": 184,
-                    "offsetTime": 7278,
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null,
-                    "offset": 184
+                    "artifactPath": null
                   }
-                ],
-                "stopOffset": 184,
-                "startOffset": 105
+                ]
               }
             ]
           }
         ]
-      },
-      "detectionProcessingErrors": {}
+      }
     }
   ]
 }

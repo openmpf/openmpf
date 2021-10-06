@@ -24,57 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.routes;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.buffers.Markup;
-import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+package org.mitre.mpf.wfm.util;
+
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.MessageLite;
+import org.apache.camel.Exchange;
+import org.apache.camel.spi.DataFormat;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.function.Supplier;
+
 @Component
-public class MarkupResponseRouteBuilder extends RouteBuilder {
-	private static final Logger log = LoggerFactory.getLogger(MarkupResponseRouteBuilder.class);
+public class ProtobufDataFormatFactory {
+    private final PropertiesUtil _propertiesUtil;
 
-	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_MARKUP;
-	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
-	public static final String ROUTE_ID = "Markup Response Route";
+    @Inject
+    ProtobufDataFormatFactory(PropertiesUtil propertiesUtil) {
+        _propertiesUtil = propertiesUtil;
+    }
 
-	@Autowired
-	private ProtobufDataFormatFactory protobufDataFormatFactory;
+    public DataFormat create(Supplier<MessageLite.Builder> messageBuilderSupplier) {
+        return new ProtobufDataFormatWithCustomSizeLimit(_propertiesUtil, messageBuilderSupplier);
+    }
 
-	private final String entryPoint, exitPoint, routeId;
 
-	public MarkupResponseRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
-	}
+    private static class ProtobufDataFormatWithCustomSizeLimit implements DataFormat {
+        private final PropertiesUtil _propertiesUtil;
+        private final Supplier<MessageLite.Builder> _messageBuilderSupplier;
 
-	public MarkupResponseRouteBuilder(String entryPoint, String exitPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
-		this.routeId = routeId;
-	}
+        private ProtobufDataFormatWithCustomSizeLimit(
+                PropertiesUtil propertiesUtil,
+                Supplier<MessageLite.Builder> messageBuilderSupplier) {
+            _propertiesUtil = propertiesUtil;
+            _messageBuilderSupplier = messageBuilderSupplier;
+        }
 
-	@Override
-	public void configure() throws Exception {
-		log.debug("Configuring route '{}'.", routeId);
+        @Override
+        public void marshal(Exchange exchange, Object graph, OutputStream outputStream)
+                throws IOException {
+            ((MessageLite) graph).writeTo(outputStream);
+        }
 
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse::newBuilder))
-			.process(MarkupResponseProcessor.REF)
-			.choice()
-				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
-					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
-				.otherwise()
-					.to(exitPoint)
-			.endChoice();
-	}
+        @Override
+        public MessageLite unmarshal(Exchange exchange, InputStream stream) throws IOException {
+            var codedInputStream = CodedInputStream.newInstance(stream);
+            codedInputStream.setSizeLimit(_propertiesUtil.getProtobufSizeLimit());
+            return _messageBuilderSupplier.get().mergeFrom(codedInputStream).build();
+        }
+    }
 }

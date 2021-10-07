@@ -44,7 +44,7 @@ public class ProtobufDataFormatFactory {
     private final PropertiesUtil _propertiesUtil;
 
     @Inject
-    ProtobufDataFormatFactory(PropertiesUtil propertiesUtil) {
+    public ProtobufDataFormatFactory(PropertiesUtil propertiesUtil) {
         _propertiesUtil = propertiesUtil;
     }
 

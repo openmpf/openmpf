@@ -66,17 +66,20 @@ public class DlqRouteBuilder extends RouteBuilder {
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeIdPrefix, selectorReplyTo;
 
 	public DlqRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
+		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX,
+		     SELECTOR_REPLY_TO, null);
 	}
 
 	public DlqRouteBuilder(String entryPoint, String exitPoint, String auditExitPoint, String invalidExitPoint,
-						   String routeIdPrefix, String selectorReplyTo) {
+						   String routeIdPrefix, String selectorReplyTo,
+						   ProtobufDataFormatFactory protobufDataFormatFactory) {
 		this.entryPoint = entryPoint;
 		this.exitPoint = exitPoint;
 		this.auditExitPoint = auditExitPoint;
 		this.invalidExitPoint = invalidExitPoint;
 		this.routeIdPrefix = routeIdPrefix;
 		this.selectorReplyTo = selectorReplyTo;
+		this.protobufDataFormatFactory = protobufDataFormatFactory;
 	}
 
 	@Override

@@ -39,6 +39,8 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.camel.routes.DlqRouteBuilder;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -119,8 +121,13 @@ public class TestDlqRouteBuilder {
 
         removeQueues(); // clean up last test run
 
-        DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT,
-                INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
+        var mockPropertiesUtil = mock(PropertiesUtil.class);
+        when(mockPropertiesUtil.getProtobufSizeLimit())
+                .thenReturn(10 * 1024 * 1024);
+
+        DlqRouteBuilder dlqRouteBuilder = new DlqRouteBuilder(
+                ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX,
+                SELECTOR_REPLY_TO, new ProtobufDataFormatFactory(mockPropertiesUtil));
 
         dlqRouteBuilder.setContext(camelContext);
         camelContext.addRoutes(dlqRouteBuilder);

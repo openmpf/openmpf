@@ -1,177 +1,197 @@
 {
-  "jobId": 460,
+  "openmpfVersion": "6.3",
+  "jobId": 45,
   "errors": [],
   "warnings": [],
-  "objectId": "d495e4ee-6574-441d-ba79-a6836a029107",
+  "objectId": "d3fbe436-b676-460d-b846-31961100fcfd",
   "pipeline": {
     "name": "SPHINX SPEECH DETECTION PIPELINE",
     "description": "Performs Sphinx speech detection.",
-    "tasks": [{
-      "actionType": "DETECTION",
-      "name": "SPHINX SPEECH DETECTION TASK",
-      "description": "Performs Sphinx speech detection.",
-      "actions": [{
-        "algorithm": "SPHINX",
-        "name": "SPHINX SPEECH DETECTION ACTION",
-        "description": "Executes the Sphinx speech detection algorithm using the default parameters.",
-        "properties": {}
-      }]
-    }]
+    "tasks": [
+      {
+        "actionType": "DETECTION",
+        "name": "SPHINX SPEECH DETECTION TASK",
+        "description": "Performs Sphinx speech detection.",
+        "actions": [
+          {
+            "algorithm": "SPHINX",
+            "name": "SPHINX SPEECH DETECTION ACTION",
+            "description": "Executes the Sphinx speech detection algorithm using the default parameters.",
+            "properties": {}
+          }
+        ]
+      }
+    ]
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "feeffdeb-82e1-4881-8e9f-1c990d98a7ca",
-  "timeStart": "2021-01-01T13:10:10.456-05:00",
-  "timeStop": "2021-01-01T13:10:40.338-05:00",
+  "externalJobId": "ccee4aa7-eb5b-45a1-9deb-e2c8f3d6d519",
+  "timeStart": "2021-09-27T18:06:59.616Z",
+  "timeStop": "2021-09-27T18:07:20.169Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
-  "media": [{
-    "mediaId": 1,
-    "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/speech/10001-90210-01803.mp4",
-    "sha256": "73cd2148a3ec4a25581df6bcdfd0a5af4b504179af2351cd971d2fd0178ec2b5",
-    "mimeType": "video/mp4",
-    "mediaType": "VIDEO",
-    "length": 183,
-    "mediaMetadata": {
-      "DURATION": "7086",
-      "FPS": "24.0",
-      "FRAME_COUNT": "183",
-      "FRAME_HEIGHT": "1080",
-      "FRAME_WIDTH": "1920",
-      "MIME_TYPE": "video/mp4",
-      "HAS_CONSTANT_FRAME_RATE": "true"
-    },
-    "mediaProperties": {},
-    "status": "COMPLETE",
-    "detectionProcessingErrors": {},
-    "markupResult": null,
-    "output": {
-      "SPEECH": [{
-        "source": "+#SPHINX SPEECH DETECTION ACTION",
-        "algorithm": "SPHINX",
-        "tracks": [{
-          "id": "2bad53f5d0aa25bb28c89c9b4ac3e0f0468ccefe9f26b721a6e4e5a4850c1907",
-          "startOffsetFrame": 20,
-          "stopOffsetFrame": 61,
-          "startOffsetTime": 833,
-          "stopOffsetTime": 2542,
-          "type": "SPEECH",
-          "source": "+#SPHINX SPEECH DETECTION ACTION",
-          "confidence": -1.0,
-          "trackProperties": {
-            "TRANSCRIPT": "what zero zero zero one"
-          },
-          "exemplar": {
-            "offsetFrame": 20,
-            "offsetTime": 833,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "what zero zero zero one"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          },
-          "detections": [{
-            "offsetFrame": 20,
-            "offsetTime": 833,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "what zero zero zero one"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          }]
-        }, {
-          "id": "b9829a284cedb5bac120440f0492db905b15694cc55645735f0c32c2e2003aab",
-          "startOffsetFrame": 94,
-          "stopOffsetFrame": 118,
-          "startOffsetTime": 3917,
-          "stopOffsetTime": 4917,
-          "type": "SPEECH",
-          "source": "+#SPHINX SPEECH DETECTION ACTION",
-          "confidence": -1.0,
-          "trackProperties": {
-            "TRANSCRIPT": "nine oh two one oh"
-          },
-          "exemplar": {
-            "offsetFrame": 94,
-            "offsetTime": 3917,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "nine oh two one oh"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          },
-          "detections": [{
-            "offsetFrame": 94,
-            "offsetTime": 3917,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "nine oh two one oh"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          }]
-        }, {
-          "id": "3db42becf1bd2c927d46a35f4cc2c8a03bb9064a97d5254043e176d7e71ee241",
-          "startOffsetFrame": 150,
-          "stopOffsetFrame": 182,
-          "startOffsetTime": 6250,
-          "stopOffsetTime": 7583,
-          "type": "SPEECH",
-          "source": "+#SPHINX SPEECH DETECTION ACTION",
-          "confidence": -1.0,
-          "trackProperties": {
-            "TRANSCRIPT": "cyril one eight zeros"
-          },
-          "exemplar": {
-            "offsetFrame": 150,
-            "offsetTime": 6250,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "cyril one eight zeros"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          },
-          "detections": [{
-            "offsetFrame": 150,
-            "offsetTime": 6250,
-            "x": 0,
-            "y": 0,
-            "width": 0,
-            "height": 0,
-            "confidence": -1.0,
-            "detectionProperties": {
-              "TRANSCRIPT": "cyril one eight zeros"
-            },
-            "artifactExtractionStatus": "NOT_ATTEMPTED",
-            "artifactPath": null
-          }]
-        }]
-      }]
+  "environmentVariableProperties": {},
+  "media": [
+    {
+      "mediaId": 46,
+      "path": "file:///opt/mpf/share/samples/speech/10001-90210-01803.mp4",
+      "sha256": "cb4441d2fec440ed94ebd9be7ce3106b65ae9c325ace4a6b5ed786543cbf23fe",
+      "mimeType": "video/mp4",
+      "mediaType": "VIDEO",
+      "length": 183,
+      "mediaMetadata": {
+        "DURATION": "7860",
+        "FPS": "24.0",
+        "FRAME_COUNT": "183",
+        "FRAME_HEIGHT": "1080",
+        "FRAME_WIDTH": "1920",
+        "HAS_CONSTANT_FRAME_RATE": "true",
+        "MIME_TYPE": "video/mp4"
+      },
+      "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
+      "markupResult": null,
+      "output": {
+        "SPEECH": [
+          {
+            "source": "+#SPHINX SPEECH DETECTION ACTION",
+            "algorithm": "SPHINX",
+            "tracks": [
+              {
+                "id": "3868d7084eaf3b23f2af226edf67c8eea4fd4a930983c8f88b80070b676b7cb9",
+                "startOffsetFrame": 20,
+                "stopOffsetFrame": 61,
+                "startOffsetTime": 833,
+                "stopOffsetTime": 2541,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "confidence": -1.0,
+                "trackProperties": {
+                  "TRANSCRIPT": "what zero zero zero one"
+                },
+                "exemplar": {
+                  "offsetFrame": 20,
+                  "offsetTime": 833,
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPT": "what zero zero zero one"
+                  },
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 20,
+                    "offsetTime": 833,
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPT": "what zero zero zero one"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              },
+              {
+                "id": "c2d5490572e0856d3e9be00f3fdb604d8cc395d96312c0e80a476ba9a35eee18",
+                "startOffsetFrame": 94,
+                "stopOffsetFrame": 118,
+                "startOffsetTime": 3916,
+                "stopOffsetTime": 4916,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "confidence": -1.0,
+                "trackProperties": {
+                  "TRANSCRIPT": "nine oh two one oh"
+                },
+                "exemplar": {
+                  "offsetFrame": 94,
+                  "offsetTime": 3916,
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPT": "nine oh two one oh"
+                  },
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 94,
+                    "offsetTime": 3916,
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPT": "nine oh two one oh"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              },
+              {
+                "id": "f32983a2c13f96df6ac53bcb393f28caa3fc79aad92e786fd702c276555aec4c",
+                "startOffsetFrame": 150,
+                "stopOffsetFrame": 188,
+                "startOffsetTime": 6250,
+                "stopOffsetTime": 7833,
+                "type": "SPEECH",
+                "source": "+#SPHINX SPEECH DETECTION ACTION",
+                "confidence": -1.0,
+                "trackProperties": {
+                  "TRANSCRIPT": "cyril one eight zero three"
+                },
+                "exemplar": {
+                  "offsetFrame": 150,
+                  "offsetTime": 6250,
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0,
+                  "confidence": -1.0,
+                  "detectionProperties": {
+                    "TRANSCRIPT": "cyril one eight zero three"
+                  },
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 150,
+                    "offsetTime": 6250,
+                    "x": 0,
+                    "y": 0,
+                    "width": 0,
+                    "height": 0,
+                    "confidence": -1.0,
+                    "detectionProperties": {
+                      "TRANSCRIPT": "cyril one eight zero three"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
-  }]
+  ]
 }

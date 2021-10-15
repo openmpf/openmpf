@@ -1,12 +1,13 @@
 {
-  "jobId": 56,
-  "jobErrors": [],
-  "jobWarnings": [],
-  "objectId": "38dad170-926f-4343-9c2f-ac791d2a4947",
+  "openmpfVersion": "6.3",
+  "jobId": 46,
+  "errors": [],
+  "warnings": [],
+  "objectId": "5f63fd2f-09f2-40dd-9f07-18bdbfa74685",
   "pipeline": {
     "name": "TEST OALPR TEXT DETECTION PIPELINE",
     "description": "TEST OALPR TEXT DETECTION PIPELINE",
-    "stages": [
+    "tasks": [
       {
         "actionType": "DETECTION",
         "name": "TEST OALPR TEXT DETECTION TASK",
@@ -24,22 +25,21 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "b9e5dd8b-611d-4278-97a9-4ff5e06a9f74",
-  "timeStart": "2019-09-25T16:55:03Z",
-  "timeStop": "2019-09-25T16:55:05Z",
+  "externalJobId": "0a42e957-ded5-4838-92f5-712777898fa6",
+  "timeStart": "2021-09-27T18:07:20.2Z",
+  "timeStop": "2021-09-27T18:07:22.516Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 59,
+      "mediaId": 47,
       "path": "file:///opt/mpf/share/samples/text/lp-bmw.jpg",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/jpeg",
-      "length": 1,
       "sha256": "8026df007258b0eaeb560254f867cd75b789864ec2139565bc9a5f15ea7327ff",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "image/jpeg",
+      "mediaType": "IMAGE",
+      "length": 1,
       "mediaMetadata": {
         "EXIF_ORIENTATION": "1",
         "FRAME_HEIGHT": "606",
@@ -49,6 +49,8 @@
         "ROTATION": "0"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "TEXT": [
@@ -80,7 +82,7 @@
                     "TEXT": "LV42DY"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/56/59/0/lp-bmw.jpg"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/46/47/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -95,7 +97,7 @@
                       "TEXT": "LV42DY"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/56/59/0/lp-bmw.jpg"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/46/47/0/0/0/frame-0.png"
                   }
                 ]
               }
@@ -105,20 +107,20 @@
       }
     },
     {
-      "mediaId": 60,
+      "mediaId": 48,
       "path": "file:///opt/mpf/share/samples/text/lp-police-car.jpg",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/jpeg",
-      "length": 1,
       "sha256": "8702265ab5e48b937fc874bee33e9e20e44d9c5cf0e51acff574e96c7c1a4a34",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "image/jpeg",
+      "mediaType": "IMAGE",
+      "length": 1,
       "mediaMetadata": {
         "FRAME_HEIGHT": "1943",
         "FRAME_WIDTH": "3597",
         "MIME_TYPE": "image/jpeg"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "TEXT": [
@@ -150,7 +152,7 @@
                     "TEXT": "0116G"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/56/60/0/lp-police-car.jpg"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/46/48/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -165,7 +167,7 @@
                       "TEXT": "0116G"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/56/60/0/lp-police-car.jpg"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/46/48/0/0/0/frame-0.png"
                   }
                 ]
               }
@@ -175,20 +177,20 @@
       }
     },
     {
-      "mediaId": 61,
+      "mediaId": 49,
       "path": "file:///opt/mpf/share/samples/text/lp-trailer.png",
-      "detectionProcessingErrors": {},
-      "mimeType": "image/png",
-      "length": 1,
       "sha256": "e94b616b7125d178d6e124428f0fda51bfc8e9661218df92c3669780786de9da",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "image/png",
+      "mediaType": "IMAGE",
+      "length": 1,
       "mediaMetadata": {
         "FRAME_HEIGHT": "2037",
         "FRAME_WIDTH": "3207",
         "MIME_TYPE": "image/png"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "TEXT": [
@@ -220,7 +222,7 @@
                     "TEXT": "6EMZ948"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/56/61/0/lp-trailer.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/46/49/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -235,7 +237,7 @@
                       "TEXT": "6EMZ948"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/56/61/0/lp-trailer.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/46/49/0/0/0/frame-0.png"
                   }
                 ]
               }

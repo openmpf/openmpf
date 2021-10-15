@@ -91,7 +91,6 @@ public class TestDetectionTaskSplitter {
         final long testId = 12345;
         final String testExternalId = "externID";
         final int testPriority = 4;
-        final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -136,7 +135,6 @@ public class TestDetectionTaskSplitter {
                 systemPropertiesSnapshot,
                 pipelineElements,
                 testPriority,
-                testOutputEnabled,
                 null,
                 null,
                 Collections.singletonList(testMedia),
@@ -449,7 +447,6 @@ public class TestDetectionTaskSplitter {
             MediaType mediaType,
             String mimeType) {
         final int testPriority = 4;
-        final boolean testOutputEnabled = true;
 
         // Capture a snapshot of the detection system property settings when the job is created.
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
@@ -472,7 +469,6 @@ public class TestDetectionTaskSplitter {
                 systemPropertiesSnapshot,
                 testPipe,
                 testPriority,
-                testOutputEnabled,
                 null,
                 null,
                 Collections.singletonList(testMedia),
@@ -531,7 +527,6 @@ public class TestDetectionTaskSplitter {
                 systemPropertiesSnapshot,
                 pipelineElements,
                 0,
-                false,
                 null,
                 null,
                 Collections.singletonList(testMedia),

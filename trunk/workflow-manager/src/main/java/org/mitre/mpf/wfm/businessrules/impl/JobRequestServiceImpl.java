@@ -121,9 +121,6 @@ public class JobRequestServiceImpl implements JobRequestService {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
-        boolean buildOutput = Optional.ofNullable(jobCreationRequest.getBuildOutput())
-                .orElseGet(_propertiesUtil::isOutputObjectsEnabled);
-
         RangeSet<Integer> jobSegmentFrameBoundaries = TreeRangeSet.create();
         if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
@@ -138,7 +135,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             }
         }
 
-
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
                 jobCreationRequest.getPipelineName(),
@@ -148,7 +144,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobSegmentFrameBoundaries,
                 jobSegmentTimeBoundaries,
                 jobCreationRequest.getExternalId(),
-                buildOutput,
                 priority,
                 jobCreationRequest.getCallbackURL(),
                 jobCreationRequest.getCallbackMethod());
@@ -189,7 +184,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                     originalJob.getSegmentFrameBoundaries(),
                     originalJob.getSegmentTimeBoundaries(),
                     originalJob.getExternalId().orElse(null),
-                    originalJob.isOutputEnabled(),
                     priority > 0 ? priority : originalJob.getPriority(),
                     originalJob.getCallbackUrl().orElse(null),
                     originalJob.getCallbackMethod().orElse(null));
@@ -214,7 +208,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             RangeSet<Integer> segmentFrameBoundaries,
             RangeSet<Integer> segmentTimeBoundaries,
             String externalId,
-            boolean buildOutput,
             int priority,
             String callbackUrl,
             String callbackMethod) {
@@ -250,7 +243,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                     systemPropertiesSnapshot,
                     pipelineElements,
                     priority,
-                    buildOutput,
                     callbackUrl,
                     callbackMethod,
                     media,

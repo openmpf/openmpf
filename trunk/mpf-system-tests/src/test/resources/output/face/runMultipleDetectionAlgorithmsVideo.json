@@ -1,11 +1,12 @@
 {
-  "jobId": 3269,
+  "openmpfVersion": "6.3",
+  "jobId": 36,
   "errors": [],
   "warnings": [],
-  "objectId": "67c9b0a9-d24a-46a7-af97-b0ad132c64e6",
+  "objectId": "e077f6f8-ad0b-4e9e-8245-dfe3ca4d490b",
   "pipeline": {
-    "name": "TEST MULTIPLE-ACTION DETECTION PIPELINE 2",
-    "description": "TEST MULTIPLE-ACTION DETECTION PIPELINE 2",
+    "name": "TEST MULTIPLE-ACTION TASK PIPELINE 2",
+    "description": "TEST MULTIPLE-ACTION TASK PIPELINE 2",
     "tasks": [
       {
         "actionType": "DETECTION",
@@ -16,7 +17,7 @@
             "algorithm": "FACECV",
             "name": "OCV FACE DETECTION ACTION",
             "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": null
+            "properties": {}
           },
           {
             "algorithm": "OCVYOLO",
@@ -33,23 +34,23 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "0d6cc038-c144-41db-96b8-3a07fc11a199",
-  "timeStart": "2021-09-10T11:27:22.531-04:00",
-  "timeStop": "2021-09-10T11:28:27.404-04:00",
+  "externalJobId": "91b7cc04-047b-4b61-9ee7-e774a584d4df",
+  "timeStart": "2021-09-27T18:04:49.855Z",
+  "timeStop": "2021-09-27T18:05:38.213Z",
   "status": "COMPLETE",
-  "algorithmProperties": null,
-  "jobProperties": null,
-  "environmentVariableProperties": null,
+  "algorithmProperties": {},
+  "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 1,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/video_02.mp4",
+      "mediaId": 37,
+      "path": "file:///opt/mpf/share/samples/person/video_02.mp4",
       "sha256": "6d794a2d5be1645b605c61d89c26d00b4e326fea2cf62035d78ceda82539d32a",
       "mimeType": "video/mp4",
       "mediaType": "VIDEO",
       "length": 521,
       "mediaMetadata": {
-        "DURATION": "17041",
+        "DURATION": "17410",
         "FPS": "29.97",
         "FRAME_COUNT": "521",
         "FRAME_HEIGHT": "480",
@@ -57,9 +58,9 @@
         "HAS_CONSTANT_FRAME_RATE": "true",
         "MIME_TYPE": "video/mp4"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "CLASS": [
@@ -93,7 +94,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -110,7 +111,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/0/frame-0.png"
                   },
                   {
                     "offsetFrame": 1,
@@ -254,7 +255,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/1/frame-23.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/1/frame-23.png"
                 },
                 "detections": [
                   {
@@ -639,7 +640,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/1/frame-23.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/1/frame-23.png"
                   },
                   {
                     "offsetFrame": 24,
@@ -1300,7 +1301,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/2/frame-35.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/2/frame-35.png"
                 },
                 "detections": [
                   {
@@ -1877,7 +1878,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/2/frame-35.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/2/frame-35.png"
                   },
                   {
                     "offsetFrame": 36,
@@ -2793,7 +2794,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/3/frame-61.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/3/frame-61.png"
                 },
                 "detections": [
                   {
@@ -3786,7 +3787,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/3/frame-61.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/3/frame-61.png"
                   },
                   {
                     "offsetFrame": 62,
@@ -4717,7 +4718,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/4/frame-74.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/4/frame-74.png"
                 },
                 "detections": [
                   {
@@ -5918,7 +5919,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/4/frame-74.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/4/frame-74.png"
                   },
                   {
                     "offsetFrame": 75,
@@ -7279,7 +7280,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/5/frame-62.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/5/frame-62.png"
                 },
                 "detections": [
                   {
@@ -8289,7 +8290,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/5/frame-62.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/5/frame-62.png"
                   },
                   {
                     "offsetFrame": 63,
@@ -10480,7 +10481,7 @@
                     "CLASSIFICATION LIST": "backpack"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/6/frame-3.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/6/frame-3.png"
                 },
                 "detections": [
                   {
@@ -10497,7 +10498,7 @@
                       "CLASSIFICATION LIST": "backpack"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/6/frame-3.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/6/frame-3.png"
                   },
                   {
                     "offsetFrame": 4,
@@ -10612,7 +10613,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/7/frame-44.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/7/frame-44.png"
                 },
                 "detections": [
                   {
@@ -11126,7 +11127,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/7/frame-44.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/7/frame-44.png"
                   },
                   {
                     "offsetFrame": 45,
@@ -11348,7 +11349,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/8/frame-19.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/8/frame-19.png"
                 },
                 "detections": [
                   {
@@ -11365,7 +11366,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/8/frame-19.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/8/frame-19.png"
                   },
                   {
                     "offsetFrame": 20,
@@ -11594,7 +11595,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/9/frame-134.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/9/frame-134.png"
                 },
                 "detections": [
                   {
@@ -13122,7 +13123,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/9/frame-134.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/9/frame-134.png"
                   },
                   {
                     "offsetFrame": 135,
@@ -14192,7 +14193,7 @@
                     "CLASSIFICATION LIST": "car"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/10/frame-70.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/10/frame-70.png"
                 },
                 "detections": [
                   {
@@ -14225,7 +14226,7 @@
                       "CLASSIFICATION LIST": "car"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/10/frame-70.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/10/frame-70.png"
                   },
                   {
                     "offsetFrame": 71,
@@ -14340,7 +14341,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/11/frame-155.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/11/frame-155.png"
                 },
                 "detections": [
                   {
@@ -15536,7 +15537,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/11/frame-155.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/11/frame-155.png"
                   },
                   {
                     "offsetFrame": 156,
@@ -16271,7 +16272,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/12/frame-125.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/12/frame-125.png"
                 },
                 "detections": [
                   {
@@ -16969,7 +16970,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/12/frame-125.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/12/frame-125.png"
                   },
                   {
                     "offsetFrame": 126,
@@ -17778,7 +17779,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/13/frame-94.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/13/frame-94.png"
                 },
                 "detections": [
                   {
@@ -17795,7 +17796,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/13/frame-94.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/13/frame-94.png"
                   },
                   {
                     "offsetFrame": 95,
@@ -17926,7 +17927,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/14/frame-199.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/14/frame-199.png"
                 },
                 "detections": [
                   {
@@ -19384,7 +19385,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/14/frame-199.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/14/frame-199.png"
                   }
                 ]
               },
@@ -19414,7 +19415,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/15/frame-109.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/15/frame-109.png"
                 },
                 "detections": [
                   {
@@ -19431,7 +19432,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/15/frame-109.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/15/frame-109.png"
                   },
                   {
                     "offsetFrame": 110,
@@ -19562,7 +19563,7 @@
                     "CLASSIFICATION LIST": "backpack"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/16/frame-126.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/16/frame-126.png"
                 },
                 "detections": [
                   {
@@ -19627,7 +19628,7 @@
                       "CLASSIFICATION LIST": "backpack"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/16/frame-126.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/16/frame-126.png"
                   },
                   {
                     "offsetFrame": 127,
@@ -19774,7 +19775,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/17/frame-135.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/17/frame-135.png"
                 },
                 "detections": [
                   {
@@ -19924,7 +19925,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/17/frame-135.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/17/frame-135.png"
                   },
                   {
                     "offsetFrame": 136,
@@ -20427,7 +20428,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/18/frame-129.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/18/frame-129.png"
                 },
                 "detections": [
                   {
@@ -20444,7 +20445,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/18/frame-129.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/18/frame-129.png"
                   },
                   {
                     "offsetFrame": 130,
@@ -20591,7 +20592,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/19/frame-143.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/19/frame-143.png"
                 },
                 "detections": [
                   {
@@ -20608,7 +20609,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/19/frame-143.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/19/frame-143.png"
                   }
                 ]
               },
@@ -20638,7 +20639,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/20/frame-150.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/20/frame-150.png"
                 },
                 "detections": [
                   {
@@ -20655,7 +20656,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/20/frame-150.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/20/frame-150.png"
                   },
                   {
                     "offsetFrame": 151,
@@ -20751,7 +20752,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/21/frame-163.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/21/frame-163.png"
                 },
                 "detections": [
                   {
@@ -20898,7 +20899,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/21/frame-163.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/21/frame-163.png"
                   },
                   {
                     "offsetFrame": 164,
@@ -21061,7 +21062,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/22/frame-158.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/22/frame-158.png"
                 },
                 "detections": [
                   {
@@ -21078,7 +21079,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/22/frame-158.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/22/frame-158.png"
                   }
                 ]
               },
@@ -21108,7 +21109,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/23/frame-190.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/23/frame-190.png"
                 },
                 "detections": [
                   {
@@ -21286,7 +21287,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/23/frame-190.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/23/frame-190.png"
                   },
                   {
                     "offsetFrame": 191,
@@ -21433,7 +21434,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/24/frame-190.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/24/frame-190.png"
                 },
                 "detections": [
                   {
@@ -21450,7 +21451,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/24/frame-190.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/24/frame-190.png"
                   },
                   {
                     "offsetFrame": 191,
@@ -21597,7 +21598,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/25/frame-298.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/25/frame-298.png"
                 },
                 "detections": [
                   {
@@ -23182,7 +23183,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/25/frame-298.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/25/frame-298.png"
                   },
                   {
                     "offsetFrame": 299,
@@ -23713,7 +23714,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/26/frame-216.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/26/frame-216.png"
                 },
                 "detections": [
                   {
@@ -23986,7 +23987,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/26/frame-216.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/26/frame-216.png"
                   },
                   {
                     "offsetFrame": 217,
@@ -25895,7 +25896,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/28/frame-278.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/28/frame-278.png"
                 },
                 "detections": [
                   {
@@ -27160,7 +27161,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/28/frame-278.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/28/frame-278.png"
                   },
                   {
                     "offsetFrame": 279,
@@ -29126,7 +29127,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/27/frame-394.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/27/frame-394.png"
                 },
                 "detections": [
                   {
@@ -32247,7 +32248,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/27/frame-394.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/27/frame-394.png"
                   },
                   {
                     "offsetFrame": 395,
@@ -32357,7 +32358,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/29/frame-203.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/29/frame-203.png"
                 },
                 "detections": [
                   {
@@ -32374,7 +32375,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/29/frame-203.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/29/frame-203.png"
                   },
                   {
                     "offsetFrame": 204,
@@ -32489,7 +32490,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/30/frame-211.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/30/frame-211.png"
                 },
                 "detections": [
                   {
@@ -32538,7 +32539,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/30/frame-211.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/30/frame-211.png"
                   },
                   {
                     "offsetFrame": 212,
@@ -32754,7 +32755,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/31/frame-236.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/31/frame-236.png"
                 },
                 "detections": [
                   {
@@ -33011,7 +33012,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/31/frame-236.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/31/frame-236.png"
                   },
                   {
                     "offsetFrame": 237,
@@ -33153,7 +33154,7 @@
                     "CLASSIFICATION LIST": "backpack"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/32/frame-245.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/32/frame-245.png"
                 },
                 "detections": [
                   {
@@ -33170,7 +33171,7 @@
                       "CLASSIFICATION LIST": "backpack"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/32/frame-245.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/32/frame-245.png"
                   },
                   {
                     "offsetFrame": 246,
@@ -33285,7 +33286,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/33/frame-303.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/33/frame-303.png"
                 },
                 "detections": [
                   {
@@ -34138,7 +34139,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/33/frame-303.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/33/frame-303.png"
                   },
                   {
                     "offsetFrame": 304,
@@ -34365,7 +34366,7 @@
                     "CLASSIFICATION LIST": "backpack"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/34/frame-314.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/34/frame-314.png"
                 },
                 "detections": [
                   {
@@ -34382,7 +34383,7 @@
                       "CLASSIFICATION LIST": "backpack"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/34/frame-314.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/34/frame-314.png"
                   }
                 ]
               },
@@ -34412,7 +34413,7 @@
                     "CLASSIFICATION LIST": "dog"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/35/frame-325.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/35/frame-325.png"
                 },
                 "detections": [
                   {
@@ -34429,7 +34430,7 @@
                       "CLASSIFICATION LIST": "dog"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/35/frame-325.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/35/frame-325.png"
                   }
                 ]
               },
@@ -34459,7 +34460,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/36/frame-379.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/36/frame-379.png"
                 },
                 "detections": [
                   {
@@ -35327,7 +35328,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/36/frame-379.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/36/frame-379.png"
                   },
                   {
                     "offsetFrame": 380,
@@ -35678,7 +35679,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/37/frame-354.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/37/frame-354.png"
                 },
                 "detections": [
                   {
@@ -35839,7 +35840,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/37/frame-354.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/37/frame-354.png"
                   },
                   {
                     "offsetFrame": 355,
@@ -36110,7 +36111,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/38/frame-387.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/38/frame-387.png"
                 },
                 "detections": [
                   {
@@ -36143,7 +36144,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/38/frame-387.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/38/frame-387.png"
                   },
                   {
                     "offsetFrame": 388,
@@ -36354,7 +36355,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/39/frame-413.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/39/frame-413.png"
                 },
                 "detections": [
                   {
@@ -36579,7 +36580,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/39/frame-413.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/39/frame-413.png"
                   },
                   {
                     "offsetFrame": 414,
@@ -36834,7 +36835,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/40/frame-406.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/40/frame-406.png"
                 },
                 "detections": [
                   {
@@ -36947,7 +36948,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/40/frame-406.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/40/frame-406.png"
                   },
                   {
                     "offsetFrame": 407,
@@ -38422,7 +38423,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/41/frame-426.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/41/frame-426.png"
                 },
                 "detections": [
                   {
@@ -38855,7 +38856,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/41/frame-426.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/41/frame-426.png"
                   },
                   {
                     "offsetFrame": 427,
@@ -39969,7 +39970,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/42/frame-455.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/42/frame-455.png"
                 },
                 "detections": [
                   {
@@ -40103,7 +40104,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/42/frame-455.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/42/frame-455.png"
                   },
                   {
                     "offsetFrame": 456,
@@ -40319,7 +40320,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/43/frame-459.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/43/frame-459.png"
                 },
                 "detections": [
                   {
@@ -40336,7 +40337,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/43/frame-459.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/43/frame-459.png"
                   },
                   {
                     "offsetFrame": 460,
@@ -40467,7 +40468,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/44/frame-469.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/44/frame-469.png"
                 },
                 "detections": [
                   {
@@ -40516,7 +40517,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/44/frame-469.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/44/frame-469.png"
                   },
                   {
                     "offsetFrame": 470,
@@ -40663,7 +40664,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/45/frame-517.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/45/frame-517.png"
                 },
                 "detections": [
                   {
@@ -40913,7 +40914,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/1/45/frame-517.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/1/45/frame-517.png"
                   },
                   {
                     "offsetFrame": 518,
@@ -40982,7 +40983,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 52.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 115,
                   "offsetTime": 3837,
@@ -40991,9 +40992,9 @@
                   "width": 84,
                   "height": 84,
                   "confidence": 52.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/0/frame-115.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/0/frame-115.png"
                 },
                 "detections": [
                   {
@@ -41004,7 +41005,7 @@
                     "width": 51,
                     "height": 51,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41016,7 +41017,7 @@
                     "width": 51,
                     "height": 51,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41028,7 +41029,7 @@
                     "width": 51,
                     "height": 51,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41040,7 +41041,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41052,7 +41053,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41064,7 +41065,7 @@
                     "width": 50,
                     "height": 50,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41076,7 +41077,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 24.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41088,7 +41089,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41100,7 +41101,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 21.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41112,7 +41113,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41124,7 +41125,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41136,7 +41137,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 27.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41148,7 +41149,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 30.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41160,7 +41161,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 36.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41172,7 +41173,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 30.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41184,7 +41185,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 30.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41196,7 +41197,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41208,7 +41209,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41220,7 +41221,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 26.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41232,7 +41233,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41244,7 +41245,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 24.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41256,7 +41257,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 24.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41268,7 +41269,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 21.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41280,7 +41281,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 17.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41292,7 +41293,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41304,7 +41305,7 @@
                     "width": 61,
                     "height": 61,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41316,7 +41317,7 @@
                     "width": 60,
                     "height": 60,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41328,7 +41329,7 @@
                     "width": 65,
                     "height": 65,
                     "confidence": 9.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41340,7 +41341,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41352,7 +41353,7 @@
                     "width": 65,
                     "height": 65,
                     "confidence": 17.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41364,7 +41365,7 @@
                     "width": 60,
                     "height": 60,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41376,7 +41377,7 @@
                     "width": 64,
                     "height": 64,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41388,7 +41389,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 19.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41400,7 +41401,7 @@
                     "width": 64,
                     "height": 64,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41412,7 +41413,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41424,7 +41425,7 @@
                     "width": 65,
                     "height": 65,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41436,7 +41437,7 @@
                     "width": 65,
                     "height": 65,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41448,7 +41449,7 @@
                     "width": 71,
                     "height": 71,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41460,7 +41461,7 @@
                     "width": 66,
                     "height": 66,
                     "confidence": 27.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41472,7 +41473,7 @@
                     "width": 69,
                     "height": 69,
                     "confidence": 34.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41484,7 +41485,7 @@
                     "width": 68,
                     "height": 68,
                     "confidence": 29.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41496,7 +41497,7 @@
                     "width": 72,
                     "height": 72,
                     "confidence": 32.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41508,7 +41509,7 @@
                     "width": 69,
                     "height": 69,
                     "confidence": 36.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41520,7 +41521,7 @@
                     "width": 73,
                     "height": 73,
                     "confidence": 31.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41532,7 +41533,7 @@
                     "width": 74,
                     "height": 74,
                     "confidence": 40.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41544,7 +41545,7 @@
                     "width": 77,
                     "height": 77,
                     "confidence": 40.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41556,7 +41557,7 @@
                     "width": 83,
                     "height": 83,
                     "confidence": 36.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41568,7 +41569,7 @@
                     "width": 80,
                     "height": 80,
                     "confidence": 36.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41580,7 +41581,7 @@
                     "width": 81,
                     "height": 81,
                     "confidence": 43.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41592,9 +41593,9 @@
                     "width": 84,
                     "height": 84,
                     "confidence": 52.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/0/frame-115.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/0/frame-115.png"
                   },
                   {
                     "offsetFrame": 116,
@@ -41604,7 +41605,7 @@
                     "width": 82,
                     "height": 82,
                     "confidence": 47.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41616,7 +41617,7 @@
                     "width": 86,
                     "height": 86,
                     "confidence": 44.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41628,7 +41629,7 @@
                     "width": 88,
                     "height": 88,
                     "confidence": 39.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41640,7 +41641,7 @@
                     "width": 89,
                     "height": 89,
                     "confidence": 35.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41652,7 +41653,7 @@
                     "width": 94,
                     "height": 94,
                     "confidence": 43.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41664,7 +41665,7 @@
                     "width": 95,
                     "height": 95,
                     "confidence": 43.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41676,7 +41677,7 @@
                     "width": 90,
                     "height": 90,
                     "confidence": 41.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41688,7 +41689,7 @@
                     "width": 84,
                     "height": 84,
                     "confidence": 26.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41700,7 +41701,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 5.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41712,7 +41713,7 @@
                     "width": 74,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41724,7 +41725,7 @@
                     "width": 73,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41736,7 +41737,7 @@
                     "width": 72,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   }
@@ -41751,7 +41752,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 35.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 113,
                   "offsetTime": 3770,
@@ -41760,9 +41761,9 @@
                   "width": 58,
                   "height": 58,
                   "confidence": 35.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/1/frame-113.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/1/frame-113.png"
                 },
                 "detections": [
                   {
@@ -41773,7 +41774,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41785,7 +41786,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41797,7 +41798,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41809,7 +41810,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41821,7 +41822,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41833,7 +41834,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41845,7 +41846,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41857,7 +41858,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41869,7 +41870,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 25.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41881,7 +41882,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 28.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41893,9 +41894,9 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 35.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/1/frame-113.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/1/frame-113.png"
                   },
                   {
                     "offsetFrame": 114,
@@ -41905,7 +41906,7 @@
                     "width": 61,
                     "height": 61,
                     "confidence": 26.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41917,7 +41918,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 28.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41929,7 +41930,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 23.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41941,7 +41942,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41953,7 +41954,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41965,7 +41966,7 @@
                     "width": 54,
                     "height": 55,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -41977,7 +41978,7 @@
                     "width": 53,
                     "height": 55,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   }
@@ -41992,7 +41993,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 29.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 426,
                   "offsetTime": 14214,
@@ -42001,9 +42002,9 @@
                   "width": 58,
                   "height": 58,
                   "confidence": 29.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/2/frame-426.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/2/frame-426.png"
                 },
                 "detections": [
                   {
@@ -42014,7 +42015,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42026,7 +42027,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 9.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42038,7 +42039,7 @@
                     "width": 51,
                     "height": 51,
                     "confidence": 8.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42050,7 +42051,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42062,7 +42063,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42074,7 +42075,7 @@
                     "width": 52,
                     "height": 52,
                     "confidence": 9.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42086,7 +42087,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 18.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42098,7 +42099,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42110,7 +42111,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 16.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42122,7 +42123,7 @@
                     "width": 54,
                     "height": 54,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42134,7 +42135,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 11.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42146,7 +42147,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 17.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42158,7 +42159,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 21.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42170,7 +42171,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42182,7 +42183,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 21.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42194,7 +42195,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42206,7 +42207,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 19.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42218,9 +42219,9 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 29.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/2/frame-426.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/2/frame-426.png"
                   },
                   {
                     "offsetFrame": 427,
@@ -42230,7 +42231,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42242,7 +42243,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 23.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42254,7 +42255,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 26.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42266,7 +42267,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 26.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42278,7 +42279,7 @@
                     "width": 58,
                     "height": 58,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42290,7 +42291,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 22.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42302,7 +42303,7 @@
                     "width": 57,
                     "height": 57,
                     "confidence": 20.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42314,7 +42315,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 10.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42326,7 +42327,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 12.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42338,7 +42339,7 @@
                     "width": 59,
                     "height": 59,
                     "confidence": 12.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42350,7 +42351,7 @@
                     "width": 55,
                     "height": 55,
                     "confidence": 6.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42362,7 +42363,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 6.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42374,7 +42375,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42386,7 +42387,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42398,7 +42399,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42410,7 +42411,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42422,7 +42423,7 @@
                     "width": 53,
                     "height": 53,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   }
@@ -42437,7 +42438,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 16.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 445,
                   "offsetTime": 14848,
@@ -42446,9 +42447,9 @@
                   "width": 56,
                   "height": 56,
                   "confidence": 16.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/3/frame-445.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/3/frame-445.png"
                 },
                 "detections": [
                   {
@@ -42459,7 +42460,7 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 15.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42471,7 +42472,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 12.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42483,7 +42484,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 7.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42495,9 +42496,9 @@
                     "width": 56,
                     "height": 56,
                     "confidence": 16.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3269/1/0/0/3/frame-445.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/36/37/0/0/3/frame-445.png"
                   },
                   {
                     "offsetFrame": 446,
@@ -42507,7 +42508,7 @@
                     "width": 63,
                     "height": 63,
                     "confidence": 12.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42519,7 +42520,7 @@
                     "width": 62,
                     "height": 62,
                     "confidence": 12.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42531,7 +42532,7 @@
                     "width": 65,
                     "height": 65,
                     "confidence": 8.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42543,7 +42544,7 @@
                     "width": 68,
                     "height": 68,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42555,7 +42556,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 5.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42567,7 +42568,7 @@
                     "width": 78,
                     "height": 78,
                     "confidence": 9.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42579,7 +42580,7 @@
                     "width": 77,
                     "height": 77,
                     "confidence": 9.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42591,7 +42592,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 6.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42603,7 +42604,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42615,7 +42616,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42627,7 +42628,7 @@
                     "width": 75,
                     "height": 75,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42639,7 +42640,7 @@
                     "width": 71,
                     "height": 71,
                     "confidence": 7.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42651,7 +42652,7 @@
                     "width": 71,
                     "height": 71,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42663,7 +42664,7 @@
                     "width": 71,
                     "height": 71,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42675,7 +42676,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 8.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42687,7 +42688,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42699,7 +42700,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42711,7 +42712,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42723,7 +42724,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42735,7 +42736,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42747,7 +42748,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
@@ -42759,7 +42760,7 @@
                     "width": 79,
                     "height": 79,
                     "confidence": 0.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   }

@@ -186,7 +186,6 @@ public class TestJobRequestService {
         assertSame(systemPropsSnapshot, job.getSystemPropertiesSnapshot());
         assertSame(pipelineElements, job.getPipelineElements());
         assertEquals(defaultPriority, job.getPriority());
-        assertTrue(job.isOutputEnabled());
         assertEquals(jobCreationRequest.getCallbackURL(), job.getCallbackUrl().get());
         assertEquals(jobCreationRequest.getCallbackMethod(), job.getCallbackMethod().get());
 
@@ -219,7 +218,6 @@ public class TestJobRequestService {
                 new SystemPropertiesSnapshot(Map.of("my.property", "5")),
                 originalJobPipelineElements,
                 3,
-                true,
                 "http://callback",
                 "POST",
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
@@ -298,7 +296,6 @@ public class TestJobRequestService {
         assertEquals(0, newJob.getCurrentTaskIndex());
         assertEquals(newJob.getExternalId().get(), originalJob.getExternalId().get());
         assertEquals(newJob.getPriority(), originalJob.getPriority());
-        assertEquals(newJob.isOutputEnabled(), originalJob.isOutputEnabled());
         assertEquals(newJob.getOverriddenAlgorithmProperties(), originalJob.getOverriddenAlgorithmProperties());
         assertEquals(newJob.getJobProperties(), originalJob.getJobProperties());
         assertEquals(newJob.getCallbackUrl().get(), originalJob.getCallbackUrl().get());
@@ -334,7 +331,7 @@ public class TestJobRequestService {
 
         _inProgressJobs.addJob(
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
-                3, true, null, null,
+                3, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"), Map.of(),
                                       Map.of(), null)),
                 Map.of(), Map.of(), TreeRangeSet.create(), TreeRangeSet.create());

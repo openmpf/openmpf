@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
@@ -37,10 +36,11 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionSplitterImpl;
-import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +66,9 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	@Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
 	private WfmAggregator aggregator;
 
+	@Autowired
+	private ProtobufDataFormatFactory protobufDataFormatFactory;
+
 	private final String entryPoint, exitPoint, routeId;
 
 	/** Create a new instance of this class using the default entry and exit points (this is the constructor called by Spring). */
@@ -90,7 +93,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(new ProtobufDataFormat(DetectionProtobuf.DetectionResponse.getDefaultInstance())) // Unpack the protobuf response.
+			.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionResponse::newBuilder)) // Unpack the protobuf response.
 			.process(DetectionResponseProcessor.REF) // Run the response through the response processor.
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))

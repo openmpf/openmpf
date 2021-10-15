@@ -34,8 +34,10 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionDeadLetterProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -58,20 +60,26 @@ public class DlqRouteBuilder extends RouteBuilder {
 	public static final String DUPLICATE_FROM_CURSOR_MESSAGE = "duplicate paged in from cursor";
 	public static final String SUPPRESSING_DUPLICATE_DELIVERY_MESSAGE = "Suppressing duplicate delivery";
 
+	@Autowired
+	private ProtobufDataFormatFactory protobufDataFormatFactory;
+
 	private String entryPoint, exitPoint, auditExitPoint, invalidExitPoint, routeIdPrefix, selectorReplyTo;
 
 	public DlqRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX, SELECTOR_REPLY_TO);
+		this(ENTRY_POINT, EXIT_POINT, AUDIT_EXIT_POINT, INVALID_EXIT_POINT, ROUTE_ID_PREFIX,
+		     SELECTOR_REPLY_TO, null);
 	}
 
 	public DlqRouteBuilder(String entryPoint, String exitPoint, String auditExitPoint, String invalidExitPoint,
-						   String routeIdPrefix, String selectorReplyTo) {
+						   String routeIdPrefix, String selectorReplyTo,
+						   ProtobufDataFormatFactory protobufDataFormatFactory) {
 		this.entryPoint = entryPoint;
 		this.exitPoint = exitPoint;
 		this.auditExitPoint = auditExitPoint;
 		this.invalidExitPoint = invalidExitPoint;
 		this.routeIdPrefix = routeIdPrefix;
 		this.selectorReplyTo = selectorReplyTo;
+		this.protobufDataFormatFactory = protobufDataFormatFactory;
 	}
 
 	@Override
@@ -123,7 +131,7 @@ public class DlqRouteBuilder extends RouteBuilder {
 				//     "com.google.protobuf.InvalidProtocolBufferException: Message missing required fields: data_uri"
 				// Further debugging is necessary to determine the root cause.
 
-				.unmarshal().protobuf(DetectionProtobuf.DetectionRequest.getDefaultInstance()).convertBodyTo(String.class)
+				.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionRequest::newBuilder)).convertBodyTo(String.class)
 				.multicast()
 					.pipeline()
 						.to(auditExitPoint) // send deserialized (readable) message to the exit point to indicate it has been processed, and for auditing

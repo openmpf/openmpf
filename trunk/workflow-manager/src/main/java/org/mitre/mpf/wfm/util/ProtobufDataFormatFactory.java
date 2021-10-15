@@ -24,61 +24,57 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.persistent;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableRangeSet;
-import org.mitre.mpf.interop.JsonIssueDetails;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.util.TimePair;
+package org.mitre.mpf.wfm.util;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.MessageLite;
+import org.apache.camel.Exchange;
+import org.apache.camel.spi.DataFormat;
+import org.springframework.stereotype.Component;
 
-// Suppress because it's better than having to explicitly use BatchJobImpl during deserialization.
-@SuppressWarnings("ClassReferencesSubclass")
-@JsonDeserialize(as = BatchJobImpl.class)
-public interface BatchJob {
-    public long getId();
+import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.function.Supplier;
 
-    public BatchJobStatusType getStatus();
+@Component
+public class ProtobufDataFormatFactory {
+    private final PropertiesUtil _propertiesUtil;
 
-    public JobPipelineElements getPipelineElements();
+    @Inject
+    public ProtobufDataFormatFactory(PropertiesUtil propertiesUtil) {
+        _propertiesUtil = propertiesUtil;
+    }
 
-    public int getCurrentTaskIndex();
+    public DataFormat create(Supplier<MessageLite.Builder> messageBuilderSupplier) {
+        return new ProtobufDataFormatWithCustomSizeLimit(_propertiesUtil, messageBuilderSupplier);
+    }
 
-    public Optional<String> getExternalId();
 
-    public int getPriority();
+    private static class ProtobufDataFormatWithCustomSizeLimit implements DataFormat {
+        private final PropertiesUtil _propertiesUtil;
+        private final Supplier<MessageLite.Builder> _messageBuilderSupplier;
 
-    public ImmutableCollection<? extends Media> getMedia();
+        private ProtobufDataFormatWithCustomSizeLimit(
+                PropertiesUtil propertiesUtil,
+                Supplier<MessageLite.Builder> messageBuilderSupplier) {
+            _propertiesUtil = propertiesUtil;
+            _messageBuilderSupplier = messageBuilderSupplier;
+        }
 
-    public Media getMedia(long mediaId);
+        @Override
+        public void marshal(Exchange exchange, Object graph, OutputStream outputStream)
+                throws IOException {
+            ((MessageLite) graph).writeTo(outputStream);
+        }
 
-    // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
-    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
-
-    public ImmutableMap<String, String> getJobProperties();
-
-    public ImmutableRangeSet<Integer> getSegmentFrameBoundaries();
-    public ImmutableRangeSet<Integer> getSegmentTimeBoundaries();
-
-    public boolean isCancelled();
-
-    public Optional<String> getCallbackUrl();
-
-    public Optional<String> getCallbackMethod();
-
-    public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
-
-    public Map<Long, Set<JsonIssueDetails>> getWarnings();
-
-    public Map<Long, Set<JsonIssueDetails>> getErrors();
-
-    public List<DetectionProcessingError> getDetectionProcessingErrors();
+        @Override
+        public MessageLite unmarshal(Exchange exchange, InputStream stream) throws IOException {
+            var codedInputStream = CodedInputStream.newInstance(stream);
+            codedInputStream.setSizeLimit(_propertiesUtil.getProtobufSizeLimit());
+            return _messageBuilderSupplier.get().mergeFrom(codedInputStream).build();
+        }
+    }
 }

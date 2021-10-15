@@ -1,8 +1,9 @@
 {
-  "jobId": 3268,
+  "openmpfVersion": "6.3",
+  "jobId": 2,
   "errors": [],
   "warnings": [],
-  "objectId": "be189eca-8106-4873-aeaa-864f5d470785",
+  "objectId": "359f70b9-6c33-4696-8900-818809e8f1e7",
   "pipeline": {
     "name": "TEST OCVFACE COMBINED PIPELINE",
     "description": "TEST OCVFACE COMBINED PIPELINE",
@@ -16,7 +17,7 @@
             "algorithm": "FACECV",
             "name": "OCV FACE DETECTION ACTION",
             "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": null
+            "properties": {}
           },
           {
             "algorithm": "FACECV",
@@ -33,17 +34,17 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "36799590-7f68-4fa7-92c2-69c32d36a8d0",
-  "timeStart": "2021-09-07T17:22:13.713-04:00",
-  "timeStop": "2021-09-07T17:22:17.517-04:00",
+  "externalJobId": "fd1a5f89-1729-415d-a65d-275f47adc007",
+  "timeStart": "2021-09-27T18:42:29.849Z",
+  "timeStop": "2021-09-27T18:42:30.494Z",
   "status": "COMPLETE",
-  "algorithmProperties": null,
-  "jobProperties": null,
-  "environmentVariableProperties": null,
+  "algorithmProperties": {},
+  "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 1,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S001-01.jpg",
+      "mediaId": 6,
+      "path": "file:///opt/mpf/share/samples/face/meds-aa-S001-01.jpg",
       "sha256": "c067e7eed23a0fe022140c30dbfa993ae720309d6567a803d111ecec739a6713",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -53,9 +54,9 @@
         "FRAME_WIDTH": "480",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "FACE": [
@@ -72,7 +73,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
                 "confidence": 57.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -81,9 +82,9 @@
                   "width": 285,
                   "height": 285,
                   "confidence": 57.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/1/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/6/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -94,9 +95,9 @@
                     "width": 285,
                     "height": 285,
                     "confidence": 57.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/1/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/6/0/1/0/frame-0.png"
                   }
                 ]
               }
@@ -115,7 +116,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 57.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -124,9 +125,9 @@
                   "width": 285,
                   "height": 285,
                   "confidence": 57.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/1/0/0/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/6/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -137,9 +138,9 @@
                     "width": 285,
                     "height": 285,
                     "confidence": 57.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/1/0/0/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/6/0/0/0/frame-0.png"
                   }
                 ]
               }
@@ -149,8 +150,8 @@
       }
     },
     {
-      "mediaId": 2,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-aa-S029-01.jpg",
+      "mediaId": 7,
+      "path": "file:///opt/mpf/share/samples/face/meds-aa-S029-01.jpg",
       "sha256": "874c83c5d02c2ddf8f223a229fbf954ca14f1680c155ddfce780c11bff83d584",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -160,9 +161,9 @@
         "FRAME_WIDTH": "384",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "FACE": [
@@ -179,7 +180,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
                 "confidence": 74.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -188,9 +189,9 @@
                   "width": 234,
                   "height": 234,
                   "confidence": 74.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/2/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/7/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -201,9 +202,9 @@
                     "width": 234,
                     "height": 234,
                     "confidence": 74.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/2/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/7/0/1/0/frame-0.png"
                   }
                 ]
               }
@@ -222,7 +223,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 74.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -231,9 +232,9 @@
                   "width": 234,
                   "height": 234,
                   "confidence": 74.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/2/0/0/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/7/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -244,9 +245,9 @@
                     "width": 234,
                     "height": 234,
                     "confidence": 74.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/2/0/0/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/7/0/0/0/frame-0.png"
                   }
                 ]
               }
@@ -256,8 +257,8 @@
       }
     },
     {
-      "mediaId": 3,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/face/meds-af-S419-01.jpg",
+      "mediaId": 8,
+      "path": "file:///opt/mpf/share/samples/face/meds-af-S419-01.jpg",
       "sha256": "39323774cdeabffad373cad1dcb9f4e59f8dbc7f946f245ce2c4055f422333e4",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -267,9 +268,9 @@
         "FRAME_WIDTH": "480",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "FACE": [
@@ -286,7 +287,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION (WITH AUTO-ORIENTATION) ACTION",
                 "confidence": 62.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -295,9 +296,9 @@
                   "width": 300,
                   "height": 300,
                   "confidence": 62.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/3/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/8/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -308,9 +309,9 @@
                     "width": 300,
                     "height": 300,
                     "confidence": 62.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/3/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/8/0/1/0/frame-0.png"
                   }
                 ]
               }
@@ -329,7 +330,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 62.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -338,9 +339,9 @@
                   "width": 300,
                   "height": 300,
                   "confidence": 62.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/3/0/0/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/2/8/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -351,9 +352,9 @@
                     "width": 300,
                     "height": 300,
                     "confidence": 62.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3268/3/0/0/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/2/8/0/0/0/frame-0.png"
                   }
                 ]
               }

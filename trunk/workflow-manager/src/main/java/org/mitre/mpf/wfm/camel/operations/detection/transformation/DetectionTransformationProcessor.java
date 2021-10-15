@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
@@ -444,10 +443,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
         Map<String, String> detectionProperties;
         if (shrunkToNothing) {
-            detectionProperties = ImmutableMap.<String, String>builder()
-                    .putAll(originalDetection.getDetectionProperties())
-                    .put("SHRUNK_TO_NOTHING", "TRUE")
-                    .build();
+            detectionProperties = new HashMap<>(originalDetection.getDetectionProperties());
+            detectionProperties.put("SHRUNK_TO_NOTHING", "TRUE");
         }
         else {
             detectionProperties = originalDetection.getDetectionProperties();

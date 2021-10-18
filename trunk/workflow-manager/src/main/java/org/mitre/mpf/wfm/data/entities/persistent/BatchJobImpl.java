@@ -179,6 +179,22 @@ public class BatchJobImpl implements BatchJob {
             String callbackMethod,
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
+        this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
+                callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
+                TreeRangeSet.create(), TreeRangeSet.create(), List.of(), Map.of(), Map.of());
+    }
+
+    public BatchJobImpl(
+            long id,
+            String externalId,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements pipelineElements,
+            int priority,
+            String callbackUrl,
+            String callbackMethod,
+            Collection<MediaImpl> media,
+            Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             RangeSet<Integer> segmentFrameBoundaries,
             RangeSet<Integer> segmentTimeBoundaries) {

@@ -143,7 +143,7 @@ public class DetectionTaskSplitter {
                         if (!job.getSegmentFrameBoundaries().isEmpty()) {
                             segmentingPlan.addSegmentFrameBoundaries(job.getSegmentFrameBoundaries());
                         }
-                        if (!job.getSegmentTimeBoundaries().isEmpty()) {
+                        else if (!job.getSegmentTimeBoundaries().isEmpty()) {
                             segmentingPlan.addSegmentTimeBoundaries(job.getSegmentTimeBoundaries());
                         }
                     }

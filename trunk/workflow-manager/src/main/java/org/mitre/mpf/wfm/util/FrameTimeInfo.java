@@ -74,7 +74,7 @@ public class FrameTimeInfo {
                 return timeStamps[insertionPoint];
             }
             else {
-                return timeStamps[-(insertionPoint) - 1];
+                return timeStamps[Math.abs(insertionPoint) - 1];
             }
 
         });
@@ -109,8 +109,8 @@ public class FrameTimeInfo {
         return _frameToTimeFn.applyAsInt(frameIndex);
     }
 
-    public int getFrameFromTimeMs(int frameIndex) {
-        return _frameToTimeFn.applyAsInt(frameIndex);
+    public int getFrameFromTimeMs(int frameTime) {
+        return _timeToFrameFn.applyAsInt(frameTime);
     }
 
 }

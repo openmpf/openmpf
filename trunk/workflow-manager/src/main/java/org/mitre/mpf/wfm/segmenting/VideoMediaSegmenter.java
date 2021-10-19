@@ -38,7 +38,6 @@ import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import com.google.common.collect.RangeSet;
 import com.google.common.collect.Range;
 
 import java.util.*;

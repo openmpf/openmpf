@@ -26,8 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.*;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -74,7 +73,35 @@ public class TestVideoMediaSegmenter {
 		assertContainsAlgoProperty("algoKey2", "algoValue2", detectionRequests);
 	}
 
+	@Test
+	public void canCreateMessagesFromUserFrameSegmentBoundaries() {
+		Media media = createTestMedia();
+		DetectionContext context = createTestDetectionContext(
+				0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+		addFrameSegmentBoundaries(context);
+		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
+		assertEquals(3, detectionRequests.size());
+		assertContainsSegment(0, 7, detectionRequests);
+		assertContainsSegment(15, 25, detectionRequests);
+		assertContainsSegment(100, 124, detectionRequests);
+	}
+
+
+	@Test
+	public void canCreateMessagesFromUserTimeSegmentBoundaries() {
+		Media media = createTestMedia();
+		DetectionContext context = createTestDetectionContext(
+				0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+		addTimeSegmentBoundaries(context);
+		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+
+		// FIXME: these are the times in the segment boundaries list. These should be converted to frame numbers.
+		assertEquals(3, detectionRequests.size());
+		assertContainsSegment(0, 70, detectionRequests);
+		assertContainsSegment(150, 250, detectionRequests);
+		assertContainsSegment(1000, 1240, detectionRequests);
+	}
 
 	@Test
 	public void canCreateNonFeedForwardMessages() {
@@ -209,6 +236,22 @@ public class TestVideoMediaSegmenter {
 	}
 
 
+
+	private static void addFrameSegmentBoundaries(DetectionContext context) {
+		RangeSet<Integer> boundaries = TreeRangeSet.create();
+		boundaries.add(Range.closed(0, 7));
+		boundaries.add(Range.closed(15, 25));
+		boundaries.add(Range.closed(100, 124));
+		context.getSegmentingPlan().addSegmentFrameBoundaries(boundaries);
+	}
+
+	private static void addTimeSegmentBoundaries(DetectionContext context) {
+		RangeSet<Integer> boundaries = TreeRangeSet.create();
+		boundaries.add(Range.closed(0, 70));
+		boundaries.add(Range.closed(150, 250));
+		boundaries.add(Range.closed(1000, 1240));
+		context.getSegmentingPlan().addSegmentTimeBoundaries(boundaries);
+	}
 
 
 	private static void assertContainsSegment(int begin, int end, Collection<DetectionRequest> requests) {

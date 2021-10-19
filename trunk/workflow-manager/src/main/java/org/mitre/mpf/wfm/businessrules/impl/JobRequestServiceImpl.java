@@ -122,14 +122,14 @@ public class JobRequestServiceImpl implements JobRequestService {
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
         RangeSet<Integer> jobSegmentFrameBoundaries = TreeRangeSet.create();
+        RangeSet<Integer> jobSegmentTimeBoundaries = TreeRangeSet.create();
+
         if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
                 jobSegmentFrameBoundaries.add(Range.closed(b.getStart(), b.getStop()));
             }
         }
-
-        RangeSet<Integer> jobSegmentTimeBoundaries = TreeRangeSet.create();
-        if (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty()) {
+        else if (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentTimeBoundaries()) {
                 jobSegmentTimeBoundaries.add(Range.closed(b.getStart(), b.getStop()));
             }

@@ -92,14 +92,17 @@ public class TestFrameTimeInfoBuilder {
         var timeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(videoPath, 18.58);
 
         assertEquals(2206, timeInfo.getTimeMsFromFrame(0));
+        assertEquals(0, timeInfo.getFrameFromTimeMs(2206));
         // Use frame rate to guess time
         // prev + (1000 / fps)
         // 2206 + 1000 / 18.58
         assertEquals(2259, timeInfo.getTimeMsFromFrame(1));
+        assertEquals(1, timeInfo.getFrameFromTimeMs(2259));
         // Use previous pts delta to guess time
         // prev + prev - prev_prev
         // 2259 + 2259 - 2206
         assertEquals(2312, timeInfo.getTimeMsFromFrame(2));
+        assertEquals(2, timeInfo.getFrameFromTimeMs(2312));
 
         assertFalse(timeInfo.hasConstantFrameRate());
         assertTrue(timeInfo.requiresTimeEstimation());
@@ -121,6 +124,8 @@ public class TestFrameTimeInfoBuilder {
         for (int i = 0; i < endIdx; i++) {
             assertTrue("frame " + i,
                        Math.abs(ffmpegTimes[i] - timeInfo.getTimeMsFromFrame(i)) <= 1);
+            assertTrue("time " + ffmpegTimes[i],
+                    Math.abs(timeInfo.getFrameFromTimeMs(ffmpegTimes[i]) - i) < 1);
         }
     }
 

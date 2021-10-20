@@ -32,7 +32,7 @@ public class JobCreationRequest {
 	private List<JobCreationMediaData> media = new LinkedList<>();
 	private Map<String, String> jobProperties = new HashMap<>();
 	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
-	// Normally, one or the other of these segment boundary lists will be set, not both.
+	// One or the other of these segment boundary lists will be set, not both.
 	private List<JobCreationSegmentBoundary> segmentFrameBoundaries = new ArrayList<>();
 	private List<JobCreationSegmentBoundary> segmentTimeBoundaries = new ArrayList<>();
 	private String externalId = null;

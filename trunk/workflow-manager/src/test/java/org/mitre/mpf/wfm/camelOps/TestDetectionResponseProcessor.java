@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 import io.swagger.models.auth.In;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -54,6 +52,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.*;
@@ -142,9 +141,7 @@ public class TestDetectionResponseProcessor {
             null,
             Collections.singletonList(media),
             Collections.emptyMap(),
-            Collections.emptyMap(),
-            TreeRangeSet.create(),
-            TreeRangeSet.create());
+            Collections.emptyMap(), List.of(), List.of());
 
         when(inProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);

@@ -26,9 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
+import com.google.common.collect.*;
 import org.mitre.mpf.wfm.util.TimePair;
 
 import java.util.List;
@@ -52,16 +50,28 @@ public class SegmentingPlan {
 
 	// One or the other, or both, of these lists may be empty.
 	private RangeSet<Integer> segmentFrameBoundaries;
-	public void addSegmentFrameBoundaries(RangeSet<Integer> frameBoundaries) {
-		segmentFrameBoundaries = frameBoundaries;
-		hasSegmentBoundaries = true;
+
+	public void addSegmentFrameBoundaries(ImmutableSortedSet<TimePair> frameBoundaries) {
+		segmentFrameBoundaries = TreeRangeSet.create();
+		if (frameBoundaries != null && !frameBoundaries.isEmpty()) {
+			for (TimePair p : frameBoundaries) {
+				segmentFrameBoundaries.add(Range.closed(p.getStartInclusive(), p.getEndInclusive()));
+			}
+			hasSegmentBoundaries = true;
+		}
 	}
+
 	public RangeSet<Integer> getSegmentFrameBoundaries() { return segmentFrameBoundaries; }
 
 	private RangeSet<Integer> segmentTimeBoundaries;
-	public void addSegmentTimeBoundaries(RangeSet<Integer> timeBoundaries) {
-		segmentTimeBoundaries = timeBoundaries;
-		hasSegmentBoundaries = true;
+	public void addSegmentTimeBoundaries(ImmutableSortedSet<TimePair> timeBoundaries) {
+		segmentTimeBoundaries = TreeRangeSet.create();
+		if (timeBoundaries != null && !timeBoundaries.isEmpty()) {
+			for (TimePair p : timeBoundaries) {
+				segmentTimeBoundaries.add(Range.closed(p.getStartInclusive(), p.getEndInclusive()));
+			}
+			hasSegmentBoundaries = true;
+		}
 	}
 	public RangeSet<Integer> getSegmentTimeBoundaries() { return segmentTimeBoundaries; }
 

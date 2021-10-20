@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.units.qual.C;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -98,13 +99,13 @@ public class BatchJobImpl implements BatchJob {
     @Override
     public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
 
-    private final ImmutableRangeSet<Integer> _segmentFrameBoundaries;
+    private final ImmutableSortedSet<TimePair> _segmentFrameBoundaries;
     @Override
-    public ImmutableRangeSet<Integer> getSegmentFrameBoundaries() {return _segmentFrameBoundaries; }
+    public ImmutableSortedSet<TimePair> getSegmentFrameBoundaries() {return _segmentFrameBoundaries; }
 
-    private final ImmutableRangeSet<Integer> _segmentTimeBoundaries;
+    private final ImmutableSortedSet<TimePair> _segmentTimeBoundaries;
     @Override
-    public ImmutableRangeSet<Integer> getSegmentTimeBoundaries() {return _segmentTimeBoundaries; }
+    public ImmutableSortedSet<TimePair> getSegmentTimeBoundaries() {return _segmentTimeBoundaries; }
 
 
     @Override
@@ -182,7 +183,7 @@ public class BatchJobImpl implements BatchJob {
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
                 callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-                TreeRangeSet.create(), TreeRangeSet.create(), List.of(), Map.of(), Map.of());
+                List.of(), List.of(), List.of(), Map.of(), Map.of());
     }
 
     public BatchJobImpl(
@@ -196,8 +197,8 @@ public class BatchJobImpl implements BatchJob {
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            RangeSet<Integer> segmentFrameBoundaries,
-            RangeSet<Integer> segmentTimeBoundaries) {
+            Collection<TimePair> segmentFrameBoundaries,
+            Collection<TimePair> segmentTimeBoundaries) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
                 callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
                 segmentFrameBoundaries, segmentTimeBoundaries, List.of(), Map.of(), Map.of());
@@ -217,8 +218,8 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            @JsonProperty("segmentFrameBoundaries") RangeSet<Integer> segmentFrameBoundaries,
-            @JsonProperty("segmentTimeBoundaries") RangeSet<Integer> segmentTimeBoundaries,
+            @JsonProperty("segmentFrameBoundaries") Collection<TimePair> segmentFrameBoundaries,
+            @JsonProperty("segmentTimeBoundaries") Collection<TimePair> segmentTimeBoundaries,
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
             @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings) {
@@ -245,16 +246,18 @@ public class BatchJobImpl implements BatchJob {
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
 
         if (!segmentFrameBoundaries.isEmpty()) {
-            _segmentFrameBoundaries = new ImmutableRangeSet.Builder<Integer>().addAll(segmentFrameBoundaries).build();
+            _segmentFrameBoundaries = segmentFrameBoundaries.stream()
+                    .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
         }
         else {
-            _segmentFrameBoundaries = ImmutableRangeSet.of();
+            _segmentFrameBoundaries = ImmutableSortedSet.of();
         }
         if (!segmentTimeBoundaries.isEmpty()) {
-            _segmentTimeBoundaries = new ImmutableRangeSet.Builder<Integer>().addAll(segmentTimeBoundaries).build();
+            _segmentTimeBoundaries = segmentTimeBoundaries.stream()
+                    .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
         }
         else {
-            _segmentTimeBoundaries = ImmutableRangeSet.of();
+            _segmentTimeBoundaries = ImmutableSortedSet.of();
         }
 
         _errors = new HashMap<>();

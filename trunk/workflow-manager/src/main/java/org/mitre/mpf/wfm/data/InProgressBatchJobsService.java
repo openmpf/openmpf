@@ -98,8 +98,8 @@ public class InProgressBatchJobsService {
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> algorithmProperties,
-            RangeSet<Integer> segmentFrameBoundaries,
-            RangeSet<Integer> segmentTimeBoundaries) {
+            Collection<TimePair> segmentFrameBoundaries,
+            Collection<TimePair> segmentTimeBoundaries) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));

@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.segmenting;
 import com.google.common.collect.*;
 import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -36,13 +37,11 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.TimePair;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -90,7 +89,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateMessagesFromUserTimeSegmentBoundaries() {
-		Media media = createTestMedia();
+		Media media = createTestMediaWithFps();
 		DetectionContext context = createTestDetectionContext(
 				0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 		addTimeSegmentBoundaries(context);
@@ -98,9 +97,9 @@ public class TestVideoMediaSegmenter {
 
 		// FIXME: these are the times in the segment boundaries list. These should be converted to frame numbers.
 		assertEquals(3, detectionRequests.size());
-		assertContainsSegment(0, 70, detectionRequests);
-		assertContainsSegment(150, 250, detectionRequests);
-		assertContainsSegment(1000, 1240, detectionRequests);
+		assertContainsSegment(2, 20, detectionRequests);
+		assertContainsSegment(44, 74, detectionRequests);
+		assertContainsSegment(89, 126, detectionRequests);
 	}
 
 	@Test
@@ -238,18 +237,16 @@ public class TestVideoMediaSegmenter {
 
 
 	private static void addFrameSegmentBoundaries(DetectionContext context) {
-		RangeSet<Integer> boundaries = TreeRangeSet.create();
-		boundaries.add(Range.closed(0, 7));
-		boundaries.add(Range.closed(15, 25));
-		boundaries.add(Range.closed(100, 124));
+		ImmutableSortedSet<TimePair> boundaries = ImmutableSortedSet.of(new TimePair(0, 7),
+				new TimePair(15, 25),
+				new TimePair(100, 124));
 		context.getSegmentingPlan().addSegmentFrameBoundaries(boundaries);
 	}
 
 	private static void addTimeSegmentBoundaries(DetectionContext context) {
-		RangeSet<Integer> boundaries = TreeRangeSet.create();
-		boundaries.add(Range.closed(0, 70));
-		boundaries.add(Range.closed(150, 250));
-		boundaries.add(Range.closed(1000, 1240));
+		ImmutableSortedSet<TimePair> boundaries = ImmutableSortedSet.of(new TimePair(100, 700),
+				new TimePair(1500, 2500),
+				new TimePair(3000, 4240));
 		context.getSegmentingPlan().addSegmentTimeBoundaries(boundaries);
 	}
 
@@ -292,6 +289,16 @@ public class TestVideoMediaSegmenter {
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;
 	}
+
+	private static Media createTestMediaWithFps() {
+		var mediaUri = TestUtil.findFile("/samples/video_01.mp4");
+		MediaImpl media = new MediaImpl(
+				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
+				Collections.emptyMap(), null);
+		media.addMetadata("FPS", "29.97");
+		return media;
+	}
+
 
 
 	private static Set<Track> createTestTracks() {

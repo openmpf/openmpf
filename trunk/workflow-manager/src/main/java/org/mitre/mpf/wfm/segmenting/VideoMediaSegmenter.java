@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,14 +71,16 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
         List<TimePair> segments = new ArrayList<>();
         if (context.getSegmentingPlan().hasSegmentBoundaries) {
-            if (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty()) {
+            if ((context.getSegmentingPlan().getSegmentFrameBoundaries() != null) &&
+                (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty())) {
                 for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
                     segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
                 }
             }
-            else if (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty()) {
+            else if ((context.getSegmentingPlan().getSegmentTimeBoundaries() != null) &&
+                    (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
                 // Convert time boundaries to frame boundaries.
-                var info = media.getFrameTimeInfo();
+                var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), Double.parseDouble(media.getMetadata("FPS")));
                 for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
                     var start = info.getFrameFromTimeMs(r.lowerEndpoint());
                     var stop = info.getFrameFromTimeMs(r.upperEndpoint());

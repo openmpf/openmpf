@@ -51,10 +51,9 @@ public class FrameTimeInfo {
 
     public static FrameTimeInfo forConstantFrameRate(double fps, int startTime,
                                                      boolean requiresTimeEstimation) {
-        int startFrame = startTime * (int)(fps / 1000);
         return new FrameTimeInfo(true, requiresTimeEstimation,
                 getTimeUsingFps(fps, startTime),
-                getFrameUsingFps(fps, startFrame));
+                getFrameUsingFps(fps, startTime));
     }
 
     public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
@@ -71,10 +70,10 @@ public class FrameTimeInfo {
                 timeIdx -> {
             int insertionPoint  = Arrays.binarySearch(timeStamps, timeIdx);
             if (insertionPoint >= 0) {
-                return timeStamps[insertionPoint];
+                return insertionPoint;
             }
             else {
-                return timeStamps[Math.abs(insertionPoint) - 1];
+                return Math.abs(insertionPoint) - 1;
             }
 
         });
@@ -92,9 +91,9 @@ public class FrameTimeInfo {
         return frameIdx -> startTime + (int) (frameIdx * msPerFrame);
     }
 
-    private static IntUnaryOperator getFrameUsingFps(double fps, int startFrame) {
+    private static IntUnaryOperator getFrameUsingFps(double fps, int startTime) {
         double framesPerMs = fps / 1000;
-        return timeIdx -> startFrame + (int) (timeIdx * framesPerMs);
+        return timeIdx -> (int)Math.rint(framesPerMs * (timeIdx - startTime));
     }
 
     public boolean hasConstantFrameRate() {

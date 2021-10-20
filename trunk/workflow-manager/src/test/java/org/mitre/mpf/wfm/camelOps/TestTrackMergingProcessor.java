@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultExchange;
@@ -206,8 +205,8 @@ public class TestTrackMergingProcessor {
                 Collections.singletonList(media),
                 Collections.emptyMap(),
                 Collections.emptyMap(),
-                TreeRangeSet.create(),
-                TreeRangeSet.create());
+                List.of(),
+                List.of());
 
         inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, mimeType, 1,
                                               Collections.emptyMap());
@@ -294,8 +293,8 @@ public class TestTrackMergingProcessor {
                 Collections.singletonList(media),
                 Collections.emptyMap(),
                 Collections.emptyMap(),
-                TreeRangeSet.create(),
-                TreeRangeSet.create());
+                List.of(),
+                List.of());
 
         SortedSet<Track> tracks = new TreeSet<>();
 

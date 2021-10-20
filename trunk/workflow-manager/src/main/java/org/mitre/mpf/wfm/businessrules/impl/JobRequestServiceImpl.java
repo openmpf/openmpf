@@ -121,17 +121,17 @@ public class JobRequestServiceImpl implements JobRequestService {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
-        RangeSet<Integer> jobSegmentFrameBoundaries = TreeRangeSet.create();
-        RangeSet<Integer> jobSegmentTimeBoundaries = TreeRangeSet.create();
+        List<TimePair> jobSegmentFrameBoundaries = new ArrayList<>();
+        List<TimePair> jobSegmentTimeBoundaries = new ArrayList<>();
 
         if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
-                jobSegmentFrameBoundaries.add(Range.closed(b.getStart(), b.getStop()));
+                jobSegmentFrameBoundaries.add(new TimePair(b.getStart(), b.getStop()));
             }
         }
         else if (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentTimeBoundaries()) {
-                jobSegmentTimeBoundaries.add(Range.closed(b.getStart(), b.getStop()));
+                jobSegmentTimeBoundaries.add(new TimePair(b.getStart(), b.getStop()));
             }
         }
 
@@ -205,8 +205,8 @@ public class JobRequestServiceImpl implements JobRequestService {
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
-            RangeSet<Integer> segmentFrameBoundaries,
-            RangeSet<Integer> segmentTimeBoundaries,
+            Collection<TimePair> segmentFrameBoundaries,
+            Collection<TimePair> segmentTimeBoundaries,
             String externalId,
             int priority,
             String callbackUrl,

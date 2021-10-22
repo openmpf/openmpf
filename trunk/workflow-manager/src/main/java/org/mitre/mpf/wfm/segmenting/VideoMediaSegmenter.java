@@ -53,8 +53,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            return createTimePairMessages(
-                    media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
+            if (context.getSegmentingPlan().hasSegmentBoundaries) {
+                List<TimePair> segments = getSegmentBoundaries(context, media);
+                return createTimePairMessages(media, context, segments);
+            } else {
+                return createTimePairMessages(
+                        media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
+            }
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);
@@ -65,37 +70,34 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
     }
 
-
+    private static List<TimePair> getSegmentBoundaries(DetectionContext context, Media media) {
+        List<TimePair> segments = new ArrayList<>();
+        if ((context.getSegmentingPlan().getSegmentFrameBoundaries() != null) &&
+            (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty())) {
+            for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
+                segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
+            }
+        }
+        else if ((context.getSegmentingPlan().getSegmentTimeBoundaries() != null) &&
+            (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
+            // Convert time boundaries to frame boundaries.
+            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), Double.parseDouble(media.getMetadata("FPS")));
+            for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
+                var start = info.getFrameFromTimeMs(r.lowerEndpoint());
+                var stop = info.getFrameFromTimeMs(r.upperEndpoint());
+                segments.add(new TimePair(start, stop));
+            }
+        }
+        return segments;
+    }
     private static List<Message> createTimePairMessages(
             Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
 
-        List<TimePair> segments = new ArrayList<>();
-        if (context.getSegmentingPlan().hasSegmentBoundaries) {
-            if ((context.getSegmentingPlan().getSegmentFrameBoundaries() != null) &&
-                (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty())) {
-                for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
-                    segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
-                }
-            }
-            else if ((context.getSegmentingPlan().getSegmentTimeBoundaries() != null) &&
-                    (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
-                // Convert time boundaries to frame boundaries.
-                var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), Double.parseDouble(media.getMetadata("FPS")));
-                for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
-                    var start = info.getFrameFromTimeMs(r.lowerEndpoint());
-                    var stop = info.getFrameFromTimeMs(r.upperEndpoint());
-                    segments.add(new TimePair(start, stop));
-                }
-            }
-
-        }
-        else {
-            segments = MediaSegmenter.createSegments(
-                    trackTimePairs,
-                    context.getSegmentingPlan().getTargetSegmentLength(),
-                    context.getSegmentingPlan().getMinSegmentLength(),
-                    context.getSegmentingPlan().getMinGapBetweenSegments());
-        }
+        List<TimePair> segments = MediaSegmenter.createSegments(
+                trackTimePairs,
+                context.getSegmentingPlan().getTargetSegmentLength(),
+                context.getSegmentingPlan().getMinSegmentLength(),
+                context.getSegmentingPlan().getMinGapBetweenSegments());
 
         List<Message> messages = new ArrayList<>(segments.size());
         for(TimePair segment : segments) {

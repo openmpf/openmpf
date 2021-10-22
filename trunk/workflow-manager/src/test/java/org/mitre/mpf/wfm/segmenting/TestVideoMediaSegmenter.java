@@ -80,10 +80,11 @@ public class TestVideoMediaSegmenter {
 		addFrameSegmentBoundaries(context);
 		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
-		assertEquals(3, detectionRequests.size());
+		assertEquals(4, detectionRequests.size());
 		assertContainsSegment(0, 7, detectionRequests);
 		assertContainsSegment(15, 25, detectionRequests);
-		assertContainsSegment(100, 124, detectionRequests);
+		assertContainsSegment(100, 119, detectionRequests);
+		assertContainsSegment(120, 124, detectionRequests);
 	}
 
 
@@ -95,11 +96,12 @@ public class TestVideoMediaSegmenter {
 		addTimeSegmentBoundaries(context);
 		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
-		// FIXME: these are the times in the segment boundaries list. These should be converted to frame numbers.
-		assertEquals(3, detectionRequests.size());
+		assertEquals(5, detectionRequests.size());
 		assertContainsSegment(2, 20, detectionRequests);
-		assertContainsSegment(44, 74, detectionRequests);
-		assertContainsSegment(89, 126, detectionRequests);
+		assertContainsSegment(44, 63, detectionRequests);
+		assertContainsSegment(64, 74, detectionRequests);
+		assertContainsSegment(89, 108, detectionRequests);
+		assertContainsSegment(109, 126, detectionRequests);
 	}
 
 	@Test

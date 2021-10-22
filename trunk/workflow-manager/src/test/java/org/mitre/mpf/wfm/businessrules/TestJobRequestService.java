@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.businessrules;
 
-import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.junit.Before;
@@ -35,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationSegmentBoundary;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
@@ -58,6 +58,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -117,6 +118,9 @@ public class TestJobRequestService {
         jobCreationRequest.setBuildOutput(true);
         jobCreationRequest.setCallbackMethod("GET");
         jobCreationRequest.setCallbackURL("http://callback");
+        jobCreationRequest.setSegmentFrameBoundaries(List.of(
+                new JobCreationSegmentBoundary(0, 50),
+                new JobCreationSegmentBoundary(100, 300)));
 
         return jobCreationRequest;
     }
@@ -133,6 +137,20 @@ public class TestJobRequestService {
         return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
     }
 
+    private static boolean compareSegmentBoundaries(List<JobCreationSegmentBoundary> creationBoundaries, SortedSet<TimePair> jobBoundaries) {
+        if (creationBoundaries.size() != jobBoundaries.size()) {
+            return false;
+        }
+        var b = creationBoundaries.listIterator();
+        for (TimePair p : jobBoundaries) {
+            var currentBound = b.next();
+            if ((p.getStartInclusive() != currentBound.getStart()) ||
+                    (p.getEndInclusive() != currentBound.getStop())) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Test
     public void canCreateJob() {
@@ -206,6 +224,10 @@ public class TestJobRequestService {
 
         assertEquals(jobCreationRequest.getJobProperties(), job.getJobProperties());
         assertEquals(jobCreationRequest.getAlgorithmProperties(), job.getOverriddenAlgorithmProperties());
+
+        assertTrue(job.getSegmentTimeBoundaries().isEmpty());
+        assertFalse(job.getSegmentFrameBoundaries().isEmpty());
+        assertTrue(compareSegmentBoundaries(jobCreationRequest.getSegmentFrameBoundaries(), job.getSegmentFrameBoundaries()));
     }
 
 

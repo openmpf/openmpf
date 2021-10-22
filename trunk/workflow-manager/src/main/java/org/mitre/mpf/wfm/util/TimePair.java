@@ -45,6 +45,10 @@ public class TimePair implements Comparable<TimePair> {
 		this.endInclusive = endInclusive;
 	}
 
+public TimePair() {
+		this.startInclusive = -1;
+		this.endInclusive = -1;
+}
 
 	@Override
 	public int hashCode() {

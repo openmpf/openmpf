@@ -74,7 +74,7 @@ public class TestVideoMediaSegmenter {
 
 	@Test
 	public void canCreateMessagesFromUserFrameSegmentBoundaries() {
-		Media media = createTestMedia();
+		Media media = createTestMediaWithFps();
 		DetectionContext context = createTestDetectionContext(
 				0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
 		addFrameSegmentBoundaries(context);
@@ -297,6 +297,7 @@ public class TestVideoMediaSegmenter {
 		MediaImpl media = new MediaImpl(
 				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
 				Collections.emptyMap(), null);
+		media.setLength(200);
 		media.addMetadata("FPS", "29.97");
 		return media;
 	}

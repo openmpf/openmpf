@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -74,18 +76,30 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         List<TimePair> segments = new ArrayList<>();
         if ((context.getSegmentingPlan().getSegmentFrameBoundaries() != null) &&
             (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty())) {
-            for (Range<Integer> r : context.getSegmentingPlan().getSegmentFrameBoundaries().asRanges()) {
+            // Ensure that the span of the RangeSet is no greater than the length of the video. This could occur if a
+            // user-specified segment end boundary is beyond the end of the video.
+            RangeSet<Integer> boundedRanges = context.getSegmentingPlan()
+                    .getSegmentFrameBoundaries()
+                    .subRangeSet(Range.closed(0, media.getLength()-1));
+            for (Range<Integer> r : boundedRanges.asRanges()) {
                 segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
             }
         }
         else if ((context.getSegmentingPlan().getSegmentTimeBoundaries() != null) &&
             (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
-            // Convert time boundaries to frame boundaries.
-            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), Double.parseDouble(media.getMetadata("FPS")));
+            // Convert time boundaries to frame boundaries, and ensure the span of the frame boundaries is no greater
+            // than the length of the video.
+            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(),
+                                                                     Double.parseDouble(media.getMetadata("FPS")));
+            RangeSet<Integer> boundedRanges = TreeRangeSet.create();
             for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
                 var start = info.getFrameFromTimeMs(r.lowerEndpoint());
                 var stop = info.getFrameFromTimeMs(r.upperEndpoint());
-                segments.add(new TimePair(start, stop));
+                boundedRanges.add(Range.closed(start, stop));
+            }
+            boundedRanges = boundedRanges.subRangeSet(Range.closed(0, media.getLength()-1));
+            for (Range<Integer> r : boundedRanges.asRanges()) {
+                segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
             }
         }
         return segments;
@@ -105,6 +119,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                     : String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
             assert segment.getEndInclusive() >= 0
                     : String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
+
             log.debug("Creating segment [{}, {}] for {}.",
                       segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
 

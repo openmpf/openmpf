@@ -98,10 +98,10 @@ public class TestVideoMediaSegmenter {
 
 		assertEquals(5, detectionRequests.size());
 		assertContainsSegment(2, 20, detectionRequests);
-		assertContainsSegment(44, 63, detectionRequests);
-		assertContainsSegment(64, 74, detectionRequests);
-		assertContainsSegment(89, 108, detectionRequests);
-		assertContainsSegment(109, 126, detectionRequests);
+		assertContainsSegment(43, 62, detectionRequests);
+		assertContainsSegment(63, 74, detectionRequests);
+		assertContainsSegment(88, 107, detectionRequests);
+		assertContainsSegment(108, 127, detectionRequests);
 	}
 
 	@Test

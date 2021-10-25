@@ -89,12 +89,15 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
             // Convert time boundaries to frame boundaries, and ensure the span of the frame boundaries is no greater
             // than the length of the video.
-            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(),
-                                                                     Double.parseDouble(media.getMetadata("FPS")));
+            double fps = Double.parseDouble(media.getMetadata("FPS"));
+            int msecPerFrame = (int)(1000/fps);
+            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), fps);
             RangeSet<Integer> boundedRanges = TreeRangeSet.create();
             for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
+                // getFrameFromTimeMs returns the frame less than or equal to the time, which is right for the start time,
+                // but for the stop time we want the frame that is equal to or greater than the time.
                 var start = info.getFrameFromTimeMs(r.lowerEndpoint());
-                var stop = info.getFrameFromTimeMs(r.upperEndpoint());
+                var stop = info.getFrameFromTimeMs(r.upperEndpoint() + msecPerFrame);
                 boundedRanges.add(Range.closed(start, stop));
             }
             boundedRanges = boundedRanges.subRangeSet(Range.closed(0, media.getLength()-1));

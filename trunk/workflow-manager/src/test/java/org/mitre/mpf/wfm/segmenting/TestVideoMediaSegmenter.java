@@ -105,6 +105,25 @@ public class TestVideoMediaSegmenter {
 	}
 
 	@Test
+	public void canLimitSegmentBoundariesToMediaLength() {
+		Media media = createTestMediaWithFps();
+		DetectionContext context = createTestDetectionContext(
+				0, Collections.EMPTY_MAP, Collections.emptySet());
+		ImmutableSortedSet<TimePair> boundaries = ImmutableSortedSet.of(new TimePair(100, 250));
+		context.getSegmentingPlan().addSegmentFrameBoundaries(boundaries);
+
+		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+
+		assertEquals(5, detectionRequests.size());
+		assertContainsSegment(100, 119, detectionRequests);
+		assertContainsSegment(120, 139, detectionRequests);
+		assertContainsSegment(140, 159, detectionRequests);
+		assertContainsSegment(160, 179, detectionRequests);
+		assertContainsSegment(180, 199, detectionRequests);
+
+	}
+
+	@Test
 	public void canCreateNonFeedForwardMessages() {
 		Media media = createTestMedia();
 

@@ -128,6 +128,10 @@ public class JobController {
                     " jobProperties for a specific algorithm defined in the pipeline." +
                     " \nFor algorithmProperties, the key should be the algorithm name, and the value should be a" +
                     " Map of String key-value pairs representing properties specific to the named algorithm." +
+                    " \n\n An optional list of segment boundaries, to be used instead of the automatic segmenting normally" +
+                    " done by the workflow manager. The boundaries can be specified as frame boundaries, or as time" +
+                    " boundaries in milliseconds, but not both. If both are provided, the frame boundaries will be used," +
+                    " and a warning will be logged." +
                     " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " \nAlso, note that all provided URIs must be properly encoded." +

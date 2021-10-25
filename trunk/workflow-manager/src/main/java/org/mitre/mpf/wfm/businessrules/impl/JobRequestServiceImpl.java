@@ -124,6 +124,10 @@ public class JobRequestServiceImpl implements JobRequestService {
         List<TimePair> jobSegmentFrameBoundaries = new ArrayList<>();
         List<TimePair> jobSegmentTimeBoundaries = new ArrayList<>();
 
+        if ((!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) &&
+                (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty())) {
+            LOG.warn("Both frame and time segment boundaries were provided: using frame boundaries for this job");
+        }
         if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
             for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
                 jobSegmentFrameBoundaries.add(new TimePair(b.getStart(), b.getStop()));

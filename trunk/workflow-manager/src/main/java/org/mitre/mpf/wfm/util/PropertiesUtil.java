@@ -264,8 +264,8 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("output.site.name");
     }
 
-    public boolean isOutputObjectsEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.enabled");
+    public boolean isStreamingOutputObjectsToDiskEnabled() {
+        return mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");
     }
 
     public boolean isOutputObjectsArtifactsAndExemplarsOnly() {
@@ -765,6 +765,10 @@ public class PropertiesUtil {
 
     public int getWarningFrameCountDiff() {
         return mpfPropertiesConfig.getInt("warn.frame.count.diff");
+    }
+
+    public int getProtobufSizeLimit() {
+        return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
     }
 }
 

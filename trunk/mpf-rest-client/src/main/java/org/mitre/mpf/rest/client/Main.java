@@ -137,24 +137,24 @@ public class Main {
                 pipelines.stream().map(Pipeline::getName).collect(Collectors.joining("\n")) + "\n");
 
 
-        // Get the first DLIB pipeline
+        // Get the first FACE pipeline
 
         JobCreationRequest jobCreationRequest = new JobCreationRequest();
         jobCreationRequest.getMedia().add(new JobCreationMediaData(mediaPath.toUri().toString()));
         jobCreationRequest.setExternalId("external id");
 
-        Optional<String> firstDlibPipeline = pipelines.stream().map(Pipeline::getName)
-                .filter(pipelineName -> pipelineName.startsWith("DLIB"))
+        Optional<String> firstFacePipeline = pipelines.stream().map(Pipeline::getName)
+                .filter(pipelineName -> pipelineName.contains("FACE"))
                 .findFirst();
 
-        if (!firstDlibPipeline.isPresent()) {
-            System.err.println("No available DLIB pipelines.");
+        if (!firstFacePipeline.isPresent()) {
+            System.err.println("No available FACE pipelines.");
             System.exit(1);
         }
 
-        System.out.println("Using DLIB pipeline: " + firstDlibPipeline.get());
+        System.out.println("Using FACE pipeline: " + firstFacePipeline.get());
 
-        jobCreationRequest.setPipelineName(firstDlibPipeline.get());
+        jobCreationRequest.setPipelineName(firstFacePipeline.get());
         jobCreationRequest.setBuildOutput(true);
         // jobCreationRequest.setPriority(priority); //will be set to 4 (default) if not set
 
@@ -175,7 +175,7 @@ public class Main {
         }
 
 
-        // Create a job using the first DLIB pipeline
+        // Create a job using the first FACE pipeline
 
         long jobId = jobCreationResponseEntity.getBody().getJobId();
         System.out.println("Created job with id: " + jobId + "\n");

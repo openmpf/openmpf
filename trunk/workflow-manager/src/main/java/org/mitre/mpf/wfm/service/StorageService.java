@@ -38,7 +38,6 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.IssueSources;
-import org.mitre.mpf.wfm.enums.MarkupStatusType;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;

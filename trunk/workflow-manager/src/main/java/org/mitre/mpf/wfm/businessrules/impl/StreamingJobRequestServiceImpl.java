@@ -140,7 +140,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
 
         try {
             boolean enableOutput = Optional.ofNullable(jobCreationRequest.getEnableOutputToDisk())
-                    .orElseGet(propertiesUtil::isOutputObjectsEnabled);
+                    .orElseGet(propertiesUtil::isStreamingOutputObjectsToDiskEnabled);
             if (enableOutput) {
                 File outputObjectDir = propertiesUtil.createOutputObjectsDirectory(jobRequestEntity.getId());
                 jobRequestEntity.setOutputObjectDirectory(outputObjectDir.getAbsolutePath());

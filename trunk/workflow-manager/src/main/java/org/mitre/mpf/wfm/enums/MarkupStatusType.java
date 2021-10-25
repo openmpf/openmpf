@@ -28,10 +28,6 @@ package org.mitre.mpf.wfm.enums;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 // MarkupStatusType enumeration describes all possible terminal status conditions applicable to a markup result.
 public enum MarkupStatusType {
 

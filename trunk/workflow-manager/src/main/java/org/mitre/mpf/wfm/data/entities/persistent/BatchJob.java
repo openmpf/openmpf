@@ -59,8 +59,6 @@ public interface BatchJob {
 
     public int getPriority();
 
-    public boolean isOutputEnabled();
-
     public ImmutableCollection<? extends Media> getMedia();
 
     public Media getMedia(long mediaId);

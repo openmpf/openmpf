@@ -89,7 +89,6 @@ public class TestMediaInspectionSplitter {
                 null,
                 null,
                 5,
-                false,
                 null,
                 null,
                 List.of(testMedia),

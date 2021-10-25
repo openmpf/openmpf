@@ -32,8 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Comparators;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
-import org.mitre.mpf.interop.JsonMediaOutputObject;
 import org.mitre.mpf.interop.util.CompareUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;

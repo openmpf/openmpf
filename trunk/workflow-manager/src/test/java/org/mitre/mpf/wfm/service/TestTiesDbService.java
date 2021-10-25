@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.uwyn.jhighlight.fastutil.Hash;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpPost;
@@ -128,7 +127,7 @@ public class TestTiesDbService {
 
         var job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media1, media2),
+                null, null, List.of(media1, media2),
                 Map.of(), Map.of());
 
         String url1 = "http://localhost:81/qwer";
@@ -721,7 +720,7 @@ public class TestTiesDbService {
 
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media),
+                null, null, List.of(media),
                 Map.of(), Map.of());
     }
 
@@ -752,7 +751,7 @@ public class TestTiesDbService {
 
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media),
+                null, null, List.of(media),
                 Map.of(), Map.of());
     }
 

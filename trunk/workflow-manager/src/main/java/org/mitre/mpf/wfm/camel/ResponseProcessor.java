@@ -84,7 +84,8 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 			exchange.getOut().getHeaders().put(
 					MpfHeaders.JMS_PRIORITY, exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY));
 			// No such job. Repackage the response and send it to the unsolicited responses queue for future analysis.
-			log.warn("[Job {}|*|*] A job with this ID is not known to the system. This message will be ignored.", jobId);
+			log.warn("A job with this ID is not known to the system. " +
+					         "This message will be ignored.");
 			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
 			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
 			exchange.getOut().setBody(((T)(exchange.getIn().getBody())).toByteArray());

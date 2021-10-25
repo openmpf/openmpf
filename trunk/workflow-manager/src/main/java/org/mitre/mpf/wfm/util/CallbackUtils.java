@@ -40,10 +40,12 @@ import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.mitre.mpf.interop.JsonHealthReportCollection;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -135,21 +137,21 @@ public class CallbackUtils implements AutoCloseable {
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request) {
         var future = ThreadUtil.<HttpResponse>newFuture();
-
+        var mdcCtx = MDC.getCopyOfContextMap();
         httpAsyncClient.execute(request, new FutureCallback<>() {
             @Override
             public void completed(HttpResponse result) {
-                future.complete(result);
+                MdcUtil.all(mdcCtx, () -> future.complete(result));
             }
 
             @Override
             public void failed(Exception ex) {
-                future.completeExceptionally(ex);
+                MdcUtil.all(mdcCtx, () -> future.completeExceptionally(ex));
             }
 
             @Override
             public void cancelled() {
-                future.cancel(true);
+                MdcUtil.all(mdcCtx, () -> future.cancel(true));
             }
         });
         return future;
@@ -157,62 +159,49 @@ public class CallbackUtils implements AutoCloseable {
 
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
-        return executeRequest(request, retries, 100, ThreadUtil.newFuture());
+        return executeRequest(request, retries, 100);
     }
 
 
     private CompletableFuture<HttpResponse> executeRequest(
-            HttpUriRequest request, int retries, long delayMs,
-            CompletableFuture<HttpResponse> future) {
+            HttpUriRequest request, int retries, long delayMs) {
 
         log.info("Starting {} callback to \"{}\".", request.getMethod(), request.getURI());
         long nextDelay = Math.min(delayMs * 2, 30_000);
 
-        httpAsyncClient.execute(request, new FutureCallback<>() {
-            @Override
-            public void completed(HttpResponse response) {
-                int statusCode = response.getStatusLine().getStatusCode();
-                if ((statusCode >= 200 && statusCode <= 299) || retries <= 0) {
-                    future.complete(response);
-                    return;
-                }
-
-                log.warn("\"{}\" responded with a non-200 status code of {}. There are {} " +
-                                 "attempts remaining and the next attempt will begin in {} ms.",
-                         request.getURI(), statusCode, retries, nextDelay);
-                scheduleRetry();
+        return executeRequest(request).thenApply(resp -> {
+            int statusCode = resp.getStatusLine().getStatusCode();
+            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0) {
+                return ThreadUtil.completedFuture(resp);
             }
 
-            @Override
-            public void failed(Exception ex) {
-                if (retries <= 0) {
-                    log.error(String.format(
-                            "Failed to issue %s callback to '%s'. All retry attempts exhausted.",
-                            request.getMethod(), request.getURI()), ex);
-                    future.completeExceptionally(ex);
-                    return;
-                }
-
+            log.warn("\"{}\" responded with a non-200 status code of {}. There are {}  " +
+                             "attempts remaining and the next attempt will begin in {} ms.",
+                     request.getURI(),statusCode, retries, nextDelay);
+            return ThreadUtil.<HttpResponse>failedFuture(new IllegalStateException("non-200"));
+        })
+        .exceptionally(err -> {
+            if (retries > 0) {
                 log.error(String.format(
-                        "Failed to issue %s callback to '%s'. There are %s attempts remaining and " +
-                                "the next attempt will begin in %s ms.",
-                        request.getMethod(), request.getURI(), retries, nextDelay), ex);
-                scheduleRetry();
+                        "Failed to issue %s callback to '%s'. There are %s attempts remaining " +
+                                "and the next attempt will begin in %s ms.",
+                        request.getMethod(), request.getURI(), retries, nextDelay), err);
             }
-
-            private void scheduleRetry() {
-                ThreadUtil.runAsync(
+            else {
+                log.error(String.format(
+                        "Failed to issue %s callback to '%s'. All retry attempts exhausted.",
+                        request.getMethod(), request.getURI()), err);
+            }
+            return ThreadUtil.failedFuture(err);
+        })
+        .thenCompose(future -> {
+            if (future.isCompletedExceptionally() && retries > 0) {
+                return ThreadUtil.delayAndUnwrap(
                         nextDelay, TimeUnit.MILLISECONDS,
-                        () -> executeRequest(request, retries - 1, nextDelay, future));
+                        () -> executeRequest(request, retries - 1, nextDelay));
             }
-
-            @Override
-            public void cancelled() {
-                future.cancel(true);
-            }
+            return future;
         });
-
-        return future;
     }
 
 

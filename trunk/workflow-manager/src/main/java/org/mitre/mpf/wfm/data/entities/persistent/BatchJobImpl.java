@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,8 @@ import org.mitre.mpf.wfm.util.TextUtils;
 import java.util.*;
 import java.util.function.Function;
 
+// Deprecated. outputEnabled is no longer a batch job property. Left for backwards compatibility.
+@JsonIgnoreProperties({ "outputEnabled" })
 public class BatchJobImpl implements BatchJob {
 
     private final long _id;
@@ -91,11 +94,6 @@ public class BatchJobImpl implements BatchJob {
     private final int _priority;
     @Override
     public int getPriority() { return _priority; }
-
-
-    private final boolean _outputEnabled;
-    @Override
-    public boolean isOutputEnabled() { return _outputEnabled; }
 
 
     private final ImmutableSortedMap<Long, MediaImpl> _media;
@@ -202,13 +200,12 @@ public class BatchJobImpl implements BatchJob {
             SystemPropertiesSnapshot systemPropertiesSnapshot,
             JobPipelineElements pipelineElements,
             int priority,
-            boolean outputEnabled,
             String callbackUrl,
             String callbackMethod,
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
-        this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, outputEnabled, callbackUrl,
+        this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), Map.of(), Map.of());
     }
 
@@ -220,7 +217,6 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("systemPropertiesSnapshot") SystemPropertiesSnapshot systemPropertiesSnapshot,
             @JsonProperty("pipelineElements") JobPipelineElements pipelineElements,
             @JsonProperty("priority") int priority,
-            @JsonProperty("outputEnabled") boolean outputEnabled,
             @JsonProperty("callbackUrl") String callbackUrl,
             @JsonProperty("callbackMethod") String callbackMethod,
             @JsonProperty("media") Collection<MediaImpl> media,
@@ -235,7 +231,6 @@ public class BatchJobImpl implements BatchJob {
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
         _pipelineElements = pipelineElements;
         _priority = priority;
-        _outputEnabled = outputEnabled;
         _callbackUrl = StringUtils.trimToNull(callbackUrl);
         _callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
 

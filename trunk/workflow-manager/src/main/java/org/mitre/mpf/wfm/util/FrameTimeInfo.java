@@ -93,7 +93,7 @@ public class FrameTimeInfo {
 
     private static IntUnaryOperator getFrameUsingFps(double fps, int startTime) {
         double framesPerMs = fps / 1000;
-        return timeIdx -> (int)Math.floor(framesPerMs * ((timeIdx < startTime) ? startTime : timeIdx - startTime));
+        return timeIdx -> (int)Math.rint(framesPerMs * ((timeIdx < startTime) ? startTime : timeIdx - startTime));
     }
 
     public boolean hasConstantFrameRate() {

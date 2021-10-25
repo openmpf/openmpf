@@ -96,10 +96,11 @@ public class TestVideoMediaSegmenter {
 		addTimeSegmentBoundaries(context);
 		List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
-		assertEquals(5, detectionRequests.size());
-		assertContainsSegment(2, 20, detectionRequests);
+		assertEquals(6, detectionRequests.size());
+		assertContainsSegment(1, 20, detectionRequests);
+		assertContainsSegment(21, 24, detectionRequests);
 		assertContainsSegment(43, 62, detectionRequests);
-		assertContainsSegment(63, 74, detectionRequests);
+		assertContainsSegment(63, 75, detectionRequests);
 		assertContainsSegment(88, 107, detectionRequests);
 		assertContainsSegment(108, 127, detectionRequests);
 	}
@@ -265,7 +266,7 @@ public class TestVideoMediaSegmenter {
 	}
 
 	private static void addTimeSegmentBoundaries(DetectionContext context) {
-		ImmutableSortedSet<TimePair> boundaries = ImmutableSortedSet.of(new TimePair(100, 700),
+		ImmutableSortedSet<TimePair> boundaries = ImmutableSortedSet.of(new TimePair(100, 800),
 				new TimePair(1500, 2500),
 				new TimePair(3000, 4240));
 		context.getSegmentingPlan().addSegmentTimeBoundaries(boundaries);

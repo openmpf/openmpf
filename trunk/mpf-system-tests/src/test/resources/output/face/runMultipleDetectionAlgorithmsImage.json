@@ -1,8 +1,9 @@
 {
-  "jobId": 3270,
+  "openmpfVersion": "6.3",
+  "jobId": 35,
   "errors": [],
   "warnings": [],
-  "objectId": "e7c14fd9-79f3-4c47-98cc-c9c4e1e28d02",
+  "objectId": "f40eae37-4205-4097-bde5-8bf210fcd41d",
   "pipeline": {
     "name": "TEST MULTIPLE-ACTION TASK PIPELINE",
     "description": "TEST MULTIPLE-ACTION TASK PIPELINE",
@@ -16,7 +17,7 @@
             "algorithm": "FACECV",
             "name": "OCV FACE DETECTION ACTION",
             "description": "Executes the OpenCV face detection algorithm using the default parameters.",
-            "properties": null
+            "properties": {}
           },
           {
             "algorithm": "OCVYOLO",
@@ -33,17 +34,17 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "4bca5b9b-62da-49e0-8c53-61fceb344d62",
-  "timeStart": "2021-09-10T13:00:17.668-04:00",
-  "timeStop": "2021-09-10T13:00:19.063-04:00",
+  "externalJobId": "88c81d1a-5635-4464-b252-7e279fb081a5",
+  "timeStart": "2021-09-27T18:04:48.962Z",
+  "timeStop": "2021-09-27T18:04:49.819Z",
   "status": "COMPLETE",
-  "algorithmProperties": null,
-  "jobProperties": null,
-  "environmentVariableProperties": null,
+  "algorithmProperties": {},
+  "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 1,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/race.jpg",
+      "mediaId": 35,
+      "path": "file:///opt/mpf/share/samples/person/race.jpg",
       "sha256": "49b0b640884f797cae8dc32d80110869fba24730245773a9e7ae0810b6cd6a45",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -53,9 +54,9 @@
         "FRAME_WIDTH": "640",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "CLASS": [
@@ -91,7 +92,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -108,7 +109,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
                   }
                 ]
               },
@@ -140,7 +141,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/1/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/1/frame-0.png"
                 },
                 "detections": [
                   {
@@ -157,7 +158,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/1/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/1/frame-0.png"
                   }
                 ]
               },
@@ -189,7 +190,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/2/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/2/frame-0.png"
                 },
                 "detections": [
                   {
@@ -206,7 +207,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/2/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/2/frame-0.png"
                   }
                 ]
               },
@@ -238,7 +239,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/3/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/3/frame-0.png"
                 },
                 "detections": [
                   {
@@ -255,7 +256,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/3/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/3/frame-0.png"
                   }
                 ]
               },
@@ -287,7 +288,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/4/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/4/frame-0.png"
                 },
                 "detections": [
                   {
@@ -304,7 +305,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/4/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/4/frame-0.png"
                   }
                 ]
               },
@@ -336,7 +337,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/5/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/5/frame-0.png"
                 },
                 "detections": [
                   {
@@ -353,7 +354,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/5/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/5/frame-0.png"
                   }
                 ]
               },
@@ -385,7 +386,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/6/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/6/frame-0.png"
                 },
                 "detections": [
                   {
@@ -402,7 +403,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/6/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/6/frame-0.png"
                   }
                 ]
               },
@@ -434,7 +435,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/7/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/7/frame-0.png"
                 },
                 "detections": [
                   {
@@ -451,7 +452,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/7/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/7/frame-0.png"
                   }
                 ]
               },
@@ -483,7 +484,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/8/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/8/frame-0.png"
                 },
                 "detections": [
                   {
@@ -500,7 +501,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/1/8/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/8/frame-0.png"
                   }
                 ]
               }
@@ -521,7 +522,7 @@
                 "type": "FACE",
                 "source": "+#OCV FACE DETECTION ACTION",
                 "confidence": 13.0,
-                "trackProperties": null,
+                "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
@@ -530,9 +531,9 @@
                   "width": 50,
                   "height": 50,
                   "confidence": 13.0,
-                  "detectionProperties": null,
+                  "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/0/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/0/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -543,9 +544,9 @@
                     "width": 50,
                     "height": 50,
                     "confidence": 13.0,
-                    "detectionProperties": null,
+                    "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/1/0/0/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/0/0/frame-0.png"
                   }
                 ]
               }
@@ -555,8 +556,8 @@
       }
     },
     {
-      "mediaId": 2,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/person/homewood-bank-robbery.jpg",
+      "mediaId": 36,
+      "path": "file:///opt/mpf/share/samples/person/homewood-bank-robbery.jpg",
       "sha256": "c1df06428121f34947d7648df45e291570ae903eeb921b5679870470a572c778",
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
@@ -566,9 +567,9 @@
         "FRAME_WIDTH": "299",
         "MIME_TYPE": "image/jpeg"
       },
-      "mediaProperties": null,
+      "mediaProperties": {},
       "status": "COMPLETE",
-      "detectionProcessingErrors": null,
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "NO TRACKS": [
@@ -610,7 +611,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/0/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/36/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -627,7 +628,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/0/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/36/0/1/0/frame-0.png"
                   }
                 ]
               },
@@ -659,7 +660,7 @@
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/1/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/36/0/1/1/frame-0.png"
                 },
                 "detections": [
                   {
@@ -676,7 +677,7 @@
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/3270/2/0/1/1/frame-0.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/36/0/1/1/frame-0.png"
                   }
                 ]
               }

@@ -1175,8 +1175,7 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
     @Test(timeout = 5 * MINUTES)
     public void runSpeechSphinxDetectVideo() throws Exception {
         runSystemTest("SPHINX SPEECH DETECTION PIPELINE", "output/speech/runSpeechSphinxDetectVideo.json",
-                      "/samples/speech/10001-90210-01803.mp4"
-        );
+                      "/samples/speech/10001-90210-01803.mp4");
     }
 
     private String addDefaultOalprPipeline() throws WfmProcessingException {

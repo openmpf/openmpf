@@ -756,5 +756,9 @@ public class PropertiesUtil {
     public int getWarningFrameCountDiff() {
         return mpfPropertiesConfig.getInt("warn.frame.count.diff");
     }
+
+    public int getProtobufSizeLimit() {
+        return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
+    }
 }
 

@@ -1,12 +1,13 @@
 {
-  "jobId": 26,
-  "jobErrors": [],
-  "jobWarnings": [],
-  "objectId": "c433751f-b602-491d-8ccd-1afdd232961c",
+  "openmpfVersion": "6.3",
+  "jobId": 19,
+  "errors": [],
+  "warnings": [],
+  "objectId": "2d9e14ef-06f0-40fb-b3a8-3bb5349a1519",
   "pipeline": {
     "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
     "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION PIPELINE",
-    "stages": [
+    "tasks": [
       {
         "actionType": "DETECTION",
         "name": "TEST OCV FACE WITH ROI PERCENT AND LOCATION TASK",
@@ -18,10 +19,10 @@
             "description": "TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
             "properties": {
               "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION": "90%",
-              "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310",
               "SEARCH_REGION_ENABLE_DETECTION": "true",
               "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION": "90%",
-              "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50"
+              "SEARCH_REGION_TOP_LEFT_Y_DETECTION": "50",
+              "SEARCH_REGION_TOP_LEFT_X_DETECTION": "310"
             }
           }
         ]
@@ -30,24 +31,23 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "b8c88dd0-f563-4e7e-b907-575ba605972a",
-  "timeStart": "2019-09-25T16:41:59Z",
-  "timeStop": "2019-09-25T16:42:05Z",
+  "externalJobId": "1f500069-dca8-4a3a-9395-56f9c16f2583",
+  "timeStart": "2021-09-27T17:58:15.295Z",
+  "timeStop": "2021-09-27T17:58:20.639Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
+  "environmentVariableProperties": {},
   "media": [
     {
-      "mediaId": 21,
+      "mediaId": 18,
       "path": "file:///opt/mpf/share/samples/face/new_face_video.avi",
-      "detectionProcessingErrors": {},
-      "mimeType": "video/x-msvideo",
-      "length": 510,
       "sha256": "7acdf25b2f577c7f1128b9569cebfbcabd13cd0f45e90b51bb67b243a0a56f41",
-      "message": null,
-      "status": "COMPLETE",
+      "mimeType": "video/x-msvideo",
+      "mediaType": "VIDEO",
+      "length": 510,
       "mediaMetadata": {
-        "DURATION": "17007",
+        "DURATION": "17070",
         "FPS": "29.97",
         "FRAME_COUNT": "510",
         "FRAME_HEIGHT": "480",
@@ -55,6 +55,8 @@
         "MIME_TYPE": "video/x-msvideo"
       },
       "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
         "FACE": [
@@ -63,36 +65,36 @@
             "algorithm": "FACECV",
             "tracks": [
               {
-                "id": "31872d04dd7f008b067d4e265d269ff8e2e1dd533a43b3c76e282c9842831766",
+                "id": "4918f31b4ead06f159d5b3a9540cd971832f65b37c3b7647e8ae7888c6b8dd34",
                 "startOffsetFrame": 241,
                 "stopOffsetFrame": 250,
-                "startOffsetTime": 8075,
+                "startOffsetTime": 8074,
                 "stopOffsetTime": 8375,
                 "type": "FACE",
                 "source": "+#TEST OCV FACE WITH ROI PERCENT AND LOCATION ACTION",
-                "confidence": 44,
+                "confidence": 44.0,
                 "trackProperties": {},
                 "exemplar": {
                   "offsetFrame": 246,
-                  "offsetTime": 8242,
+                  "offsetTime": 8241,
                   "x": 332,
                   "y": 106,
                   "width": 192,
                   "height": 192,
-                  "confidence": 44,
+                  "confidence": 44.0,
                   "detectionProperties": {},
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/19/18/0/0/0/frame-246.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 241,
-                    "offsetTime": 8075,
+                    "offsetTime": 8074,
                     "x": 317,
                     "y": 96,
                     "width": 184,
                     "height": 184,
-                    "confidence": 13,
+                    "confidence": 13.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -104,7 +106,7 @@
                     "y": 97,
                     "width": 189,
                     "height": 189,
-                    "confidence": 22,
+                    "confidence": 22.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -116,19 +118,19 @@
                     "y": 108,
                     "width": 181,
                     "height": 181,
-                    "confidence": 16,
+                    "confidence": 16.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
                   {
                     "offsetFrame": 244,
-                    "offsetTime": 8175,
+                    "offsetTime": 8174,
                     "x": 316,
                     "y": 108,
                     "width": 181,
                     "height": 181,
-                    "confidence": 15,
+                    "confidence": 15.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -140,31 +142,31 @@
                     "y": 107,
                     "width": 193,
                     "height": 193,
-                    "confidence": 26,
+                    "confidence": 26.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
                   {
                     "offsetFrame": 246,
-                    "offsetTime": 8242,
+                    "offsetTime": 8241,
                     "x": 332,
                     "y": 106,
                     "width": 192,
                     "height": 192,
-                    "confidence": 44,
+                    "confidence": 44.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/26/21/0/frame-247.png"
+                    "artifactPath": "file:///opt/mpf/share/artifacts/19/18/0/0/0/frame-246.png"
                   },
                   {
                     "offsetFrame": 247,
-                    "offsetTime": 8275,
+                    "offsetTime": 8274,
                     "x": 328,
                     "y": 110,
                     "width": 196,
                     "height": 196,
-                    "confidence": 33,
+                    "confidence": 33.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -176,19 +178,19 @@
                     "y": 124,
                     "width": 183,
                     "height": 183,
-                    "confidence": 35,
+                    "confidence": 35.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
                   },
                   {
                     "offsetFrame": 249,
-                    "offsetTime": 8342,
+                    "offsetTime": 8341,
                     "x": 324,
                     "y": 134,
                     "width": 169,
                     "height": 169,
-                    "confidence": 27,
+                    "confidence": 27.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -200,7 +202,7 @@
                     "y": 135,
                     "width": 169,
                     "height": 169,
-                    "confidence": 0,
+                    "confidence": 0.0,
                     "detectionProperties": {},
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null

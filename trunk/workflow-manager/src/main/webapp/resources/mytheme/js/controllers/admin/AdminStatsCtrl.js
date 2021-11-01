@@ -30,14 +30,10 @@
  * AdminStatsCtrl
  * @constructor
  */
-var AdminStatsCtrl = function ($scope, $http, JobsService, TimerService) {
+var AdminStatsCtrl = function ($scope, $http, JobsService) {
 
     var simon_service_url = "javasimon-console/data/list.json?pattern=org.mitre.mpf.wfm.*&type=STOPWATCH";
-    var simon_recent_data = [];//most recent data from last pull to
     $scope.jobs_recent_data = [];//most recent data from last pull to
-    $scope.timer_since = "";
-    var default_timer_counter = 15;
-    $scope.timer_counter = default_timer_counter;
     var astats_table = null;
     $scope.jobs_message = "Loading....";
     var jobPlot = null;
@@ -52,7 +48,6 @@ var AdminStatsCtrl = function ($scope, $http, JobsService, TimerService) {
             "ordering": true,
             "initComplete": function () {
                 updateData();
-                TimerService.register("admin_stats_counter", $scope.timerTickHandler, 1000, 1000);//start the table
             },
             "createdRow": function (row, data, index) {//style the row cell   bootstrap styles: primary,info,link,danger,success, warning
                 if (data[2] > 0) {
@@ -64,25 +59,9 @@ var AdminStatsCtrl = function ($scope, $http, JobsService, TimerService) {
         });
     };
 
-    $scope.timerTickHandler = function () { //every second
-        //console.log('AdminStats - timerTickHandler');
-        if ($scope.timer_counter <= 0) {
-            //console.log('AdminStats - timerTickHandler - refresh');
-            updateData();
-            $scope.timer_counter = default_timer_counter;
-        }
-        $scope.timer_counter -= 1;
-    };
-
     var updateData = function () {
         refreshSimonData();
         refreshJobsData();
-        $scope.timer_since = Utils.getTime();
-    };
-
-    $scope.refreshRequest = function () {
-        $scope.timer_counter = default_timer_counter;
-        updateData();
     };
 
     //get simon data
@@ -103,7 +82,6 @@ var AdminStatsCtrl = function ($scope, $http, JobsService, TimerService) {
             } else {
                 Utils.debug("No Simon data", json);
             }
-            simon_recent_data = json;
             //force refresh to reload
             if (!$scope.$$phase) $scope.$apply();
         });
@@ -203,11 +181,6 @@ var AdminStatsCtrl = function ($scope, $http, JobsService, TimerService) {
         $("#job-stats-tooltip").hide();//close tool tip anyway
     }
 
-    //cleanup after leaving page
-    $scope.$on("$destroy", function() {
-       // console.log("destroying AdminStats timer");
-        TimerService.unregister("admin_stats_counter");//kill the timer
-    });
 
     init();
 };

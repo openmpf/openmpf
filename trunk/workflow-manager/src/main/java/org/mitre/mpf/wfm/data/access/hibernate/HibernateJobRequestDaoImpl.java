@@ -223,6 +223,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
         return allJobsStatisticsModel;
     }
 
+    // Decided to manually combine pipeline status entries so that we don't need to do a
+    // "GROUP BY pipeline" query in addition to the "GROUP BY pipeline, status" we currently do.
     private static AggregatePipelineStatsModel getPipelineStats(Iterable<Object[]> rows) {
         long minDuration = 0;
         long maxDuration = 0;
@@ -249,7 +251,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                     minDuration = currentRowMin;
                 }
                 else {
-                    minDuration = Math.max(minDuration, currentRowMin);
+                    minDuration = Math.min(minDuration, currentRowMin);
                 }
             }
 

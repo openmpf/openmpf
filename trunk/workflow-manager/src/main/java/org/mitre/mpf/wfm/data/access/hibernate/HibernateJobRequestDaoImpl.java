@@ -47,9 +47,7 @@ import javax.persistence.criteria.Root;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -192,7 +190,7 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
         long start = System.currentTimeMillis();
 
         // Need to use createNativeQuery here because other methods were converting times to
-        // integers, but we want doubles for sub-second precision.
+        // integers, but we want decimals for sub-second precision.
         var query = getCurrentSession().createNativeQuery(
             "SELECT pipeline, status, count(*), min(duration), max(duration), sum(duration), " +
                     "sum(CASE WHEN duration IS NULL THEN 0 ELSE 1 END) as valid_count" +
@@ -264,9 +262,12 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
     }
 
 
-    private static long toMillis(Object o) {
-        return o == null
-                ? 0
-                : (long) ((double) o * 1000);
+    private static long toMillis(Object secondsObj) {
+        if (secondsObj == null) {
+            return 0;
+        }
+        // Depending on the version of PostgreSQL, secondsObj will either be a Double or BigDecimal.
+        double seconds = ((Number) secondsObj).doubleValue();
+        return (long) seconds * 1000;
     }
 }

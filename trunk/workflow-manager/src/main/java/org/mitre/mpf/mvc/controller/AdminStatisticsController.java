@@ -80,7 +80,6 @@ public class AdminStatisticsController {
     @ResponseBody
     public AllJobsStatisticsModel getAllJobsStats() {
         log.debug("[/jobs/stats]");
-        jobRequestDao.getJobStats();
         return jobRequestDao.getJobStats();
     }
 }

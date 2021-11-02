@@ -268,6 +268,6 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
         }
         // Depending on the version of PostgreSQL, secondsObj will either be a Double or BigDecimal.
         double seconds = ((Number) secondsObj).doubleValue();
-        return (long) seconds * 1000;
+        return (long) (seconds * 1000);
     }
 }

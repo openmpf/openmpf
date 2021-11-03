@@ -39,6 +39,8 @@ var AdminStatsCtrl = function ($scope, $http, JobsService) {
     var jobPlot = null;
 
     var init = function () {
+        $scope.refreshJobsData();
+        $scope.refreshSimonData();
         //add the table and wait until the table is on page then start updates
         astats_table = $('#astats_dataTable-processes').DataTable({
             //responsive : false,
@@ -46,9 +48,6 @@ var AdminStatsCtrl = function ($scope, $http, JobsService) {
             bFilter: false,
             paginate: false,
             "ordering": true,
-            "initComplete": function () {
-                updateData();
-            },
             "createdRow": function (row, data, index) {//style the row cell   bootstrap styles: primary,info,link,danger,success, warning
                 if (data[2] > 0) {
                     $('td', row).eq(2).addClass('success');
@@ -59,13 +58,7 @@ var AdminStatsCtrl = function ($scope, $http, JobsService) {
         });
     };
 
-    var updateData = function () {
-        refreshSimonData();
-        refreshJobsData();
-    };
-
-    //get simon data
-    var refreshSimonData = function () {
+    $scope.refreshSimonData = function () {
         $http.get(simon_service_url).success(function (json) {
            // console.log('Simon Data returned', json);
             if (json) { //should be array
@@ -86,7 +79,8 @@ var AdminStatsCtrl = function ($scope, $http, JobsService) {
             if (!$scope.$$phase) $scope.$apply();
         });
     };
-    var refreshJobsData = function () {
+
+    $scope.refreshJobsData = function () {
         JobsService.getStats().then(function (json) {
           //  console.log('Job Stats Data returned', json);
             var html = "<h2>Total Jobs:" + json.totalJobs + "</h2>";
@@ -176,11 +170,6 @@ var AdminStatsCtrl = function ($scope, $http, JobsService) {
             if (!$scope.$$phase) $scope.$apply();
         });
     }
-    $scope.switchTab = function (tab) {
-        refreshJobsData();//table shrinks, need to reload and resize
-        $("#job-stats-tooltip").hide();//close tool tip anyway
-    }
-
 
     init();
 };

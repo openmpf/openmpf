@@ -32,11 +32,20 @@
     <div class="col-lg-12">
         <!-- Nav tabs -->
         <ul id="statsTabs" class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="active"><a id="statsJobsTab" href data-target="#astats_jobs_tab"
-                                                      aria-controls="astats_jobs_tab" role="tab" data-toggle="tab" ng-click="switchTab('jobs')">Jobs</a>
+            <li role="presentation" class="active">
+                <a id="statsJobsTab" href data-target="#astats_jobs_tab"
+                   aria-controls="astats_jobs_tab" role="tab" data-toggle="tab"
+                   ng-click="refreshJobsData()">
+                    Jobs
+                </a>
             </li>
-            <li role="presentation"><a id="statsProcessesTab" href data-target="#astats_processes_tab"
-                                       aria-controls="astats_processes_tab" role="tab" data-toggle="tab">Processes</a></li>
+            <li role="presentation">
+                <a id="statsProcessesTab" href data-target="#astats_processes_tab"
+                   aria-controls="astats_processes_tab" role="tab" data-toggle="tab"
+                   ng-click="refreshSimonData()">
+                    Processes
+                </a>
+            </li>
         </ul>
         <!-- Tab panes -->
         <div class="tab-content">

@@ -753,6 +753,14 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.callback.retries");
     }
 
+    public int getHttpCallbackConcurrentConnections() {
+        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections");
+    }
+
+    public int getHttpCallbackSocketTimeout() {
+        return mpfPropertiesConfig.getInt("http.callback.socket.timeout.ms");
+    }
+
     public int getWarningFrameCountDiff() {
         return mpfPropertiesConfig.getInt("warn.frame.count.diff");
     }

@@ -757,6 +757,10 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.callback.concurrent.connections");
     }
 
+    public int getHttpCallbackConcurrentConnectionsPerRoute() {
+        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections.per.route");
+    }
+
     public int getHttpCallbackSocketTimeout() {
         return mpfPropertiesConfig.getInt("http.callback.socket.timeout.ms");
     }

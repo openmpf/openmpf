@@ -84,7 +84,7 @@ public class CallbackUtils implements AutoCloseable {
         ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(ioConfig);
 
         PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
-        cm.setDefaultMaxPerRoute(propertiesUtil.getHttpCallbackConcurrentConnections()); // default is 2
+        cm.setDefaultMaxPerRoute(propertiesUtil.getHttpCallbackConcurrentConnectionsPerRoute()); // default is 2
         cm.setMaxTotal(propertiesUtil.getHttpCallbackConcurrentConnections()); // default is 20
 
 

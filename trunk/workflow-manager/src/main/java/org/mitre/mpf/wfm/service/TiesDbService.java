@@ -194,7 +194,7 @@ public class TiesDbService {
                 Map.entry("processDate", timeCompleted),
                 Map.entry("jobStatus", jobStatus),
                 Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
-                Map.entry("systemHostname", getHostName()),
+                Map.entry("systemHostname", _propertiesUtil.getHostName()),
                 Map.entry("trackCount", trackCount)
         );
 
@@ -228,13 +228,6 @@ public class TiesDbService {
         digest.update(algorithm.getBytes(StandardCharsets.UTF_8));
         digest.update(String.valueOf(endTime.getEpochSecond()).getBytes(StandardCharsets.UTF_8));
         return Hex.encodeHexString(digest.digest());
-    }
-
-
-    private static String getHostName() {
-        return Objects.requireNonNullElseGet(
-                System.getenv("NODE_HOSTNAME"),
-                () -> System.getenv("HOSTNAME"));
     }
 
 

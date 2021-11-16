@@ -99,6 +99,9 @@ public class TestTiesDbService {
 
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
+
+        when(_mockPropertiesUtil.getHostName())
+                .thenReturn("localhost");
     }
 
 

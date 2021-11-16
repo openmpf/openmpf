@@ -263,6 +263,14 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("output.site.name");
     }
 
+    public String getHostName() {
+        return Objects.requireNonNullElseGet(
+                System.getenv("NODE_HOSTNAME"),
+                () -> System.getenv("HOSTNAME"));
+    }
+
+
+
     public boolean isStreamingOutputObjectsToDiskEnabled() {
         return mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");
     }

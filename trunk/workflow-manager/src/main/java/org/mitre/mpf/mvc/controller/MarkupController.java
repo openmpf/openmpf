@@ -47,6 +47,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +101,9 @@ public class MarkupController {
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         List<MarkupResultModel> markupResultModels = new ArrayList<>();
         if (jobId != null) {
@@ -127,7 +131,7 @@ public class MarkupController {
     //search is string to filter
     @RequestMapping(value = {"/markup/get-markup-results-filtered"}, method = RequestMethod.POST)
     @ResponseBody
-    public MarkupPageListModel getMarkupResultsFiltered(@RequestParam(value = "jobId", required = true) long jobId,
+    public MarkupPageListModel getMarkupResultsFiltered(@RequestParam(value = "jobId", required = true) String jobId,
                                            @RequestParam(value = "draw", required = false) int draw,
                                            @RequestParam(value = "start", required = false) int start,
                                            @RequestParam(value = "length", required = false) int length,
@@ -135,19 +139,20 @@ public class MarkupController {
                                            @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         //all MarkupResult objects
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
         Collections.reverse(markupResults);
 
         //convert markup objects
-        List<MarkupResultConvertedModel> markupResultModels = new ArrayList<MarkupResultConvertedModel>();
+        List<MarkupResultConvertedModel> markupResultModels = new ArrayList<>();
         for (MarkupResult markupResult : markupResults) {
             MarkupResultConvertedModel model = convertMarkupResultWithContentType(markupResult);
             markupResultModels.add(model);
         }
 
         //add job media that may exist without markup
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest != null) {
             BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
@@ -357,7 +362,7 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), markupResult.getJobId(), markupResult.getPipeline(),
+                markupResult.getId(), propertiesUtil.getHostName()+"-"+markupResult.getJobId(), markupResult.getPipeline(),
                 markupResult.getMarkupUri(), markupUriContentType, markupImgUrl, markupDownloadUrl,
                 markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
                 sourceDownloadUrl, sourceFileAvailable);

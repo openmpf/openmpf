@@ -113,13 +113,13 @@ public class JobController {
                     " \nAnother example: file:///home/user/images/image.jpg. \n\nA callbackURL (optional) and" +
                     " callbackMethod (GET or POST) may be added. When the job completes, the callback will perform" +
                     " a GET or POST to the callbackURL with the jobId, externalId, and outputObjectUri parameters." +
-                    " \n\nFor example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is '1'," +
+                    " \n\nFor example, if the callbackURL provided is 'http://api.example.com/foo', the jobId is 'hostname-1'," +
                     " and the externalId is 'someid', then a GET callback will be: " +
-                    " http://api.example.com/foo?jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
+                    " http://api.example.com/foo?jobid=hostname-1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nIf callbackURL ends in 'foo?someparam=something', then a GET callback will be:" +
-                    " http://api.example.com/foo?someparam=something&jobid=1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json. " +
+                    " http://api.example.com/foo?someparam=something&jobid=hostname-1&externalid=someid&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json. " +
                     " \n\nIf no externalId is provided, then a GET callback will be:" +
-                    " http://api.example.com/foo?jobid=1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
+                    " http://api.example.com/foo?jobid=hostname-1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nThe body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +
                     " \n\nAn optional jobProperties object contains String key-value pairs which override the pipeline's" +
@@ -128,6 +128,7 @@ public class JobController {
                     " jobProperties for a specific algorithm defined in the pipeline." +
                     " \nFor algorithmProperties, the key should be the algorithm name, and the value should be a" +
                     " Map of String key-value pairs representing properties specific to the named algorithm." +
+                    " \n\nThe job id is a string consisting of the hostname where the job was run plus the numeric job id used internally by OpenMPF." +
                     " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " \nAlso, note that all provided URIs must be properly encoded." +
@@ -254,9 +255,10 @@ public class JobController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
-    public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") long jobId) {
-        try (var mdc = CloseableMdc.job(jobId)) {
-            JobRequest jobRequest = jobRequestDao.findById(jobId);
+    public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        try (var mdc = CloseableMdc.job(internalJobId)) {
+            JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null) {
                 log.error("getJobStatusRest: Error retrieving the SingleJobInfo model for the job " +
                                   "with id '{}'", jobId);
@@ -269,14 +271,15 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}", method = RequestMethod.GET)
     @ResponseBody
-    public SingleJobInfo getJobStatus(@PathVariable("id") long jobId,
+    public SingleJobInfo getJobStatus(@PathVariable("id") String jobId,
                                       @RequestParam(value = "useSession", required = false) boolean useSession) {
-        try (var mdc = CloseableMdc.job(jobId)) {
-            if (useSession && !sessionModel.getSessionJobs().contains(jobId)) {
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+            try (var mdc = CloseableMdc.job(internalJobId)) {
+            if (useSession && !sessionModel.getSessionJobs().contains(internalJobId)) {
                 return null;
             }
 
-            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null) {
                 log.error("getJobStatus: Error retrieving the SingleJobInfo model for the job " +
                                   "with id '{}'", jobId);
@@ -298,10 +301,11 @@ public class JobController {
             @ApiResponse(code = 200, message = "Successful response"),
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
-    public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) throws IOException {
-        try (var mdc = CloseableMdc.job(jobId)) {
+    public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) throws IOException {
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        try (var mdc = CloseableMdc.job(internalJobId)) {
             //return 200 for successful GET and object; 404 for bad id
-            JobRequest jobRequest = jobRequestDao.findById(jobId);
+            JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null || jobRequest.getOutputObjectPath() == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -359,8 +363,15 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId,
+    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String exportedJobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
+        long jobId;
+        try {
+            jobId = propertiesUtil.getJobIdFromExportedId(exportedJobId);
+        } catch (NumberFormatException e) {
+            log.error("Failed to parse jobId in resubmit request: {}", exportedJobId);
+            return new ResponseEntity<>(new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, "Error parsing Job Id = "+exportedJobId), HttpStatus.BAD_REQUEST);
+        }
         try (var mdc = CloseableMdc.job(jobId)) {
             JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
             if (resubmitResponse.getMpfResponse()
@@ -378,11 +389,12 @@ public class JobController {
     @RequestMapping(value = "/jobs/{id}/resubmit", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public JobCreationResponse resubmitJob(@PathVariable("id") long jobId,
+    public JobCreationResponse resubmitJob(@PathVariable("id") String jobId,
                                            @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        try (var mdc = CloseableMdc.job(jobId)) {
-            JobCreationResponse response = resubmitJobInternal(jobId, jobPriorityParam);
-            sessionModel.getSessionJobs().add(response.getJobId());
+        long realJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        try (var mdc = CloseableMdc.job(realJobId)) {
+            JobCreationResponse response = resubmitJobInternal(realJobId, jobPriorityParam);
+            sessionModel.getSessionJobs().add(propertiesUtil.getJobIdFromExportedId(response.getJobId()));
             return response;
         }
     }
@@ -427,8 +439,9 @@ public class JobController {
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
             }
+            String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
             // the job request has been successfully parsed, construct the job creation response
-            return new JobCreationResponse(jobId);
+            return new JobCreationResponse(exportedJobId);
         }
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
@@ -479,7 +492,7 @@ public class JobController {
             }
 
             return new SingleJobInfo(
-                    job.getId(),
+                    propertiesUtil.getHostName()+"-"+job.getId(),
                     job.getPipeline(),
                     job.getPriority(),
                     job.getStatus().toString(),
@@ -504,7 +517,8 @@ public class JobController {
             //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
-            return new JobCreationResponse(jobId);
+            String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+            return new JobCreationResponse(exportedJobId);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);

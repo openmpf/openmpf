@@ -269,7 +269,10 @@ public class PropertiesUtil {
                 () -> System.getenv("HOSTNAME"));
     }
 
-
+    public long getJobIdFromExportedId(String exportedId) {
+        String[] tokens = exportedId.split("-");
+        return Long.parseLong(tokens[tokens.length-1]);
+    }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {
         return mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");

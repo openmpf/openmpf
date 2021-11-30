@@ -412,13 +412,14 @@ public class JobController {
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<MpfResponse> cancelJobRest(
-            @ApiParam(required = true, value = "Job id") @PathVariable("id") long jobId) {
-        try (var mdc = CloseableMdc.job(jobId)) {
-            MpfResponse mpfResponse = cancelJobInternal(jobId);
+            @ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) {
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        try (var mdc = CloseableMdc.job(internalJobId)) {
+            MpfResponse mpfResponse = cancelJobInternal(internalJobId);
             if (mpfResponse.getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
                 return new ResponseEntity<>(mpfResponse, HttpStatus.OK);
             } else {
-                log.error("Error cancelling job with id '{}'", jobId);
+                log.error("Error cancelling job with id '{}'", internalJobId);
                 return new ResponseEntity<>(mpfResponse, HttpStatus.BAD_REQUEST);
             }
         }
@@ -428,8 +429,9 @@ public class JobController {
     @RequestMapping(value = "/jobs/{id}/cancel", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public MpfResponse cancelJob(@PathVariable("id") long jobId) {
-        return MdcUtil.job(jobId, () -> cancelJobInternal(jobId));
+    public MpfResponse cancelJob(@PathVariable("id") String jobId) {
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        return MdcUtil.job(internalJobId, () -> cancelJobInternal(internalJobId));
     }
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
@@ -539,7 +541,7 @@ public class JobController {
             log.debug("Successful cancellation of job with id: {}", jobId);
             return new MpfResponse(MpfResponse.RESPONSE_CODE_SUCCESS, null);
         }
-        String errorStr = "Failed to cancel the job with id '" + Long.toString(jobId) + "'. Please check to make sure the job exists before submitting a cancel request. "
+        String errorStr = "Failed to cancel the job with id '" + jobId + "'. Please check to make sure the job exists before submitting a cancel request. "
                 + "Also consider checking the server logs for more information on this error.";
         log.error(errorStr);
         return new MpfResponse(MpfResponse.RESPONSE_CODE_ERROR, errorStr);

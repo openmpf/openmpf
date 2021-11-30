@@ -138,9 +138,10 @@ public class TestStorageService {
     @Test
     public void outputObjectGetsStoredLocallyWhenBackendException() throws IOException, StorageException {
         long jobId = 867;
+        String exportedJobId = "localhost-867";
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
-                .thenReturn(jobId);
+                .thenReturn(exportedJobId);
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
         setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
 
@@ -163,9 +164,10 @@ public class TestStorageService {
     @Test
     public void outputObjectGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
         long jobId = 869;
+        String exportedJobId = "localhost-869";
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
-                .thenReturn(jobId);
+                .thenReturn(exportedJobId);
 
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
         setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
@@ -190,9 +192,10 @@ public class TestStorageService {
     @Test
     public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
         long jobId = 598;
+        String exportedJobId = "localhost-598";
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
-                .thenReturn(jobId);
+                .thenReturn(exportedJobId);
         SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
         setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
 

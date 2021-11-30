@@ -993,7 +993,7 @@ public class ITWebREST {
 			String postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
 			JSONObject obj = new JSONObject(postResponseJson);
-			long jobId = obj.getLong("jobId");
+			String jobId = obj.getString("jobId");
 
 			//wait for it to callback
 			log.info("Waiting for POST callback...");
@@ -1012,7 +1012,7 @@ public class ITWebREST {
 			postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
 			obj = new JSONObject(postResponseJson);
-			jobId =  obj.getLong("jobId");
+			jobId =  obj.getString("jobId");
 
 			//wait for it to callback
 			log.info("Waiting for GET callback...");
@@ -1053,7 +1053,7 @@ public class ITWebREST {
 
 		Spark.get("/callback", (request, resp) -> {
 			try {
-			    long jobId = Long.parseLong(request.queryParams("jobid"));
+			    String jobId = request.queryParams("jobid");
 				log.info("Spark received GET callback with url: " + request.url() + '?' + request.queryString());
 
 				JsonCallbackBody callbackBody = new JsonCallbackBody(

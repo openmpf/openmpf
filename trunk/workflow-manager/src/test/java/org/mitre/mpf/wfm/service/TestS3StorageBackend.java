@@ -255,9 +255,10 @@ public class TestS3StorageBackend {
 
     private JsonOutputObject setJobProperties(Map<String, String> properties) {
         long jobId = 123;
+        String exportedJobId = "localhost-123";
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
-                .thenReturn(jobId);
+                .thenReturn(exportedJobId);
 
         var mockJob = mock(BatchJob.class);
         when(mockJob.getJobProperties())

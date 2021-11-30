@@ -37,8 +37,8 @@ public class JsonOutputObject {
 
     @JsonProperty("jobId")
     @JsonPropertyDescription("The unique identifier assigned to this job by the system.")
-    private long jobId;
-    public long getJobId() { return jobId; }
+    private String jobId;
+    public String getJobId() { return jobId; }
 
     @JsonProperty("priority")
     @JsonPropertyDescription("The relative priority of this job given as a value between 1 and 9 (inclusive).")
@@ -120,7 +120,7 @@ public class JsonOutputObject {
 
 
 
-    public JsonOutputObject(long jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
+    public JsonOutputObject(String jobId, String objectId, JsonPipeline pipeline, int priority, String siteId,
                             String openmpfVersion, String externalJobId, Instant timeStart, Instant timeStop, String status) {
         this.jobId = jobId;
         this.objectId = objectId;
@@ -142,7 +142,7 @@ public class JsonOutputObject {
 
     @JsonCreator
     public static JsonOutputObject factory(
-            @JsonProperty("jobId") long jobId,
+            @JsonProperty("jobId") String jobId,
             @JsonProperty("objectId") String objectId,
             @JsonProperty("pipeline") JsonPipeline pipeline,
             @JsonProperty("priority") int priority,

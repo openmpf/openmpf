@@ -1023,6 +1023,7 @@ public class ITWebREST {
 			// attempts have been made.
 			// GET and POST both use the same code to handle callback failures.
 			JsonCallbackBody getCallbackContent = getCallbackResult.get();
+			log.info("jobId = " + jobId + " callback job id = " +getCallbackContent.getJobId());
 			Assert.assertEquals(jobId, getCallbackContent.getJobId());
 			Assert.assertEquals(externalId, getCallbackContent.getExternalId());
 

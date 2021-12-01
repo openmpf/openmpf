@@ -30,7 +30,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JsonCallbackBody {
-    /** The internal identifier assigned to this job by MPF. */
+    /** The identifier assigned to this job by MPF. */
     private final String _jobId;
     public String getJobId() { return _jobId; }
 

@@ -48,6 +48,7 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,10 @@ public class TestWfmEndToEnd {
 
 	@Autowired
 	private JobRequestDao jobRequestDao;
+
+	@Autowired
+	private PropertiesUtil propertiesUtil;
+
 
 	@Autowired
 	@Qualifier(JobCompleteProcessorImpl.REF)
@@ -177,14 +182,17 @@ public class TestWfmEndToEnd {
 		JobRequest jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
-		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
+		Assert.assertNotNull(jobRequest.getOutputObjectPath());
 
 		Path outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);
 		Assert.assertNotNull(outputObjectPath);
 		Assert.assertTrue(Files.exists(outputObjectPath));
 
 		JsonOutputObject jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
-		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
+		long internalJobId = propertiesUtil.getJobIdFromExportedId(jsonOutputObject.getJobId());
+		Assert.assertEquals(internalJobId, jobId);
+		String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+		Assert.assertEquals(exportedJobId, jsonOutputObject.getJobId());
 		Instant start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
 
@@ -199,14 +207,17 @@ public class TestWfmEndToEnd {
 		jobRequest = jobRequestDao.findById(jobId);
 
 		Assert.assertEquals(BatchJobStatusType.COMPLETE, jobRequest.getStatus());
-		Assert.assertTrue(jobRequest.getOutputObjectPath() != null);
+		Assert.assertNotNull(jobRequest.getOutputObjectPath());
 
 		outputObjectPath = IoUtils.toLocalPath(jobRequest.getOutputObjectPath()).orElse(null);
 		Assert.assertNotNull(outputObjectPath);
 		Assert.assertTrue(Files.exists(outputObjectPath));
 
 		jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
-		Assert.assertEquals(jsonOutputObject.getJobId(), jobId);
+		internalJobId = propertiesUtil.getJobIdFromExportedId(jsonOutputObject.getJobId());
+		Assert.assertEquals(internalJobId, jobId);
+		exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+		Assert.assertEquals(exportedJobId, jsonOutputObject.getJobId());
 		Assert.assertNotEquals(jsonOutputObject.getTimeStart(), start);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStop(), stop);
 
@@ -224,7 +235,7 @@ public class TestWfmEndToEnd {
 
 		camelContext.createProducerTemplate().sendBodyAndHeader(MpfEndpoints.COMPLETED_DETECTIONS, ExchangePattern.InOnly, targetResponse.toByteArray(), MpfHeaders.JOB_ID, jobId);
 		Exchange exchange = camelContext.createConsumerTemplate().receive(MpfEndpoints.UNSOLICITED_MESSAGES + "?selector=" + MpfHeaders.JOB_ID + "%3D" + jobId, 10000);
-		Assert.assertTrue("The unsolicited response was not properly detected.", exchange != null);
+		Assert.assertNotNull("The unsolicited response was not properly detected.", exchange);
 		DetectionProtobuf.DetectionResponse receivedResponse = DetectionProtobuf.DetectionResponse.parseFrom(exchange.getIn().getBody(byte[].class));
 		Assert.assertEquals(targetResponse.getMediaId(), receivedResponse.getMediaId());
 		Assert.assertEquals(targetResponse.getRequestId(), receivedResponse.getRequestId());

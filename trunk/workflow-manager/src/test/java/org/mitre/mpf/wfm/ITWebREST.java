@@ -442,7 +442,7 @@ public class ITWebREST {
 		log.info("[test_Jobs_SerializedOutput] - {} - json: {}", outputObjectType,
 				json.toString());
 		if(outputObjectType.equals("detection")) {
-			Assert.assertSame(json.get("jobId"), completeJobId);
+			Assert.assertTrue(Objects.equals(json.get("jobId"), completeJobId));
 			Assert.assertTrue(((String) json.get("objectId")).length() > 0);
 			Assert.assertTrue(((String) json.get("timeStart")).length() > 0);
 			org.json.simple.JSONObject pipeline = (org.json.simple.JSONObject) json.get("pipeline");
@@ -1002,8 +1002,10 @@ public class ITWebREST {
 			Assert.assertEquals(externalId, postCallbackContent.getExternalId());
 
 			Assert.assertTrue(postCallbackContent.getOutputObjectUri().startsWith("file:///"));
+			String[] tokens = jobId.split("-");
+			long internalJobId = Long.parseLong(tokens[tokens.length-1]);
 			Assert.assertTrue(postCallbackContent.getOutputObjectUri().endsWith(
-					String.format("output-objects/%s/detection.json", jobId)));
+					String.format("output-objects/%s/detection.json", internalJobId)));
 
 			//test GET
 			params.put("callbackMethod","GET");

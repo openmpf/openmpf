@@ -125,6 +125,9 @@ public class TestCustomNginxStorageBackend {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
 
+        when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_JOB_ID))
+                .thenReturn(TEST_INTERNAL_JOB_ID);
+
         setStorageUri(SERVICE_URI.toString());
 
         BAD_PATH_POST_COUNT.set(0);

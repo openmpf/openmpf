@@ -1028,8 +1028,10 @@ public class ITWebREST {
 			Assert.assertEquals(externalId, getCallbackContent.getExternalId());
 
 			Assert.assertTrue(getCallbackContent.getOutputObjectUri().startsWith("file:///"));
+			tokens = jobId.split("-");
+			internalJobId = Long.parseLong(tokens[tokens.length-1]);
 			Assert.assertTrue(getCallbackContent.getOutputObjectUri().endsWith(
-					String.format("output-objects/%s/detection.json", jobId)));
+					String.format("output-objects/%s/detection.json", internalJobId)));
 
 			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
 			                                                         WebRESTUtils.MPF_AUTHORIZATION));

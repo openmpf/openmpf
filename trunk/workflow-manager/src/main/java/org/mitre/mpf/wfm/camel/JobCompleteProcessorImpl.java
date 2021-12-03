@@ -260,7 +260,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
                 .build();
 
-        String exportedJobId = propertiesUtil.getHostName() + job.getId();
+        String exportedJobId = propertiesUtil.getHostName() + "-" + job.getId();
 
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)

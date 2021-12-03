@@ -260,9 +260,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
                 .build();
 
+        String exportedJobId = propertiesUtil.getHostName() + job.getId();
+
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
-                    .setParameter("jobid", String.valueOf(job.getId()));
+                    .setParameter("jobid", exportedJobId);
 
             job.getExternalId()
                     .ifPresent(id -> callbackUriWithParamsBuilder.setParameter("externalid", id));
@@ -283,7 +285,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 ? null
                 : outputObjectUri.toString();
 
-        String exportedJobId = propertiesUtil.getHostName() + "-" + job.getId();
         JsonCallbackBody jsonBody = new JsonCallbackBody(
                 exportedJobId, job.getExternalId().orElse(null), outputObjectUriString);
 

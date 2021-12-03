@@ -256,7 +256,14 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        long internalJobId;
+        try {
+            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        } catch (NumberFormatException e) {
+            log.error("Failed to parse jobId in job status request: {}", jobId);
+            return ResponseEntity.badRequest().body(null);
+        }
+
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null) {
@@ -273,8 +280,15 @@ public class JobController {
     @ResponseBody
     public SingleJobInfo getJobStatus(@PathVariable("id") String jobId,
                                       @RequestParam(value = "useSession", required = false) boolean useSession) {
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-            try (var mdc = CloseableMdc.job(internalJobId)) {
+        long internalJobId;
+        try {
+            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        } catch (NumberFormatException e) {
+            log.error("Failed to parse jobId in job status request: {}", jobId);
+            return null;
+        }
+
+        try (var mdc = CloseableMdc.job(internalJobId)) {
             if (useSession && !sessionModel.getSessionJobs().contains(internalJobId)) {
                 return null;
             }
@@ -302,7 +316,14 @@ public class JobController {
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) throws IOException {
-        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        long internalJobId;
+        try {
+            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        }
+        catch (NumberFormatException e) {
+            log.error("Failed to parse jobId in get serialized detection output request: {}", jobId);
+            return ResponseEntity.badRequest().body(null);
+        }
         try (var mdc = CloseableMdc.job(internalJobId)) {
             //return 200 for successful GET and object; 404 for bad id
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -345,8 +366,16 @@ public class JobController {
 
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
-    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) long idParam) {
-        return MdcUtil.job(idParam, () ->
+    public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam) {
+        long internalJobId;
+        try {
+            internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
+        }
+        catch (NumberFormatException e) {
+            log.error("Failed to parse jobId in get output object request: {}", idParam);
+            return null;
+        }
+        return MdcUtil.job(internalJobId, () ->
                 new ModelAndView("output_object", "jobId", idParam));
     }
 
@@ -363,17 +392,17 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String exportedJobId,
+    public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        long jobId;
+        long internalJobId;
         try {
-            jobId = propertiesUtil.getJobIdFromExportedId(exportedJobId);
+            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         } catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in resubmit request: {}", exportedJobId);
-            return new ResponseEntity<>(new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, "Error parsing Job Id = "+exportedJobId), HttpStatus.BAD_REQUEST);
+            log.error("Failed to parse jobId in resubmit request: {}", jobId);
+            return new ResponseEntity<>(new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, "Error parsing Job Id = "+jobId), HttpStatus.BAD_REQUEST);
         }
-        try (var mdc = CloseableMdc.job(jobId)) {
-            JobCreationResponse resubmitResponse = resubmitJobInternal(jobId, jobPriorityParam);
+        try (var mdc = CloseableMdc.job(internalJobId)) {
+            JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
             if (resubmitResponse.getMpfResponse()
                     .getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
                 return new ResponseEntity<>(resubmitResponse, HttpStatus.OK);

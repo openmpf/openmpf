@@ -46,14 +46,14 @@ public class MpfPropertiesConfigurationBuilder {
 
     private static final Collection<String> MUTABLE_PREFIXES = ImmutableList.of(
             "detection.",
-            "http.callback",
+            "http.callback.retries",
             "http.object.storage.",
+            "http.callback.timeout.ms",
             "mpf.output.objects.",
             "node.auto.",
             "remote.media.download.",
             "web.broadcast.job.status.enabled",
             "web.job.polling.interval",
-            "http.callback.timeout.ms",
             "warn.",
             "markup.",
             "ties.db.url"

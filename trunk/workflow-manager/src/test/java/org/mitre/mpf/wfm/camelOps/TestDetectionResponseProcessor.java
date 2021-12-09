@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import io.swagger.models.auth.In;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;

@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.segmenting;
 import com.google.common.collect.*;
 import org.mitre.mpf.wfm.util.TimePair;
 
-import java.util.List;
 
 public class SegmentingPlan {
 	/** The preferred length of a segment. This must be at least 1. */

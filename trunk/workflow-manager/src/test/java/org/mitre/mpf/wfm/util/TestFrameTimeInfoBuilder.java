@@ -125,7 +125,7 @@ public class TestFrameTimeInfoBuilder {
             assertTrue("frame " + i,
                        Math.abs(ffmpegTimes[i] - timeInfo.getTimeMsFromFrame(i)) <= 1);
             assertTrue("time " + ffmpegTimes[i],
-                    Math.abs(timeInfo.getFrameFromTimeMs(ffmpegTimes[i]) - i) < 1);
+                       i - timeInfo.getFrameFromTimeMs(ffmpegTimes[i] ) <= 1);
         }
     }
 

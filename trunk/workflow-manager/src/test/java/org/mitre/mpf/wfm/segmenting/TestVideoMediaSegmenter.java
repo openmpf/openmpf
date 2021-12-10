@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.TimePair;
 
 import java.net.URI;
@@ -316,6 +317,8 @@ public class TestVideoMediaSegmenter {
                 Map.of(), frameBoundaries, timeBoundaries, null);
         media.setLength(200);
         media.addMetadata("FPS", "29.97");
+        media.setFrameTimeInfo(
+                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), 29.97));
         return media;
     }
 

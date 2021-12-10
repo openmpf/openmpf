@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.Message;
@@ -33,15 +34,13 @@ import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.TimePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import com.google.common.collect.Range;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -98,7 +97,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             // than the length of the video.
             double fps = Double.parseDouble(media.getMetadata("FPS"));
             int msecPerFrame = (int)(1000/fps);
-            var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), fps);
+            var info = media.getFrameTimeInfo();
             RangeSet<Integer> boundedRanges = TreeRangeSet.create();
             for (TimePair tp : media.getSegmentTimeBoundaries()) {
                 int adjustedStartMs = ((tp.getStartInclusive() - msecPerFrame) >= 0) ? (tp.getStartInclusive() - msecPerFrame) : tp.getStartInclusive();

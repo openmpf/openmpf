@@ -26,15 +26,28 @@
 
 package org.mitre.mpf.rest.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
 public class JobCreationMediaData {
 
+    private String mediaUri;
+
+    private Map<String, String> properties = new HashMap<>();
+
+    private Map<String, String> metadata = new HashMap<>();
+
+    private List<JobCreationSegmentBoundary> segmentFrameBoundaries = new ArrayList<>();
+
+    private List<JobCreationSegmentBoundary> segmentTimeBoundaries = new ArrayList<>();
+
     public JobCreationMediaData() {}
+
     public JobCreationMediaData(String uri) {
-        this.mediaUri=uri;
+        this.mediaUri = uri;
     }
 
     public String getMediaUri() {
@@ -44,9 +57,6 @@ public class JobCreationMediaData {
     public void setMediaUri(String mediaUri) {
         this.mediaUri = mediaUri;
     }
-
-    private String mediaUri;
-
 
     public Map<String, String> getProperties() {
         return properties;
@@ -64,8 +74,19 @@ public class JobCreationMediaData {
         this.metadata = metadata;
     }
 
-    private Map<String, String> properties = new HashMap<>();
+    public List<JobCreationSegmentBoundary> getSegmentFrameBoundaries() {
+        return segmentFrameBoundaries;
+    }
 
-    private Map<String, String> metadata = new HashMap<>();
+    public void setSegmentFrameBoundaries(List<JobCreationSegmentBoundary> segments) {
+        this.segmentFrameBoundaries = segments;
+    }
 
+    public List<JobCreationSegmentBoundary> getSegmentTimeBoundaries() {
+        return segmentTimeBoundaries;
+    }
+
+    public void setSegmentTimeBoundaries(List<JobCreationSegmentBoundary> segments) {
+        this.segmentTimeBoundaries = segments;
+    }
 }

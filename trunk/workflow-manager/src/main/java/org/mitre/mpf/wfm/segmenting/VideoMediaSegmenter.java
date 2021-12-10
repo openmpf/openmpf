@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.Range;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
@@ -55,10 +56,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            if (context.getSegmentingPlan().hasSegmentBoundaries) {
-                List<TimePair> segments = getSegmentBoundaries(context, media);
+            if (!media.getSegmentFrameBoundaries().isEmpty()
+                    || !media.getSegmentTimeBoundaries().isEmpty()) {
+                List<TimePair> segments = getSegmentBoundaries(media);
                 return createTimePairMessages(media, context, segments);
-            } else {
+            }
+            else {
                 return createTimePairMessages(
                         media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
             }
@@ -72,34 +75,38 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
     }
 
-    private static List<TimePair> getSegmentBoundaries(DetectionContext context, Media media) {
+    private static List<TimePair> getSegmentBoundaries(Media media) {
         List<TimePair> segments = new ArrayList<>();
-        if ((context.getSegmentingPlan().getSegmentFrameBoundaries() != null) &&
-            (!context.getSegmentingPlan().getSegmentFrameBoundaries().isEmpty())) {
+        if ((media.getSegmentFrameBoundaries() != null) &&
+            (!media.getSegmentFrameBoundaries().isEmpty())) {
             // Ensure that the span of the RangeSet is no greater than the length of the video. This could occur if a
             // user-specified segment end boundary is beyond the end of the video.
-            RangeSet<Integer> boundedRanges = context.getSegmentingPlan()
+            var ranges = media
                     .getSegmentFrameBoundaries()
-                    .subRangeSet(Range.closed(0, media.getLength()-1));
+                    .stream()
+                    .map(tp -> Range.closed(tp.getStartInclusive(), tp.getEndInclusive()))
+                    .collect(Collectors.toList());
+            var boundedRanges = TreeRangeSet.create(ranges)
+                    .subRangeSet(Range.closed(0, media.getLength() - 1));
             for (Range<Integer> r : boundedRanges.asRanges()) {
                 segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
             }
         }
-        else if ((context.getSegmentingPlan().getSegmentTimeBoundaries() != null) &&
-            (!context.getSegmentingPlan().getSegmentTimeBoundaries().isEmpty())) {
+        else if ((media.getSegmentTimeBoundaries() != null) &&
+            (!media.getSegmentTimeBoundaries().isEmpty())) {
             // Convert time boundaries to frame boundaries, and ensure the span of the frame boundaries is no greater
             // than the length of the video.
             double fps = Double.parseDouble(media.getMetadata("FPS"));
             int msecPerFrame = (int)(1000/fps);
             var info = FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), fps);
             RangeSet<Integer> boundedRanges = TreeRangeSet.create();
-            for (Range<Integer> r : context.getSegmentingPlan().getSegmentTimeBoundaries().asRanges()) {
-                // getFrameFromTimeMs rounds its result, so we need to adjust the times to make sure they are inclusive.
-                int adjustedStartMs = ((r.lowerEndpoint() - msecPerFrame) >= 0) ? (r.lowerEndpoint() - msecPerFrame) : r.lowerEndpoint();
+            for (TimePair tp : media.getSegmentTimeBoundaries()) {
+                int adjustedStartMs = ((tp.getStartInclusive() - msecPerFrame) >= 0) ? (tp.getStartInclusive() - msecPerFrame) : tp.getStartInclusive();
                 var start = info.getFrameFromTimeMs(adjustedStartMs);
-                var stop = info.getFrameFromTimeMs(r.upperEndpoint() + msecPerFrame);
+                var stop = info.getFrameFromTimeMs(tp.getEndInclusive() + msecPerFrame);
                 boundedRanges.add(Range.closed(start, stop));
             }
+
             boundedRanges = boundedRanges.subRangeSet(Range.closed(0, media.getLength()-1));
             for (Range<Integer> r : boundedRanges.asRanges()) {
                 segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
@@ -107,6 +114,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
         return segments;
     }
+
     private static List<Message> createTimePairMessages(
             Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
 

@@ -111,29 +111,16 @@ public class JobRequestServiceImpl implements JobRequestService {
     public JobRequest run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties(), m.getMetadata()))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getMediaUri(),
+                        m.getProperties(),
+                        m.getMetadata(),
+                        convertSegmentBoundaries(m.getSegmentFrameBoundaries()),
+                        convertSegmentBoundaries(m.getSegmentTimeBoundaries())))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
-
-        List<TimePair> jobSegmentFrameBoundaries = new ArrayList<>();
-        List<TimePair> jobSegmentTimeBoundaries = new ArrayList<>();
-
-        if ((!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) &&
-                (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty())) {
-            LOG.warn("Both frame and time segment boundaries were provided: using frame boundaries for this job");
-        }
-        if (!jobCreationRequest.getSegmentFrameBoundaries().isEmpty()) {
-            for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentFrameBoundaries()) {
-                jobSegmentFrameBoundaries.add(new TimePair(b.getStart(), b.getStop()));
-            }
-        }
-        else if (!jobCreationRequest.getSegmentTimeBoundaries().isEmpty()) {
-            for (JobCreationSegmentBoundary b : jobCreationRequest.getSegmentTimeBoundaries()) {
-                jobSegmentTimeBoundaries.add(new TimePair(b.getStart(), b.getStop()));
-            }
-        }
 
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
@@ -141,8 +128,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                 media,
                 jobCreationRequest.getJobProperties(),
                 jobCreationRequest.getAlgorithmProperties(),
-                jobSegmentFrameBoundaries,
-                jobSegmentTimeBoundaries,
                 jobCreationRequest.getExternalId(),
                 priority,
                 jobCreationRequest.getCallbackURL(),
@@ -153,7 +138,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             return jobRequestEntity;
         }
     }
-
 
 
     @Override
@@ -172,7 +156,12 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties(), m.getProvidedMetadata()))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getUri(),
+                        m.getMediaSpecificProperties(),
+                        m.getProvidedMetadata(),
+                        m.getSegmentFrameBoundaries(),
+                        m.getSegmentTimeBoundaries()))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -181,8 +170,6 @@ public class JobRequestServiceImpl implements JobRequestService {
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
-                    originalJob.getSegmentFrameBoundaries(),
-                    originalJob.getSegmentTimeBoundaries(),
                     originalJob.getExternalId().orElse(null),
                     priority > 0 ? priority : originalJob.getPriority(),
                     originalJob.getCallbackUrl().orElse(null),
@@ -199,14 +186,21 @@ public class JobRequestServiceImpl implements JobRequestService {
     }
 
 
+    private static List<TimePair> convertSegmentBoundaries(
+            Collection<JobCreationSegmentBoundary> segmentBoundaries) {
+        return segmentBoundaries
+                .stream()
+                .map(b -> new TimePair(b.getStart(), b.getStop()))
+                .collect(ImmutableList.toImmutableList());
+    }
+
+
     private JobRequest initialize(
             JobRequest jobRequestEntity,
             String pipelineName,
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
-            Collection<TimePair> segmentFrameBoundaries,
-            Collection<TimePair> segmentTimeBoundaries,
             String externalId,
             int priority,
             String callbackUrl,
@@ -247,9 +241,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                     callbackMethod,
                     media,
                     jobProperties,
-                    overriddenAlgoProps,
-                    segmentFrameBoundaries,
-                    segmentTimeBoundaries);
+                    overriddenAlgoProps);
 
             try {
                 jobRequestEntity.setId(jobId);

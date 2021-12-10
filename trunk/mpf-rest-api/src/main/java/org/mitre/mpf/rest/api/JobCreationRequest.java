@@ -32,9 +32,6 @@ public class JobCreationRequest {
 	private List<JobCreationMediaData> media = new LinkedList<>();
 	private Map<String, String> jobProperties = new HashMap<>();
 	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
-	// One or the other of these segment boundary lists will be set, not both.
-	private List<JobCreationSegmentBoundary> segmentFrameBoundaries = new ArrayList<>();
-	private List<JobCreationSegmentBoundary> segmentTimeBoundaries = new ArrayList<>();
 	private String externalId = null;
 	private String pipelineName = null;
 	private Boolean buildOutput = null; //will use a server side property if null
@@ -63,12 +60,6 @@ public class JobCreationRequest {
 	public void setAlgorithmProperties(Map<String, Map<String, String>> algorithmProperties) {
 		this.algorithmProperties = algorithmProperties;
 	}
-
-	public List<JobCreationSegmentBoundary> getSegmentFrameBoundaries() { return segmentFrameBoundaries; }
-	public void setSegmentFrameBoundaries(List<JobCreationSegmentBoundary> segments) { this.segmentFrameBoundaries = segments; }
-
-	public List<JobCreationSegmentBoundary> getSegmentTimeBoundaries() { return segmentTimeBoundaries; }
-	public void setSegmentTimeBoundaries(List<JobCreationSegmentBoundary> segments) { this.segmentTimeBoundaries = segments; }
 
 	public String getExternalId() {
 		return externalId;

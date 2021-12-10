@@ -139,14 +139,6 @@ public class DetectionTaskSplitter {
                         segmentingPlan = createSegmentingPlan(
                                 job.getSystemPropertiesSnapshot(), combinedProperties, media);
                     }
-                    if (isFirstDetectionTask) {
-                        if (!job.getSegmentFrameBoundaries().isEmpty()) {
-                            segmentingPlan.addSegmentFrameBoundaries(job.getSegmentFrameBoundaries());
-                        }
-                        else if (!job.getSegmentTimeBoundaries().isEmpty()) {
-                            segmentingPlan.addSegmentTimeBoundaries(job.getSegmentTimeBoundaries());
-                        }
-                    }
 
                     List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty> algorithmProperties
                             = convertPropertiesMapToAlgorithmPropertiesList(combinedProperties);

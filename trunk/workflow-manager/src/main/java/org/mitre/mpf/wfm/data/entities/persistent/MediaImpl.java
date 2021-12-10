@@ -29,18 +29,17 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.TimePair;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MediaImpl implements Media {
 
@@ -155,6 +154,17 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
+    private final ImmutableList<TimePair> _segmentFrameBoundaries;
+    @Override
+    public ImmutableList<TimePair> getSegmentFrameBoundaries() {
+        return _segmentFrameBoundaries;
+    }
+
+    private final ImmutableList<TimePair> _segmentTimeBoundaries;
+    @Override
+    public ImmutableList<TimePair> getSegmentTimeBoundaries() {
+        return _segmentTimeBoundaries;
+    }
 
     public MediaImpl(
             long id,
@@ -163,6 +173,8 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
+            Collection<TimePair> segmentFrameBoundaries,
+            Collection<TimePair> segmentTimeBoundaries,
             String errorMessage) {
         _id = id;
         _uri = IoUtils.normalizeUri(uri);
@@ -170,6 +182,9 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
+        _segmentFrameBoundaries = ImmutableList.copyOf(segmentFrameBoundaries);
+        _segmentTimeBoundaries = ImmutableList.copyOf(segmentTimeBoundaries);
+
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
@@ -186,8 +201,18 @@ public class MediaImpl implements Media {
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
-            @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("segmentFrameBoundaries") Collection<TimePair> segmentFrameBoundaries,
+            @JsonProperty("segmentTimeBoundaries") Collection<TimePair> segmentTimeBoundaries) {
+        this(id,
+             uri,
+             uriScheme,
+             localPath,
+             mediaSpecificProperties,
+             providedMetadata,
+             segmentFrameBoundaries,
+             segmentTimeBoundaries,
+             errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -200,9 +225,15 @@ public class MediaImpl implements Media {
         }
 
         MediaImpl result = new MediaImpl(
-                originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
-                originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
+                originalMedia.getId(),
+                originalMedia.getUri(),
+                originalMedia.getUriScheme(),
+                originalMedia.getLocalPath(),
+                originalMedia.getMediaSpecificProperties(),
+                originalMedia.getProvidedMetadata(),
+                originalMedia.getSegmentFrameBoundaries(),
+                originalMedia.getSegmentFrameBoundaries(),
+                originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());

@@ -67,7 +67,7 @@ public class TestMediaInspectionSplitter {
 
 
     @Test
-    public void testMediaInspectionSplitter() throws Exception {
+    public void testMediaInspectionSplitter() {
         final long jobId = 54328;
 
         var inMessage = new DefaultMessage();
@@ -81,7 +81,8 @@ public class TestMediaInspectionSplitter {
         long testMediaId = 123456;
         URI testURI = TestUtil.findFile("/samples/new_face_video.avi");
         var testMedia = new MediaImpl(
-                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(), Map.of(), null);
+                testMediaId, testURI.toString(), UriScheme.FILE, Paths.get(testURI), Map.of(),
+                Map.of(), List.of(), List.of(),null);
 
         var testJob = new BatchJobImpl(
                 jobId,

@@ -191,7 +191,8 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
 
         URI mediaUri = ioUtils.findFile(filePath);
-        Media media = inProgressJobs.initMedia(mediaUri.toString(), Collections.emptyMap(), Collections.emptyMap());
+        Media media = inProgressJobs.initMedia(mediaUri.toString(), Map.of(), Map.of(), List.of(),
+                                               List.of());
         long mediaId = media.getId();
 
         inProgressJobs.addJob(
@@ -202,11 +203,9 @@ public class TestTrackMergingProcessor {
                 priority,
                 null,
                 null,
-                Collections.singletonList(media),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                List.of(),
-                List.of());
+                List.of(media),
+                Map.of(),
+                Map.of());
 
         inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, mimeType, 1,
                                               Collections.emptyMap());
@@ -279,8 +278,8 @@ public class TestTrackMergingProcessor {
         SystemPropertiesSnapshot systemPropertiesSnapshot = propertiesUtil.createSystemPropertiesSnapshot();
         URI mediaUri = ioUtils.findFile("/samples/video_01.mp4");
         Media media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                Map.of(), Map.of(), List.of(), List.of(), null);
 
         inProgressJobs.addJob(
                 TEST_JOB_ID,
@@ -292,9 +291,7 @@ public class TestTrackMergingProcessor {
                 null,
                 Collections.singletonList(media),
                 Collections.emptyMap(),
-                Collections.emptyMap(),
-                List.of(),
-                List.of());
+                Collections.emptyMap());
 
         SortedSet<Track> tracks = new TreeSet<>();
 

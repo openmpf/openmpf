@@ -34,12 +34,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.util.TextUtils;
-import org.mitre.mpf.wfm.util.TimePair;
 
 import java.util.*;
 import java.util.function.Function;
@@ -99,14 +97,6 @@ public class BatchJobImpl implements BatchJob {
     private final ImmutableMap<String, String> _jobProperties;
     @Override
     public ImmutableMap<String, String> getJobProperties() { return _jobProperties; }
-
-    private final ImmutableSortedSet<TimePair> _segmentFrameBoundaries;
-    @Override
-    public ImmutableSortedSet<TimePair> getSegmentFrameBoundaries() {return _segmentFrameBoundaries; }
-
-    private final ImmutableSortedSet<TimePair> _segmentTimeBoundaries;
-    @Override
-    public ImmutableSortedSet<TimePair> getSegmentTimeBoundaries() {return _segmentTimeBoundaries; }
 
 
     @Override
@@ -183,26 +173,8 @@ public class BatchJobImpl implements BatchJob {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
-                callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-                List.of(), List.of(), List.of(), Map.of(), Map.of());
-    }
-
-    public BatchJobImpl(
-            long id,
-            String externalId,
-            SystemPropertiesSnapshot systemPropertiesSnapshot,
-            JobPipelineElements pipelineElements,
-            int priority,
-            String callbackUrl,
-            String callbackMethod,
-            Collection<MediaImpl> media,
-            Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            Collection<TimePair> segmentFrameBoundaries,
-            Collection<TimePair> segmentTimeBoundaries) {
-        this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
-                callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-                segmentFrameBoundaries, segmentTimeBoundaries, List.of(), Map.of(), Map.of());
+             callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
+             List.of(), Map.of(), Map.of());
     }
 
 
@@ -219,8 +191,6 @@ public class BatchJobImpl implements BatchJob {
             @JsonProperty("jobProperties") Map<String, String> jobProperties,
             @JsonProperty("overriddenAlgorithmProperties")
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
-            @JsonProperty("segmentFrameBoundaries") Collection<TimePair> segmentFrameBoundaries,
-            @JsonProperty("segmentTimeBoundaries") Collection<TimePair> segmentTimeBoundaries,
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
             @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings) {
@@ -245,21 +215,6 @@ public class BatchJobImpl implements BatchJob {
                 .stream()
                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
         _detectionProcessingErrors = new ArrayList<>(detectionProcessingErrors);
-
-        if (!segmentFrameBoundaries.isEmpty()) {
-            _segmentFrameBoundaries = segmentFrameBoundaries.stream()
-                    .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-        }
-        else {
-            _segmentFrameBoundaries = ImmutableSortedSet.of();
-        }
-        if (!segmentTimeBoundaries.isEmpty()) {
-            _segmentTimeBoundaries = segmentTimeBoundaries.stream()
-                    .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-        }
-        else {
-            _segmentTimeBoundaries = ImmutableSortedSet.of();
-        }
 
         _errors = new HashMap<>();
         // Can't just pass errors to HashMap constructor because we also want to copy the sets.

@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.RangeSet;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -97,9 +96,7 @@ public class InProgressBatchJobsService {
             String callbackMethod,
             Collection<Media> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties,
-            Collection<TimePair> segmentFrameBoundaries,
-            Collection<TimePair> segmentTimeBoundaries) {
+            Map<String, ? extends Map<String, String>> algorithmProperties) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
@@ -125,9 +122,7 @@ public class InProgressBatchJobsService {
                 callbackMethod,
                 mediaImpls,
                 jobProperties,
-                algorithmProperties,
-                segmentFrameBoundaries,
-                segmentTimeBoundaries);
+                algorithmProperties);
         _jobs.put(jobId, job);
 
         media.stream()
@@ -339,8 +334,12 @@ public class InProgressBatchJobsService {
     private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
 
-    public synchronized Media initMedia(String uriStr, Map<String, String> mediaSpecificProperties,
-                                        Map<String, String> providedMetadataProperties) {
+    public synchronized Media initMedia(
+            String uriStr,
+            Map<String, String> mediaSpecificProperties,
+            Map<String, String> providedMetadataProperties,
+            List<TimePair> segmentFrameBoundaries,
+            List<TimePair> segmentTimeBoundaries) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -367,12 +366,28 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                                 providedMetadataProperties, errorMessage);
+            return new MediaImpl(
+                    mediaId,
+                    uriStr,
+                    uriScheme,
+                    localPath,
+                    mediaSpecificProperties,
+                    providedMetadataProperties,
+                    segmentFrameBoundaries,
+                    segmentTimeBoundaries,
+                    errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
-            return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                                 mediaSpecificProperties, providedMetadataProperties, e.getMessage());
+            return new MediaImpl(
+                    mediaId,
+                    uriStr,
+                    UriScheme.UNDEFINED,
+                    null,
+                    mediaSpecificProperties,
+                    providedMetadataProperties,
+                    segmentFrameBoundaries,
+                    segmentTimeBoundaries,
+                    e.getMessage());
         }
     }
 

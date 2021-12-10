@@ -26,10 +26,6 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.*;
-import org.mitre.mpf.wfm.util.TimePair;
-
-
 public class SegmentingPlan {
 	/** The preferred length of a segment. This must be at least 1. */
 	private int targetSegmentLength;
@@ -47,35 +43,6 @@ public class SegmentingPlan {
 	private int minGapBetweenSegments;
 	public int getMinGapBetweenSegments() { return minGapBetweenSegments; }
 
-	// One or the other, or both, of these lists may be empty.
-	private RangeSet<Integer> segmentFrameBoundaries;
-
-	public void addSegmentFrameBoundaries(ImmutableSortedSet<TimePair> frameBoundaries) {
-		segmentFrameBoundaries = TreeRangeSet.create();
-		if (frameBoundaries != null && !frameBoundaries.isEmpty()) {
-			for (TimePair p : frameBoundaries) {
-				segmentFrameBoundaries.add(Range.closed(p.getStartInclusive(), p.getEndInclusive()));
-			}
-			hasSegmentBoundaries = true;
-		}
-	}
-
-	public RangeSet<Integer> getSegmentFrameBoundaries() { return segmentFrameBoundaries; }
-
-	private RangeSet<Integer> segmentTimeBoundaries;
-	public void addSegmentTimeBoundaries(ImmutableSortedSet<TimePair> timeBoundaries) {
-		segmentTimeBoundaries = TreeRangeSet.create();
-		if (timeBoundaries != null && !timeBoundaries.isEmpty()) {
-			for (TimePair p : timeBoundaries) {
-				segmentTimeBoundaries.add(Range.closed(p.getStartInclusive(), p.getEndInclusive()));
-			}
-			hasSegmentBoundaries = true;
-		}
-	}
-	public RangeSet<Integer> getSegmentTimeBoundaries() { return segmentTimeBoundaries; }
-
-	public boolean hasSegmentBoundaries;
-
 	/**
 	 * Creates a new instance using the provided parameters.
 	 * @param targetSegmentLength The preferred length of a segment. This must be at least 1.
@@ -88,7 +55,6 @@ public class SegmentingPlan {
 		this.minSegmentLength = Math.min(targetSegmentLength, Math.max(minSegmentLength, 1));
 		this.samplingInterval = Math.min(targetSegmentLength, Math.max(samplingInterval, 1));
 		this.minGapBetweenSegments = Math.max(this.samplingInterval + 1, minGapBetweenSegments);
-		this.hasSegmentBoundaries = false;
 	}
 
 	@Override

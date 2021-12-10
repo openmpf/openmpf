@@ -27,10 +27,12 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.TimePair;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -88,4 +90,8 @@ public interface Media {
     public String getSha256();
 
     public FrameTimeInfo getFrameTimeInfo();
+
+    public ImmutableList<TimePair> getSegmentFrameBoundaries();
+
+    public ImmutableList<TimePair> getSegmentTimeBoundaries();
 }

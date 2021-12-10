@@ -125,7 +125,7 @@ public class TestDetectionResponseProcessor {
 
         MediaImpl media = new MediaImpl(
                 MEDIA_ID, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
-                Collections.emptyMap(), Collections.emptyMap(), null);
+                Map.of(), Map.of(), List.of(), List.of(), null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
         media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(FPS, 0, false));
@@ -138,9 +138,9 @@ public class TestDetectionResponseProcessor {
             1,
             null,
             null,
-            Collections.singletonList(media),
-            Collections.emptyMap(),
-            Collections.emptyMap(), List.of(), List.of());
+            List.of(media),
+            Map.of(),
+            Map.of());
 
         when(inProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);

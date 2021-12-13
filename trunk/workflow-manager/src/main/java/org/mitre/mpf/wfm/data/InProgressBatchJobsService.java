@@ -39,6 +39,7 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -338,8 +339,8 @@ public class InProgressBatchJobsService {
             String uriStr,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadataProperties,
-            List<TimePair> segmentFrameBoundaries,
-            List<TimePair> segmentTimeBoundaries) {
+            Collection<TimePair> frameRanges,
+            Collection<TimePair> timeRanges) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -373,8 +374,8 @@ public class InProgressBatchJobsService {
                     localPath,
                     mediaSpecificProperties,
                     providedMetadataProperties,
-                    segmentFrameBoundaries,
-                    segmentTimeBoundaries,
+                    frameRanges,
+                    timeRanges,
                     errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
@@ -385,8 +386,8 @@ public class InProgressBatchJobsService {
                     null,
                     mediaSpecificProperties,
                     providedMetadataProperties,
-                    segmentFrameBoundaries,
-                    segmentTimeBoundaries,
+                    frameRanges,
+                    timeRanges,
                     e.getMessage());
         }
     }
@@ -412,6 +413,7 @@ public class InProgressBatchJobsService {
         media.setMimeType(mimeType);
         media.setLength(length);
         media.addMetadata(metadata);
+        media.setFramesToProcess(UserSpecifiedRangesUtil.getCombinedRanges(media));
     }
 
     public synchronized void addConvertedMediaPath(long jobId, long mediaId,

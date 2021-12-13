@@ -33,8 +33,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.JobCreationSegmentBoundary;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
@@ -107,9 +107,9 @@ public class TestJobRequestService {
     private static JobCreationRequest createTestJobCreationRequest() {
         var jobCreationMedia1 = new JobCreationMediaData("http://my_media1.mp4");
         jobCreationMedia1.getProperties().put("media_prop1", "media_val1");
-        jobCreationMedia1.setSegmentFrameBoundaries(List.of(
-                new JobCreationSegmentBoundary(0, 50),
-                new JobCreationSegmentBoundary(100, 300) ));
+        jobCreationMedia1.setFrameRanges(List.of(
+                new JobCreationMediaRange(0, 50),
+                new JobCreationMediaRange(100, 300)));
 
         var jobCreationMedia2 = new JobCreationMediaData("http://my_media2.mp4");
         jobCreationMedia2.getProperties().put("media_prop2", "media_val2");
@@ -141,14 +141,14 @@ public class TestJobRequestService {
 
 
     private static void assertSegmentBoundariesEqual(
-            Collection<JobCreationSegmentBoundary> creationBoundaries,
+            Collection<JobCreationMediaRange> creationBoundaries,
             Collection<TimePair> jobBoundaries) {
         assertEquals(creationBoundaries.size(), jobBoundaries.size());
 
         var creationBoundariesIter = creationBoundaries
                 .stream()
-                .sorted(Comparator.comparingInt(JobCreationSegmentBoundary::getStart)
-                                .thenComparingInt(JobCreationSegmentBoundary::getStop))
+                .sorted(Comparator.comparingInt(JobCreationMediaRange::getStart)
+                                .thenComparingInt(JobCreationMediaRange::getStop))
                 .iterator();
 
         var jobBoundariesIter = jobBoundaries
@@ -158,7 +158,7 @@ public class TestJobRequestService {
 
         while (jobBoundariesIter.hasNext()) {
             TimePair jobBoundary = jobBoundariesIter.next();
-            JobCreationSegmentBoundary creationBoundary = creationBoundariesIter.next();
+            JobCreationMediaRange creationBoundary = creationBoundariesIter.next();
             assertEquals(jobBoundary.getStartInclusive(), creationBoundary.getStart());
             assertEquals(jobBoundary.getEndInclusive(), creationBoundary.getStop());
         }
@@ -238,11 +238,11 @@ public class TestJobRequestService {
         assertEquals(jobCreationRequest.getJobProperties(), job.getJobProperties());
         assertEquals(jobCreationRequest.getAlgorithmProperties(), job.getOverriddenAlgorithmProperties());
 
-        assertFalse(media1.getSegmentFrameBoundaries().isEmpty());
-        assertTrue(media1.getSegmentTimeBoundaries().isEmpty());
+        assertFalse(media1.getFrameRanges().isEmpty());
+        assertTrue(media1.getTimeRanges().isEmpty());
 
-        assertTrue(media2.getSegmentFrameBoundaries().isEmpty());
-        assertTrue(media2.getSegmentTimeBoundaries().isEmpty());
+        assertTrue(media2.getFrameRanges().isEmpty());
+        assertTrue(media2.getTimeRanges().isEmpty());
 
         var jobCreationMedia1 = jobCreationRequest.getMedia()
                 .stream()
@@ -250,8 +250,8 @@ public class TestJobRequestService {
                 .findAny()
                 .orElseThrow();
 
-        assertSegmentBoundariesEqual(jobCreationMedia1.getSegmentFrameBoundaries(),
-                                     media1.getSegmentFrameBoundaries());
+        assertSegmentBoundariesEqual(jobCreationMedia1.getFrameRanges(),
+                                     media1.getFrameRanges());
     }
 
 

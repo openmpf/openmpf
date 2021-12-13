@@ -24,28 +24,55 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
 
+package org.mitre.mpf.wfm.util;
 
-public class JobCreationSegmentBoundary {
+import com.google.common.collect.*;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-    public JobCreationSegmentBoundary() {}
-    public JobCreationSegmentBoundary(int segmentStart, int segmentStop) {
-        this.start = segmentStart;
-        this.stop = segmentStop;
+public class UserSpecifiedRangesUtil {
+
+    private UserSpecifiedRangesUtil() {
     }
 
-    public int getStart() {
-        return start;
+
+    public static ImmutableSortedSet<TimePair> getCombinedRanges(Media media) {
+        if (media.getFrameRanges().isEmpty()
+                && media.getTimeRanges().isEmpty()) {
+            return ImmutableSortedSet.of(new TimePair(0, media.getLength() - 1));
+        }
+
+        var rangeSet = TreeRangeSet.<Integer>create();
+        for (var frameRange : media.getFrameRanges()) {
+            rangeSet.add(createRange(frameRange.getStartInclusive(),
+                                     frameRange.getEndInclusive()));
+        }
+
+        var frameTimeInfo = media.getFrameTimeInfo();
+        for (var timeRange : media.getTimeRanges()) {
+            int beginFrame = frameTimeInfo.getFrameFromTimeMs(timeRange.getStartInclusive());
+            int endFrame = frameTimeInfo.getFrameFromTimeMs(timeRange.getEndInclusive());
+            rangeSet.add(createRange(beginFrame, endFrame));
+        }
+
+        var boundedRange = rangeSet.subRangeSet(createRange(0, media.getLength() - 1));
+
+        var segments = ImmutableSortedSet.<TimePair>naturalOrder();
+        for (var range : boundedRange.asRanges()) {
+            int begin = range.lowerBoundType() == BoundType.CLOSED
+                    ? range.lowerEndpoint()
+                    : range.lowerEndpoint() + 1;
+
+            int end = range.upperBoundType() == BoundType.CLOSED
+                    ? range.upperEndpoint()
+                    : range.upperEndpoint() - 1;
+            segments.add(new TimePair(begin, end));
+        }
+        return segments.build();
     }
-    public int getStop() { return stop; }
 
-    public void setStart(int Start) { this.start = Start; }
-    public void setStop(int Stop) {
-        this.stop = Stop;
+
+    private static Range<Integer> createRange(int begin, int end) {
+        return Range.closed(begin, end).canonical(DiscreteDomain.integers());
     }
-
-    private int start;
-    private int stop;
-
 }

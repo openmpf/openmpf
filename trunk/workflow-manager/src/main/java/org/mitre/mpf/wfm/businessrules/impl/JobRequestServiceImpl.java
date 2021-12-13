@@ -27,12 +27,13 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
-import org.mitre.mpf.rest.api.JobCreationSegmentBoundary;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
@@ -115,8 +116,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.getMediaUri(),
                         m.getProperties(),
                         m.getMetadata(),
-                        convertSegmentBoundaries(m.getSegmentFrameBoundaries()),
-                        convertSegmentBoundaries(m.getSegmentTimeBoundaries())))
+                        convertRanges(m.getFrameRanges()),
+                        convertRanges(m.getTimeRanges())))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
@@ -160,8 +161,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                         m.getUri(),
                         m.getMediaSpecificProperties(),
                         m.getProvidedMetadata(),
-                        m.getSegmentFrameBoundaries(),
-                        m.getSegmentTimeBoundaries()))
+                        m.getFrameRanges(),
+                        m.getTimeRanges()))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -186,12 +187,12 @@ public class JobRequestServiceImpl implements JobRequestService {
     }
 
 
-    private static List<TimePair> convertSegmentBoundaries(
-            Collection<JobCreationSegmentBoundary> segmentBoundaries) {
-        return segmentBoundaries
+    private static ImmutableSortedSet<TimePair> convertRanges(
+            Collection<JobCreationMediaRange> ranges) {
+        return ranges
                 .stream()
-                .map(b -> new TimePair(b.getStart(), b.getStop()))
-                .collect(ImmutableList.toImmutableList());
+                .map(r -> new TimePair(r.getStart(), r.getStop()))
+                .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     }
 
 

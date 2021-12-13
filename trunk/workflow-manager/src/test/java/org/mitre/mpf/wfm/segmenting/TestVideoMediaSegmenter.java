@@ -26,19 +26,22 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -104,16 +107,16 @@ public class TestVideoMediaSegmenter {
                 )
         );
         DetectionContext context = createTestDetectionContext(
-                0,  Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), Collections.emptySet());
+                0,  Map.of(), Set.of());
         List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
         assertEquals(6, detectionRequests.size());
-        assertContainsSegment(1, 20, detectionRequests);
-        assertContainsSegment(21, 24, detectionRequests);
+        assertContainsSegment(2, 21, detectionRequests);
+        assertContainsSegment(22, 22, detectionRequests);
         assertContainsSegment(43, 62, detectionRequests);
-        assertContainsSegment(63, 75, detectionRequests);
+        assertContainsSegment(63, 73, detectionRequests);
         assertContainsSegment(88, 107, detectionRequests);
-        assertContainsSegment(108, 127, detectionRequests);
+        assertContainsSegment(108, 126, detectionRequests);
     }
 
     @Test
@@ -132,7 +135,6 @@ public class TestVideoMediaSegmenter {
         assertContainsSegment(140, 159, detectionRequests);
         assertContainsSegment(160, 179, detectionRequests);
         assertContainsSegment(180, 199, detectionRequests);
-
     }
 
     @Test
@@ -305,6 +307,7 @@ public class TestVideoMediaSegmenter {
                 Map.of(), List.of(), List.of(), null);
         media.setLength(50);
         media.addMetadata("mediaKey1", "mediaValue1");
+        media.setFramesToProcess(ImmutableSortedSet.of(new TimePair(0, media.getLength() - 1)));
         return media;
     }
 
@@ -319,6 +322,7 @@ public class TestVideoMediaSegmenter {
         media.addMetadata("FPS", "29.97");
         media.setFrameTimeInfo(
                 FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), 29.97));
+        media.setFramesToProcess(UserSpecifiedRangesUtil.getCombinedRanges(media));
         return media;
     }
 

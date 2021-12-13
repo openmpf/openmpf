@@ -27,8 +27,8 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
@@ -91,7 +91,9 @@ public interface Media {
 
     public FrameTimeInfo getFrameTimeInfo();
 
-    public ImmutableList<TimePair> getSegmentFrameBoundaries();
+    public ImmutableSortedSet<TimePair> getFrameRanges();
 
-    public ImmutableList<TimePair> getSegmentTimeBoundaries();
+    public ImmutableSortedSet<TimePair> getTimeRanges();
+
+    public ImmutableSortedSet<TimePair> getFramesToProcess();
 }

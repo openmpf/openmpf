@@ -24,65 +24,28 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Comparator;
-import java.util.Objects;
-
-public class TimePair implements Comparable<TimePair> {
-
-	private final int startInclusive;
-
-	public int getStartInclusive() { return startInclusive; }
-
-	private final int endInclusive;
-
-	public int getEndInclusive() { return endInclusive; }
+package org.mitre.mpf.rest.api;
 
 
-	public TimePair(@JsonProperty("startInclusive") int startInclusive,
-	                @JsonProperty("endInclusive") int endInclusive) {
-		this.startInclusive = startInclusive;
-		this.endInclusive = endInclusive;
-	}
+public class JobCreationMediaRange {
 
+    public JobCreationMediaRange() {}
+    public JobCreationMediaRange(int start, int stop) {
+        this.start = start;
+        this.stop = stop;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(startInclusive, endInclusive);
-	}
+    public int getStart() {
+        return start;
+    }
+    public int getStop() { return stop; }
 
+    public void setStart(int Start) { this.start = Start; }
+    public void setStop(int Stop) {
+        this.stop = Stop;
+    }
 
-	@Override
-	public boolean equals(Object other) {
-		if (!(other instanceof TimePair)) {
-			return false;
-		}
-		TimePair casted = (TimePair) other;
-		return compareTo(casted) == 0;
-	}
+    private int start;
+    private int stop;
 
-
-	private static final Comparator<TimePair> DEFAULT_COMPARATOR = Comparator
-			.nullsFirst(Comparator
-				.comparingInt(TimePair::getStartInclusive)
-				.thenComparingInt(TimePair::getEndInclusive));
-
-	@Override
-	public int compareTo(TimePair other) {
-		return DEFAULT_COMPARATOR.compare(this, other);
-	}
-
-
-	public int length() {
-		return endInclusive - startInclusive + 1;
-	}
-
-
-	@Override
-	public String toString() {
-		return getClass() .getSimpleName() + ": startInclusive=" + startInclusive + ", endInclusive=" + endInclusive;
-	}
 }

@@ -40,9 +40,9 @@ public class JobCreationMediaData {
 
     private Map<String, String> metadata = new HashMap<>();
 
-    private List<JobCreationSegmentBoundary> segmentFrameBoundaries = new ArrayList<>();
+    private List<JobCreationMediaRange> frameRanges = new ArrayList<>();
 
-    private List<JobCreationSegmentBoundary> segmentTimeBoundaries = new ArrayList<>();
+    private List<JobCreationMediaRange> timeRanges = new ArrayList<>();
 
     public JobCreationMediaData() {}
 
@@ -74,19 +74,19 @@ public class JobCreationMediaData {
         this.metadata = metadata;
     }
 
-    public List<JobCreationSegmentBoundary> getSegmentFrameBoundaries() {
-        return segmentFrameBoundaries;
+    public List<JobCreationMediaRange> getFrameRanges() {
+        return frameRanges;
     }
 
-    public void setSegmentFrameBoundaries(List<JobCreationSegmentBoundary> segments) {
-        this.segmentFrameBoundaries = segments;
+    public void setFrameRanges(List<JobCreationMediaRange> frameRanges) {
+        this.frameRanges = frameRanges;
     }
 
-    public List<JobCreationSegmentBoundary> getSegmentTimeBoundaries() {
-        return segmentTimeBoundaries;
+    public List<JobCreationMediaRange> getTimeRanges() {
+        return timeRanges;
     }
 
-    public void setSegmentTimeBoundaries(List<JobCreationSegmentBoundary> segments) {
-        this.segmentTimeBoundaries = segments;
+    public void setTimeRanges(List<JobCreationMediaRange> timeRanges) {
+        this.timeRanges = timeRanges;
     }
 }

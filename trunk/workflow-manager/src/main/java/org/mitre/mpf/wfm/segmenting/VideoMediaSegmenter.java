@@ -26,9 +26,6 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -43,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
@@ -55,15 +51,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            if (!media.getSegmentFrameBoundaries().isEmpty()
-                    || !media.getSegmentTimeBoundaries().isEmpty()) {
-                List<TimePair> segments = getSegmentBoundaries(media);
-                return createTimePairMessages(media, context, segments);
-            }
-            else {
-                return createTimePairMessages(
-                        media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
-            }
+            Set<TimePair> framesToProcess = media.getFramesToProcess();
+            return createTimePairMessages(media, context, framesToProcess);
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);
@@ -72,46 +61,6 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             List<TimePair> trackTimePairs = MediaSegmenter.createTimePairsForTracks(context.getPreviousTracks());
             return createTimePairMessages(media, context, trackTimePairs);
         }
-    }
-
-    private static List<TimePair> getSegmentBoundaries(Media media) {
-        List<TimePair> segments = new ArrayList<>();
-        if ((media.getSegmentFrameBoundaries() != null) &&
-            (!media.getSegmentFrameBoundaries().isEmpty())) {
-            // Ensure that the span of the RangeSet is no greater than the length of the video. This could occur if a
-            // user-specified segment end boundary is beyond the end of the video.
-            var ranges = media
-                    .getSegmentFrameBoundaries()
-                    .stream()
-                    .map(tp -> Range.closed(tp.getStartInclusive(), tp.getEndInclusive()))
-                    .collect(Collectors.toList());
-            var boundedRanges = TreeRangeSet.create(ranges)
-                    .subRangeSet(Range.closed(0, media.getLength() - 1));
-            for (Range<Integer> r : boundedRanges.asRanges()) {
-                segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
-            }
-        }
-        else if ((media.getSegmentTimeBoundaries() != null) &&
-            (!media.getSegmentTimeBoundaries().isEmpty())) {
-            // Convert time boundaries to frame boundaries, and ensure the span of the frame boundaries is no greater
-            // than the length of the video.
-            double fps = Double.parseDouble(media.getMetadata("FPS"));
-            int msecPerFrame = (int)(1000/fps);
-            var info = media.getFrameTimeInfo();
-            RangeSet<Integer> boundedRanges = TreeRangeSet.create();
-            for (TimePair tp : media.getSegmentTimeBoundaries()) {
-                int adjustedStartMs = ((tp.getStartInclusive() - msecPerFrame) >= 0) ? (tp.getStartInclusive() - msecPerFrame) : tp.getStartInclusive();
-                var start = info.getFrameFromTimeMs(adjustedStartMs);
-                var stop = info.getFrameFromTimeMs(tp.getEndInclusive() + msecPerFrame);
-                boundedRanges.add(Range.closed(start, stop));
-            }
-
-            boundedRanges = boundedRanges.subRangeSet(Range.closed(0, media.getLength()-1));
-            for (Range<Integer> r : boundedRanges.asRanges()) {
-                segments.add(new TimePair(r.lowerEndpoint(), r.upperEndpoint()));
-            }
-        }
-        return segments;
     }
 
     private static List<Message> createTimePairMessages(

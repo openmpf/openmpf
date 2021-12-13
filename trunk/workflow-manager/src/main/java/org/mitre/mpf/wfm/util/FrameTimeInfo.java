@@ -88,7 +88,6 @@ public interface FrameTimeInfo {
             double fps, int startTime, boolean hasConstantFrameRate,
             boolean requiresTimeEstimation) {
         double framesPerMs = fps / 1000;
-
         return new FrameTimeInfo() {
 
             public boolean hasConstantFrameRate() {
@@ -104,13 +103,12 @@ public interface FrameTimeInfo {
             }
 
             public int getFrameFromTimeMs(int timeMs) {
-//                if (timeMs > startTime) {
-//                    return (int) (framesPerMs * (timeMs - startTime));
-//                }
-//                else {
-//                    return 0;
-//                }
-                return (int)Math.rint(framesPerMs * ((timeMs < startTime) ? startTime : timeMs - startTime));
+                if (timeMs > startTime) {
+                    return (int) (framesPerMs * (timeMs - startTime));
+                }
+                else {
+                    return 0;
+                }
             }
         };
     }

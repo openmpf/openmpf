@@ -29,8 +29,8 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -154,17 +154,29 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
-    private final ImmutableList<TimePair> _segmentFrameBoundaries;
+    private final ImmutableSortedSet<TimePair> _frameRanges;
     @Override
-    public ImmutableList<TimePair> getSegmentFrameBoundaries() {
-        return _segmentFrameBoundaries;
+    public ImmutableSortedSet<TimePair> getFrameRanges() {
+        return _frameRanges;
     }
 
-    private final ImmutableList<TimePair> _segmentTimeBoundaries;
+    private final ImmutableSortedSet<TimePair> _timeRanges;
     @Override
-    public ImmutableList<TimePair> getSegmentTimeBoundaries() {
-        return _segmentTimeBoundaries;
+    public ImmutableSortedSet<TimePair> getTimeRanges() {
+        return _timeRanges;
     }
+
+
+    private ImmutableSortedSet<TimePair> _framesToProcess;
+    @Override
+    @JsonIgnore
+    public ImmutableSortedSet<TimePair> getFramesToProcess() {
+        return _framesToProcess;
+    }
+    public void setFramesToProcess(ImmutableSortedSet<TimePair> framesToProcess) {
+        _framesToProcess = framesToProcess;
+    }
+
 
     public MediaImpl(
             long id,
@@ -173,8 +185,8 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
-            Collection<TimePair> segmentFrameBoundaries,
-            Collection<TimePair> segmentTimeBoundaries,
+            Collection<TimePair> frameRanges,
+            Collection<TimePair> timeRanges,
             String errorMessage) {
         _id = id;
         _uri = IoUtils.normalizeUri(uri);
@@ -182,8 +194,8 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        _segmentFrameBoundaries = ImmutableList.copyOf(segmentFrameBoundaries);
-        _segmentTimeBoundaries = ImmutableList.copyOf(segmentTimeBoundaries);
+        _frameRanges = ImmutableSortedSet.copyOf(frameRanges);
+        _timeRanges = ImmutableSortedSet.copyOf(timeRanges);
 
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
@@ -202,16 +214,16 @@ public class MediaImpl implements Media {
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata,
-            @JsonProperty("segmentFrameBoundaries") Collection<TimePair> segmentFrameBoundaries,
-            @JsonProperty("segmentTimeBoundaries") Collection<TimePair> segmentTimeBoundaries) {
+            @JsonProperty("frameRanges") Collection<TimePair> frameRanges,
+            @JsonProperty("timeRanges") Collection<TimePair> timeRanges) {
         this(id,
              uri,
              uriScheme,
              localPath,
              mediaSpecificProperties,
              providedMetadata,
-             segmentFrameBoundaries,
-             segmentTimeBoundaries,
+             frameRanges,
+             timeRanges,
              errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
@@ -231,8 +243,8 @@ public class MediaImpl implements Media {
                 originalMedia.getLocalPath(),
                 originalMedia.getMediaSpecificProperties(),
                 originalMedia.getProvidedMetadata(),
-                originalMedia.getSegmentFrameBoundaries(),
-                originalMedia.getSegmentFrameBoundaries(),
+                originalMedia.getFrameRanges(),
+                originalMedia.getTimeRanges(),
                 originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
@@ -240,6 +252,7 @@ public class MediaImpl implements Media {
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
+        result.setFramesToProcess(originalMedia.getFramesToProcess());
         return result;
     }
 

@@ -117,6 +117,31 @@ public class TestVideoMediaSegmenter {
         assertContainsSegment(108, 126, detectionRequests);
     }
 
+
+    @Test
+    public void doesNotCombineNonAdjacentUserRanges() {
+        var segmentingPlan = new SegmentingPlan(100, 50, 1, 5);
+        var context = new DetectionContext(
+                1, 0, "STAGE_NAME", 0, "ACTION_NAME",
+                true, List.of(), Set.of(),
+                segmentingPlan);
+
+        var media = createTestMediaWithFps(
+                List.of(
+                        new TimePair(5, 9),
+                        new TimePair(10, 30),
+                        new TimePair(32, 40)
+                ),
+                List.of()
+        );
+
+        List<DetectionRequest> detectionRequests = runSegmenter(media, context);
+
+        assertEquals(2, detectionRequests.size());
+        assertContainsSegment(5, 30, detectionRequests);
+        assertContainsSegment(32, 40, detectionRequests);
+    }
+
     @Test
     public void canLimitSegmentBoundariesToMediaLength() {
         Media media = createTestMediaWithFps(

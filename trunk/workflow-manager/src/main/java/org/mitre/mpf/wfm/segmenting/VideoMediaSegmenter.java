@@ -42,6 +42,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static java.util.stream.Collectors.toList;
+
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
@@ -53,7 +55,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
             Set<TimePair> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
-            return createTimePairMessages(media, context, framesToProcess);
+            // Process each range separately to prevent createTimePairMessages from filling
+            // gaps between user specified ranges.
+            return framesToProcess.stream()
+                    .map(tp -> createTimePairMessages(media, context, List.of(tp)))
+                    .flatMap(Collection::stream)
+                    .collect(toList());
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);

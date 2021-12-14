@@ -27,7 +27,7 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
@@ -187,12 +187,12 @@ public class JobRequestServiceImpl implements JobRequestService {
     }
 
 
-    private static ImmutableSortedSet<TimePair> convertRanges(
+    private static ImmutableSet<TimePair> convertRanges(
             Collection<JobCreationMediaRange> ranges) {
         return ranges
                 .stream()
                 .map(r -> new TimePair(r.getStart(), r.getStop()))
-                .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+                .collect(ImmutableSet.toImmutableSet());
     }
 
 

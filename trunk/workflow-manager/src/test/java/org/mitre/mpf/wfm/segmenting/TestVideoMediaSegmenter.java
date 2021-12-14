@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
@@ -41,7 +40,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.TimePair;
-import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -307,7 +305,6 @@ public class TestVideoMediaSegmenter {
                 Map.of(), List.of(), List.of(), null);
         media.setLength(50);
         media.addMetadata("mediaKey1", "mediaValue1");
-        media.setFramesToProcess(ImmutableSortedSet.of(new TimePair(0, media.getLength() - 1)));
         return media;
     }
 
@@ -322,7 +319,6 @@ public class TestVideoMediaSegmenter {
         media.addMetadata("FPS", "29.97");
         media.setFrameTimeInfo(
                 FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), 29.97));
-        media.setFramesToProcess(UserSpecifiedRangesUtil.getCombinedRanges(media));
         return media;
     }
 

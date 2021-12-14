@@ -30,7 +30,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
@@ -154,28 +154,13 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
-    private final ImmutableSortedSet<TimePair> _frameRanges;
+    private final ImmutableSet<TimePair> _frameRanges;
     @Override
-    public ImmutableSortedSet<TimePair> getFrameRanges() {
-        return _frameRanges;
-    }
+    public ImmutableSet<TimePair> getFrameRanges() { return _frameRanges; }
 
-    private final ImmutableSortedSet<TimePair> _timeRanges;
+    private final ImmutableSet<TimePair> _timeRanges;
     @Override
-    public ImmutableSortedSet<TimePair> getTimeRanges() {
-        return _timeRanges;
-    }
-
-
-    private ImmutableSortedSet<TimePair> _framesToProcess;
-    @Override
-    @JsonIgnore
-    public ImmutableSortedSet<TimePair> getFramesToProcess() {
-        return _framesToProcess;
-    }
-    public void setFramesToProcess(ImmutableSortedSet<TimePair> framesToProcess) {
-        _framesToProcess = framesToProcess;
-    }
+    public ImmutableSet<TimePair> getTimeRanges() { return _timeRanges; }
 
 
     public MediaImpl(
@@ -194,8 +179,8 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        _frameRanges = ImmutableSortedSet.copyOf(frameRanges);
-        _timeRanges = ImmutableSortedSet.copyOf(timeRanges);
+        _frameRanges = ImmutableSet.copyOf(frameRanges);
+        _timeRanges = ImmutableSet.copyOf(timeRanges);
 
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
@@ -252,7 +237,6 @@ public class MediaImpl implements Media {
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
-        result.setFramesToProcess(originalMedia.getFramesToProcess());
         return result;
     }
 

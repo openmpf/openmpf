@@ -39,7 +39,6 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.TimePair;
-import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -413,7 +412,6 @@ public class InProgressBatchJobsService {
         media.setMimeType(mimeType);
         media.setLength(length);
         media.addMetadata(metadata);
-        media.setFramesToProcess(UserSpecifiedRangesUtil.getCombinedRanges(media));
     }
 
     public synchronized void addConvertedMediaPath(long jobId, long mediaId,

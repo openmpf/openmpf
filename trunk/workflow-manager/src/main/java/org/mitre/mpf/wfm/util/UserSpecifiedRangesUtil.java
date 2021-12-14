@@ -27,8 +27,14 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.*;
+import com.google.common.collect.BoundType;
+import com.google.common.collect.DiscreteDomain;
+import com.google.common.collect.Range;
+import com.google.common.collect.TreeRangeSet;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class UserSpecifiedRangesUtil {
 
@@ -36,10 +42,10 @@ public class UserSpecifiedRangesUtil {
     }
 
 
-    public static ImmutableSortedSet<TimePair> getCombinedRanges(Media media) {
+    public static Set<TimePair> getCombinedRanges(Media media) {
         if (media.getFrameRanges().isEmpty()
                 && media.getTimeRanges().isEmpty()) {
-            return ImmutableSortedSet.of(new TimePair(0, media.getLength() - 1));
+            return Set.of(new TimePair(0, media.getLength() - 1));
         }
 
         var rangeSet = TreeRangeSet.<Integer>create();
@@ -57,7 +63,7 @@ public class UserSpecifiedRangesUtil {
 
         var boundedRange = rangeSet.subRangeSet(createRange(0, media.getLength() - 1));
 
-        var segments = ImmutableSortedSet.<TimePair>naturalOrder();
+        var segments = new HashSet<TimePair>();
         for (var range : boundedRange.asRanges()) {
             int begin = range.lowerBoundType() == BoundType.CLOSED
                     ? range.lowerEndpoint()
@@ -68,11 +74,13 @@ public class UserSpecifiedRangesUtil {
                     : range.upperEndpoint() - 1;
             segments.add(new TimePair(begin, end));
         }
-        return segments.build();
+        return segments;
     }
 
 
     private static Range<Integer> createRange(int begin, int end) {
+        // .canonical(DiscreteDomain.integers()) is required for the RangeSet to join adjacent
+        // ranges.
         return Range.closed(begin, end).canonical(DiscreteDomain.integers());
     }
 }

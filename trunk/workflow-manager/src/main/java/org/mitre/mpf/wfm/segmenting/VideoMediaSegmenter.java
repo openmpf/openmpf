@@ -35,6 +35,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -51,7 +52,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            Set<TimePair> framesToProcess = media.getFramesToProcess();
+            Set<TimePair> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
             return createTimePairMessages(media, context, framesToProcess);
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {

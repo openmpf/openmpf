@@ -25,9 +25,11 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -35,29 +37,39 @@ import static org.mockito.Mockito.when;
 
 public class TestUserSpecifiedRangesUtil {
 
+
     @Test
     public void returnsFullVideoWhenNoSpecifiedSegments() {
-        var results = getCombinedSegments(ImmutableSortedSet.of(), ImmutableSortedSet.of());
-        var expected = ImmutableSortedSet.of(new TimePair(0, 10));
+        var results = getCombinedSegments(ImmutableSet.of(), ImmutableSet.of());
+        var expected = ImmutableSet.of(new TimePair(0, 10));
+        assertEquals(expected, results);
+    }
+
+
+    @Test
+    public void returnsFullVideoWhenTimesBeyondLimits() {
+        var timeRanges = ImmutableSet.of(new TimePair(1, 1000));
+        var results = getCombinedSegments(ImmutableSet.of(), timeRanges);
+        var expected = ImmutableSet.of(new TimePair(0, 10));
         assertEquals(expected, results);
     }
 
 
     @Test
     public void canCombineSegments() {
-        var frameRanges = ImmutableSortedSet.of(
+        var frameRanges = ImmutableSet.of(
                 new TimePair(1, 3),
                 new TimePair(9, 100),
                 new TimePair(14, 16)
         );
-        var timeRanges = ImmutableSortedSet.of(
+        var timeRanges = ImmutableSet.of(
                 new TimePair(167, 200), // frames 4 - 5
                 new TimePair(1000, 2000) // Beyond end of video
         );
 
         var results = getCombinedSegments(frameRanges, timeRanges);
 
-        var expected = ImmutableSortedSet.of(
+        var expected = ImmutableSet.of(
                 new TimePair(1, 5),
                 new TimePair(9, 10));
 
@@ -68,18 +80,18 @@ public class TestUserSpecifiedRangesUtil {
     @Test
     public void doesNotCombineNonAdjacentRanges() {
         {
-            var frameRanges = ImmutableSortedSet.of(
+            var frameRanges = ImmutableSet.of(
                     new TimePair(1, 3),
                     new TimePair(5, 6)
             );
-            var results = getCombinedSegments(frameRanges, ImmutableSortedSet.of());
+            var results = getCombinedSegments(frameRanges, ImmutableSet.of());
             assertEquals(frameRanges, results);
         }
         {
-            var frameRanges = ImmutableSortedSet.of(new TimePair(1, 3));
-            var timeRanges = ImmutableSortedSet.of(new TimePair(200, 400));
+            var frameRanges = ImmutableSet.of(new TimePair(1, 3));
+            var timeRanges = ImmutableSet.of(new TimePair(200, 400));
             var results = getCombinedSegments(frameRanges, timeRanges);
-            var expected = ImmutableSortedSet.of(
+            var expected = ImmutableSet.of(
                     new TimePair(1, 3),
                     new TimePair(5, 10)
             );
@@ -91,38 +103,37 @@ public class TestUserSpecifiedRangesUtil {
     @Test
     public void canHandleTimeBeforeStart() {
         {
-            var timeRanges = ImmutableSortedSet.of(
+            var timeRanges = ImmutableSet.of(
                     new TimePair(0, 10)
             );
             var results = getCombinedSegments(
-                    ImmutableSortedSet.of(), timeRanges);
-            var expected = ImmutableSortedSet.of(new TimePair(0, 0));
+                    ImmutableSet.of(), timeRanges);
+            var expected = ImmutableSet.of(new TimePair(0, 0));
             assertEquals(expected, results);
         }
         {
-            var timeRanges = ImmutableSortedSet.of(
+            var timeRanges = ImmutableSet.of(
                     new TimePair(0, 40)
             );
             var results = getCombinedSegments(
-                    ImmutableSortedSet.of(), timeRanges);
-            var expected = ImmutableSortedSet.of(new TimePair(0, 0));
+                    ImmutableSet.of(), timeRanges);
+            var expected = ImmutableSet.of(new TimePair(0, 0));
             assertEquals(expected, results);
         }
         {
-            var timeRanges = ImmutableSortedSet.of(
+            var timeRanges = ImmutableSet.of(
                     new TimePair(0, 80)
             );
-            var results = getCombinedSegments(
-                    ImmutableSortedSet.of(), timeRanges);
-            var expected = ImmutableSortedSet.of(new TimePair(0, 1));
+            var results = getCombinedSegments(ImmutableSet.of(), timeRanges);
+            var expected = ImmutableSet.of(new TimePair(0, 1));
             assertEquals(expected, results);
         }
     }
 
 
-    private static ImmutableSortedSet<TimePair> getCombinedSegments(
-            ImmutableSortedSet<TimePair> frameRanges,
-            ImmutableSortedSet<TimePair> timeRanges) {
+    private static Set<TimePair> getCombinedSegments(
+            ImmutableSet<TimePair> frameRanges,
+            ImmutableSet<TimePair> timeRanges) {
 
         var media = createTestMedia(frameRanges, timeRanges);
         return UserSpecifiedRangesUtil.getCombinedRanges(media);
@@ -130,8 +141,8 @@ public class TestUserSpecifiedRangesUtil {
 
 
     private static Media createTestMedia(
-            ImmutableSortedSet<TimePair> frameRanges,
-            ImmutableSortedSet<TimePair> timeRanges) {
+            ImmutableSet<TimePair> frameRanges,
+            ImmutableSet<TimePair> timeRanges) {
         int[] frameTimes = {
                 33,  // 0
                 66,  // 1

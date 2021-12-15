@@ -33,8 +33,9 @@ import com.google.common.collect.Range;
 import com.google.common.collect.TreeRangeSet;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-import java.util.HashSet;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 public class UserSpecifiedRangesUtil {
 
@@ -42,12 +43,23 @@ public class UserSpecifiedRangesUtil {
     }
 
 
+    /**
+     * Gets the ranges of frames that the user requested to be processed. When a user specifies
+     * time ranges, those are converted to frame numbers. Adjacent and overlapping ranges are
+     * combined in to a range spanning both. So [2, 5], [4, 7], [8, 10] becomes [2, 10].
+     * Time ranges are combined after being converted to frame numbers.
+     * When a user doesn't  explicitly state the ranges, they want the entire video to be
+     * processed.
+     * @param media Input media that may or may not contain user specified ranges
+     * @return The minimal set of ranges enclosing all user specified ranges.
+     */
     public static Set<TimePair> getCombinedRanges(Media media) {
         if (media.getFrameRanges().isEmpty()
                 && media.getTimeRanges().isEmpty()) {
             return Set.of(new TimePair(0, media.getLength() - 1));
         }
 
+        // TreeRangeSet will get us the minimal set of ranges enclosing all Range's added to it.
         var rangeSet = TreeRangeSet.<Integer>create();
         for (var frameRange : media.getFrameRanges()) {
             rangeSet.add(createRange(frameRange.getStartInclusive(),
@@ -61,20 +73,13 @@ public class UserSpecifiedRangesUtil {
             rangeSet.add(createRange(beginFrame, endFrame));
         }
 
-        var boundedRange = rangeSet.subRangeSet(createRange(0, media.getLength() - 1));
+        // Chop off ranges past the end of the video.
+        var boundedRangeSet = rangeSet.subRangeSet(createRange(0, media.getLength() - 1));
 
-        var segments = new HashSet<TimePair>();
-        for (var range : boundedRange.asRanges()) {
-            int begin = range.lowerBoundType() == BoundType.CLOSED
-                    ? range.lowerEndpoint()
-                    : range.lowerEndpoint() + 1;
-
-            int end = range.upperBoundType() == BoundType.CLOSED
-                    ? range.upperEndpoint()
-                    : range.upperEndpoint() - 1;
-            segments.add(new TimePair(begin, end));
-        }
-        return segments;
+        return boundedRangeSet.asRanges()
+                .stream()
+                .map(UserSpecifiedRangesUtil::rangeToClosedTimePair)
+                .collect(toSet());
     }
 
 
@@ -82,5 +87,18 @@ public class UserSpecifiedRangesUtil {
         // .canonical(DiscreteDomain.integers()) is required for the RangeSet to join adjacent
         // ranges.
         return Range.closed(begin, end).canonical(DiscreteDomain.integers());
+    }
+
+
+    private static TimePair rangeToClosedTimePair(Range<Integer> range) {
+        int begin = range.lowerBoundType() == BoundType.CLOSED
+                ? range.lowerEndpoint()
+                : range.lowerEndpoint() + 1;
+
+        int end = range.upperBoundType() == BoundType.CLOSED
+                ? range.upperEndpoint()
+                : range.upperEndpoint() - 1;
+
+        return new TimePair(begin, end);
     }
 }

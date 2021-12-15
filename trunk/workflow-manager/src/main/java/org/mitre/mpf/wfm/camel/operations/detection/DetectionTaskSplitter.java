@@ -96,8 +96,7 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
-                // If this is the first detection task in the pipeline, we should segment the entire media for detection,
-                // and we need to check whether the user has specified a set of segment boundaries to use.
+                // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
                 // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
                 SortedSet<Track> previousTracks;

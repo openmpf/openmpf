@@ -225,7 +225,7 @@ public interface MediaSegmenter {
 
     /**
      * Modifies the current MediaRange such that it includes the entire range represented by the current
-     * and target TimePairs.
+     * and target MediaRanges.
      */
     public static MediaRange merge(MediaRange current, MediaRange target) {
         return new MediaRange(current.getStartInclusive(),

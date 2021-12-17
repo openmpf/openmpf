@@ -78,7 +78,7 @@ public class UserSpecifiedRangesUtil {
 
         return boundedRangeSet.asRanges()
                 .stream()
-                .map(UserSpecifiedRangesUtil::rangeToClosedTimePair)
+                .map(UserSpecifiedRangesUtil::toClosedMediaRange)
                 .collect(toSet());
     }
 
@@ -90,7 +90,7 @@ public class UserSpecifiedRangesUtil {
     }
 
 
-    private static MediaRange rangeToClosedTimePair(Range<Integer> range) {
+    private static MediaRange toClosedMediaRange(Range<Integer> range) {
         int begin = range.lowerBoundType() == BoundType.CLOSED
                 ? range.lowerEndpoint()
                 : range.lowerEndpoint() + 1;

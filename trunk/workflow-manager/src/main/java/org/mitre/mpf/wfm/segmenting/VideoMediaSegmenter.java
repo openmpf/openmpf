@@ -55,10 +55,10 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
             Set<MediaRange> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
-            // Process each range separately to prevent createTimePairMessages from filling
+            // Process each range separately to prevent createMediaRangeMessages from filling
             // gaps between user specified ranges.
             return framesToProcess.stream()
-                    .map(tp -> createTimePairMessages(media, context, List.of(tp)))
+                    .map(tp -> createMediaRangeMessages(media, context, List.of(tp)))
                     .flatMap(Collection::stream)
                     .collect(toList());
         }
@@ -67,11 +67,11 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
         else {
             List<MediaRange> trackMediaRanges = MediaSegmenter.createRangesForTracks(context.getPreviousTracks());
-            return createTimePairMessages(media, context, trackMediaRanges);
+            return createMediaRangeMessages(media, context, trackMediaRanges);
         }
     }
 
-    private static List<Message> createTimePairMessages(
+    private static List<Message> createMediaRangeMessages(
             Media media, DetectionContext context, Collection<MediaRange> trackMediaRanges) {
 
         List<MediaRange> segments = MediaSegmenter.createSegments(

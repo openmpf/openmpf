@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access;
 
+import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 
@@ -45,4 +46,6 @@ public interface JobRequestDao extends JpaDao<JobRequest> {
     public void updateStatus(long jobId, BatchJobStatusType status);
 
     public BatchJobStatusType getStatus(long jobId);
+
+    public AllJobsStatisticsModel getJobStats();
 }

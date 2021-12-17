@@ -27,26 +27,25 @@
     <h3>Job Statistics</h3>
     <page-info>This view will display some statistical information on all the jobs that have run on the system.</page-info>
 </div>
-<div class="row">
-    <div class="col-lg-12">
-        <span id="panel-refresh" class="panel-refresh">
-            <span id="astats_refreshText">Last refresh <span id="astats_since">{{timer_since}}</span> </span>
-                    &nbsp;
-                <button class="btn btn-warning" ng-click="refreshRequest()">Refresh</button>
-			<span> Next refresh in <span id="astats_refreshCounter">{{timer_counter}}</span></span>
-        </span>
-    </div>
-</div>
 
 <div class="row" role="tabpanel">
     <div class="col-lg-12">
         <!-- Nav tabs -->
         <ul id="statsTabs" class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="active"><a id="statsJobsTab" href data-target="#astats_jobs_tab"
-                                                      aria-controls="astats_jobs_tab" role="tab" data-toggle="tab" ng-click="switchTab('jobs')">Jobs</a>
+            <li role="presentation" class="active">
+                <a id="statsJobsTab" href data-target="#astats_jobs_tab"
+                   aria-controls="astats_jobs_tab" role="tab" data-toggle="tab"
+                   ng-click="refreshJobsData()">
+                    Jobs
+                </a>
             </li>
-            <li role="presentation"><a id="statsProcessesTab" href data-target="#astats_processes_tab"
-                                       aria-controls="astats_processes_tab" role="tab" data-toggle="tab">Processes</a></li>
+            <li role="presentation">
+                <a id="statsProcessesTab" href data-target="#astats_processes_tab"
+                   aria-controls="astats_processes_tab" role="tab" data-toggle="tab"
+                   ng-click="refreshSimonData()">
+                    Processes
+                </a>
+            </li>
         </ul>
         <!-- Tab panes -->
         <div class="tab-content">
@@ -67,11 +66,11 @@
                             <div id="astats_jobs" ng-repeat="(name,job) in jobs_recent_data">
                                 <br/>
                                 <strong>{{name}}</strong><br/>
-                                # Jobs {{job.count}} <br/>
-                                Total time:{{job.totalTime}}<br/>
-                                Average time:{{job.totalTime}} / {{job.validCount }}(ms)<br/>
-                                Max time:{{job.maxTime}} (ms)<br/>
-                                Min time:{{job.minTime}} (ms)<br/>
+                                # Jobs {{job.count | number }} <br/>
+                                Total time: {{job.totalTime | number}}<br/>
+                                Average time: {{job.totalTime / job.validCount | number:3 }} (ms)<br/>
+                                Max time: {{job.maxTime | number}} (ms)<br/>
+                                Min time: {{job.minTime | number}} (ms)<br/>
                             </div>
                         </div>
                     </div>

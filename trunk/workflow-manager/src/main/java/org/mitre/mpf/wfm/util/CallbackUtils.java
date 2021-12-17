@@ -63,11 +63,6 @@ import static java.util.stream.Collectors.toList;
 @Component
 public class CallbackUtils implements AutoCloseable {
 
-    private static final int MAX_CONNECTIONS_PER_ROUTE = 10;
-    private static final int MAX_CONNECTIONS_TOTAL = 100;
-
-    private static final int SOCKET_TIMEOUT_MILLISEC = 5000;
-
     private static final Logger log = LoggerFactory.getLogger(CallbackUtils.class);
 
     private final JsonUtils jsonUtils;
@@ -76,21 +71,21 @@ public class CallbackUtils implements AutoCloseable {
 
 
     @Inject
-    CallbackUtils(JsonUtils jsonUtils) throws IOReactorException {
+    CallbackUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
         this.jsonUtils = jsonUtils;
 
         IOReactorConfig ioConfig = IOReactorConfig.custom()
                 .setIoThreadCount(Math.min(8, Runtime.getRuntime().availableProcessors()))
                 // the default connect timeout value for non-blocking connection requests.
-                .setConnectTimeout(SOCKET_TIMEOUT_MILLISEC)
+                .setConnectTimeout(propertiesUtil.getHttpCallbackSocketTimeout())
                 // the default socket timeout value for non-blocking I/O operations
-                .setSoTimeout(SOCKET_TIMEOUT_MILLISEC).build();
+                .setSoTimeout(propertiesUtil.getHttpCallbackSocketTimeout()).build();
 
         ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(ioConfig);
 
         PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
-        cm.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE); // default is 2
-        cm.setMaxTotal(MAX_CONNECTIONS_TOTAL); // default is 20
+        cm.setDefaultMaxPerRoute(propertiesUtil.getHttpCallbackConcurrentConnectionsPerRoute()); // default is 2
+        cm.setMaxTotal(propertiesUtil.getHttpCallbackConcurrentConnections()); // default is 20
 
 
         httpAsyncClient = HttpAsyncClients.custom().setConnectionManager(cm).build();

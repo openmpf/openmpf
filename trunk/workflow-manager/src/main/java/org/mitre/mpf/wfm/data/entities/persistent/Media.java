@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -91,7 +91,7 @@ public interface Media {
 
     public FrameTimeInfo getFrameTimeInfo();
 
-    public ImmutableSet<TimePair> getFrameRanges();
+    public ImmutableSet<MediaRange> getFrameRanges();
 
-    public ImmutableSet<TimePair> getTimeRanges();
+    public ImmutableSet<MediaRange> getTimeRanges();
 }

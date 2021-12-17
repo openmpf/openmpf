@@ -187,11 +187,11 @@ public class JobRequestServiceImpl implements JobRequestService {
     }
 
 
-    private static ImmutableSet<TimePair> convertRanges(
+    private static ImmutableSet<MediaRange> convertRanges(
             Collection<JobCreationMediaRange> ranges) {
         return ranges
                 .stream()
-                .map(r -> new TimePair(r.getStart(), r.getStop()))
+                .map(r -> new MediaRange(r.getStart(), r.getStop()))
                 .collect(ImmutableSet.toImmutableSet());
     }
 

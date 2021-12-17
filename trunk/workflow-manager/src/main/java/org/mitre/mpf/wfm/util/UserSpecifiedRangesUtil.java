@@ -53,10 +53,10 @@ public class UserSpecifiedRangesUtil {
      * @param media Input media that may or may not contain user specified ranges
      * @return The minimal set of ranges enclosing all user specified ranges.
      */
-    public static Set<TimePair> getCombinedRanges(Media media) {
+    public static Set<MediaRange> getCombinedRanges(Media media) {
         if (media.getFrameRanges().isEmpty()
                 && media.getTimeRanges().isEmpty()) {
-            return Set.of(new TimePair(0, media.getLength() - 1));
+            return Set.of(new MediaRange(0, media.getLength() - 1));
         }
 
         // TreeRangeSet will get us the minimal set of ranges enclosing all Range's added to it.
@@ -90,7 +90,7 @@ public class UserSpecifiedRangesUtil {
     }
 
 
-    private static TimePair rangeToClosedTimePair(Range<Integer> range) {
+    private static MediaRange rangeToClosedTimePair(Range<Integer> range) {
         int begin = range.lowerBoundType() == BoundType.CLOSED
                 ? range.lowerEndpoint()
                 : range.lowerEndpoint() + 1;
@@ -99,6 +99,6 @@ public class UserSpecifiedRangesUtil {
                 ? range.upperEndpoint()
                 : range.upperEndpoint() - 1;
 
-        return new TimePair(begin, end);
+        return new MediaRange(begin, end);
     }
 }

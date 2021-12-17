@@ -142,7 +142,7 @@ public class TestJobRequestService {
 
     private static void assertSegmentBoundariesEqual(
             Collection<JobCreationMediaRange> creationBoundaries,
-            Collection<TimePair> jobBoundaries) {
+            Collection<MediaRange> jobBoundaries) {
         assertEquals(creationBoundaries.size(), jobBoundaries.size());
 
         var creationBoundariesIter = creationBoundaries
@@ -157,7 +157,7 @@ public class TestJobRequestService {
                 .iterator();
 
         while (jobBoundariesIter.hasNext()) {
-            TimePair jobBoundary = jobBoundariesIter.next();
+            MediaRange jobBoundary = jobBoundariesIter.next();
             JobCreationMediaRange creationBoundary = creationBoundariesIter.next();
             assertEquals(jobBoundary.getStartInclusive(), creationBoundary.getStart());
             assertEquals(jobBoundary.getEndInclusive(), creationBoundary.getStop());

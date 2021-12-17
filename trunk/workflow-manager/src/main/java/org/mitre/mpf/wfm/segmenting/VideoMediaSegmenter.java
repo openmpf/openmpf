@@ -34,7 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            Set<TimePair> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
+            Set<MediaRange> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
             // Process each range separately to prevent createTimePairMessages from filling
             // gaps between user specified ranges.
             return framesToProcess.stream()
@@ -66,22 +66,22 @@ public class VideoMediaSegmenter implements MediaSegmenter {
             return createFeedForwardMessages(media, context);
         }
         else {
-            List<TimePair> trackTimePairs = MediaSegmenter.createTimePairsForTracks(context.getPreviousTracks());
-            return createTimePairMessages(media, context, trackTimePairs);
+            List<MediaRange> trackMediaRanges = MediaSegmenter.createRangesForTracks(context.getPreviousTracks());
+            return createTimePairMessages(media, context, trackMediaRanges);
         }
     }
 
     private static List<Message> createTimePairMessages(
-            Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
+            Media media, DetectionContext context, Collection<MediaRange> trackMediaRanges) {
 
-        List<TimePair> segments = MediaSegmenter.createSegments(
-                trackTimePairs,
+        List<MediaRange> segments = MediaSegmenter.createSegments(
+                trackMediaRanges,
                 context.getSegmentingPlan().getTargetSegmentLength(),
                 context.getSegmentingPlan().getMinSegmentLength(),
                 context.getSegmentingPlan().getMinGapBetweenSegments());
 
         List<Message> messages = new ArrayList<>(segments.size());
-        for(TimePair segment : segments) {
+        for(MediaRange segment : segments) {
             assert segment.getStartInclusive() >= 0
                     : String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
             assert segment.getEndInclusive() >= 0

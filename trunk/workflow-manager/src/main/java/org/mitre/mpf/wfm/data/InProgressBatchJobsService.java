@@ -38,7 +38,7 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -338,8 +338,8 @@ public class InProgressBatchJobsService {
             String uriStr,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadataProperties,
-            Collection<TimePair> frameRanges,
-            Collection<TimePair> timeRanges) {
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 

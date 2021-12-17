@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Comparator;
 import java.util.Objects;
 
-public class TimePair implements Comparable<TimePair> {
+public class MediaRange implements Comparable<MediaRange> {
 
 	private final int startInclusive;
 
@@ -42,8 +42,8 @@ public class TimePair implements Comparable<TimePair> {
 	public int getEndInclusive() { return endInclusive; }
 
 
-	public TimePair(@JsonProperty("startInclusive") int startInclusive,
-	                @JsonProperty("endInclusive") int endInclusive) {
+	public MediaRange(@JsonProperty("startInclusive") int startInclusive,
+	                  @JsonProperty("endInclusive") int endInclusive) {
 		this.startInclusive = startInclusive;
 		this.endInclusive = endInclusive;
 	}
@@ -57,21 +57,21 @@ public class TimePair implements Comparable<TimePair> {
 
 	@Override
 	public boolean equals(Object other) {
-		if (!(other instanceof TimePair)) {
+		if (!(other instanceof MediaRange)) {
 			return false;
 		}
-		TimePair casted = (TimePair) other;
+		MediaRange casted = (MediaRange) other;
 		return compareTo(casted) == 0;
 	}
 
 
-	private static final Comparator<TimePair> DEFAULT_COMPARATOR = Comparator
+	private static final Comparator<MediaRange> DEFAULT_COMPARATOR = Comparator
 			.nullsFirst(Comparator
-				.comparingInt(TimePair::getStartInclusive)
-				.thenComparingInt(TimePair::getEndInclusive));
+				.comparingInt(MediaRange::getStartInclusive)
+				.thenComparingInt(MediaRange::getEndInclusive));
 
 	@Override
-	public int compareTo(TimePair other) {
+	public int compareTo(MediaRange other) {
 		return DEFAULT_COMPARATOR.compare(this, other);
 	}
 

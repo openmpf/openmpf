@@ -39,7 +39,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -77,9 +77,9 @@ public class TestVideoMediaSegmenter {
     public void canCreateMessagesFromUserFrameSegmentBoundaries() {
         Media media = createTestMediaWithFps(
                 List.of(
-                        new TimePair(0, 7),
-                        new TimePair(15, 25),
-                        new TimePair(100, 124)
+                        new MediaRange(0, 7),
+                        new MediaRange(15, 25),
+                        new MediaRange(100, 124)
                 ),
                 List.of());
         DetectionContext context = createTestDetectionContext(
@@ -99,9 +99,9 @@ public class TestVideoMediaSegmenter {
         Media media = createTestMediaWithFps(
                 List.of(),
                 List.of(
-                        new TimePair(100, 800),
-                        new TimePair(1500, 2500),
-                        new TimePair(3000, 4240)
+                        new MediaRange(100, 800),
+                        new MediaRange(1500, 2500),
+                        new MediaRange(3000, 4240)
                 )
         );
         DetectionContext context = createTestDetectionContext(
@@ -128,9 +128,9 @@ public class TestVideoMediaSegmenter {
 
         var media = createTestMediaWithFps(
                 List.of(
-                        new TimePair(5, 9),
-                        new TimePair(10, 30),
-                        new TimePair(32, 40)
+                        new MediaRange(5, 9),
+                        new MediaRange(10, 30),
+                        new MediaRange(32, 40)
                 ),
                 List.of()
         );
@@ -145,7 +145,7 @@ public class TestVideoMediaSegmenter {
     @Test
     public void canLimitSegmentBoundariesToMediaLength() {
         Media media = createTestMediaWithFps(
-                List.of(new TimePair(100, 250)),
+                List.of(new MediaRange(100, 250)),
                 List.of()
         );
         DetectionContext context = createTestDetectionContext(0, Map.of(), Set.of());
@@ -334,8 +334,8 @@ public class TestVideoMediaSegmenter {
     }
 
     private static Media createTestMediaWithFps(
-            List<TimePair> frameBoundaries,
-            List<TimePair> timeBoundaries) {
+            List<MediaRange> frameBoundaries,
+            List<MediaRange> timeBoundaries) {
         var mediaUri = TestUtil.findFile("/samples/video_01.mp4");
         MediaImpl media = new MediaImpl(
                 1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),

@@ -36,7 +36,7 @@ import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -154,13 +154,13 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
-    private final ImmutableSet<TimePair> _frameRanges;
+    private final ImmutableSet<MediaRange> _frameRanges;
     @Override
-    public ImmutableSet<TimePair> getFrameRanges() { return _frameRanges; }
+    public ImmutableSet<MediaRange> getFrameRanges() { return _frameRanges; }
 
-    private final ImmutableSet<TimePair> _timeRanges;
+    private final ImmutableSet<MediaRange> _timeRanges;
     @Override
-    public ImmutableSet<TimePair> getTimeRanges() { return _timeRanges; }
+    public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
 
     public MediaImpl(
@@ -170,8 +170,8 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
-            Collection<TimePair> frameRanges,
-            Collection<TimePair> timeRanges,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
             String errorMessage) {
         _id = id;
         _uri = IoUtils.normalizeUri(uri);
@@ -199,8 +199,8 @@ public class MediaImpl implements Media {
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata,
-            @JsonProperty("frameRanges") Collection<TimePair> frameRanges,
-            @JsonProperty("timeRanges") Collection<TimePair> timeRanges) {
+            @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
         this(id,
              uri,
              uriScheme,

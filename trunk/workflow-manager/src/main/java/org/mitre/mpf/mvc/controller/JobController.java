@@ -131,7 +131,7 @@ public class JobController {
                     " \n\n For videos, an optional list of frame ranges or time ranges to limit which sections " +
                     "of the video will be processed. Regular segmenting will be applied, except " +
                     "that no gaps between user specified ranges will be filled. The ranges can be " +
-                    "specified as frame ranges and/or time ranges in milliseconds." +
+                    "specified as frame ranges or time ranges in milliseconds." +
                     " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " \nAlso, note that all provided URIs must be properly encoded." +

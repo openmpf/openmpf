@@ -26,18 +26,15 @@
 
 package org.mitre.mpf.wfm;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +48,8 @@ import java.util.List;
 
 public class WebRESTUtils {
 
-	public static final String REST_URL = Utils.BASE_URL + "/workflow-manager/rest/";
+	public static final String BASE_URL = getBaseUrl();
+	public static final String REST_URL = BASE_URL + "/workflow-manager/rest/";
 	public static final String MPF_AUTHORIZATION = "Basic bXBmOm1wZjEyMw==";// mpf user base64 <username:password>
 	public static final String ADMIN_AUTHORIZATION = "Basic YWRtaW46bXBmYWRtCg";// admin user base64 <username:password>
 
@@ -59,11 +57,23 @@ public class WebRESTUtils {
 
 	private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
 
-	public static JSONArray getNodes() throws JSONException, MalformedURLException {
-		String url = REST_URL + "nodes/info.json";
+	private WebRESTUtils() {}
+
+	private static String getBaseUrl() {
+		var baseUrl = System.getenv(EnvVar.TOMCAT_BASE_URL);
+		if (baseUrl != null && !baseUrl.isBlank()) {
+			return baseUrl;
+		}
+		else {
+			return "http://localhost:8080";
+		}
+	}
+
+	public static JsonNode getNodes() throws MalformedURLException, JsonProcessingException {
+		String url = REST_URL + "nodes/info";
 		log.debug("getNodes get {}",url);
-		JSONObject obj = new JSONObject(getJSON(new URL(url), MPF_AUTHORIZATION));
-		return obj.getJSONArray("nodeModels");
+		var obj = objectMapper.readTree(getJSON(new URL(url), MPF_AUTHORIZATION));
+		return obj.get("nodeModels");
 	}
 
 	public static String getJSON(URL url, String auth) {
@@ -214,20 +224,21 @@ public class WebRESTUtils {
 		return sb.toString();
 	}
 
-	public static SingleJobInfo getSingleJobInfo(long jobId) throws JsonParseException, JsonMappingException, IOException {
-		String urlJobsStatus = REST_URL + "jobs/" + Long.toString(jobId) + ".json";
+	public static SingleJobInfo getSingleJobInfo(long jobId) throws IOException {
+		String urlJobsStatus = REST_URL + "jobs/" + jobId;
 		String jsonJobResponse = getJSON(new URL(urlJobsStatus), MPF_AUTHORIZATION);
-		Assert.assertTrue("Failed to retrieve JSON when GETting job info for job id: " + Long.toString(jobId), jsonJobResponse.length() >= 0);
+		Assert.assertFalse("Failed to retrieve JSON when GETting job info for job id: " + jobId,
+		                   jsonJobResponse.isEmpty());
 		return objectMapper.readValue(jsonJobResponse, SingleJobInfo.class);
 	}
 
-	public static BatchJobStatusType getJobsStatus(long jobid)throws JsonParseException, JsonMappingException, IOException  {
+	public static BatchJobStatusType getJobsStatus(long jobid) throws IOException  {
 		SingleJobInfo singleJobInfo = getSingleJobInfo(jobid);
 		//convert to the enum and return
 		return BatchJobStatusType.valueOf(singleJobInfo.getJobStatus());
 	}
 
-	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, JsonParseException, JsonMappingException, IOException {
+	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, IOException {
 		log.info("[waitForJobToTerminate] job {}, delay:{} ", jobid, delay);
 		int count=20;
 		BatchJobStatusType status;
@@ -238,7 +249,6 @@ public class WebRESTUtils {
 			count--;
 		}
 		while(count > 0 && !status.isTerminal());
-		if(count > 0) return true;
-		return false;
+		return count > 0;
 	}
 }

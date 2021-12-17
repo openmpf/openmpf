@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm;
 
 import org.junit.*;
-import org.mitre.mpf.wfm.ui.Utils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
@@ -166,7 +165,7 @@ public class ITComponentRegistration {
 
 
     private static String getUrl(String path) {
-        return Utils.BASE_URL + "/workflow-manager/rest/" + path;
+        return WebRESTUtils.BASE_URL + "/workflow-manager/rest/" + path;
     }
 
 

@@ -158,7 +158,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 LOG.debug("Action {} has {} tracks", actionIndex, tracks.size());
                 processTracks(request, tracks, job, media, action, actionIndex, extractionPolicy);
 
-                Message message = new DefaultMessage();
+                Message message = new DefaultMessage(exchange.getContext());
                 message.setBody(_jsonUtils.serialize(request));
                 messages.add(message);
             }

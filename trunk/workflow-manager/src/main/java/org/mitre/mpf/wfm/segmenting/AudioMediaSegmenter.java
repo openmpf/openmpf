@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +51,12 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(AudioMediaSegmenter.class);
     public static final String REF = "audioMediaSegmenter";
 
+    private final CamelContext _camelContext;
+
+    @Inject
+    AudioMediaSegmenter(CamelContext camelContext) {
+        _camelContext = camelContext;
+    }
 
     @Override
     public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
@@ -64,7 +72,7 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private static Message createProtobufMessage(Media media, DetectionContext context,
+    private Message createProtobufMessage(Media media, DetectionContext context,
                                                  AudioRequest audioRequest) {
         DetectionProtobuf.DetectionRequest request = MediaSegmenter
                 .initializeRequest(media, context)
@@ -72,12 +80,12 @@ public class AudioMediaSegmenter implements MediaSegmenter {
                 .setAudioRequest(audioRequest)
                 .build();
 
-        Message message = new DefaultMessage();
+        Message message = new DefaultMessage(_camelContext);
         message.setBody(request);
         return message;
     }
 
-    private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+    private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
         List<Message> messages = new ArrayList<>();
         for (Track track : context.getPreviousTracks()) {
 

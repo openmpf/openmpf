@@ -28,8 +28,11 @@ package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -204,12 +207,12 @@ public class TestRemoteMediaProcessor {
         when(_mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 
-        var inMessage = new DefaultMessage();
+        var context = new DefaultCamelContext();
+        var inMessage = new DefaultMessage(context);
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
 
-        var exchange = mock(Exchange.class);
-        when(exchange.getIn())
-                .thenReturn(inMessage);
+        var exchange = new DefaultExchange(context);
+        exchange.setIn(inMessage);
 
         List<Message> messages = _remoteMediaSplitter.split(exchange);
 

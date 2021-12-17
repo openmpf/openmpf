@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices) {
+var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
     $.fn.dataTable.ext.errMode = 'throw';
 
     $scope.selectedJob = {};
@@ -60,6 +60,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 ajax: {
                     url: "jobs-paged",
                     type: "POST",
+                    headers: csrfHeaders(),
                     data: function (d) {//extra params
                         d.search = d.search.value;
                     }
@@ -429,6 +430,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             ajax: {
                 url: "markup/get-markup-results-filtered",
                 type: "POST",
+                headers: csrfHeaders(),
                 data: function (d) {//extra params
                     d.search = d.search.value;//pull out because spring is a pain to pass params
                     d.jobId = $scope.selectedJob.jobId;

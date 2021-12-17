@@ -28,7 +28,9 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -52,11 +54,12 @@ public class MediaTestUtil {
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 
-        var inMessage = new DefaultMessage();
+        var context = new DefaultCamelContext();
+        var inMessage = new DefaultMessage(context);
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
         inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
 
-        var outMessage = new DefaultMessage();
+        var outMessage = new DefaultMessage(context);
 
         var exchange = mock(Exchange.class);
         when(exchange.getIn())

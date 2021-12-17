@@ -49,21 +49,10 @@
         <!--  needed for fileupload -->
         <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>
 
-        <!-- using a velocity view resolver to get angular to work (html templates) -->
-        <bean id="velocityConfig" class="org.springframework.web.servlet.view.velocity.VelocityConfigurer">
-            <property name="resourceLoaderPath" value="/WEB-INF/html/"/>
-        </bean>
-
-        <bean id="viewResolver" class="org.springframework.web.servlet.view.velocity.VelocityViewResolver">
-            <property name="cache" value="true"/>
-            <property name="prefix" value=""/>
-            <!-- <property name="prefix" value="/WEB-INF/html/"/> -->
-            <property name="suffix" value=".html"/>
-            <property name="exposeSpringMacroHelpers" value="true"/>
-            <property name="order" value="0" />
-        </bean>
-
         <mvc:resources mapping="/resources/**" location="/resources/mytheme/" />
+
+        <mvc:resources mapping="/swagger-ui/**"
+                       location="classpath:/META-INF/resources/webjars/springfox-swagger-ui/" />
 
         <!-- Enables the Spring MVC @Controller programming model -->
         <mvc:annotation-driven>

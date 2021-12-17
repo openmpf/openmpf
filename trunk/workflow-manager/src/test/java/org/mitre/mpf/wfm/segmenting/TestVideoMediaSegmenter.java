@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -48,6 +49,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
+import static org.mockito.Mockito.mock;
 
 public class TestVideoMediaSegmenter {
 
@@ -234,7 +236,7 @@ public class TestVideoMediaSegmenter {
 
 
 	private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new VideoMediaSegmenter();
+		MediaSegmenter segmenter = new VideoMediaSegmenter(mock(CamelContext.class));
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}

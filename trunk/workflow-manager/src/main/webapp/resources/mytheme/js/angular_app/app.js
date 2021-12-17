@@ -47,14 +47,32 @@ var App = angular.module('mpf.wfm', [
 	'mpf.wfm.property.settings'
 ]);
 
+
+(function() {
+	// Get the CSRF configuration added to the page index.jsp.
+	var csrfHeader = $('#_csrf_header').attr('content');
+	var csrfToken = $('#_csrf').attr('content');
+
+	App.constant('csrfHeaders', function (obj) {
+		var result = obj || {};
+		result[csrfHeader] = csrfToken;
+		return result;
+	});
+}());
+
+
 // Declare app level module which depends on filters, and services
-App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($stateProvider, $urlRouterProvider,$httpProvider) {
+App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $urlRouterProvider) {
 	  // For any unmatched url, redirect to /jobs
 	  $urlRouterProvider.otherwise("/jobs");
 
+	  var getTemplateUrl = function(name) {
+		  return 'resources/layouts/' + name + '.html';
+	  };
+
 	  $stateProvider.state('/about', {
 		  url: '/about',
-		  templateUrl: 'about/layout.html',
+		  templateUrl: getTemplateUrl('about'),
 		  controller: AboutCtrl,
 		  resolve: {
             depResponse: function($http) {
@@ -65,37 +83,31 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 
 	  $stateProvider.state('/server_media', {
 		  url: '/server_media',
-		  templateUrl: 'server_media/layout.html',
+		  templateUrl: getTemplateUrl('server_media'),
 		  controller: 'ServerMediaCtrl'
 	  });
 
 	  $stateProvider.state('/pipelines', {
 		  url: '/pipelines',
-		  templateUrl: 'pipelines/layout',
+		  templateUrl: getTemplateUrl('pipelines'),
 		  controller: PipelinesCtrl
 	  });
 
 	  $stateProvider.state('/pipelines2', {
 		  url: '/pipelines2',
-		  templateUrl: 'pipelines2/layout.html',
+		  templateUrl: getTemplateUrl('pipelines2'),
           controller: 'Pipelines2Ctrl',
-          // controllerAs: 'pipes2',
-          // resolve: {
-          //     init: function() {
-          //         vm.init();
-          //     }
-          // }
       });
 
 	  $stateProvider.state('/jobs', {
 		  url: '/jobs',
-		  templateUrl: 'jobs/layout.html',
+		  templateUrl: getTemplateUrl('jobs'),
 		  controller: JobsCtrl
 	  });
 
 	  $stateProvider.state('/adminNodes', {
 		  url: '/adminNodes',
-		  templateUrl: 'admin/nodes/layout',
+		  templateUrl: getTemplateUrl('admin/nodes'),
 		  controller: AdminNodesCtrl,
 		  resolve: {
 			  checkDocker: ['MetadataService', '$state', function (MetadataService, $state) {
@@ -117,13 +129,13 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 
 	  $stateProvider.state('/admin/propertySettings', {
 		  url: '/admin/propertySettings',
-		  templateUrl: 'admin/property_settings/layout',
+		  templateUrl: getTemplateUrl('admin/property_settings'),
 		  controller: 'AdminPropertySettingsCtrl'
 	  });
 
 	  $stateProvider.state('/admin/componentRegistration', {
 		  url: '/admin/componentRegistration',
-		  templateUrl: 'admin/component_registration/layout',
+		  templateUrl: getTemplateUrl('admin/component_registration'),
 		  controller: 'AdminComponentRegistrationCtrl',
 		  resolve: {
 			  roleInfo: ['RoleService', function (r) { return r.getRoleInfo(); }],
@@ -133,24 +145,24 @@ App.config(['$stateProvider', '$urlRouterProvider','$httpProvider' ,function ($s
 
 	  $stateProvider.state('/adminLogs', {
 		  url: '/adminLogs',
-		  templateUrl: 'admin/log/layout' ,
+		  templateUrl: getTemplateUrl('admin/logs'),
 		  controller: AdminLogsCtrl
 	  });
 
 	  $stateProvider.state('/adminStatistics', {
 		  url: '/adminStatistics',
-		  templateUrl: 'admin/stats/layout',
+		  templateUrl: getTemplateUrl('admin/stats'),
 		  controller: AdminStatsCtrl
 	  });
+}]);
 
-      $stateProvider.state('/adminWebServices', {
-          url: '/adminWebServices',
-          templateUrl: 'adminWebServices/layout.html' //,
-          // controller: //TODO: need a controller
-      });
 
-	$httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';//need to add explicitly but can cause problems with CORS
-    $httpProvider.interceptors.push('httpInterceptor');//services.js
+App.config(['$httpProvider', 'csrfHeaders', function($httpProvider, csrfHeaders) {
+	//need to add explicitly but can cause problems with CORS
+	$httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';
+	csrfHeaders($httpProvider.defaults.headers.common);
+
+	$httpProvider.interceptors.push('httpInterceptor');//services.js
 }]);
 
 //$log.debug should not work without this, but other levels should

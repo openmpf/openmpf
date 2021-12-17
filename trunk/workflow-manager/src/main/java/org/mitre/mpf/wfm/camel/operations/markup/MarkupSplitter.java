@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camel.operations.markup;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.apache.tika.mime.MimeTypes;
@@ -66,6 +67,8 @@ import java.util.stream.DoubleStream;
 public class MarkupSplitter {
     private static final Logger log = LoggerFactory.getLogger(MarkupSplitter.class);
 
+    private final CamelContext _camelContext;
+
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final PropertiesUtil _propertiesUtil;
@@ -76,10 +79,12 @@ public class MarkupSplitter {
 
     @Inject
     public MarkupSplitter(
+            CamelContext camelContext,
             InProgressBatchJobsService inProgressBatchJobs,
             PropertiesUtil propertiesUtil,
             MarkupResultDao markupResultDao,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        _camelContext = camelContext;
         _inProgressBatchJobs = inProgressBatchJobs;
         _propertiesUtil = propertiesUtil;
         _markupResultDao = markupResultDao;
@@ -152,7 +157,7 @@ public class MarkupSplitter {
             }
 
             var algorithm = job.getPipelineElements().getAlgorithm(markupAction.getAlgorithm());
-            var message = new DefaultMessage();
+            var message = new DefaultMessage(_camelContext);
             message.setHeader(
                     MpfHeaders.RECIPIENT_QUEUE,
                     String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(),

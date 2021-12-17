@@ -101,13 +101,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.mitre.mpf</groupId>
-            <artifactId>mpf-install</artifactId>
-            <version>${project.parent.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.mitre.mpf</groupId>-->
+<!--            <artifactId>mpf-install</artifactId>-->
+<!--            <version>${project.parent.version}</version>-->
+<!--            <type>pom</type>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.mitre.mpf</groupId>
             <artifactId>mpf-java-test-detection-component</artifactId>
@@ -134,11 +134,6 @@
         </dependency>
         <!-- / added for REST web services -->
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-smile</artifactId>
-            <version>${com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -632,23 +627,23 @@
             <version>42.2.10</version>
         </dependency>
 
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>${joda.time.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>joda-time</groupId>-->
+<!--            <artifactId>joda-time</artifactId>-->
+<!--            <version>${joda.time.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time-hibernate</artifactId>
-            <version>${joda.time.hibernate.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>joda-time</groupId>-->
+<!--            <artifactId>joda-time-hibernate</artifactId>-->
+<!--            <version>${joda.time.hibernate.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.jadira.usertype</groupId>
-            <artifactId>usertype.core</artifactId>
-            <version>${jadira.usertype.core.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jadira.usertype</groupId>-->
+<!--            <artifactId>usertype.core</artifactId>-->
+<!--            <version>${jadira.usertype.core.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
          <groupId>org.aspectj</groupId>
@@ -685,6 +680,11 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
@@ -692,6 +692,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-smile</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <!-- / added for Jackson -->
@@ -731,12 +737,12 @@
             </exclusions>
         </dependency>
 
-        <dependency>
+<!--         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>${h2database.version}</version>
         </dependency>
-
+ -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -777,11 +783,11 @@
         </dependency>
         <!-- / added for swagger -->
 
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>${org.seleniumhq.selenium.selenium-java.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.seleniumhq.selenium</groupId>-->
+<!--            <artifactId>selenium-java</artifactId>-->
+<!--            <version>${org.seleniumhq.selenium.selenium-java.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>xml-apis</groupId>

@@ -39,7 +39,6 @@ import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
@@ -63,6 +62,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebREST {
+
+	private static final String IMG_URL = WebRESTUtils.BASE_URL
+			+ "/workflow-manager/resources/img/blue-cybernetic-background.jpg";
 
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
@@ -937,7 +939,7 @@ public class ITWebREST {
 		JSONArray mediaList = new JSONArray();
 		JSONObject mediaEntry = new JSONObject();
 		mediaList.put(mediaEntry);
-		mediaEntry.put("mediaUri", Utils.IMG_URL);
+		mediaEntry.put("mediaUri", IMG_URL);
 		mediaEntry.put("properties", new JSONObject());
         params.put("media", mediaList);
 
@@ -977,7 +979,7 @@ public class ITWebREST {
 
 			JSONArray media = new JSONArray();
 			JSONObject medium = new JSONObject();
-			medium.put("mediaUri", Utils.IMG_URL);
+			medium.put("mediaUri", IMG_URL);
 			medium.put("properties", properties);
 			media.put(medium);
 

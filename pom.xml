@@ -86,23 +86,20 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
-        <!--updated com.fasterxml.jackson.dataformat.jackson-dataformat-smile version to 2.9.2 to be consistent with jackson-core version -->
-        <com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>2.9.2</com.fasterxml.jackson.dataformat.jackson-dataformat-smile.version>
         <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
         <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
         <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
-        <org.seleniumhq.selenium.selenium-java.version>2.53.0</org.seleniumhq.selenium.selenium-java.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
-        <spring.framework.version>4.2.5.RELEASE</spring.framework.version>
-        <hibernate.framework.version>5.4.12.Final</hibernate.framework.version>
-        <hibernate.validator.version>5.2.4.Final</hibernate.validator.version>
+        <spring.framework.version>4.3.16.RELEASE</spring.framework.version>
+        <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
+        <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
         <javax.el.api.version>2.2.4</javax.el.api.version>
         <atomikos.framework.version>3.9.3</atomikos.framework.version>
-        <camel.framework.version>2.16.2</camel.framework.version>
+        <camel.framework.version>2.24.0</camel.framework.version>
         <jaxb.version>2.3.0</jaxb.version>
         <jaxws.rt.version>2.3.0</jaxws.rt.version>
         <jaxws.spring.version>1.9</jaxws.spring.version>
-        <activemq.framework.version>5.13.0</activemq.framework.version>
+        <activemq.framework.version>5.15.9</activemq.framework.version>
         <leveldb-api-version>0.7</leveldb-api-version>
         <leveldb-version>0.7</leveldb-version>
         <leveldbjni-version>1.8</leveldbjni-version>
@@ -111,14 +108,14 @@
         <slf4j.version>1.7.25</slf4j.version>
         <log4j.version>2.16.0</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
-        <jackson.version>2.9.2</jackson.version>
+        <jackson.version>2.13.0</jackson.version>
 
         <!-- sticking with the 3.2.8 release because a jump to 4.x.x will require changing spring-security.xml -->
         <spring.security.version>3.2.8.RELEASE</spring.security.version>
         <org.springframework.data.spring-data-redis.version>1.6.6.RELEASE</org.springframework.data.spring-data-redis.version>
         <commons.codec.version>1.10</commons.codec.version>
-        <commons.collections4.version>4.0</commons.collections4.version>
-        <commons.configuration2.version>2.2</commons.configuration2.version>
+        <commons.collections4.version>4.1</commons.collections4.version>
+        <commons.configuration2.version>2.7</commons.configuration2.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <javax.inject.version>1</javax.inject.version>
         <javax.jms.version>1.1</javax.jms.version>
@@ -133,18 +130,17 @@
         <stax2.api.version>4.0.0</stax2.api.version>
         <mockito.core.version>2.26.0</mockito.core.version>
         <commons.io.version>2.6</commons.io.version>
-        <xstream.version>1.4.8</xstream.version>
-        <commons.beanutils.version>1.9.3</commons.beanutils.version>
+        <xstream.version>1.4.18</xstream.version>
+        <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <joda.time.version>2.8.2</joda.time.version>
         <joda.time.hibernate.version>1.4</joda.time.hibernate.version>
         <jadira.usertype.core.version>6.0.1.GA</jadira.usertype.core.version>
         <aspectjweaver.version>1.8.6</aspectjweaver.version>
         <jbossjta.version>4.16.4.Final</jbossjta.version>
         <javax.servlet.jstl.version>1.2</javax.servlet.jstl.version>
-        <commons.fileupload.version>1.3.1</commons.fileupload.version>
+        <commons.fileupload.version>1.3.3</commons.fileupload.version>
         <imgscalr.lib.version>4.2</imgscalr.lib.version>
-        <spring.data.commons.version>1.10.2.RELEASE</spring.data.commons.version>
-        <h2database.version>1.4.188</h2database.version>
+        <spring.data.commons.version>2.0.7.RELEASE </spring.data.commons.version>
         <!-- new issue is causing problems with JSONObject - 20141113 -->
         <org.json.version>20140107</org.json.version>
         <javax.json.version>1.0.4</javax.json.version>

@@ -33,7 +33,7 @@ import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
-import org.h2.util.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
@@ -153,7 +153,7 @@ public class PropertiesUtil {
     private void parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
-        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+        if (StringUtils.isBlank(coreMpfNodesStr)) {
             coreMpfNodes = ImmutableSet.of(); // empty set
         } else {
             coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)

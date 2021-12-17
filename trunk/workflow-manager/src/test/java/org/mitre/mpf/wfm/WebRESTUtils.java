@@ -37,7 +37,7 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.ui.Utils;
+import org.mitre.mpf.wfm.enums.EnvVar;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,13 +51,26 @@ import java.util.List;
 
 public class WebRESTUtils {
 
-	public static final String REST_URL = Utils.BASE_URL + "/workflow-manager/rest/";
+	public static final String BASE_URL = getBaseUrl();
+	public static final String REST_URL = BASE_URL + "/workflow-manager/rest/";
 	public static final String MPF_AUTHORIZATION = "Basic bXBmOm1wZjEyMw==";// mpf user base64 <username:password>
 	public static final String ADMIN_AUTHORIZATION = "Basic YWRtaW46bXBmYWRtCg";// admin user base64 <username:password>
 
 	private static final Logger log = LoggerFactory.getLogger(WebRESTUtils.class);
 
 	private static final ObjectMapper objectMapper = ObjectMapperFactory.customObjectMapper();
+
+	private WebRESTUtils() {}
+
+	private static String getBaseUrl() {
+		var baseUrl = System.getenv(EnvVar.TOMCAT_BASE_URL);
+		if (baseUrl != null && !baseUrl.isBlank()) {
+			return baseUrl;
+		}
+		else {
+			return "http://localhost:8080";
+		}
+	}
 
 	public static JSONArray getNodes() throws JSONException, MalformedURLException {
 		String url = REST_URL + "nodes/info.json";

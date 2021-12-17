@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -67,10 +68,10 @@ public class TestMediaInspectionSplitter {
 
 
     @Test
-    public void testMediaInspectionSplitter() throws Exception {
+    public void testMediaInspectionSplitter() {
         final long jobId = 54328;
 
-        var inMessage = new DefaultMessage();
+        var inMessage = new DefaultMessage(mock(CamelContext.class));
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
         var exchange = mock(Exchange.class);
         when(exchange.getIn())

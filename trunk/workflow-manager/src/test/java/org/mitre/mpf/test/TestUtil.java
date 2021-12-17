@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.test;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -119,7 +120,8 @@ public class TestUtil {
 
 
     public static Exchange createTestExchange() {
-        return createTestExchange(new DefaultMessage(), new DefaultMessage());
+        var mockContext = mock(CamelContext.class);
+        return createTestExchange(new DefaultMessage(mockContext), new DefaultMessage(mockContext));
     }
 
     public static Exchange createTestExchange(Message inMessage, Message outMessage) {

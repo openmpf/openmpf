@@ -47,6 +47,7 @@ public class NodeManagers {
         StaxDriver driver = new StaxDriver();
         driver.getQnameMap().setDefaultNamespace("launch.xml.nms.mitre.org");
         XStream xstream = new XStream(driver);
+        xstream.allowTypeHierarchy(NodeManagers.class);
         xstream.autodetectAnnotations(true);
         xstream.processAnnotations(NodeManagers.class);
         NodeManagers retval = (NodeManagers) xstream.fromXML(inputStream);
@@ -60,6 +61,7 @@ public class NodeManagers {
 
     public static void toXml(NodeManagers managers, OutputStream outputStream) {
         XStream xStream = new XStream();
+        xStream.allowTypeHierarchy(NodeManagers.class);
         //just adding all of them from the start - do not see a disadvantage from doing this
         xStream.processAnnotations(NodeManagers.class);
         xStream.processAnnotations(NodeManager.class);

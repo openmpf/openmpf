@@ -26,9 +26,9 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
@@ -71,11 +70,12 @@ public class TestMediaInspectionSplitter {
     public void testMediaInspectionSplitter() {
         final long jobId = 54328;
 
-        var inMessage = new DefaultMessage(mock(CamelContext.class));
+        var context = new DefaultCamelContext();
+        var inMessage = new DefaultMessage(context);
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
-        var exchange = mock(Exchange.class);
-        when(exchange.getIn())
-                .thenReturn(inMessage);
+
+        var exchange = new DefaultExchange(context);
+        exchange.setIn(inMessage);
 
         var testExternalId = "externID";
 

@@ -108,8 +108,8 @@
         </dependency>
         <dependency>
             <groupId>javax.jms</groupId>
-            <artifactId>jms</artifactId>
-            <version>${javax.jms.version}</version>
+            <artifactId>javax.jms-api</artifactId>
+            <version>${javax.jms-api.version}</version>
         </dependency>
 
         <dependency>

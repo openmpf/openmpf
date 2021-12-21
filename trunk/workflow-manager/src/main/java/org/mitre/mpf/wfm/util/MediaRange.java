@@ -24,69 +24,65 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
+package org.mitre.mpf.wfm.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Comparator;
+import java.util.Objects;
+
+public class MediaRange implements Comparable<MediaRange> {
+
+	private final int startInclusive;
+
+	public int getStartInclusive() { return startInclusive; }
+
+	private final int endInclusive;
+
+	public int getEndInclusive() { return endInclusive; }
 
 
-public class JobCreationMediaData {
+	public MediaRange(@JsonProperty("startInclusive") int startInclusive,
+	                  @JsonProperty("endInclusive") int endInclusive) {
+		this.startInclusive = startInclusive;
+		this.endInclusive = endInclusive;
+	}
 
-    private String mediaUri;
 
-    private Map<String, String> properties = new HashMap<>();
+	@Override
+	public int hashCode() {
+		return Objects.hash(startInclusive, endInclusive);
+	}
 
-    private Map<String, String> metadata = new HashMap<>();
 
-    private List<JobCreationMediaRange> frameRanges = new ArrayList<>();
+	@Override
+	public boolean equals(Object other) {
+		if (!(other instanceof MediaRange)) {
+			return false;
+		}
+		MediaRange casted = (MediaRange) other;
+		return compareTo(casted) == 0;
+	}
 
-    private List<JobCreationMediaRange> timeRanges = new ArrayList<>();
 
-    public JobCreationMediaData() {}
+	private static final Comparator<MediaRange> DEFAULT_COMPARATOR = Comparator
+			.nullsFirst(Comparator
+				.comparingInt(MediaRange::getStartInclusive)
+				.thenComparingInt(MediaRange::getEndInclusive));
 
-    public JobCreationMediaData(String uri) {
-        this.mediaUri = uri;
-    }
+	@Override
+	public int compareTo(MediaRange other) {
+		return DEFAULT_COMPARATOR.compare(this, other);
+	}
 
-    public String getMediaUri() {
-        return mediaUri;
-    }
 
-    public void setMediaUri(String mediaUri) {
-        this.mediaUri = mediaUri;
-    }
+	public int length() {
+		return endInclusive - startInclusive + 1;
+	}
 
-    public Map<String, String> getProperties() {
-        return properties;
-    }
 
-    public Map<String, String> getMetadata() {
-        return metadata;
-    }
-
-    public void setProperties(Map<String, String> properties) {
-        this.properties = properties;
-    }
-
-    public void setMetadata(Map<String, String> metadata) {
-        this.metadata = metadata;
-    }
-
-    public List<JobCreationMediaRange> getFrameRanges() {
-        return frameRanges;
-    }
-
-    public void setFrameRanges(List<JobCreationMediaRange> frameRanges) {
-        this.frameRanges = frameRanges;
-    }
-
-    public List<JobCreationMediaRange> getTimeRanges() {
-        return timeRanges;
-    }
-
-    public void setTimeRanges(List<JobCreationMediaRange> timeRanges) {
-        this.timeRanges = timeRanges;
-    }
+	@Override
+	public String toString() {
+		return getClass() .getSimpleName() + ": startInclusive=" + startInclusive + ", endInclusive=" + endInclusive;
+	}
 }

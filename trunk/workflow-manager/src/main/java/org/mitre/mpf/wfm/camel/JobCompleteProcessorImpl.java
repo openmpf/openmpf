@@ -359,6 +359,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getType() != null ? media.getType().toString() : null,
                     media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
+            for (var frameRange : media.getFrameRanges()) {
+                mediaOutputObject.getFrameRanges().add(new JsonMediaRange(
+                        frameRange.getStartInclusive(), frameRange.getEndInclusive()));
+            }
+
+            for (var timeRange : media.getTimeRanges()) {
+                mediaOutputObject.getTimeRanges().add(new JsonMediaRange(
+                        timeRange.getStartInclusive(), timeRange.getEndInclusive()));
+            }
+
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
             censorPropertiesService.copyAndCensorProperties(
                     media.getMediaSpecificProperties(),

@@ -27,10 +27,12 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -110,7 +112,12 @@ public class JobRequestServiceImpl implements JobRequestService {
     public JobRequest run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties(), m.getMetadata()))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getMediaUri(),
+                        m.getProperties(),
+                        m.getMetadata(),
+                        convertRanges(m.getFrameRanges()),
+                        convertRanges(m.getTimeRanges())))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
@@ -134,7 +141,6 @@ public class JobRequestServiceImpl implements JobRequestService {
     }
 
 
-
     @Override
     public JobRequest resubmit(long jobId, int priority) {
         JobRequest jobRequestEntity = _jobRequestDao.findById(jobId);
@@ -151,7 +157,12 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties(), m.getProvidedMetadata()))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getUri(),
+                        m.getMediaSpecificProperties(),
+                        m.getProvidedMetadata(),
+                        m.getFrameRanges(),
+                        m.getTimeRanges()))
                 .collect(ImmutableList.toImmutableList());
 
 
@@ -173,6 +184,15 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         submit(jobRequestEntity);
         return jobRequestEntity;
+    }
+
+
+    private static ImmutableSet<MediaRange> convertRanges(
+            Collection<JobCreationMediaRange> ranges) {
+        return ranges
+                .stream()
+                .map(r -> new MediaRange(r.getStart(), r.getStop()))
+                .collect(ImmutableSet.toImmutableSet());
     }
 
 

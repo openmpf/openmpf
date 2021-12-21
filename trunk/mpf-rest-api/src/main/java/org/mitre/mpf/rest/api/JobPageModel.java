@@ -30,6 +30,10 @@ public class JobPageModel extends SingleJobInfo {
 
     private boolean outputFileExists = false;
 
+    private long internalJobId;
+    public long getJobId() { return internalJobId; }
+    public void setJobId(long id) { internalJobId = id; }
+
     public boolean isOutputFileExists() {
         return outputFileExists;
     }
@@ -42,7 +46,7 @@ public class JobPageModel extends SingleJobInfo {
     }
 
     public JobPageModel(SingleJobInfo job) {
-        super(job.getJobId(),
+        super(job.getExportedJobId(),
               job.getPipelineName(),
               job.getJobPriority(),
               job.getJobStatus(),

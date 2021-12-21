@@ -231,6 +231,7 @@ public class JobController {
         for (int i = 0; i < jobInfoModels.size(); i++) {
             SingleJobInfo job = jobInfoModels.get(i);
             JobPageModel job_model = new JobPageModel(job);
+            job_model.setJobId(propertiesUtil.getJobIdFromExportedId(job.getExportedJobId()));
             if(job_model.getOutputObjectPath() != null) {
                 job_model.setOutputFileExists(
                         IoUtils.toLocalPath(job_model.getOutputObjectPath())

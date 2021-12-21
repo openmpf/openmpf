@@ -70,7 +70,7 @@ public class SingleJobInfo {
         this.mediaUris = List.copyOf(mediaUris);
     }
 
-    public String getJobId() {
+    public String getExportedJobId() {
         return jobId;
     }
 

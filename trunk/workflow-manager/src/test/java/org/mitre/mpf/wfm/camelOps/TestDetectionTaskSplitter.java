@@ -97,8 +97,8 @@ public class TestDetectionTaskSplitter {
 
         URI mediaUri = ioUtils.findFile("/samples/new_face_video.avi");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                Collections.emptyMap(), null);
+                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                Map.of(), Map.of(), List.of(), List.of(), null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
@@ -454,7 +454,7 @@ public class TestDetectionTaskSplitter {
         URI fullMediaUri = ioUtils.findFile(mediaUri);
         MediaImpl testMedia = new MediaImpl(
                 nextId(), fullMediaUri.toString(), UriScheme.get(fullMediaUri), Paths.get(fullMediaUri),
-                mediaProperties, Collections.emptyMap(), null);
+                mediaProperties, Map.of(), List.of(), List.of(), null);
         testMedia.setLength(300);
         testMedia.setType(mediaType);
         testMedia.setMimeType(mimeType);
@@ -488,8 +488,8 @@ public class TestDetectionTaskSplitter {
 
         URI mediaUri = URI.create("file:///path/to/dummy/media");
         MediaImpl testMedia = new MediaImpl(
-                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), mediaProperties,
-                Collections.emptyMap(), null);
+                nextId(), mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                mediaProperties, Map.of(), List.of(), List.of(), null);
         testMedia.setType(MediaType.VIDEO);
         testMedia.setMimeType("video/dummy");
 

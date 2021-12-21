@@ -107,10 +107,12 @@ public class TestTiesDbService {
 
     @Test
     public void testAddAssertions() {
-        var media1 = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media1 = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                   List.of(), List.of(), null);
         media1.setSha256("MEDIA1_SHA");
 
-        var media2 = new MediaImpl(325, "file:///media2", null, null, Map.of(), Map.of(), null);
+        var media2 = new MediaImpl(325, "file:///media2", null, null, Map.of(), Map.of(),
+                                   List.of(), List.of(), null);
         media2.setSha256("MEDIA2_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
@@ -675,7 +677,8 @@ public class TestTiesDbService {
 
 
     private static BatchJob createTwoStageTestJob() {
-        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                  List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
@@ -699,7 +702,8 @@ public class TestTiesDbService {
 
 
     private static BatchJob createThreeStageTestJob() {
-        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                  List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);

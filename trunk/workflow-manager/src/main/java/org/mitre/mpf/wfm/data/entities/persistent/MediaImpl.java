@@ -30,17 +30,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MediaImpl implements Media {
 
@@ -155,6 +154,14 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
+    private final ImmutableSet<MediaRange> _frameRanges;
+    @Override
+    public ImmutableSet<MediaRange> getFrameRanges() { return _frameRanges; }
+
+    private final ImmutableSet<MediaRange> _timeRanges;
+    @Override
+    public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
+
 
     public MediaImpl(
             long id,
@@ -163,6 +170,8 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
             String errorMessage) {
         _id = id;
         _uri = IoUtils.normalizeUri(uri);
@@ -170,6 +179,9 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
+        _frameRanges = ImmutableSet.copyOf(frameRanges);
+        _timeRanges = ImmutableSet.copyOf(timeRanges);
+
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
@@ -186,8 +198,18 @@ public class MediaImpl implements Media {
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
-            @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
+        this(id,
+             uri,
+             uriScheme,
+             localPath,
+             mediaSpecificProperties,
+             providedMetadata,
+             frameRanges,
+             timeRanges,
+             errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -200,9 +222,15 @@ public class MediaImpl implements Media {
         }
 
         MediaImpl result = new MediaImpl(
-                originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
-                originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
+                originalMedia.getId(),
+                originalMedia.getUri(),
+                originalMedia.getUriScheme(),
+                originalMedia.getLocalPath(),
+                originalMedia.getMediaSpecificProperties(),
+                originalMedia.getProvidedMetadata(),
+                originalMedia.getFrameRanges(),
+                originalMedia.getTimeRanges(),
+                originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());

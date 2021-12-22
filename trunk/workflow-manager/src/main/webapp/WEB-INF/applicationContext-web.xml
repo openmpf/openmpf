@@ -51,6 +51,9 @@
 
         <mvc:resources mapping="/resources/**" location="/resources/mytheme/" />
 
+        <mvc:resources mapping="/swagger-ui/**"
+                       location="classpath:/META-INF/resources/webjars/springfox-swagger-ui/" />
+
         <!-- Enables the Spring MVC @Controller programming model -->
         <mvc:annotation-driven>
             <mvc:message-converters>

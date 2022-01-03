@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonActionOutputObject;
@@ -118,8 +117,8 @@ public class ITWebStreamingReports {
         String jobCreationResponseJson1 = createStreamingJob(createJobUrl, PIPELINE_NAME,
                 EXTERNAL_ID_1, "POST");
 
-        JSONObject obj1 = new JSONObject(jobCreationResponseJson1);
-        postJobId1 = Long.valueOf(obj1.getInt("jobId"));
+        var obj1 = objectMapper.readTree(jobCreationResponseJson1);
+        postJobId1 = obj1.get("jobId").asLong();
         log.info("Streaming job #1 with jobId " + postJobId1
                 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson1);
 
@@ -128,8 +127,8 @@ public class ITWebStreamingReports {
         String jobCreationResponseJson2 = createStreamingJob(createJobUrl, PIPELINE_NAME,
                 EXTERNAL_ID_2, "POST");
 
-        JSONObject obj2 = new JSONObject(jobCreationResponseJson2);
-        postJobId2 = Long.valueOf(obj2.getInt("jobId"));
+        var obj2 = objectMapper.readTree(jobCreationResponseJson2);
+        postJobId2 = obj2.get("jobId").asInt();
         log.info("Streaming job #2 with jobId " + postJobId2
                 + " created with POST method, jobCreationResponse=" + jobCreationResponseJson2);
     }
@@ -335,14 +334,14 @@ public class ITWebStreamingReports {
     private static String createStreamingJob(String url, String pipelineName, String externalId,
         String callbackMethod) throws MalformedURLException {
 
+        var params = objectMapper.createObjectNode();
         // create a request for a new streaming job using a component that supports streaming jobs.
-        JSONObject params = new JSONObject();
         params.put("pipelineName", pipelineName);
 
-        JSONObject mediaProperties = new JSONObject();
+        var mediaProperties = objectMapper.createObjectNode();
         mediaProperties.put("testProp", "testVal");
 
-        JSONObject stream = new JSONObject();
+        var stream = objectMapper.createObjectNode();
         stream.put("streamUri", STREAM_URI);
         stream.put("mediaProperties", mediaProperties);
         stream.put("segmentSize", 10);

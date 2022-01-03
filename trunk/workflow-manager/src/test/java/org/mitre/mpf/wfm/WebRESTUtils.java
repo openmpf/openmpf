@@ -27,13 +27,12 @@
 package org.mitre.mpf.wfm;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.mitre.mpf.rest.api.SingleJobInfo;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -72,11 +71,11 @@ public class WebRESTUtils {
 		}
 	}
 
-	public static JSONArray getNodes() throws JSONException, MalformedURLException {
+	public static JsonNode getNodes() throws MalformedURLException, JsonProcessingException {
 		String url = REST_URL + "nodes/info.json";
 		log.debug("getNodes get {}",url);
-		JSONObject obj = new JSONObject(getJSON(new URL(url), MPF_AUTHORIZATION));
-		return obj.getJSONArray("nodeModels");
+		var obj = objectMapper.readTree(getJSON(new URL(url), MPF_AUTHORIZATION));
+		return obj.get("nodeModels");
 	}
 
 	public static String getJSON(URL url, String auth) {

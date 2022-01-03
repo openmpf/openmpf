@@ -29,7 +29,7 @@ package org.mitre.mpf.mvc.controller;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.*;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.nms.ServiceDescriptor;
 import org.mitre.mpf.rest.api.MpfResponse;
@@ -175,7 +175,7 @@ public class NodeController {
 	public String getMasterNode() {
 		String masterNode;
 		masterNode = System.getenv(EnvVar.THIS_MPF_NODE);
-		if ( StringUtils.isBlank( masterNode ) ) {
+		if ( StringUtils.isBlank(masterNode ) ) {
 			// apparently, getting the current host is non-trivial, the solution below is
 			//	based on the following articles:
 			//		http://stackoverflow.com/questions/7348711/recommended-way-to-get-hostname-in-java

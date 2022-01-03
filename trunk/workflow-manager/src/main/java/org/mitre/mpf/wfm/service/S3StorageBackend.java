@@ -41,7 +41,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.interop.JsonOutputObject;

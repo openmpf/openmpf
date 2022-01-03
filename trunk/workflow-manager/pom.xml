@@ -127,11 +127,11 @@
         </dependency>
 
         <!-- added for REST web services -->
-        <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>${com.googlecode.json-simple.json-simple.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.googlecode.json-simple</groupId>-->
+<!--            <artifactId>json-simple</artifactId>-->
+<!--            <version>${com.googlecode.json-simple.json-simple.version}</version>-->
+<!--        </dependency>-->
         <!-- / added for REST web services -->
 
 
@@ -258,27 +258,27 @@
             <version>${spring.security.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>${javax.annotation.api.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>javax.annotation</groupId>-->
+<!--            <artifactId>javax.annotation-api</artifactId>-->
+<!--            <version>${javax.annotation.api.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>${commons.codec.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>${commons.collections4.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons.io.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>commons-codec</groupId>-->
+<!--            <artifactId>commons-codec</artifactId>-->
+<!--            <version>${commons.codec.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.commons</groupId>-->
+<!--            <artifactId>commons-collections4</artifactId>-->
+<!--            <version>${commons.collections4.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>commons-io</groupId>-->
+<!--            <artifactId>commons-io</artifactId>-->
+<!--            <version>${commons.io.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
@@ -297,18 +297,18 @@
             <version>${javax.jms-api.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.xbean</groupId>
-            <artifactId>xbean-spring</artifactId>
-            <version>${xbean.spring.version}</version>
-            <type>jar</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.xbean</groupId>-->
+<!--            <artifactId>xbean-spring</artifactId>-->
+<!--            <version>${xbean.spring.version}</version>-->
+<!--            <type>jar</type>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>commons-logging</groupId>-->
+<!--                    <artifactId>commons-logging</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.atomikos</groupId>
@@ -336,74 +336,74 @@
             <version>${commons.lang3.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.sun.xml.ws</groupId>
-            <artifactId>jaxws-rt</artifactId>
-            <version>${jaxws.rt.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>stax-api</artifactId>
-                    <groupId>stax</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.sun.xml.ws</groupId>-->
+<!--            <artifactId>jaxws-rt</artifactId>-->
+<!--            <version>${jaxws.rt.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <artifactId>stax-api</artifactId>-->
+<!--                    <groupId>stax</groupId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.jvnet.jax-ws-commons.spring</groupId>
-            <artifactId>jaxws-spring</artifactId>
-            <version>${jaxws.spring.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.xml.ws</groupId>
-                    <artifactId>jaxws-rt</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-context</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.xml.bind</groupId>
-                    <artifactId>jaxb-impl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.xml.stream.buffer</groupId>
-                    <artifactId>streambuffer</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>stax-ex</artifactId>
-                    <groupId>org.jvnet.staxex</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.xml.stream</groupId>
-                    <artifactId>stax-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.xml.soap</groupId>
-                    <artifactId>saaj-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sun.xml.stream</groupId>
-                    <artifactId>sjsxp</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
-            <version>${cglib.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jvnet.jax-ws-commons.spring</groupId>-->
+<!--            <artifactId>jaxws-spring</artifactId>-->
+<!--            <version>${jaxws.spring.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.sun.xml.ws</groupId>-->
+<!--                    <artifactId>jaxws-rt</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>javax.servlet</groupId>-->
+<!--                    <artifactId>servlet-api</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.springframework</groupId>-->
+<!--                    <artifactId>spring</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.springframework</groupId>-->
+<!--                    <artifactId>spring-core</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.springframework</groupId>-->
+<!--                    <artifactId>spring-context</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.sun.xml.bind</groupId>-->
+<!--                    <artifactId>jaxb-impl</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.sun.xml.stream.buffer</groupId>-->
+<!--                    <artifactId>streambuffer</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <artifactId>stax-ex</artifactId>-->
+<!--                    <groupId>org.jvnet.staxex</groupId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>javax.xml.stream</groupId>-->
+<!--                    <artifactId>stax-api</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>javax.xml.soap</groupId>-->
+<!--                    <artifactId>saaj-api</artifactId>-->
+<!--                </exclusion>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.sun.xml.stream</groupId>-->
+<!--                    <artifactId>sjsxp</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>cglib</groupId>-->
+<!--            <artifactId>cglib</artifactId>-->
+<!--            <version>${cglib.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.apache.tika</groupId>
@@ -469,11 +469,11 @@
             <artifactId>javax.el-api</artifactId>
             <version>${javax.el.api.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.codehaus.woodstox</groupId>
-            <artifactId>stax2-api</artifactId>
-            <version>${stax2.api.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.codehaus.woodstox</groupId>-->
+<!--            <artifactId>stax2-api</artifactId>-->
+<!--            <version>${stax2.api.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -519,21 +519,21 @@
              2.3.0. Also, we exclude jaxb-core and jaxb-impl versions 2.2.11 from camel-core (version 2.16.2). Then we
              exclude camel-core from everything that transitively depends on it.
         -->
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-core</artifactId>
-            <version>${jaxb.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-impl</artifactId>
-            <version>${jaxb.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>${jaxb.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.sun.xml.bind</groupId>-->
+<!--            <artifactId>jaxb-core</artifactId>-->
+<!--            <version>${jaxb.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.sun.xml.bind</groupId>-->
+<!--            <artifactId>jaxb-impl</artifactId>-->
+<!--            <version>${jaxb.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>javax.xml.bind</groupId>-->
+<!--            <artifactId>jaxb-api</artifactId>-->
+<!--            <version>${jaxb.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>
@@ -598,17 +598,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-gson</artifactId>
-            <version>${camel.framework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.camel</groupId>
-                    <artifactId>camel-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.camel</groupId>-->
+<!--            <artifactId>camel-gson</artifactId>-->
+<!--            <version>${camel.framework.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>org.apache.camel</groupId>-->
+<!--                    <artifactId>camel-core</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jms</artifactId>
@@ -713,11 +713,11 @@
             <version>${spring.framework.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.imgscalr</groupId>
-            <artifactId>imgscalr-lib</artifactId>
-            <version>${imgscalr.lib.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.imgscalr</groupId>-->
+<!--            <artifactId>imgscalr-lib</artifactId>-->
+<!--            <version>${imgscalr.lib.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
@@ -743,22 +743,22 @@
             <version>${h2database.version}</version>
         </dependency>
  -->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${org.json.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-            <version>${javax.json.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.json</groupId>-->
+<!--            <artifactId>json</artifactId>-->
+<!--            <version>${org.json.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.glassfish</groupId>-->
+<!--            <artifactId>javax.json</artifactId>-->
+<!--            <version>${javax.json.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>org.apache.velocity</groupId>
-            <artifactId>velocity</artifactId>
-            <version>${velocity.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.velocity</groupId>-->
+<!--            <artifactId>velocity</artifactId>-->
+<!--            <version>${velocity.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>io.springfox</groupId>
@@ -952,34 +952,6 @@
                                         <successCode>0</successCode>
                                     </successCodes>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>protractor</id>
-            <build>
-                <plugins>
-                    <!-- protractor needs to be installed prior, tomcat needs to be running (manually or through tomcat7-maven-plugin)
-                    you will also need to have the environmental variable DISPLAY=:99 for xvfb - cannot use exec or tomcat7-maven-plugin plugin
-                    e.g. export DISPLAY=:99 -->
-                    <plugin>
-                        <groupId>com.github.greengerong</groupId>
-                        <artifactId>maven-ng-protractor</artifactId>
-                        <version>0.0.2</version>
-                        <configuration>
-                            <protractor>protractor</protractor>
-                            <configFile>${project.basedir}/src/test/protractor/protractor.conf.js</configFile>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>ng-protractor</id>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>

@@ -109,7 +109,7 @@
         <javasimon.version>4.1.1</javasimon.version>
         <javasimon.jdbc.version>3.5.2</javasimon.jdbc.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <log4j.version>2.16.0</log4j.version>
+        <log4j.version>2.17.1</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <jackson.version>2.9.2</jackson.version>
 

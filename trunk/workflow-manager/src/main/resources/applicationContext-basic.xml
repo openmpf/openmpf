@@ -36,9 +36,9 @@
     <context:component-scan base-package="org.mitre.mpf.mvc, org.mitre.mpf.wfm" />
     <context:annotation-config/>
 
-    <bean primary="true" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
-        <property name="messageInterpolator" value="org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator" />
-    </bean>
+    <bean class="org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator" />
+
+    <bean primary="true" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
 
     <beans profile="!docker">
         <bean class="org.mitre.mpf.nms.MasterNode" factory-method="create" />

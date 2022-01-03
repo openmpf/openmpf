@@ -28,6 +28,7 @@ package org.mitre.mpf.mvc.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,6 +91,7 @@ public class TestPipelineController {
                 .thenReturn("5");
 
         var springValidator = new LocalValidatorFactoryBean();
+        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
         springValidator.afterPropertiesSet();
         var pipelineValidator = new PipelineValidator(springValidator, mockWorkflowPropertyService);
 
@@ -168,7 +170,7 @@ public class TestPipelineController {
 
         var properties = algorithm.getProvidesCollection().getProperties();
         assertEquals(2, properties.size());
-        
+
 
         var algoProp = properties.stream()
                 .filter(p -> p.getName().equals("TEST_ALGO_PROP"))

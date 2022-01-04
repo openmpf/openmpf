@@ -310,26 +310,26 @@
 <!--            </exclusions>-->
 <!--        </dependency>-->
 
-        <dependency>
-            <groupId>com.atomikos</groupId>
-            <artifactId>transactions-jms</artifactId>
-            <version>${atomikos.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.atomikos</groupId>
-            <artifactId>transactions-jdbc</artifactId>
-            <version>${atomikos.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.atomikos</groupId>
-            <artifactId>transactions</artifactId>
-            <version>${atomikos.framework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.atomikos</groupId>
-            <artifactId>transactions-hibernate3</artifactId>
-            <version>${atomikos.framework.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.atomikos</groupId>-->
+<!--            <artifactId>transactions-jms</artifactId>-->
+<!--            <version>${atomikos.framework.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.atomikos</groupId>-->
+<!--            <artifactId>transactions-jdbc</artifactId>-->
+<!--            <version>${atomikos.framework.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.atomikos</groupId>-->
+<!--            <artifactId>transactions</artifactId>-->
+<!--            <version>${atomikos.framework.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.atomikos</groupId>-->
+<!--            <artifactId>transactions-hibernate3</artifactId>-->
+<!--            <version>${atomikos.framework.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>

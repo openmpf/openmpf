@@ -522,11 +522,9 @@ public class ITWebREST {
 		log.debug("Pipelines available: " + JSONstring);
 		log.info("Pipelines testing : (" + TEST_PIPELINES.length + ")");
 
-		for (int i = 0; i < TEST_PIPELINES.length; i++) {
-			String test_pipeline = TEST_PIPELINES[i];
+		for (String test_pipeline : TEST_PIPELINES) {
 			boolean found = false;
-			for (int j = 0; j < pipelines.size(); j++) {
-				var pipeline = pipelines.get(i);
+			for (var pipeline : pipelines) {
 				if (pipeline.get("name").asText().equals(test_pipeline)) {
 					found = true;
 					break;

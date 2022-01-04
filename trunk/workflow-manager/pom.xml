@@ -464,11 +464,11 @@
             <artifactId>hibernate-validator</artifactId>
             <version>${hibernate.validator.version}</version>
         </dependency>
-        <dependency>
-            <groupId>javax.el</groupId>
-            <artifactId>javax.el-api</artifactId>
-            <version>${javax.el.api.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>javax.el</groupId>-->
+<!--            <artifactId>javax.el-api</artifactId>-->
+<!--            <version>${javax.el.api.version}</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.codehaus.woodstox</groupId>-->
 <!--            <artifactId>stax2-api</artifactId>-->
@@ -493,17 +493,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>${commons.beanutils.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>commons-beanutils</groupId>-->
+<!--            <artifactId>commons-beanutils</artifactId>-->
+<!--            <version>${commons.beanutils.version}</version>-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>commons-logging</groupId>-->
+<!--                    <artifactId>commons-logging</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+<!--        </dependency>-->
 
         <!-- There is a known issue with jaxb-core and jaxb-impl in Java 11: https://stackoverflow.com/a/52502208
 
@@ -534,11 +534,11 @@
 <!--            <artifactId>jaxb-api</artifactId>-->
 <!--            <version>${jaxb.version}</version>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <version>${javax.activation.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>javax.activation</groupId>-->
+<!--            <artifactId>activation</artifactId>-->
+<!--            <version>${javax.activation.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-core</artifactId>
@@ -651,6 +651,7 @@
             <version>${aspectjweaver.version}</version>
         </dependency>
 
+        <!-- todo check next two -->
         <dependency>
             <groupId>org.jboss.jbossts</groupId>
             <artifactId>jbossjta</artifactId>
@@ -777,11 +778,11 @@
 <!--            <version>${org.seleniumhq.selenium.selenium-java.version}</version>-->
 <!--        </dependency>-->
 
-        <dependency>
-            <groupId>xml-apis</groupId>
-            <artifactId>xml-apis</artifactId>
-            <version>${xml-apis.xml-apis.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>xml-apis</groupId>-->
+<!--            <artifactId>xml-apis</artifactId>-->
+<!--            <version>${xml-apis.xml-apis.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.atmosphere</groupId>
@@ -789,22 +790,22 @@
             <version>${atmosphere.runtime.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-core</artifactId>
-            <version>${org.springframework.integration.spring-integration-core.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.integration</groupId>-->
+<!--            <artifactId>spring-integration-core</artifactId>-->
+<!--            <version>${org.springframework.integration.spring-integration-core.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>${redis.clients.jedis.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-jms</artifactId>
-            <version>${org.springframework.integration.spring-integration-jms.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.integration</groupId>-->
+<!--            <artifactId>spring-integration-jms</artifactId>-->
+<!--            <version>${org.springframework.integration.spring-integration-jms.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.data</groupId>

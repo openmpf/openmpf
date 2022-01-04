@@ -84,12 +84,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <org.springframework.integration.spring-integration-core.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-core.version>
-        <org.springframework.integration.spring-integration-jms.version>2.0.5.RELEASE</org.springframework.integration.spring-integration-jms.version>
-        <redis.clients.jedis.version>2.7.3</redis.clients.jedis.version>
-        <xml-apis.xml-apis.version>1.4.01</xml-apis.xml-apis.version>
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
+
         <spring.framework.version>5.3.14</spring.framework.version>
         <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
         <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
@@ -100,9 +96,6 @@
         <jaxws.rt.version>2.3.0</jaxws.rt.version>
         <jaxws.spring.version>1.9</jaxws.spring.version>
         <activemq.framework.version>5.15.9</activemq.framework.version>
-        <leveldb-api-version>0.7</leveldb-api-version>
-        <leveldb-version>0.7</leveldb-version>
-        <leveldbjni-version>1.8</leveldbjni-version>
         <javasimon.version>4.1.1</javasimon.version>
         <javasimon.jdbc.version>3.5.2</javasimon.jdbc.version>
         <slf4j.version>1.7.25</slf4j.version>
@@ -110,8 +103,7 @@
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <jackson.version>2.13.0</jackson.version>
 
-        <spring.security.version>5.6.0</spring.security.version>
-        <org.springframework.data.spring-data-redis.version>1.6.6.RELEASE</org.springframework.data.spring-data-redis.version>
+        <spring.security.version>5.6.1</spring.security.version>
         <commons.codec.version>1.10</commons.codec.version>
         <commons.collections4.version>4.1</commons.collections4.version>
         <commons.configuration2.version>2.7</commons.configuration2.version>

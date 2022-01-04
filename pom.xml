@@ -76,7 +76,7 @@
         <repository>
             <id>maven-us.nuxeo.org-vendor-releases</id>
             <name>nexus-vendor-releases</name>
-            <url>http://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
+            <url>https://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
         </repository>
     </repositories>
 

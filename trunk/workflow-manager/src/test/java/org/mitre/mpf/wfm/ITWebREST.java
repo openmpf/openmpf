@@ -230,9 +230,6 @@ public class ITWebREST {
 		String url = WebRESTUtils.REST_URL + "jobs/" + Long.toString(processedJobId) + "/resubmit";
 		startTest("test3ResubmitCancelledJob",url);
 
-		//need to make sure the job is in a terminal state before trying to resubmit!
-		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + processedJobId + ".json";
-
 		SingleJobInfo singleJobInfo = null;
 		//wait till ready to attempt a job resubmission
 		do {
@@ -273,7 +270,7 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testRestNoAuth() throws Exception {
-		String urlStr = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String urlStr = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("testRestNoAuth", urlStr);
 
 		URL url = new URL(urlStr);
@@ -343,7 +340,7 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Status_Single() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id + ".json";
+		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id;
 		startTest("test_Jobs_Status",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 
@@ -466,7 +463,7 @@ public class ITWebREST {
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Jobs_Stats() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("testPing_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var obj = objectMapper.readTree(JSONstring);
@@ -479,7 +476,7 @@ public class ITWebREST {
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Stats() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("test_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_Jobs_Stats] json:" + JSONstring);
@@ -500,7 +497,7 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines_Available() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("testPing_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var array = objectMapper.readTree(JSONstring);
@@ -516,7 +513,7 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Pipelines_Available() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("test_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var pipelines = objectMapper.readTree(JSONstring);
@@ -548,7 +545,7 @@ public class ITWebREST {
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var obj = objectMapper.readTree(JSONstring);
@@ -562,7 +559,7 @@ public class ITWebREST {
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var obj = objectMapper.readTree(JSONstring);
@@ -592,7 +589,7 @@ public class ITWebREST {
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var array = objectMapper.readTree(JSONstring);
@@ -613,7 +610,7 @@ public class ITWebREST {
 	public void test_NodeManager_getNodeManagerConfig() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
@@ -657,7 +654,7 @@ public class ITWebREST {
 
 		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
-		String config = WebRESTUtils.REST_URL + "nodes/config.json";
+		String config = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("test_NodeManager_saveNodeManagerConfigPOST",config);
 		JSONstring = WebRESTUtils.getJSON(new URL(config), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
@@ -857,7 +854,7 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("testPing_Pipelines",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var array = objectMapper.readTree(JSONstring);
@@ -870,7 +867,7 @@ public class ITWebREST {
 	public void testPing_NodeManagerInfo() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("testPing_NodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var obj = objectMapper.readTree(JSONstring);
@@ -885,7 +882,7 @@ public class ITWebREST {
 	public void testPing_NodeManagerConfig() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("testPing_NodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		var array = objectMapper.readTree(JSONstring);

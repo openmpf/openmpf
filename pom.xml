@@ -95,7 +95,7 @@
         <javasimon.version>4.1.1</javasimon.version>
         <javasimon.jdbc.version>3.5.2</javasimon.jdbc.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <log4j.version>2.16.0</log4j.version>
+        <log4j.version>2.17.1</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
         <jackson.version>2.13.0</jackson.version>
         <spring.security.version>5.6.1</spring.security.version>
@@ -103,11 +103,11 @@
         <javax.jms-api.version>2.0.1</javax.jms-api.version>
         <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
         <commons.lang3.version>3.10</commons.lang3.version>
-        <tika.core.version>1.24</tika.core.version>
+        <tika.core.version>1.28</tika.core.version>
         <mockito.core.version>2.26.0</mockito.core.version>
         <commons.io.version>2.6</commons.io.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
-        <google.protobuf.version>2.6.1</google.protobuf.version>
+        <google.protobuf.version>3.16.0</google.protobuf.version>
         <springfox.swagger.version>3.0.0</springfox.swagger.version>
         <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in
         order to maintain cross-compatibility. -->

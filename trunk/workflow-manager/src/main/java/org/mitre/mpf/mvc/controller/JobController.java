@@ -122,7 +122,7 @@ public class JobController {
                     " http://api.example.com/foo?jobid=hostname-1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nThe body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +
-                    " \n\nThe job id that is reported from OPenMPF is a string consisting of the hostname where the job was run plus the" +
+                    " \n\nThe job id that is reported from OpenMPF is a string consisting of the hostname where the job was run plus the" +
                     " numeric job id used internally by OpenMPF." +
                     " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
                     " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
@@ -176,13 +176,13 @@ public class JobController {
     public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
         if (useSession) {
             return sessionModel.getSessionJobs().stream()
-                    .map(id -> convertJob(jobRequestDao.findById(id)))
+                    .map(id -> convertToSingleJobInfo(jobRequestDao.findById(id)))
                     .collect(toList());
         }
         else {
             return jobRequestDao.findAll()
                     .stream()
-                    .map(this::convertJob)
+                    .map(this::convertToSingleJobInfo)
                     .collect(toList());
         }
     }
@@ -216,37 +216,15 @@ public class JobController {
         String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
         //handle paging
-        List<SingleJobInfo> jobInfoModels = jobRequestDao
+        List<JobPageModel> jobPageModels = jobRequestDao
                 .findByPage(length, start, search, sortColumn, sortOrderDirection)
                 .stream()
-                .map(this::convertJob)
+                .map(this::convertToJobPageModel)
                 .collect(toList());
         int recordsTotal = (int) jobRequestDao.countAll();
-
-        JobPageListModel model = new JobPageListModel();
-        model.setDraw(draw);
-        // Total records, before filtering (i.e. the total number of records in the database)
-        model.setRecordsTotal(recordsTotal);
-        // Total records, after filtering (i.e. the total number of records after filtering has been applied -
-        // not just the number of records being returned for this page of data).
-        model.setRecordsFiltered( search.equals("") ? recordsTotal :
-                                          (int)jobRequestDao.countFiltered(search));
-
-        //convert for output
-        for (int i = 0; i < jobInfoModels.size(); i++) {
-            SingleJobInfo job = jobInfoModels.get(i);
-            JobPageModel job_model = new JobPageModel(job);
-            job_model.setJobId(propertiesUtil.getJobIdFromExportedId(job.getExportedJobId()));
-            if(job_model.getOutputObjectPath() != null) {
-                job_model.setOutputFileExists(
-                        IoUtils.toLocalPath(job_model.getOutputObjectPath())
-                            .map(Files::exists)
-                            .orElse(true));
-            }
-            model.addData(job_model);
-        }
-
-        return model;
+        int recordsFiltered = search.equals("") ? recordsTotal :
+                (int)jobRequestDao.countFiltered(search);
+        return new JobPageListModel(draw, recordsTotal, recordsFiltered, null, jobPageModels);
     }
 
 
@@ -277,7 +255,7 @@ public class JobController {
                                   "with id '{}'", jobId);
                 return ResponseEntity.badRequest().body(null);
             }
-            return ResponseEntity.ok(convertJob(jobRequest));
+            return ResponseEntity.ok(convertToSingleJobInfo(jobRequest));
         }
     }
 
@@ -305,7 +283,7 @@ public class JobController {
                                   "with id '{}'", jobId);
                 return null;
             }
-            return convertJob(jobRequest);
+            return convertToSingleJobInfo(jobRequest);
         }
     }
 
@@ -501,7 +479,7 @@ public class JobController {
     }
 
 
-    private SingleJobInfo convertJob(JobRequest job) {
+    private SingleJobInfo convertToSingleJobInfo(JobRequest job) {
         try (var mdc = CloseableMdc.job(job.getId())) {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
@@ -540,6 +518,56 @@ public class JobController {
                     inProgressJobs.jobHasCallbacksInProgress(job.getId()),
                     job.getStatus().isTerminal(),
                     mediaUris);
+        }
+    }
+
+
+    private JobPageModel convertToJobPageModel(JobRequest job) {
+        try (var mdc = CloseableMdc.job(job.getId())) {
+            float jobProgressVal = jobProgress.getJobProgress(job.getId())
+                    .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
+
+            List<String> mediaUris;
+            try {
+                // Currently, it is not possible for job.getJob() to be null, but in previous
+                // versions it was possible. We don't want the jobs page to become unusable if a
+                // user has a job from an older version.
+                if (job.getJob() == null)  {
+                    log.error("Unable to determine mediaUris for job {}.", job.getId());
+                    mediaUris = List.of();
+                }
+                else {
+                    var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
+                    mediaUris = batchJob.getMedia().stream()
+                            .map(Media::getUri)
+                            .collect(toList());
+                }
+            }
+            catch (WfmProcessingException e) {
+                log.error(String.format(
+                        "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
+                mediaUris = List.of();
+            }
+
+            JobPageModel jobModel = new JobPageModel(job.getId(),
+                                    job.getPipeline(),
+                                    job.getPriority(),
+                                    job.getStatus().toString(),
+                                    jobProgressVal,
+                                    job.getTimeReceived(),
+                                    job.getTimeCompleted(),
+                                    job.getOutputObjectPath(),
+                                    inProgressJobs.jobHasCallbacksInProgress(job.getId()),
+                                    job.getStatus().isTerminal(),
+                                    mediaUris);
+
+            if(job.getOutputObjectPath() != null) {
+                jobModel.setOutputFileExists(
+                        IoUtils.toLocalPath(job.getOutputObjectPath())
+                                .map(Files::exists)
+                                .orElse(true));
+            }
+            return jobModel;
         }
     }
 

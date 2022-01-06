@@ -736,7 +736,9 @@
                     //finally submit the job
                     MediaService.createJobFromMedia(jobCreationRequest).then(function (jobCreationResponse) {
                         if (jobCreationResponse.mpfResponse.responseCode == 0) {
-                            NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                            const idTokens = jobCreationResponse.jobId.split("-");
+                            var internalJobId = idTokens[idTokens.length-1];
+                            NotificationSvc.success('Job ' + internalJobId + ' created!');
                             $log.info('successful job creation - switch to jobs view');
 
                             $location.path('/jobs');//go to jobs view

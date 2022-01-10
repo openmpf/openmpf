@@ -176,9 +176,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.getTimeCompleted(),
                 outputObjectUri,
                 outputSha.getValue(),
-                trackCounter);if (!tiesDbFuture.isDone()) {
-                inProgressBatchJobs.setCallbacksInProgress(jobId);
-            }
+                trackCounter);
+        if (!tiesDbFuture.isDone()) {
+            inProgressBatchJobs.setCallbacksInProgress(jobId);
+        }
 
         if (job.getCallbackUrl().isPresent()) {
             inProgressBatchJobs.setCallbacksInProgress(jobId);
@@ -189,6 +190,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     .whenCompleteAsync((x, err) -> completeJob(job));
         }
         else {
+            jobRequestDao.setCallbackNotRequested(jobId);
             tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job));
         }
     }
@@ -224,7 +226,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         String callbackMethod = job.getCallbackMethod().orElse("POST");
 
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
         log.info("Starting {} callback to {} for job id {}.", callbackMethod, callbackUrl, job.getId());
@@ -232,7 +234,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
             return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(JobCompleteProcessorImpl::checkResponse)
+                    .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }
         catch (Exception e) {
@@ -241,13 +243,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private static Void checkResponse(HttpResponse response) {
+    private void checkResponse(long jobId, HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode < 200 || statusCode > 299) {
             throw new IllegalStateException(
                     "The remote server responded with a non-200 status code of: " + statusCode);
         }
-        return null;
+        jobRequestDao.setCallbackSuccessful(jobId);
     }
 
 
@@ -292,20 +294,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static Void handleFailedCallback(BatchJob job, Throwable callbackError) {
+    private Void handleFailedCallback(BatchJob job, Throwable callbackError) {
         if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
             callbackError = callbackError.getCause();
         }
 
         String callbackMethod = job.getCallbackMethod().orElse("POST");
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
-        log.warn(String.format(
-                    "Sending HTTP %s callback to \"%s\" failed due to: %s",
-                    callbackMethod, callbackUrl, callbackError),
-                 callbackError);
+        var errorMessage = String.format(
+                "Sending HTTP %s callback to \"%s\" failed due to: %s",
+                callbackMethod, callbackUrl, callbackError);
+        log.error(errorMessage, callbackError);
+        jobRequestDao.setCallbackError(job.getId(), errorMessage);
 
         return null;
     }

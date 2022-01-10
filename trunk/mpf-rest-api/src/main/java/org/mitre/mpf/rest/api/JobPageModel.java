@@ -50,8 +50,9 @@ public class JobPageModel extends SingleJobInfo {
               job.getStartDate(),
               job.getEndDate(),
               job.getOutputObjectPath(),
-              job.getHasCallbacksInProgress(),
               job.isTerminal(),
+              job.getTiesDbStatus(),
+              job.getCallbackStatus(),
               job.getMediaUris());
     }
 }

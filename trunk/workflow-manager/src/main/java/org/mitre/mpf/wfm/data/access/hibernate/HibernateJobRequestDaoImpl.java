@@ -135,6 +135,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 ilike.apply(root.get("id").as(String.class)),
                 ilike.apply(root.get("pipeline")),
                 ilike.apply(root.get("status").as(String.class)),
+                ilike.apply(root.get("tiesDbStatus")),
+                ilike.apply(root.get("callbackStatus")),
                 ilike.apply(cb.function("to_char", String.class, root.get("timeReceived"),
                                         cb.literal(dateFormat))),
                 ilike.apply(cb.function("to_char", String.class, root.get("timeCompleted"),
@@ -182,6 +184,60 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 .where(cb.equal(root.get("id"), jobId));
 
         return buildQuery(query).getSingleResult();
+    }
+
+
+    @Override
+    public void setTiesDbNotRequested(long jobId) {
+        setTiesDbStatus(jobId, "NOT REQUESTED");
+    }
+
+    @Override
+    public void setTiesDbSuccessful(long jobId) {
+        setTiesDbStatus(jobId, "COMPLETE");
+    }
+
+    @Override
+    public void setTiesDbError(long jobId, String status) {
+        setTiesDbStatus(jobId, "ERROR: " + status);
+    }
+
+    private void setTiesDbStatus(long jobId, String status) {
+        var cb = getCriteriaBuilder();
+        var update = cb.createCriteriaUpdate(JobRequest.class);
+        var root = update.from(JobRequest.class);
+
+        update.set("tiesDbStatus", status)
+                .where(cb.equal(root.get("id"), jobId));
+
+        executeUpdate(update);
+    }
+
+
+    @Override
+    public void setCallbackNotRequested(long jobId) {
+        setCallbackStatus(jobId, "NOT REQUESTED");
+    }
+
+    @Override
+    public void setCallbackSuccessful(long jobId) {
+        setCallbackStatus(jobId, "COMPLETE");
+    }
+
+    @Override
+    public void setCallbackError(long jobId, String status) {
+        setCallbackStatus(jobId, "ERROR: " + status);
+    }
+
+    private void setCallbackStatus(long jobId, String status) {
+        var cb = getCriteriaBuilder();
+        var update = cb.createCriteriaUpdate(JobRequest.class);
+        var root = update.from(JobRequest.class);
+
+        update.set("callbackStatus", status)
+                .where(cb.equal(root.get("id"), jobId));
+
+        executeUpdate(update);
     }
 
 

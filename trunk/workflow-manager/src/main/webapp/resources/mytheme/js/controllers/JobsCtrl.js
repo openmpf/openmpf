@@ -112,16 +112,42 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
-                            var jobStatus = job.jobStatus;
-                            if (job.hasCallbacksInProgress) {
-                                jobStatus += ' (callbacks in progress)';
-                            }
 
                             var hideProgress = 'style="display:none;"';
                             if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
                             var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + jobStatus + '</span>' + progressDiv;
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
+                        }
+                    },
+                    {
+                        data: 'tiesDbStatus',
+                        className: 'status-cell',
+                        render: function (data, type, job) {
+                            if (job.tiesDbStatus && job.tiesDbStatus.startsWith('ERROR:')) {
+                                return $('<button>')
+                                    .addClass('ties-db-error-details')
+                                    .addClass('btn btn-danger btn-block btn-xs')
+                                    .html('ERROR')[0].outerHTML;
+                            }
+                            else {
+                                return job.tiesDbStatus;
+                            }
+                        }
+                    },
+                    {
+                        data: 'callbackStatus',
+                        className: 'status-cell',
+                        render: function (data, type, job) {
+                            if (job.callbackStatus && job.callbackStatus.startsWith('ERROR:')) {
+                                return $('<button>')
+                                    .addClass('callback-error-details')
+                                    .addClass('btn btn-danger btn-block btn-xs')
+                                    .html('ERROR')[0].outerHTML;
+                            }
+                            else {
+                                return job.callbackStatus;
+                            }
                         }
                     },
                     {
@@ -190,19 +216,44 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
     };
 
     var bindButtons = function () {
-        $(".markupBtn").click(function () {
-            showMarkup(getJobFromTableEle(this));
+        $(".markupBtn").click(function (event) {
+            $scope.$apply(function () {
+                showMarkup(getJobFromTableEle(event.target));
+            });
         });
-        $(".cancelBtn").click(function () {
-            cancelJob(getJobFromTableEle(this));
+        $(".cancelBtn").click(function (event) {
+            $scope.$apply(function () {
+                cancelJob(getJobFromTableEle(event.target));
+            });
         });
-        $(".resubmitBtn").click(function () {
-            resubmitJob(getJobFromTableEle(this));
+        $(".resubmitBtn").click(function (event) {
+            $scope.$apply(function () {
+                resubmitJob(getJobFromTableEle(event.target));
+            });
         });
-        $("#infoModalBtn").click(function (evt) {
-            // Prevent table from sorting by status when clicking info icon.
-            evt.stopPropagation();
-            $("#infoModal").modal('show');
+        $("#infoModalBtn").click(function (event) {
+            $scope.$apply(function () {
+                // Prevent table from sorting by status when clicking info icon.
+                event.stopPropagation();
+                $("#infoModal").modal('show');
+            });
+        });
+
+        $('.ties-db-error-details').click(function(event) {
+            $scope.$apply(function () {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'TiesDb';
+                $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
+                $("#errorDetailsModal").modal('show');
+            });
+        });
+        $('.callback-error-details').click(function(event) {
+            $scope.$apply(function() {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'Callback';
+                $scope.errorDetails = $scope.selectedJob.callbackStatus;
+                $("#errorDetailsModal").modal('show');
+            });
         });
     };
 

@@ -43,6 +43,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -62,6 +63,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.Mockito.*;
 
 public class TestTiesDbService {
@@ -77,6 +79,9 @@ public class TestTiesDbService {
     @Mock
     private CallbackUtils _mockCallbackUtils;
 
+    @Mock
+    private JobRequestDao _mockJobRequestDao;
+
     private TiesDbService _tiesDbService;
 
 
@@ -89,7 +94,7 @@ public class TestTiesDbService {
     public void init() {
         MockitoAnnotations.initMocks(this);
         _tiesDbService = new TiesDbService(_mockPropertiesUtil, _mockAggregateJobPropertiesUtil,
-                                           _objectMapper, _mockCallbackUtils);
+                                           _objectMapper, _mockCallbackUtils, _mockJobRequestDao);
 
         when(_mockPropertiesUtil.getSemanticVersion())
                 .thenReturn("1.5");
@@ -223,6 +228,32 @@ public class TestTiesDbService {
                                 timeCompleted,
                                 req)),
                         eq(3));
+
+        assertReportsSuccess(job.getId());
+    }
+
+
+    @Test
+    public void reportsWhenTiesDbNotRequested() {
+        var job = createTwoStageTestJob();
+        var trackCounter = new TrackCounter();
+        trackCounter.set(321, 0, 0, "TYPE1", 10);
+        trackCounter.set(321, 1, 0, "TYPE2", 10);
+
+        var result = _tiesDbService.addAssertions(
+                job,
+                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
+                Instant.now(),
+                URI.create("http://localhost:321/asdf"),
+                "asdfasdf",
+                trackCounter);
+
+        assertTrue(result.isDone());
+
+        verifyZeroInteractions(_mockCallbackUtils);
+        verify(_mockJobRequestDao)
+                .setTiesDbNotRequested(job.getId());
+        verifyNoMoreInteractions(_mockJobRequestDao);
     }
 
 
@@ -296,6 +327,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -380,6 +413,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -465,6 +500,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -529,6 +566,8 @@ public class TestTiesDbService {
                                 req)),
                         eq(3));
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -593,6 +632,8 @@ public class TestTiesDbService {
                                 timeCompleted,
                                 req)),
                         eq(3));
+
+        assertReportsError(job.getId());
     }
 
 
@@ -661,6 +702,8 @@ public class TestTiesDbService {
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt());
+
+        assertReportsError(job.getId());
     }
 
     private static HttpResponse createErrorResponse() {
@@ -806,6 +849,19 @@ public class TestTiesDbService {
         }
 
         return true;
+    }
+
+
+    private void assertReportsSuccess(long jobId) {
+        verify(_mockJobRequestDao)
+                .setTiesDbSuccessful(jobId);
+        verifyNoMoreInteractions(_mockJobRequestDao);
+    }
+
+    private void assertReportsError(long jobId) {
+        verify(_mockJobRequestDao)
+                .setTiesDbError(eq(jobId), nonBlank());
+        verifyNoMoreInteractions(_mockJobRequestDao);
     }
 }
 

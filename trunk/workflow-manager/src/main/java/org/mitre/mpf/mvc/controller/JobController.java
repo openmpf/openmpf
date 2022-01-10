@@ -193,7 +193,9 @@ public class JobController {
             .put("2", "timeReceived")
             .put("3", "timeCompleted")
             .put("4", "status")
-            .put("5", "priority")
+            .put("5", "tiesDbStatus")
+            .put("6", "callbackStatus")
+            .put("7", "priority")
             .build();
 
 
@@ -491,9 +493,26 @@ public class JobController {
                     job.getTimeReceived(),
                     job.getTimeCompleted(),
                     job.getOutputObjectPath(),
-                    inProgressJobs.jobHasCallbacksInProgress(job.getId()),
                     job.getStatus().isTerminal(),
+                    getCallbackStatus(job, job.getTiesDbStatus()),
+                    getCallbackStatus(job, job.getCallbackStatus()),
                     mediaUris);
+        }
+    }
+
+
+    private String getCallbackStatus(JobRequest job, String dbStatus) {
+        if (dbStatus != null) {
+            return dbStatus;
+        }
+        else if (inProgressJobs.jobHasCallbacksInProgress(job.getId())) {
+            return "IN PROGRESS";
+        }
+        else if (!job.getStatus().isTerminal()) {
+            return "JOB RUNNING";
+        }
+        else {
+            return null;
         }
     }
 

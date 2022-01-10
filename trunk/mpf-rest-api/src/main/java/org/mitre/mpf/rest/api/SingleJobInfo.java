@@ -39,8 +39,9 @@ public class SingleJobInfo {
     private Instant startDate;
     private Instant endDate;
     private String outputObjectPath;
-    private boolean hasCallbacksInProgress;
     private boolean terminal;
+    private String tiesDbStatus;
+    private String callbackStatus;
     private List<String> mediaUris;
 
     public SingleJobInfo() { }
@@ -54,8 +55,9 @@ public class SingleJobInfo {
             Instant startDate,
             Instant endDate,
             String outputObjectPath,
-            boolean hasCallbacksInProgress,
             boolean terminal,
+            String tiesDbStatus,
+            String callbackStatus,
             Collection<String> mediaUris) {
         this.jobId = jobId;
         this.pipelineName = pipelineName;
@@ -65,8 +67,9 @@ public class SingleJobInfo {
         this.startDate = startDate;
         this.endDate = endDate;
         this.outputObjectPath = outputObjectPath;
-        this.hasCallbacksInProgress = hasCallbacksInProgress;
         this.terminal = terminal;
+        this.tiesDbStatus = tiesDbStatus;
+        this.callbackStatus = callbackStatus;
         this.mediaUris = List.copyOf(mediaUris);
     }
 
@@ -102,12 +105,16 @@ public class SingleJobInfo {
         return outputObjectPath;
     }
 
-    public boolean getHasCallbacksInProgress() {
-        return hasCallbacksInProgress;
-    }
-
     public boolean isTerminal() {
         return terminal;
+    }
+
+    public String getTiesDbStatus() {
+        return tiesDbStatus;
+    }
+
+    public String getCallbackStatus() {
+        return callbackStatus;
     }
 
     public List<String> getMediaUris() {

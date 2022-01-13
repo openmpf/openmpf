@@ -44,6 +44,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.InvalidJobIdException;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -101,6 +102,14 @@ public class JobController {
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
+
+    @ExceptionHandler(InvalidJobIdException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public MessageModel invalidJobIdHandler(InvalidJobIdException ex) {
+        log.error(ex.getMessage(), ex);
+        return new MessageModel(ex.getMessage());
+    }
 
     /*
      *	POST /jobs
@@ -240,14 +249,7 @@ public class JobController {
             @ApiResponse(code = 400, message = "Invalid id") })
     @ResponseBody
     public ResponseEntity<SingleJobInfo> getJobStatusRest(@ApiParam(required = true, value = "Job Id") @PathVariable("id") String jobId) {
-        long internalJobId;
-        try {
-            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        } catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in job status request: {}", jobId);
-            return ResponseEntity.badRequest().body(null);
-        }
-
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
             if (jobRequest == null) {
@@ -264,13 +266,7 @@ public class JobController {
     @ResponseBody
     public SingleJobInfo getJobStatus(@PathVariable("id") String jobId,
                                       @RequestParam(value = "useSession", required = false) boolean useSession) {
-        long internalJobId;
-        try {
-            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        } catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in job status request: {}", jobId);
-            return null;
-        }
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
 
         try (var mdc = CloseableMdc.job(internalJobId)) {
             if (useSession && !sessionModel.getSessionJobs().contains(internalJobId)) {
@@ -300,14 +296,7 @@ public class JobController {
             @ApiResponse(code = 404, message = "Invalid id")})
     @ResponseBody
     public ResponseEntity<?> getSerializedDetectionOutputRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId) throws IOException {
-        long internalJobId;
-        try {
-            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        }
-        catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in get serialized detection output request: {}", jobId);
-            return ResponseEntity.badRequest().body(null);
-        }
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             //return 200 for successful GET and object; 404 for bad id
             JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -351,14 +340,7 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs/output-object", method = RequestMethod.GET)
     public ModelAndView getOutputObject(@RequestParam(value = "id", required = true) String idParam) {
-        long internalJobId;
-        try {
-            internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
-        }
-        catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in get output object request: {}", idParam);
-            return null;
-        }
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(idParam);
         return MdcUtil.job(internalJobId, () ->
                 new ModelAndView("output_object", "jobId", idParam));
     }
@@ -378,13 +360,7 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public ResponseEntity<JobCreationResponse> resubmitJobRest(@ApiParam(required = true, value = "Job id") @PathVariable("id") String jobId,
                                                                @ApiParam(value = "Job priority (0-9 with 0 being the lowest) - OPTIONAL") @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        long internalJobId;
-        try {
-            internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        } catch (NumberFormatException e) {
-            log.error("Failed to parse jobId in resubmit request: {}", jobId);
-            return new ResponseEntity<>(new JobCreationResponse(MpfResponse.RESPONSE_CODE_ERROR, "Error parsing Job Id = "+jobId), HttpStatus.BAD_REQUEST);
-        }
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobCreationResponse resubmitResponse = resubmitJobInternal(internalJobId, jobPriorityParam);
             if (resubmitResponse.getMpfResponse()
@@ -404,9 +380,9 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
     public JobCreationResponse resubmitJob(@PathVariable("id") String jobId,
                                            @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
-        long realJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        try (var mdc = CloseableMdc.job(realJobId)) {
-            JobCreationResponse response = resubmitJobInternal(realJobId, jobPriorityParam);
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        try (var mdc = CloseableMdc.job(internalJobId)) {
+            JobCreationResponse response = resubmitJobInternal(internalJobId, jobPriorityParam);
             sessionModel.getSessionJobs().add(propertiesUtil.getJobIdFromExportedId(response.getJobId()));
             return response;
         }
@@ -454,7 +430,7 @@ public class JobController {
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
             }
-            String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+            String exportedJobId = propertiesUtil.getExportedJobId(jobId);
             // the job request has been successfully parsed, construct the job creation response
             return new JobCreationResponse(exportedJobId);
         }
@@ -478,36 +454,41 @@ public class JobController {
         return errBuilder.toString();
     }
 
+    private List<String> getMediaUris(JobRequest job) {
+
+        List<String> mediaUris;
+        try {
+            // Currently, it is not possible for job.getJob() to be null, but in previous
+            // versions it was possible. We don't want the jobs page to become unusable if a
+            // user has a job from an older version.
+            if (job.getJob() == null)  {
+                log.error("Unable to determine mediaUris for job {}.", job.getId());
+                mediaUris = List.of();
+            }
+            else {
+                var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
+                mediaUris = batchJob.getMedia().stream()
+                        .map(Media::getUri)
+                        .collect(toList());
+            }
+        }
+        catch (WfmProcessingException e) {
+            log.error(String.format(
+                    "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
+            mediaUris = List.of();
+        }
+        return mediaUris;
+    }
 
     private SingleJobInfo convertToSingleJobInfo(JobRequest job) {
         try (var mdc = CloseableMdc.job(job.getId())) {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-            List<String> mediaUris;
-            try {
-                // Currently, it is not possible for job.getJob() to be null, but in previous
-                // versions it was possible. We don't want the jobs page to become unusable if a
-                // user has a job from an older version.
-                if (job.getJob() == null)  {
-                    log.error("Unable to determine mediaUris for job {}.", job.getId());
-                    mediaUris = List.of();
-                }
-                else {
-                    var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
-                    mediaUris = batchJob.getMedia().stream()
-                            .map(Media::getUri)
-                            .collect(toList());
-                }
-            }
-            catch (WfmProcessingException e) {
-                log.error(String.format(
-                        "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
-                mediaUris = List.of();
-            }
+            List<String> mediaUris = getMediaUris(job);
 
             return new SingleJobInfo(
-                    propertiesUtil.getHostName()+"-"+job.getId(),
+                    propertiesUtil.getExportedJobId(job.getId()),
                     job.getPipeline(),
                     job.getPriority(),
                     job.getStatus().toString(),
@@ -527,27 +508,7 @@ public class JobController {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-            List<String> mediaUris;
-            try {
-                // Currently, it is not possible for job.getJob() to be null, but in previous
-                // versions it was possible. We don't want the jobs page to become unusable if a
-                // user has a job from an older version.
-                if (job.getJob() == null)  {
-                    log.error("Unable to determine mediaUris for job {}.", job.getId());
-                    mediaUris = List.of();
-                }
-                else {
-                    var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
-                    mediaUris = batchJob.getMedia().stream()
-                            .map(Media::getUri)
-                            .collect(toList());
-                }
-            }
-            catch (WfmProcessingException e) {
-                log.error(String.format(
-                        "Unable to determine mediaUris for job %s due to: %s", job.getId(), e), e);
-                mediaUris = List.of();
-            }
+            List<String> mediaUris = getMediaUris(job);
 
             JobPageModel jobModel = new JobPageModel(job.getId(),
                                     job.getPipeline(),
@@ -582,7 +543,7 @@ public class JobController {
             //the old progress value (100 in most cases converted to 99 because of the INCOMPLETE STATE)!
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
-            String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+            String exportedJobId = propertiesUtil.getExportedJobId(jobId);
             return new JobCreationResponse(exportedJobId);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();

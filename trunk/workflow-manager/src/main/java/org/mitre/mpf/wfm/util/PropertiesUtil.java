@@ -271,7 +271,18 @@ public class PropertiesUtil {
 
     public long getJobIdFromExportedId(String exportedId) {
         String[] tokens = exportedId.split("-");
-        return Long.parseLong(tokens[tokens.length-1]);
+        try {
+            return Long.parseLong(tokens[tokens.length - 1]);
+        }
+        catch (NumberFormatException e) {
+            throw new InvalidJobIdException(
+                    "Failed to parse job id of \"" + exportedId +
+                            "\". Expected a job id like <hostname>-<integer>.", e);
+        }
+    }
+
+    public String getExportedJobId(long jobId) {
+        return getHostName() + "-" + jobId;
     }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {

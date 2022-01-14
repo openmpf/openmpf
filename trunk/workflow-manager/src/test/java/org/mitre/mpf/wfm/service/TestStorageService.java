@@ -33,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Test;
-import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonMediaIssue;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -90,8 +89,6 @@ public class TestStorageService {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-        when(_mockPropertiesUtil.getHostName())
-                .thenReturn("localhost");
         when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_EXPORTED_JOB_ID))
                 .thenReturn(TEST_INTERNAL_JOB_ID);
         when(_mockOutputObject.getJobId())

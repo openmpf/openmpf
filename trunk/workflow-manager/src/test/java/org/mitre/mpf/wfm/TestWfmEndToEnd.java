@@ -191,7 +191,7 @@ public class TestWfmEndToEnd {
 		JsonOutputObject jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		long internalJobId = propertiesUtil.getJobIdFromExportedId(jsonOutputObject.getJobId());
 		Assert.assertEquals(internalJobId, jobId);
-		String exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+		String exportedJobId = propertiesUtil.getExportedJobId(jobId);
 		Assert.assertEquals(exportedJobId, jsonOutputObject.getJobId());
 		Instant start = jsonOutputObject.getTimeStart(),
 				stop = jsonOutputObject.getTimeStop();
@@ -216,7 +216,7 @@ public class TestWfmEndToEnd {
 		jsonOutputObject = objectMapper.readValue(outputObjectPath.toFile(), JsonOutputObject.class);
 		internalJobId = propertiesUtil.getJobIdFromExportedId(jsonOutputObject.getJobId());
 		Assert.assertEquals(internalJobId, jobId);
-		exportedJobId = propertiesUtil.getHostName() + "-" + jobId;
+		exportedJobId = propertiesUtil.getExportedJobId(jobId);
 		Assert.assertEquals(exportedJobId, jsonOutputObject.getJobId());
 		Assert.assertNotEquals(jsonOutputObject.getTimeStart(), start);
 		Assert.assertNotEquals(jsonOutputObject.getTimeStop(), stop);

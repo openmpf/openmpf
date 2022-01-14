@@ -131,10 +131,9 @@ public class JobController {
                     " http://api.example.com/foo?jobid=hostname-1&outputobjecturi=file%3A%2F%2F%2Fpath%2Fto%2F1%2Fdetection.json." +
                     " \n\nThe body of a POST callback will always include the 'jobId', 'externalId', and" +
                     " 'outputObjectUri', even if the latter two are null." +
+                    " \n\nAlso, note that all provided URIs must be properly encoded." +
                     " \n\nThe job id that is reported from OpenMPF is a string consisting of the hostname where the job was run plus the" +
                     " numeric job id used internally by OpenMPF." +
-                    " \n\nNote that the batch jobs and streaming jobs share a range of valid job ids. " +
-                    " OpenMPF guarantees that the ids of a streaming job and a batch job will be unique." +
                     " \n\nAn optional jobProperties object contains String key-value pairs which override the pipeline's" +
                     " job properties for this job." +
                     " \n\nAn optional algorithmProperties object containing <String,Map> key-value pairs can override" +
@@ -145,7 +144,6 @@ public class JobController {
                     "of the video will be processed. Regular segmenting will be applied, except " +
                     "that no gaps between user specified ranges will be filled. The ranges can be " +
                     "specified as frame ranges or time ranges in milliseconds." +
-                    " \nAlso, note that all provided URIs must be properly encoded." +
                     " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
                     " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
                     " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided.",

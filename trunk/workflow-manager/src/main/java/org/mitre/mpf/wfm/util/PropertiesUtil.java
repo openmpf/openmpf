@@ -276,8 +276,8 @@ public class PropertiesUtil {
         }
         catch (NumberFormatException e) {
             throw new InvalidJobIdException(
-                    "Failed to parse job id of \"" + exportedId +
-                            "\". Expected a job id like <hostname>-<integer>.", e);
+                    "Failed to parse job id of '" + exportedId +
+                            "'. Expected a job id like <hostname>-<integer>.", e);
         }
     }
 

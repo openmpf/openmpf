@@ -207,14 +207,14 @@ public class ServerMediaController {
     @RequestMapping(value = "/server/download", method = RequestMethod.GET)
     @ResponseBody
     public void download(HttpServletResponse response,
-                         @RequestParam("jobId") long jobId,
+                         @RequestParam("jobId") String jobId,
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
 
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
         }
-
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             response.setStatus(404);
             response.flushBuffer();

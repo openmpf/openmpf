@@ -24,30 +24,18 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.interop;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+package org.mitre.mpf.wfm.util;
 
-public class JsonCallbackBody {
-    /** The identifier assigned to this job by MPF. */
-    private final String _jobId;
-    public String getJobId() { return _jobId; }
+import org.mitre.mpf.wfm.WfmProcessingException;
 
-    /** The ID that was provided to this job when it was initially submitted. */
-    private final String _externalId;
-    public String getExternalId() { return _externalId; }
+public class InvalidJobIdException extends WfmProcessingException {
 
-    private final String _outputObjectUri;
-    public String getOutputObjectUri() { return _outputObjectUri; }
+    public InvalidJobIdException(String message) {
+        super(message);
+    }
 
-    @JsonCreator
-    public JsonCallbackBody(
-            @JsonProperty("jobId") String jobId,
-            @JsonProperty("externalId") String externalId,
-            @JsonProperty("outputObjectUri") String outputObjectUri) {
-        _jobId = jobId;
-        _externalId = externalId;
-        _outputObjectUri = outputObjectUri;
+    public InvalidJobIdException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

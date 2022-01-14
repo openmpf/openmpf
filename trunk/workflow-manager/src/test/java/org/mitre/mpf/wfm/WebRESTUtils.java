@@ -214,20 +214,20 @@ public class WebRESTUtils {
 		return sb.toString();
 	}
 
-	public static SingleJobInfo getSingleJobInfo(long jobId) throws JsonParseException, JsonMappingException, IOException {
-		String urlJobsStatus = REST_URL + "jobs/" + Long.toString(jobId) + ".json";
+	public static SingleJobInfo getSingleJobInfo(String jobId) throws JsonParseException, JsonMappingException, IOException {
+		String urlJobsStatus = REST_URL + "jobs/" + jobId + ".json";
 		String jsonJobResponse = getJSON(new URL(urlJobsStatus), MPF_AUTHORIZATION);
-		Assert.assertTrue("Failed to retrieve JSON when GETting job info for job id: " + Long.toString(jobId), jsonJobResponse.length() >= 0);
+		Assert.assertTrue("Failed to retrieve JSON when GETting job info for job id: " + jobId, jsonJobResponse.length() >= 0);
 		return objectMapper.readValue(jsonJobResponse, SingleJobInfo.class);
 	}
 
-	public static BatchJobStatusType getJobsStatus(long jobid)throws JsonParseException, JsonMappingException, IOException  {
+	public static BatchJobStatusType getJobsStatus(String jobid)throws JsonParseException, JsonMappingException, IOException  {
 		SingleJobInfo singleJobInfo = getSingleJobInfo(jobid);
 		//convert to the enum and return
 		return BatchJobStatusType.valueOf(singleJobInfo.getJobStatus());
 	}
 
-	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, JsonParseException, JsonMappingException, IOException {
+	public static boolean waitForJobToTerminate(String jobid, long delay) throws InterruptedException, JsonParseException, JsonMappingException, IOException {
 		log.info("[waitForJobToTerminate] job {}, delay:{} ", jobid, delay);
 		int count=20;
 		BatchJobStatusType status;

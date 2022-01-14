@@ -72,7 +72,8 @@ public class LocalStorageBackend implements StorageBackend {
 
     @Override
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws IOException {
-        Path outputPath = _propertiesUtil.createDetectionOutputObjectFile(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        Path outputPath = _propertiesUtil.createDetectionOutputObjectFile(internalJobId);
         if (outputSha.getValue() == null) {
             MessageDigest digest = DigestUtils.getSha256Digest();
             try (var outStream = new DigestOutputStream(Files.newOutputStream(outputPath), digest)) {

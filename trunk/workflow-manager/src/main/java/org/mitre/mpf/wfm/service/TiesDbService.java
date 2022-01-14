@@ -188,18 +188,18 @@ public class TiesDbService {
                 Map.entry("pipeline", jobPart.getPipeline().getName()),
                 Map.entry("algorithm", algoName),
                 Map.entry("outputType", trackType),
-                Map.entry("jobId", jobPart.getJob().getId()),
+                Map.entry("jobId", _propertiesUtil.getExportedJobId(jobPart.getJob().getId())),
                 Map.entry("outputUri", outputObjectLocation.toString()),
                 Map.entry("sha256OutputHash", outputObjectSha),
                 Map.entry("processDate", timeCompleted),
                 Map.entry("jobStatus", jobStatus),
                 Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
-                Map.entry("systemHostname", getHostName()),
+                Map.entry("systemHostname", _propertiesUtil.getHostName()),
                 Map.entry("trackCount", trackCount)
         );
 
         var assertionId = getAssertionId(
-                jobPart.getJob().getId(),
+                _propertiesUtil.getExportedJobId(jobPart.getJob().getId()),
                 trackType,
                 jobPart.getAlgorithm().getName(), timeCompleted);
 
@@ -220,21 +220,14 @@ public class TiesDbService {
     }
 
 
-    private static String getAssertionId(long jobId, String detectionType, String algorithm,
+    private static String getAssertionId(String jobId, String detectionType, String algorithm,
                                          Instant endTime) {
         var digest = DigestUtils.getSha256Digest();
-        digest.update(String.valueOf(jobId).getBytes(StandardCharsets.UTF_8));
+        digest.update(jobId.getBytes(StandardCharsets.UTF_8));
         digest.update(detectionType.getBytes(StandardCharsets.UTF_8));
         digest.update(algorithm.getBytes(StandardCharsets.UTF_8));
         digest.update(String.valueOf(endTime.getEpochSecond()).getBytes(StandardCharsets.UTF_8));
         return Hex.encodeHexString(digest.digest());
-    }
-
-
-    private static String getHostName() {
-        return Objects.requireNonNullElseGet(
-                System.getenv("NODE_HOSTNAME"),
-                () -> System.getenv("HOSTNAME"));
     }
 
 

@@ -27,24 +27,30 @@
 
 package org.mitre.mpf.wfm.pipeline;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.service.WorkflowProperty;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
 import org.mitre.mpf.wfm.service.component.TestDescriptorFactory;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
-import org.mitre.mpf.wfm.service.pipeline.PipelineValidationException;
+import org.mitre.mpf.wfm.service.pipeline.PipelinePartLookup;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
+import org.mitre.mpf.wfm.service.pipeline.TransientPipelinePartLookup;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -55,11 +61,14 @@ public class TestPipelineValidator {
 
     private final WorkflowPropertyService _mockWorkflowPropertyService = mock(WorkflowPropertyService.class);
 
+    private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private final Map<String, Pipeline> _pipelines = new HashMap<>();
     private final Map<String, Task> _tasks = new HashMap<>();
     private final Map<String, Action> _actions = new HashMap<>();
     private final Map<String, Algorithm> _algorithms = new HashMap<>();
+
+    private final PipelinePartLookup _pipelinePartLookup = createPartLookup();
 
     @Before
     public void init() {
@@ -68,13 +77,36 @@ public class TestPipelineValidator {
         _pipelineValidator = new PipelineValidator(springValidator, _mockWorkflowPropertyService);
     }
 
+    private PipelinePartLookup createPartLookup() {
+        return new PipelinePartLookup() {
+            @Override
+            public Pipeline getPipeline(String name) {
+                return _pipelines.get(name);
+            }
+
+            @Override
+            public Task getTask(String name) {
+                return _tasks.get(name);
+            }
+
+            @Override
+            public Action getAction(String name) {
+                return _actions.get(name);
+            }
+
+            @Override
+            public Algorithm getAlgorithm(String name) {
+                return _algorithms.get(name);
+            }
+        };
+    }
 
     private void verifyBatchPipelineRunnable(String pipelineName) {
-        _pipelineValidator.verifyBatchPipelineRunnable(pipelineName, _pipelines, _tasks, _actions, _algorithms);
+        _pipelineValidator.verifyBatchPipelineRunnable(pipelineName, _pipelinePartLookup);
     }
 
     private void verifyStreamingPipelineRunnable(String pipelineName) {
-        _pipelineValidator.verifyStreamingPipelineRunnable(pipelineName, _pipelines, _tasks, _actions, _algorithms);
+        _pipelineValidator.verifyStreamingPipelineRunnable(pipelineName, _pipelinePartLookup);
     }
 
     private <T extends PipelineElement> void addElement(T pipelineElement, Map<String, T> existing) {
@@ -676,22 +708,144 @@ public class TestPipelineValidator {
     }
 
 
+    @Test
+    public void canValidateTransientPipelinesWithoutError() throws IOException {
+        var algoProp1 = new AlgorithmProperty(
+                "prop1", "description", ValueType.STRING, "default", null);
+        var algo1 = new Algorithm(
+                "ALGO1", "description", ActionType.DETECTION,
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of(algoProp1)),
+                true, false);
+        addElement(algo1);
+
+        var algoProp2 = new AlgorithmProperty(
+                "prop2", "description", ValueType.STRING, "default", null);
+        var algo2 = new Algorithm(
+                "ALGO2", "description", ActionType.DETECTION,
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of(algoProp2)),
+                true, false);
+        addElement(algo2);
+
+        var path = TestUtil.findFilePath("/transient-pipelines/all-transient.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var partLookup = new TransientPipelinePartLookup(transientPipeline,
+                                                         _pipelinePartLookup);
+        _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup);
+    }
+
+
+    @Test
+    public void canValidateTransientPipelineReferencingExistingParts() throws IOException {
+        var task1 = new Task("TASK1", "description", List.of("ACTION2"));
+        addElement(task1);
+        var action2 = new Action("ACTION2", "description", "ALGO1",
+                                 List.of());
+        addElement(action2);
+        var algoProp1 = new AlgorithmProperty(
+                "prop1", "description", ValueType.STRING, "default", null);
+        var algo1 = new Algorithm(
+                "ALGO1", "description", ActionType.DETECTION,
+                new Algorithm.Requires(List.of()),
+                new Algorithm.Provides(List.of(), List.of(algoProp1)),
+                true, false);
+        addElement(algo1);
+
+
+        var path = TestUtil.findFilePath("/transient-pipelines/partial-transient.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var partLookup = new TransientPipelinePartLookup(transientPipeline,
+                                                         _pipelinePartLookup);
+        _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup);
+    }
+
+
+    @Test
+    public void reportsValidationErrorsForTransientPipline() throws IOException {
+        var path = TestUtil.findFilePath("/transient-pipelines/validation-errors.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var ex = TestUtil.assertThrows(
+                InvalidPipelineException.class,
+                () -> _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup));
+
+        assertValidationErrors(
+            ex.getMessage(),
+            createViolationMessage("actions[0].properties[0].value", null, "may not be null"),
+            createViolationMessage("pipeline", "[]", "may not be empty"),
+            createViolationMessage("tasks[0].actions", "[]", "may not be empty"));
+    }
+
+
+    @Test
+    public void reportsWhenTransientPipelineHasDuplicates() throws IOException {
+        var path = TestUtil.findFilePath("/transient-pipelines/duplicates.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var ex = TestUtil.assertThrows(
+                InvalidPipelineException.class,
+                () -> _pipelineValidator.validateTransientPipeline(transientPipeline, partLookup));
+        var message = ex.getMessage();
+        assertThat(message, containsString("DUPTASK3"));
+        assertThat(message, containsString("DUPTASK4"));
+        assertThat(message, containsString("DUPACTION"));
+
+        assertThat(message, not(containsString("TASK1")));
+        assertThat(message, not(containsString("TASK2")));
+        assertThat(message, not(containsString("ACTION1")));
+        assertThat(message, not(containsString("ACTION2")));
+    }
+
+
+    @Test
+    public void reportsWhenTransientPipelineReferencesMissingParts() throws IOException {
+        var path = TestUtil.findFilePath("/transient-pipelines/partial-transient.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+
+        var partLookup = new TransientPipelinePartLookup(transientPipeline, _pipelinePartLookup);
+        var ex = TestUtil.assertThrows(
+                InvalidPipelineException.class,
+                () -> _pipelineValidator.verifyBatchPipelineRunnable(
+                        partLookup.getPipelineName(), partLookup));
+
+        var message = ex.getMessage();
+        assertThat(message, containsString("TASK1"));
+        assertThat(message, containsString("ACTION2"));
+        assertThat(message, containsString("ALGO1"));
+
+        assertThat(message, not(containsString("TASK2")));
+        assertThat(message, not(containsString("ACTION1")));
+
+    }
+
+
+
     private void assertValidationErrors(PipelineElement pipelineElement, String... messages) {
         assertTrue("No messages passed in to check", messages.length > 0);
-        var ex = TestUtil.assertThrows(PipelineValidationException.class,
+        var ex = TestUtil.assertThrows(InvalidPipelineException.class,
                                        () -> _pipelineValidator.validateOnAdd(pipelineElement, Map.of()));
-        var errorMessage = ex.getMessage();
-        for (String expectedMsg : messages) {
-            assertThat(errorMessage, containsString(expectedMsg));
+        assertValidationErrors(ex.getMessage(), messages);
+    }
+
+
+    private static void assertValidationErrors(String actualMessage, String... expectedMessages) {
+        for (String expectedMsg : expectedMessages) {
+            assertThat(actualMessage, containsString(expectedMsg));
         }
 
-        var lineCount = errorMessage
+        var lineCount = actualMessage
                 .chars()
                 .filter(ch -> ch == '\n')
                 .count();
 
         assertEquals("Did not contain the expected number of error messages.",
-                     lineCount, messages.length);
+                     lineCount, expectedMessages.length);
     }
 
 

@@ -44,6 +44,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
@@ -260,6 +261,25 @@ public abstract class TestSystem {
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
+
+    protected long runPipelineOnMedia(
+            TransientPipelineDefinition pipelineDef,
+            List<JobCreationMediaData> media,
+            Map<String, String> jobProperties,
+            int priority) {
+
+        var jobRequest = new JobCreationRequest();
+        jobRequest.setExternalId(UUID.randomUUID().toString());
+        jobRequest.setPipelineDefinition(pipelineDef);
+        jobRequest.setMedia(media);
+        jobRequest.setJobProperties(jobProperties);
+        jobRequest.setPriority(priority);
+
+        long jobRequestId = jobRequestService.run(jobRequest).getId();
+        Assert.assertTrue(waitFor(jobRequestId));
+        return jobRequestId;
+    }
+
 
     protected long runPipelineOnStream(
             String pipelineName, JobCreationStreamData stream, Map<String, String> jobProperties,

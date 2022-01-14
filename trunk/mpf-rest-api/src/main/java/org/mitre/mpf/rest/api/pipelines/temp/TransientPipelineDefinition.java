@@ -25,35 +25,48 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.rest.api.pipelines.temp;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collector;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
 
-public class Utils {
+import javax.validation.Valid;
+import java.util.List;
 
-    private Utils() {
+public class TransientPipelineDefinition {
+
+    private final ImmutableList<String> _pipeline;
+    @NotEmpty
+    @Valid
+    public ImmutableList<@AllNotBlank String> getPipeline() {
+        return _pipeline;
     }
 
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
+    private final ImmutableList<TransientTask> _tasks;
+    @Valid
+    public ImmutableList<TransientTask> getTasks() {
+        return _tasks;
     }
 
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
+    private final ImmutableList<TransientAction> _actions;
+    @Valid
+    public ImmutableList<TransientAction> getActions() {
+        return _actions;
     }
 
-
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
+    public TransientPipelineDefinition(
+            @JsonProperty("pipeline") List<String> pipeline,
+            @JsonProperty("tasks") List<TransientTask> tasks,
+            @JsonProperty("actions") List<TransientAction> actions) {
+        _pipeline = Utils.trimAndUpper(pipeline, ImmutableList.toImmutableList());
+        _tasks = tasks == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(tasks);
+        _actions = actions == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(actions);
     }
 }

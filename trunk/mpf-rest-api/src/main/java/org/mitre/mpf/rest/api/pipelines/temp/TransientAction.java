@@ -25,35 +25,45 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.rest.api.pipelines.temp;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.util.Utils;
+
+import javax.validation.Valid;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collector;
 
-public class Utils {
+public class TransientAction {
 
-    private Utils() {
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
     }
 
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
+    private final String _algorithm;
+    @NotBlank
+    public String getAlgorithm() {
+        return _algorithm;
     }
 
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
+    private final ImmutableList<ActionProperty> _properties;
+    @Valid
+    public ImmutableList<ActionProperty> getProperties() {
+        return _properties;
     }
 
-
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
+    public TransientAction(
+            @JsonProperty("name") String name,
+            @JsonProperty("algorithm") String algorithm,
+            @JsonProperty("properties") Collection<ActionProperty> properties) {
+        _name = Utils.trimAndUpper(name);
+        _algorithm = Utils.trimAndUpper(algorithm);
+        _properties = properties == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(properties);
     }
 }

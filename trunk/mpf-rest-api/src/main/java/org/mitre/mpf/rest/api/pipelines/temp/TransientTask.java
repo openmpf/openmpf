@@ -25,35 +25,37 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service.pipeline;
+package org.mitre.mpf.rest.api.pipelines.temp;
 
-import org.mitre.mpf.rest.api.pipelines.PipelineElement;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.ConstraintViolation;
-import java.util.Collection;
+import javax.validation.Valid;
+import java.util.List;
 
-import static java.util.stream.Collectors.joining;
+public class TransientTask {
 
-public class PipelineValidationException extends InvalidPipelineException {
-
-    public PipelineValidationException(PipelineElement invalidPipelineElement,
-                                       Collection<ConstraintViolation<PipelineElement>> validationErrors) {
-        super(createMessage(invalidPipelineElement, validationErrors));
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
     }
 
-
-    private static String createMessage(PipelineElement invalidPipelineElement,
-                                        Collection<ConstraintViolation<PipelineElement>> validationErrors) {
-        String prefix = invalidPipelineElement.getName() + " has errors in the following fields:\n";
-        return validationErrors.stream()
-                .map(PipelineValidationException::createFieldMessage)
-                .sorted()
-                .collect(joining("\n", prefix, ""));
+    private final ImmutableList<String> _actions;
+    @NotEmpty
+    @Valid
+    public ImmutableList<@AllNotBlank String> getActions() {
+        return _actions;
     }
 
-    private static String createFieldMessage(ConstraintViolation<PipelineElement> violation) {
-        return String.format("%s=\"%s\": %s", violation.getPropertyPath(), violation.getInvalidValue(),
-                             violation.getMessage());
+    public TransientTask(
+            @JsonProperty("name") String name,
+            @JsonProperty("actions") List<String> actions) {
+        _name = name;
+        _actions = Utils.trimAndUpper(actions, ImmutableList.toImmutableList());
     }
-
 }

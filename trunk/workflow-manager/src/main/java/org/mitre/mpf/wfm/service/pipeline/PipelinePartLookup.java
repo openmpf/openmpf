@@ -25,35 +25,20 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.wfm.service.pipeline;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collector;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 
-public class Utils {
+public interface PipelinePartLookup {
 
-    private Utils() {
-    }
+    public Pipeline getPipeline(String name);
 
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
-    }
+    public Task getTask(String name);
 
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
-    }
+    public Action getAction(String name);
 
-
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
-    }
+    public Algorithm getAlgorithm(String name);
 }

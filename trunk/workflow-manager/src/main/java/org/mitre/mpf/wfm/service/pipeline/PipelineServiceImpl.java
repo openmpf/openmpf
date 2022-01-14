@@ -31,6 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.WritableResource;
@@ -45,7 +46,7 @@ import static java.util.stream.Collectors.toList;
 
 
 @Service
-public class PipelineServiceImpl implements PipelineService {
+public class PipelineServiceImpl implements PipelineService, PipelinePartLookup {
 
     private final ObjectMapper _objectMapper;
 
@@ -122,7 +123,6 @@ public class PipelineServiceImpl implements PipelineService {
         }
     }
 
-
     private static String fixName(String name) {
         if (name == null) {
             throw new IllegalArgumentException("Name cannot be null.");
@@ -134,33 +134,44 @@ public class PipelineServiceImpl implements PipelineService {
     @Override
     public synchronized JobPipelineElements getBatchPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
-        verifyBatchPipelineRunnable(pipelineName);
-        return getPipelineElements(pipelineName);
+        _validator.verifyBatchPipelineRunnable(fixName(pipelineName), this);
+        return getPipelineElements(pipelineName, this);
     }
 
     @Override
     public synchronized JobPipelineElements getStreamingPipelineElements(String pipelineName) {
         pipelineName = fixName(pipelineName);
-        verifyStreamingPipelineRunnable(pipelineName);
-        return getPipelineElements(pipelineName);
+        _validator.verifyStreamingPipelineRunnable(fixName(pipelineName), this);
+        return getPipelineElements(pipelineName, this);
     }
 
 
-    private JobPipelineElements getPipelineElements(String pipelineName) {
-        var pipeline = getPipeline(fixName(pipelineName));
+    @Override
+    public synchronized JobPipelineElements getBatchPipelineElements(
+            TransientPipelineDefinition transientPipeline) {
+        var transientPipelineLookup = new TransientPipelinePartLookup(transientPipeline, this);
+        _validator.validateTransientPipeline(transientPipeline, transientPipelineLookup);
+        return getPipelineElements(transientPipelineLookup.getPipelineName(),
+                                   transientPipelineLookup);
+    }
+
+
+    private static JobPipelineElements getPipelineElements(String pipelineName,
+                                                           PipelinePartLookup partLookup) {
+        var pipeline = partLookup.getPipeline(fixName(pipelineName));
 
         var tasks = pipeline.getTasks()
                 .stream()
-                .map(this::getTask)
+                .map(partLookup::getTask)
                 .collect(toList());
 
         var actions = tasks.stream()
                 .flatMap(t -> t.getActions().stream())
-                .map(this::getAction)
+                .map(partLookup::getAction)
                 .collect(toList());
 
         var algorithms = actions.stream()
-                .map(action -> getAlgorithm(action.getAlgorithm()))
+                .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
                 .collect(toList());
 
         return new JobPipelineElements(pipeline, tasks, actions, algorithms);
@@ -176,6 +187,8 @@ public class PipelineServiceImpl implements PipelineService {
     public synchronized ImmutableList<Algorithm> getAlgorithms() {
         return ImmutableList.copyOf(_algorithms.values());
     }
+
+
 
     @Override
     public synchronized Action getAction(String name) {
@@ -229,17 +242,6 @@ public class PipelineServiceImpl implements PipelineService {
     @Override
     public synchronized void save(Pipeline pipeline) {
         save(pipeline, _pipelines);
-    }
-
-
-    @Override
-    public synchronized void verifyBatchPipelineRunnable(String pipelineName) {
-        _validator.verifyBatchPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
-    }
-
-    @Override
-    public synchronized void verifyStreamingPipelineRunnable(String pipelineName) {
-        _validator.verifyStreamingPipelineRunnable(fixName(pipelineName), _pipelines, _tasks, _actions, _algorithms);
     }
 
 

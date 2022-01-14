@@ -26,6 +26,8 @@
 
 package org.mitre.mpf.rest.api;
 
+import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
+
 import java.util.*;
 
 public class JobCreationRequest {
@@ -34,6 +36,7 @@ public class JobCreationRequest {
 	private Map<String, Map<String, String>> algorithmProperties = new HashMap<>();
 	private String externalId = null;
 	private String pipelineName = null;
+	private TransientPipelineDefinition pipelineDefinition;
 	private Boolean buildOutput = null; //will use a server side property if null
 	private Integer priority = null; //will be set to 4 (default) on the server side if null
 	private String callbackURL = null; // the URL to send a response after the job completes
@@ -73,6 +76,13 @@ public class JobCreationRequest {
 	}
 	public void setPipelineName(String pipelineName) {
 		this.pipelineName = pipelineName;
+	}
+
+	public TransientPipelineDefinition getPipelineDefinition() {
+		return pipelineDefinition;
+	}
+	public void setPipelineDefinition(TransientPipelineDefinition pipelineDefinition) {
+		this.pipelineDefinition = pipelineDefinition;
 	}
 
 	public Boolean getBuildOutput() {

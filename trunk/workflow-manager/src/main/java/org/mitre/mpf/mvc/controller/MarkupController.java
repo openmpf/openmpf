@@ -362,9 +362,9 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), propertiesUtil.getHostName()+"-"+markupResult.getJobId(), markupResult.getPipeline(),
-                markupResult.getMarkupUri(), markupUriContentType, markupImgUrl, markupDownloadUrl,
-                markupFileAvailable, markupResult.getSourceUri(), sourceUriContentType, sourceImgUrl,
-                sourceDownloadUrl, sourceFileAvailable);
+                markupResult.getId(), propertiesUtil.getExportedJobId(markupResult.getJobId()),
+                markupResult.getPipeline(), markupResult.getMarkupUri(), markupUriContentType,
+                markupImgUrl, markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(),
+                sourceUriContentType, sourceImgUrl, sourceDownloadUrl, sourceFileAvailable);
     }
 }

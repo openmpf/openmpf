@@ -282,7 +282,7 @@ public class PropertiesUtil {
     }
 
     public String getExportedJobId(long jobId) {
-        return getHostName() + "-" + jobId;
+        return getHostName() + '-' + jobId;
     }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {

@@ -224,7 +224,7 @@ public class WebRESTUtils {
 		return sb.toString();
 	}
 
-	public static SingleJobInfo getSingleJobInfo(long jobId) throws IOException {
+	public static SingleJobInfo getSingleJobInfo(String jobId) throws IOException {
 		String urlJobsStatus = REST_URL + "jobs/" + jobId;
 		String jsonJobResponse = getJSON(new URL(urlJobsStatus), MPF_AUTHORIZATION);
 		Assert.assertFalse("Failed to retrieve JSON when GETting job info for job id: " + jobId,
@@ -232,13 +232,13 @@ public class WebRESTUtils {
 		return objectMapper.readValue(jsonJobResponse, SingleJobInfo.class);
 	}
 
-	public static BatchJobStatusType getJobsStatus(long jobid) throws IOException  {
+	public static BatchJobStatusType getJobsStatus(String jobid) throws IOException  {
 		SingleJobInfo singleJobInfo = getSingleJobInfo(jobid);
 		//convert to the enum and return
 		return BatchJobStatusType.valueOf(singleJobInfo.getJobStatus());
 	}
 
-	public static boolean waitForJobToTerminate(long jobid, long delay) throws InterruptedException, IOException {
+	public static boolean waitForJobToTerminate(String jobid, long delay) throws InterruptedException, IOException {
 		log.info("[waitForJobToTerminate] job {}, delay:{} ", jobid, delay);
 		int count=20;
 		BatchJobStatusType status;

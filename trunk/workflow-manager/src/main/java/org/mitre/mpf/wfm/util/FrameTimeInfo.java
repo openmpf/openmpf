@@ -27,60 +27,94 @@
 
 package org.mitre.mpf.wfm.util;
 
-import java.util.function.IntUnaryOperator;
+import java.util.Arrays;
 
-public class FrameTimeInfo {
-    private final boolean _hasConstantFrameRate;
+public interface FrameTimeInfo {
+    public boolean hasConstantFrameRate();
 
-    private final boolean _requiresTimeEstimation;
+    public boolean requiresTimeEstimation();
 
-    private final IntUnaryOperator _frameToTimeFn;
+    public int getTimeMsFromFrame(int frameIndex);
 
-
-    private FrameTimeInfo(boolean hasConstantFrameRate,  boolean requiresTimeEstimation,
-                          IntUnaryOperator frameToTimeFn) {
-        _hasConstantFrameRate = hasConstantFrameRate;
-        _requiresTimeEstimation = requiresTimeEstimation;
-        _frameToTimeFn = frameToTimeFn;
-    }
+    public int getFrameFromTimeMs(int timeMs);
 
 
     public static FrameTimeInfo forConstantFrameRate(double fps, int startTime,
                                                      boolean requiresTimeEstimation) {
-        return new FrameTimeInfo(true, requiresTimeEstimation, getTimeUsingFps(fps, startTime));
-    }
-
-    public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
-                                                     boolean requiresTimeEstimation) {
-        return new FrameTimeInfo(false, requiresTimeEstimation, frameIdx -> {
-            try {
-                return timeStamps[frameIdx];
-            }
-            catch (ArrayIndexOutOfBoundsException e) {
-                int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
-                return getTimeUsingFps(fps, startTime).applyAsInt(frameIdx);
-            }
-        });
+        return fpsFrameTimeInfo(fps, startTime, true, requiresTimeEstimation);
     }
 
     public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps) {
-        return new FrameTimeInfo(false, true, getTimeUsingFps(fps, 0));
+        return fpsFrameTimeInfo(fps, 0, false, true);
     }
 
-    private static IntUnaryOperator getTimeUsingFps(double fps, int startTime) {
-        double msPerFrame = 1000 / fps;
-        return frameIdx -> startTime + (int) (frameIdx * msPerFrame);
+
+    public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
+                                                     boolean requiresTimeEstimation) {
+        return new FrameTimeInfo() {
+
+            public boolean hasConstantFrameRate() {
+                return false;
+            }
+
+            public boolean requiresTimeEstimation() {
+                return requiresTimeEstimation;
+            }
+
+            public int getTimeMsFromFrame(int frameIndex) {
+                try {
+                    return timeStamps[frameIndex];
+                }
+                catch (ArrayIndexOutOfBoundsException e) {
+                    int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
+                    return getTimeUsingFps(frameIndex, fps, startTime);
+                }
+            }
+
+            public int getFrameFromTimeMs(int timeMs) {
+                int rv = Arrays.binarySearch(timeStamps, timeMs);
+                if (rv >= 0) {
+                    return rv;
+                }
+                else {
+                    int firstGreaterIdx = -rv - 1;
+                    return Math.max(firstGreaterIdx - 1, 0);
+                }
+            }
+        };
     }
 
-    public boolean hasConstantFrameRate() {
-        return _hasConstantFrameRate;
+    private static FrameTimeInfo fpsFrameTimeInfo(
+            double fps, int startTime, boolean hasConstantFrameRate,
+            boolean requiresTimeEstimation) {
+        double framesPerMs = fps / 1000;
+        return new FrameTimeInfo() {
+
+            public boolean hasConstantFrameRate() {
+                return hasConstantFrameRate;
+            }
+
+            public boolean requiresTimeEstimation() {
+                return requiresTimeEstimation;
+            }
+
+            public int getTimeMsFromFrame(int frameIndex) {
+                return getTimeUsingFps(frameIndex, fps, startTime);
+            }
+
+            public int getFrameFromTimeMs(int timeMs) {
+                if (timeMs > startTime) {
+                    return (int) (framesPerMs * (timeMs - startTime));
+                }
+                else {
+                    return 0;
+                }
+            }
+        };
     }
 
-    public boolean requiresTimeEstimation() {
-        return _requiresTimeEstimation;
-    }
 
-    public int getFrameTimeMs(int frameIndex) {
-        return _frameToTimeFn.applyAsInt(frameIndex);
+    private static int getTimeUsingFps(int frameIndex, double fps, int startTime) {
+        return startTime + (int) (frameIndex * 1000 / fps);
     }
 }

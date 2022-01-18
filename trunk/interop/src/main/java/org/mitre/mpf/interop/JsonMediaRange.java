@@ -24,69 +24,59 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+package org.mitre.mpf.interop;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
+import java.util.Comparator;
+import java.util.Objects;
+
+@JsonTypeName("MediaRange")
+@JsonPropertyOrder({"start", "stop"})
+public class JsonMediaRange implements Comparable<JsonMediaRange> {
+
+    private final int start;
+    @JsonPropertyDescription("Inclusive beginning of range")
+    public int getStart() { return start; }
+
+    private final int stop;
+    @JsonPropertyDescription("Inclusive end of range")
+    public int getStop() { return stop; }
 
 
-public class JobCreationMediaData {
-
-    private String mediaUri;
-
-    private Map<String, String> properties = new HashMap<>();
-
-    private Map<String, String> metadata = new HashMap<>();
-
-    private List<JobCreationMediaRange> frameRanges = new ArrayList<>();
-
-    private List<JobCreationMediaRange> timeRanges = new ArrayList<>();
-
-    public JobCreationMediaData() {}
-
-    public JobCreationMediaData(String uri) {
-        this.mediaUri = uri;
+    public JsonMediaRange(
+            @JsonProperty("begin") int start,
+            @JsonProperty("end") int stop) {
+        this.start = start;
+        this.stop = stop;
     }
 
-    public String getMediaUri() {
-        return mediaUri;
+    @Override
+    public int hashCode() {
+        return Objects.hash(start, stop);
     }
 
-    public void setMediaUri(String mediaUri) {
-        this.mediaUri = mediaUri;
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof JsonMediaRange && compareTo((JsonMediaRange) other) == 0;
     }
 
-    public Map<String, String> getProperties() {
-        return properties;
-    }
+    private static final Comparator<JsonMediaRange> DEFAULT_COMPARATOR = Comparator
+            .comparingInt(JsonMediaRange::getStart)
+            .thenComparingInt(JsonMediaRange::getStop);
 
-    public Map<String, String> getMetadata() {
-        return metadata;
-    }
-
-    public void setProperties(Map<String, String> properties) {
-        this.properties = properties;
-    }
-
-    public void setMetadata(Map<String, String> metadata) {
-        this.metadata = metadata;
-    }
-
-    public List<JobCreationMediaRange> getFrameRanges() {
-        return frameRanges;
-    }
-
-    public void setFrameRanges(List<JobCreationMediaRange> frameRanges) {
-        this.frameRanges = frameRanges;
-    }
-
-    public List<JobCreationMediaRange> getTimeRanges() {
-        return timeRanges;
-    }
-
-    public void setTimeRanges(List<JobCreationMediaRange> timeRanges) {
-        this.timeRanges = timeRanges;
+    @Override
+    public int compareTo(JsonMediaRange other) {
+        //noinspection ObjectEquality - False positive
+        if (this == other) {
+            return 0;
+        }
+        else {
+            return DEFAULT_COMPARATOR.compare(this, other);
+        }
     }
 }

@@ -133,8 +133,8 @@ public class DetectionResponseProcessor
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
         var frameTimeInfo = media.getFrameTimeInfo();
-        int startTime = frameTimeInfo.getFrameTimeMs(startFrame);
-        int stopTime = frameTimeInfo.getFrameTimeMs(stopFrame);
+        int startTime = frameTimeInfo.getTimeMsFromFrame(startFrame);
+        int stopTime = frameTimeInfo.getTimeMsFromFrame(stopFrame);
 
         String mediaLabel = String.format("Media #%d, Frames: %d-%d, Task: '%s', Action: '%s'",
                 detectionResponse.getMediaId(),
@@ -152,8 +152,8 @@ public class DetectionResponseProcessor
                 continue;
             }
 
-            int startOffsetTime = frameTimeInfo.getFrameTimeMs(objectTrack.getStartFrame());
-            int stopOffsetTime  = frameTimeInfo.getFrameTimeMs(objectTrack.getStopFrame());
+            int startOffsetTime = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStartFrame());
+            int stopOffsetTime  = frameTimeInfo.getTimeMsFromFrame(objectTrack.getStopFrame());
 
             ImmutableSortedSet<Detection> detections = objectTrack.getFrameLocationsList()
                     .stream()
@@ -336,7 +336,7 @@ public class DetectionResponseProcessor
     private static Detection toDetection(
             DetectionProtobuf.VideoTrack.FrameLocationMap frameLocationMap,
             FrameTimeInfo timeInfo) {
-        int time = timeInfo.getFrameTimeMs(frameLocationMap.getFrame());
+        int time = timeInfo.getTimeMsFromFrame(frameLocationMap.getFrame());
         return toDetection(frameLocationMap.getImageLocation(), frameLocationMap.getFrame(), time);
     }
 

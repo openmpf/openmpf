@@ -42,10 +42,7 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -149,8 +146,8 @@ public class TestDefaultMediaSegmenter {
 	private static Media createTestMedia() {
 		URI mediaUri = URI.create("file:///example.foo");
 		MediaImpl media = new MediaImpl(
-				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-				Collections.emptyMap(), null);
+				1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
+				Map.of(), List.of(), List.of(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

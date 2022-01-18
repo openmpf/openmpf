@@ -41,6 +41,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -142,8 +143,9 @@ public class TestImageMediaSegmenter {
 
 	private static Media createTestMedia() {
 		URI uri = URI.create("file:///example.jpg");
-		MediaImpl media = new MediaImpl(1, uri.toString(), UriScheme.get(uri),
-                                        Paths.get(uri), Collections.emptyMap(), Collections.emptyMap(), null);
+		MediaImpl media = new MediaImpl(
+				1, uri.toString(), UriScheme.get(uri), Paths.get(uri),
+				Map.of(), Map.of(), List.of(), List.of(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

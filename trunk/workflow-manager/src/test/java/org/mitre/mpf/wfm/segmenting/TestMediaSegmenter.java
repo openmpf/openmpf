@@ -37,7 +37,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf.PropertyMap;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.util.*;
 
@@ -50,16 +50,16 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testNoSplits() {
-		List<TimePair> results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 24)), 25, 1, 100);
+		List<MediaRange> results = MediaSegmenter.createSegments(
+                Collections.singletonList(new MediaRange(0, 24)), 25, 1, 100);
 		assertEquals(0, results.get(0).getStartInclusive());
 		assertEquals(24,  results.get(0).getEndInclusive());
 	}
 
 	@Test
 	public void testSplits() {
-		List<TimePair> results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 24)), 10, 1, 100);
+		List<MediaRange> results = MediaSegmenter.createSegments(
+                Collections.singletonList(new MediaRange(0, 24)), 10, 1, 100);
 
 		assertEquals(0, results.get(0).getStartInclusive());
 		assertEquals(9, results.get(0).getEndInclusive());
@@ -72,11 +72,11 @@ public class TestMediaSegmenter {
 
 
 		// "Segmenting Media" example from User Guide
-		List<TimePair> inputs = new ArrayList<>();
-		inputs.add(new TimePair(25, 150));
-		inputs.add(new TimePair(175, 275));
-		inputs.add(new TimePair(25, 125));
-		inputs.add(new TimePair(0, 175));
+		List<MediaRange> inputs = new ArrayList<>();
+		inputs.add(new MediaRange(25, 150));
+		inputs.add(new MediaRange(175, 275));
+		inputs.add(new MediaRange(25, 125));
+		inputs.add(new MediaRange(0, 175));
 
 		results = MediaSegmenter.createSegments(
 				inputs, 100, 5, 0);
@@ -95,8 +95,8 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testShortFirstSegment() {
-		List<TimePair> results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 3)), 10, 5, 0);
+		List<MediaRange> results = MediaSegmenter.createSegments(
+                Collections.singletonList(new MediaRange(0, 3)), 10, 5, 0);
 
 		assertEquals(1, results.size());
 
@@ -106,11 +106,11 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testShortAdjacentSegment() {
-		List<TimePair> inputs = new ArrayList<>();
-		inputs.add(new TimePair(0, 9));
-		inputs.add(new TimePair(10, 13));
+		List<MediaRange> inputs = new ArrayList<>();
+		inputs.add(new MediaRange(0, 9));
+		inputs.add(new MediaRange(10, 13));
 
-		List<TimePair> results = MediaSegmenter.createSegments(
+		List<MediaRange> results = MediaSegmenter.createSegments(
 				inputs, 10, 5, 0);
 
 		assertEquals(2, results.size());
@@ -124,9 +124,9 @@ public class TestMediaSegmenter {
 
 		// "Adjacent Segment Present" example from User Guide
 		inputs.clear();
-		inputs.add(new TimePair(0, 99));
-		inputs.add(new TimePair(100, 199));
-		inputs.add(new TimePair(200, 249));
+		inputs.add(new MediaRange(0, 99));
+		inputs.add(new MediaRange(100, 199));
+		inputs.add(new MediaRange(200, 249));
 
 		results = MediaSegmenter.createSegments(
 				inputs, 100, 75, 50);
@@ -142,11 +142,11 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testShortNonAdjacentSegment() {
-		List<TimePair> inputs = new ArrayList<>();
-		inputs.add(new TimePair(0, 11));
-		inputs.add(new TimePair(13, 13));
+		List<MediaRange> inputs = new ArrayList<>();
+		inputs.add(new MediaRange(0, 11));
+		inputs.add(new MediaRange(13, 13));
 
-		List<TimePair> results = MediaSegmenter.createSegments(
+		List<MediaRange> results = MediaSegmenter.createSegments(
 				inputs, 10, 5, 0);
 
 		assertEquals(2, results.size());
@@ -160,10 +160,10 @@ public class TestMediaSegmenter {
 
 		// "No Adjacent Segment" example from User Guide
 		inputs.clear();
-		inputs.add(new TimePair(0, 99));
-		inputs.add(new TimePair(100, 199));
-		inputs.add(new TimePair(200, 249));
-		inputs.add(new TimePair(325, 349));
+		inputs.add(new MediaRange(0, 99));
+		inputs.add(new MediaRange(100, 199));
+		inputs.add(new MediaRange(200, 249));
+		inputs.add(new MediaRange(325, 349));
 
 		results = MediaSegmenter.createSegments(
 				inputs, 100, 75, 50);
@@ -182,8 +182,8 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testSegmentLengthAtLeastMinLength() {
-		List<TimePair> results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 199)), 100, 10, 0);
+		List<MediaRange> results = MediaSegmenter.createSegments(
+                Collections.singletonList(new MediaRange(0, 199)), 100, 10, 0);
 
 		assertEquals(2, results.size());
 
@@ -195,7 +195,7 @@ public class TestMediaSegmenter {
 
 
 		results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 200)), 100, 10, 0);
+                Collections.singletonList(new MediaRange(0, 200)), 100, 10, 0);
 
 		assertEquals(2, results.size());
 
@@ -207,7 +207,7 @@ public class TestMediaSegmenter {
 
 
 		results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 208)), 100, 10, 0);
+                Collections.singletonList(new MediaRange(0, 208)), 100, 10, 0);
 
 		assertEquals(2, results.size());
 
@@ -219,7 +219,7 @@ public class TestMediaSegmenter {
 
 
 		results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 209)), 100, 10, 0);
+                Collections.singletonList(new MediaRange(0, 209)), 100, 10, 0);
 
 		assertEquals(3, results.size());
 
@@ -234,7 +234,7 @@ public class TestMediaSegmenter {
 
 
 		results = MediaSegmenter.createSegments(
-				Collections.singletonList(new TimePair(0, 298)), 100, 10, 0);
+                Collections.singletonList(new MediaRange(0, 298)), 100, 10, 0);
 
 		assertEquals(3, results.size());
 
@@ -250,18 +250,18 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testMinGapBetweenSegments() {
-		List<TimePair> inputs = new ArrayList<>();
-		inputs.add(new TimePair(0, 149));
-		inputs.add(new TimePair(175, 399));
-		inputs.add(new TimePair(500, 899));
+		List<MediaRange> inputs = new ArrayList<>();
+		inputs.add(new MediaRange(0, 149));
+		inputs.add(new MediaRange(175, 399));
+		inputs.add(new MediaRange(500, 899));
 
-		List<TimePair> results = MediaSegmenter.createSegments(
+		List<MediaRange> results = MediaSegmenter.createSegments(
 				inputs, 75, 25, 100);
 
 		assertEquals(12, results.size());
 
 		int offset = 0;
-		for (TimePair result : results.subList(0, 5)) {
+		for (MediaRange result : results.subList(0, 5)) {
 			assertEquals(offset, result.getStartInclusive());
 			assertEquals(offset+74, result.getEndInclusive());
 			offset += 75;
@@ -271,7 +271,7 @@ public class TestMediaSegmenter {
 		assertEquals(offset+24, results.get(5).getEndInclusive());
 
 		offset = 500;
-		for (TimePair result : results.subList(6, 11)) {
+		for (MediaRange result : results.subList(6, 11)) {
 			assertEquals(offset, result.getStartInclusive());
 			assertEquals(offset+74, result.getEndInclusive());
 			offset += 75;
@@ -283,9 +283,9 @@ public class TestMediaSegmenter {
 
 		// "MIN_GAP_BETWEEN_SEGMENTS" Property" example from User Guide (after track merging)
 		inputs.clear();
-		inputs.add(new TimePair(0, 149));
-		inputs.add(new TimePair(175, 399));
-		inputs.add(new TimePair(500, 899));
+		inputs.add(new MediaRange(0, 149));
+		inputs.add(new MediaRange(175, 399));
+		inputs.add(new MediaRange(500, 899));
 
 		results = MediaSegmenter.createSegments(
 				inputs, 75, 26, 100);
@@ -293,7 +293,7 @@ public class TestMediaSegmenter {
 		assertEquals(10, results.size());
 
 		offset = 0;
-		for (TimePair result : results.subList(0, 4)) {
+		for (MediaRange result : results.subList(0, 4)) {
 			assertEquals(offset, result.getStartInclusive());
 			assertEquals(offset+74, result.getEndInclusive());
 			offset += 75;
@@ -303,7 +303,7 @@ public class TestMediaSegmenter {
 		assertEquals(offset+99, results.get(4).getEndInclusive());
 
 		offset = 500;
-		for (TimePair result : results.subList(5, 9)) {
+		for (MediaRange result : results.subList(5, 9)) {
 			assertEquals(offset, result.getStartInclusive());
 			assertEquals(offset+74, result.getEndInclusive());
 			offset += 75;
@@ -315,30 +315,30 @@ public class TestMediaSegmenter {
 
 	@Test
 	public void testOverlap() {
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 0));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 1));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(10, 20), 10));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(10, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(10, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(10, 20), 10));
 
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 0));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 1));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(15, 20), 10));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(15, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(15, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(15, 20), 10));
 
-		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 0));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 1));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(16, 20), 10));
+		assertFalse(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(16, 20), 0));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(16, 20), 1));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(16, 20), 10));
 
 
-		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 0));
-		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 1));
-		assertFalse(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 4));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 5));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 6));
-		assertTrue(MediaSegmenter.overlaps(new TimePair(0, 15), new TimePair(20, 40), 10));
+		assertFalse(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 0));
+		assertFalse(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 1));
+		assertFalse(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 4));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 5));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 6));
+		assertTrue(MediaSegmenter.overlaps(new MediaRange(0, 15), new MediaRange(20, 40), 10));
 	}
 
 	@Test
 	public void testMerge() {
-		assertEquals(new TimePair(0, 20), MediaSegmenter.merge(new TimePair(0, 15), new TimePair(10, 20)));
+		assertEquals(new MediaRange(0, 20), MediaSegmenter.merge(new MediaRange(0, 15), new MediaRange(10, 20)));
 	}
 
 

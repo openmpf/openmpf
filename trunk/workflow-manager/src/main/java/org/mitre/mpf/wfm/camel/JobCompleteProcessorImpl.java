@@ -260,9 +260,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
                 .build();
 
+        String exportedJobId = propertiesUtil.getExportedJobId(job.getId());
+
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
-                    .setParameter("jobid", String.valueOf(job.getId()));
+                    .setParameter("jobid", exportedJobId);
 
             job.getExternalId()
                     .ifPresent(id -> callbackUriWithParamsBuilder.setParameter("externalid", id));
@@ -284,7 +286,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 : outputObjectUri.toString();
 
         JsonCallbackBody jsonBody = new JsonCallbackBody(
-                job.getId(), job.getExternalId().orElse(null), outputObjectUriString);
+                exportedJobId, job.getExternalId().orElse(null), outputObjectUriString);
 
         postRequest.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody),
                                                ContentType.APPLICATION_JSON));
@@ -319,9 +321,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                   Mutable<String> outputSha,
                                   TrackCounter trackCounter) throws IOException {
         long jobId = job.getId();
-
+        String exportedJobId = propertiesUtil.getExportedJobId(jobId);
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
-                jobId,
+                exportedJobId,
                 UUID.randomUUID().toString(),
                 convertPipeline(job.getPipelineElements()),
                 job.getPriority(),
@@ -358,6 +360,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(),
                     media.getType() != null ? media.getType().toString() : null,
                     media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
+
+            for (var frameRange : media.getFrameRanges()) {
+                mediaOutputObject.getFrameRanges().add(new JsonMediaRange(
+                        frameRange.getStartInclusive(), frameRange.getEndInclusive()));
+            }
+
+            for (var timeRange : media.getTimeRanges()) {
+                mediaOutputObject.getTimeRanges().add(new JsonMediaRange(
+                        timeRange.getStartInclusive(), timeRange.getEndInclusive()));
+            }
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
             censorPropertiesService.copyAndCensorProperties(

@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class SingleJobInfo {
-    private long jobId;
+    private String jobId;
     private String pipelineName;
     private int jobPriority;
     private String jobStatus;
@@ -46,7 +46,7 @@ public class SingleJobInfo {
     public SingleJobInfo() { }
 
     public SingleJobInfo(
-            long jobId,
+            String jobId,
             String pipelineName,
             int jobPriority,
             String jobStatus,
@@ -70,7 +70,7 @@ public class SingleJobInfo {
         this.mediaUris = List.copyOf(mediaUris);
     }
 
-    public long getJobId() {
+    public String getJobId() {
         return jobId;
     }
 

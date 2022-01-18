@@ -176,7 +176,7 @@ public class Main {
 
         // Create a job using the first FACE pipeline
 
-        long jobId = jobCreationResponseEntity.getBody().getJobId();
+        String   jobId = jobCreationResponseEntity.getBody().getJobId();
         System.out.println("Created job with id: " + jobId + "\n");
 
         System.out.println("---Sleeping for 10 seconds to let the job process---\n");

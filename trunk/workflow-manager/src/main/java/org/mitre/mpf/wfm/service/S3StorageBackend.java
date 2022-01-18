@@ -100,14 +100,16 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(JsonOutputObject outputObject) throws StorageException {
-        BatchJob job = _inProgressJobs.getJob(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        BatchJob job = _inProgressJobs.getJob(internalJobId);
         return requiresS3ResultUpload(job.getJobProperties()::get);
     }
 
     @Override
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException {
         URI localUri = _localStorageBackend.store(outputObject, outputSha);
-        BatchJob job = _inProgressJobs.getJob(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        BatchJob job = _inProgressJobs.getJob(internalJobId);
         if (outputSha.getValue() == null) {
             outputSha.setValue(hashExistingFile(Paths.get(localUri)));
         }

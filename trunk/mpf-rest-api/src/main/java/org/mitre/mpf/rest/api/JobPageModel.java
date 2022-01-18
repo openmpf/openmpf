@@ -26,7 +26,22 @@
 
 package org.mitre.mpf.rest.api;
 
-public class JobPageModel extends SingleJobInfo {
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+
+public class JobPageModel {
+    private final long jobId;
+    private final String pipelineName;
+    private final int jobPriority;
+    private final String jobStatus;
+    private final float jobProgress;
+    private final Instant startDate;
+    private final Instant endDate;
+    private final String outputObjectPath;
+    private final boolean hasCallbacksInProgress;
+    private final boolean terminal;
+    private final List<String> mediaUris;
 
     private boolean outputFileExists = false;
 
@@ -38,20 +53,72 @@ public class JobPageModel extends SingleJobInfo {
         this.outputFileExists = outputFileExists;
     }
 
-    public JobPageModel() {
+    public JobPageModel(
+            long jobId,
+            String pipelineName,
+            int jobPriority,
+            String jobStatus,
+            float jobProgress,
+            Instant startDate,
+            Instant endDate,
+            String outputObjectPath,
+            boolean hasCallbacksInProgress,
+            boolean terminal,
+            Collection<String> mediaUris) {
+        this.jobId = jobId;
+        this.pipelineName = pipelineName;
+        this.jobPriority = jobPriority;
+        this.jobStatus = jobStatus;
+        this.jobProgress = jobProgress;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.outputObjectPath = outputObjectPath;
+        this.hasCallbacksInProgress = hasCallbacksInProgress;
+        this.terminal = terminal;
+        this.mediaUris = List.copyOf(mediaUris);
     }
 
-    public JobPageModel(SingleJobInfo job) {
-        super(job.getJobId(),
-              job.getPipelineName(),
-              job.getJobPriority(),
-              job.getJobStatus(),
-              job.getJobProgress(),
-              job.getStartDate(),
-              job.getEndDate(),
-              job.getOutputObjectPath(),
-              job.getHasCallbacksInProgress(),
-              job.isTerminal(),
-              job.getMediaUris());
+    public long getJobId() {
+        return jobId;
+    }
+
+    public String getPipelineName() {
+        return pipelineName;
+    }
+
+    public int getJobPriority() {
+        return jobPriority;
+    }
+
+    public String getJobStatus() {
+        return jobStatus;
+    }
+
+    public float getJobProgress() {
+        return jobProgress;
+    }
+
+    public Instant getStartDate() {
+        return startDate;
+    }
+
+    public Instant getEndDate() {
+        return endDate;
+    }
+
+    public String getOutputObjectPath() {
+        return outputObjectPath;
+    }
+
+    public boolean getHasCallbacksInProgress() {
+        return hasCallbacksInProgress;
+    }
+
+    public boolean isTerminal() {
+        return terminal;
+    }
+
+    public List<String> getMediaUris() {
+        return mediaUris;
     }
 }

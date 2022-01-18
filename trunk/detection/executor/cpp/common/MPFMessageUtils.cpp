@@ -75,8 +75,6 @@ DetectionError translateMPFDetectionError(
             return DetectionError::NO_DETECTION_ERROR;
         case MPF_DETECTION_NOT_INITIALIZED:
             return DetectionError::DETECTION_NOT_INITIALIZED;
-        case MPF_UNRECOGNIZED_DATA_TYPE:
-            return DetectionError::UNRECOGNIZED_DATA_TYPE;
         case MPF_UNSUPPORTED_DATA_TYPE:
             return DetectionError::UNSUPPORTED_DATA_TYPE;
         case MPF_INVALID_DATAFILE_URI:
@@ -139,8 +137,6 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_DETECTION_SUCCESS;
         case DetectionError::DETECTION_NOT_INITIALIZED:
             return MPF_DETECTION_NOT_INITIALIZED;
-        case DetectionError::UNRECOGNIZED_DATA_TYPE:
-            return MPF_UNRECOGNIZED_DATA_TYPE;
         case DetectionError::UNSUPPORTED_DATA_TYPE:
             return MPF_UNSUPPORTED_DATA_TYPE;
         case DetectionError::INVALID_DATAFILE_URI:

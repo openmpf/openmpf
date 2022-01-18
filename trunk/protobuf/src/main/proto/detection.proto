@@ -31,7 +31,6 @@ option java_outer_classname = "DetectionProtobuf";
 enum DetectionError {
     NO_DETECTION_ERROR             = 0;
     DETECTION_NOT_INITIALIZED      = 1;
-    UNRECOGNIZED_DATA_TYPE         = 2;
     UNSUPPORTED_DATA_TYPE          = 3;
     INVALID_DATAFILE_URI           = 4;
     COULD_NOT_OPEN_DATAFILE        = 5;

@@ -432,12 +432,8 @@ public class MPFDetectionBuffer {
 
             case MPF_DETECTION_SUCCESS:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.NO_DETECTION_ERROR;
-            case MPF_OTHER_DETECTION_ERROR_TYPE:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNRECOGNIZED_DETECTION_ERROR;
             case MPF_DETECTION_NOT_INITIALIZED:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.DETECTION_NOT_INITIALIZED;
-            case MPF_UNRECOGNIZED_DATA_TYPE:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNRECOGNIZED_DATA_TYPE;
             case MPF_UNSUPPORTED_DATA_TYPE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNSUPPORTED_DATA_TYPE;
             case MPF_INVALID_DATAFILE_URI:

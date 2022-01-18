@@ -436,26 +436,16 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.DETECTION_NOT_INITIALIZED;
             case MPF_UNSUPPORTED_DATA_TYPE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.UNSUPPORTED_DATA_TYPE;
-            case MPF_INVALID_DATAFILE_URI:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_DATAFILE_URI;
             case MPF_COULD_NOT_OPEN_DATAFILE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.COULD_NOT_OPEN_DATAFILE;
             case MPF_COULD_NOT_READ_DATAFILE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.COULD_NOT_READ_DATAFILE;
             case MPF_FILE_WRITE_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.FILE_WRITE_ERROR;
-            case MPF_IMAGE_READ_ERROR:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.IMAGE_READ_ERROR;
             case MPF_BAD_FRAME_SIZE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.BAD_FRAME_SIZE;
             case MPF_BOUNDING_BOX_SIZE_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
-            case MPF_INVALID_FRAME_INTERVAL:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_FRAME_INTERVAL;
-            case MPF_INVALID_START_FRAME:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_START_FRAME;
-            case MPF_INVALID_STOP_FRAME:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_STOP_FRAME;
             case MPF_DETECTION_FAILED:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.DETECTION_FAILED;
             case MPF_DETECTION_TRACKING_FAILED:
@@ -468,10 +458,6 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.PROPERTY_IS_NOT_INT;
             case MPF_PROPERTY_IS_NOT_FLOAT:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.PROPERTY_IS_NOT_FLOAT;
-            case MPF_INVALID_ROTATION:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_ROTATION;
-            case MPF_MEMORY_ALLOCATION_FAILED:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MEMORY_ALLOCATION_FAILED;
             case MPF_GPU_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             case MPF_NETWORK_ERROR:

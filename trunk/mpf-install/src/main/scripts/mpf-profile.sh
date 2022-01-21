@@ -35,16 +35,20 @@
 #
 # Set appropriate values for MPF_USER and MPF_HOME, and modify other variables with correct
 # values for the given runtime environment.  Then copy this file to /etc/profile.d/mpf.sh
+
+# Ubuntu's bash creates HOSTNAME as a local variable, so we export it here.
+export HOSTNAME
+
 export no_proxy=localhost
 
 export MPF_USER=mpf
 export MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 export MPF_LOG_PATH=$MPF_HOME/share/logs
-export MASTER_MPF_NODE=$HOSTNAME
-export THIS_MPF_NODE=$HOSTNAME
+export MASTER_MPF_NODE=localhost
+export THIS_MPF_NODE=localhost
 export CORE_MPF_NODES=$THIS_MPF_NODE
 
-export JAVA_HOME=/usr
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
 export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
 export JGROUPS_TCP_PORT=7800

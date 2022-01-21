@@ -193,7 +193,7 @@ class ActiveMqManager(BaseMpfSystemDependencyManager):
 
 
 class PostgresManager(BaseMpfSystemDependencyManager):
-    SERVICE_NAME = 'postgresql-12'
+    SERVICE_NAME = 'postgresql'
 
     def dependency_name(self):
         return 'PostgreSQL'
@@ -212,7 +212,7 @@ class PostgresManager(BaseMpfSystemDependencyManager):
 
 
 class RedisManager(BaseMpfSystemDependencyManager):
-    SERVICE_NAME = 'redis'
+    SERVICE_NAME = 'redis-server'
 
     def __init__(self, mpf_config):
         super(RedisManager, self).__init__(mpf_config)
@@ -640,10 +640,13 @@ class ShellHelper:
 
     def service_exists(self, service_name):
         try:
-            self.check_call(['systemctl', 'is-enabled', service_name])
+            self.check_call(['systemctl', 'status', service_name])
             return True
         except subprocess.CalledProcessError as err:
-            if err.returncode == 1:
+            if err.returncode == 3:
+                # Service exists, but is not running.
+                return True
+            if err.returncode == 4:
                 return False
             raise
 
@@ -667,7 +670,7 @@ sys_args = mpf_util.arg_group(
 
     argh.arg('--redis-cli-bin', default='redis-cli', help='path to redis-cli binary'),
 
-    argh.arg('--redis-conf', default='/etc/redis.conf', help='path to redis.conf file'),
+    argh.arg('--redis-conf', default='/etc/redis/redis.conf', help='path to redis.conf file'),
 
     argh.arg('--catalina', default='/opt/apache-tomcat/bin/catalina.sh',
              help='path to catalina.sh'),

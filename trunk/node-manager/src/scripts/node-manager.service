@@ -1,0 +1,4 @@
+[Service]
+ExecStart=/bin/bash -c '\
+   source /etc/profile.d/mpf.sh; \
+   exec java -jar $${MPF_HOME}/jars/mpf-nodemanager-6.3.jar'

@@ -444,20 +444,12 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.FILE_WRITE_ERROR;
             case MPF_BAD_FRAME_SIZE:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.BAD_FRAME_SIZE;
-            case MPF_BOUNDING_BOX_SIZE_ERROR:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
             case MPF_DETECTION_FAILED:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.DETECTION_FAILED;
-            case MPF_DETECTION_TRACKING_FAILED:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.DETECTION_TRACKING_FAILED;
             case MPF_INVALID_PROPERTY:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_PROPERTY;
             case MPF_MISSING_PROPERTY:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MISSING_PROPERTY;
-            case MPF_PROPERTY_IS_NOT_INT:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.PROPERTY_IS_NOT_INT;
-            case MPF_PROPERTY_IS_NOT_FLOAT:
-                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.PROPERTY_IS_NOT_FLOAT;
             case MPF_GPU_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             case MPF_NETWORK_ERROR:

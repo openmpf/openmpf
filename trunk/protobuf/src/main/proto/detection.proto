@@ -36,13 +36,9 @@ enum DetectionError {
     COULD_NOT_READ_DATAFILE        = 6;
     FILE_WRITE_ERROR               = 7;
     BAD_FRAME_SIZE                 = 9;
-    BOUNDING_BOX_SIZE_ERROR        = 10;
     DETECTION_FAILED               = 14;
-    DETECTION_TRACKING_FAILED      = 15;
     MISSING_PROPERTY               = 16;
     INVALID_PROPERTY               = 17;
-    PROPERTY_IS_NOT_INT            = 18;
-    PROPERTY_IS_NOT_FLOAT          = 19;
     UNRECOGNIZED_DETECTION_ERROR   = 22;
     REQUEST_CANCELLED              = 23; // The detection request was cancelled by the user.
     DEAD_LETTER                    = 24;

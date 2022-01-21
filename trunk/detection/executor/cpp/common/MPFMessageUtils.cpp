@@ -85,20 +85,12 @@ DetectionError translateMPFDetectionError(
             return DetectionError::FILE_WRITE_ERROR;
         case MPF_BAD_FRAME_SIZE:
             return DetectionError::BAD_FRAME_SIZE;
-        case MPF_BOUNDING_BOX_SIZE_ERROR:
-            return DetectionError::BOUNDING_BOX_SIZE_ERROR;
         case MPF_DETECTION_FAILED:
             return DetectionError::DETECTION_FAILED;
-        case MPF_DETECTION_TRACKING_FAILED:
-            return DetectionError::DETECTION_TRACKING_FAILED;
         case MPF_MISSING_PROPERTY:
             return DetectionError::MISSING_PROPERTY;
         case MPF_INVALID_PROPERTY:
             return DetectionError::INVALID_PROPERTY;
-        case MPF_PROPERTY_IS_NOT_INT:
-            return DetectionError::PROPERTY_IS_NOT_INT;
-        case MPF_PROPERTY_IS_NOT_FLOAT:
-            return DetectionError::PROPERTY_IS_NOT_FLOAT;
         case MPF_OTHER_DETECTION_ERROR_TYPE:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
         case MPF_GPU_ERROR:
@@ -133,20 +125,12 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_FILE_WRITE_ERROR;
         case DetectionError::BAD_FRAME_SIZE:
             return MPF_BAD_FRAME_SIZE;
-        case DetectionError::BOUNDING_BOX_SIZE_ERROR:
-            return MPF_BOUNDING_BOX_SIZE_ERROR;
         case DetectionError::DETECTION_FAILED:
             return MPF_DETECTION_FAILED;
-        case DetectionError::DETECTION_TRACKING_FAILED:
-            return MPF_DETECTION_TRACKING_FAILED;
         case DetectionError::MISSING_PROPERTY:
             return MPF_MISSING_PROPERTY;
         case DetectionError::INVALID_PROPERTY:
             return MPF_INVALID_PROPERTY;
-        case DetectionError::PROPERTY_IS_NOT_INT:
-            return MPF_PROPERTY_IS_NOT_INT;
-        case DetectionError::PROPERTY_IS_NOT_FLOAT:
-            return MPF_PROPERTY_IS_NOT_FLOAT;
         case DetectionError::UNRECOGNIZED_DETECTION_ERROR:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
         case DetectionError::GPU_ERROR:

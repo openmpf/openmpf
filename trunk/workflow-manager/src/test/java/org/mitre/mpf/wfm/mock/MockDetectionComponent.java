@@ -67,7 +67,7 @@ public class MockDetectionComponent implements Processor {
 				.setActionIndex(detectionRequest.getActionIndex())
 				.setActionName(detectionRequest.getActionName())
 				.setDataType(DetectionProtobuf.DetectionResponse.DataType.valueOf(detectionRequest.getDataType().name()))
-				.setError(reportError(detectionRequest) ? DetectionProtobuf.DetectionError.DETECTION_TRACKING_FAILED : DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
+				.setError(reportError(detectionRequest) ? DetectionProtobuf.DetectionError.DETECTION_FAILED : DetectionProtobuf.DetectionError.NO_DETECTION_ERROR)
 				.setMediaId(detectionRequest.getMediaId())
 				.setMetrics(
 						Metrics.MetricsMessage.newBuilder()

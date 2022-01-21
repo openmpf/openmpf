@@ -212,7 +212,7 @@ public class TestDetectionResponseProcessor {
 
     @Test
     public void testVideoResponseError() {
-        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BAD_FRAME_SIZE;
 
         processVideoJob(error);
 

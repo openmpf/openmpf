@@ -450,6 +450,8 @@ public class MPFDetectionBuffer {
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.INVALID_PROPERTY;
             case MPF_MISSING_PROPERTY:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MISSING_PROPERTY;
+            case MPF_MEMORY_ALLOCATION_FAILED:
+                return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.MEMORY_ALLOCATION_FAILED;
             case MPF_GPU_ERROR:
                 return org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionError.GPU_ERROR;
             case MPF_NETWORK_ERROR:

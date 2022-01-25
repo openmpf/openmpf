@@ -91,6 +91,8 @@ DetectionError translateMPFDetectionError(
             return DetectionError::MISSING_PROPERTY;
         case MPF_INVALID_PROPERTY:
             return DetectionError::INVALID_PROPERTY;
+        case MPF_MEMORY_ALLOCATION_FAILED:
+            return DetectionError::MEMORY_ALLOCATION_FAILED;
         case MPF_OTHER_DETECTION_ERROR_TYPE:
             return DetectionError::UNRECOGNIZED_DETECTION_ERROR;
         case MPF_GPU_ERROR:
@@ -131,6 +133,8 @@ MPFDetectionError translateProtobufError(DetectionError err) {
             return MPF_MISSING_PROPERTY;
         case DetectionError::INVALID_PROPERTY:
             return MPF_INVALID_PROPERTY;
+        case DetectionError::MEMORY_ALLOCATION_FAILED:
+            return MPF_MEMORY_ALLOCATION_FAILED;
         case DetectionError::UNRECOGNIZED_DETECTION_ERROR:
             return MPF_OTHER_DETECTION_ERROR_TYPE;
         case DetectionError::GPU_ERROR:

@@ -39,6 +39,7 @@ enum DetectionError {
     DETECTION_FAILED               = 14;
     MISSING_PROPERTY               = 16;
     INVALID_PROPERTY               = 17;
+    MEMORY_ALLOCATION_FAILED       = 21;
     UNRECOGNIZED_DETECTION_ERROR   = 22;
     REQUEST_CANCELLED              = 23; // The detection request was cancelled by the user.
     DEAD_LETTER                    = 24;

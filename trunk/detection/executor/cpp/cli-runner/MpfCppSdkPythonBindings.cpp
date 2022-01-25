@@ -211,6 +211,7 @@ PYBIND11_MODULE(mpf_cpp_sdk, m) {
             .value("DETECTION_FAILED", MPFDetectionError::MPF_DETECTION_FAILED)
             .value("INVALID_PROPERTY", MPFDetectionError::MPF_INVALID_PROPERTY)
             .value("MISSING_PROPERTY", MPFDetectionError::MPF_MISSING_PROPERTY)
+            .value("MEMORY_ALLOCATION_FAILED", MPFDetectionError::MPF_MEMORY_ALLOCATION_FAILED)
             .value("GPU_ERROR", MPFDetectionError::MPF_GPU_ERROR)
             .value("NETWORK_ERROR", MPFDetectionError::MPF_NETWORK_ERROR)
             .value("COULD_NOT_OPEN_MEDIA", MPFDetectionError::MPF_COULD_NOT_OPEN_MEDIA)

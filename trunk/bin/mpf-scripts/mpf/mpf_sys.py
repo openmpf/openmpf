@@ -524,8 +524,11 @@ class MpfConfig:
         if len(child_nodes) == 0:
             return True
 
-        local_host_name, local_aliases, _ = socket.gethostbyname_ex(socket.gethostname())
         listed_host = child_nodes[0]
+        if listed_host == 'localhost' or listed_host == 'localhost.localdomain':
+            return True
+
+        local_host_name, local_aliases, _ = socket.gethostbyname_ex(socket.gethostname())
         return listed_host == local_host_name or listed_host in local_aliases
 
     def _get_child_nodes(self):

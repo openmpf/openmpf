@@ -28,7 +28,7 @@ package org.mitre.mpf.rest.api;
 
 public class MarkupResultConvertedModel {
 	private long id;
-	private long jobId;
+	private String jobId;
 	private String pipeline;
 	private String markupUri;
 
@@ -44,7 +44,7 @@ public class MarkupResultConvertedModel {
 	private String sourceDownloadUrl;
 
 	public long getId() { return id; }
-	public long getJobId() { return jobId; }
+	public String getJobId() { return jobId; }
     public String getPipeline() { return pipeline; }
     public String getMarkupUri() { return markupUri; }
     public String getMarkupUriContentType() { return markupUriContentType; }
@@ -63,7 +63,7 @@ public class MarkupResultConvertedModel {
 		this.sourceDownloadUrl = sourceDownloadUrl;
 	}
 
-	public void setJobId(long jobId) {
+	public void setJobId(String jobId) {
 		this.jobId = jobId;
 	}
 
@@ -114,7 +114,7 @@ public class MarkupResultConvertedModel {
 
 	public MarkupResultConvertedModel() {}
 
-    public MarkupResultConvertedModel(long id, long jobId, String pipeline,
+    public MarkupResultConvertedModel(long id, String jobId, String pipeline,
 									  String markupUri, String markupUriContentType,String markupImgUrl,String markupDownloadUrl,boolean markupFileAvailable, String sourceUri,String sourceURIContentType,String sourceImgUrl,String sourceDownloadUrl, boolean sourceFileAvailable) {
 		this.id = id;
 		this.jobId = jobId;

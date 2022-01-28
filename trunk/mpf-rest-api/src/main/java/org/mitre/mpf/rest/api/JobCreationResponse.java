@@ -27,7 +27,7 @@
 package org.mitre.mpf.rest.api;
 
 public class JobCreationResponse {
-	private long jobId = -1; //will be -1 if there is an error creating the job	
+	private String jobId;  // Will be null if there is an error creating the job
 	private MpfResponse mpfResponse = new MpfResponse();	
 	
 	/*
@@ -37,10 +37,10 @@ public class JobCreationResponse {
 	
 	public JobCreationResponse(int errorCode, String errorMessage) {
 		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = -1;
+		this.jobId = null;
 	}
 
-	public JobCreationResponse(long jobId) {
+	public JobCreationResponse(String jobId) {
 		this.mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		this.jobId = jobId;
 	}
@@ -48,7 +48,7 @@ public class JobCreationResponse {
 	/*
 	 * Getters
 	 */
-	public long getJobId() {
+	public String getJobId() {
 		return jobId;
 	}
 	

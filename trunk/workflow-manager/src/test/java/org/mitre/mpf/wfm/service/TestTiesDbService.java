@@ -104,6 +104,13 @@ public class TestTiesDbService {
 
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
+
+        when(_mockPropertiesUtil.getHostName())
+                .thenReturn("localhost");
+
+        when(_mockPropertiesUtil.getExportedJobId(anyLong()))
+                .thenReturn("localhost-123");
+
     }
 
 
@@ -184,7 +191,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media1,
                                 url1,
@@ -200,7 +207,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media1,
                                 url2,
@@ -216,7 +223,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media2,
                                 url1,
@@ -313,7 +320,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -382,7 +389,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE,
                                     job.getMedia().iterator().next(),
                                     url,
@@ -399,7 +406,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -469,7 +476,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE,
                                     job.getMedia().iterator().next(),
                                     url,
@@ -486,7 +493,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -553,7 +560,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -620,7 +627,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 media,
                                 url,
@@ -656,8 +663,10 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
+        String jobId = _mockPropertiesUtil.getExportedJobId(job.getId());
+        
         ArgumentMatcher<HttpUriRequest> action1Matcher = request -> httpRequestMatcher(
-                job.getId(),
+                jobId,
                 BatchJobStatusType.COMPLETE_WITH_ERRORS,
                 media,
                 url,
@@ -669,8 +678,9 @@ public class TestTiesDbService {
                 timeCompleted,
                 request);
 
+
         ArgumentMatcher<HttpUriRequest> action2Matcher = request -> httpRequestMatcher(
-                job.getId(),
+                jobId,
                 BatchJobStatusType.COMPLETE_WITH_ERRORS,
                 media,
                 url,
@@ -774,7 +784,7 @@ public class TestTiesDbService {
 
 
     private boolean httpRequestMatcher(
-            long jobId,
+            String jobId,
             BatchJobStatusType jobStatus,
             Media media,
             String tiesDbBaseUrl,
@@ -828,7 +838,7 @@ public class TestTiesDbService {
         if (!trackType.equals(dataObject.get("outputType").textValue())) {
             return false;
         }
-        if (jobId != dataObject.get("jobId").longValue()) {
+        if (!jobId.equals(dataObject.get("jobId").textValue())) {
             return false;
         }
         if (!outputUri.toString().equals(dataObject.get("outputUri").textValue())) {

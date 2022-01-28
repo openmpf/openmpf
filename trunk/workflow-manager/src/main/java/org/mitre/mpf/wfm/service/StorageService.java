@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,8 @@ public class StorageService {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final PropertiesUtil _propertiesUtil;
+
     private final List<StorageBackend> _remoteBackends;
 
     private final LocalStorageBackend _localBackend;
@@ -59,11 +62,13 @@ public class StorageService {
     @Inject
     StorageService(
             InProgressBatchJobsService inProgressJobs,
+            PropertiesUtil propertiesUtil,
             S3StorageBackend s3StorageBackend,
             CustomNginxStorageBackend nginxStorageBackend,
             LocalStorageBackend localStorageBackend) {
 
         _inProgressJobs = inProgressJobs;
+        _propertiesUtil = propertiesUtil;
         _remoteBackends = ImmutableList.of(s3StorageBackend, nginxStorageBackend);
         _localBackend = localStorageBackend;
     }
@@ -71,6 +76,7 @@ public class StorageService {
 
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws IOException {
         Exception remoteException = null;
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
                 if (remoteBackend.canStore(outputObject)) {
@@ -82,17 +88,17 @@ public class StorageService {
             remoteException = ex;
             LOG.warn(String.format(
                     "Failed to remotely store output object for job id %d. It will be stored locally instead.",
-                    outputObject.getJobId()), ex);
+                    internalJobId), ex);
 
             _inProgressJobs.addJobWarning(
-                    outputObject.getJobId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
+                    internalJobId, IssueCodes.REMOTE_STORAGE_UPLOAD,
                     "The output object was stored locally because storing it remotely failed due to: " + ex);
 
             outputObject.addWarnings(0, List.of(new JsonIssueDetails(
                     IssueSources.WORKFLOW_MANAGER.toString(), IssueCodes.REMOTE_STORAGE_UPLOAD.toString(),
                     "This output object was stored locally because storing it remotely failed due to: " + ex)));
 
-            var job = _inProgressJobs.getJob(outputObject.getJobId());
+            var job = _inProgressJobs.getJob(internalJobId);
             outputObject.setStatus(job.getStatus().onComplete().toString());
         }
 

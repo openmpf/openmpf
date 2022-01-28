@@ -263,6 +263,28 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("output.site.name");
     }
 
+    public String getHostName() {
+        return Objects.requireNonNullElseGet(
+                System.getenv("NODE_HOSTNAME"),
+                () -> System.getenv("HOSTNAME"));
+    }
+
+    public long getJobIdFromExportedId(String exportedId) {
+        String[] tokens = exportedId.split("-");
+        try {
+            return Long.parseLong(tokens[tokens.length - 1]);
+        }
+        catch (NumberFormatException e) {
+            throw new InvalidJobIdException(
+                    "Failed to parse job id of '" + exportedId +
+                            "'. Expected a job id like <hostname>-<integer>.", e);
+        }
+    }
+
+    public String getExportedJobId(long jobId) {
+        return getHostName() + '-' + jobId;
+    }
+
     public boolean isStreamingOutputObjectsToDiskEnabled() {
         return mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");
     }

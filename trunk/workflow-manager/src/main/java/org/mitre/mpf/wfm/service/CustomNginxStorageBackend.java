@@ -110,7 +110,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(JsonOutputObject outputObject) throws StorageException {
-        return canStore(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        return canStore(internalJobId);
     }
 
     private boolean canStore(long jobId) throws StorageException {
@@ -122,7 +123,8 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
     @Override
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException {
-        URI serviceUri = getServiceUri(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        URI serviceUri = getServiceUri(internalJobId);
         if (outputSha.getValue() == null) {
             MessageDigest digest = DigestUtils.getSha256Digest();
             URI result;

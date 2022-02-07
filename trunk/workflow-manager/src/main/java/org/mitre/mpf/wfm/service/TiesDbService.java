@@ -150,10 +150,28 @@ public class TiesDbService {
 
 
         return ThreadUtil.allOf(futures)
-                // Only run if all futures complete successfully.
-                .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
-                // Errors are handled internally, so we always convert to a successful future.
-                .exceptionally(t -> null);
+                .handle((x, err) -> {
+                    if (err == null) {
+                        _jobRequestDao.setTiesDbSuccessful(job.getId());
+                    }
+                    else {
+                        reportExceptions(job.getId(), futures);
+                    }
+                    return null;
+                });
+    }
+
+    private void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
+        var joiner = new StringJoiner(" ");
+        for (var future : futures) {
+            try {
+                future.join();
+            }
+            catch (CompletionException e) {
+                joiner.add(e.getCause().getMessage());
+            }
+        }
+        _jobRequestDao.setTiesDbError(jobId, joiner.toString());
     }
 
 
@@ -225,8 +243,7 @@ public class TiesDbService {
         LOG.info("Posting assertion to TiesDb for the {} action.",
                  jobPart.getAction().getName());
 
-        return postAssertion(jobPart.getJob().getId(),
-                             jobPart.getAction().getName(),
+        return postAssertion(jobPart.getAction().getName(),
                              tiesDbUrl,
                              jobPart.getMedia().getSha256(),
                              assertion);
@@ -244,8 +261,7 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(long jobId,
-                                                  String action,
+    private CompletableFuture<Void> postAssertion(String action,
                                                   String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
@@ -258,8 +274,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            handleHttpError(jobId, tiesDbUrl, action, e);
-            return ThreadUtil.failedFuture(e);
+            return ThreadUtil.failedFuture(convertError(tiesDbUrl, action, e));
         }
 
         try {
@@ -276,20 +291,24 @@ public class TiesDbService {
 
             return _callbackUtils.executeRequest(postRequest,
                                                  _propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(TiesDbService::checkResponse)
-                    .whenComplete((x, err) -> handleHttpError(jobId, fullUrl.toString(), action, err));
+                    .thenAccept(TiesDbService::checkResponse)
+                    .handle((x, err) -> {
+                        if (err != null) {
+                            throw convertError(fullUrl.toString(), action, err);
+                        }
+                        return null;
+                    });
         }
         catch (JsonProcessingException e) {
-            handleHttpError(jobId, fullUrl.toString(), action, e);
-            return ThreadUtil.failedFuture(e);
+            return ThreadUtil.failedFuture(convertError(fullUrl.toString(), action, e));
         }
     }
 
 
-    private static Void checkResponse(HttpResponse response) {
+    private static void checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode >= 200 && statusCode <= 299) {
-            return null;
+            return;
         }
         try {
             var responseContent = IOUtils.toString(response.getEntity().getContent(),
@@ -305,18 +324,21 @@ public class TiesDbService {
     }
 
 
-    private void handleHttpError(long jobId, String url, String action, Throwable error) {
-        if (error == null) {
-            return;
-        }
-
+    private static TiesDbException convertError(String url, String action, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var errorMessage = String.format(
-                "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
+                "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s.",
                 url, action, error);
         LOG.error(errorMessage, error);
-        _jobRequestDao.setTiesDbError(jobId, errorMessage);
+        return new TiesDbException(errorMessage, error);
+    }
+
+
+    private static class TiesDbException extends RuntimeException {
+        public TiesDbException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

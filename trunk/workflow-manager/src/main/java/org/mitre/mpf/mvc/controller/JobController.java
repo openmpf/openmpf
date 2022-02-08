@@ -44,10 +44,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
-import org.mitre.mpf.wfm.util.InvalidJobIdException;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -540,10 +537,10 @@ public class JobController {
             return dbStatus;
         }
         else if (inProgressJobs.jobHasCallbacksInProgress(job.getId())) {
-            return "IN PROGRESS";
+            return CallbackStatus.inProgress();
         }
         else if (!job.getStatus().isTerminal()) {
-            return "JOB RUNNING";
+            return CallbackStatus.jobRunning();
         }
         else {
             return null;

@@ -82,6 +82,7 @@ public class TestTiesDbService {
     @Mock
     private JobRequestDao _mockJobRequestDao;
 
+
     private TiesDbService _tiesDbService;
 
 
@@ -145,7 +146,7 @@ public class TestTiesDbService {
 
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(TiesDbService.URL_PROP),
                 argThat(jp -> jp.getJob().equals(job)
                         && jp.getAction().equals(action1)
                         && (jp.getMedia().equals(media1) || jp.getMedia().equals(media2)))
@@ -153,7 +154,7 @@ public class TestTiesDbService {
 
         String url2 = "http://localhost:90/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(TiesDbService.URL_PROP),
                 argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media1)
                         && jp.getAction().equals(action2))
         )).thenReturn(url2);
@@ -241,30 +242,6 @@ public class TestTiesDbService {
 
 
     @Test
-    public void reportsWhenTiesDbNotRequested() {
-        var job = createTwoStageTestJob();
-        var trackCounter = new TrackCounter();
-        trackCounter.set(321, 0, 0, "TYPE1", 10);
-        trackCounter.set(321, 1, 0, "TYPE2", 10);
-
-        var result = _tiesDbService.addAssertions(
-                job,
-                BatchJobStatusType.COMPLETE_WITH_WARNINGS,
-                Instant.now(),
-                URI.create("http://localhost:321/asdf"),
-                "asdfasdf",
-                trackCounter);
-
-        assertTrue(result.isDone());
-
-        verifyZeroInteractions(_mockCallbackUtils);
-        verify(_mockJobRequestDao)
-                .setTiesDbNotRequested(job.getId());
-        verifyNoMoreInteractions(_mockJobRequestDao);
-    }
-
-
-    @Test
     public void testTaskMerging() {
         testTwoStageTrackMerging("TYPE1", 451, 452);
     }
@@ -289,7 +266,7 @@ public class TestTiesDbService {
                                           int task1TrackCount, int task2TrackCount) {
         var job = createTwoStageTestJob();
         String url = "http://localhost:81/qwer";
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(TiesDbService.URL_PROP), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -356,7 +333,7 @@ public class TestTiesDbService {
         var job = createThreeStageTestJob();
         String url = "http://localhost:81/qwer";
 
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(TiesDbService.URL_PROP), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -443,7 +420,7 @@ public class TestTiesDbService {
         var job = createThreeStageTestJob();
         String url = "http://localhost:81/qwer";
 
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(TiesDbService.URL_PROP), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -528,7 +505,7 @@ public class TestTiesDbService {
         var job = createThreeStageTestJob();
         String url = "http://localhost:81/qwer";
 
-        when(_mockAggregateJobPropertiesUtil.getValue(eq("TIES_DB_URL"), any(JobPart.class)))
+        when(_mockAggregateJobPropertiesUtil.getValue(eq(TiesDbService.URL_PROP), any(JobPart.class)))
                 .thenReturn(url);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -586,14 +563,14 @@ public class TestTiesDbService {
         var goodAction = job.getPipelineElements().getAction(1, 0);
 
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(TiesDbService.URL_PROP),
                 argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
                         && jp.getAction().equals(badAction)))
         ).thenReturn("BAD URI");
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(TiesDbService.URL_PROP),
                 argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)
                         && jp.getAction().equals(goodAction)))
         ).thenReturn(url);
@@ -651,7 +628,7 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(TiesDbService.URL_PROP),
                 argThat(jp -> jp.getJob().equals(job) && jp.getMedia().equals(media)))
         ).thenReturn(url);
 
@@ -664,7 +641,7 @@ public class TestTiesDbService {
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
         String jobId = _mockPropertiesUtil.getExportedJobId(job.getId());
-        
+
         ArgumentMatcher<HttpUriRequest> action1Matcher = request -> httpRequestMatcher(
                 jobId,
                 BatchJobStatusType.COMPLETE_WITH_ERRORS,

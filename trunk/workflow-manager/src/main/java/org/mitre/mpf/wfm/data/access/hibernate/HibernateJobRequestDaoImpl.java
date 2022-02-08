@@ -34,12 +34,15 @@ import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.inject.Inject;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
@@ -47,7 +50,9 @@ import javax.persistence.criteria.Root;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -58,8 +63,12 @@ import static java.util.stream.Collectors.*;
 public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements JobRequestDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
 
-    public HibernateJobRequestDaoImpl() {
+    private final JobStatusBroadcaster _jobStatusBroadcaster;
+
+    @Inject
+    public HibernateJobRequestDaoImpl(JobStatusBroadcaster jobStatusBroadcaster) {
         super(JobRequest.class);
+        _jobStatusBroadcaster = jobStatusBroadcaster;
     }
 
 
@@ -188,53 +197,40 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
 
 
     @Override
-    public void setTiesDbNotRequested(long jobId) {
-        setTiesDbStatus(jobId, "NOT REQUESTED");
-    }
-
-    @Override
     public void setTiesDbSuccessful(long jobId) {
-        setTiesDbStatus(jobId, "COMPLETE");
+        var newStatus = CallbackStatus.complete();
+        setCallbackStatus(jobId, newStatus, "tiesDbStatus");
+        _jobStatusBroadcaster.tiesDbStatusChanged(jobId, newStatus);
     }
 
     @Override
     public void setTiesDbError(long jobId, String status) {
-        setTiesDbStatus(jobId, "ERROR: " + status);
+        var newStatus = CallbackStatus.error(status);
+        setCallbackStatus(jobId, newStatus, "tiesDbStatus");
+        _jobStatusBroadcaster.tiesDbStatusChanged(jobId, newStatus);
     }
 
-    private void setTiesDbStatus(long jobId, String status) {
-        var cb = getCriteriaBuilder();
-        var update = cb.createCriteriaUpdate(JobRequest.class);
-        var root = update.from(JobRequest.class);
-
-        update.set("tiesDbStatus", status)
-                .where(cb.equal(root.get("id"), jobId));
-
-        executeUpdate(update);
-    }
-
-
-    @Override
-    public void setCallbackNotRequested(long jobId) {
-        setCallbackStatus(jobId, "NOT REQUESTED");
-    }
 
     @Override
     public void setCallbackSuccessful(long jobId) {
-        setCallbackStatus(jobId, "COMPLETE");
+        var newStatus = CallbackStatus.complete();
+        setCallbackStatus(jobId, newStatus, "callbackStatus");
+        _jobStatusBroadcaster.callbackStatusChanged(jobId, newStatus);
     }
 
     @Override
     public void setCallbackError(long jobId, String status) {
-        setCallbackStatus(jobId, "ERROR: " + status);
+        var newStatus = CallbackStatus.error(status);
+        setCallbackStatus(jobId, newStatus, "callbackStatus");
+        _jobStatusBroadcaster.callbackStatusChanged(jobId, newStatus);
     }
 
-    private void setCallbackStatus(long jobId, String status) {
+    private void setCallbackStatus(long jobId, String status, String column) {
         var cb = getCriteriaBuilder();
         var update = cb.createCriteriaUpdate(JobRequest.class);
         var root = update.from(JobRequest.class);
 
-        update.set("callbackStatus", status)
+        update.set(column, status)
                 .where(cb.equal(root.get("id"), jobId));
 
         executeUpdate(update);

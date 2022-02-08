@@ -54,7 +54,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -68,6 +71,8 @@ import java.util.concurrent.CompletionException;
  */
 @Component
 public class TiesDbService {
+
+    public static String URL_PROP = "TIES_DB_URL";
 
     private static final Logger LOG = LoggerFactory.getLogger(TiesDbService.class);
 
@@ -118,8 +123,7 @@ public class TiesDbService {
                     continue;
                 }
 
-                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
-                        "TIES_DB_URL", jobPart);
+                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(URL_PROP, jobPart);
                 if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
                     continue;
                 }
@@ -144,24 +148,16 @@ public class TiesDbService {
             }
         }
         if (futures.isEmpty()) {
-            _jobRequestDao.setTiesDbNotRequested(job.getId());
             return ThreadUtil.completedFuture(null);
         }
 
-
         return ThreadUtil.allOf(futures)
-                .handle((x, err) -> {
-                    if (err == null) {
-                        _jobRequestDao.setTiesDbSuccessful(job.getId());
-                    }
-                    else {
-                        reportExceptions(job.getId(), futures);
-                    }
-                    return null;
-                });
+                .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
+                .exceptionally(e -> reportExceptions(job.getId(), futures));
     }
 
-    private void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
+
+    private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
         var joiner = new StringJoiner(" ");
         for (var future : futures) {
             try {
@@ -172,6 +168,7 @@ public class TiesDbService {
             }
         }
         _jobRequestDao.setTiesDbError(jobId, joiner.toString());
+        return null;
     }
 
 

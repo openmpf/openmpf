@@ -156,6 +156,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             inProgressBatchJobs.setJobStatus(jobId, completionStatus);
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
+        checkCallbacks(job, jobRequest);
+
         jobRequestDao.persist(jobRequest);
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
@@ -177,12 +179,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 outputObjectUri,
                 outputSha.getValue(),
                 trackCounter);
-        if (!tiesDbFuture.isDone()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);
-        }
 
         if (job.getCallbackUrl().isPresent()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
                     .whenCompleteAsync(
@@ -190,8 +188,33 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     .whenCompleteAsync((x, err) -> completeJob(job));
         }
         else {
-            jobRequestDao.setCallbackNotRequested(jobId);
             tiesDbFuture.whenCompleteAsync((x, err) -> completeJob(job));
+        }
+    }
+
+
+    private void checkCallbacks(BatchJob job, JobRequest jobRequest) {
+        if (job.getCallbackUrl().isPresent()) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setCallbackStatus(newStatus);
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
+        }
+
+        boolean requiresTiesDb = JobPartsIter.stream(job)
+                .map(jp -> aggregateJobPropertiesUtil.getValue(TiesDbService.URL_PROP, jp))
+                .anyMatch(url -> url != null && !url.isBlank());
+        if (requiresTiesDb) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setTiesDbStatus(newStatus);
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), newStatus);
         }
     }
 

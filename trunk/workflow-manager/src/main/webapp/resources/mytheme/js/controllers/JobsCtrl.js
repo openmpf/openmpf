@@ -124,30 +124,22 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         data: 'tiesDbStatus',
                         className: 'status-cell',
                         render: function (data, type, job) {
-                            if (job.tiesDbStatus && job.tiesDbStatus.startsWith('ERROR:')) {
-                                return $('<button>')
-                                    .addClass('ties-db-error-details')
-                                    .addClass('btn btn-danger btn-block btn-xs')
-                                    .html('ERROR')[0].outerHTML;
-                            }
-                            else {
-                                return job.tiesDbStatus;
-                            }
+                            var statusCell = createCallbackStatusCell(
+                                job.jobId, job.tiesDbStatus, 'ties-db');
+                            return $('<span>')
+                                .addClass('ties-db-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
                         }
                     },
                     {
                         data: 'callbackStatus',
                         className: 'status-cell',
                         render: function (data, type, job) {
-                            if (job.callbackStatus && job.callbackStatus.startsWith('ERROR:')) {
-                                return $('<button>')
-                                    .addClass('callback-error-details')
-                                    .addClass('btn btn-danger btn-block btn-xs')
-                                    .html('ERROR')[0].outerHTML;
-                            }
-                            else {
-                                return job.callbackStatus;
-                            }
+                            var statusCell = createCallbackStatusCell(
+                                job.jobId, job.callbackStatus, 'callback');
+                            return $('<span>')
+                                .addClass('callback-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
                         }
                     },
                     {
@@ -239,7 +231,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             });
         });
 
-        $('.ties-db-error-details').click(function(event) {
+        $('#jobTable').on('click', '.ties-db-error-details', function(event) {
             $scope.$apply(function () {
                 $scope.selectedJob = getJobFromTableEle(event.target);
                 $scope.errorType = 'TiesDb';
@@ -247,7 +239,8 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 $("#errorDetailsModal").modal('show');
             });
         });
-        $('.callback-error-details').click(function(event) {
+
+        $('#jobTable').on('click', '.callback-error-details', function(event) {
             $scope.$apply(function() {
                 $scope.selectedJob = getJobFromTableEle(event.target);
                 $scope.errorType = 'Callback';
@@ -412,6 +405,38 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 console.log('job cancellation complete for id: ' + job.id);
                 NotificationSvc.info('Job cancellation of job ' + job.id + ' is now complete.');
             }
+        }
+    });
+
+
+    var createCallbackStatusCell = function (jobId, status, type) {
+        if (!status) {
+            return "";
+        }
+        else if (status.startsWith('ERROR:')) {
+            return $('<button>')
+                .addClass(type + '-error-details')
+                .addClass('btn btn-danger btn-block btn-xs')
+                .html('ERROR')[0].outerHTML;
+        }
+        else {
+            return status;
+        }
+    };
+
+    $scope.$on('SSPC_CALLBACK_STATUS', function (event, msg) {
+        var jobId = msg.content.jobId;
+        var status = msg.content.status;
+        var job = _.findWhere(jobTable.data(), {jobId: jobId});
+        if (msg.event === "tiesDb") {
+            job.tiesDbStatus = status;
+            $('.ties-db-status-' + jobId).html(
+                createCallbackStatusCell(jobId, status, 'ties-db'));
+        }
+        if (msg.event === "callBack") {
+            job.callbackStatus = status;
+            $('.callback-status-' + jobId).html(
+                createCallbackStatusCell(jobId, status, 'callback'));
         }
     });
 

@@ -159,6 +159,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         checkCallbacks(job, jobRequest);
 
         jobRequestDao.persist(jobRequest);
+        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
@@ -222,7 +223,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
-            jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +

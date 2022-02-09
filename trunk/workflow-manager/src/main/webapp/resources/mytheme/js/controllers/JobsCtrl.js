@@ -122,10 +122,8 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     },
                     {
                         data: 'tiesDbStatus',
-                        className: 'status-cell',
                         render: function (data, type, job) {
-                            var statusCell = createCallbackStatusCell(
-                                job.jobId, job.tiesDbStatus, 'ties-db');
+                            var statusCell = createCallbackStatusCell(job.tiesDbStatus, 'ties-db');
                             return $('<span>')
                                 .addClass('ties-db-status-' + job.jobId)
                                 .html(statusCell)[0].outerHTML;
@@ -133,10 +131,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     },
                     {
                         data: 'callbackStatus',
-                        className: 'status-cell',
                         render: function (data, type, job) {
                             var statusCell = createCallbackStatusCell(
-                                job.jobId, job.callbackStatus, 'callback');
+                                job.callbackStatus, 'callback');
                             return $('<span>')
                                 .addClass('callback-status-' + job.jobId)
                                 .html(statusCell)[0].outerHTML;
@@ -409,7 +406,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
     });
 
 
-    var createCallbackStatusCell = function (jobId, status, type) {
+    var createCallbackStatusCell = function (status, type) {
         if (!status) {
             return "";
         }
@@ -417,7 +414,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             return $('<button>')
                 .addClass(type + '-error-details')
                 .addClass('btn btn-danger btn-block btn-xs')
-                .html('ERROR')[0].outerHTML;
+                .text('ERROR');
+        }
+        else if (status === 'IN PROGRESS') {
+            return status + ' <i class="fa fa-spinner fa-spin"></i>';
         }
         else {
             return status;
@@ -431,12 +431,12 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         if (msg.event === "tiesDb") {
             job.tiesDbStatus = status;
             $('.ties-db-status-' + jobId).html(
-                createCallbackStatusCell(jobId, status, 'ties-db'));
+                createCallbackStatusCell(status, 'ties-db'));
         }
         if (msg.event === "callBack") {
             job.callbackStatus = status;
             $('.callback-status-' + jobId).html(
-                createCallbackStatusCell(jobId, status, 'callback'));
+                createCallbackStatusCell(status, 'callback'));
         }
     });
 

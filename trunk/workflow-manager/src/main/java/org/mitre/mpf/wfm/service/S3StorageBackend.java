@@ -27,17 +27,6 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -59,6 +48,14 @@ import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -101,7 +98,7 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public boolean canStore(JsonOutputObject outputObject) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(outputObject.getJobId());
-        return requiresS3ResultUpload(job.getJobProperties()::get);
+        return requiresS3ResultUpload(_aggregateJobPropertiesUtil.getCombinedProperties(job));
     }
 
     @Override
@@ -112,7 +109,7 @@ public class S3StorageBackend implements StorageBackend {
             outputSha.setValue(hashExistingFile(Paths.get(localUri)));
         }
         return putInS3IfAbsent(Paths.get(localUri), outputSha.getValue(),
-                               job.getJobProperties()::get);
+                               _aggregateJobPropertiesUtil.getCombinedProperties(job));
     }
 
 
@@ -281,28 +278,31 @@ public class S3StorageBackend implements StorageBackend {
     public void downloadFromS3(Media media, Function<String, String> combinedProperties)
             throws StorageException {
         try {
-            AmazonS3 s3Client = getS3DownloadClient(media.getUri(), combinedProperties);
+            var s3Client = getS3DownloadClient(media.getUri(), combinedProperties);
             String[] pathParts = splitBucketAndObjectKey(media.getUri());
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
-            s3Client.getObject(new GetObjectRequest(bucket, objectKey), media.getLocalPath().toFile());
+            s3Client.getObject(
+                    r -> r.bucket(bucket).key(objectKey),
+                    media.getLocalPath());
         }
-        catch (SdkClientException e) {
-            throw new StorageException(String.format("Failed to download \"%s\" due to %s", media.getUri(), e),
-                                       e);
+        catch (S3Exception | SdkClientException e) {
+            throw new StorageException(
+                    String.format("Failed to download \"%s\" due to %s", media.getUri(), e), e);
         }
     }
 
 
-    public S3Object getFromS3(String uri, Function<String, String> properties) throws StorageException {
+    public ResponseInputStream<GetObjectResponse> getFromS3(
+            String uri, Function<String, String> properties) throws StorageException {
         try {
-            AmazonS3 s3Client = getS3DownloadClient(uri, properties);
+            var s3Client = getS3DownloadClient(uri, properties);
             String[] pathParts = splitBucketAndObjectKey(uri);
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
-            return s3Client.getObject(bucket, objectKey);
+            return s3Client.getObject(b -> b.bucket(bucket).key(objectKey));
         }
-        catch (SdkClientException e) {
+        catch (S3Exception | SdkClientException e) {
             throw new StorageException(String.format("Failed to download \"%s\" due to %s", uri, e),
                                        e);
         }
@@ -333,15 +333,14 @@ public class S3StorageBackend implements StorageBackend {
         LOG.info("Storing \"{}\" in S3 bucket \"{}\" with object key \"{}\" ...", path, bucketUri, objectName);
 
         try {
-            AmazonS3 s3Client = getS3UploadClient(properties);
-            boolean alreadyExists = s3Client.doesObjectExist(resultsBucket, objectName);
-            if (alreadyExists) {
+            var s3Client = getS3UploadClient(properties);
+            if (objectExists(s3Client, resultsBucket, objectName)) {
                 LOG.info("Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" " +
                                "because a file with the same SHA-256 hash was already there.",
                          path, bucketUri, objectName);
             }
             else {
-                s3Client.putObject(resultsBucket, objectName, path.toFile());
+                s3Client.putObject(r -> r.bucket(resultsBucket).key(objectName), path);
                 LOG.info("Successfully stored \"{}\" in S3 bucket \"{}\" with object key \"{}\".",
                          path, bucketUri, objectName);
             }
@@ -352,7 +351,7 @@ public class S3StorageBackend implements StorageBackend {
             Files.delete(path);
             return objectUri;
         }
-        catch (SdkClientException e) {
+        catch (S3Exception | SdkClientException e) {
             var errorMsg = String.format("Failed to upload %s due to S3 error: %s", path, e);
             LOG.error(errorMsg, e);
             throw new StorageException(errorMsg, e);
@@ -361,6 +360,16 @@ public class S3StorageBackend implements StorageBackend {
             var errorMsg = "Couldn't build uri: " + e;
             LOG.error(errorMsg, e);
             throw new StorageException(errorMsg, e);
+        }
+    }
+
+    private static boolean objectExists(S3Client s3Client, String bucket, String key) {
+        try {
+            s3Client.headObject(b -> b.bucket(bucket).key(key));
+            return true;
+        }
+        catch (NoSuchKeyException | NoSuchBucketException e) {
+            return false;
         }
     }
 
@@ -379,34 +388,33 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private AmazonS3 getS3DownloadClient(String mediaUri, Function<String, String> properties) throws StorageException {
+    private S3Client getS3DownloadClient(String mediaUri, Function<String, String> properties) throws StorageException {
         String endpoint = getS3Endpoint(mediaUri);
         return getS3Client(endpoint, _propertiesUtil.getRemoteMediaDownloadRetries(), properties);
     }
 
-    private AmazonS3 getS3UploadClient(Function<String, String> properties) throws StorageException {
+    private S3Client getS3UploadClient(Function<String, String> properties) throws StorageException {
         String endpoint = getS3Endpoint(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY));
         return getS3Client(endpoint, _propertiesUtil.getHttpStorageUploadRetryCount(), properties);
 
     }
 
-    private static AmazonS3 getS3Client(String endpoint, int retryCount, Function<String, String> properties) {
-        AWSCredentials credentials = new BasicAWSCredentials(
+    private static S3Client getS3Client(String endpoint, int retryCount,
+                                        Function<String, String> properties) {
+        var credentials = AwsBasicCredentials.create(
                 properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY),
                 properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
 
-        ClientConfiguration clientConfig = new ClientConfiguration();
-        clientConfig.setMaxErrorRetry(retryCount);
+        var retry = RetryPolicy.builder()
+                .numRetries(retryCount)
+                .build();
 
-        AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-                endpoint, Regions.US_EAST_1.name());
-
-        return AmazonS3ClientBuilder
-                .standard()
-                .withPathStyleAccessEnabled(true)
-                .withEndpointConfiguration(endpointConfiguration)
-                .withClientConfiguration(clientConfig)
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+        return S3Client.builder()
+                .region(Region.of(properties.apply(MpfConstants.S3_REGION_PROPERTY)))
+                .endpointOverride(URI.create(endpoint))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
+                .overrideConfiguration(o -> o.retryPolicy(retry))
                 .build();
     }
 

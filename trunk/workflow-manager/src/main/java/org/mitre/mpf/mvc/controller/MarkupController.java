@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
@@ -279,11 +277,11 @@ public class MarkupController {
         Function<String, String> combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+            try (var s3Stream = s3StorageBackend.getFromS3(
+                    markupResult.getMarkupUri(), combinedProperties)) {
+                var s3Response = s3Stream.response();
+                IoUtils.sendBinaryResponse(s3Stream, response,
+                                           s3Response.contentType(), s3Response.contentLength());
             }
             return;
         }

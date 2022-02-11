@@ -320,5 +320,12 @@
         "type": "STRING",
         "propertiesKey": "ties.db.url",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_REGION",
+        "description": "Region to use when downloading and uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.region",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

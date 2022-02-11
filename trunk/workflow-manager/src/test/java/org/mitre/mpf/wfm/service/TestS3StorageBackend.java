@@ -41,9 +41,10 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -71,9 +72,13 @@ public class TestS3StorageBackend {
 
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
+    private final WorkflowPropertyService _mockWorkflowPropertyService
+            = mock(WorkflowPropertyService.class);
+
     private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
             _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPropertiesUtil, null));
+            new AggregateJobPropertiesUtil(_mockPropertiesUtil,
+                                           _mockWorkflowPropertyService));
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -121,6 +126,7 @@ public class TestS3StorageBackend {
         properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET);
         properties.put(MpfConstants.S3_SECRET_KEY_PROPERTY, "<MY_SECRET_KEY>");
         properties.put(MpfConstants.S3_ACCESS_KEY_PROPERTY, "<MY_ACCESS_KEY>");
+        properties.put(MpfConstants.S3_REGION_PROPERTY, "us-east-1");
         return properties;
     }
 
@@ -369,7 +375,8 @@ public class TestS3StorageBackend {
         when(media.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of(
                         MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET,
-                        MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"
+                        MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>",
+                        MpfConstants.S3_REGION_PROPERTY, "us-east-1"
                 ));
 
         when(_mockInProgressJobs.getJob(jobId))
@@ -424,15 +431,20 @@ public class TestS3StorageBackend {
         when(job.getPipelineElements())
                 .thenReturn(pipelineElements);
 
-
         when(media.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET));
+        when(media.getType())
+                .thenReturn(MediaType.VIDEO);
 
         var overriddenAlgoProps
                 = ImmutableMap.of("TEST_ALGO",
                                   ImmutableMap.of(MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"));
         when(job.getOverriddenAlgorithmProperties())
                 .thenReturn(overriddenAlgoProps);
+
+        when(_mockWorkflowPropertyService.getPropertyValue(
+                    eq(MpfConstants.S3_REGION_PROPERTY), eq(MediaType.VIDEO), any()))
+                .thenReturn("us-east-1");
 
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of());

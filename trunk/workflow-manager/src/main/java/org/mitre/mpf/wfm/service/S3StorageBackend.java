@@ -399,7 +399,7 @@ public class S3StorageBackend implements StorageBackend {
         clientConfig.setMaxErrorRetry(retryCount);
 
         AwsClientBuilder.EndpointConfiguration endpointConfiguration = new AwsClientBuilder.EndpointConfiguration(
-                endpoint, Regions.US_EAST_1.name());
+                endpoint, Regions.US_EAST_1.getName());
 
         return AmazonS3ClientBuilder
                 .standard()

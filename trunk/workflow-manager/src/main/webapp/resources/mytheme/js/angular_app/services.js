@@ -609,6 +609,9 @@ AppServices.factory('ServerSidePush',
                         case 'SSPC_PROPERTIES_CHANGED':
                             $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
                             break;
+                        case 'SSPC_CALLBACK_STATUS':
+                            $rootScope.$broadcast('SSPC_CALLBACK_STATUS', json);
+                            break;
                         default:
                             console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));
                             break;

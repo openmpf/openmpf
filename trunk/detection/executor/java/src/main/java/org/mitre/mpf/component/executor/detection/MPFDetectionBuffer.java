@@ -28,7 +28,6 @@ package org.mitre.mpf.component.executor.detection;
 
 import com.google.common.base.Joiner;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.commons.io.FilenameUtils;
 import org.mitre.mpf.component.api.detection.*;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer.AlgorithmProperty;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -39,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
+import java.io.File;
 import java.util.*;
 
 public class MPFDetectionBuffer {
@@ -84,7 +84,7 @@ public class MPFDetectionBuffer {
             int splitSize = message.getIntProperty("SplitSize");
             long jobId = message.getLongProperty("JobId");
 
-            String jobName = "Job " + jobId + ":" + FilenameUtils.getName(dataUri);
+            String jobName = "Job " + jobId + ":" + (new File(dataUri)).getName();
 
             return new MPFMessageMetadata(dataUri, dataType,
                     detectionRequest.getMediaId(),

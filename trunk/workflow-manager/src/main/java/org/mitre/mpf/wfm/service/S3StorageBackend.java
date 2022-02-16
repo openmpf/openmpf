@@ -32,7 +32,6 @@ import com.google.common.collect.Table;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -55,13 +54,15 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -212,13 +213,13 @@ public class S3StorageBackend implements StorageBackend {
 
 
     public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
-        boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY_PROPERTY));
+        boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY));
         if (uploadOnly) {
             return false;
         }
 
-        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY));
-        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY));
+        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY));
         if (hasAccessKey && hasSecretKey) {
             return true;
         }
@@ -229,12 +230,12 @@ public class S3StorageBackend implements StorageBackend {
         String presentProperty;
         String missingProperty;
         if (hasAccessKey) {
-            presentProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
-            missingProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+            presentProperty = MpfConstants.S3_ACCESS_KEY;
+            missingProperty = MpfConstants.S3_SECRET_KEY;
         }
         else {
-            presentProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
-            missingProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
+            presentProperty = MpfConstants.S3_SECRET_KEY;
+            missingProperty = MpfConstants.S3_ACCESS_KEY;
         }
         throw new StorageException(String.format("The %s property was set, but the %s property was not.",
                                                  presentProperty, missingProperty));
@@ -243,11 +244,11 @@ public class S3StorageBackend implements StorageBackend {
 
 
     public static boolean requiresS3ResultUpload(Function<String, String> properties) throws StorageException {
-        if (StringUtils.isBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY))) {
+        if (StringUtils.isBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET))) {
             return false;
         }
-        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY));
-        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+        boolean hasAccessKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_ACCESS_KEY));
+        boolean hasSecretKey = StringUtils.isNotBlank(properties.apply(MpfConstants.S3_SECRET_KEY));
         if (hasAccessKey && hasSecretKey) {
             return true;
         }
@@ -255,31 +256,32 @@ public class S3StorageBackend implements StorageBackend {
         if (!hasAccessKey && !hasSecretKey) {
             throw new StorageException(String.format(
                     "The %s property was set, but the %s and %s properties were not.",
-                    MpfConstants.S3_RESULTS_BUCKET_PROPERTY, MpfConstants.S3_ACCESS_KEY_PROPERTY,
-                    MpfConstants.S3_SECRET_KEY_PROPERTY));
+                    MpfConstants.S3_RESULTS_BUCKET, MpfConstants.S3_ACCESS_KEY,
+                    MpfConstants.S3_SECRET_KEY));
         }
 
         String presentProperty;
         String missingProperty;
         if (hasAccessKey) {
-            presentProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
-            missingProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
+            presentProperty = MpfConstants.S3_ACCESS_KEY;
+            missingProperty = MpfConstants.S3_SECRET_KEY;
         }
         else {
-            presentProperty = MpfConstants.S3_SECRET_KEY_PROPERTY;
-            missingProperty = MpfConstants.S3_ACCESS_KEY_PROPERTY;
+            presentProperty = MpfConstants.S3_SECRET_KEY;
+            missingProperty = MpfConstants.S3_ACCESS_KEY;
         }
         throw new StorageException(String.format(
                 "The %s and %s properties were set, but the %s property was not.",
-                MpfConstants.S3_RESULTS_BUCKET_PROPERTY, presentProperty, missingProperty));
+                MpfConstants.S3_RESULTS_BUCKET, presentProperty, missingProperty));
     }
 
 
     public void downloadFromS3(Media media, Function<String, String> combinedProperties)
             throws StorageException {
         try {
-            var s3Client = getS3DownloadClient(media.getUri(), combinedProperties);
-            String[] pathParts = splitBucketAndObjectKey(media.getUri());
+            var s3UrlUtil = S3UrlUtil.get(combinedProperties);
+            var s3Client = getS3DownloadClient(media.getUri(), s3UrlUtil, combinedProperties);
+            String[] pathParts = s3UrlUtil.splitBucketAndObjectKey(media.getUri());
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
             s3Client.getObject(
@@ -296,8 +298,9 @@ public class S3StorageBackend implements StorageBackend {
     public ResponseInputStream<GetObjectResponse> getFromS3(
             String uri, Function<String, String> properties) throws StorageException {
         try {
-            var s3Client = getS3DownloadClient(uri, properties);
-            String[] pathParts = splitBucketAndObjectKey(uri);
+            var s3UrlUtil = S3UrlUtil.get(properties);
+            var s3Client = getS3DownloadClient(uri, s3UrlUtil, properties);
+            String[] pathParts = s3UrlUtil.splitBucketAndObjectKey(uri);
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
             return s3Client.getObject(b -> b.bucket(bucket).key(objectKey));
@@ -309,31 +312,19 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private static String[] splitBucketAndObjectKey(String uriStr) throws StorageException {
-        URI uri = URI.create(uriStr);
-        String uriPath = uri.getPath();
-        if (uriPath.startsWith("/")) {
-            uriPath = uriPath.substring(1);
-        }
-        String[] parts = uriPath.split("/", 2);
-        if (parts.length != 2 || StringUtils.isBlank(parts[0]) || StringUtils.isBlank(parts[1])) {
-            throw new StorageException("Unable to determine bucket name and object key from uri: " + uriStr);
-        }
-        return parts;
-    }
-
     private URI putInS3IfAbsent(Path path, Function<String, String> properties) throws IOException, StorageException {
         return putInS3IfAbsent(path, hashExistingFile(path), properties);
     }
 
     private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties) throws IOException, StorageException {
         String objectName = getObjectName(hash);
-        URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY));
-        String resultsBucket = getResultsBucketName(bucketUri);
+        URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET));
+        var s3UrlUtil = S3UrlUtil.get(properties);
+        String resultsBucket = s3UrlUtil.getResultsBucketName(bucketUri);
         LOG.info("Storing \"{}\" in S3 bucket \"{}\" with object key \"{}\" ...", path, bucketUri, objectName);
 
         try {
-            var s3Client = getS3UploadClient(properties);
+            var s3Client = getS3UploadClient(s3UrlUtil, properties);
             if (objectExists(s3Client, resultsBucket, objectName)) {
                 LOG.info("Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" " +
                                "because a file with the same SHA-256 hash was already there.",
@@ -345,19 +336,12 @@ public class S3StorageBackend implements StorageBackend {
                          path, bucketUri, objectName);
             }
 
-            URI objectUri = new URIBuilder(bucketUri)
-                    .setPath(bucketUri.getPath() + '/' + objectName)
-                    .build();
+            URI objectUri = s3UrlUtil.getFullUri(bucketUri, objectName);
             Files.delete(path);
             return objectUri;
         }
         catch (S3Exception | SdkClientException e) {
             var errorMsg = String.format("Failed to upload %s due to S3 error: %s", path, e);
-            LOG.error(errorMsg, e);
-            throw new StorageException(errorMsg, e);
-        }
-        catch (URISyntaxException e) {
-            var errorMsg = "Couldn't build uri: " + e;
             LOG.error(errorMsg, e);
             throw new StorageException(errorMsg, e);
         }
@@ -388,71 +372,39 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private S3Client getS3DownloadClient(String mediaUri, Function<String, String> properties) throws StorageException {
-        String endpoint = getS3Endpoint(mediaUri);
+    private S3Client getS3DownloadClient(
+            String mediaUri,
+            S3UrlUtil s3UrlUtil,
+            Function<String, String> properties) throws StorageException {
+        var endpoint = s3UrlUtil.getS3Endpoint(mediaUri);
         return getS3Client(endpoint, _propertiesUtil.getRemoteMediaDownloadRetries(), properties);
     }
 
-    private S3Client getS3UploadClient(Function<String, String> properties) throws StorageException {
-        String endpoint = getS3Endpoint(properties.apply(MpfConstants.S3_RESULTS_BUCKET_PROPERTY));
+    private S3Client getS3UploadClient(
+            S3UrlUtil s3UrlUtil,
+            Function<String, String> properties) throws StorageException {
+        var endpoint = s3UrlUtil.getS3Endpoint(
+                properties.apply(MpfConstants.S3_RESULTS_BUCKET));
         return getS3Client(endpoint, _propertiesUtil.getHttpStorageUploadRetryCount(), properties);
 
     }
 
-    private static S3Client getS3Client(String endpoint, int retryCount,
+    private static S3Client getS3Client(URI endpoint, int retryCount,
                                         Function<String, String> properties) {
         var credentials = AwsBasicCredentials.create(
-                properties.apply(MpfConstants.S3_ACCESS_KEY_PROPERTY),
-                properties.apply(MpfConstants.S3_SECRET_KEY_PROPERTY));
+                properties.apply(MpfConstants.S3_ACCESS_KEY),
+                properties.apply(MpfConstants.S3_SECRET_KEY));
 
         var retry = RetryPolicy.builder()
                 .numRetries(retryCount)
                 .build();
 
         return S3Client.builder()
-                .region(Region.of(properties.apply(MpfConstants.S3_REGION_PROPERTY)))
-                .endpointOverride(URI.create(endpoint))
+                .region(Region.of(properties.apply(MpfConstants.S3_REGION)))
+                .endpointOverride(endpoint)
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
                 .overrideConfiguration(o -> o.retryPolicy(retry))
                 .build();
     }
-
-
-    private static String getS3Endpoint(String uri) throws StorageException {
-        try {
-            return removePartsAfterHost(uri);
-        }
-        catch(URISyntaxException e) {
-            throw new StorageException(
-                    "An error occurred while trying to determine the S3 endpoint: " + e.getMessage(),
-                    e);
-        }
-    }
-
-
-    private static String removePartsAfterHost(String uri) throws URISyntaxException {
-        URI serviceUri = new URIBuilder(uri)
-                .setPath("")
-                .setFragment(null)
-                .removeQuery()
-                .build();
-        if (serviceUri.getHost() == null) {
-            throw new URISyntaxException(serviceUri.toString(), "Missing host");
-        }
-        return serviceUri.toString();
-    }
-
-
-    private static String getResultsBucketName(URI bucketUri) throws StorageException {
-        String path = bucketUri.getPath();
-        if (path.length() < 2 || path.charAt(0) != '/') {
-            throw new StorageException("Could not determine bucket name from URI: " + bucketUri);
-        }
-        int slash2Pos = path.indexOf('/', 1);
-        return slash2Pos < 0
-                ? path.substring(1)
-                : path.substring(1, slash2Pos);
-    }
-
 }

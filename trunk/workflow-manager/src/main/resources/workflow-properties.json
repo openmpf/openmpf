@@ -322,10 +322,45 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "S3_ACCESS_KEY",
+        "description": "The access key that will be used when downloading and uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.access.key",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_SECRET_KEY",
+        "description": "The secret key that will be used when downloading and uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.secret.key",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_RESULTS_BUCKET",
+        "description": "URI to bucket where result objects should be stored. To disable the upload of result objects, do not provide a value for this property.",
+        "type": "STRING",
+        "propertiesKey": "s3.results.bucket",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_UPLOAD_ONLY",
+        "description": "When true, media will not be downloaded using S3 authentication. If S3_RESULTS_BUCKET is set, S3 authentication will be used to upload result objects.",
+        "type": "BOOLEAN",
+        "propertiesKey": "s3.upload.only",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "S3_REGION",
         "description": "Region to use when downloading and uploading to S3.",
         "type": "STRING",
         "propertiesKey": "s3.region",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_USE_VIRTUAL_HOST",
+        "description": "When true, the S3 client will configured to virtual host style access (bucket name is part of domain name), otherwise path style access (bucket name is first segment in URL path) will be used.",
+        "type": "BOOLEAN",
+        "propertiesKey": "s3.use.virtual.host",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

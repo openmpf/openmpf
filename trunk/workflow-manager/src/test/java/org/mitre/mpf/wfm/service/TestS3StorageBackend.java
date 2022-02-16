@@ -123,10 +123,10 @@ public class TestS3StorageBackend {
 
     private static Map<String, String> getS3Properties() {
         Map<String, String> properties = new HashMap<>();
-        properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET);
-        properties.put(MpfConstants.S3_SECRET_KEY_PROPERTY, "<MY_SECRET_KEY>");
-        properties.put(MpfConstants.S3_ACCESS_KEY_PROPERTY, "<MY_ACCESS_KEY>");
-        properties.put(MpfConstants.S3_REGION_PROPERTY, "us-east-1");
+        properties.put(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + RESULTS_BUCKET);
+        properties.put(MpfConstants.S3_SECRET_KEY, "<MY_SECRET_KEY>");
+        properties.put(MpfConstants.S3_ACCESS_KEY, "<MY_ACCESS_KEY>");
+        properties.put(MpfConstants.S3_REGION, "us-east-1");
         return properties;
     }
 
@@ -150,43 +150,43 @@ public class TestS3StorageBackend {
     @Test
     public void downloadsFromS3WhenResultsBucketMissing() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET);
         assertTrue(S3StorageBackend.requiresS3MediaDownload(getS3Properties()::get));
     }
 
     @Test
     public void downloadsFromS3WhenUploadOnlyFalse() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "false");
+        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY, "false");
         assertTrue(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
     @Test
     public void doesNotDownloadFromS3WhenUploadOnlyTrue() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "true");
+        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY, "true");
         assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
     @Test
     public void doesNotDownloadFromS3WhenNoKeys() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
-        s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_SECRET_KEY);
+        s3Properties.remove(MpfConstants.S3_ACCESS_KEY);
         assertFalse(S3StorageBackend.requiresS3MediaDownload(s3Properties::get));
     }
 
     @Test(expected = StorageException.class)
     public void doesNotDownloadFromS3WhenNoAccessKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_ACCESS_KEY);
         S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
     }
 
     @Test(expected = StorageException.class)
     public void doesNotDownloadFromS3WhenNoSecretKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_SECRET_KEY);
         S3StorageBackend.requiresS3MediaDownload(s3Properties::get);
     }
 
@@ -198,21 +198,21 @@ public class TestS3StorageBackend {
     @Test
     public void doesNotUploadToS3WhenResultsBucketMissing() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_RESULTS_BUCKET);
         assertCanNotUpload(s3Properties);
     }
 
     @Test
     public void uploadsToS3WhenUploadOnlyFalse() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "false");
+        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY, "false");
         assertCanUpload(s3Properties);
     }
 
     @Test
     public void uploadsToS3WhenUploadOnlyTrue() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY_PROPERTY, "true");
+        s3Properties.put(MpfConstants.S3_UPLOAD_ONLY, "true");
         assertCanUpload(s3Properties);
     }
 
@@ -220,22 +220,22 @@ public class TestS3StorageBackend {
     @Test
     public void doesNotUploadToS3WhenNoKeys() {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
-        s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_SECRET_KEY);
+        s3Properties.remove(MpfConstants.S3_ACCESS_KEY);
         assertThrowsWhenCallingCanStore(s3Properties);
     }
 
     @Test
     public void doesNotUploadToS3WhenNoAccessKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_ACCESS_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_ACCESS_KEY);
         assertThrowsWhenCallingCanStore(s3Properties);
     }
 
     @Test
     public void doesNotUploadToS3WhenNoSecretKey() throws StorageException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.remove(MpfConstants.S3_SECRET_KEY_PROPERTY);
+        s3Properties.remove(MpfConstants.S3_SECRET_KEY);
         assertThrowsWhenCallingCanStore(s3Properties);
     }
 
@@ -303,10 +303,10 @@ public class TestS3StorageBackend {
     public void throwsExceptionWhenBadResultsBucket() throws IOException {
         Map<String, String> s3Properties = getS3Properties();
 
-        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, "BUCKET");
+        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, "BUCKET");
         verifyThrowsExceptionWhenStoring(s3Properties);
 
-        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST);
+        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, S3_HOST);
         verifyThrowsExceptionWhenStoring(s3Properties);
     }
 
@@ -368,15 +368,15 @@ public class TestS3StorageBackend {
                 .thenReturn(media);
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of(
-                        MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>",
-                        MpfConstants.S3_SECRET_KEY_PROPERTY, ""
+                        MpfConstants.S3_ACCESS_KEY, "<ACCESS_KEY>",
+                        MpfConstants.S3_SECRET_KEY, ""
                 ));
 
         when(media.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of(
-                        MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET,
-                        MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>",
-                        MpfConstants.S3_REGION_PROPERTY, "us-east-1"
+                        MpfConstants.S3_RESULTS_BUCKET, S3_HOST + RESULTS_BUCKET,
+                        MpfConstants.S3_SECRET_KEY, "<SECRET_KEY>",
+                        MpfConstants.S3_REGION, "us-east-1"
                 ));
 
         when(_mockInProgressJobs.getJob(jobId))
@@ -409,7 +409,7 @@ public class TestS3StorageBackend {
                                       true, true);
         var action = new Action(
                 "TEST_ACTION", "description", algorithm.getName(),
-                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY_PROPERTY,
+                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY,
                                                               "<ACCESS_KEY>")));
         var task = new Task("TEST_TASK", "description", List.of(action.getName()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",
@@ -432,18 +432,18 @@ public class TestS3StorageBackend {
                 .thenReturn(pipelineElements);
 
         when(media.getMediaSpecificProperties())
-                .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET));
+                .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + RESULTS_BUCKET));
         when(media.getType())
                 .thenReturn(MediaType.VIDEO);
 
         var overriddenAlgoProps
                 = ImmutableMap.of("TEST_ALGO",
-                                  ImmutableMap.of(MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>"));
+                                  ImmutableMap.of(MpfConstants.S3_SECRET_KEY, "<SECRET_KEY>"));
         when(job.getOverriddenAlgorithmProperties())
                 .thenReturn(overriddenAlgoProps);
 
         when(_mockWorkflowPropertyService.getPropertyValue(
-                    eq(MpfConstants.S3_REGION_PROPERTY), eq(MediaType.VIDEO), any()))
+                    eq(MpfConstants.S3_REGION), eq(MediaType.VIDEO), any()))
                 .thenReturn("us-east-1");
 
         when(job.getJobProperties())
@@ -485,7 +485,7 @@ public class TestS3StorageBackend {
         Path filePath = getTestFileCopy();
 
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + BUCKET_WITH_EXISTING_OBJECT);
+        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + BUCKET_WITH_EXISTING_OBJECT);
 
         JsonOutputObject outputObject = setJobProperties(s3Properties);
         when(_mockLocalStorageBackend.store(same(outputObject), any()))
@@ -501,7 +501,7 @@ public class TestS3StorageBackend {
     @Test
     public void canHandleConnectionRefused() throws IOException {
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, "http://localhost:5001/" + RESULTS_BUCKET);
+        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, "http://localhost:5001/" + RESULTS_BUCKET);
         Path filePath = getTestFileCopy();
 
         JsonOutputObject outputObject = setJobProperties(s3Properties);
@@ -527,7 +527,7 @@ public class TestS3StorageBackend {
 
         Path filePath = getTestFileCopy();
         Map<String, String> s3Properties = getS3Properties();
-        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + "BAD_BUCKET");
+        s3Properties.put(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + "BAD_BUCKET");
 
         JsonOutputObject outputObject = setJobProperties(s3Properties);
         when(_mockLocalStorageBackend.store(same(outputObject), any()))

@@ -30,7 +30,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
@@ -52,7 +51,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.io.PathResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -217,24 +218,25 @@ public class MarkupController {
         return model;
     }
 
-    @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
+    @RequestMapping(value = "/markup/content", method = RequestMethod.GET)
     @ResponseBody
-    public void serve(HttpServletResponse response, @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
+    public ResponseEntity<?> serve(@RequestParam(value = "id") long id) throws IOException, URISyntaxException {
         MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult != null) {
-            //only on image!
-            if (!StringUtils.endsWithIgnoreCase(mediaMarkupResult.getMarkupUri(), "avi")) {
-                String nonUrlPath = mediaMarkupResult.getMarkupUri().replace("file:", "");
-                File f = new File(nonUrlPath);
-                if (f.canRead()) {
-                    FileUtils.copyFile(f, response.getOutputStream());
-                    response.flushBuffer();
-                }
+            String nonUrlPath = mediaMarkupResult.getMarkupUri().replace("file:", "");
+            File file = new File(nonUrlPath);
+            if (file.canRead()) {
+                Path path = file.toPath();
+                var contentType= Optional.ofNullable(Files.probeContentType(path))
+                        .map(MediaType::parseMediaType)
+                        .orElse(MediaType.APPLICATION_OCTET_STREAM);
+                return ResponseEntity.ok()
+                        .contentType(contentType)
+                        .body(new PathResource(path));
             }
         }
-        //TODO need a no image available if final nested if is not met
+        return ResponseEntity.notFound().build();
     }
-
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
     public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {

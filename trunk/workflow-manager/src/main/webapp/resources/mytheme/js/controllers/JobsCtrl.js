@@ -491,12 +491,11 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     data: "markupImg",
                     render: function (data, type, obj) {
                         if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
-                            obj.markupImg = "markup/content?id=" + obj.id;
                             obj.markupDownload = "markup/download?id=" + obj.id;
                             obj.markupType = getMarkupType(obj.markupUriContentType);
                             if (obj.markupType == 'image') {
                                 return $('<img>')
-                                    .attr('src', obj.markupImg)
+                                    .attr('src', "markup/content?id=" + obj.id)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;

@@ -35,7 +35,7 @@
 namespace py = pybind11;
 
 
-namespace MPF { namespace COMPONENT {
+namespace MPF::COMPONENT {
 
     namespace {
         py::object get_builtin(const char *name) {
@@ -151,54 +151,57 @@ namespace MPF { namespace COMPONENT {
 
 
         /*
-          Entry point documentation: https://setuptools.readthedocs.io/en/latest/pkg_resources.html#convenience-api
-          Example entry point declaration in a component's setup.py:
-          import setuptools
-          setuptools.setup(
-                name=...
-                ...
-                entry_points={
-                    'mpf.exported_component': 'component = my_module:MyComponentClass'
-                }
-            )
-        */
+          Example entry point declaration in a component's setup.cfg:
+          [options.entry_points]
+          mpf.exported_component =
+              component = my_module:MyComponentClass
+         */
         py::object load_component_from_package(const std::string &distribution_name) {
-            static const char * const entry_point_group = "mpf.exported_component";
-
-            py::module pkg_resources = py::module::import("pkg_resources");
-            py::dict entry_points;
+            auto import_meta = py::module::import("importlib.metadata");
             try {
-                entry_points = pkg_resources.attr("get_entry_map")(distribution_name, entry_point_group);
+                auto distribution = import_meta.attr("distribution")(distribution_name);
+                py::list entry_points = distribution.attr("entry_points");
+                if (entry_points.size() == 1) {
+                    return entry_points[0].attr("load")();
+                }
+
+                py::str expected_group = "mpf.exported_component";
+                py::str expected_name = "component";
+                py::object group_matches = py::none();
+                for (const auto& entry_point : entry_points) {
+                    if (!expected_group.equal(entry_point.attr("group"))) {
+                        continue;
+                    }
+                    if (expected_name.equal(entry_point.attr("name"))) {
+                        return entry_point.attr("load")();
+                    }
+                    group_matches = entry_point.cast<py::object>();
+                }
+                if (!group_matches.is_none()) {
+                    // An entry point in the "mpf.exported_component" group was found, but the
+                    // left-hand side of the '=' was something else. For example
+                    // 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
+                    // We really only care about the entry point group, since we don't do anything
+                    // with entry point name.
+                    group_matches.attr("load")();
+                }
             }
-            catch (py::error_already_set &ex) {
-                if (!ex.matches(pkg_resources.attr("DistributionNotFound"))) {
+            catch (const py::error_already_set& ex) {
+                if (!ex.matches(import_meta.attr("PackageNotFoundError"))) {
                     throw;
                 }
             }
 
-            if (entry_points.empty()) {
-                try {
-                    return load_component_from_module(distribution_name, distribution_name);
-                }
-                catch (const ComponentLoadError &ex) {
-                    throw ComponentLoadError(
-                            "The \"" + distribution_name + "\" component did not declare an \"" + entry_point_group
-                            + "\" entry point so an attempt was made to load the component from a module named \""
-                            + distribution_name + "\", but that also failed due to: " + ex.what());
-                }
+            try {
+                return load_component_from_module(distribution_name, distribution_name);
             }
-
-            static const char * const expected_entry_point_name = "component";
-            // The left hand side of the '=' in entry point declaration should be "component"
-            py::handle component_entry_point = entry_points.attr("get")(expected_entry_point_name);
-            if (component_entry_point.is_none()) {
-                // An entry point in the "mpf.exported_component" group was found,
-                // but the left hand side of the '=' was something else.
-                // For example 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
-                // We really only care about the entry point group, since we don't do anything with entry point name.
-                component_entry_point = entry_points.begin()->second;
+            catch (const ComponentLoadError &ex) {
+                throw ComponentLoadError(
+                    "The \"" + distribution_name + "\" component did not declare an "
+                    "\"mpf.exported_component\" entry point so an attempt was made to load "
+                    "the component from a module named \"" + distribution_name + "\", "
+                    "but that also failed due to: " + ex.what());
             }
-            return component_entry_point.attr("load")();
         }
 
 
@@ -216,8 +219,8 @@ namespace MPF { namespace COMPONENT {
 
         py::object load_component(const std::string &component_lib) {
             py::object component_class = is_python_file(component_lib)
-                                         ? load_component_from_file(component_lib)
-                                         : load_component_from_package(component_lib);
+                                     ? load_component_from_file(component_lib)
+                                     : load_component_from_package(component_lib);
             try {
                 return component_class();
             }
@@ -269,7 +272,7 @@ namespace MPF { namespace COMPONENT {
         Properties get_properties(py::handle obj, const char * field) {
             Properties result;
             py::object iter_items = obj.attr(field).attr("items")();
-            for (auto &pair : iter_items) {
+            for (const auto &pair : iter_items) {
                 result.insert(to_std_pair<py::str, py::str>(pair));
             }
             return result;
@@ -704,7 +707,7 @@ namespace MPF { namespace COMPONENT {
     PythonComponentHandle::PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
                                                  const std::string &lib_path) {
         initialize_python();
-        impl_ = std::unique_ptr<impl>(new impl(logger, lib_path));
+        impl_ = std::make_unique<impl>(logger, lib_path);
     }
 
     // Can't be defaulted in header because in the header PythonComponentHandle::impl is still an incomplete type.
@@ -770,7 +773,7 @@ namespace MPF { namespace COMPONENT {
     PythonLogger::PythonLogger(const std::string &log_level, const std::string &component_name) {
         initialize_python();
         ConfigureLogging(log_level, component_name);
-        impl_ = std::unique_ptr<logger_impl>(new logger_impl);
+        impl_ = std::make_unique<logger_impl>();
     }
 
     PythonLogger::PythonLogger(const PythonLogger& other)
@@ -876,4 +879,4 @@ namespace MPF { namespace COMPONENT {
 
         return log_dir + '/' + component_name + ".log";
     }
-}}
+}

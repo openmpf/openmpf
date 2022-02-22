@@ -39,19 +39,11 @@ public class JobPageModel {
     private final Instant startDate;
     private final Instant endDate;
     private final String outputObjectPath;
-    private final boolean hasCallbacksInProgress;
     private final boolean terminal;
+    private final String tiesDbStatus;
+    private final String callbackStatus;
     private final List<String> mediaUris;
-
     private boolean outputFileExists = false;
-
-    public boolean isOutputFileExists() {
-        return outputFileExists;
-    }
-
-    public void setOutputFileExists(boolean outputFileExists) {
-        this.outputFileExists = outputFileExists;
-    }
 
     public JobPageModel(
             long jobId,
@@ -62,8 +54,9 @@ public class JobPageModel {
             Instant startDate,
             Instant endDate,
             String outputObjectPath,
-            boolean hasCallbacksInProgress,
             boolean terminal,
+            String tiesDbStatus,
+            String callbackStatus,
             Collection<String> mediaUris) {
         this.jobId = jobId;
         this.pipelineName = pipelineName;
@@ -73,9 +66,19 @@ public class JobPageModel {
         this.startDate = startDate;
         this.endDate = endDate;
         this.outputObjectPath = outputObjectPath;
-        this.hasCallbacksInProgress = hasCallbacksInProgress;
         this.terminal = terminal;
+        this.tiesDbStatus = tiesDbStatus;
+        this.callbackStatus = callbackStatus;
         this.mediaUris = List.copyOf(mediaUris);
+    }
+
+
+    public boolean isOutputFileExists() {
+        return outputFileExists;
+    }
+
+    public void setOutputFileExists(boolean outputFileExists) {
+        this.outputFileExists = outputFileExists;
     }
 
     public long getJobId() {
@@ -110,8 +113,12 @@ public class JobPageModel {
         return outputObjectPath;
     }
 
-    public boolean getHasCallbacksInProgress() {
-        return hasCallbacksInProgress;
+    public String getTiesDbStatus() {
+        return tiesDbStatus;
+    }
+
+    public String getCallbackStatus() {
+        return callbackStatus;
     }
 
     public boolean isTerminal() {

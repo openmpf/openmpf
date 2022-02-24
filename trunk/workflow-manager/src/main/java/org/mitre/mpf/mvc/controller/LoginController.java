@@ -103,47 +103,50 @@ public class LoginController {
         return mv;
     }
 
+    @RequestMapping(value = { "/logout" }, method = RequestMethod.GET)
+    public String getLogout(
+            @RequestParam(value = "reason", required = false) String reason,
+            HttpSession session) {
+        session.invalidate();
+        SecurityContextHolder.clearContext(); // prevent a user from recovering a session
+        String redirect = "redirect:/login";
+        if (reason != null) {
+            redirect += "?reason=" + reason;
+        }
+        return redirect;
+    }
+
     @RequestMapping(value = { "/login" }, method = RequestMethod.GET)
     public ModelAndView getLogin(
-            @RequestParam(value = "error", required = false) String error,
-            @RequestParam(value = "bootout", required = false) String bootout,
-            @RequestParam(value = "disabled", required = false) String disabled,
-            @RequestParam(value = "logout", required = false) String logout,
-            @RequestParam(value = "timeout", required = false) String timeout,
-            HttpSession session, HttpServletRequest servletRequest) {
-
-        // invalidate session on logout or timeout for extra security
-        boolean clearSession = false;
-
+            @RequestParam(value = "reason", required = false) String reason) {
         ModelAndView model = new ModelAndView("login_view");
-        if (error != null) {
-            log.debug("Invalid username and password");
-            model.addObject("error", "Invalid username and password!");
-        } else if (bootout != null) {
-            log.debug("User booted out");
-            model.addObject("error", "You've been logged out because the same user logged in from another location.");
-        } else if (disabled != null) {
-            log.debug("User account disabled");
-            model.addObject("error", "Account is disabled!");
-        } else if (logout != null) {
-            log.debug("User logged out");
-            model.addObject("msg", "You've been logged out successfully.");
-            clearSession = true;
-        } else if (timeout != null) {
-            log.debug("Session timed out");
-            model.addObject("msg", "Session timed out or expired.");
-            clearSession = true;
-        }
-
-        if(clearSession) {
-            session.invalidate();
-
-            //necessary to prevent a user from recovering a session
-            SecurityContextHolder.clearContext();
-        }
-
         model.addObject("version", propertiesUtil.getSemanticVersion());
-
+        if (reason == null) {
+            return model;
+        }
+        switch (reason) {
+            case "error":
+                log.debug("Invalid username and password");
+                model.addObject("error", "Invalid username and password!");
+                break;
+            case "bootout":
+                log.debug("User booted out");
+                model.addObject("error",
+                        "You've been logged out because the same user logged in from another location.");
+                break;
+            case "disabled":
+                log.debug("User account disabled");
+                model.addObject("error", "Account is disabled!");
+                break;
+            case "timeout":
+                log.debug("Session timed out");
+                model.addObject("msg", "Session timed out or expired.");
+                break;
+            case "user":
+                log.debug("User logged out");
+                model.addObject("msg", "You've been logged out successfully.");
+                break;
+        }
         return model;
     }
 

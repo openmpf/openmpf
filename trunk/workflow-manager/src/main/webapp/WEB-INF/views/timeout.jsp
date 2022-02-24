@@ -29,7 +29,7 @@
         <script>
             // NOTE: We need to redirect the top of the window in case an inner
             // div (acting like a subframe) attempts to load this content.
-            window.top.location.href = 'login?timeout';
+            window.top.location.href = 'logout?reason=timeout';
         </script>
     </head>
     <body></body>

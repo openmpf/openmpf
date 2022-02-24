@@ -54,7 +54,7 @@ public class TimeoutFilter implements Filter {
 
     // these calls do not require the user to be logged in; also, they do not count towards resetting the timeout countdown
     private static final Pattern excludeUrls =
-			Pattern.compile("^.*(css|js|fonts|jpg|login|timeout|bootout|rest).*$",
+			Pattern.compile("^.*(css|js|fonts|jpg|login|logout|timeout|bootout|rest).*$",
             Pattern.CASE_INSENSITIVE);
 
     // these ajax calls are on timers and should not count towards resetting the timeout countdown

@@ -48,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -391,9 +393,19 @@ public class S3StorageBackend implements StorageBackend {
 
     private static S3Client getS3Client(URI endpoint, int retryCount,
                                         Function<String, String> properties) {
-        var credentials = AwsBasicCredentials.create(
-                properties.apply(MpfConstants.S3_ACCESS_KEY),
-                properties.apply(MpfConstants.S3_SECRET_KEY));
+        var sessionToken = properties.apply("S3_SESSION_TOKEN");
+        AwsCredentials credentials;
+        if (sessionToken != null && !sessionToken.isBlank()) {
+            credentials = AwsSessionCredentials.create(
+                    properties.apply(MpfConstants.S3_ACCESS_KEY),
+                    properties.apply(MpfConstants.S3_SECRET_KEY),
+                    sessionToken);
+        }
+        else {
+            credentials = AwsBasicCredentials.create(
+                    properties.apply(MpfConstants.S3_ACCESS_KEY),
+                    properties.apply(MpfConstants.S3_SECRET_KEY));
+        }
 
         var retry = RetryPolicy.builder()
                 .numRetries(retryCount)

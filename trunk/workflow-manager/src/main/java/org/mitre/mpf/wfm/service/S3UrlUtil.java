@@ -36,9 +36,15 @@ import java.net.URISyntaxException;
 import java.util.function.Function;
 
 public interface S3UrlUtil {
-    public static S3UrlUtil get(Function<String, String> properties) {
+    public static S3UrlUtil get(Function<String, String> properties) throws StorageException {
         if (Boolean.parseBoolean(properties.apply(MpfConstants.S3_USE_VIRTUAL_HOST))) {
-            return VIRTUAL_HOST_STYLE;
+            var s3Host = properties.apply(MpfConstants.S3_HOST);
+            if (s3Host == null || s3Host.isBlank()) {
+                throw new StorageException(String.format(
+                        "When %s is provided, %s almost must be provided.",
+                        MpfConstants.S3_USE_VIRTUAL_HOST, MpfConstants.S3_HOST));
+            }
+            return new VirtualHostStyle(s3Host);
         }
         else {
             return PATH_STYLE;
@@ -103,7 +109,18 @@ public interface S3UrlUtil {
     };
 
 
-    static final S3UrlUtil VIRTUAL_HOST_STYLE = new S3UrlUtil() {
+    static class VirtualHostStyle implements S3UrlUtil {
+        private final String _s3Host;
+
+        private VirtualHostStyle(String s3Host) {
+            if (s3Host.startsWith(".")) {
+                _s3Host = s3Host.substring(1);
+            }
+            else {
+                _s3Host = s3Host;
+            }
+        }
+
         @Override
         public URI getS3Endpoint(String uri) throws StorageException {
             return getS3EndpointShared(uri);
@@ -113,11 +130,12 @@ public interface S3UrlUtil {
         @Override
         public String getResultsBucketName(URI bucketUri) throws StorageException {
             var host = bucketUri.getHost().toLowerCase();
-            var s3Index = host.indexOf(".s3.");
-            if (s3Index < 0) {
-                throw new StorageException("host name did not contain .s3.");
+            var endOfBucketIndex = host.indexOf('.' + _s3Host);
+            if (endOfBucketIndex < 0) {
+                throw new StorageException(
+                        "host name did not contain the configured s3 host: " + _s3Host);
             }
-            return host.substring(0, s3Index);
+            return host.substring(0, endOfBucketIndex);
         }
 
 

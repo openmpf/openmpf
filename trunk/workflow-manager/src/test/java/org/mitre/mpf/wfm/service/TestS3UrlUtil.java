@@ -102,7 +102,17 @@ public class TestS3UrlUtil {
     }
 
 
-    private static S3UrlUtil getVirtualHost() {
-        return S3UrlUtil.get(k -> k.equals(MpfConstants.S3_USE_VIRTUAL_HOST) ? "true" : null);
+    private static S3UrlUtil getVirtualHost() throws StorageException {
+        return S3UrlUtil.get(k -> {
+            if (k.equals(MpfConstants.S3_USE_VIRTUAL_HOST)) {
+                return "true";
+            }
+            else if (k.equals(MpfConstants.S3_HOST)) {
+                return "s3.amazonaws.com";
+            }
+            else {
+                return "";
+            }
+        });
     }
 }

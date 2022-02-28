@@ -362,5 +362,12 @@
         "type": "BOOLEAN",
         "propertiesKey": "s3.use.virtual.host",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_HOST",
+        "description": "....",
+        "type": "STRING",
+        "propertiesKey": "s3.host",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

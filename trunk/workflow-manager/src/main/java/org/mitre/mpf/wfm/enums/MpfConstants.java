@@ -63,6 +63,7 @@ public class MpfConstants {
             REQUEST_CANCELLED = "REQUEST_CANCELLED",
             S3_ACCESS_KEY = "S3_ACCESS_KEY",
             S3_SECRET_KEY = "S3_SECRET_KEY",
+            S3_SESSION_TOKEN = "S3_SESSION_TOKEN",
             S3_RESULTS_BUCKET = "S3_RESULTS_BUCKET",
             S3_UPLOAD_ONLY = "S3_UPLOAD_ONLY",
             S3_REGION = "S3_REGION",

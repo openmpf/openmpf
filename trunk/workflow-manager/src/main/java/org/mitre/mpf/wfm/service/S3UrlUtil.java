@@ -116,7 +116,8 @@ public interface S3UrlUtil {
                 uriPath = uriPath.substring(1);
             }
             String[] parts = uriPath.split("/", 2);
-            if (parts.length != 2 || StringUtils.isBlank(parts[0]) || StringUtils.isBlank(parts[1])) {
+            if (parts.length != 2 || StringUtils.isBlank(parts[0])
+                    || StringUtils.isBlank(parts[1])) {
                 throw new StorageException(
                         "Unable to determine bucket name and object key from uri: " + uriStr);
             }
@@ -160,8 +161,10 @@ public interface S3UrlUtil {
             var host = bucketUri.getHost().toLowerCase();
             var endOfBucketIndex = host.indexOf('.' + _s3Host);
             if (endOfBucketIndex < 0) {
-                throw new StorageException(
-                        "host name did not contain the configured s3 host: " + _s3Host);
+                throw new StorageException(String.format(
+                    "The specified bucket URI, \"%s\", " +
+                            "did not contain the configured S3 host \"%s\".",
+                    bucketUri, _s3Host));
             }
             return host.substring(0, endOfBucketIndex);
         }

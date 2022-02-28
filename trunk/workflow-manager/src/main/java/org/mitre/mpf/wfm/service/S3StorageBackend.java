@@ -394,7 +394,7 @@ public class S3StorageBackend implements StorageBackend {
 
     private static S3Client getS3Client(URI endpoint, int retryCount,
                                         Function<String, String> properties) {
-        var sessionToken = properties.apply("S3_SESSION_TOKEN");
+        var sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
         AwsCredentials credentials;
         if (sessionToken != null && !sessionToken.isBlank()) {
             credentials = AwsSessionCredentials.create(

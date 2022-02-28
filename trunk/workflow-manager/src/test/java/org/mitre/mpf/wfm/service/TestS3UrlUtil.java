@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service;
 
 
 import org.junit.Test;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 
 import java.net.URI;
@@ -53,6 +54,27 @@ public class TestS3UrlUtil {
         var combinedUri = urlUtil.getFullUri(
                 URI.create("https://my.bucket.name.s3.amazonaws.com"), "my/object/name");
         assertEquals(URI.create(testUrl), combinedUri);
+    }
+
+
+    @Test
+    public void testWrongHost() throws StorageException {
+        var urlUtil = S3UrlUtil.get(k -> {
+            if (k.equals(MpfConstants.S3_USE_VIRTUAL_HOST)) {
+                return "true";
+            }
+            if (k.equals(MpfConstants.S3_HOST)) {
+                return "some.other.url.example.com";
+            }
+            return null;
+        });
+
+        var testUrl = "https://my.bucket.name.S3.amazonaws.com/my/object/name";
+        TestUtil.assertThrows(StorageException.class,
+                              () -> urlUtil.getResultsBucketName(URI.create(testUrl)));
+
+        TestUtil.assertThrows(StorageException.class,
+                              () -> urlUtil.splitBucketAndObjectKey(testUrl));
     }
 
 

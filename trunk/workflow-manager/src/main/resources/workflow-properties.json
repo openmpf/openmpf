@@ -336,6 +336,13 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "S3_SESSION_TOKEN",
+        "description": "Only required when the S3 bucket is configured to require a session key. This generally occurs when multi-factor authentication is required. OpenMPF does not handle generating the session key.",
+        "type": "STRING",
+        "propertiesKey": "s3.session.token",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "S3_RESULTS_BUCKET",
         "description": "URI to bucket where result objects should be stored. To disable the upload of result objects, do not provide a value for this property.",
         "type": "STRING",
@@ -365,7 +372,7 @@
     },
     {
         "name": "S3_HOST",
-        "description": "....",
+        "description": "When S3_USE_VIRTUAL_HOST is true, this should contain the S3 hostname without the bucket. For example, if the bucket URI is \"https://bucket.s3.amazonaws.com\", this should be set to \"s3.amazonaws.com\".",
         "type": "STRING",
         "propertiesKey": "s3.host",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

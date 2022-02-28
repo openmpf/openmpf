@@ -77,7 +77,23 @@ public interface S3UrlUtil {
 
         @Override
         public URI getS3Endpoint(String uri) throws StorageException {
-            return getS3EndpointShared(uri);
+            try {
+                URI serviceUri = new URIBuilder(uri)
+                        .setPath("")
+                        .setFragment(null)
+                        .removeQuery()
+                        .build();
+                if (serviceUri.getHost() == null) {
+                    throw new StorageException(String.format(
+                            "Could not determine S3 host from \"%s\".", uri));
+                }
+                return serviceUri;
+            }
+            catch (URISyntaxException e) {
+                throw new StorageException(
+                        "An error occurred while trying to determine the S3 endpoint: "
+                                + e.getMessage(), e);
+            }
         }
 
         @Override
@@ -123,7 +139,19 @@ public interface S3UrlUtil {
 
         @Override
         public URI getS3Endpoint(String uri) throws StorageException {
-            return getS3EndpointShared(uri);
+            try {
+                return new URIBuilder(uri)
+                        .setPath("")
+                        .setFragment(null)
+                        .removeQuery()
+                        .setHost(_s3Host)
+                        .build();
+            }
+            catch (URISyntaxException e) {
+                throw new StorageException(
+                        "An error occurred while trying to determine the S3 endpoint: "
+                                + e.getMessage(), e);
+            }
         }
 
 
@@ -160,28 +188,6 @@ public interface S3UrlUtil {
                 path = path.substring(1);
             }
             return new String[] { bucket, path };
-        }
-    };
-
-
-
-    private static URI getS3EndpointShared(String uri) throws StorageException {
-        try {
-            URI serviceUri = new URIBuilder(uri)
-                    .setPath("")
-                    .setFragment(null)
-                    .removeQuery()
-                    .build();
-            if (serviceUri.getHost() == null) {
-                throw new StorageException(String.format(
-                        "Could not determine S3 host from \"%s\".", uri));
-            }
-            return serviceUri;
-        }
-        catch (URISyntaxException e) {
-            throw new StorageException(
-                    "An error occurred while trying to determine the S3 endpoint: "
-                            + e.getMessage(), e);
         }
     }
 }

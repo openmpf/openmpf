@@ -41,7 +41,7 @@ public class TestS3UrlUtil {
         var urlUtil = getVirtualHost();
         var testUrl = "https://my.bucket.name.S3.amazonaws.com/my/object/name";
 
-        assertEquals(URI.create("https://my.bucket.name.S3.amazonaws.com"),
+        assertEquals(URI.create("https://S3.amazonaws.com"),
                      urlUtil.getS3Endpoint(testUrl));
 
         assertEquals("my.bucket.name",  urlUtil.getResultsBucketName(URI.create(testUrl)));
@@ -60,7 +60,7 @@ public class TestS3UrlUtil {
     public void canHandleVirtualHostNoObjectKey() throws StorageException {
         var urlUtil = getVirtualHost();
         var resultsBucket = "https://my.bucket.name.s3.amazonaws.com";
-        assertEquals(URI.create(resultsBucket), urlUtil.getS3Endpoint(resultsBucket));
+        assertEquals(URI.create("https://s3.amazonaws.com"), urlUtil.getS3Endpoint(resultsBucket));
         assertEquals("my.bucket.name", urlUtil.getResultsBucketName(URI.create(resultsBucket)));
 
         assertEquals(

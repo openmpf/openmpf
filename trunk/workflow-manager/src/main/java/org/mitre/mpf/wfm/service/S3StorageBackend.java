@@ -286,6 +286,7 @@ public class S3StorageBackend implements StorageBackend {
             String[] pathParts = s3UrlUtil.splitBucketAndObjectKey(media.getUri());
             String bucket = pathParts[0];
             String objectKey = pathParts[1];
+            LOG.info("Downloading from S3 bucket \"{}\", object \"{}\"", bucket, objectKey);
             s3Client.getObject(
                     r -> r.bucket(bucket).key(objectKey),
                     media.getLocalPath());
@@ -411,6 +412,7 @@ public class S3StorageBackend implements StorageBackend {
                 .numRetries(retryCount)
                 .build();
 
+        LOG.info("Creating S3 client for endpoint \"{}\"", endpoint);
         return S3Client.builder()
                 .region(Region.of(properties.apply(MpfConstants.S3_REGION)))
                 .endpointOverride(endpoint)

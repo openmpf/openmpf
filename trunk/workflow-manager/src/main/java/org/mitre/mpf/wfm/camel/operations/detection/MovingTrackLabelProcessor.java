@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.detection;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Maps;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
@@ -172,7 +173,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
         boolean trackIsMoving = numMovingDetections >= minMovingDetections;
         var newTrackProperties = ImmutableSortedMap.<String, String>naturalOrder()
-                .putAll(track.getTrackProperties())
+                .putAll(Maps.filterKeys(track.getTrackProperties(), key -> !key.equals("MOVING")))
                 .put("MOVING", trackIsMoving ? "TRUE" : "FALSE")
                 .build();
 
@@ -218,7 +219,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
     private static Detection addMotionLabel(boolean isMoving, Detection detection) {
         var newDetectionProperties = ImmutableSortedMap.<String, String>naturalOrder()
-                .putAll(detection.getDetectionProperties())
+                .putAll(Maps.filterKeys(detection.getDetectionProperties(), key -> !key.equals("MOVING")))
                 .put("MOVING", isMoving ? "TRUE" : "FALSE")
                 .build();
 

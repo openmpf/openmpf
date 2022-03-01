@@ -1,9 +1,9 @@
 {
   "openmpfVersion": "6.3",
-  "jobId": 35,
+  "jobId": "a02a30e1ca11-35",
   "errors": [],
   "warnings": [],
-  "objectId": "f40eae37-4205-4097-bde5-8bf210fcd41d",
+  "objectId": "0c41ec55-008d-499f-bf78-e9082e274abd",
   "pipeline": {
     "name": "TEST MULTIPLE-ACTION TASK PIPELINE",
     "description": "TEST MULTIPLE-ACTION TASK PIPELINE",
@@ -34,9 +34,9 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "88c81d1a-5635-4464-b252-7e279fb081a5",
-  "timeStart": "2021-09-27T18:04:48.962Z",
-  "timeStop": "2021-09-27T18:04:49.819Z",
+  "externalJobId": "0dfcbadf-6170-429c-8b82-8bff7a0b22e6",
+  "timeStart": "2022-01-22T02:55:38.167Z",
+  "timeStop": "2022-01-22T02:55:38.789Z",
   "status": "COMPLETE",
   "algorithmProperties": {},
   "jobProperties": {},
@@ -49,6 +49,8 @@
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
       "length": 1,
+      "frameRanges": [],
+      "timeRanges": [],
       "mediaMetadata": {
         "FRAME_HEIGHT": "428",
         "FRAME_WIDTH": "640",
@@ -65,55 +67,6 @@
             "algorithm": "OCVYOLO",
             "tracks": [
               {
-                "id": "cd09bf7dbfeb9a60b72badeecd792ea06831563caa2cda5358a5055dc3d7af9e",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "CLASS",
-                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.7400942,
-                "trackProperties": {
-                  "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.740094",
-                  "CLASSIFICATION LIST": "person"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 14,
-                  "y": 72,
-                  "width": 44,
-                  "height": 176,
-                  "confidence": 0.7400942,
-                  "detectionProperties": {
-                    "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.740094",
-                    "CLASSIFICATION LIST": "person"
-                  },
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 14,
-                    "y": 72,
-                    "width": 44,
-                    "height": 176,
-                    "confidence": 0.7400942,
-                    "detectionProperties": {
-                      "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.740094",
-                      "CLASSIFICATION LIST": "person"
-                    },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
-                  }
-                ]
-              },
-              {
                 "id": "9cb4d4bb0c15dc78f157a7ddd8fc996ec07bcc414b3f8a704900ce902685fa5b",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
@@ -121,10 +74,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.7476971,
+                "confidence": 0.7381616,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.738162",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -134,14 +87,14 @@
                   "y": 76,
                   "width": 47,
                   "height": 192,
-                  "confidence": 0.7476971,
+                  "confidence": 0.7381616,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.738162",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/1/frame-0.png"
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
                 },
                 "detections": [
                   {
@@ -151,10 +104,59 @@
                     "y": 76,
                     "width": 47,
                     "height": 192,
-                    "confidence": 0.7476971,
+                    "confidence": 0.7381616,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.747697",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.738162",
+                      "CLASSIFICATION LIST": "person"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/0/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "d67a3efbfa74a9bb92c347cdaa49484dfb8b80f794e8b5a12d33711bd445d335",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "CLASS",
+                "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
+                "confidence": 0.7381672,
+                "trackProperties": {
+                  "CLASSIFICATION": "person",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.738167",
+                  "CLASSIFICATION LIST": "person"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 14,
+                  "y": 72,
+                  "width": 44,
+                  "height": 175,
+                  "confidence": 0.7381672,
+                  "detectionProperties": {
+                    "CLASSIFICATION": "person",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.738167",
+                    "CLASSIFICATION LIST": "person"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///opt/mpf/share/artifacts/35/35/0/1/1/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 14,
+                    "y": 72,
+                    "width": 44,
+                    "height": 175,
+                    "confidence": 0.7381672,
+                    "detectionProperties": {
+                      "CLASSIFICATION": "person",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.738167",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -163,17 +165,17 @@
                 ]
               },
               {
-                "id": "4785d438eb6315bf2f97e4efc70eda54c3bb4923fe612c0aac86b9e7f39ce37e",
+                "id": "6364799f03ae75a8195c7d47a932e79a003ebb447e82caf4cef506bf6ff4fd09",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.7810555,
+                "confidence": 0.7790327,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.779033",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -182,11 +184,11 @@
                   "x": 88,
                   "y": 37,
                   "width": 35,
-                  "height": 141,
-                  "confidence": 0.7810555,
+                  "height": 142,
+                  "confidence": 0.7790327,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.779033",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -199,11 +201,11 @@
                     "x": 88,
                     "y": 37,
                     "width": 35,
-                    "height": 141,
-                    "confidence": 0.7810555,
+                    "height": 142,
+                    "confidence": 0.7790327,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.781056",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.779033",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -219,10 +221,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.8684121,
+                "confidence": 0.87036747,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.870367",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -232,10 +234,10 @@
                   "y": 19,
                   "width": 41,
                   "height": 108,
-                  "confidence": 0.8684121,
+                  "confidence": 0.87036747,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.870367",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -249,10 +251,10 @@
                     "y": 19,
                     "width": 41,
                     "height": 108,
-                    "confidence": 0.8684121,
+                    "confidence": 0.87036747,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.868412",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.870367",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -261,30 +263,30 @@
                 ]
               },
               {
-                "id": "d3b602e13408b137ee73ad610cd222b23b1e246bd733ef949fabeea3f910e47e",
+                "id": "142a37a7def7ebbbf1399c43f0e9be61889a6ff3e9de9573bbb6ee5904123175",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.95451385,
+                "confidence": 0.9516746,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.951675",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
                   "x": 351,
-                  "y": 39,
+                  "y": 40,
                   "width": 27,
-                  "height": 128,
-                  "confidence": 0.95451385,
+                  "height": 127,
+                  "confidence": 0.9516746,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.951675",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -295,13 +297,13 @@
                     "offsetFrame": 0,
                     "offsetTime": 0,
                     "x": 351,
-                    "y": 39,
+                    "y": 40,
                     "width": 27,
-                    "height": 128,
-                    "confidence": 0.95451385,
+                    "height": 127,
+                    "confidence": 0.9516746,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.954514",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.951675",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -317,10 +319,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.9575011,
+                "confidence": 0.9582835,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.958283",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -330,10 +332,10 @@
                   "y": 40,
                   "width": 94,
                   "height": 235,
-                  "confidence": 0.9575011,
+                  "confidence": 0.9582835,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.958283",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -347,10 +349,10 @@
                     "y": 40,
                     "width": 94,
                     "height": 235,
-                    "confidence": 0.9575011,
+                    "confidence": 0.9582835,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.957501",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.958283",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -366,10 +368,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.977645,
+                "confidence": 0.9789104,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.97891",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -379,10 +381,10 @@
                   "y": 38,
                   "width": 119,
                   "height": 362,
-                  "confidence": 0.977645,
+                  "confidence": 0.9789104,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.97891",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -396,10 +398,10 @@
                     "y": 38,
                     "width": 119,
                     "height": 362,
-                    "confidence": 0.977645,
+                    "confidence": 0.9789104,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.977645",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.97891",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -415,10 +417,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.98001933,
+                "confidence": 0.9804209,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.980421",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -428,10 +430,10 @@
                   "y": 38,
                   "width": 41,
                   "height": 132,
-                  "confidence": 0.98001933,
+                  "confidence": 0.9804209,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.980421",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -445,10 +447,10 @@
                     "y": 38,
                     "width": 41,
                     "height": 132,
-                    "confidence": 0.98001933,
+                    "confidence": 0.9804209,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.980019",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.980421",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -457,30 +459,30 @@
                 ]
               },
               {
-                "id": "c3c7f22474bcc970d8e0e7062402f76e64a952f63e4928693d762eb48e5ebde6",
+                "id": "e037609316ab7ad38890d54039bcee525a8dd3fdbe6a66bd8c65d28ac7682d20",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.9966697,
+                "confidence": 0.9965332,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.996533",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
                   "x": 366,
-                  "y": 5,
-                  "width": 143,
-                  "height": 406,
-                  "confidence": 0.9966697,
+                  "y": 4,
+                  "width": 144,
+                  "height": 407,
+                  "confidence": 0.9965332,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.996533",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -491,13 +493,13 @@
                     "offsetFrame": 0,
                     "offsetTime": 0,
                     "x": 366,
-                    "y": 5,
-                    "width": 143,
-                    "height": 406,
-                    "confidence": 0.9966697,
+                    "y": 4,
+                    "width": 144,
+                    "height": 407,
+                    "confidence": 0.9965332,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.99667",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.996533",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -562,6 +564,8 @@
       "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
       "length": 1,
+      "frameRanges": [],
+      "timeRanges": [],
       "mediaMetadata": {
         "FRAME_HEIGHT": "168",
         "FRAME_WIDTH": "299",
@@ -584,30 +588,30 @@
             "algorithm": "OCVYOLO",
             "tracks": [
               {
-                "id": "a1b92736c7ff4df22886ebf9862c5e0153c78bf36fa16aa308a937f56fce6102",
+                "id": "5f79406c98cb92eb342c094b11da1d9933e95172ffa2b9f4aea6755342d3c092",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.96147543,
+                "confidence": 0.9523826,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.952383",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 16,
+                  "x": 15,
                   "y": 22,
                   "width": 96,
                   "height": 141,
-                  "confidence": 0.96147543,
+                  "confidence": 0.9523826,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.952383",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -617,14 +621,14 @@
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 16,
+                    "x": 15,
                     "y": 22,
                     "width": 96,
                     "height": 141,
-                    "confidence": 0.96147543,
+                    "confidence": 0.9523826,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.961475",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.952383",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",
@@ -640,10 +644,10 @@
                 "stopOffsetTime": 0,
                 "type": "CLASS",
                 "source": "+#OCV TINY YOLO OBJECT DETECTION ACTION",
-                "confidence": 0.9845105,
+                "confidence": 0.98500353,
                 "trackProperties": {
                   "CLASSIFICATION": "person",
-                  "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                  "CLASSIFICATION CONFIDENCE LIST": "0.985004",
                   "CLASSIFICATION LIST": "person"
                 },
                 "exemplar": {
@@ -653,10 +657,10 @@
                   "y": 46,
                   "width": 60,
                   "height": 120,
-                  "confidence": 0.9845105,
+                  "confidence": 0.98500353,
                   "detectionProperties": {
                     "CLASSIFICATION": "person",
-                    "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                    "CLASSIFICATION CONFIDENCE LIST": "0.985004",
                     "CLASSIFICATION LIST": "person"
                   },
                   "artifactExtractionStatus": "COMPLETED",
@@ -670,10 +674,10 @@
                     "y": 46,
                     "width": 60,
                     "height": 120,
-                    "confidence": 0.9845105,
+                    "confidence": 0.98500353,
                     "detectionProperties": {
                       "CLASSIFICATION": "person",
-                      "CLASSIFICATION CONFIDENCE LIST": "0.98451",
+                      "CLASSIFICATION CONFIDENCE LIST": "0.985004",
                       "CLASSIFICATION LIST": "person"
                     },
                     "artifactExtractionStatus": "COMPLETED",

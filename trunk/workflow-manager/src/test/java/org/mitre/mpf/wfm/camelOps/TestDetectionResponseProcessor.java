@@ -212,7 +212,7 @@ public class TestDetectionResponseProcessor {
 
     @Test
     public void testVideoResponseError() {
-        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BOUNDING_BOX_SIZE_ERROR;
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.BAD_FRAME_SIZE;
 
         processVideoJob(error);
 
@@ -290,7 +290,7 @@ public class TestDetectionResponseProcessor {
 
     @Test
     public void testImageResponseError() {
-        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.IMAGE_READ_ERROR;
+        DetectionProtobuf.DetectionError error = DetectionProtobuf.DetectionError.COULD_NOT_READ_MEDIA;
 
         DetectionProtobuf.DetectionResponse detectionResponse = DetectionProtobuf.DetectionResponse.newBuilder()
                 .setError(error)

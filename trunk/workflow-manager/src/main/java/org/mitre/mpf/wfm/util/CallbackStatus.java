@@ -24,36 +24,30 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access;
 
-import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
-import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+package org.mitre.mpf.wfm.util;
 
-import java.util.List;
+public class CallbackStatus {
+    private CallbackStatus() {
+    }
 
-public interface JobRequestDao extends JpaDao<JobRequest> {
+    public static String jobRunning() {
+        return "JOB RUNNING";
+    }
 
-    public void cancelJobsInNonTerminalState();
+    public static String inProgress() {
+        return "IN PROGRESS";
+    }
 
-    public List<JobRequest> findByPage(int pageSize, int offset, String searchTerm, String sortColumn,
-                                       String sortOrderDirection);
+    public static String notRequested() {
+        return "NOT REQUESTED";
+    }
 
-    public long countFiltered(String searchTerm);
+    public static String complete() {
+        return "COMPLETE";
+    }
 
-    public long getNextId();
-
-    public void updateStatus(long jobId, BatchJobStatusType status);
-
-    public BatchJobStatusType getStatus(long jobId);
-
-    public AllJobsStatisticsModel getJobStats();
-
-    public void setTiesDbSuccessful(long jobId);
-
-    public void setTiesDbError(long jobId, String status);
-
-    public void setCallbackSuccessful(long jobId);
-
-    public void setCallbackError(long jobId, String status);
+    public static String error(String reason) {
+        return "ERROR: " + reason;
+    }
 }

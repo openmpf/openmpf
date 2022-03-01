@@ -267,6 +267,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobRequestEntity.setPipeline(pipelineElements.getName());
                 jobRequestEntity.setTimeCompleted(null);jobRequestEntity.setOutputObjectPath(null);
                 jobRequestEntity.setOutputObjectVersion(null);
+                jobRequestEntity.setTiesDbStatus(null);
+                jobRequestEntity.setCallbackStatus(null);
 
 
                 jobRequestEntity.setJob(_jsonUtils.serialize(job));

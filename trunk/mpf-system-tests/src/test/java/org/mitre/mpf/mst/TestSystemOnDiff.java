@@ -33,9 +33,9 @@ import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientAction;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientTask;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.*;

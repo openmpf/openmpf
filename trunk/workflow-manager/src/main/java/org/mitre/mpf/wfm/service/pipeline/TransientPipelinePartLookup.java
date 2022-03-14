@@ -31,9 +31,9 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientAction;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientTask;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
 import org.mitre.mpf.rest.api.util.Utils;
 
 import java.util.Map;

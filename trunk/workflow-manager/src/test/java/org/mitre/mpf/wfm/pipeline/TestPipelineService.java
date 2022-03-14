@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;

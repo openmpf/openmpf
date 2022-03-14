@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.core.io.WritableResource;
@@ -40,7 +40,10 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 

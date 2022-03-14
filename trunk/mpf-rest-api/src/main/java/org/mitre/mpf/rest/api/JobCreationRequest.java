@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.rest.api;
 
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 
 import java.util.*;
 

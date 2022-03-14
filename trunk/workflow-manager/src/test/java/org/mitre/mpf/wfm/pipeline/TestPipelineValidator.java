@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.rest.api.pipelines.temp.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.service.WorkflowProperty;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;

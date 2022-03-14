@@ -25,19 +25,18 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.pipelines.temp;
+package org.mitre.mpf.rest.api.pipelines.transients;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
-import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.util.Utils;
 
 import javax.validation.Valid;
-import java.util.List;
+import java.util.Collection;
 
-public class TransientTask {
+public class TransientAction {
 
     private final String _name;
     @NotBlank
@@ -45,17 +44,26 @@ public class TransientTask {
         return _name;
     }
 
-    private final ImmutableList<String> _actions;
-    @NotEmpty
-    @Valid
-    public ImmutableList<@AllNotBlank String> getActions() {
-        return _actions;
+    private final String _algorithm;
+    @NotBlank
+    public String getAlgorithm() {
+        return _algorithm;
     }
 
-    public TransientTask(
+    private final ImmutableList<ActionProperty> _properties;
+    @Valid
+    public ImmutableList<ActionProperty> getProperties() {
+        return _properties;
+    }
+
+    public TransientAction(
             @JsonProperty("name") String name,
-            @JsonProperty("actions") List<String> actions) {
-        _name = name;
-        _actions = Utils.trimAndUpper(actions, ImmutableList.toImmutableList());
+            @JsonProperty("algorithm") String algorithm,
+            @JsonProperty("properties") Collection<ActionProperty> properties) {
+        _name = Utils.trimAndUpper(name);
+        _algorithm = Utils.trimAndUpper(algorithm);
+        _properties = properties == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(properties);
     }
 }

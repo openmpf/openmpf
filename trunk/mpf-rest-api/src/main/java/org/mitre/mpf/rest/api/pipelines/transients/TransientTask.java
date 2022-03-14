@@ -25,10 +25,11 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.pipelines.temp;
+package org.mitre.mpf.rest.api.pipelines.transients;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
@@ -36,37 +37,25 @@ import org.mitre.mpf.rest.api.util.Utils;
 import javax.validation.Valid;
 import java.util.List;
 
-public class TransientPipelineDefinition {
+public class TransientTask {
 
-    private final ImmutableList<String> _pipeline;
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
+    }
+
+    private final ImmutableList<String> _actions;
     @NotEmpty
     @Valid
-    public ImmutableList<@AllNotBlank String> getPipeline() {
-        return _pipeline;
-    }
-
-    private final ImmutableList<TransientTask> _tasks;
-    @Valid
-    public ImmutableList<TransientTask> getTasks() {
-        return _tasks;
-    }
-
-    private final ImmutableList<TransientAction> _actions;
-    @Valid
-    public ImmutableList<TransientAction> getActions() {
+    public ImmutableList<@AllNotBlank String> getActions() {
         return _actions;
     }
 
-    public TransientPipelineDefinition(
-            @JsonProperty("pipeline") List<String> pipeline,
-            @JsonProperty("tasks") List<TransientTask> tasks,
-            @JsonProperty("actions") List<TransientAction> actions) {
-        _pipeline = Utils.trimAndUpper(pipeline, ImmutableList.toImmutableList());
-        _tasks = tasks == null
-                ? ImmutableList.of()
-                : ImmutableList.copyOf(tasks);
-        _actions = actions == null
-                ? ImmutableList.of()
-                : ImmutableList.copyOf(actions);
+    public TransientTask(
+            @JsonProperty("name") String name,
+            @JsonProperty("actions") List<String> actions) {
+        _name = name;
+        _actions = Utils.trimAndUpper(actions, ImmutableList.toImmutableList());
     }
 }

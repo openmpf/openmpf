@@ -143,7 +143,9 @@ public class JobController {
                     "specified as frame ranges or time ranges in milliseconds." +
                     " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
                     " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
-                    " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided.",
+                    " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided." +
+                    "\n\nFull documentation for the REST API can be found " +
+                    "<a href=\"https://openmpf.github.io/docs/site/html/REST-API.html\">here</a>.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),

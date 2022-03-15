@@ -25,35 +25,37 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.rest.api.pipelines.transients;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collector;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.util.Utils;
 
-public class Utils {
+import javax.validation.Valid;
+import java.util.List;
 
-    private Utils() {
+public class TransientTask {
+
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
     }
 
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
+    private final ImmutableList<String> _actions;
+    @NotEmpty
+    @Valid
+    public ImmutableList<@AllNotBlank String> getActions() {
+        return _actions;
     }
 
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
-    }
-
-
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
+    public TransientTask(
+            @JsonProperty("name") String name,
+            @JsonProperty("actions") List<String> actions) {
+        _name = name;
+        _actions = Utils.trimAndUpper(actions, ImmutableList.toImmutableList());
     }
 }

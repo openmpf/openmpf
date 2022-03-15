@@ -357,8 +357,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         DebugCanvas.draw(finalDetection.getShape(), Color.magenta);
         DebugCanvas.draw(finalDetection.getTopLeftPt(), Color.magenta);
 
-        Detection expected = new Detection(-90, 90, 300, 300, 0.0f, 0, 0,
-                Map.of("ROTATION", "225",
+        Detection expected = new Detection(69, 36, 76, 120, 0.0f, 0, 0,
+                Map.of("ROTATION", "0",
                        "HORIZONTAL_FLIP", "TRUE"));
 
         TransformedShape expectedDetection = getTransformedShape(expected);

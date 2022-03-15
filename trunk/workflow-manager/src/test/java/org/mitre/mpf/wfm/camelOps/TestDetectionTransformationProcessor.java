@@ -79,10 +79,10 @@ public class TestDetectionTransformationProcessor {
 
         assertPadding(40, 40, 20, 20, "100%", "-5", 100, 100, 20, 45, 60, 10); // expand and shrink
 
-        assertShrinkToNothing(20, 20, 7, 7, "-100%", "-100%", 40, 40, 23, 23, 1, 1); // shrink beyond nothing (not exact)
-        assertShrinkToNothing(20, 20, 7, 7, "-7", "-7", 40, 40, 23, 23, 1, 1);       // shrink beyond nothing (not exact)
+        assertShrinkToNothing(20, 20, 7, 7, "-100%", "-100%", 40, 40, 24, 24, 1, 1); // shrink beyond nothing (not exact)
+        assertShrinkToNothing(20, 20, 7, 7, "-7", "-7", 40, 40, 24, 24, 1, 1);       // shrink beyond nothing (not exact)
         assertPadding(20, 20, 7, 7, "25%", "25%", 40, 40, 18, 18, 11, 11); // expand uniformly (not exact)
-        assertPadding(20, 20, 7, 7, "21%", "21%", 40, 40, 18, 18, 10, 10); // expand uniformly (not exact)
+        assertPadding(20, 20, 7, 7, "21%", "21%", 40, 40, 19, 19, 10, 10); // expand uniformly (not exact)
         assertPadding(20, 20, 7, 7, "-21%", "-21%", 40, 40, 21, 21, 5, 5); // shrink uniformly (not exact)
 
         assertPadding(6, 4, 4, 6, "50%", "33.3%", 10, 20, 4, 2, 6, 10); // over-expand towards right (height != width)
@@ -91,9 +91,137 @@ public class TestDetectionTransformationProcessor {
 
 
     @Test
+    public void testFlippedClippingOrthogonal() {
+        {
+            Detection input = createDetection(30, 40, 50, 60, null, false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "300%", "400%", 640, 480, input);
+            Detection expected = createDetection(0, 0, 230, 340, null, false);
+            assertEquals(expected, padded);
+        }
+
+        {
+            Detection input = createDetection(30, 40, 50, 60, null, true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "300%", "400%", 640, 480, input);
+            Detection expected = createDetection(180, 0, 180, 340, null, true);
+            assertEquals(expected, padded);
+        }
+
+        {
+            Detection input = createDetection(560, 380, 50, 60, null, true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "300%", "400%", 640, 480, input);
+            Detection expected = createDetection(640, 140, 280, 340, null, true);
+            assertEquals(expected, padded);
+        }
+    }
+
+
+    @Test
+    public void jrobbleTestRotatedClipping() {
+        /*
+        { // NO CLIPPING
+            Detection input = createDetection(30, 40, 50, 60, "45", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50%", "50%", 640, 480, input);
+            Detection expected = createDetection(-9, 36, 100, 120, "45", false);
+            assertEquals(expected, padded);
+        }
+
+        { // CLIPPING
+            Detection input = createDetection(30, 40, 50, 60, "45", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "200%", "200%", 640, 480, input);
+            Detection expected = createDetection(-76, 76, 250, 230, "45", false);
+            assertEquals(expected, padded);
+        }
+
+        { // CLIPPING
+            Detection input = createDetection(30, 40, 50, 60, "45", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "0%", "1200%", 640, 480, input);
+            Detection expected = createDetection(-5, 5, 50, 792, "45", false);
+            assertEquals(expected, padded);
+        }
+        */
+
+        { // CLIPPING: Capture entire frame
+            Detection input = createDetection(30, 40, 50, 60, "45", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50000%", "50000%", 640, 480, input);
+            Detection expected = createDetection(-239, 239, 792, 792, "45", false);
+            assertEquals(expected, padded);
+        }
+
+        { // CLIPPING
+            Detection input = createDetection(30, 40, 50, 60, "225", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "200%", "400%", 640, 480, input);
+            Detection expected = createDetection(270, 139, 250, 291, "225", false);
+            assertEquals(expected, padded);
+        }
+    }
+
+    @Test
+    public void jrobbleTestFlippedClipping() {
+        /*
+        { // NO CLIPPING
+            Detection input = createDetection(130, 140, 50, 60, "0", true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50%", "50%", 640, 480, input);
+            Detection expected = createDetection(155, 110, 100, 120, "0", true);
+            assertEquals(expected, padded);
+        }
+
+
+        {
+            Detection input = createDetection(30, 40, 50, 60, "0", true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50%", "50%", 640, 480, input);
+            Detection expected = createDetection(55, 10, 55, 120, "0", true);
+            assertEquals(expected, padded);
+        }
+
+        {
+            Detection input = createDetection(30, 40, 50, 60, "45", true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50%", "50%", 640, 480, input);
+            Detection expected = createDetection(69, 36, 75, 120, "45", true);
+            assertEquals(expected, padded);
+        }
+        */
+
+        { // CLIPPING
+            Detection input = createDetection(30, 40, 50, 60, "225", true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "200%", "400%", 640, 480, input);
+            Detection expected = createDetection(-90, 90, 300, 300, "225", true);
+            assertEquals(expected, padded);
+        }
+
+        { // CLIPPING: Right side of frame
+            Detection input = createDetection(580, 400, 50, 60, "90", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "200%", "400%", 640, 480, input);
+            Detection expected = createDetection(340, 480, 230, 300, "90", false);
+            assertEquals(expected, padded);
+        }
+
+        {
+            Detection input = createDetection(30, 40, 50, 60, "0", true);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "50%", "50%", 640, 480, input);
+            Detection expected = createDetection(69, 36, 76, 120, "0", true);
+            assertEquals(expected, padded);
+        }
+    }
+
+
+    @Test
     public void testRotatedClippingOrthogonal() {
         {
-            Detection input = createDetection(0, 479, 480, 640, "90");
+            Detection input = createDetection(0, 480, 480, 640, "90");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "200%", "200%", 640, 480, input);
             // Input detection is already at max possible size.
@@ -104,7 +232,7 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(300, 100, 400, 100, "90");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
-            Detection expected = createDetection(300, 300, 301, 100, "90");
+            Detection expected = createDetection(300, 300, 300, 100, "90");
             assertEquals(expected, actual);
         }
     }
@@ -116,7 +244,7 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(30, 40, 580, 400, "20");
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "1000%", "1000%", 640, 480, input);
-            Detection expected = createDetection(-153, 56, 766, 670, "20");
+            Detection expected = createDetection(-154, 56, 766, 670, "20");
             assertEquals(expected, padded);
         }
 
@@ -132,7 +260,7 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(300, 100, 400, 100, "45");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
-            Detection expected = createDetection(158, 241, 413, 100, "45");
+            Detection expected = createDetection(159, 241, 413, 100, "45");
             assertEquals(expected, actual);
         }
 
@@ -140,7 +268,7 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(300, 100, 400, 100, "225");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "100%", "0", 500, 500, input);
-            Detection expected = createDetection(449, -49, 707, 100, "225");
+            Detection expected = createDetection(450, -50, 708, 100, "225");
             assertEquals(expected, actual);
         }
 
@@ -148,7 +276,7 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(300, 100, 400, 100, "225");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 500, 500, input);
-            Detection expected = createDetection(441, -41, 696, 100, "225");
+            Detection expected = createDetection(441, -41, 695, 100, "225");
             assertEquals(expected, actual);
         }
     }
@@ -159,7 +287,7 @@ public class TestDetectionTransformationProcessor {
 
         Detection input = createDetection(96, 140, 190, 42, "18.74");
         {
-            Detection expected = createDetection(6, 170, 380, 42, "18.74");
+            Detection expected = createDetection(6, 171, 380, 42, "18.74");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "0", 1000, 1000, input);
             assertEquals(expected, actual);
@@ -173,7 +301,7 @@ public class TestDetectionTransformationProcessor {
         }
 
         {
-            Detection expected = createDetection(0, 150, 380, 84, "18.74");
+            Detection expected = createDetection(-1, 151, 380, 84, "18.74");
             Detection actual = DetectionTransformationProcessor.padDetection(
                     "50%", "50%", 1000, 1000, input);
             assertEquals(expected, actual);
@@ -213,8 +341,20 @@ public class TestDetectionTransformationProcessor {
         }
     }
 
-    private static Detection createDetection(int x, int y, int width, int height, String rotation) {
+    private static Detection createDetection(int x, int y, int width, int height, String rotation, boolean flip) {
+        Map<String, String> detectionProperties = new HashMap();
+        if (flip) {
+            detectionProperties.put("HORIZONTAL_FLIP", "true");
+        }
+        if (rotation != null) {
+            detectionProperties.put("ROTATION", rotation);
+        }
 
+        return new Detection(x, y, width, height, 1, 0, 0,
+                detectionProperties);
+    }
+
+    private static Detection createDetection(int x, int y, int width, int height, String rotation) {
         Map<String, String> detectionProperties = rotation == null
                 ? Collections.emptyMap()
                 : Collections.singletonMap("ROTATION", rotation);
@@ -460,6 +600,47 @@ public class TestDetectionTransformationProcessor {
         assertEquals(2, filteredTrack.getEndOffsetFrameInclusive());
         assertEquals(1, filteredTrack.getStartOffsetTimeInclusive());
         assertEquals(2, filteredTrack.getEndOffsetTimeInclusive());
+    }
+
+    @Test
+    public void testRotationAndFlip() {
+        {
+            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Map.of("ROTATION", "45"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(250, 0, 500, 50, Map.of("HORIZONTAL_FLIP", "TRUE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50,
+                    Map.of("ROTATION", "125", "HORIZONTAL_FLIP", "TRUE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+    }
+
+    private SortedSet<Track> createTracks(int x, int y, int width, int height, Map<String, String> detectionProperties) {
+        SortedSet<Detection> detections = new TreeSet<>();
+        Detection detection = new Detection(x, y, width, height, 1, 1, 1, detectionProperties);
+        detections.add(detection);
+
+        Track track = new Track(1, 2, 1, 1, 1, 1,
+                1, 1, "FACE", 1, detections, Collections.emptyMap());
+        SortedSet<Track> tracks = new TreeSet<>();
+        tracks.add(track);
+
+        return tracks;
     }
 
     private Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks, int frameWidth, int frameHeight) {

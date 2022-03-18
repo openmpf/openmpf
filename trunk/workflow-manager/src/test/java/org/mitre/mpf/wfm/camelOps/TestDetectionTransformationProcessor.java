@@ -120,7 +120,6 @@ public class TestDetectionTransformationProcessor {
 
     @Test
     public void jrobbleTestRotatedClipping() {
-        /*
         { // NO CLIPPING
             Detection input = createDetection(30, 40, 50, 60, "45", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
@@ -161,14 +160,41 @@ public class TestDetectionTransformationProcessor {
             assertEquals(expected, padded);
         }
 
-         */
-
         { // Single pixel overlap: Top left XY (true)
             Detection input = createDetection(-50, -80, 51, 81, "0", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "0%", "0%", 640, 480, input);
             Detection expected = createDetection(0, 0, 1, 1, "0", false);
             assertEquals(expected, padded);
+        }
+        { // Single pixel overlap: Top left X (false)
+            assertShrinkToNothing(-50, -80, 50, 81,
+                    "0%", "0%",  640, 480,
+                    0, 0, 1, 1);
+        }
+        { // Single pixel overlap: Top left Y (false)
+            assertShrinkToNothing(-50, -80, 51, 80,
+                    "0%", "0%",  640, 480,
+                    0, 0, 1, 1);
+        }
+
+
+        { // Single pixel overlap: Bottom right XY (true)
+            Detection input = createDetection(199, 399, 500, 50, "0", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "0%", "0%", 200, 400, input);
+            Detection expected = createDetection(199, 399, 1, 1, "0", false);
+            assertEquals(expected, padded);
+        }
+        { // Single pixel overlap: Bottom right X (false)
+            assertShrinkToNothing(200, 399, 500, 50,
+                    "0%", "0%",  200, 400,
+                    200, 399, 1, 1);
+        }
+        { // Single pixel overlap: Bottom right Y (false)
+            assertShrinkToNothing(199, 400, 500, 50,
+                    "0%", "0%",  200, 400,
+                    199, 400, 1, 1);
         }
     }
 

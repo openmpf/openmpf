@@ -197,7 +197,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         var newTracks = new TreeSet<Track>();
         var zeroSizeFrames = IntStream.builder();
         var outsideFrames = IntStream.builder();
-        var frameBoundingBox = new Rectangle2D.Double(0-1, 0-1, frameWidth-1+1, frameHeight-1+1); // DEBUG
+        var frameBoundingBox = new Rectangle2D.Double(0, 0, frameWidth, frameHeight); // DEBUG
         for (Track track : tracks) {
             SortedSet<Detection> goodDetections = new TreeSet<>();
             for (Detection detection : track.getDetections()) {
@@ -217,7 +217,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 DebugCanvas.draw(transformedDetection.getShape(), Color.red);
                 DebugCanvas.draw(transformedDetection.getTopLeftPt(), Color.red);
 
-                DebugCanvas.show("illformed");
+                // DebugCanvas.show("illformed");
 
 
                 if (transformedDetection.getShape().intersects(frameBoundingBox)) {
@@ -461,8 +461,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             detectionTransform.concatenate(rotationTransform);
         }
 
-        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX()-1, detection.getY()-1,
-                detection.getWidth()-1+1, detection.getHeight()-1+1);
+        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
+                detection.getWidth(), detection.getHeight());
 
         DebugCanvas.draw(detectionRect, Color.orange); // DEBUG
 

@@ -120,7 +120,6 @@ public class TestDetectionTransformationProcessor {
 
     @Test
     public void jrobbleTestRotatedClipping() {
-        /*
         { // NO CLIPPING
             Detection input = createDetection(30, 40, 50, 60, "45", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
@@ -144,13 +143,12 @@ public class TestDetectionTransformationProcessor {
             Detection expected = createDetection(-5, 5, 50, 792, "45", false);
             assertEquals(expected, padded);
         }
-        */
 
         { // CLIPPING: Capture entire frame
             Detection input = createDetection(30, 40, 50, 60, "45", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "50000%", "50000%", 640, 480, input);
-            Detection expected = createDetection(-239, 239, 792, 792, "45", false);
+            Detection expected = createDetection(-240, 240, 792, 792, "45", false);
             assertEquals(expected, padded);
         }
 
@@ -158,14 +156,13 @@ public class TestDetectionTransformationProcessor {
             Detection input = createDetection(30, 40, 50, 60, "225", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "200%", "400%", 640, 480, input);
-            Detection expected = createDetection(270, 139, 250, 291, "225", false);
+            Detection expected = createDetection(270, 139, 250, 290, "225", false);
             assertEquals(expected, padded);
         }
     }
 
     @Test
     public void jrobbleTestFlippedClipping() {
-        /*
         { // NO CLIPPING
             Detection input = createDetection(130, 140, 50, 60, "0", true);
             Detection padded = DetectionTransformationProcessor.padDetection(
@@ -173,7 +170,6 @@ public class TestDetectionTransformationProcessor {
             Detection expected = createDetection(155, 110, 100, 120, "0", true);
             assertEquals(expected, padded);
         }
-
 
         {
             Detection input = createDetection(30, 40, 50, 60, "0", true);
@@ -206,13 +202,12 @@ public class TestDetectionTransformationProcessor {
             Detection expected = createDetection(340, 480, 230, 300, "90", false);
             assertEquals(expected, padded);
         }
-        */
 
         {
             Detection input = createDetection(30, 40, 50, 60, "0", true);
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "50%", "50%", 640, 480, input);
-            Detection expected = createDetection(69, 36, 76, 120, "0", true);
+            Detection expected = createDetection(55, 10, 55, 120, "0", true);
             assertEquals(expected, padded);
         }
     }

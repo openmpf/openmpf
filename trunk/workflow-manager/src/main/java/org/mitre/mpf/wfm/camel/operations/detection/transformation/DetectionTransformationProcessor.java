@@ -344,28 +344,35 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         Rectangle2D.Double clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
         Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
-
+        /*
         DebugCanvas.clear();
+
+        Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
+        DebugCanvas.draw(frameRect, Color.yellow);
 
         TransformedShape origDetection = getTransformedShape(detection);
         DebugCanvas.draw(origDetection.getShape(), Color.red);
         DebugCanvas.draw(origDetection.getTopLeftPt(), Color.red);
+        */
 
         Detection retval = rectToDetection(detectionRectMappedBack, detection);
 
+        /*
         TransformedShape finalDetection = getTransformedShape(retval);
         DebugCanvas.draw(finalDetection.getShape(), Color.magenta);
         DebugCanvas.draw(finalDetection.getTopLeftPt(), Color.magenta);
+        */
 
+        /* DEBUG
         Detection expected = new Detection(69, 36, 76, 120, 0.0f, 0, 0,
                 Map.of("ROTATION", "0",
                        "HORIZONTAL_FLIP", "TRUE"));
-
         TransformedShape expectedDetection = getTransformedShape(expected);
         DebugCanvas.draw(expectedDetection.getShape(), Color.green);
         DebugCanvas.draw(expectedDetection.getTopLeftPt(), Color.green);
+        */
 
-        DebugCanvas.show("padDetection");
+        // DebugCanvas.show("padDetection");
 
 
         return retval;

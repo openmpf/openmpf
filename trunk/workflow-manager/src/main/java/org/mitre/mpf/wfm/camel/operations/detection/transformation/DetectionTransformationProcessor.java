@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
-import com.google.common.primitives.Doubles;
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -198,7 +197,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         var newTracks = new TreeSet<Track>();
         var zeroSizeFrames = IntStream.builder();
         var outsideFrames = IntStream.builder();
-        var frameBoundingBox = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
+        var frameBoundingBox = new Rectangle2D.Double(0-1, 0-1, frameWidth-1+1, frameHeight-1+1); // DEBUG
         for (Track track : tracks) {
             SortedSet<Detection> goodDetections = new TreeSet<>();
             for (Detection detection : track.getDetections()) {
@@ -206,6 +205,29 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     zeroSizeFrames.add(detection.getMediaOffsetFrame());
                     continue;
                 }
+
+                TransformedDetection transformedDetection = transformDetection(detection);
+
+
+                DebugCanvas.clear();
+
+                Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
+                DebugCanvas.draw(frameRect, Color.yellow);
+
+                DebugCanvas.draw(transformedDetection.getShape(), Color.red);
+                DebugCanvas.draw(transformedDetection.getTopLeftPt(), Color.red);
+
+                DebugCanvas.show("illformed");
+
+
+                if (transformedDetection.getShape().intersects(frameBoundingBox)) {
+                    goodDetections.add(detection);
+                }
+                else {
+                    outsideFrames.add(detection.getMediaOffsetFrame());
+                }
+
+                /*
                 var detectionBoundingBox = new Rectangle2D.Double(detection.getX(), detection.getY(),
                         detection.getWidth(), detection.getHeight());
                 if (frameBoundingBox.createIntersection(detectionBoundingBox).isEmpty()) {
@@ -214,6 +236,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 else {
                     goodDetections.add(detection);
                 }
+                */
             }
             if (goodDetections.size() > 0) {
                 newTracks.add(new Track(
@@ -379,10 +402,10 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     }
 
 
-    public static class TransformedShape {
+    public static class TransformedDetection {
         private Shape shape;
         private Point2D.Double topLeftPt;
-        public TransformedShape(Shape shape, Point2D.Double topLeftPt) {
+        public TransformedDetection(Shape shape, Point2D.Double topLeftPt) {
             this.shape = shape;
             this.topLeftPt = topLeftPt;
         }
@@ -394,20 +417,6 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
     }
 
-    public static class TransformedRect {
-        private Rectangle2D.Double rect;
-        private Point2D.Double topLeftPt;
-        public TransformedRect(Rectangle2D.Double rect, Point2D.Double topLeftPt) {
-            this.rect = rect;
-            this.topLeftPt = topLeftPt;
-        }
-        public Rectangle2D.Double getRect() {
-            return rect;
-        }
-        public Point2D.Double getTopLeftPt() {
-            return topLeftPt;
-        }
-    }
 
     private static double getRotation(Detection detection) {
         double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
@@ -431,7 +440,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 .orElse(false);
     }
 
-    private static TransformedShape getTransformedShape(Detection detection) {
+    private static TransformedDetection transformDetection(Detection detection) {
         AffineTransform detectionTransform = new AffineTransform(); // identity
 
         if (hasFlip(detection)) {
@@ -452,13 +461,13 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             detectionTransform.concatenate(rotationTransform);
         }
 
-        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
-                detection.getWidth(), detection.getHeight());
+        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX()-1, detection.getY()-1,
+                detection.getWidth()-1+1, detection.getHeight()-1+1);
 
         DebugCanvas.draw(detectionRect, Color.orange); // DEBUG
 
         // Create the shape that represents the detection after applying rotation and flip
-        return new TransformedShape(
+        return new TransformedDetection(
                 detectionTransform.createTransformedShape(detectionRect),
                 new Point2D.Double(detection.getX(), detection.getY()));
     }

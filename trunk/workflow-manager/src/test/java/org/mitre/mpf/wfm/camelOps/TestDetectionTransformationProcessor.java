@@ -120,6 +120,7 @@ public class TestDetectionTransformationProcessor {
 
     @Test
     public void jrobbleTestRotatedClipping() {
+        /*
         { // NO CLIPPING
             Detection input = createDetection(30, 40, 50, 60, "45", false);
             Detection padded = DetectionTransformationProcessor.padDetection(
@@ -157,6 +158,16 @@ public class TestDetectionTransformationProcessor {
             Detection padded = DetectionTransformationProcessor.padDetection(
                     "200%", "400%", 640, 480, input);
             Detection expected = createDetection(270, 139, 250, 290, "225", false);
+            assertEquals(expected, padded);
+        }
+
+         */
+
+        { // Single pixel overlap: Top left XY (true)
+            Detection input = createDetection(-50, -80, 51, 81, "0", false);
+            Detection padded = DetectionTransformationProcessor.padDetection(
+                    "0%", "0%", 640, 480, input);
+            Detection expected = createDetection(0, 0, 1, 1, "0", false);
             assertEquals(expected, padded);
         }
     }
@@ -598,7 +609,7 @@ public class TestDetectionTransformationProcessor {
     }
 
     @Test
-    public void testRotationAndFlip() {
+    public void jrobbleTestRotationAndFlip() {
         {
             SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Collections.emptyMap());
             Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
@@ -606,7 +617,7 @@ public class TestDetectionTransformationProcessor {
         }
 
         {
-            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Map.of("ROTATION", "45"));
+            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Map.of("ROTATION", "-45"));
             Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
             assertEquals(1, filteredTracks.size());
         }
@@ -618,10 +629,72 @@ public class TestDetectionTransformationProcessor {
         }
 
         {
-            SortedSet<Track> tracks = createTracks(-100, -100, 500, 50,
+            SortedSet<Track> tracks = createTracks(-100, 500, 500, 50,
                     Map.of("ROTATION", "125", "HORIZONTAL_FLIP", "TRUE"));
             Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
             assertEquals(1, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(-100, 500, 500, 50,
+                    Map.of("ROTATION", "125", "HORIZONTAL_FLIP", "TRUE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(200, 500, 500, 50,
+                    Map.of("ROTATION", "125", "HORIZONTAL_FLIP", "FALSE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(200, 500, 500, 50,
+                    Map.of("ROTATION", "0", "HORIZONTAL_FLIP", "FALSE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+
+        {
+            SortedSet<Track> tracks = createTracks(200, 500, 500, 50,
+                    Map.of("ROTATION", "45", "HORIZONTAL_FLIP", "TRUE"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+
+
+        { // Single pixel overlap: Top left XY (true)
+            SortedSet<Track> tracks = createTracks(-50, -80, 51, 81, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+        { // Single pixel overlap: Top left X (false)
+            SortedSet<Track> tracks = createTracks(-50, -80, 50, 81, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+        { // Single pixel overlap: Top left Y (false)
+            SortedSet<Track> tracks = createTracks(-50, -80, 51, 80, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+
+
+        { // Single pixel overlap: Bottom right XY (true)
+            SortedSet<Track> tracks = createTracks(199, 399, 500, 50, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, false);
+            assertEquals(1, filteredTracks.size());
+        }
+        { // Single pixel overlap: Bottom right X (false)
+            SortedSet<Track> tracks = createTracks(200, 399, 500, 50, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+        { // Single pixel overlap: Bottom right Y (false)
+            SortedSet<Track> tracks = createTracks(199, 400, 500, 50, Collections.emptyMap());
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
         }
     }
 
@@ -639,7 +712,7 @@ public class TestDetectionTransformationProcessor {
     }
 
     private Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks, int frameWidth, int frameHeight) {
-        return runRemoveIllFormedDetections(tracks, frameWidth, frameWidth, false, false);
+        return runRemoveIllFormedDetections(tracks, frameWidth, frameHeight, false, false);
     }
 
     private Collection<Track> runRemoveIllFormedDetections(SortedSet<Track> tracks, int frameWidth, int frameHeight,

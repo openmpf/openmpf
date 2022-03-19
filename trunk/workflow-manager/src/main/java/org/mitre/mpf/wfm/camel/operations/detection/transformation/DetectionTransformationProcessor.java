@@ -210,13 +210,26 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         detection.getWidth(), detection.getHeight());
                 Shape detectionShape = transform.createTransformedShape(detectionRect);
 
+                /*
+                AffineTransform transform = getTransform(detection);
+                Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
+                var preTransformFrameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
+                var frameRect = transform.createTransformedShape(preTransformFrameRect).getBounds2D();
+                */
+
                 if (true) { // set to true show visualization
                     DebugCanvas.clear();
+
                     DebugCanvas.draw(frameBoundingBox, Color.yellow);
                     DebugCanvas.draw(detection, Color.green, Color.red);
+
+                    // DebugCanvas.draw(frameRect, Color.lightGray);
+                    // DebugCanvas.draw(correctedDetectionRect, Color.darkGray);
+
                     DebugCanvas.show("illformed");
                 }
 
+                // if (correctedDetectionRect.intersects(frameRect)) {
                 if (detectionShape.intersects(frameBoundingBox)) {
                     goodDetections.add(detection);
                 }
@@ -277,6 +290,30 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
 
         return newTracks;
+    }
+
+
+    private static AffineTransform getTransform(Detection detection) {
+        double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
+                .filter(StringUtils::isNotBlank)
+                .map(Double::parseDouble)
+                .orElse(0.0);
+
+        boolean flip = Boolean.parseBoolean(detection.getDetectionProperties().get("HORIZONTAL_FLIP"));
+        AffineTransform transform;
+        if (flip) {
+            transform = new AffineTransform(
+                    -1, 0,
+                    0, 1,
+                    0, 0
+            );
+            transform.rotate(Math.toRadians(360 - rotationDegrees));
+        }
+        else {
+            transform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees));
+        }
+
+        return transform;
     }
 
 
@@ -370,25 +407,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
                                          Detection detection) {
-
-        double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
-                .filter(StringUtils::isNotBlank)
-                .map(Double::parseDouble)
-                .orElse(0.0);
-
-        boolean flip = Boolean.parseBoolean(detection.getDetectionProperties().get("HORIZONTAL_FLIP"));
-        AffineTransform transform;
-        if (flip) {
-            transform = new AffineTransform(
-                    -1, 0,
-                    0, 1,
-                    0, 0
-            );
-            transform.rotate(Math.toRadians(360 - rotationDegrees));
-        }
-        else {
-            transform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees));
-        }
+        AffineTransform transform = getTransform(detection);
 
         Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
         Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding);

@@ -636,6 +636,7 @@ public class TestDetectionTransformationProcessor {
 
     @Test
     public void jrobbleTestRotationAndFlip() {
+        /*
         {
             SortedSet<Track> tracks = createTracks(-100, -100, 500, 50, Collections.emptyMap());
             Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
@@ -720,6 +721,14 @@ public class TestDetectionTransformationProcessor {
         { // Single pixel overlap: Bottom right Y (false)
             SortedSet<Track> tracks = createTracks(199, 400, 500, 50, Collections.emptyMap());
             Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 200, 400, false, true);
+            assertEquals(0, filteredTracks.size());
+        }
+        */
+
+        {   // Detection is close enough to be within the rotated frame region bounding box (like the one used during
+            // clipping), but does not actually intersect with the real frame region.
+            SortedSet<Track> tracks = createTracks(150, -150, 100, 50, Map.of("ROTATION", "-45"));
+            Collection<Track> filteredTracks = runRemoveIllFormedDetections(tracks, 400, 200, false, true);
             assertEquals(0, filteredTracks.size());
         }
     }

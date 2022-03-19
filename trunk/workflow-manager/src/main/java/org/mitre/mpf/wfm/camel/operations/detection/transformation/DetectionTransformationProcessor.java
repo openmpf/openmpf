@@ -52,7 +52,6 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Function;
@@ -197,7 +196,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         var newTracks = new TreeSet<Track>();
         var zeroSizeFrames = IntStream.builder();
         var outsideFrames = IntStream.builder();
-        var frameBoundingBox = new Rectangle2D.Double(0, 0, frameWidth, frameHeight); // DEBUG
+        var frameBoundingBox = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
         for (Track track : tracks) {
             SortedSet<Detection> goodDetections = new TreeSet<>();
             for (Detection detection : track.getDetections()) {
@@ -206,37 +205,24 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     continue;
                 }
 
-                TransformedDetection transformedDetection = transformDetection(detection);
-
-
-                DebugCanvas.clear();
-
-                Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
-                DebugCanvas.draw(frameRect, Color.yellow);
-
-                DebugCanvas.draw(transformedDetection.getShape(), Color.red);
-                DebugCanvas.draw(transformedDetection.getTopLeftPt(), Color.red);
-
-                // DebugCanvas.show("illformed");
-
-
-                if (transformedDetection.getShape().intersects(frameBoundingBox)) {
-                    goodDetections.add(detection);
-                }
-                else {
-                    outsideFrames.add(detection.getMediaOffsetFrame());
-                }
-
-                /*
-                var detectionBoundingBox = new Rectangle2D.Double(detection.getX(), detection.getY(),
+                AffineTransform transform = getInPlaceTransform(detection);
+                Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
                         detection.getWidth(), detection.getHeight());
-                if (frameBoundingBox.createIntersection(detectionBoundingBox).isEmpty()) {
-                    outsideFrames.add(detection.getMediaOffsetFrame());
+                Shape detectionShape = transform.createTransformedShape(detectionRect);
+
+                if (true) { // set to true show visualization
+                    DebugCanvas.clear();
+                    DebugCanvas.draw(frameBoundingBox, Color.yellow);
+                    DebugCanvas.draw(detection, Color.green, Color.red);
+                    DebugCanvas.show("illformed");
                 }
-                else {
+
+                if (detectionShape.intersects(frameBoundingBox)) {
                     goodDetections.add(detection);
                 }
-                */
+                else {
+                    outsideFrames.add(detection.getMediaOffsetFrame());
+                }
             }
             if (goodDetections.size() > 0) {
                 newTracks.add(new Track(
@@ -291,6 +277,35 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
 
         return newTracks;
+    }
+
+
+    public static AffineTransform getInPlaceTransform(Detection detection) {
+        double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
+                .filter(StringUtils::isNotBlank)
+                .map(Double::parseDouble)
+                .orElse(0.0);
+
+        boolean flip = Boolean.parseBoolean(detection.getDetectionProperties().get("HORIZONTAL_FLIP"));
+
+        AffineTransform detectionTransform = new AffineTransform(); // identity
+
+        if (flip) {
+            AffineTransform moveBackTransform = AffineTransform.getTranslateInstance(detection.getX(), 0);
+            detectionTransform.concatenate(moveBackTransform);
+
+            AffineTransform flipTransform = AffineTransform.getScaleInstance(-1, 1);
+            detectionTransform.concatenate(flipTransform);
+
+            AffineTransform moveToCenterTransform = AffineTransform.getTranslateInstance(-detection.getX(), 0);
+            detectionTransform.concatenate(moveToCenterTransform);
+        }
+
+        AffineTransform rotationTransform =
+                AffineTransform.getRotateInstance(Math.toRadians(-rotationDegrees), detection.getX(), detection.getY());
+        detectionTransform.concatenate(rotationTransform);
+
+        return detectionTransform;
     }
 
     private void padTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
@@ -355,126 +370,47 @@ public class DetectionTransformationProcessor extends WfmProcessor {
      */
     public static Detection padDetection(String xPadding, String yPadding, int frameWidth, int frameHeight,
                                          Detection detection) {
+
         double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
                 .filter(StringUtils::isNotBlank)
                 .map(Double::parseDouble)
                 .orElse(0.0);
 
-        AffineTransform transform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees));
+        boolean flip = Boolean.parseBoolean(detection.getDetectionProperties().get("HORIZONTAL_FLIP"));
+        AffineTransform transform;
+        if (flip) {
+            transform = new AffineTransform(
+                    -1, 0,
+                    0, 1,
+                    0, 0
+            );
+            transform.rotate(Math.toRadians(360 - rotationDegrees));
+        }
+        else {
+            transform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees));
+        }
 
-        Rectangle2D.Double rotationCorrectedDetectionRect = transformDetection(detection, transform);
-        Rectangle2D.Double grownDetectionRect = grow(rotationCorrectedDetectionRect, xPadding, yPadding);
+        Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
+        Rectangle2D.Double grownDetectionRect = grow(correctedDetectionRect, xPadding, yPadding);
         Rectangle2D.Double clippedDetectionRect = clip(grownDetectionRect, frameWidth, frameHeight, transform);
         Rectangle2D.Double detectionRectMappedBack = inverseTransform(clippedDetectionRect, transform);
 
-        /*
-        DebugCanvas.clear();
+        Detection retvalDetection = rectToDetection(detectionRectMappedBack, detection);
 
-        Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
-        DebugCanvas.draw(frameRect, Color.yellow);
+        if (false) { // set to true show visualization
+            DebugCanvas.clear();
+            Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
+            DebugCanvas.draw(frameRect, Color.yellow);
+            DebugCanvas.draw(detection, Color.green, Color.red);
+            DebugCanvas.draw(retvalDetection, Color.cyan, Color.magenta);
+            DebugCanvas.show("padDetection");
+        }
 
-        TransformedShape origDetection = getTransformedShape(detection);
-        DebugCanvas.draw(origDetection.getShape(), Color.red);
-        DebugCanvas.draw(origDetection.getTopLeftPt(), Color.red);
-        */
-
-        Detection retval = rectToDetection(detectionRectMappedBack, detection);
-
-        /*
-        TransformedShape finalDetection = getTransformedShape(retval);
-        DebugCanvas.draw(finalDetection.getShape(), Color.magenta);
-        DebugCanvas.draw(finalDetection.getTopLeftPt(), Color.magenta);
-        */
-
-        /* DEBUG
-        Detection expected = new Detection(69, 36, 76, 120, 0.0f, 0, 0,
-                Map.of("ROTATION", "0",
-                       "HORIZONTAL_FLIP", "TRUE"));
-        TransformedShape expectedDetection = getTransformedShape(expected);
-        DebugCanvas.draw(expectedDetection.getShape(), Color.green);
-        DebugCanvas.draw(expectedDetection.getTopLeftPt(), Color.green);
-        */
-
-        // DebugCanvas.show("padDetection");
-
-
-        return retval;
+        return retvalDetection;
     }
 
 
-    public static class TransformedDetection {
-        private Shape shape;
-        private Point2D.Double topLeftPt;
-        public TransformedDetection(Shape shape, Point2D.Double topLeftPt) {
-            this.shape = shape;
-            this.topLeftPt = topLeftPt;
-        }
-        public Shape getShape() {
-            return shape;
-        }
-        public Point2D.Double getTopLeftPt() {
-            return topLeftPt;
-        }
-    }
-
-
-    private static double getRotation(Detection detection) {
-        double rotationDegrees = Optional.ofNullable(detection.getDetectionProperties().get("ROTATION"))
-                .filter(StringUtils::isNotBlank)
-                .map(Double::parseDouble)
-                .orElse(0.0);
-
-        // From the AWT docs:
-        //   "Rotating by a positive angle theta rotates points on the positive X axis toward the positive Y axis."
-        // When dealing with images, the positive Y axis is pointing down, so a positive angle results in CW rotation.
-        // We want CCW rotation, so we negate the angle.
-        rotationDegrees *= -1;
-
-        return rotationDegrees;
-    }
-
-    private static boolean hasFlip(Detection detection) {
-        return Optional.ofNullable(detection.getDetectionProperties().get("HORIZONTAL_FLIP"))
-                .filter(StringUtils::isNotBlank)
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-    }
-
-    private static TransformedDetection transformDetection(Detection detection) {
-        AffineTransform detectionTransform = new AffineTransform(); // identity
-
-        if (hasFlip(detection)) {
-            AffineTransform moveBackTransform = AffineTransform.getTranslateInstance(detection.getX(), 0);
-            detectionTransform.concatenate(moveBackTransform);
-
-            AffineTransform flipTransform = AffineTransform.getScaleInstance(-1, 1);
-            detectionTransform.concatenate(flipTransform);
-
-            AffineTransform moveToCenterTransform = AffineTransform.getTranslateInstance(-detection.getX(), 0);
-            detectionTransform.concatenate(moveToCenterTransform);
-        }
-
-        double rotationDegrees = getRotation(detection);
-        if (Math.abs(rotationDegrees % 360) >= 0.1) { // has rotation
-            // Rotate the detection CCW around its top-left coordinate, which is how they are represented in the JSON output.
-            AffineTransform rotationTransform = AffineTransform.getRotateInstance(Math.toRadians(rotationDegrees), detection.getX(), detection.getY());
-            detectionTransform.concatenate(rotationTransform);
-        }
-
-        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
-                detection.getWidth(), detection.getHeight());
-
-        DebugCanvas.draw(detectionRect, Color.orange); // DEBUG
-
-        // Create the shape that represents the detection after applying rotation and flip
-        return new TransformedDetection(
-                detectionTransform.createTransformedShape(detectionRect),
-                new Point2D.Double(detection.getX(), detection.getY()));
-    }
-
-
-
-    private static Rectangle2D.Double transformDetection(Detection detection, AffineTransform transform) {
+    private static Rectangle2D.Double transformToRect(Detection detection, AffineTransform transform) {
         double[] newTopLeft = new double[2];
         transform.transform(new double[] { detection.getX(), detection.getY() }, 0, newTopLeft, 0, 1);
         return new Rectangle2D.Double(newTopLeft[0], newTopLeft[1],
@@ -511,8 +447,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     private static Rectangle2D.Double clip(Rectangle2D.Double detectionRect, int frameWidth, int frameHeight,
                                            AffineTransform transform) {
         var preTransformFrameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
-        var frameRect
-                = transform.createTransformedShape(preTransformFrameRect).getBounds2D();
+        var frameRect = transform.createTransformedShape(preTransformFrameRect).getBounds2D();
         Rectangle2D.Double result = new Rectangle2D.Double();
         Rectangle2D.intersect(detectionRect, frameRect, result);
         return result;
@@ -533,10 +468,13 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
 
     private static Detection rectToDetection(Rectangle2D.Double rect, Detection originalDetection) {
-        int x = (int) rect.getX();
-        int y = (int) rect.getY();
-        int width = (int) Math.ceil(rect.getWidth());
-        int height = (int) Math.ceil(rect.getHeight());
+        int x = (int) Math.round(rect.getX());
+        int y = (int) Math.round(rect.getY());
+
+        double epsilon = 0.001; // account for floating point imprecision
+        int width = (int) Math.ceil(rect.getWidth() - epsilon);
+        int height = (int) Math.ceil(rect.getHeight() - epsilon);
+
         boolean shrunkToNothing = false;
         if (width <= 0) {
             width = 1;

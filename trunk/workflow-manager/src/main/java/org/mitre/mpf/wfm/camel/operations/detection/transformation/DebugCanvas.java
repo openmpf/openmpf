@@ -1,11 +1,41 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2021 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2021 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
 package org.mitre.mpf.wfm.camel.operations.detection.transformation;
+
+import org.apache.commons.lang3.StringUtils;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 public class DebugCanvas {
     private static final int CANVAS_WIDTH = 900;
@@ -13,32 +43,8 @@ public class DebugCanvas {
     private static final int DEFAULT_STROKE_WIDTH = 2;
     private static final int CIRCLE_DIAMETER = 16;
 
-    private static final Map<String, Color> KNOWN_COLORS = new HashMap<>();
-    private static final String[] COLOR_NAMES;
-
-    static Color MED_GREEN = new Color(0, 128, 0);
-    static Color YELLOW_BROWN = new Color(153, 153, 0);
-
-    static {
-        // KNOWN_COLORS.put("black",     Color.black);
-        // KNOWN_COLORS.put("white",     Color.white);
-        KNOWN_COLORS.put("red",       Color.red);
-        KNOWN_COLORS.put("blue",      Color.blue);
-        KNOWN_COLORS.put("green",     Color.green);
-        // KNOWN_COLORS.put("pink",      Color.pink);
-        KNOWN_COLORS.put("cyan",      Color.cyan);
-        KNOWN_COLORS.put("purple",    Color.magenta);
-        KNOWN_COLORS.put("orange",    Color.orange);
-        // KNOWN_COLORS.put("yellow",    Color.yellow);
-        // KNOWN_COLORS.put("darkgray",  Color.darkGray);
-        KNOWN_COLORS.put("lightgray", Color.lightGray);
-
-        COLOR_NAMES = KNOWN_COLORS.keySet().toArray(new String[0]);
-    }
-
     private Graphics2D g2;
     private BufferedImage bufferedImage;
-    private int colorIndex;
 
     private static DebugCanvas instance = new DebugCanvas();
 
@@ -56,8 +62,6 @@ public class DebugCanvas {
 
         g2.translate(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2); // move all shapes into pos. X and Y quadrant
         g2.scale(0.5, 0.5);
-
-        colorIndex = 0;
     }
 
     public static void show(String title) {
@@ -67,14 +71,6 @@ public class DebugCanvas {
         dialog.getContentPane().add(new JLabel(new ImageIcon(instance.bufferedImage)));
         dialog.setModal(true);
         dialog.setVisible(true);
-    }
-
-    public static void draw(Shape shape) {
-        String colorName = nextColor();
-        Color color = KNOWN_COLORS.get(colorName);
-        instance.g2.setColor(color);
-        instance.g2.draw(shape);
-        System.out.println("Color: " + colorName);
     }
 
     public static void draw(Shape shape, Color color) {
@@ -103,9 +99,21 @@ public class DebugCanvas {
         instance = new DebugCanvas();
     }
 
-    private static String nextColor() {
-        String colorName = COLOR_NAMES[instance.colorIndex];
-        instance.colorIndex = (instance.colorIndex + 1) % COLOR_NAMES.length;
-        return colorName;
+    public static void draw(Detection detection, Color origColor, Color transformedColor) {
+
+
+        Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
+                detection.getWidth(), detection.getHeight());
+
+        AffineTransform detectionTransform = DetectionTransformationProcessor.getInPlaceTransform(detection);
+        Shape detectionShape = detectionTransform.createTransformedShape(detectionRect);
+
+        if (origColor != null) {
+            draw(detectionRect, origColor);
+            draw(detectionRect.getX(), detection.getY(), origColor);
+        }
+
+        draw(detectionShape, transformedColor);
+        draw(detection.getX(), detection.getY(), transformedColor);
     }
 }

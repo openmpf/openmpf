@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.transformation;
 
-import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
 import javax.swing.*;
@@ -35,7 +34,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.Optional;
 
 public class DebugCanvas {
     private static final int CANVAS_WIDTH = 900;
@@ -100,8 +98,6 @@ public class DebugCanvas {
     }
 
     public static void draw(Detection detection, Color origColor, Color transformedColor) {
-
-
         Rectangle2D.Double detectionRect = new Rectangle2D.Double(detection.getX(), detection.getY(),
                 detection.getWidth(), detection.getHeight());
 

@@ -210,26 +210,13 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         detection.getWidth(), detection.getHeight());
                 Shape detectionShape = transform.createTransformedShape(detectionRect);
 
-                /*
-                AffineTransform transform = getTransform(detection);
-                Rectangle2D.Double correctedDetectionRect = transformToRect(detection, transform);
-                var preTransformFrameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
-                var frameRect = transform.createTransformedShape(preTransformFrameRect).getBounds2D();
-                */
-
-                if (true) { // set to true show visualization
+                if (false) { // if true show visualization
                     DebugCanvas.clear();
-
                     DebugCanvas.draw(frameBoundingBox, Color.yellow);
                     DebugCanvas.draw(detection, Color.green, Color.red);
-
-                    // DebugCanvas.draw(frameRect, Color.lightGray);
-                    // DebugCanvas.draw(correctedDetectionRect, Color.darkGray);
-
-                    DebugCanvas.show("illformed");
+                    DebugCanvas.show("removeIllFormedDetections");
                 }
 
-                // if (correctedDetectionRect.intersects(frameRect)) {
                 if (detectionShape.intersects(frameBoundingBox)) {
                     goodDetections.add(detection);
                 }
@@ -416,7 +403,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
         Detection retvalDetection = rectToDetection(detectionRectMappedBack, detection);
 
-        if (false) { // set to true show visualization
+        if (false) { // if true show visualization
             DebugCanvas.clear();
             Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
             DebugCanvas.draw(frameRect, Color.yellow);

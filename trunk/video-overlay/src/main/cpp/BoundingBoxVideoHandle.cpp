@@ -34,22 +34,31 @@
 
 
 BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, const std::string &encoder,
-                                               int vp9Crf, bool border, const ResolutionConfig &resCfg,
-                                               MPF::COMPONENT::MPFVideoCapture videoCapture) :
-        destinationPath_(std::move(destinationPath)), videoCapture_(std::move(videoCapture)) {
+                                               int vp9Crf, MPF::COMPONENT::MPFVideoCapture videoCapture)
+        : destinationPath_(std::move(destinationPath))
+        , encoder_(std::move(encoder))
+        , vp9Crf_(vp9Crf)
+        , videoCapture_(std::move(videoCapture)) {}
 
-    int destinationFrameWidth  = videoCapture_.GetFrameSize().width;
-    int destinationFrameHeight = videoCapture_.GetFrameSize().height;
-
-    if (border) {
-        destinationFrameWidth  += resCfg.framePadding;
-        destinationFrameHeight += resCfg.framePadding;
+BoundingBoxVideoHandle::~BoundingBoxVideoHandle() {
+    if (nullptr != pipe_) {
+        std::cerr << "Error: Pipe should have been closed and set to nullptr." << std::endl;
+        std::exit(EXIT_FAILURE);
     }
+}
 
+cv::Size BoundingBoxVideoHandle::GetFrameSize() const {
+    return videoCapture_.GetFrameSize();
+}
+
+bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
+    return videoCapture_.Read(frame);
+}
+
+std::string BoundingBoxVideoHandle::GetCommand(const cv::Size& size) {
     std::string command = std::string("ffmpeg") +
         " -pixel_format bgr24" +
-        " -video_size " + std::to_string(destinationFrameWidth) +
-            "x" + std::to_string(destinationFrameHeight) +
+        " -video_size " + std::to_string(size.width) + "x" + std::to_string(size.height) +
         " -framerate " + std::to_string(videoCapture_.GetFrameRate()) +
         " -f rawvideo" +
         " -i -" +
@@ -57,16 +66,16 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, cons
         // Use yuv420p to encode webm files that can be played with current browsers.
         " -pix_fmt yuv420p";
 
-    if ("vp9" == encoder) { // .webm
+    if ("vp9" == encoder_) { // .webm
         command = command +
             " -c:v libvpx-vp9" +
             // https://trac.ffmpeg.org/wiki/Encode/VP9
             // Two-pass is the recommended encoding method for libvpx-vp9 as some quality-enhancing encoder features are
             // only available in 2-pass mode. Constant quality 2-pass is invoked by setting -b:v to zero and specifiying
             // a quality level using the -crf switch.
-            " -crf " + std::to_string(vp9Crf) + " -b:v 0";
+            " -crf " + std::to_string(vp9Crf_) + " -b:v 0";
     }
-    else if ("h264" == encoder) { // .mp4
+    else if ("h264" == encoder_) { // .mp4
         command = command +
             " -c:v libx264";
     }
@@ -83,28 +92,19 @@ BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, cons
         " -y" + // overwrite file if it exists
         " '" + destinationPath_ + "'";
 
-    pipe_ = popen(command.c_str(), "w");
-    if (pipe_ == nullptr) {
-        throw std::runtime_error("Unable to write markup because the ffmpeg process failed to start.");
-    }
-}
-
-BoundingBoxVideoHandle::~BoundingBoxVideoHandle() {
-    if (pipe_ != nullptr) {
-        std::cerr << "Error: Pipe should have been closed and set to nullptr." << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-}
-
-cv::Size BoundingBoxVideoHandle::GetFrameSize() const {
-    return videoCapture_.GetFrameSize();
-}
-
-bool BoundingBoxVideoHandle::Read(cv::Mat &frame) {
-    return videoCapture_.Read(frame);
+    return command;
 }
 
 void BoundingBoxVideoHandle::HandleMarkedFrame(const cv::Mat& frame) {
+    // Now that we know the size of an output frame we can complete the command string and open a pipe.
+    if (nullptr == pipe_) {
+        std::string command = GetCommand(frame.size());
+        pipe_ = popen(command.c_str(), "w");
+        if (nullptr == pipe_) {
+            throw std::runtime_error("Unable to write markup because the ffmpeg process failed to start.");
+        }
+    }
+
     // Properly handle non-continuous cv::Mats. For example, if the left or right side of the frame was cropped off then
     // the matrix will be non-continuous. This is because cropping doesn't copy the matrix, it creates a submatrix
     // pointing in to the original un-cropped frame. To avoid writing sections we need to skip we copy data row by row.

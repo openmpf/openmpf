@@ -50,7 +50,7 @@ public class TestBoundingBoxWriter {
         int width = widthAndHeight.getLeft();
         int height = widthAndHeight.getRight();
 
-        // Raw source file is 1920x1280. Markup should be slightly bigger along each dimension due to border.
+        // Raw source file is 1920x1280. Markup should be larger along each dimension due to border.
         Assert.assertTrue(width > height);
         Assert.assertTrue(width > 1920);
         Assert.assertTrue(height > 1080);
@@ -62,7 +62,7 @@ public class TestBoundingBoxWriter {
         int width = widthAndHeight.getLeft();
         int height = widthAndHeight.getRight();
 
-        // Raw source file is 308x400. Markup should be slightly bigger along each dimension due to border.
+        // Raw source file is 308x400. Markup should be larger along each dimension due to border.
         Assert.assertTrue(height > width);
         Assert.assertTrue(width > 308);
         Assert.assertTrue(height > 400);

@@ -210,12 +210,14 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         detection.getWidth(), detection.getHeight());
                 Shape detectionShape = transform.createTransformedShape(detectionRect);
 
+                /*
                 if (false) { // if true show visualization
                     DebugCanvas.clear();
                     DebugCanvas.draw(frameBoundingBox, Color.yellow);
                     DebugCanvas.draw(detection, Color.green, Color.red);
                     DebugCanvas.show("removeIllFormedDetections");
                 }
+                */
 
                 if (detectionShape.intersects(frameBoundingBox)) {
                     goodDetections.add(detection);
@@ -403,6 +405,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
         Detection retvalDetection = rectToDetection(detectionRectMappedBack, detection);
 
+        /*
         if (false) { // if true show visualization
             DebugCanvas.clear();
             Rectangle2D frameRect = new Rectangle2D.Double(0, 0, frameWidth, frameHeight);
@@ -411,6 +414,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             DebugCanvas.draw(retvalDetection, Color.cyan, Color.magenta);
             DebugCanvas.show("padDetection");
         }
+        */
 
         return retvalDetection;
     }
@@ -476,10 +480,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
     private static Detection rectToDetection(Rectangle2D.Double rect, Detection originalDetection) {
         int x = (int) Math.round(rect.getX());
         int y = (int) Math.round(rect.getY());
-
-        double epsilon = 0.001; // account for floating point imprecision
-        int width = (int) Math.ceil(rect.getWidth() - epsilon);
-        int height = (int) Math.ceil(rect.getHeight() - epsilon);
+        int width = (int) Math.ceil(rect.getWidth());
+        int height = (int) Math.ceil(rect.getHeight());
 
         boolean shrunkToNothing = false;
         if (width <= 0) {

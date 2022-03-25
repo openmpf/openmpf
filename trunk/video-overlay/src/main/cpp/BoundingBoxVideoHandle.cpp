@@ -33,7 +33,7 @@
 #include <utility>
 
 
-BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, const std::string &encoder,
+BoundingBoxVideoHandle::BoundingBoxVideoHandle(std::string destinationPath, std::string encoder,
                                                int vp9Crf, MPF::COMPONENT::MPFVideoCapture videoCapture)
         : destinationPath_(std::move(destinationPath))
         , encoder_(std::move(encoder))

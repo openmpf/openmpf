@@ -130,8 +130,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
         ResolutionConfig resCfg =
             getResolutionConfig(freeType2, videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
 
-        BoundingBoxVideoHandle boundingBoxVideoHandle(destinationVideoPath, encoder, vp9Crf, border, resCfg,
-                                                      std::move(videoCapture));
+        BoundingBoxVideoHandle boundingBoxVideoHandle(destinationVideoPath, encoder, vp9Crf, std::move(videoCapture));
 
         markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
                boundingBoxVideoHandle);

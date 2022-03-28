@@ -113,16 +113,31 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
-                            var jobStatus = job.jobStatus;
-                            if (job.hasCallbacksInProgress) {
-                                jobStatus += ' (callbacks in progress)';
-                            }
 
                             var hideProgress = 'style="display:none;"';
                             if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
                             var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + jobStatus + '</span>' + progressDiv;
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
+                        }
+                    },
+                    {
+                        data: 'tiesDbStatus',
+                        render: function (data, type, job) {
+                            var statusCell = createCallbackStatusCell(job.tiesDbStatus, 'ties-db');
+                            return $('<span>')
+                                .addClass('ties-db-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
+                        }
+                    },
+                    {
+                        data: 'callbackStatus',
+                        render: function (data, type, job) {
+                            var statusCell = createCallbackStatusCell(
+                                job.callbackStatus, 'callback');
+                            return $('<span>')
+                                .addClass('callback-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
                         }
                     },
                     {
@@ -191,19 +206,45 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
     };
 
     var bindButtons = function () {
-        $(".markupBtn").click(function () {
-            showMarkup(getJobFromTableEle(this));
+        $(".markupBtn").click(function (event) {
+            $scope.$apply(function () {
+                showMarkup(getJobFromTableEle(event.target));
+            });
         });
-        $(".cancelBtn").click(function () {
-            cancelJob(getJobFromTableEle(this));
+        $(".cancelBtn").click(function (event) {
+            $scope.$apply(function () {
+                cancelJob(getJobFromTableEle(event.target));
+            });
         });
-        $(".resubmitBtn").click(function () {
-            resubmitJob(getJobFromTableEle(this));
+        $(".resubmitBtn").click(function (event) {
+            $scope.$apply(function () {
+                resubmitJob(getJobFromTableEle(event.target));
+            });
         });
-        $("#infoModalBtn").click(function (evt) {
-            // Prevent table from sorting by status when clicking info icon.
-            evt.stopPropagation();
-            $("#infoModal").modal('show');
+        $("#infoModalBtn").click(function (event) {
+            $scope.$apply(function () {
+                // Prevent table from sorting by status when clicking info icon.
+                event.stopPropagation();
+                $("#infoModal").modal('show');
+            });
+        });
+
+        $('#jobTable').on('click', '.ties-db-error-details', function(event) {
+            $scope.$apply(function () {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'TiesDb';
+                $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
+                $("#errorDetailsModal").modal('show');
+            });
+        });
+
+        $('#jobTable').on('click', '.callback-error-details', function(event) {
+            $scope.$apply(function() {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'Callback';
+                $scope.errorDetails = $scope.selectedJob.callbackStatus;
+                $("#errorDetailsModal").modal('show');
+            });
         });
     };
 
@@ -362,6 +403,41 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 console.log('job cancellation complete for id: ' + job.id);
                 NotificationSvc.info('Job cancellation of job ' + job.id + ' is now complete.');
             }
+        }
+    });
+
+
+    var createCallbackStatusCell = function (status, type) {
+        if (!status) {
+            return "";
+        }
+        else if (status.startsWith('ERROR:')) {
+            return $('<button>')
+                .addClass(type + '-error-details')
+                .addClass('btn btn-danger btn-block btn-xs')
+                .text('ERROR');
+        }
+        else if (status === 'IN PROGRESS') {
+            return status + ' <i class="fa fa-spinner fa-spin"></i>';
+        }
+        else {
+            return status;
+        }
+    };
+
+    $scope.$on('SSPC_CALLBACK_STATUS', function (event, msg) {
+        var jobId = msg.content.jobId;
+        var status = msg.content.status;
+        var job = _.findWhere(jobTable.data(), {jobId: jobId});
+        if (msg.event === "tiesDb") {
+            job.tiesDbStatus = status;
+            $('.ties-db-status-' + jobId).html(
+                createCallbackStatusCell(status, 'ties-db'));
+        }
+        if (msg.event === "callBack") {
+            job.callbackStatus = status;
+            $('.callback-status-' + jobId).html(
+                createCallbackStatusCell(status, 'callback'));
         }
     });
 

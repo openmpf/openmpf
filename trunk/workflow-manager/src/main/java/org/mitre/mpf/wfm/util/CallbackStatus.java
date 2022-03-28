@@ -25,35 +25,29 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.rest.api.util;
+package org.mitre.mpf.wfm.util;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collector;
-
-public class Utils {
-
-    private Utils() {
+public class CallbackStatus {
+    private CallbackStatus() {
     }
 
-    public static String trimAndUpper(String s) {
-        return s == null
-                ? null
-                : s.trim().toUpperCase();
+    public static String jobRunning() {
+        return "JOB RUNNING";
     }
 
-    public static String trim(String s) {
-        return s == null
-                ? null
-                : s.trim();
+    public static String inProgress() {
+        return "IN PROGRESS";
     }
 
+    public static String notRequested() {
+        return "NOT REQUESTED";
+    }
 
-    public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return Optional.ofNullable(strings)
-                .stream()
-                .flatMap(Collection::stream)
-                .map(Utils::trimAndUpper)
-                .collect(collector);
+    public static String complete() {
+        return "COMPLETE";
+    }
+
+    public static String error(String reason) {
+        return "ERROR: " + reason;
     }
 }

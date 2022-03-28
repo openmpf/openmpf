@@ -48,4 +48,12 @@ public interface JobRequestDao extends JpaDao<JobRequest> {
     public BatchJobStatusType getStatus(long jobId);
 
     public AllJobsStatisticsModel getJobStats();
+
+    public void setTiesDbSuccessful(long jobId);
+
+    public void setTiesDbError(long jobId, String status);
+
+    public void setCallbackSuccessful(long jobId);
+
+    public void setCallbackError(long jobId, String status);
 }

@@ -25,35 +25,45 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.service.pipeline;
+package org.mitre.mpf.rest.api.pipelines.transients;
 
-import org.mitre.mpf.rest.api.pipelines.PipelineElement;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import org.hibernate.validator.constraints.NotBlank;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.util.Utils;
 
-import javax.validation.ConstraintViolation;
+import javax.validation.Valid;
 import java.util.Collection;
 
-import static java.util.stream.Collectors.joining;
+public class TransientAction {
 
-public class PipelineValidationException extends InvalidPipelineException {
-
-    public PipelineValidationException(PipelineElement invalidPipelineElement,
-                                       Collection<ConstraintViolation<PipelineElement>> validationErrors) {
-        super(createMessage(invalidPipelineElement, validationErrors));
+    private final String _name;
+    @NotBlank
+    public String getName() {
+        return _name;
     }
 
-
-    private static String createMessage(PipelineElement invalidPipelineElement,
-                                        Collection<ConstraintViolation<PipelineElement>> validationErrors) {
-        String prefix = invalidPipelineElement.getName() + " has errors in the following fields:\n";
-        return validationErrors.stream()
-                .map(PipelineValidationException::createFieldMessage)
-                .sorted()
-                .collect(joining("\n", prefix, ""));
+    private final String _algorithm;
+    @NotBlank
+    public String getAlgorithm() {
+        return _algorithm;
     }
 
-    private static String createFieldMessage(ConstraintViolation<PipelineElement> violation) {
-        return String.format("%s=\"%s\": %s", violation.getPropertyPath(), violation.getInvalidValue(),
-                             violation.getMessage());
+    private final ImmutableList<ActionProperty> _properties;
+    @Valid
+    public ImmutableList<ActionProperty> getProperties() {
+        return _properties;
     }
 
+    public TransientAction(
+            @JsonProperty("name") String name,
+            @JsonProperty("algorithm") String algorithm,
+            @JsonProperty("properties") Collection<ActionProperty> properties) {
+        _name = Utils.trimAndUpper(name);
+        _algorithm = Utils.trimAndUpper(algorithm);
+        _properties = properties == null
+                ? ImmutableList.of()
+                : ImmutableList.copyOf(properties);
+    }
 }

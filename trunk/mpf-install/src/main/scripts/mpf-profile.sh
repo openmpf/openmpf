@@ -63,4 +63,4 @@ export REDIS_HOST=localhost
 export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 
 # enable tab completion for mpf script
-command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"
+# command -v register-python-argcomplete > /dev/null && eval "$(register-python-argcomplete mpf)"

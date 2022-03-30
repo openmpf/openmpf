@@ -77,8 +77,9 @@ def get_all_wfm_nodes(wfm_manager_url, username, password, node_type = 'all'):
     endpoint_url = wfm_manager_url.rstrip('/') + '/rest/nodes/all?type=' + node_type
     request = urllib.request.Request(endpoint_url)
 
-    base64string = base64.b64encode('%s:%s' % (username, password))
-    request.add_header('Authorization', 'Basic %s' % base64string)
+    auth_info_bytes = ('%s:%s' % (username, password)).encode('utf-8')
+    base64_bytes = base64.b64encode(auth_info_bytes)
+    request.add_header('Authorization', 'Basic %s' % base64_bytes.decode('utf-8'))
 
     try:
         response = urllib.request.urlopen(request)

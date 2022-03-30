@@ -123,9 +123,25 @@ public class JobRequestServiceImpl implements JobRequestService {
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
+        JobPipelineElements pipelineElements;
+        if (jobCreationRequest.getPipelineDefinition() == null) {
+            pipelineElements = _pipelineService.getBatchPipelineElements(
+                    jobCreationRequest.getPipelineName());
+        }
+        else if (jobCreationRequest.getPipelineName() == null
+                || jobCreationRequest.getPipelineName().isBlank()) {
+            pipelineElements = _pipelineService.getBatchPipelineElements(
+                    jobCreationRequest.getPipelineDefinition());
+        }
+        else {
+            throw new WfmProcessingException("Job request must either contain \"pipelineName\" " +
+                                                     "or \"pipelineDefinition\", but not both.");
+        }
+
+
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
-                jobCreationRequest.getPipelineName(),
+                pipelineElements,
                 media,
                 jobCreationRequest.getJobProperties(),
                 jobCreationRequest.getAlgorithmProperties(),
@@ -167,7 +183,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
 
         jobRequestEntity = initialize(jobRequestEntity,
-                    originalJob.getPipelineElements().getName(),
+                    originalJob.getPipelineElements(),
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
@@ -198,7 +214,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     private JobRequest initialize(
             JobRequest jobRequestEntity,
-            String pipelineName,
+            JobPipelineElements pipelineElements,
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -207,7 +223,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             String callbackUrl,
             String callbackMethod) {
 
-        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipelineName);
         // Capture the current state of the detection system properties at the time when this job is created.
         // Since the detection system properties may be changed by an administrator, we must ensure that the job
         // uses a consistent set of detection system properties through all stages of the job's pipeline.

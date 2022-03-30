@@ -171,7 +171,7 @@ class ActiveMqManager(BaseMpfSystemDependencyManager):
         if self._is_service:
             return self._shell.service_status(ActiveMqManager.SERVICE_NAME)
         else:
-            return self._shell.check_call([self._config.active_mq, 'status'])
+            return self._shell.check_call((self._config.active_mq, 'status'))
 
     def _not_running_status_code(self):
         if self._is_service:
@@ -183,13 +183,13 @@ class ActiveMqManager(BaseMpfSystemDependencyManager):
         if self._is_service:
             self._shell.start_service(ActiveMqManager.SERVICE_NAME)
         else:
-            self._shell.check_call([self._config.active_mq, 'start'])
+            self._shell.check_call((self._config.active_mq, 'start'))
 
     def _run_stop_command(self):
         if self._is_service:
             self._shell.stop_service(ActiveMqManager.SERVICE_NAME)
         else:
-            self._shell.check_call([self._config.active_mq, 'stop'])
+            self._shell.check_call((self._config.active_mq, 'stop'))
 
 
 class PostgresManager(BaseMpfSystemDependencyManager):
@@ -225,7 +225,7 @@ class RedisManager(BaseMpfSystemDependencyManager):
         if self._is_service:
             return self._shell.service_status(RedisManager.SERVICE_NAME)
         else:
-            return self._shell.check_call([self._config.redis_cli, 'info'])
+            return self._shell.check_call((self._config.redis_cli, 'info'))
 
     def _not_running_status_code(self):
         if self._is_service:
@@ -237,14 +237,14 @@ class RedisManager(BaseMpfSystemDependencyManager):
         if self._is_service:
             self._shell.start_service(RedisManager.SERVICE_NAME)
         else:
-            self._shell.check_call(['sudo', self._config.redis_server, self._config.redis_conf])
+            self._shell.check_call(('sudo', self._config.redis_server, self._config.redis_conf))
 
     def _run_stop_command(self):
         if self._is_service:
             self._shell.stop_service(RedisManager.SERVICE_NAME)
         else:
-            self._shell.check_call([self._config.redis_cli, 'flushall'])
-            self._shell.check_call([self._config.redis_cli, 'shutdown'])
+            self._shell.check_call((self._config.redis_cli, 'flushall'))
+            self._shell.check_call((self._config.redis_cli, 'shutdown'))
 
 
 class NodeManagerManager(BaseMpfSystemDependencyManager):
@@ -281,7 +281,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
             return any(s for h, s in statuses)
 
     def _local_status(self):
-        if self._shell.call(['service', NodeManagerManager.SERVICE_NAME, 'status']) == 0:
+        if self._shell.call(('systemctl', 'status', NodeManagerManager.SERVICE_NAME)) == 0:
             return True
         try:
             self._shell.get_pid_bound_to_port(self._config.node_manager_port)
@@ -356,7 +356,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
         # e.g. sudo su --login mpf --command "ansible --user mpf mpf-child --args 'service node-manager status' --become --one-line"
         remote_cmd = 'service %s %s' % (NodeManagerManager.SERVICE_NAME, action)
         ansible_cmd = "ansible --user mpf mpf-child --args '%s' --become --one-line" % remote_cmd
-        return self._shell.check_output(['sudo', 'su', '--login', 'mpf', '--command', ansible_cmd])
+        return self._shell.check_output(('sudo', 'su', '--login', 'mpf', '--command', ansible_cmd))
 
     def _run_status_command(self):
         raise NotImplementedError()
@@ -407,7 +407,7 @@ class TomcatManager(BaseMpfSystemDependencyManager):
         if self._is_service:
             self._shell.start_service(TomcatManager.SERVICE_NAME)
         else:
-            self._run_with_catalina_pid([self._config.catalina, 'start'])
+            self._run_with_catalina_pid((self._config.catalina, 'start'))
         time.sleep(20)
 
     def _run_stop_command(self):
@@ -415,12 +415,12 @@ class TomcatManager(BaseMpfSystemDependencyManager):
             self._shell.stop_service(TomcatManager.SERVICE_NAME)
         else:
             try:
-                self._run_with_catalina_pid([self._config.catalina, 'stop', '120'])
+                self._run_with_catalina_pid((self._config.catalina, 'stop', '120'))
             except subprocess.CalledProcessError as err:
                 if err.returncode != 1:
                     raise
                 self._create_pid_file()
-                self._run_with_catalina_pid([self._config.catalina, 'stop', '120'])
+                self._run_with_catalina_pid((self._config.catalina, 'stop', '120'))
 
         print('Waiting for Node Manager to clean up...')
         time.sleep(15)
@@ -532,7 +532,7 @@ class MpfConfig:
         return listed_host == local_host_name or listed_host in local_aliases
 
     def _get_child_nodes(self):
-        cmd_output = self._shell.check_output(['ansible', 'mpf-child', '--list-hosts'])
+        cmd_output = self._shell.check_output(('ansible', 'mpf-child', '--list-hosts'))
         lines = (l.strip() for l in cmd_output.splitlines() if l.strip())
         # Discard the first line because it is the host count. The rest are the hosts
         next(lines)
@@ -601,15 +601,9 @@ class ShellHelper:
     def __init__(self, verbose=False):
         self._verbose = verbose
         if verbose:
-            self._devNull = None
             self._shellKwArgs = {}
         else:
-            self._devNull = open(os.devnull, 'wb')
-            self._shellKwArgs = {'stdout': self._devNull, 'stderr': self._devNull}
-
-    def __del__(self):
-        if self._devNull:
-            self._devNull.close()
+            self._shellKwArgs = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
 
     def call(self, args):
         return subprocess.call(args, **self._shellKwArgs)
@@ -626,24 +620,24 @@ class ShellHelper:
         if self._verbose:
             return subprocess.check_output(args, text=True)
         else:
-            return subprocess.check_output(args, text=True, stderr=self._devNull)
+            return subprocess.check_output(args, text=True, stderr=subprocess.DEVNULL)
 
     def is_on_path(self, executable):
-        return self.call(['which', executable]) == 0
+        return self.call(('which', executable)) == 0
 
     def executable_exists(self, executable):
         return self.is_on_path(executable) or os.path.isfile(executable)
 
     def get_pid_bound_to_port(self, port):
-        output = self.check_output(['sudo', 'fuser', '-n', 'tcp', str(port)])
+        output = self.check_output(('sudo', 'fuser', '-n', 'tcp', str(port)))
         return int(output)
 
     def process_is_running(self, pid):
-        return self.call(['ps', str(pid)]) == 0
+        return self.call(('ps', str(pid))) == 0
 
     def service_exists(self, service_name):
         try:
-            self.check_call(['systemctl', 'status', service_name])
+            self.check_call(('systemctl', 'status', service_name))
             return True
         except subprocess.CalledProcessError as err:
             if err.returncode == 3:
@@ -654,13 +648,13 @@ class ShellHelper:
             raise
 
     def service_status(self, service_name):
-        return self.check_call(['service', service_name, 'status'])
+        return self.check_call(('systemctl', 'status', service_name))
 
     def start_service(self, service_name):
-        self.check_call(['sudo', 'service', service_name, 'start'])
+        self.check_call(('sudo', 'systemctl', 'start', service_name))
 
     def stop_service(self, service_name):
-        self.check_call(['sudo', 'service', service_name, 'stop'])
+        self.check_call(('sudo', 'systemctl', 'stop', service_name))
 
 
 sys_args = mpf_util.arg_group(

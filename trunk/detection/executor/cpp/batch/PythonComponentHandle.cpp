@@ -183,7 +183,7 @@ namespace MPF::COMPONENT {
                     // 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
                     // We really only care about the entry point group, since we don't do anything
                     // with entry point name.
-                    group_matches.attr("load")();
+                    return group_matches.attr("load")();
                 }
             }
             catch (const py::error_already_set& ex) {

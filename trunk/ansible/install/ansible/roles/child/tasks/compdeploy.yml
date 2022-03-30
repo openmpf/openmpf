@@ -114,7 +114,7 @@
         list_files=true
         mode=0755
       with_items: "{{ component_archives.files }}"
-      when: pluginst is defined and component_archives > 0
+      when: pluginst is defined and component_archives.files
       register: component_paths
 
     - name: fail task extraction

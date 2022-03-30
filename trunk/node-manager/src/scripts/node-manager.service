@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -26,37 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-symlinker=${MPF_HOME}/bin/symlink.sh
-
-log() {
-    local log_text="$1"
-    local log_level="$2"
-    local log_file="$3"
-    local log_echo="$4"
-   
-    # echo first in case log file doesn't exist
-    if [ "${log_echo}" = true ] ; then
-        # to terminal or capture device
-    	echo -e "${log_text}";
-    fi
-
-    if ! [ -z "${log_file}" ] ; then
-        # bash scripts will manage their own log
-        if [ `whoami` == ${MPF_USER} ] ; then
-            echo -e "$(date +"%Y-%m-%d %H:%M:%S,%3N") ${log_level} - ${log_text}" >> ${log_file}
-        else
-            su ${MPF_USER} -c "echo -e \"$(date +"%Y-%m-%d %H:%M:%S,%3N") ${log_level} - ${log_text}\" >> \"${log_file}\""
-        fi
-    fi
-
-    # return the status for the command that was on the right side of the pipe
-    return ${PIPESTATUS[1]};
-}
-
-log_success()   { log "$1" "SUCCESS" "$2" "$3"; }
-log_error()     { log "$1" "ERROR"   "$2" "$3"; }
-log_warn()      { log "$1" "WARN"    "$2" "$3"; }
-log_info()      { log "$1" "INFO"    "$2" "$3"; }
-log_debug()     { log "$1" "DEBUG"   "$2" "$3"; }
-
-
+# Install by copying this file to /etc/systemd/system/node-manager.service
+# Run `journalctl -xe -u node-manager.service` to access start up logs.
+[Service]
+ExecStart=/bin/bash -c '\
+   source /etc/profile.d/mpf.sh; \
+   exec sudo --user "$$MPF_USER" --preserve-env java -jar "$${MPF_HOME}/jars/mpf-nodemanager-6.3.jar"'

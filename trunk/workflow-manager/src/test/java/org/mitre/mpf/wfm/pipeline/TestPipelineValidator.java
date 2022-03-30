@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
@@ -73,6 +74,7 @@ public class TestPipelineValidator {
     @Before
     public void init() {
         var springValidator = new LocalValidatorFactoryBean();
+        springValidator.setMessageInterpolator(new ParameterMessageInterpolator());
         springValidator.afterPropertiesSet();
         _pipelineValidator = new PipelineValidator(springValidator, _mockWorkflowPropertyService);
     }
@@ -612,8 +614,9 @@ public class TestPipelineValidator {
                 createViolationMessage("tasks", "[]", "may not be empty"));
 
         pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", ""));
-        assertValidationErrors(pipeline,
-                               createViolationMessage("tasks[1]", pipeline.getTasks().get(1), "may not be empty"));
+        assertValidationErrors(
+                pipeline,
+                createViolationMessage("tasks[1].<collection element>", pipeline.getTasks().get(1), "may not be empty"));
 
         pipeline = new Pipeline("PIPELINE", "desc.desc", List.of("TASK", "ASDF"));
         _pipelineValidator.validateOnAdd(pipeline, Map.of());
@@ -631,8 +634,9 @@ public class TestPipelineValidator {
                 createViolationMessage("actions", "[]", "may not be empty"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", ""));
-        assertValidationErrors(task,
-                               createViolationMessage("actions[1]", task.getActions().get(1), "may not be empty"));
+        assertValidationErrors(
+                task,
+                createViolationMessage("actions[1].<collection element>", task.getActions().get(1), "may not be empty"));
 
         task = new Task("TASK", "desc/desc", List.of("ACTION", "ASDF"));
         _pipelineValidator.validateOnAdd(task, Map.of());
@@ -688,8 +692,8 @@ public class TestPipelineValidator {
 
         assertValidationErrors(
             algorithm,
-            createViolationMessage("requiresCollection.states[1]", "", "may not be empty"),
-            createViolationMessage("providesCollection.states[0]", "", "may not be empty"),
+            createViolationMessage("requiresCollection.states[1].<collection element>", "", "may not be empty"),
+            createViolationMessage("providesCollection.states[0].<collection element>", "", "may not be empty"),
             createViolationMessage("providesCollection.properties[1].defaultValue", property2.toString(),
                                    "must provide either a defaultValue or propertiesKey, but not both."),
             createViolationMessage("providesCollection.properties[1].propertiesKey", property2.toString(),

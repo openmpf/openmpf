@@ -224,7 +224,7 @@ public class TestAggregateJobPropertiesUtil {
 
         var mockObjectMapper = mock(ObjectMapper.class);
 
-        when(mockObjectMapper.readValue((InputStream) any(), (TypeReference<?>) any()))
+        when(mockObjectMapper.readValue((InputStream) any(), (TypeReference<List<WorkflowProperty>>) any()))
                 .thenReturn(workflowProperties);
 
         var workflowPropertyService = new WorkflowPropertyService(mockPropertiesUtil, mockObjectMapper);

@@ -44,6 +44,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -329,7 +330,10 @@ public class TestAdminComponentRegistrationController {
 
         doThrow(new IOException())
                 .when(mockFile)
-                .transferTo(any());
+                .transferTo(any(File.class));
+        doThrow(new IOException())
+                .when(mockFile)
+                .transferTo(any(Path.class));
 
         ResponseEntity<?> result = _controller.uploadComponentRest(mockFile);
 
@@ -364,7 +368,9 @@ public class TestAdminComponentRegistrationController {
 
     private void verifyNotSaved(MultipartFile mockFile) throws IOException {
         verify(mockFile, never())
-                .transferTo(any());
+                .transferTo(any(File.class));
+        verify(mockFile, never())
+                .transferTo(any(Path.class));
         verify(_mockStateService, never())
                 .addEntryForUploadedPackage(any());
     }

@@ -335,8 +335,10 @@ public class TestMediaInspectionProcessor {
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/heic"), eq(1),
                                         metadataCaptor.capture());
-        assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));
-        assertEquals("4032", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+        var metadata = metadataCaptor.getValue();
+        assertEquals("4032", metadata.get("FRAME_WIDTH"));
+        assertEquals("3024", metadata.get("FRAME_HEIGHT"));
+        assertEquals("90", metadata.get("ROTATION"));
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(_mockInProgressJobs)

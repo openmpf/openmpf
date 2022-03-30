@@ -669,7 +669,7 @@ namespace MPF { namespace COMPONENT {
 
     private:
 
-        void HandleComponentException(const std::string &component_method) {
+        [[noreturn]] void HandleComponentException(const std::string &component_method) {
             std::string base_message = "An error occurred while invoking the \"" + component_method
                     + "\" method on the Python component";
             try {

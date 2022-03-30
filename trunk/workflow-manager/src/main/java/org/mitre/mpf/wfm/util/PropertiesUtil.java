@@ -33,7 +33,6 @@ import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.IOUtils;
-import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
@@ -46,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
@@ -153,7 +153,7 @@ public class PropertiesUtil {
     private void parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
-        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+        if (coreMpfNodesStr == null || coreMpfNodesStr.isBlank()) {
             coreMpfNodes = ImmutableSet.of(); // empty set
         } else {
             coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
@@ -764,7 +764,7 @@ public class PropertiesUtil {
     }
 
     public boolean dockerProfileEnabled() {
-        return springEnvironment.acceptsProfiles("docker");
+        return springEnvironment.acceptsProfiles(Profiles.of("docker"));
     }
 
     public int getHttpCallbackTimeoutMs() {

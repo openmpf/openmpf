@@ -26,20 +26,20 @@
 
 package org.mitre.mpf.wfm;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.JsonCallbackBody;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.*;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.ui.Utils;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.slf4j.Logger;
@@ -50,7 +50,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,6 +62,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ITWebREST {
+
+	private static final String IMG_URL = WebRESTUtils.BASE_URL
+			+ "/workflow-manager/resources/img/blue-cybernetic-background.jpg";
 
 	private static final int MINUTES = 1000 * 60; // 1000 milliseconds/sec, 60 sec/minute
 	private static final String TEST_PIPELINE_NAME = "OCV FACE DETECTION PIPELINE";
@@ -225,9 +230,6 @@ public class ITWebREST {
 		String url = WebRESTUtils.REST_URL + "jobs/" + processedJobId + "/resubmit";
 		startTest("test3ResubmitCancelledJob",url);
 
-		//need to make sure the job is in a terminal state before trying to resubmit!
-		String urlJobsStatus = WebRESTUtils.REST_URL + "jobs/" + processedJobId + ".json";
-
 		SingleJobInfo singleJobInfo = null;
 		//wait till ready to attempt a job resubmission
 		do {
@@ -268,7 +270,7 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testRestNoAuth() throws Exception {
-		String urlStr = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String urlStr = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("testRestNoAuth", urlStr);
 
 		URL url = new URL(urlStr);
@@ -338,24 +340,24 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Status_Single() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id + ".json";
+		String url = WebRESTUtils.REST_URL + "jobs/" + job_created_id;
 		startTest("test_Jobs_Status",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 
 		boolean found = false;
 		//find our job
-		JSONObject job = new JSONObject(JSONstring); // array.getJSONObject(i);
+		var job = objectMapper.readTree(JSONstring);
 		log.debug("[Jobs_Status] job :" + job);
-		if(Objects.equals(job.getString("jobId"), job_created_id)){
+		if(job.get("jobId").asText().equals(job_created_id)){
 			log.info("[Jobs_Status] job found :" + job);
-			Assert.assertTrue(TimeUtils.toInstant(job.getString("startDate")).toEpochMilli() > 0);
-			Assert.assertNotNull(job.getString("jobId"));
-			Assert.assertTrue(TimeUtils.toInstant(job.getString("endDate")).toEpochMilli() > 0);
-			Assert.assertTrue(job.getString("pipelineName").length() > 0);
-			Assert.assertTrue(job.getString("pipelineName").equals(TEST_PIPELINE_NAME));
-			Assert.assertTrue(job.getString("jobStatus").equals("COMPLETE"));
-			Assert.assertTrue(job.getString("outputObjectPath").length() > 0);
-			Assert.assertTrue(job.getString("outputObjectPath").endsWith("detection.json"));
+			Assert.assertTrue(TimeUtils.toInstant(job.get("startDate").asText()).toEpochMilli() > 0);
+			Assert.assertNotNull(job.get("jobId").asText());
+			Assert.assertTrue(TimeUtils.toInstant(job.get("endDate").asText()).toEpochMilli() > 0);
+			Assert.assertTrue(job.get("pipelineName").asText().length() > 0);
+			Assert.assertTrue(job.get("pipelineName").asText().equals(TEST_PIPELINE_NAME));
+			Assert.assertTrue(job.get("jobStatus").asText().equals("COMPLETE"));
+			Assert.assertTrue(job.get("outputObjectPath").asText().length() > 0);
+			Assert.assertTrue(job.get("outputObjectPath").asText().endsWith("detection.json"));
 
 			found =true;
 		}
@@ -436,23 +438,21 @@ public class ITWebREST {
 		Assert.assertNotNull(JSONstring);// returns a path to the file
 		// created during job creation
 		log.info("[test_Jobs_SerializedOutput] json length :" + JSONstring.length());
-		JSONParser parser = new JSONParser();
-		org.json.simple.JSONObject json = (org.json.simple.JSONObject) parser
-				.parse(JSONstring);
+		var json = objectMapper.readTree(JSONstring);
 		log.info("[test_Jobs_SerializedOutput] - {} - json: {}", outputObjectType,
 				json.toString());
 		if(outputObjectType.equals("detection")) {
-			Assert.assertTrue(Objects.equals(json.get("jobId"), completeJobId));
-			Assert.assertTrue(((String) json.get("objectId")).length() > 0);
-			Assert.assertTrue(((String) json.get("timeStart")).length() > 0);
-			org.json.simple.JSONObject pipeline = (org.json.simple.JSONObject) json.get("pipeline");
-			Assert.assertTrue(((String) pipeline.get("name")).equals(detPipeline));
+			Assert.assertTrue(json.get("jobId").asText().equals(completeJobId));
+			Assert.assertTrue(json.get("objectId").asText().length() > 0);
+			Assert.assertTrue(json.get("timeStart").asText().length() > 0);
+			var pipeline = json.get("pipeline");
+			Assert.assertTrue(pipeline.get("name").asText().equals(detPipeline));
 			Assert.assertTrue(Integer.parseInt(json.get("priority").toString()) == 7);
-			org.json.simple.JSONArray arr = (org.json.simple.JSONArray) json.get("media");
-			org.json.simple.JSONObject media = (org.json.simple.JSONObject) arr.get(0);
-			String path = (String) media.get("path");
+			var arr = json.get("media");
+			var media = arr.get(0);
+			String path = media.get("path").asText();
 			Assert.assertTrue(path.endsWith(resourcePath));
-			Assert.assertTrue(((String) media.get("status")).equals("COMPLETE"));
+			Assert.assertTrue(media.get("status").asText().equals("COMPLETE"));
 		} else {
 			//bad object type
 			Assert.assertTrue(false);
@@ -463,10 +463,10 @@ public class ITWebREST {
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Jobs_Stats() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("testPing_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONObject obj = new JSONObject(JSONstring);
+		var obj = objectMapper.readTree(JSONstring);
 		Assert.assertTrue(obj.has("totalJobs") && obj.has("aggregatePipelineStatsMap")
 				&& obj.has("elapsedTimeMs") && obj.has("jobTypes"));
 		//TODO: use model and do a comparison
@@ -476,22 +476,17 @@ public class ITWebREST {
 	//TOOD: use the new model
 	@Test(timeout = 1 * MINUTES)
 	public void test_Jobs_Stats() throws Exception {
-		String url = WebRESTUtils.REST_URL + "jobs/stats.json";
+		String url = WebRESTUtils.REST_URL + "jobs/stats";
 		startTest("test_Jobs_Stats",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_Jobs_Stats] json:" + JSONstring);
-		JSONObject objs = new JSONObject(JSONstring);
+		var objs = objectMapper.readTree(JSONstring);
 		boolean found = false;
 		Assert.assertTrue(objs.has("totalJobs") && objs.has("aggregatePipelineStatsMap")
 				&& objs.has("elapsedTimeMs") && objs.has("jobTypes"));
-		if (objs.getInt("totalJobs") > 0) {
-			JSONObject data = objs.getJSONObject("aggregatePipelineStatsMap");
-			Iterator<String> keys = data.keys();
-			while (keys.hasNext()) {
-				String key = keys.next();
-				if (key.equals(TEST_PIPELINE_NAME))
-					found = true;// see atleast if the job that was created is in there
-			}
+		if (objs.get("totalJobs").asInt() > 0) {
+			var data = objs.get("aggregatePipelineStatsMap");
+			found = data.has(TEST_PIPELINE_NAME);
 		}
 
 		//TODO: use model and do a comparison
@@ -502,12 +497,12 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines_Available() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("testPing_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONArray array = new JSONArray(JSONstring);
-		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+		var array = objectMapper.readTree(JSONstring);
+		log.info("array length :" + array.size());
+		Assert.assertTrue(array.size() >= 0);
 		endTest();
 	}
 
@@ -518,23 +513,19 @@ public class ITWebREST {
 	 */
 	@Test(timeout = 1 * MINUTES)
 	public void test_Pipelines_Available() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("test_Pipelines_Available",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONArray pipelines = new JSONArray(JSONstring);
-		Assert.assertTrue(pipelines.length() >= 0);
-		log.info("Pipelines available: (" + pipelines.length() + ") ");
+		var pipelines = objectMapper.readTree(JSONstring);
+		Assert.assertTrue(pipelines.size() >= 0);
+		log.info("Pipelines available: (" + pipelines.size() + ") ");
 		log.debug("Pipelines available: " + JSONstring);
 		log.info("Pipelines testing : (" + TEST_PIPELINES.length + ")");
-		JSONArray testing_pipelines = new JSONArray(TEST_PIPELINES);
-		Assert.assertTrue(testing_pipelines.length() >= 0);
 
-		for (int i = 0; i < testing_pipelines.length(); i++) {
-			String test_pipeline = testing_pipelines.getString(i);
+		for (String test_pipeline : TEST_PIPELINES) {
 			boolean found = false;
-			for (int j = 0; j < pipelines.length(); j++) {
-				JSONObject pipeline = pipelines.getJSONObject(j);
-				if (pipeline.getString("name").equals(test_pipeline)) {
+			for (var pipeline : pipelines) {
+				if (pipeline.get("name").asText().equals(test_pipeline)) {
 					found = true;
 					break;
 				}
@@ -552,13 +543,13 @@ public class ITWebREST {
 	public void testPing_NodeManager_getNodeManagerInfo() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("testPing_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONObject obj = new JSONObject(JSONstring);
-		JSONArray array = obj.getJSONArray("nodeModels");
-		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);// 16
+		var obj = objectMapper.readTree(JSONstring);
+		var array = obj.get("nodeModels");
+		log.info("array length :" + array.size());
+		Assert.assertTrue(array.size() >= 0);// 16
 		endTest();
 	}
 
@@ -566,27 +557,27 @@ public class ITWebREST {
 	public void test_NodeManager_getNodeManagerInfo() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("test_NodeManager_getNodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONObject obj = new JSONObject(JSONstring);
-		JSONArray array = obj.getJSONArray("nodeModels");
+		var obj = objectMapper.readTree(JSONstring);
+		var array = obj.get("nodeModels");
 
 		for (String test_service : TEST_SERVICES) {
 			log.debug("service:" + test_service);
-			JSONObject service = null;
-			for (int i = 0; i < array.length(); i++) {
-				if (array.getJSONObject(i).getString("name").toLowerCase().contains(test_service.toLowerCase())) {
-					service = array.getJSONObject(i);
+			JsonNode service = null;
+			for (int i = 0; i < array.size(); i++) {
+				if (array.get(i).get("name").asText().toLowerCase().contains(test_service.toLowerCase())) {
+					service = array.get(i);
 					break;
 				}
 			}
 			Assert.assertTrue(service != null);
-			Assert.assertTrue(service.getInt("rank") >= 0);
-			Assert.assertTrue(service.getInt("serviceCount") >= 0);
-			Assert.assertTrue(service.getInt("restartCount") >= 0);
-			Assert.assertTrue(service.getString("kind").equals("simple")
-					|| service.getString("kind").equals("generic"));
+			Assert.assertTrue(service.get("rank").asInt() >= 0);
+			Assert.assertTrue(service.get("serviceCount").asInt() >= 0);
+			Assert.assertTrue(service.get("restartCount").asInt() >= 0);
+			Assert.assertTrue(service.get("kind").asText().equals("simple")
+					|| service.get("kind").asText().equals("generic"));
 		}
 		endTest();
 	}
@@ -596,16 +587,16 @@ public class ITWebREST {
 	public void testPing_NodeManager_getNodeManagerConfig() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("testPing_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONArray array = new JSONArray(JSONstring);
-		log.info("array length :" + array.length());
+		var array = objectMapper.readTree(JSONstring);
+		log.info("array length :" + array.size());
 
-		Assert.assertTrue(array.length() > 0);
-		JSONObject obj = array.getJSONObject(0);
-		JSONArray array2 = obj.getJSONArray("services");
-		Assert.assertTrue(array2.length() >= 0);
+		Assert.assertTrue(array.size() > 0);
+		var obj = array.get(0);
+		var array2 = obj.get("services");
+		Assert.assertTrue(array2.size() >= 0);
 		endTest();
 	}
 
@@ -617,36 +608,42 @@ public class ITWebREST {
 	public void test_NodeManager_getNodeManagerConfig() throws Exception {
 	    TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("test_NodeManager_getNodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[test_NodeManager_getNodeManagerConfig] GET:"+url);
-		JSONArray array = new JSONArray(JSONstring);
+		var array = objectMapper.readTree(JSONstring);
 		log.info("[test_NodeManager_getNodeManagerConfig] services :" + JSONstring);
 
-		Assert.assertTrue(array.length() > 0);
-		JSONObject obj = array.getJSONObject(0);
-		Assert.assertTrue(obj.getString("host").length() > 0);
-		JSONArray services = obj.getJSONArray("services");
-		Assert.assertTrue(services.length() >= 0);
-		log.info("[test_NodeManager_getNodeManagerConfig] services :" + services.length());
+		Assert.assertTrue(array.size() > 0);
+		var obj = array.get(0);
+		Assert.assertTrue(obj.get("host").asText().length() > 0);
+		var services = obj.get("services");
+		Assert.assertTrue(services.size() >= 0);
+		log.info("[test_NodeManager_getNodeManagerConfig] services :" + services.size());
 
 		for (String test_service : TEST_SERVICES) {
 			log.info("[test_NodeManager_getNodeManagerConfig] Verifying Service Exists:" + test_service);
-			JSONObject service = null;
-			for (int i = 0; i < services.length(); i++) {
-				if (services.getJSONObject(i).getString("serviceName").toLowerCase().equals(test_service.toLowerCase())) {
+			JsonNode service = null;
+			for (int i = 0; i < services.size(); i++) {
+				if (services.get(i).get("serviceName").asText().toLowerCase().equals(test_service.toLowerCase())) {
 					log.info("[test_NodeManager_getNodeManagerConfig] Service Found:" + test_service);
-					service = services.getJSONObject(i);
+					service = services.get(i);
 					break;
 				}
 			}
 			log.info("{} found {}", test_service, service != null);
 			Assert.assertTrue(service != null);
-			Assert.assertTrue(service.getString("cmd").length() >= 0);
+			Assert.assertTrue(service.get("cmd").asText().length() >= 0);
 		}
 
 		endTest();
+	}
+
+	private static void removeFirst(JsonNode node) {
+		var iter = node.iterator();
+		iter.next();
+		iter.remove();
 	}
 
 	@Test(timeout = 1 * MINUTES)
@@ -655,22 +652,22 @@ public class ITWebREST {
 
 		String url = WebRESTUtils.REST_URL + "nodes/config";
 		//get the current config
-		String config = WebRESTUtils.REST_URL + "nodes/config.json";
+		String config = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("test_NodeManager_saveNodeManagerConfigPOST",config);
 		JSONstring = WebRESTUtils.getJSON(new URL(config), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[saveNodeManagerConfigPOST] original config:"+JSONstring);
 		String orig_config =JSONstring;
-		JSONArray array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() > 0);
+		var array = objectMapper.readTree(JSONstring);
+		Assert.assertTrue(array.size() > 0);
 		//modify original by removing first service
-		JSONObject obj = array.getJSONObject(0);
-		JSONArray services = obj.getJSONArray("services");
-		JSONObject first = services.getJSONObject(0);
-		log.info("[saveNodeManagerConfigPOST] Removing Service:" + first.getString("serviceName"));
-		services.remove(0);
-		array.remove(0);
-		obj.put("services", services);
-		array.put(obj);
+		var obj = array.get(0);
+		var services = obj.get("services");
+		var first = services.get(0);
+		log.info("[saveNodeManagerConfigPOST] Removing Service:" + first.get("serviceName").asText());
+		removeFirst(services);
+		removeFirst(array);
+		((ObjectNode) obj).set("services", services);
+		((ArrayNode) array).add(obj);
 
 		//post back
 		String params = array.toString();
@@ -692,14 +689,14 @@ public class ITWebREST {
 		log.debug("[saveNodeManagerConfigGet]  {}",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(config), WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("[saveNodeManagerConfigPOST]  new config:"+JSONstring);
-		array = new JSONArray(JSONstring);
-		Assert.assertTrue(array.length() >= 0);
-		obj = array.getJSONObject(0);
-		services = obj.getJSONArray("services");
-		for (int i = 0; i < services.length(); i++) {
-			JSONObject service = services.getJSONObject(i);
+		array = objectMapper.readTree(JSONstring);
+		Assert.assertTrue(array.size() >= 0);
+		obj = array.get(0);
+		services = obj.get("services");
+		for (int i = 0; i < services.size(); i++) {
+			var service = services.get(i);
 			log.debug("Service:" + service.toString());
-			Assert.assertFalse(service.getString("serviceName").equals(first.getString("serviceName")));
+			Assert.assertFalse(service.get("serviceName").asText().equals(first.get("serviceName").asText()));
 		}
 
 		//cleanup - add back in for future tests if needed
@@ -725,21 +722,21 @@ public class ITWebREST {
 	    TestUtil.assumeNodeManagerEnabled();
 
 		startTest("test_NodeManager_shutdown_startService","");
-		JSONArray nodes = WebRESTUtils.getNodes();
-		Assert.assertTrue(nodes.length() > 0);
+		var nodes = WebRESTUtils.getNodes();
+		Assert.assertTrue(nodes.size() > 0);
 		// get the first node that is running
-		JSONObject node = null;
-		for (int i = 0; i < nodes.length(); i++) {
-			node = nodes.getJSONObject(i);
+		JsonNode node = null;
+		for (int i = 0; i < nodes.size(); i++) {
+			node = nodes.get(i);
 			log.info("Node:" + node.toString());
-			if (node.getString("lastKnownState").equals("Running"))
+			if (node.get("lastKnownState").asText().equals("Running"))
 				break;
 		}
 		if (node == null) {
 			log.error("No node is 'Running'");
 			Assert.assertTrue(false);
 		}
-		String service_name = node.getString("name");
+		String service_name = node.get("name").asText();
 		Assert.assertTrue(service_name != null && service_name.length() > 0);
 
 		/*
@@ -780,13 +777,13 @@ public class ITWebREST {
 
 		// verify service is shut down
 		nodes = WebRESTUtils.getNodes();
-		Assert.assertTrue(nodes.length() > 0);
+		Assert.assertTrue(nodes.size() > 0);
 		boolean completed = false;
-		for (int i = 0; i < nodes.length(); i++) {
-			JSONObject verify_node = nodes.getJSONObject(i);
+		for (int i = 0; i < nodes.size(); i++) {
+			var verify_node = nodes.get(i);
 			log.info("Node:" + verify_node.toString());
-			if (node.getString("name").equals(verify_node.getString("name"))
-					&& !verify_node.getString("lastKnownState").equals(
+			if (node.get("name").asText().equals(verify_node.get("name").asText())
+					&& !verify_node.get("lastKnownState").asText().equals(
 					"Running")) {
 				completed = true;
 				break;
@@ -831,13 +828,13 @@ public class ITWebREST {
 
 		// verify service is shut down
 		nodes = WebRESTUtils.getNodes();
-		Assert.assertTrue(nodes.length() > 0);
+		Assert.assertTrue(nodes.size() > 0);
 		completed = false;
-		for (int i = 0; i < nodes.length(); i++) {
-			JSONObject verify_node = nodes.getJSONObject(i);
+		for (int i = 0; i < nodes.size(); i++) {
+			var verify_node = nodes.get(i);
 			log.info("Node:" + verify_node.toString());
-			if (node.getString("name").equals(verify_node.getString("name"))
-					&& verify_node.getString("lastKnownState").equals("Running")) {
+			if (node.get("name").asText().equals(verify_node.get("name").asText())
+					&& verify_node.get("lastKnownState").asText().equals("Running")) {
 				completed = true;
 				break;
 			}
@@ -855,12 +852,12 @@ public class ITWebREST {
 
 	@Test(timeout = 1 * MINUTES)
 	public void testPing_Pipelines() throws Exception {
-		String url = WebRESTUtils.REST_URL + "pipelines.json";
+		String url = WebRESTUtils.REST_URL + "pipelines";
 		startTest("testPing_Pipelines",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONArray array = new JSONArray(JSONstring);
-		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+		var array = objectMapper.readTree(JSONstring);
+		log.info("array length :" + array.size());
+		Assert.assertTrue(array.size() >= 0);
 		endTest();
 	}
 
@@ -868,13 +865,13 @@ public class ITWebREST {
 	public void testPing_NodeManagerInfo() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/info.json";
+		String url = WebRESTUtils.REST_URL + "nodes/info";
 		startTest("testPing_NodeManagerInfo",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONObject obj = new JSONObject(JSONstring);
-		JSONArray array =obj.getJSONArray("nodeModels");
-		log.info("array length :" + array.length());
-		Assert.assertTrue(array.length() >= 0);
+		var obj = objectMapper.readTree(JSONstring);
+		var array =obj.get("nodeModels");
+		log.info("array length :" + array.size());
+		Assert.assertTrue(array.size() >= 0);
 		endTest();
 	}
 
@@ -883,16 +880,16 @@ public class ITWebREST {
 	public void testPing_NodeManagerConfig() throws Exception {
 		TestUtil.assumeNodeManagerEnabled();
 
-		String url = WebRESTUtils.REST_URL + "nodes/config.json";
+		String url = WebRESTUtils.REST_URL + "nodes/config";
 		startTest("testPing_NodeManagerConfig",url);
 		JSONstring = WebRESTUtils.getJSON(new URL(url), WebRESTUtils.MPF_AUTHORIZATION);
-		JSONArray array = new JSONArray(JSONstring);
-		log.info("array length :" + array.length());
+		var array = objectMapper.readTree(JSONstring);
+		log.info("array length :" + array.size());
 
-		Assert.assertTrue(array.length() > 0);
-		JSONObject obj = array.getJSONObject(0);
-		JSONArray array2 =obj.getJSONArray("services");
-		Assert.assertTrue(array2.length() >= 0);
+		Assert.assertTrue(array.size() > 0);
+		var obj = array.get(0);
+		var array2 =obj.get("services");
+		Assert.assertTrue(array2.size() >= 0);
 		endTest();
 	}
 
@@ -924,19 +921,19 @@ public class ITWebREST {
 	// Helpers
 	// ///////////////////////////
 
-	public static String createNewJob() throws MalformedURLException, InterruptedException {
+	public static String createNewJob() throws MalformedURLException, InterruptedException, JsonProcessingException {
 		log.info("Creating new Job");
 		String url = WebRESTUtils.REST_URL + "jobs";
 		// create a JobCreationRequest
-		JSONObject params = new JSONObject();
+		var params = objectMapper.createObjectNode();
 		params.put("pipelineName", TEST_PIPELINE_NAME);
 
-		JSONArray mediaList = new JSONArray();
-		JSONObject mediaEntry = new JSONObject();
-		mediaList.put(mediaEntry);
-		mediaEntry.put("mediaUri", Utils.IMG_URL);
-		mediaEntry.put("properties", new JSONObject());
-        params.put("media", mediaList);
+		var mediaList = objectMapper.createArrayNode();
+		var mediaEntry = objectMapper.createObjectNode();
+		mediaList.add(mediaEntry);
+		mediaEntry.put("mediaUri", IMG_URL);
+		mediaEntry.set("properties", objectMapper.createObjectNode());
+        params.set("media", mediaList);
 
 		params.put("externalId", "external id");
 		params.put("buildOutput", true);
@@ -945,8 +942,8 @@ public class ITWebREST {
 		log.info("Post to: " + url + " Params: " + param_string);
 		JSONstring = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 		log.info("results:" + JSONstring);
-		JSONObject obj = new JSONObject(JSONstring);
-		return obj.getString("jobId");
+		var obj = objectMapper.readTree(JSONstring);
+		return obj.get("jobId").asText();
 	}
 
 	// /////////////////////////
@@ -966,19 +963,19 @@ public class ITWebREST {
 			log.info("Creating new Job");
 
 			// create a JobCreationRequest
-			JSONObject params = new JSONObject();
+			var params = objectMapper.createObjectNode();
 			params.put("pipelineName", "OCV FACE DETECTION (WITH MARKUP) PIPELINE");
 
-			JSONObject properties = new JSONObject();
+			var properties = objectMapper.createObjectNode();
 			properties.put("testProp", "testVal");
 
-			JSONArray media = new JSONArray();
-			JSONObject medium = new JSONObject();
-			medium.put("mediaUri", Utils.IMG_URL);
-			medium.put("properties", properties);
-			media.put(medium);
+			var media = objectMapper.createArrayNode();
+			var medium = objectMapper.createObjectNode();
+			medium.put("mediaUri", IMG_URL);
+			medium.set("properties", properties);
+			media.add(medium);
 
-			params.put("media", media);
+			params.set("media", media);
 			params.put("externalId", externalId);
 			params.put("buildOutput", true);
 			params.put("priority", 9);
@@ -992,8 +989,8 @@ public class ITWebREST {
 			log.info("Post to: " + url + " Params: " + param_string);
 			String postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
-			JSONObject obj = new JSONObject(postResponseJson);
-			String jobId = obj.getString("jobId");
+			var obj = objectMapper.readTree(postResponseJson);
+			var jobId = obj.get("jobId").asText();
 
 			//wait for it to callback
 			log.info("Waiting for POST callback...");
@@ -1013,8 +1010,8 @@ public class ITWebREST {
 			log.info("Post to: " + url + " Params: " + param_string);
 			postResponseJson = WebRESTUtils.postJSON(new URL(url), param_string, WebRESTUtils.MPF_AUTHORIZATION);
 			log.info("results:" + postResponseJson);// {"errorCode":0,"errorMessage":null,"jobId":5}
-			obj = new JSONObject(postResponseJson);
-			jobId =  obj.getString("jobId");
+			obj = objectMapper.readTree(postResponseJson);
+			jobId =  obj.get("jobId").asText();
 
 			//wait for it to callback
 			log.info("Waiting for GET callback...");
@@ -1033,9 +1030,10 @@ public class ITWebREST {
 			Assert.assertTrue(getCallbackContent.getOutputObjectUri().endsWith(
 					String.format("output-objects/%s/detection.json", internalJobId)));
 
-			var jobResponseObj = new JSONObject(WebRESTUtils.getJSON(new URL(url + '/' + jobId),
-			                                                         WebRESTUtils.MPF_AUTHORIZATION));
-			var jobStatus = jobResponseObj.getString("jobStatus");
+			var jobResponseObj = objectMapper.readTree(
+					WebRESTUtils.getJSON(new URL(url + '/' + jobId),
+					                     WebRESTUtils.MPF_AUTHORIZATION));
+			var jobStatus = jobResponseObj.get("jobStatus").asText();
 			Assert.assertEquals("COMPLETE", jobStatus);
 
 		} finally {

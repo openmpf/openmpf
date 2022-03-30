@@ -26,28 +26,23 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Source log4bash
-. ${MPF_HOME}/bin/log4bash.sh
-
 # don't source mpf.sh - if under /etc/profile.d we got it
 
-# Do an environment variable and Java property
-if [ -n "${ACTIVE_MQ_BROKER_URI}" ]; then
-    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}"
-else
-    QUEUE_FLAGS="-DACTIVE_MQ_BROKER_URI=tcp://localhost:61616"
-    log_warn "ACTIVE_MQ_BROKER_URI unset or empty, using tcp://localhost:61616"
+if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
+    ACTIVE_MQ_BROKER_URI=tcp://localhost:61616
+    echo "WARNING: ACTIVE_MQ_BROKER_URI unset or empty, using $ACTIVE_MQ_BROKER_URI"
 fi
 
-
-# NOTE: As of Java 6 update 18, Java will allocate up to 1/4 of a machine's physical memory to heap space (-Xmx).
-# Java will use 1/64 of a machine's physical memory for the initial heap space (-Xms).
-
-# NOTE: As of Java 8, PermGen no longer exists. Native system memory is used to store class data.
-
-JAVA_FLAGS="-Djava.library.path=${MPF_HOME}/lib"
+if [ "$JAVA_HOME" ]; then
+    java_prog=${JAVA_HOME}/bin/java
+else
+    java_prog=java
+fi
 
 set -x
-exec ${JAVA_HOME}/bin/java ${JAVA_FLAGS} ${QUEUE_FLAGS} $*
-set +x
+exec "$java_prog" \
+    "-Djava.library.path=${MPF_HOME}/lib" \
+    "-DACTIVE_MQ_BROKER_URI=${ACTIVE_MQ_BROKER_URI}" \
+    "$@"
+
 

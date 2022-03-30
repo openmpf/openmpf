@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -49,6 +51,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
     public static final String REF = "videoMediaSegmenter";
 
+    private final CamelContext _camelContext;
+
+    @Inject
+    VideoMediaSegmenter(CamelContext camelContext) {
+        _camelContext = camelContext;
+    }
 
     @Override
     public List<Message> createDetectionRequestMessages(
@@ -71,7 +79,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         }
     }
 
-    private static List<Message> createMediaRangeMessages(
+    private List<Message> createMediaRangeMessages(
             Media media, DetectionContext context, Collection<MediaRange> trackMediaRanges) {
 
         List<MediaRange> segments = MediaSegmenter.createSegments(
@@ -101,7 +109,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private static Message createProtobufMessage(
+    private Message createProtobufMessage(
             Media media,
             DetectionContext context,
             VideoRequest videoRequest) {
@@ -111,13 +119,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .setVideoRequest(videoRequest)
                 .build();
 
-        Message message = new DefaultMessage();
+        Message message = new DefaultMessage(_camelContext);
         message.setBody(detectionRequest);
         return message;
     }
 
 
-    private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+    private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
         int topConfidenceCount = getTopConfidenceCount(context);
 
         List<Message> messages = new ArrayList<>();

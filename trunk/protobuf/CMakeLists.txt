@@ -37,6 +37,8 @@ if (EXISTS /apps/install/lib/libprotobuf.a)
     set(Protobuf_LIBRARY /apps/install/lib/libprotobuf.a)
 elseif(EXISTS /usr/lib64/libprotobuf.a)
     set(Protobuf_LIBRARY /usr/lib64/libprotobuf.a)
+elseif(EXISTS /usr/lib/x86_64-linux-gnu/libprotobuf.a)
+    set(Protobuf_LIBRARY /usr/lib/x86_64-linux-gnu/libprotobuf.a)
 endif()
 find_package(Protobuf REQUIRED)
 

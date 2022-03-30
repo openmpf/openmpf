@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices) {
+var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
     $.fn.dataTable.ext.errMode = 'throw';
 
     $scope.selectedJob = {};
@@ -60,6 +60,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 ajax: {
                     url: "jobs-paged",
                     type: "POST",
+                    headers: csrfHeaders(),
                     data: function (d) {//extra params
                         d.search = d.search.value;
                     }
@@ -505,6 +506,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             ajax: {
                 url: "markup/get-markup-results-filtered",
                 type: "POST",
+                headers: csrfHeaders(),
                 data: function (d) {//extra params
                     d.search = d.search.value;//pull out because spring is a pain to pass params
                     d.jobId = $scope.selectedJob.jobId;
@@ -565,12 +567,11 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     data: "markupImg",
                     render: function (data, type, obj) {
                         if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
-                            obj.markupImg = "markup/content?id=" + obj.id;
                             obj.markupDownload = "markup/download?id=" + obj.id;
                             obj.markupType = getMarkupType(obj.markupUriContentType);
                             if (obj.markupType == 'image') {
                                 return $('<img>')
-                                    .attr('src', obj.markupImg)
+                                    .attr('src', "markup/content?id=" + obj.id)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;

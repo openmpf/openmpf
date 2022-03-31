@@ -33,7 +33,9 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 
 import java.net.URI;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class TestS3UrlUtil {
 
@@ -88,6 +90,17 @@ public class TestS3UrlUtil {
         assertEquals(
                 URI.create("https://my.bucket.name.s3.amazonaws.com/ab/cd/abcdefg"),
                 urlUtil.getFullUri(URI.create(resultsBucket), "ab/cd/abcdefg"));
+    }
+
+
+    @Test
+    public void reportsNoBucketWithVirtualHost() throws StorageException {
+        var urlUtil = getVirtualHost();
+        var ex = TestUtil.assertThrows(
+                StorageException.class,
+                () -> urlUtil.getResultsBucketName(URI.create("https://s3.amazonaws.com")));
+        assertThat(ex.getMessage(),
+                   containsString("only contained the configured S3 host"));
     }
 
 

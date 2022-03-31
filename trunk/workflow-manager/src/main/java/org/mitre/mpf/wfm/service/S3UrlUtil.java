@@ -129,11 +129,12 @@ public interface S3UrlUtil {
         private final String _s3Host;
 
         private VirtualHostStyle(String s3Host) {
+            var s3HostLower = s3Host.toLowerCase();
             if (s3Host.startsWith(".")) {
-                _s3Host = s3Host.substring(1);
+                _s3Host = s3HostLower.substring(1);
             }
             else {
-                _s3Host = s3Host;
+                _s3Host = s3HostLower;
             }
         }
 
@@ -161,14 +162,24 @@ public interface S3UrlUtil {
                     .map(String::toLowerCase)
                     .orElseThrow(() -> new StorageException(
                             "Unable to extract host name from the provided URI: " + bucketUri));
+
             var endOfBucketIndex = host.indexOf('.' + _s3Host);
-            if (endOfBucketIndex < 0) {
-                throw new StorageException(String.format(
-                    "The specified bucket URI, \"%s\", " +
-                            "did not contain the configured S3 host \"%s\".",
-                    bucketUri, _s3Host));
+            if (endOfBucketIndex > 0) {
+                return host.substring(0, endOfBucketIndex);
             }
-            return host.substring(0, endOfBucketIndex);
+            else if (host.equals(_s3Host)) {
+                throw new StorageException(String.format(
+                        "Unable to determine the results bucket name because the host in the " +
+                                "specified bucket URI, \"%s\", only contained the configured " +
+                                "S3 host \"%s\".",
+                        bucketUri, _s3Host));
+            }
+            else {
+                throw new StorageException(String.format(
+                        "The specified bucket URI, \"%s\", " +
+                                "did not contain the configured S3 host \"%s\".",
+                        bucketUri, _s3Host));
+            }
         }
 
 

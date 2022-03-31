@@ -358,14 +358,14 @@
     },
     {
         "name": "S3_REGION",
-        "description": "Region to use when downloading and uploading to S3.",
+        "description": "Region to use when downloading and uploading to S3. For example: \"us-east-1\"",
         "type": "STRING",
         "propertiesKey": "s3.region",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
         "name": "S3_USE_VIRTUAL_HOST",
-        "description": "When true, the S3 client will configured to virtual host style access (bucket name is part of domain name), otherwise path style access (bucket name is first segment in URL path) will be used.",
+        "description": "When true, the S3 client will be configured to use virtual host style access, otherwise path style access will be used. When using virtual host style access, the bucket name is part of domain name. For example: \"https://bucket.s3.amazonaws.com/object\". When path style access is used, the bucket name is the first segment in URL path. For example: \"https://s3.amazonaws.com/bucket/object\".",
         "type": "BOOLEAN",
         "propertiesKey": "s3.use.virtual.host",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]

@@ -27,7 +27,6 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 
@@ -41,7 +40,7 @@ public interface S3UrlUtil {
             var s3Host = properties.apply(MpfConstants.S3_HOST);
             if (s3Host == null || s3Host.isBlank()) {
                 throw new StorageException(String.format(
-                        "When %s is provided, %s almost must be provided.",
+                        "When %s is provided, %s must be provided.",
                         MpfConstants.S3_USE_VIRTUAL_HOST, MpfConstants.S3_HOST));
             }
             return new VirtualHostStyle(s3Host);
@@ -63,7 +62,7 @@ public interface S3UrlUtil {
 
     static final S3UrlUtil PATH_STYLE = new S3UrlUtil() {
         @Override
-        public String getResultsBucketName(URI bucketUri) throws StorageException{
+        public String getResultsBucketName(URI bucketUri) throws StorageException {
             String path = bucketUri.getPath();
             if (path.length() < 2 || path.charAt(0) != '/') {
                 throw new StorageException(
@@ -116,8 +115,7 @@ public interface S3UrlUtil {
                 uriPath = uriPath.substring(1);
             }
             String[] parts = uriPath.split("/", 2);
-            if (parts.length != 2 || StringUtils.isBlank(parts[0])
-                    || StringUtils.isBlank(parts[1])) {
+            if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
                 throw new StorageException(
                         "Unable to determine bucket name and object key from uri: " + uriStr);
             }
@@ -189,6 +187,9 @@ public interface S3UrlUtil {
             var path = uri.getPath();
             if (path.startsWith("/")) {
                 path = path.substring(1);
+            }
+            if (path.isBlank()) {
+                throw new StorageException("Unable to determine object key from uri: " + uriStr);
             }
             return new String[] { bucket, path };
         }

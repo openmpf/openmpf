@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
@@ -225,11 +223,10 @@ public class ServerMediaController {
         Function<String, String> combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+            try (var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties)) {
+                var s3Response = s3Stream.response();
+                IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
+                                           s3Response.contentLength());
             }
             return;
         }

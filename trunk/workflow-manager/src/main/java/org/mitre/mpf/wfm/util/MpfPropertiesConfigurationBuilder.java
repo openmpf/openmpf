@@ -56,7 +56,8 @@ public class MpfPropertiesConfigurationBuilder {
             "web.job.polling.interval",
             "warn.",
             "markup.",
-            "ties.db.url"
+            "ties.db.url",
+            "s3."
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
@@ -64,7 +65,8 @@ public class MpfPropertiesConfigurationBuilder {
             "markup.",
             "http.object.storage.nginx.service.uri",
             "mpf.output.objects.artifacts.and.exemplars.only",
-            "mpf.output.objects.last.task.only");
+            "mpf.output.objects.last.task.only",
+            "s3.");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;

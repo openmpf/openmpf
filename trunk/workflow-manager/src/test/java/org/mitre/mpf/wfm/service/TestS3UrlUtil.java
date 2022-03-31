@@ -92,6 +92,15 @@ public class TestS3UrlUtil {
 
 
     @Test
+    public void reportsErrorWhenInvalidResultsBucket() throws StorageException {
+        var urlUtils = getVirtualHost();
+        var notAUrl = "not-a-url";
+        TestUtil.assertThrows(StorageException.class,
+                              () -> urlUtils.getResultsBucketName(URI.create(notAUrl)));
+    }
+
+
+    @Test
     public void canHandlePathWithObjectKey() throws StorageException {
         var urlUtil = S3UrlUtil.get(k -> null);
         var testUrl = "https://asdf.example.com/bucket/my/object/name";

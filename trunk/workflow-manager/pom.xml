@@ -474,11 +474,6 @@
             <artifactId>javax.el-api</artifactId>
             <version>${javax.el.api.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.codehaus.woodstox</groupId>
-            <artifactId>stax2-api</artifactId>
-            <version>${stax2.api.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.tomcat</groupId>

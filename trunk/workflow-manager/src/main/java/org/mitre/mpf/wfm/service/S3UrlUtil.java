@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Optional;
 import java.util.function.Function;
 
 public interface S3UrlUtil {
@@ -156,7 +157,10 @@ public interface S3UrlUtil {
 
         @Override
         public String getResultsBucketName(URI bucketUri) throws StorageException {
-            var host = bucketUri.getHost().toLowerCase();
+            var host = Optional.ofNullable(bucketUri.getHost())
+                    .map(String::toLowerCase)
+                    .orElseThrow(() -> new StorageException(
+                            "Unable to extract host name from the provided URI: " + bucketUri));
             var endOfBucketIndex = host.indexOf('.' + _s3Host);
             if (endOfBucketIndex < 0) {
                 throw new StorageException(String.format(

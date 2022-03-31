@@ -157,6 +157,12 @@ public class WorkflowPropertyService {
         return getPropertyValue(_indexedByName.get(propertyName.toUpperCase()), null);
     }
 
+    public String getPropertyValue(String propertyName,
+                                   SystemPropertiesSnapshot systemPropertiesSnapshot) {
+        return getPropertyValue(_indexedByName.get(propertyName.toUpperCase()),
+                                systemPropertiesSnapshot);
+    }
+
 
     private String getPropertyValue(WorkflowProperty property, SystemPropertiesSnapshot systemPropertiesSnapshot) {
         if (property == null) {

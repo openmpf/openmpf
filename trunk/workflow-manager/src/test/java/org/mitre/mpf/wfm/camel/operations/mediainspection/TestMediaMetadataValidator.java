@@ -34,6 +34,8 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -41,8 +43,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class TestMediaMetadataValidator {
@@ -101,6 +102,14 @@ public class TestMediaMetadataValidator {
                 "DURATION", "3",
                 "ROTATION", "0"),
                 MediaType.VIDEO, 90, Set.of());
+
+        var frameTimeInfoCaptor = ArgumentCaptor.forClass(FrameTimeInfo.class);
+        verify(_mockInProgressJobs)
+                .addFrameTimeInfo(eq(123L), eq(321L), frameTimeInfoCaptor.capture());
+        var frameTimeInfo = frameTimeInfoCaptor.getValue();
+        assertFalse(frameTimeInfo.hasConstantFrameRate());
+        assertTrue(frameTimeInfo.requiresTimeEstimation());
+        assertEquals(1_000, frameTimeInfo.getFrameTimeMs(30));
     }
 
     @Test

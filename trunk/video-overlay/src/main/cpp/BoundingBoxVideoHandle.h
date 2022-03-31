@@ -42,8 +42,8 @@ public:
     static constexpr bool useIcons = true;
     static constexpr bool showFrameNumbers = true;
 
-    BoundingBoxVideoHandle(std::string destinationPath, const std::string &encoder, int vp9Crf, bool border,
-                           const ResolutionConfig &resCfg, MPF::COMPONENT::MPFVideoCapture videoCapture);
+    BoundingBoxVideoHandle(std::string destinationPath, std::string encoder, int vp9Crf,
+                           MPF::COMPONENT::MPFVideoCapture videoCapture);
 
     ~BoundingBoxVideoHandle();
 
@@ -58,9 +58,15 @@ public:
 private:
     std::string destinationPath_;
 
+    std::string encoder_;
+
+    int vp9Crf_;
+
     MPF::COMPONENT::MPFVideoCapture videoCapture_;
 
-    FILE *pipe_;
+    FILE *pipe_ = nullptr;
+
+    std::string GetCommand(const cv::Size& size);
 };
 
 #endif //MPF_BOUNDINGBOXVIDEOHANDLE_H

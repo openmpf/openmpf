@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -44,6 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +99,9 @@ public class JobController {
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -309,11 +312,12 @@ public class JobController {
                 }
 
                 var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+                var combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(job);
                 InputStreamResource inputStreamResource;
-                if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
-                    S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                                   job.getJobProperties()::get);
-                    inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
+                if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
+                    var s3Stream = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
+                                                              combinedProperties);
+                    inputStreamResource = new InputStreamResource(s3Stream);
                 }
                 else {
                     inputStreamResource = new InputStreamResource(IoUtils.openStream(

@@ -375,7 +375,12 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
     private static URIBuilder buildUploadUri(URI serviceUri) {
         URIBuilder builder = new URIBuilder(serviceUri);
-        builder.setPath(builder.getPath() + "/api/uploadS3.php");
+        if (builder.getPath() == null) {
+            builder.setPath("/api/uploadS3.php");
+        }
+        else {
+            builder.setPath(builder.getPath() + "/api/uploadS3.php");
+        }
         return builder;
     }
 

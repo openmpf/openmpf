@@ -320,5 +320,61 @@
         "type": "STRING",
         "propertiesKey": "ties.db.url",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_ACCESS_KEY",
+        "description": "The access key that will be used when downloading and uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.access.key",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_SECRET_KEY",
+        "description": "The secret key that will be used when downloading and uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.secret.key",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_SESSION_TOKEN",
+        "description": "Only required when the S3 bucket is configured to require a session key. This generally occurs when multi-factor authentication is required. OpenMPF does not handle generating the session key.",
+        "type": "STRING",
+        "propertiesKey": "s3.session.token",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_RESULTS_BUCKET",
+        "description": "URI to bucket where result objects should be stored. To disable the upload of result objects, do not provide a value for this property.",
+        "type": "STRING",
+        "propertiesKey": "s3.results.bucket",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_UPLOAD_ONLY",
+        "description": "When true, media will not be downloaded using S3 authentication. If S3_RESULTS_BUCKET is set, S3 authentication will be used to upload result objects.",
+        "type": "BOOLEAN",
+        "propertiesKey": "s3.upload.only",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_REGION",
+        "description": "Region to use when downloading and uploading to S3. For example: \"us-east-1\"",
+        "type": "STRING",
+        "propertiesKey": "s3.region",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_USE_VIRTUAL_HOST",
+        "description": "When true, the S3 client will be configured to use virtual host style access, otherwise path style access will be used. When using virtual host style access, the bucket name is part of domain name. For example: \"https://bucket.s3.amazonaws.com/object\". When path style access is used, the bucket name is the first segment in URL path. For example: \"https://s3.amazonaws.com/bucket/object\".",
+        "type": "BOOLEAN",
+        "propertiesKey": "s3.use.virtual.host",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "S3_HOST",
+        "description": "When S3_USE_VIRTUAL_HOST is true, this should contain the S3 hostname without the bucket. For example, if the bucket URI is \"https://bucket.s3.amazonaws.com\", this should be set to \"s3.amazonaws.com\".",
+        "type": "STRING",
+        "propertiesKey": "s3.host",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

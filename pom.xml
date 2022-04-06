@@ -87,7 +87,7 @@
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
 
         <!-- Version numbers that are used more than once. -->
-        <spring.framework.version>5.3.14</spring.framework.version>
+        <spring.framework.version>5.3.18</spring.framework.version>
         <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
         <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
         <camel.framework.version>2.24.0</camel.framework.version>

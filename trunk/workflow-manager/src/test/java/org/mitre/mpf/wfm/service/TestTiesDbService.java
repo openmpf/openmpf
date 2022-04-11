@@ -252,7 +252,7 @@ public class TestTiesDbService {
                                          int task1TrackCount, int task2TrackCount) {
         var job = createTwoStageTestJob();
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(321));
 
         var tasksToMerge = Map.of(1, 0);
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -324,7 +324,7 @@ public class TestTiesDbService {
         var tasksToMerge = Map.of(2, 1);
 
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(321));
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
@@ -415,7 +415,7 @@ public class TestTiesDbService {
         var tasksToMerge = Map.of(1, 0);
 
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(321));
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
                 .thenReturn(tasksToMerge);
@@ -503,7 +503,7 @@ public class TestTiesDbService {
         var job = createThreeStageTestJob();
 
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(321));
 
         var tasksToMerge = Map.of(1, 0,  2, 1);
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(any(), any()))
@@ -840,8 +840,11 @@ public class TestTiesDbService {
         return true;
     }
 
+    //////////////////////////////////////////////////////////////////////
+    // Test derivative media
+    //////////////////////////////////////////////////////////////////////
 
-    private class AssertionEntry {
+    private static class AssertionEntry {
         private final String _algoName;
         public String getAlgoName() { return _algoName; }
 
@@ -851,13 +854,15 @@ public class TestTiesDbService {
         private final int _count;
         public int getCount() { return _count; }
 
-        public AssertionEntry(String algoName, String detectionType, int count) {
+        private final String _tiesDbUrl;
+        public String getTiesDbUrl() { return _tiesDbUrl; }
+
+        public AssertionEntry(String algoName, String detectionType, int count, String tiesDbUrl) {
             _algoName = algoName;
             _detectionType = detectionType;
             _count = count;
+            _tiesDbUrl = tiesDbUrl;
         }
-
-
     }
 
     @Test
@@ -868,10 +873,11 @@ public class TestTiesDbService {
         trackCounter.set(701, 2, 0, "DERIVATIVE_TYPE", 2); // child1
         trackCounter.set(702, 2, 0, "DERIVATIVE_TYPE", 3); // child2
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 1));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5)); // sum of child tracks
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 1, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5, url)); // sum of child tracks
 
         runSourceAndDerivativeMediaDiffTasks(true, trackCounter, assertionEntries);
     }
@@ -884,10 +890,11 @@ public class TestTiesDbService {
         trackCounter.set(701, 2, 0, "DERIVATIVE_TYPE", 2); // child1
         trackCounter.set(702, 2, 0, "DERIVATIVE_TYPE", 3); // child2
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "NO TRACKS", 0));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5));
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "NO TRACKS", 0, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "DERIVATIVE_TYPE", 5, url));
 
         runSourceAndDerivativeMediaDiffTasks(true, trackCounter, assertionEntries);
     }
@@ -898,10 +905,11 @@ public class TestTiesDbService {
         trackCounter.set(700, 0, 0, "MEDIA", 0); // parent
         trackCounter.set(700, 1, 0, "SOURCE_TYPE", 3); // parent
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 3));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "NO TRACKS", 0));
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO", "SOURCE_TYPE", 3, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO", "NO TRACKS", 0, url));
 
         runSourceAndDerivativeMediaDiffTasks(false, trackCounter, assertionEntries);
     }
@@ -911,7 +919,7 @@ public class TestTiesDbService {
         var job = createDerivativeMediaThreeStageTestJobDiffTasks(createChildren);
 
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1062,7 +1070,7 @@ public class TestTiesDbService {
                                 url,
                                 "SHARED_ALGO",
                                 "SHARED_TYPE",
-                                5,
+                                5, // don't include childen
                                 outputObjectLocation,
                                 outputSha,
                                 timeCompleted,
@@ -1179,7 +1187,7 @@ public class TestTiesDbService {
         var job = createDerivativeMediaTwoStageTestJobSharedTask();
 
         String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+        setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
 
         when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
                 .thenReturn(ThreadUtil.completedFuture(
@@ -1280,6 +1288,10 @@ public class TestTiesDbService {
         return job;
     }
 
+    //////////////////////////////////////////////////////////////////////
+    // Test derivative media flows with multiple source-only and
+    // derivative-only actions
+    //////////////////////////////////////////////////////////////////////
 
     @Test
     public void testNoMergingSourceAndDerivativeMediaFlows() {
@@ -1295,15 +1307,18 @@ public class TestTiesDbService {
         trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
         trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 2));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO2", "SOURCE_TYPE2", 3));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 12));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO2", "DERIVATIVE_TYPE2", 10));
-        assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14));
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 2, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO2", "SOURCE_TYPE2", 3, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 12, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO2", "DERIVATIVE_TYPE2", 10, url));
+        assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14, url));
 
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, Map.of(), Map.of(), true);
+        BatchJob job = setupMergingLastSourceAndDerivativeMediaTasksJob(Map.of(), Map.of(), true);
+        setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
+        runJob(trackCounter, assertionEntries, job);
     }
 
     @Test
@@ -1320,17 +1335,19 @@ public class TestTiesDbService {
         trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
         trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9));
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9, url));
 
-        var parentTasksToMerge = Map.of(5, 2,  2, 1);
-        var childTasksToMerge = Map.of(5, 4,  4, 3);
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, parentTasksToMerge,
-                childTasksToMerge, true);
+        var parentTasksToMerge = Map.of(5, 2, 2, 1);
+        var childTasksToMerge = Map.of(5, 4, 4, 3);
+
+        BatchJob job = setupMergingLastSourceAndDerivativeMediaTasksJob(parentTasksToMerge, childTasksToMerge, true);
+        setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
+        runJob(trackCounter, assertionEntries, job);
     }
-
 
     @Test
     public void testMergingSourceAndNoDerivativeMediaFlowsDiffTypes() {
@@ -1340,26 +1357,93 @@ public class TestTiesDbService {
         trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
         trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
 
+        var url = "http://localhost:81/qwer";
         var assertionEntries = new HashSet<AssertionEntry>();
-        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0));
-        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5));
-        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "NO TRACKS", 0));
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "NO TRACKS", 0, url));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5, url));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "NO TRACKS", 0, url));
 
         var parentTasksToMerge = Map.of(5, 2,  2, 1);
         var childTasksToMerge = Map.of(5, 4,  4, 3);
-        runMergingLastSourceAndDerivativeMediaTasks(trackCounter, assertionEntries, parentTasksToMerge,
-                                                    childTasksToMerge, false);
+
+        BatchJob job = setupMergingLastSourceAndDerivativeMediaTasksJob(parentTasksToMerge, childTasksToMerge, false);
+        setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
+        runJob(trackCounter, assertionEntries, job);
     }
 
-    private void runMergingLastSourceAndDerivativeMediaTasks(TrackCounter trackCounter,
-                                                             Set<AssertionEntry> assertionEntries,
-                                                             Map<Integer, Integer> parentTasksToMerge,
-                                                             Map<Integer, Integer> childTasksToMerge,
-                                                             boolean addChildren) {
-        var job = createDerivativeMediaSixStageTestJob(addChildren);
+    //////////////////////////////////////////////////////////////////////
+    // Test setting TiesDb URLs
+    //////////////////////////////////////////////////////////////////////
 
-        String url = "http://localhost:81/qwer";
-        setTiesDbUrlForAll(url);
+    @Test
+    public void testNoMergingSourceAndDerivativeMediaFlowsSharedTiesDbUrl() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
+        trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
+        trackCounter.set(701, 3, 0, "DERIVATIVE_TYPE1", 7); // child1
+        trackCounter.set(702, 3, 0, "DERIVATIVE_TYPE1", 5); // child2
+        trackCounter.set(701, 4, 0, "DERIVATIVE_TYPE2", 8); // child1
+        trackCounter.set(702, 4, 0, "DERIVATIVE_TYPE2", 2); // child2
+        trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
+        trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
+
+        var extractUrl = "http://localhost:81/extract";
+        var sharedUrl = "http://localhost:81/shared";
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, extractUrl));
+        assertionEntries.add(new AssertionEntry("SHARED_ALGO", "SHARED_TYPE", 14, sharedUrl));
+
+        BatchJob job = setupMergingLastSourceAndDerivativeMediaTasksJob(Map.of(), Map.of(), true);
+
+        setTiesDbUrlForMediaAndAction(extractUrl, job.getMedia(700), job.getPipelineElements().getAction(0, 0));
+        setTiesDbUrlForMediaAndAction(sharedUrl, job.getMedia(700), job.getPipelineElements().getAction(5, 0));
+
+        runJob(trackCounter, assertionEntries, job);
+    }
+
+    @Test
+    public void testMergingSourceAndDerivativeMediaFlowsDiffTypesDiffTiesDbUrls() {
+        var trackCounter = new TrackCounter();
+        trackCounter.set(700, 0, 0, "MEDIA", 2); // parent
+        trackCounter.set(700, 1, 0, "SOURCE_TYPE1", 2); // parent
+        trackCounter.set(700, 2, 0, "SOURCE_TYPE2", 3); // parent
+        trackCounter.set(701, 3, 0, "DERIVATIVE_TYPE1", 7); // child1
+        trackCounter.set(702, 3, 0, "DERIVATIVE_TYPE1", 5); // child2
+        trackCounter.set(701, 4, 0, "DERIVATIVE_TYPE2", 8); // child1
+        trackCounter.set(702, 4, 0, "DERIVATIVE_TYPE2", 2); // child2
+        trackCounter.set(700, 5, 0, "SHARED_TYPE", 5); // parent
+        trackCounter.set(701, 5, 0, "SHARED_TYPE", 6); // child1
+        trackCounter.set(702, 5, 0, "SHARED_TYPE", 3); // child2
+
+        var extractUrl = "http://localhost:81/extract";
+        var parentUrl = "http://localhost:81/parent";
+        var childUrl = "http://localhost:81/child";
+
+        var assertionEntries = new HashSet<AssertionEntry>();
+        assertionEntries.add(new AssertionEntry("EXTRACT_ALGO", "MEDIA", 2, extractUrl));
+        assertionEntries.add(new AssertionEntry("PARENT_ALGO1", "SOURCE_TYPE1", 5, parentUrl));
+        assertionEntries.add(new AssertionEntry("CHILD_ALGO1", "DERIVATIVE_TYPE1", 9, childUrl));
+
+        var parentTasksToMerge = Map.of(5, 2, 2, 1);
+        var childTasksToMerge = Map.of(5, 4, 4, 3);
+
+        BatchJob job = setupMergingLastSourceAndDerivativeMediaTasksJob(parentTasksToMerge, childTasksToMerge, true);
+
+        setTiesDbUrlForMediaAndAction(extractUrl, job.getMedia(700), job.getPipelineElements().getAction(0, 0));
+        setTiesDbUrlForMediaAndAction(parentUrl, job.getMedia(700), job.getPipelineElements().getAction(1, 0));
+        setTiesDbUrlForMediaAndAction(childUrl, job.getMedia(700), job.getPipelineElements().getAction(3, 0));
+
+        runJob(trackCounter, assertionEntries, job);
+    }
+
+
+    private BatchJob setupMergingLastSourceAndDerivativeMediaTasksJob(Map<Integer, Integer> parentTasksToMerge,
+                                                                      Map<Integer, Integer> childTasksToMerge,
+                                                                      boolean addChildren) {
+        var job = createDerivativeMediaSixStageTestJob(addChildren);
 
         when(_mockAggregateJobPropertiesUtil.getTasksToMerge(
                 argThat(m -> m != null && m.getId() == 700), any())) // parent
@@ -1382,6 +1466,10 @@ public class TestTiesDbService {
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
+        return job;
+    }
+
+    private void runJob(TrackCounter trackCounter, Set<AssertionEntry> assertionEntries, BatchJob job) {
         var timeCompleted = Instant.ofEpochSecond(1622724824);
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
@@ -1403,7 +1491,7 @@ public class TestTiesDbService {
                                     job.getId(),
                                     BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                     job.getMedia(700), // parent
-                                    url,
+                                    assertionEntry.getTiesDbUrl(),
                                     assertionEntry.getAlgoName(),
                                     assertionEntry.getDetectionType(),
                                     assertionEntry.getCount(),
@@ -1474,9 +1562,15 @@ public class TestTiesDbService {
         return job;
     }
 
-    private void setTiesDbUrlForAll(String url) {
+    private void setTiesDbUrlForMedia(String url, Media media) {
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"), any(BatchJob.class), any(Media.class), any(Action.class)))
+                eq("TIES_DB_URL"), any(BatchJob.class), eq(media), any(Action.class)))
+                .thenReturn(url);
+    }
+
+    private void setTiesDbUrlForMediaAndAction(String url, Media media, Action action) {
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                eq("TIES_DB_URL"), any(BatchJob.class), eq(media), eq(action)))
                 .thenReturn(url);
     }
 }

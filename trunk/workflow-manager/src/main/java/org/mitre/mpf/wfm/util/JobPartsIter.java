@@ -64,6 +64,7 @@ public class JobPartsIter {
         }
 
         public JobPartsFixedMediaIter(BatchJob job, Media media, int mediaIndex) {
+            // parent media have a creation task of -1, so +1 gets task 0
             super(new JobPart(job, media, mediaIndex, media.getCreationTask() + 1, 0));
         }
 

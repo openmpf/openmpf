@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -151,7 +152,7 @@ public class TiesDbService {
             String trackType = algoAndTypeAndTiesDbUrlToUse.getMiddle();
             String tiesDbUrl = algoAndTypeAndTiesDbUrlToUse.getRight();
 
-            if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
+            if (StringUtils.isBlank(tiesDbUrl)) {
                 continue;
             }
 

@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -113,7 +114,9 @@ public class MarkupController {
 
     @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
     @ResponseBody
-    public List<MarkupResultModel> getMarkupResultsJsonSession(@ApiParam(value = "Job id - OPTIONAL") @RequestParam(value = "jobId", required = false) Long jobId) {
+    public List<MarkupResultModel> getMarkupResultsJsonSession(
+            @ApiParam(value = "Job id - OPTIONAL")
+            @RequestParam(value = "jobId", required = false) Long jobId) {
         return getMarkupResultsJson(jobId);
     }
 
@@ -124,17 +127,18 @@ public class MarkupController {
     //search is string to filter
     @RequestMapping(value = {"/markup/get-markup-results-filtered"}, method = RequestMethod.POST)
     @ResponseBody
-    public MarkupPageListModel getMarkupResultsFiltered(@RequestParam(value = "jobId", required = true) long jobId,
-                                           @RequestParam(value = "draw", required = false) int draw,
-                                           @RequestParam(value = "start", required = false) int start,
-                                           @RequestParam(value = "length", required = false) int length,
-                                           @RequestParam(value = "search", required = false) String search,
-                                           @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
+    public ResponseEntity<?> getMarkupResultsFiltered(
+            @RequestParam(value = "jobId", required = true) long jobId,
+            @RequestParam(value = "draw", required = false) int draw,
+            @RequestParam(value = "start", required = false) int start,
+            @RequestParam(value = "length", required = false) int length,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         if (jobRequest == null) {
-            return new MarkupPageListModel(draw, 0, 0, null, List.of());
+            return ResponseEntity.notFound().build();
         }
 
         BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
@@ -205,14 +209,21 @@ public class MarkupController {
         start = (start <= end) ? start : end;
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered.subList(start, end);
 
-        return new MarkupPageListModel(draw, markupResultModels.size(), markupResultModelsFiltered.size(), null,
+        MarkupPageListModel pageListModel = new MarkupPageListModel(
+                draw,
+                markupResultModels.size(),
+                markupResultModelsFiltered.size(),
+                null,
                 markupResultModelsFinal);
+
+        return ResponseEntity.ok(pageListModel);
     }
 
     // TODO: Remove this?
     @RequestMapping(value = "/markup/content", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
-    public void serve(HttpServletResponse response, @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
+    public void serve(HttpServletResponse response,
+                      @RequestParam(value = "id", required = true) long id) throws IOException, URISyntaxException {
         MarkupResult mediaMarkupResult = markupResultDao.findById(id);
         if (mediaMarkupResult != null) {
             //only on image!
@@ -230,7 +241,8 @@ public class MarkupController {
 
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
+    public void getFile(@RequestParam("id") long id,
+                        HttpServletResponse response) throws IOException, StorageException {
         MarkupResult markupResult = markupResultDao.findById(id);
         if (markupResult == null) {
             log.error("Markup with id " + id + " download failed. Invalid id.");

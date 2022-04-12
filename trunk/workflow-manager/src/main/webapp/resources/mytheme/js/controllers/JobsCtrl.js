@@ -432,6 +432,9 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 data: function (d) {//extra params
                     d.search = d.search.value;//pull out because spring is a pain to pass params
                     d.jobId = $scope.selectedJob.jobId;
+                },
+                error: function (xhr, error, code) {
+                    alert("Error while retrieving data: " + xhr.status);
                 }
             },
             renderer: "bootstrap",

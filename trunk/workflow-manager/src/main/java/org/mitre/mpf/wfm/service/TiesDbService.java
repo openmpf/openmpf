@@ -151,7 +151,7 @@ public class TiesDbService {
             String trackType = algoAndTypeAndTiesDbUrlToUse.getMiddle();
             String tiesDbUrl = algoAndTypeAndTiesDbUrlToUse.getRight();
 
-            if (tiesDbUrl == null) {
+            if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
                 continue;
             }
 

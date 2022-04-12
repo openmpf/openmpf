@@ -10,6 +10,6 @@ Run this command in the directory with `pom.xml`:
 
 # Run
 
-Run this command in the same directory:
+Run this command in the same directory to print usage instructions:
 
-`java -jar target/mpf-rest-client-*-jar-with-dependencies.jar <username> <raw-password> <face-image-file-path>`
+`java -jar target/mpf-rest-client-*-jar-with-dependencies.jar`

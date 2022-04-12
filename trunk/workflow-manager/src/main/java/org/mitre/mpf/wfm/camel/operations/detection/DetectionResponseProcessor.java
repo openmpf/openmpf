@@ -126,7 +126,7 @@ public class DetectionResponseProcessor
         }
         else {
             String mediaLabel = getBasicMediaLabel(detectionResponse);
-            log.warn("[{}] Response received, but no tracks were found for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+            log.warn("Response received, but no tracks were found for {}.", mediaLabel);
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
 
@@ -166,7 +166,7 @@ public class DetectionResponseProcessor
                 detectionResponse.getTaskName(),
                 detectionResponse.getActionName());
 
-        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        log.debug("Response received for {}.", mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
 
         // Begin iterating through the tracks that were found by the detector.
@@ -218,7 +218,7 @@ public class DetectionResponseProcessor
                 detectionResponse.getTaskName(),
                 detectionResponse.getActionName());
 
-        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        log.debug("Response received for {}.", mediaLabel);
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
 
         // Begin iterating through the tracks that were found by the detector.
@@ -259,7 +259,7 @@ public class DetectionResponseProcessor
                                       DetectionProtobuf.DetectionResponse.ImageResponse imageResponse,
                                       double confidenceThreshold) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
-        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        log.debug("Response received for {}.", mediaLabel);
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 1, 0, 0);
 
@@ -290,7 +290,7 @@ public class DetectionResponseProcessor
                                         DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
                                         double confidenceThreshold) {
         String mediaLabel = getBasicMediaLabel(detectionResponse);
-        log.debug("[{}] Response received for {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+        log.debug("Response received for {}.", mediaLabel);
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 
@@ -378,13 +378,13 @@ public class DetectionResponseProcessor
             String errorMessage;
             // Some error occurred during detection. Store this error.
             if (detectionResponse.getError() == DetectionProtobuf.DetectionError.REQUEST_CANCELLED) {
-                log.warn("[{}] Job cancelled while processing {}.", getLogLabel(jobId, detectionResponse), mediaLabel);
+                log.warn("Job cancelled while processing {}.", mediaLabel);
                 errorCode = MpfConstants.REQUEST_CANCELLED;
                 errorMessage = "Successfully cancelled.";
             }
             else {
-                log.error("[{}] Encountered a detection error while processing {}: {}",
-                        getLogLabel(jobId, detectionResponse), mediaLabel, detectionResponse.getError());
+                log.error("Encountered a detection error while processing {}: {}",
+                        mediaLabel, detectionResponse.getError());
                 errorCode = Objects.toString(detectionResponse.getError());
                 errorMessage = detectionResponse.getErrorMessage();
             }
@@ -437,10 +437,6 @@ public class DetectionResponseProcessor
                         DetectionProtobuf.PropertyMap::getValue,
                         (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
                         TreeMap::new));
-    }
-
-    private static String getLogLabel(long jobId, DetectionProtobuf.DetectionResponse detectionResponse) {
-        return String.format("Job %d|%d|%d", jobId, detectionResponse.getTaskIndex(), detectionResponse.getActionIndex());
     }
 
     private static String getBasicMediaLabel(DetectionProtobuf.DetectionResponse detectionResponse) {

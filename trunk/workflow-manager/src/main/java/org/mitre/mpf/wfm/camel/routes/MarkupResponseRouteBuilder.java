@@ -32,9 +32,10 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
-import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,6 +45,9 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_MARKUP;
 	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
 	public static final String ROUTE_ID = "Markup Response Route";
+
+	@Autowired
+	private ProtobufDataFormatFactory protobufDataFormatFactory;
 
 	private final String entryPoint, exitPoint, routeId;
 
@@ -64,7 +68,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(new ProtobufDataFormat(Markup.MarkupResponse.getDefaultInstance()))
+			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse::newBuilder))
 			.process(MarkupResponseProcessor.REF)
 			.choice()
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))

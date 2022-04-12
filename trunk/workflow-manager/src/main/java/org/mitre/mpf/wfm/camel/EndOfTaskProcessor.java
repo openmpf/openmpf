@@ -58,17 +58,14 @@ public class EndOfTaskProcessor extends WfmProcessor {
         inProgressBatchJobs.incrementTask(jobId);
         BatchJob job = inProgressBatchJobs.getJob(jobId);
 
-        log.info("[Job {}|{}|*] Task Complete! Progress is now {}/{}.",
-                 jobId,
-                 job.getCurrentTaskIndex() - 1,
-                 job.getCurrentTaskIndex(),
-                 job.getPipelineElements().getTaskCount());
+        log.info("Task Complete! Progress is now {}/{}.",
+                 job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
 
 
         if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
             jobProgressStore.setJobProgress(jobId, 99.0f);
             jobStatusBroadcaster.broadcast(jobId, job.getStatus());
-            log.debug("[Job {}|*|*] All tasks have completed. Setting the {} flag.", jobId, MpfHeaders.JOB_COMPLETE);
+            log.debug("All tasks have completed. Setting the {} flag.", MpfHeaders.JOB_COMPLETE);
             exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
         }
 

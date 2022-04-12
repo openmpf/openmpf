@@ -30,7 +30,6 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
 import org.mitre.mpf.interop.JsonSegmentSummaryReport;
 import org.mitre.mpf.interop.JsonStreamingDetectionOutputObject;
 import org.mitre.mpf.interop.JsonStreamingTrackOutputObject;
@@ -40,6 +39,7 @@ import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingEndpoints;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
+import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -57,12 +57,18 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
 
     private final StreamingJobRequestService _streamingJobRequestService;
 
+    private final ProtobufDataFormatFactory _protobufDataFormatFactory;
+
     // Used to determine of messages should be ignored if AMQ has not been purged yet
     private final WfmStartup _wfmStartup;
 
     @Autowired
-    public StreamingJobRoutesBuilder(StreamingJobRequestService streamingJobRequestService, WfmStartup wfmStartup) {
+    public StreamingJobRoutesBuilder(
+            StreamingJobRequestService streamingJobRequestService,
+            ProtobufDataFormatFactory protobufDataFormatFactory,
+            WfmStartup wfmStartup) {
         _streamingJobRequestService = streamingJobRequestService;
+        _protobufDataFormatFactory = protobufDataFormatFactory;
         _wfmStartup = wfmStartup;
     }
 
@@ -100,7 +106,8 @@ public class StreamingJobRoutesBuilder extends RouteBuilder {
         from(StreamingEndpoints.WFM_STREAMING_JOB_SUMMARY_REPORTS.endpointName())
                 .routeId("Streaming Job Summary Report Route")
                 .log(LoggingLevel.DEBUG, "Received summary report message: ${headers}")
-                .unmarshal(new ProtobufDataFormat(DetectionProtobuf.StreamingDetectionResponse.getDefaultInstance()))
+                .unmarshal(_protobufDataFormatFactory.create(
+                        DetectionProtobuf.StreamingDetectionResponse::newBuilder))
                 .process(exchange -> {
                     if (_wfmStartup.isApplicationRefreshed()) {
                         Message msg = exchange.getIn();

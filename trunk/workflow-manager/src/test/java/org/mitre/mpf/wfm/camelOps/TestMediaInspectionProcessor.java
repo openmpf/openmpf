@@ -27,10 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
@@ -391,6 +388,16 @@ public class TestMediaInspectionProcessor {
         verify(_mockInProgressJobs, never())
                 .addMediaInspectionInfo(anyLong(), anyLong(), any(), any(), any(), anyInt(), anyMap());
         verifyNoJobOrMediaError();
+    }
+
+    @Test
+    public void testCalculateDurationMilliseconds() {
+        Assert.assertEquals(7800, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.8"));
+        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.86"));
+        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.860"));
+        Assert.assertEquals(7080, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.08"));
+        Assert.assertEquals(7086, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.086"));
+        Assert.assertEquals(45_296_789, MediaInspectionProcessor.calculateDurationMilliseconds("12:34:56.789"));
     }
 
 

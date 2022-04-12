@@ -25,29 +25,56 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.data.entities.transients;
+package org.mitre.mpf.wfm.util;
 
-import org.mitre.mpf.wfm.util.JobPart;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.MessageLite;
+import org.apache.camel.Exchange;
+import org.apache.camel.spi.DataFormat;
+import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.function.Supplier;
 
-public class TrackCounter {
+@Component
+public class ProtobufDataFormatFactory {
+    private final PropertiesUtil _propertiesUtil;
 
-    private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
-
-    public TrackCountEntry get(JobPart jobPart) {
-        return _counts.get(new TrackCountKey(jobPart.getMedia().getId(),
-                                             jobPart.getTaskIndex(),
-                                             jobPart.getActionIndex()));
+    @Inject
+    public ProtobufDataFormatFactory(PropertiesUtil propertiesUtil) {
+        _propertiesUtil = propertiesUtil;
     }
 
-    public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
-        return _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx));
+    public DataFormat create(Supplier<MessageLite.Builder> messageBuilderSupplier) {
+        return new ProtobufDataFormatWithCustomSizeLimit(_propertiesUtil, messageBuilderSupplier);
     }
 
-    public void set(long mediaId, int taskIdx, int actionIdx, String trackType, int count) {
-        _counts.put(new TrackCountKey(mediaId, taskIdx, actionIdx),
-                    new TrackCountEntry(mediaId, taskIdx, actionIdx, trackType, count));
+
+    private static class ProtobufDataFormatWithCustomSizeLimit implements DataFormat {
+        private final PropertiesUtil _propertiesUtil;
+        private final Supplier<MessageLite.Builder> _messageBuilderSupplier;
+
+        private ProtobufDataFormatWithCustomSizeLimit(
+                PropertiesUtil propertiesUtil,
+                Supplier<MessageLite.Builder> messageBuilderSupplier) {
+            _propertiesUtil = propertiesUtil;
+            _messageBuilderSupplier = messageBuilderSupplier;
+        }
+
+        @Override
+        public void marshal(Exchange exchange, Object graph, OutputStream outputStream)
+                throws IOException {
+            ((MessageLite) graph).writeTo(outputStream);
+        }
+
+        @Override
+        public MessageLite unmarshal(Exchange exchange, InputStream stream) throws IOException {
+            var codedInputStream = CodedInputStream.newInstance(stream);
+            codedInputStream.setSizeLimit(_propertiesUtil.getProtobufSizeLimit());
+            return _messageBuilderSupplier.get().mergeFrom(codedInputStream).build();
+        }
     }
 }

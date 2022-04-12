@@ -128,7 +128,7 @@ public class TestTiesDbService {
 
         var job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media1, media2),
+                null, null, List.of(media1, media2),
                 Map.of(), Map.of());
 
         String url1 = "http://localhost:81/qwer";
@@ -721,7 +721,7 @@ public class TestTiesDbService {
 
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media),
+                null, null, List.of(media),
                 Map.of(), Map.of());
     }
 
@@ -752,7 +752,7 @@ public class TestTiesDbService {
 
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(media),
+                null, null, List.of(media),
                 Map.of(), Map.of());
     }
 

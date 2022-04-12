@@ -200,6 +200,7 @@ public class MediaImpl implements Media {
             String uri,
             UriScheme uriScheme,
             Path localPath,
+            Map<String, String> mediaSpecificProperties,
             Map<String, String> metadata,
             String errorMessage) {
         _id = id;
@@ -208,7 +209,7 @@ public class MediaImpl implements Media {
         _uri = IoUtils.normalizeUri(uri);
         _uriScheme = uriScheme;
         _localPath = localPath;
-        _mediaSpecificProperties = ImmutableMap.of();
+        _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.of();
         _metadata.putAll(metadata);
         if (StringUtils.isNotEmpty(errorMessage)) {

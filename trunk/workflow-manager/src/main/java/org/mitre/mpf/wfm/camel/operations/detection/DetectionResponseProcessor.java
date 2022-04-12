@@ -444,7 +444,7 @@ public class DetectionResponseProcessor
                 detectionResponse.getMediaId(), detectionResponse.getTaskName(), detectionResponse.getActionName());
     }
 
-    private SortedMap<String, String> processDerivativeMedia(long jobId, 
+    private SortedMap<String, String> processDerivativeMedia(long jobId,
                                                              long parentMediaId,
                                                              int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
@@ -459,8 +459,8 @@ public class DetectionResponseProcessor
 
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, newUri.toString()); // update track properties
 
-        Media derivativeMedia = _inProgressJobs.initDerivativeMedia(mediaId, parentMediaId, taskIndex, newUri,
-                newLocalPath, trackProperties);
+        Media derivativeMedia = _inProgressJobs.initDerivativeMedia(
+                jobId, mediaId, parentMediaId, taskIndex, newUri, newLocalPath, trackProperties);
 
         _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 

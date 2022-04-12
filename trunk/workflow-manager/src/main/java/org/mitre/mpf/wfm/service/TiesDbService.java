@@ -257,8 +257,10 @@ public class TiesDbService {
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
-        LOG.info("Posting assertion to TiesDb for the {} algorithm.",
-                algorithm);
+        LOG.info("Posting assertion to TiesDb for the {} algorithm. Track type = {}. Track count = {}",
+                algorithm,
+                trackType,
+                trackCount);
 
         return postAssertion(
                 algorithm,

@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.PathResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -223,38 +222,27 @@ public class ServerMediaController {
             return;
         }
 
+        // If any of the code below throws an uncaught exception it will result in printing a stack trace
+        // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
+
         var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         Function<String, String> combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            try {
-                S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
-                try (InputStream inputStream = s3Object.getObjectContent()) {
-                    ObjectMetadata metadata = s3Object.getObjectMetadata();
-                    IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                            metadata.getContentLength());
-                }
-                return;
-            } catch (StorageException e) {
-                log.error(sourceUri + " media download failed: " + e.getMessage());
-                response.setStatus(500);
-                response.flushBuffer();
-                return;
+            S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
+            try (InputStream inputStream = s3Object.getObjectContent()) {
+                ObjectMetadata metadata = s3Object.getObjectMetadata();
+                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
+                                           metadata.getContentLength());
             }
+            return;
         }
 
-        try {
-            URL mediaUrl = sourceUri.toURL();
-            URLConnection urlConnection = mediaUrl.openConnection();
-            try (InputStream inputStream = urlConnection.getInputStream()) {
-                IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                        urlConnection.getContentLength());
-            }
-        } catch (IOException e) {
-            log.error(sourceUri + " media download failed: " + e.getMessage());
-            response.setStatus(500);
-            response.flushBuffer();
-            return;
+        URL mediaUrl = sourceUri.toURL();
+        URLConnection urlConnection = mediaUrl.openConnection();
+        try (InputStream inputStream = urlConnection.getInputStream()) {
+            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
+                                       urlConnection.getContentLength());
         }
     }
 }

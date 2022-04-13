@@ -316,8 +316,9 @@ public class DetectionResponseProcessor
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             }
+            long mediaId = IdGenerator.next(); // get the media id now to maintain track order
             var future = ThreadUtil.callAsync(
-                    () -> processDerivativeMedia(jobId, detectionResponse.getMediaId(),
+                    () -> processDerivativeMedia(jobId, detectionResponse.getMediaId(), mediaId,
                             detectionResponse.getTaskIndex(), trackProperties));
             future.whenComplete((x, y) -> semaphore.release());
             futures.put(objectTrack, future);
@@ -446,11 +447,10 @@ public class DetectionResponseProcessor
 
     private SortedMap<String, String> processDerivativeMedia(long jobId,
                                                              long parentMediaId,
+                                                             long mediaId,
                                                              int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
         Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
-
-        long mediaId = IdGenerator.next();
 
         // Derivative media may be stored remotely.
         var newUriAndLocalPath = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);

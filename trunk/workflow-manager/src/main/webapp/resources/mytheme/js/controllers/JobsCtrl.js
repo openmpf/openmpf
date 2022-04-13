@@ -459,7 +459,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
                             if (obj.sourceMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', obj.sourceImgUrl)
+                                    .attr('src', obj.sourceDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;
@@ -505,7 +505,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                         if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
                             if (obj.markupMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', obj.markupImgUrl)
+                                    .attr('src', obj.markupDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;

@@ -36,13 +36,11 @@ public class MarkupResultConvertedModel {
 
     private String markupMediaType;
     private boolean markupFileAvailable;
-    private String markupImgUrl;
     private String markupDownloadUrl;
 
     private String sourceUri;
     private String sourceMediaType;
     private boolean sourceFileAvailable;
-    private String sourceImgUrl;
     private String sourceDownloadUrl;
 
     public long getId() {
@@ -77,10 +75,6 @@ public class MarkupResultConvertedModel {
         return markupFileAvailable;
     }
 
-    public String getMarkupImgUrl() {
-        return markupImgUrl;
-    }
-
     public String getMarkupDownloadUrl() {
         return markupDownloadUrl;
     }
@@ -96,10 +90,6 @@ public class MarkupResultConvertedModel {
 
     public boolean isSourceFileAvailable() {
         return sourceFileAvailable;
-    }
-
-    public String getSourceImgUrl() {
-        return sourceImgUrl;
     }
 
     public String getSourceDownloadUrl() {
@@ -138,10 +128,6 @@ public class MarkupResultConvertedModel {
         this.markupFileAvailable = markupFileAvailable;
     }
 
-    public void setMarkupImgUrl(String markupImgUrl) {
-        this.markupImgUrl = markupImgUrl;
-    }
-
     public void setMarkupDownloadUrl(String markupDownloadUrl) {
         this.markupDownloadUrl = markupDownloadUrl;
     }
@@ -158,18 +144,14 @@ public class MarkupResultConvertedModel {
         this.sourceFileAvailable = sourceFileAvailable;
     }
 
-    public void setSourceImgUrl(String sourceImgUrl) {
-        this.sourceImgUrl = sourceImgUrl;
-    }
-
 
     public MarkupResultConvertedModel() {
     }
 
 	public MarkupResultConvertedModel(long id, long jobId, long mediaId, long parentMediaId,
                                       String pipeline, String markupUri, String markupMediaType,
-                                      String markupImgUrl, String markupDownloadUrl, boolean markupFileAvailable,
-                                      String sourceUri, String sourceMediaType, String sourceImgUrl,
+                                      String markupDownloadUrl, boolean markupFileAvailable,
+                                      String sourceUri, String sourceMediaType,
                                       String sourceDownloadUrl, boolean sourceFileAvailable) {
 		this.id = id;
 		this.jobId = jobId;
@@ -179,12 +161,10 @@ public class MarkupResultConvertedModel {
 		this.markupUri = markupUri;
 		this.markupMediaType = markupMediaType;
 		this.markupFileAvailable = markupFileAvailable;
-		this.markupImgUrl = markupImgUrl;
 		this.markupDownloadUrl = markupDownloadUrl;
 		this.sourceUri = sourceUri;
 		this.sourceMediaType = sourceMediaType;
 		this.sourceFileAvailable = sourceFileAvailable;
-		this.sourceImgUrl = sourceImgUrl;
 		this.sourceDownloadUrl = sourceDownloadUrl;
 	}
 }

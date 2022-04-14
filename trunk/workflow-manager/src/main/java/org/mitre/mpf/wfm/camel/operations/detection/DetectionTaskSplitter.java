@@ -58,12 +58,12 @@ public class DetectionTaskSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(DetectionTaskSplitter.class);
 
-    private static AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-    private static InProgressBatchJobsService _inProgressBatchJobs;
-    private static MediaSegmenter _imageMediaSegmenter;
-    private static MediaSegmenter _videoMediaSegmenter;
-    private static MediaSegmenter _audioMediaSegmenter;
-    private static MediaSegmenter _defaultMediaSegmenter;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
+    private final MediaSegmenter _imageMediaSegmenter;
+    private final MediaSegmenter _videoMediaSegmenter;
+    private final MediaSegmenter _audioMediaSegmenter;
+    private final MediaSegmenter _defaultMediaSegmenter;
 
     @Inject
     public DetectionTaskSplitter(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
@@ -92,14 +92,13 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
-                // Is this the first detection task in the pipeline for this media?
-                boolean isFirstDetectionTask = isFirstDetectionTask(job, media);
+                boolean isFirstDetectionTaskForMedia = isFirstDetectionTask(job, media);
 
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
                 // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
                 SortedSet<Track> previousTracks;
-                if (isFirstDetectionTask) {
+                if (isFirstDetectionTaskForMedia) {
                     previousTracks = Collections.emptySortedSet();
                 } else {
                     // Get the tracks for the last task that was processed for this media.
@@ -151,7 +150,7 @@ public class DetectionTaskSplitter {
                             task.getName(),
                             actionIndex,
                             action.getName(),
-                            isFirstDetectionTask,
+                            isFirstDetectionTaskForMedia,
                             algorithmProperties,
                             previousTracks,
                             segmentingPlan);
@@ -296,7 +295,7 @@ public class DetectionTaskSplitter {
      */
     private static boolean isFirstDetectionTask(BatchJob job, Media media) {
         for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
-            // Only need to check the first action. We would not be here in the splitter after a parellel action,
+            // Only need to check the first action. We would not be here in the splitter after a parallel action,
             // which can only be the last action in a pipeline.
             int actionIndex = 0;
             boolean wasProcessed = job.wasActionProcessed(media.getId(), taskIndex, actionIndex);

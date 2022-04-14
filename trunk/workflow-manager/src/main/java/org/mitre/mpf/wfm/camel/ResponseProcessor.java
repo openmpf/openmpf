@@ -39,7 +39,7 @@ import java.util.Map;
 public abstract class ResponseProcessor<T extends MessageLite> extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(ResponseProcessor.class);
 
-	private static InProgressBatchJobsService _inProgressJobs;
+	private final InProgressBatchJobsService _inProgressJobs;
 
 	private final Class<T> clazz;
 

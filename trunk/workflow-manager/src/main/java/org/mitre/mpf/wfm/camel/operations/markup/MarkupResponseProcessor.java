@@ -51,9 +51,9 @@ public class MarkupResponseProcessor extends ResponseProcessor<Markup.MarkupResp
     public static final String REF = "markupResponseProcessor";
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
-    private static InProgressBatchJobsService _inProgressJobs;
-    private static MarkupResultDao _markupResultDao;
-    private static StorageService _storageService;
+    private final InProgressBatchJobsService _inProgressJobs;
+    private final MarkupResultDao _markupResultDao;
+    private final StorageService _storageService;
 
     @Inject
     public MarkupResponseProcessor(InProgressBatchJobsService inProgressJobs,

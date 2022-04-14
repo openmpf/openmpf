@@ -67,11 +67,11 @@ public class DetectionResponseProcessor
 
     private static final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
 
-    private static AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
-    private static InProgressBatchJobsService _inProgressJobs;
-    private static MediaInspectionHelper _mediaInspectionHelper;
-    private static StorageService _storageService;
-    private static PropertiesUtil _propertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private final InProgressBatchJobsService _inProgressJobs;
+    private final MediaInspectionHelper _mediaInspectionHelper;
+    private final StorageService _storageService;
+    private final PropertiesUtil _propertiesUtil;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,

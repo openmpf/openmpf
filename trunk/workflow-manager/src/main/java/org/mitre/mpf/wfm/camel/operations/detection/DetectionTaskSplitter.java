@@ -116,7 +116,7 @@ public class DetectionTaskSplitter {
                     var combinedProperties = new HashMap<>(
                             _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    if (_aggregateJobPropertiesUtil.canSkipAction(media, combinedProperties)) {
+                    if (!_aggregateJobPropertiesUtil.actionAppliesToMedia(media, combinedProperties)) {
                         continue;
                     }
 

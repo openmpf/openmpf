@@ -40,7 +40,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
 
@@ -472,17 +471,27 @@ public class AggregateJobPropertiesUtil {
                 .anyMatch(type::equalsIgnoreCase);
     }
 
-    public static boolean canSkipAction(Media media, Map<String, String> combinedProperties) {
-        if (Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")) &&
-                !media.isDerivative()) {
-            return true;
-        }
+    public boolean actionAppliesToMedia(BatchJob job, Media media, Action action) {
+        return actionAppliesToMedia(
+                media,
+                Boolean.parseBoolean(getValue("DERIVATIVE_MEDIA_ONLY", job, media, action)),
+                Boolean.parseBoolean(getValue("SOURCE_MEDIA_ONLY", job, media, action)));
+    }
 
-        if (Boolean.parseBoolean(combinedProperties.get("SOURCE_MEDIA_ONLY")) &&
-                media.isDerivative()) {
-            return true;
-        }
+    public static boolean actionAppliesToMedia(Media media, Map<String, String> combinedProperties) {
+        return actionAppliesToMedia(
+                media,
+                Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")),
+                Boolean.parseBoolean(combinedProperties.get("SOURCE_MEDIA_ONLY")));
+    }
 
-        return false;
+    private static boolean actionAppliesToMedia(Media media, boolean isDerivativeMediaOnly, boolean isSourceMediaOnly) {
+        if (isDerivativeMediaOnly && !media.isDerivative()) {
+            return false;
+        }
+        if (isSourceMediaOnly && media.isDerivative()) {
+            return false;
+        }
+        return true;
     }
 }

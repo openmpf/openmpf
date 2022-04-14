@@ -386,14 +386,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     String actionName = task.getActions().get(actionIndex);
                     Action action = job.getPipelineElements().getAction(actionName);
 
-                    var combinedProperties = new HashMap<>(
-                            aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
-
-                    if (aggregateJobPropertiesUtil.canSkipAction(media, combinedProperties)) {
+                    if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
                         continue;
                     }
 
-                    String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
+                    String stateKey = String.format("%s#%s", stateKeyBuilder, action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
                              job, media.getId(), taskIndex, actionIndex)) {
@@ -441,7 +438,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);
                     }
-                    else if (tasksToMerge.values().contains(taskIndex)) {
+                    else if (tasksToMerge.containsValue(taskIndex)) {
                         // This task will be merged with one that follows.
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);

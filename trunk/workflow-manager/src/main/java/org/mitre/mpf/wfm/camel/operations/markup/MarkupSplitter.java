@@ -113,7 +113,7 @@ public class MarkupSplitter {
             var markupProperties = _aggregateJobPropertiesUtil.getPropertyMap(
                     job, media, markupAction);
 
-            if (_aggregateJobPropertiesUtil.canSkipAction(media, markupProperties)) {
+            if (!_aggregateJobPropertiesUtil.actionAppliesToMedia(media, markupProperties)) {
                 continue;
             }
 

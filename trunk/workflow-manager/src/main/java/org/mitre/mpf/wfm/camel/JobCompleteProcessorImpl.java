@@ -404,8 +404,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         }
                     }
 
-                    Collection<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
-                                                                             taskIndex, actionIndex);
+                    SortedSet<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
+                                                                            taskIndex, actionIndex);
                     if (tracks.isEmpty()) {
                         trackCounter.set(media.getId(), taskIndex, actionIndex,
                                          JsonActionOutputObject.NO_TRACKS_TYPE, 0);
@@ -438,6 +438,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 action.getAlgorithm(), mediaOutputObject);
                     }
                     else {
+                        int trackIndex = 0;
                         for (Track track : tracks) {
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
@@ -447,7 +448,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                     action.getAlgorithm();
 
                             JsonTrackOutputObject jsonTrackOutputObject
-                                    = createTrackOutputObject(track, stateKey, type, action, media, job);
+                                    = createTrackOutputObject(track, trackIndex, stateKey, type, action, media, job);
 
                             if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
                                 mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
@@ -468,6 +469,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                 actionSet.add(jsonAction);
                                 jsonAction.getTracks().add(jsonTrackOutputObject);
                             }
+                            trackIndex++;
                         }
                     }
 
@@ -503,10 +505,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private JsonTrackOutputObject createTrackOutputObject(Track track, String stateKey, String type,
-                                                          Action action,
-                                                          Media media,
-                                                          BatchJob job) {
+    private JsonTrackOutputObject createTrackOutputObject(Track track, int trackIndex, String stateKey, String type,
+                                                          Action action, Media media, BatchJob job) {
         JsonDetectionOutputObject exemplar = createDetectionOutputObject(track.getExemplar());
 
         String artifactsAndExemplarsOnlyProp = aggregateJobPropertiesUtil.getValue(
@@ -531,6 +531,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
 
         return new JsonTrackOutputObject(
+            trackIndex,
             TextUtils.getTrackUuid(media.getSha256(),
                                    track.getExemplar().getMediaOffsetFrame(),
                                    track.getExemplar().getX(),

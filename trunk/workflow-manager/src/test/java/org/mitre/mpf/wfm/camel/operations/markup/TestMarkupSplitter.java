@@ -122,23 +122,23 @@ public class TestMarkupSplitter {
         {
             Track track = createTrack(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "some really really long class",
-                            NUMERIC_PROP_NAME, "9.99999"),
+                                          NUMERIC_PROP_NAME, "9.99999"),
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
-                            NUMERIC_PROP_NAME, "7000.5555"));
+                                          NUMERIC_PROP_NAME, "7000.5555"));
             Assert.assertEquals("some reall 10.000",
                                 MarkupSplitter.getLabel(track, "", TEXT_PROP_NAME, NUMERIC_PROP_NAME).get());
         }
         {
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abc",
-                            NUMERIC_PROP_NAME, "7000.5555"));
+                                          NUMERIC_PROP_NAME, "7000.5555"));
             Assert.assertEquals("abc 7000.556",
                                 MarkupSplitter.getLabel(detection, "", TEXT_PROP_NAME, NUMERIC_PROP_NAME).get());
         }
         {
             Detection detection = createDetection(
                     ImmutableSortedMap.of(TEXT_PROP_NAME, "abcdefgh   cutoff",
-                            NUMERIC_PROP_NAME, "7000.5"));
+                                          NUMERIC_PROP_NAME, "7000.5"));
             Assert.assertEquals("abcdefgh 7000.500",
                                 MarkupSplitter.getLabel(detection, "", TEXT_PROP_NAME, NUMERIC_PROP_NAME).get());
         }

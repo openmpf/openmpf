@@ -392,12 +392,12 @@ public class TestMediaInspectionProcessor {
 
     @Test
     public void testCalculateDurationMilliseconds() {
-        Assert.assertEquals(7800, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.8"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.86"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.860"));
-        Assert.assertEquals(7080, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.08"));
-        Assert.assertEquals(7086, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.086"));
-        Assert.assertEquals(45_296_789, MediaInspectionProcessor.calculateDurationMilliseconds("12:34:56.789"));
+        Assert.assertEquals(7800, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.8"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.86"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.860"));
+        Assert.assertEquals(7080, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.08"));
+        Assert.assertEquals(7086, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.086"));
+        Assert.assertEquals(45_296_789, MediaInspectionHelper.calculateDurationMilliseconds("12:34:56.789"));
     }
 
 

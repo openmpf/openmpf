@@ -404,7 +404,7 @@ public class MediaInspectionHelper {
         return metadata;
     }
 
-    private static int calculateDurationMilliseconds(String durationStr) {
+    public static int calculateDurationMilliseconds(String durationStr) {
         if (durationStr != null) {
             String[] durationArray = durationStr.split("\\.|:");
             int hours = Integer.parseInt(durationArray[0]);

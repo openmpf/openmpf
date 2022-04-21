@@ -68,18 +68,21 @@ public class BatchJobImpl implements BatchJob {
 
     // Table of media id and task index to set of action indices
     private final Table<Long, Integer, Set<Integer>> _mediaAndTaskToActions = HashBasedTable.create();
+    @Override
     public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex) {
         if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
             return false;
         }
         return _mediaAndTaskToActions.get(mediaId, taskIndex).contains(actionIndex);
     }
+    @Override
     public void setProcessedAction(long mediaId, int taskIndex, int actionIndex) {
         if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
-            _mediaAndTaskToActions.put(mediaId, taskIndex, new HashSet());
+            _mediaAndTaskToActions.put(mediaId, taskIndex, new HashSet<>());
         }
         _mediaAndTaskToActions.get(mediaId, taskIndex).add(actionIndex);
     }
+    @Override
     public int getLastProcessedTaskIndex(long mediaId) {
         var tasks = _mediaAndTaskToActions.row(mediaId).keySet();
         return tasks.isEmpty() ? -1 : Collections.max(tasks);

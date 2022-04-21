@@ -988,7 +988,7 @@ public class TestTiesDbService {
 
         BatchJob job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(parentMedia),
+                null, null, List.of(parentMedia),
                 Map.of(), Map.of());
 
         if (createChildren) {
@@ -1172,7 +1172,7 @@ public class TestTiesDbService {
 
         BatchJob job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(parentMedia),
+                null, null, List.of(parentMedia),
                 Map.of(), Map.of());
 
         job.addDerivativeMedia(childMedia1);
@@ -1279,7 +1279,7 @@ public class TestTiesDbService {
 
         BatchJob job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(parentMedia),
+                null, null, List.of(parentMedia),
                 Map.of(), Map.of());
 
         job.addDerivativeMedia(childMedia1);
@@ -1544,7 +1544,7 @@ public class TestTiesDbService {
 
         BatchJob job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
-                true, null, null, List.of(parentMedia),
+                null, null, List.of(parentMedia),
                 Map.of(), Map.of());
 
         if (addChildren) {

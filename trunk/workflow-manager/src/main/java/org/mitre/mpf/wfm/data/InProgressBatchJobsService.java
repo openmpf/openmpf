@@ -37,6 +37,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -190,16 +190,8 @@ public class InProgressBatchJobsService {
         // Clean up derivative media directory for this job in case any media was moved to remote storage.
         boolean hasDerivativeMedia = job.getMedia().stream().anyMatch(Media::isDerivative);
         if (hasDerivativeMedia) {
-            try {
-                Path derivativeMediaPath = _propertiesUtil.getJobDerivativeMediaDirectory(jobId).toPath();
-                Files.walk(derivativeMediaPath)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .filter(File::isDirectory)
-                        .forEach(File::delete); // only deletes empty directories
-            } catch (IOException e) {
-                LOG.warn("Unable to clean up derivative media directories for job {}.", jobId, e);
-            }
+            Path derivativeMediaPath = _propertiesUtil.getJobDerivativeMediaDirectory(jobId).toPath();
+            IoUtils.deleteEmptyDirectoriesRecursively(derivativeMediaPath);
         }
     }
 
@@ -460,7 +452,7 @@ public class InProgressBatchJobsService {
         getMediaImpl(jobId, mediaId).setFrameTimeInfo(frameTimeInfo);
     }
 
-    private synchronized MediaImpl getMediaImpl(long jobId, long mediaId) {
+    private MediaImpl getMediaImpl(long jobId, long mediaId) {
         MediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {
             throw new IllegalArgumentException(String.format("Job %s does not have media with id %s", jobId, mediaId));

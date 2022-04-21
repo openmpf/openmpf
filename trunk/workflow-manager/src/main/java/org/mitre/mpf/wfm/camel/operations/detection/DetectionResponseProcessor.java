@@ -170,7 +170,16 @@ public class DetectionResponseProcessor
         checkErrors(jobId, mediaLabel, detectionResponse, startFrame, stopFrame, startTime, stopTime);
 
         // Begin iterating through the tracks that were found by the detector.
+        boolean isMediaType = videoResponse.getDetectionType().equals("MEDIA");
         for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
+            SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
+
+            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            if (hasDerivativeMedia) {
+                throw new WfmProcessingException(
+                        "Unsupported operation. Derivative media is not supported for jobs with video source media.");
+            }
+
             if (objectTrack.getConfidence() < confidenceThreshold) {
                 continue;
             }
@@ -197,7 +206,7 @@ public class DetectionResponseProcessor
                         videoResponse.getDetectionType(),
                         objectTrack.getConfidence(),
                         detections,
-                        toImmutableMap(objectTrack.getDetectionPropertiesList()));
+                        trackProperties);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -222,9 +231,17 @@ public class DetectionResponseProcessor
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, startTime, stopTime);
 
         // Begin iterating through the tracks that were found by the detector.
+        boolean isMediaType = audioResponse.getDetectionType().equals("MEDIA");
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
+            SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
+
+            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            if (hasDerivativeMedia) {
+                throw new WfmProcessingException(
+                        "Unsupported operation. Derivative media is not supported for jobs with audio source media.");
+            }
+
             if (objectTrack.getConfidence() >= confidenceThreshold) {
-                SortedMap<String, String> properties = toImmutableMap(objectTrack.getDetectionPropertiesList());
                 Detection detection = new Detection(
                         0,
                         0,
@@ -233,7 +250,7 @@ public class DetectionResponseProcessor
                         objectTrack.getConfidence(),
                         0,
                         objectTrack.getStartTime(),
-                        properties);
+                        trackProperties);
 
                 Track track = new Track(
                         jobId,
@@ -247,7 +264,7 @@ public class DetectionResponseProcessor
                         audioResponse.getDetectionType(),
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
-                        properties);
+                        trackProperties);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -264,7 +281,17 @@ public class DetectionResponseProcessor
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 1, 0, 0);
 
         // Iterate through the list of detections. It is assumed that detections are not sorted in a meaningful way.
+        boolean isMediaType = imageResponse.getDetectionType().equals("MEDIA");
         for (DetectionProtobuf.ImageLocation location : imageResponse.getImageLocationsList()) {
+            SortedMap<String, String> locationProperties = toImmutableMap(location.getDetectionPropertiesList());
+
+            boolean hasDerivativeMedia = isMediaType &&
+                    locationProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            if (hasDerivativeMedia) {
+                throw new WfmProcessingException(
+                        "Unsupported operation. Derivative media is not supported for jobs with image source media.");
+            }
+
             if (location.getConfidence() >= confidenceThreshold) {
                 Track track = new Track(
                         jobId,
@@ -278,13 +305,12 @@ public class DetectionResponseProcessor
                         imageResponse.getDetectionType(),
                         location.getConfidence(),
                         ImmutableSortedSet.of(toDetection(location, 0, 0)),
-                        toImmutableMap(location.getDetectionPropertiesList()));
+                        locationProperties);
                 _inProgressJobs.addTrack(track);
             }
         }
     }
 
-    // TODO: Handle derivative media for non-generic input media in other process*Response() methods.
     private void processGenericResponse(long jobId,
                                         DetectionProtobuf.DetectionResponse detectionResponse,
                                         DetectionProtobuf.DetectionResponse.GenericResponse genericResponse,
@@ -298,12 +324,11 @@ public class DetectionResponseProcessor
         var futures = new HashMap<DetectionProtobuf.GenericTrack, CompletableFuture<SortedMap<String, String>>>();
 
         // Begin iterating through the tracks that were found by the detector.
+        boolean isMediaType = genericResponse.getDetectionType().equals("MEDIA");
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
             SortedMap<String, String> trackProperties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
-            boolean hasDerivativeMedia = genericResponse.getDetectionType().equals("MEDIA") &&
-                    trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
-
+            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
             if (!hasDerivativeMedia) {
                 processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
                         trackProperties);

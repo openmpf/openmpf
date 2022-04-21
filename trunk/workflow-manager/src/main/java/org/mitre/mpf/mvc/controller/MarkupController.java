@@ -315,7 +315,8 @@ public class MarkupController {
                                      markupResult.getSourceUri(), isImage, fileExists);
     }
 
-    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
+    private static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult,
+                                                                                 Media media) {
         String markupMediaType = "";
         String markupDownloadUrl = "";
         String sourceMediaType = "";

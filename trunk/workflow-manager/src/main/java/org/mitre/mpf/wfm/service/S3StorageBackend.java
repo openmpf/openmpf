@@ -54,12 +54,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.RetryPolicyContext;
+import software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -68,6 +67,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Semaphore;
@@ -410,9 +410,17 @@ public class S3StorageBackend implements StorageBackend {
                     properties.apply(MpfConstants.S3_SECRET_KEY));
         }
 
-        var retry = RetryPolicy.builder()
-                .numRetries(retryCount)
+        var backoff = FullJitterBackoffStrategy.builder()
+                .baseDelay(Duration.ofMillis(100))
+                .maxBackoffTime(Duration.ofSeconds(30))
                 .build();
+
+        var retry = RetryPolicy.builder()
+                .backoffStrategy(backoff)
+                .numRetries(retryCount)
+                .retryCondition(ctx -> shouldRetry(ctx, retryCount))
+                .build();
+
 
         LOG.info("Creating S3 client for endpoint \"{}\"", endpoint);
         return S3Client.builder()
@@ -422,5 +430,21 @@ public class S3StorageBackend implements StorageBackend {
                 .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
                 .overrideConfiguration(o -> o.retryPolicy(retry))
                 .build();
+    }
+
+
+    private static boolean shouldRetry(RetryPolicyContext context, int maxRetries) {
+        if (context.originalRequest() instanceof HeadObjectRequest
+                && context.httpStatusCode() == 404) {
+            // A HEAD request is sent prior to uploading an object to determine if the object
+            // already exists and the upload can be avoided. In most cases the object will not
+            // exist, so we expect the 404 error in that case.
+            return false;
+        }
+        int attemptsRemaining = maxRetries - context.retriesAttempted();
+        LOG.warn("\"{}\" responded with a non-200 status code of {}. " +
+                         "There are {} attempts remaining.",
+                 context.request().getUri(), context.httpStatusCode(), attemptsRemaining);
+        return true;
     }
 }

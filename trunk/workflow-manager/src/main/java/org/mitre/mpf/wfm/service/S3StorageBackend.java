@@ -432,14 +432,17 @@ public class S3StorageBackend implements StorageBackend {
 
 
     private static boolean shouldRetry(RetryPolicyContext context, int maxRetries) {
-        if (context.originalRequest() instanceof HeadObjectRequest) {
-            return context.httpStatusCode() != 404;
+        if (context.originalRequest() instanceof HeadObjectRequest
+                && context.httpStatusCode() == 404) {
+            // A HEAD request is sent prior to uploading an object to determine if the object
+            // already exists and the upload can be avoided. In most cases the object will not
+            // exist, so we expect the 404 error in that case.
+            return false;
         }
         int attemptsRemaining = maxRetries - context.retriesAttempted();
-        var httpRequest = context.request();
         LOG.warn("\"{}\" responded with a non-200 status code of {}. " +
                          "There are {} attempts remaining.",
-                 httpRequest.getUri(), context.httpStatusCode(), attemptsRemaining);
+                 context.request().getUri(), context.httpStatusCode(), attemptsRemaining);
         return true;
     }
 }

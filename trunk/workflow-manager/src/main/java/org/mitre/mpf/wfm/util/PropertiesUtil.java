@@ -772,5 +772,9 @@ public class PropertiesUtil {
     public int getProtobufSizeLimit() {
         return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
     }
+
+    public int getS3ClientCacheCount() {
+        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
+    }
 }
 

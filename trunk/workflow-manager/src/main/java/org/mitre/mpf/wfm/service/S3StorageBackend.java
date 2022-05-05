@@ -27,10 +27,13 @@
 
 package org.mitre.mpf.wfm.service;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -68,6 +71,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Semaphore;
@@ -77,6 +81,8 @@ import java.util.function.Function;
 public class S3StorageBackend implements StorageBackend {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3StorageBackend.class);
+
+    private static LoadingCache<S3ClientConfig, S3Client> _s3ClientCache;
 
     private final PropertiesUtil _propertiesUtil;
 
@@ -91,6 +97,9 @@ public class S3StorageBackend implements StorageBackend {
                             LocalStorageBackend localStorageBackend,
                             InProgressBatchJobsService inProgressBatchJobsService,
                             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        synchronized (S3StorageBackend.class) {
+            _s3ClientCache = createClientCache(propertiesUtil.getS3ClientCacheCount());
+        }
         _propertiesUtil = propertiesUtil;
         _localStorageBackend = localStorageBackend;
         _inProgressJobs = inProgressBatchJobsService;
@@ -379,8 +388,10 @@ public class S3StorageBackend implements StorageBackend {
             String mediaUri,
             S3UrlUtil s3UrlUtil,
             Function<String, String> properties) throws StorageException {
-        var endpoint = s3UrlUtil.getS3Endpoint(mediaUri);
-        return getS3Client(endpoint, _propertiesUtil.getRemoteMediaDownloadRetries(), properties);
+        return _s3ClientCache.getUnchecked(new S3ClientConfig(
+                s3UrlUtil.getS3Endpoint(mediaUri),
+                _propertiesUtil.getRemoteMediaDownloadRetries(),
+                properties));
     }
 
     private S3Client getS3UploadClient(
@@ -388,46 +399,10 @@ public class S3StorageBackend implements StorageBackend {
             Function<String, String> properties) throws StorageException {
         var endpoint = s3UrlUtil.getS3Endpoint(
                 properties.apply(MpfConstants.S3_RESULTS_BUCKET));
-        return getS3Client(endpoint, _propertiesUtil.getHttpStorageUploadRetryCount(), properties);
-
-    }
-
-    private static S3Client getS3Client(URI endpoint, int retryCount,
-                                        Function<String, String> properties) {
-        var sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
-        AwsCredentials credentials;
-        if (sessionToken != null && !sessionToken.isBlank()) {
-            credentials = AwsSessionCredentials.create(
-                    properties.apply(MpfConstants.S3_ACCESS_KEY),
-                    properties.apply(MpfConstants.S3_SECRET_KEY),
-                    sessionToken);
-        }
-        else {
-            credentials = AwsBasicCredentials.create(
-                    properties.apply(MpfConstants.S3_ACCESS_KEY),
-                    properties.apply(MpfConstants.S3_SECRET_KEY));
-        }
-
-        var backoff = FullJitterBackoffStrategy.builder()
-                .baseDelay(Duration.ofMillis(100))
-                .maxBackoffTime(Duration.ofSeconds(30))
-                .build();
-
-        var retry = RetryPolicy.builder()
-                .backoffStrategy(backoff)
-                .numRetries(retryCount)
-                .retryCondition(ctx -> shouldRetry(ctx, retryCount))
-                .build();
-
-
-        LOG.info("Creating S3 client for endpoint \"{}\"", endpoint);
-        return S3Client.builder()
-                .region(Region.of(properties.apply(MpfConstants.S3_REGION)))
-                .endpointOverride(endpoint)
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
-                .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
-                .overrideConfiguration(o -> o.retryPolicy(retry))
-                .build();
+        return _s3ClientCache.getUnchecked(new S3ClientConfig(
+                endpoint,
+                _propertiesUtil.getHttpStorageUploadRetryCount(),
+                properties));
     }
 
 
@@ -444,5 +419,91 @@ public class S3StorageBackend implements StorageBackend {
                          "There are {} attempts remaining.",
                  context.request().getUri(), context.httpStatusCode(), attemptsRemaining);
         return true;
+    }
+
+
+    private static LoadingCache<S3ClientConfig, S3Client> createClientCache(int cacheSize) {
+        return CacheBuilder.newBuilder()
+                .maximumSize(cacheSize)
+                .<S3ClientConfig, S3Client>removalListener(l -> l.getValue().close())
+                .build(CacheLoader.from(S3StorageBackend::buildClient));
+    }
+
+
+    private static S3Client buildClient(S3ClientConfig clientConfig) {
+        AwsCredentials credentials;
+        if (clientConfig.sessionToken != null && !clientConfig.sessionToken.isBlank()) {
+            credentials = AwsSessionCredentials.create(
+                    clientConfig.accessKey,
+                    clientConfig.secretKey,
+                    clientConfig.sessionToken);
+        }
+        else {
+            credentials = AwsBasicCredentials.create(
+                    clientConfig.accessKey,
+                    clientConfig.secretKey);
+        }
+
+        var backoff = FullJitterBackoffStrategy.builder()
+                .baseDelay(Duration.ofMillis(100))
+                .maxBackoffTime(Duration.ofSeconds(30))
+                .build();
+
+        var retry = RetryPolicy.builder()
+                .backoffStrategy(backoff)
+                .numRetries(clientConfig.retryCount)
+                .retryCondition(ctx -> shouldRetry(ctx, clientConfig.retryCount))
+                .build();
+
+
+        LOG.info("Creating S3 client for endpoint \"{}\"", clientConfig.endpoint);
+        return S3Client.builder()
+                .region(Region.of(clientConfig.region))
+                .endpointOverride(clientConfig.endpoint)
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
+                .overrideConfiguration(o -> o.retryPolicy(retry))
+                .build();
+    }
+
+
+    private static class S3ClientConfig {
+        final URI endpoint;
+        final int retryCount;
+        final String accessKey;
+        final String secretKey;
+        final String sessionToken;
+        final String region;
+
+        S3ClientConfig(URI endpoint, int retryCount, Function<String, String> properties) {
+            this.endpoint = endpoint;
+            this.retryCount = retryCount;
+            accessKey = properties.apply(MpfConstants.S3_ACCESS_KEY);
+            secretKey = properties.apply(MpfConstants.S3_SECRET_KEY);
+            sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
+            region = properties.apply(MpfConstants.S3_REGION);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)  {
+                return true;
+            }
+            if (!(o instanceof S3ClientConfig)) {
+                return false;
+            }
+            var that = (S3ClientConfig) o;
+            return endpoint.equals(that.endpoint)
+                    && retryCount == that.retryCount
+                    && accessKey.equals(that.accessKey)
+                    && secretKey.equals(that.secretKey)
+                    && Objects.equals(sessionToken, that.sessionToken)
+                    && region.equals(that.region);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(endpoint, retryCount, accessKey, secretKey, sessionToken, region);
+        }
     }
 }

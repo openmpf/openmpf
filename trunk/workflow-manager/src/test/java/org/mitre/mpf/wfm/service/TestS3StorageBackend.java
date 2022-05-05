@@ -75,10 +75,7 @@ public class TestS3StorageBackend {
     private final WorkflowPropertyService _mockWorkflowPropertyService
             = mock(WorkflowPropertyService.class);
 
-    private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
-            _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPropertiesUtil,
-                                           _mockWorkflowPropertyService));
+    private S3StorageBackend _s3StorageBackend;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -119,6 +116,14 @@ public class TestS3StorageBackend {
         GET_COUNT.set(0);
         REQUESTED_GET_FAILURES.set(0);
         REQUESTED_PUT_FAILURES.set(0);
+
+        when(_mockPropertiesUtil.getS3ClientCacheCount())
+                .thenReturn(20);
+
+        _s3StorageBackend = new S3StorageBackend(
+                _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
+                new AggregateJobPropertiesUtil(_mockPropertiesUtil,
+                                               _mockWorkflowPropertyService));
     }
 
     private static Map<String, String> getS3Properties() {

@@ -52,16 +52,14 @@ public class MediaImpl implements Media {
     @Override
     public long getId() { return _id; }
 
-    private long _parentId = -1l;
+    private final long _parentId;
     @Override
     public long getParentId() { return _parentId; }
-    public void setParentId(long parentId) { _parentId = parentId; }
 
-    private int _creationTaskIndex = -1;
+    private final int _creationTaskIndex;
     @Override
     @JsonIgnore
     public int getCreationTask() { return _creationTaskIndex; }
-    public void setCreationTask(int creationTaskIndex) { _creationTaskIndex = creationTaskIndex; }
 
     @Override
     @JsonIgnore
@@ -174,34 +172,13 @@ public class MediaImpl implements Media {
 
     public MediaImpl(
             long id,
-            String uri,
-            UriScheme uriScheme,
-            Path localPath,
-            Map<String, String> mediaSpecificProperties,
-            Map<String, String> providedMetadata,
-            String errorMessage) {
-        _id = id;
-        _uri = IoUtils.normalizeUri(uri);
-        _uriScheme = uriScheme;
-        _localPath = localPath;
-        _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        if (StringUtils.isNotEmpty(errorMessage)) {
-            _errorMessage = createErrorMessage(id, uri, errorMessage);
-            _failed = true;
-        }
-    }
-
-
-    public MediaImpl(
-            long id,
             long parentId,
             int creationTaskIndex,
             String uri,
             UriScheme uriScheme,
             Path localPath,
             Map<String, String> mediaSpecificProperties,
-            Map<String, String> metadata,
+            Map<String, String> providedMetadata,
             String errorMessage) {
         _id = id;
         _parentId = parentId;
@@ -210,18 +187,31 @@ public class MediaImpl implements Media {
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.of();
-        _metadata.putAll(metadata);
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
+        _metadata.putAll(providedMetadata);
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
         }
     }
 
+    public MediaImpl(
+            long id,
+            String uri,
+            UriScheme uriScheme,
+            Path localPath,
+            Map<String, String> mediaSpecificProperties,
+            Map<String, String> providedMetadata,
+            String errorMessage) {
+        this(id, -1, 0, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+    }
+
 
     @JsonCreator
     public MediaImpl(
             @JsonProperty("id") long id,
+            @JsonProperty("parentId") long parentId,
+            @JsonProperty("creationTaskIndex") int creationTaskIndex,
             @JsonProperty("uri") String uri,
             @JsonProperty("uriScheme") UriScheme uriScheme,
             @JsonProperty("localPath") Path localPath,
@@ -229,7 +219,8 @@ public class MediaImpl implements Media {
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+        this(id, parentId, creationTaskIndex, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata,
+                errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -242,12 +233,16 @@ public class MediaImpl implements Media {
         }
 
         MediaImpl result = new MediaImpl(
-                originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
-                originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
+                originalMedia.getId(),
+                originalMedia.getParentId(),
+                originalMedia.getCreationTask(),
+                originalMedia.getUri(),
+                originalMedia.getUriScheme(),
+                originalMedia.getLocalPath(),
+                originalMedia.getMediaSpecificProperties(),
+                originalMedia.getProvidedMetadata(),
+                originalMedia.getErrorMessage());
 
-        result.setParentId(originalMedia.getParentId());
-        result.setCreationTask(originalMedia.getCreationTask());
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());

@@ -79,6 +79,10 @@ public class MediaMetadataValidator {
     }
 
     public boolean skipInspection(long jobId, Media media) {
+        if (media.isDerivative()) {
+            return false;
+        }
+
         var mediaMetadata = media.getProvidedMetadata();
         if (mediaMetadata.isEmpty()) {
             return false;

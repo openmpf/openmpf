@@ -203,7 +203,7 @@ public class MediaImpl implements Media {
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
             String errorMessage) {
-        this(id, -1, 0, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+        this(id, -1, -1, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
     }
 
 

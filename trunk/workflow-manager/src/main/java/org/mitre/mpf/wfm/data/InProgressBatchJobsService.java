@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -390,7 +391,7 @@ public class InProgressBatchJobsService {
         LOG.info("Initializing derivative media from {} with id {}", uri.toString(), mediaId);
 
         UriScheme uriScheme = UriScheme.parse(uri.getScheme());
-        String errorMessage = null;
+        String errorMessage;
 
         if (uriScheme == UriScheme.UNDEFINED) {
             errorMessage = NOT_DEFINED_URI_SCHEME;
@@ -412,7 +413,9 @@ public class InProgressBatchJobsService {
                              uri.toString(),
                              uriScheme,
                              localPath,
-                             getMediaImpl(jobId, parentMediaId).getMediaSpecificProperties(),
+                             // Derivative media do not inherit parent media properties. For example, specifying
+                             // a ROTATION value on the parent may not be appropriate for the children.
+                             ImmutableMap.of(),
                              metadata,
                              errorMessage);
     }

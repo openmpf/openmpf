@@ -176,9 +176,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.getTimeCompleted(),
                 outputObjectUri,
                 outputSha.getValue(),
-                trackCounter);if (!tiesDbFuture.isDone()) {
-                inProgressBatchJobs.setCallbacksInProgress(jobId);
-            }
+                trackCounter);
+        if (!tiesDbFuture.isDone()) {
+            inProgressBatchJobs.setCallbacksInProgress(jobId);
+        }
 
         if (job.getCallbackUrl().isPresent()) {
             inProgressBatchJobs.setCallbacksInProgress(jobId);

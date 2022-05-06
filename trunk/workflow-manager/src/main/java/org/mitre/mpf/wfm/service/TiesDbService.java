@@ -162,7 +162,6 @@ public class TiesDbService {
                     TrackTypeCount::merge);
         }
 
-
         var futures = new ArrayList<CompletableFuture<Void>>();
         for (var entry : parentWithDerivativeCounts.entrySet()) {
             futures.add(addActionAssertion(

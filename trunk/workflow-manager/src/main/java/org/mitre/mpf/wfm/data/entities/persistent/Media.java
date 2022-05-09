@@ -39,7 +39,7 @@ import java.util.Optional;
 // Suppress because it's better than having to explicitly use MediaImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
 @JsonSerialize(as = MediaImpl.class)
-public interface Media extends Comparable<Media> {
+public interface Media {
 
     /** The unique identifier for this file. */
     public long getId();

@@ -199,8 +199,11 @@ public class MarkupController {
         //handle paging
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered
                 .stream()
-                .sorted(Comparator.comparingLong(MarkupResultConvertedModel::getParentMediaId)
-                        .thenComparingLong(MarkupResultConvertedModel::getMediaId))
+                .sorted((o1, o2) -> { // group by parent
+                    long id1 = o1.getParentMediaId() == -1 ? o1.getMediaId() : o1.getParentMediaId();
+                    long id2 = o2.getParentMediaId() == -1 ? o2.getMediaId() : o2.getParentMediaId();
+                    return Long.compare(id1, id2);
+                })
                 .skip(start)
                 .limit(length)
                 .collect(Collectors.toList());

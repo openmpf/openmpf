@@ -66,6 +66,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
@@ -468,6 +469,7 @@ public class JobController {
                 else {
                     var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
                     mediaUris = batchJob.getMedia().stream()
+                            .filter(Predicate.not(Media::isDerivative)) // only report source media URIs
                             .map(Media::getUri)
                             .collect(toList());
                 }

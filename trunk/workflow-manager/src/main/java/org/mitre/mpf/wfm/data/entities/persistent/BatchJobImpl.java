@@ -31,7 +31,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.*;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Table;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -39,6 +41,7 @@ import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // Deprecated. outputEnabled is no longer a batch job property. Left for backwards compatibility.
 @JsonIgnoreProperties({ "outputEnabled" })
@@ -99,27 +102,20 @@ public class BatchJobImpl implements BatchJob {
     public int getPriority() { return _priority; }
 
 
-    private final ImmutableSortedMap<Long, MediaImpl> _media;
+    private final SortedMap<Long, MediaImpl> _media;
     @Override
-    public ImmutableCollection<MediaImpl> getMedia() {
-        return ImmutableSortedSet.<MediaImpl>naturalOrder()
-                .addAll(_media.values())
-                .addAll(_derivativeMedia.values())
-                .build();
+    public Collection<MediaImpl> getMedia() {
+        return Collections.unmodifiableCollection(_media.values());
     }
     @Override
     public MediaImpl getMedia(long mediaId) {
-        if (_media.containsKey(mediaId)){
-            return _media.get(mediaId);
-        }
-        return _derivativeMedia.get(mediaId);
+        return _media.get(mediaId);
     }
 
 
-    private final SortedMap<Long, MediaImpl> _derivativeMedia = new TreeMap<>();
     @Override
     public void addDerivativeMedia(Media media) {
-        _derivativeMedia.put(media.getId(), MediaImpl.toMediaImpl(media));
+        _media.put(media.getId(), MediaImpl.toMediaImpl(media));
     }
 
 
@@ -238,10 +234,11 @@ public class BatchJobImpl implements BatchJob {
         _callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
 
         _media = media.stream()
-                .collect(ImmutableSortedMap.toImmutableSortedMap(
-                        Comparator.naturalOrder(),
+                .collect(Collectors.toMap(
                         MediaImpl::getId,
-                        Function.identity()));
+                        Function.identity(),
+                        (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },
+                        TreeMap::new));
 
         _jobProperties = ImmutableMap.copyOf(jobProperties);
 

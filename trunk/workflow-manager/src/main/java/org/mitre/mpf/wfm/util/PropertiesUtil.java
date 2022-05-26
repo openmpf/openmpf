@@ -126,7 +126,7 @@ public class PropertiesUtil {
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
-        derivativeMediaDirectory = createOrFail(share, "derivatives", permissions);
+        derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -148,6 +148,7 @@ public class PropertiesUtil {
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
         log.debug("Remote Media Directory = {}", remoteMediaDirectory);
         log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
+        log.debug("Derivative Media Directory = {}", derivativeMediaDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 

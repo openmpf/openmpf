@@ -174,7 +174,8 @@ public class DetectionResponseProcessor
         for (DetectionProtobuf.VideoTrack objectTrack : videoResponse.getVideoTracksList()) {
             SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
 
-            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            boolean hasDerivativeMedia = isMediaType &&
+                                         trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (hasDerivativeMedia) {
                 throw new WfmProcessingException(
                         "Unsupported operation. Derivative media is not supported for jobs with video source media.");
@@ -235,7 +236,8 @@ public class DetectionResponseProcessor
         for (DetectionProtobuf.AudioTrack objectTrack : audioResponse.getAudioTracksList()) {
             SortedMap<String, String> trackProperties = toImmutableMap(objectTrack.getDetectionPropertiesList());
 
-            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            boolean hasDerivativeMedia = isMediaType &&
+                                         trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (hasDerivativeMedia) {
                 throw new WfmProcessingException(
                         "Unsupported operation. Derivative media is not supported for jobs with audio source media.");
@@ -286,7 +288,7 @@ public class DetectionResponseProcessor
             SortedMap<String, String> locationProperties = toImmutableMap(location.getDetectionPropertiesList());
 
             boolean hasDerivativeMedia = isMediaType &&
-                    locationProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+                                         locationProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (hasDerivativeMedia) {
                 throw new WfmProcessingException(
                         "Unsupported operation. Derivative media is not supported for jobs with image source media.");
@@ -328,7 +330,8 @@ public class DetectionResponseProcessor
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
             SortedMap<String, String> trackProperties = toMutableMap(objectTrack.getDetectionPropertiesList());
 
-            boolean hasDerivativeMedia = isMediaType && trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_PATH);
+            boolean hasDerivativeMedia = isMediaType &&
+                                         trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (!hasDerivativeMedia) {
                 processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
                         trackProperties);
@@ -475,17 +478,16 @@ public class DetectionResponseProcessor
                                                              long parentMediaId,
                                                              int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
-        Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_PATH)).toAbsolutePath();
+        Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH)).toAbsolutePath();
 
         // Derivative media may be stored remotely.
-        var newUriAndLocalPath = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
-        var newUri = newUriAndLocalPath.getLeft();
-        var newLocalPath = newUriAndLocalPath.getRight();
+        var newUri = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
 
-        trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_PATH, newUri.toString()); // update track properties
+        // Add the media id to allow users to associate media tracks with media elements in the JSON output.
+        trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));
 
         Media derivativeMedia = _inProgressJobs.initDerivativeMedia(
-                jobId, mediaId, parentMediaId, taskIndex, newUri, newLocalPath, trackProperties);
+                mediaId, parentMediaId, taskIndex, newUri, localPath, trackProperties);
 
         _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 

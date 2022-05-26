@@ -213,7 +213,6 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws StorageException, IOException {
-        _localStorageBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
         BatchJob job = _inProgressJobs.getJob(jobId);
         Function<String, String> combinedProperties =
                 _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));

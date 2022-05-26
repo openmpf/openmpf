@@ -30,7 +30,6 @@ package org.mitre.mpf.wfm.service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
@@ -47,10 +46,8 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class StorageService {
@@ -185,27 +182,22 @@ public class StorageService {
     }
 
 
-    public Pair<URI, Path> storeDerivativeMedia(long jobId, long mediaId, long parentMediaId, Path localPath) {
+    public URI storeDerivativeMedia(long jobId, long mediaId, long parentMediaId, Path localPath) {
         try {
             for (StorageBackend remoteBackend : _remoteBackends) {
                 if (remoteBackend.canStoreDerivativeMedia(jobId, parentMediaId)) {
-                    var uploadedUri = remoteBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
-
-                    // Move media to tmp directory so it gets cleaned up when the job terminates.
-                    var tempPath = _propertiesUtil.getTemporaryMediaDirectory()
-                            .toPath()
-                            .resolve(UUID.randomUUID().toString())
-                            .toAbsolutePath();
-                    Files.move(localPath, tempPath);
-
-                    return Pair.of(uploadedUri, tempPath);
+                    return remoteBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
                 }
             }
         } catch (IOException | StorageException ex) {
             handleDerivativeMediaRemoteStorageFailure(jobId, mediaId, parentMediaId, ex);
         }
-        URI localUri = _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
-        return Pair.of(localUri, localPath);
+        try {
+            return _localBackend.storeDerivativeMedia(jobId, parentMediaId, localPath);
+        } catch (IOException ex) {
+            handleDerivativeMediaLocalStorageFailure(jobId, mediaId, parentMediaId, localPath, ex);
+        }
+        return localPath.toUri();
     }
 
 
@@ -216,5 +208,15 @@ public class StorageService {
         _inProgressJobs.addWarning(
                 jobId, mediaId, IssueCodes.REMOTE_STORAGE_UPLOAD,
                 "Media was stored locally because storing it remotely failed due to: " + e);
+    }
+
+    private void handleDerivativeMediaLocalStorageFailure(long jobId, long mediaId, long parentMediaId, Path localPath,
+                                                          Exception e) {
+        LOG.warn(String.format("Failed to store derivative media with media id %d and parent media id %d for " +
+                        "job id %d. File will remain in %s.",
+                mediaId, parentMediaId, jobId, localPath), e);
+        _inProgressJobs.addWarning(
+                jobId, mediaId, IssueCodes.LOCAL_STORAGE,
+                "Media was not moved because storing it locally failed due to: " + e);
     }
 }

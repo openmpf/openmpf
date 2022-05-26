@@ -381,8 +381,7 @@ public class InProgressBatchJobsService {
         }
     }
 
-    public synchronized Media initDerivativeMedia(long jobId,
-                                                  long mediaId,
+    public synchronized Media initDerivativeMedia(long mediaId,
                                                   long parentMediaId,
                                                   int taskIndex,
                                                   URI uri,
@@ -404,7 +403,8 @@ public class InProgressBatchJobsService {
         }
 
         var metadata = new HashMap<>(trackProperties); // include page number and other info, if available
-        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_PATH); // the URI is now a class data member
+        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
+        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_ID);
         metadata.put(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE");
 
         return new MediaImpl(mediaId,

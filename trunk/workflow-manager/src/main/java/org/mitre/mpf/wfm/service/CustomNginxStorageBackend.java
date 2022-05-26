@@ -50,7 +50,6 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -181,11 +180,9 @@ public class CustomNginxStorageBackend implements StorageBackend {
     @Override
     public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws IOException, StorageException {
         URI serviceUri = getServiceUri(jobId);
-        URI newLocation;
         try (InputStream inputStream = Files.newInputStream(localPath)) {
-            newLocation = store(serviceUri, inputStream);
+            return store(serviceUri, inputStream);
         }
-        return newLocation;
     }
 
 

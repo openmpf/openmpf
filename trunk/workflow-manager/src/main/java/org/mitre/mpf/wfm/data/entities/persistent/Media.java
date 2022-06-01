@@ -61,8 +61,14 @@ public interface Media {
     /** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
     public Path getLocalPath();
 
+    /** The path to the media that the JSON output object should use. */
+    public String getOutputUri();
+
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     public Optional<Path> getConvertedMediaPath();
+
+    /** For derivative media, this will contain the URI to the media once placed in storage at the end of a job. */
+    public Optional<String> getStorageUri();
 
     /** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
     public boolean isFailed();

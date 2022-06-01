@@ -384,23 +384,11 @@ public class InProgressBatchJobsService {
     public synchronized Media initDerivativeMedia(long mediaId,
                                                   long parentMediaId,
                                                   int taskIndex,
-                                                  URI uri,
                                                   Path localPath,
                                                   SortedMap<String, String> trackProperties) {
-        LOG.info("Initializing derivative media from {} with id {}", uri.toString(), mediaId);
+        LOG.info("Initializing derivative media from {} with id {}", localPath.toString(), mediaId);
 
-        UriScheme uriScheme = UriScheme.parse(uri.getScheme());
-        String errorMessage;
-
-        if (uriScheme == UriScheme.UNDEFINED) {
-            errorMessage = NOT_DEFINED_URI_SCHEME;
-        }
-        else if (!SUPPORTED_URI_SCHEMES.contains(uriScheme)) {
-            errorMessage = NOT_SUPPORTED_URI_SCHEME;
-        }
-        else {
-            errorMessage = checkForLocalFileError(localPath);
-        }
+        String errorMessage = checkForLocalFileError(localPath);
 
         var metadata = new HashMap<>(trackProperties); // include page number and other info, if available
         metadata.remove(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
@@ -410,8 +398,8 @@ public class InProgressBatchJobsService {
         return new MediaImpl(mediaId,
                              parentMediaId,
                              taskIndex,
-                             uri.toString(),
-                             uriScheme,
+                             localPath.toString(),
+                             UriScheme.FILE,
                              localPath,
                              // Derivative media do not inherit parent media properties. For example, specifying
                              // a ROTATION value on the parent may not be appropriate for the children.

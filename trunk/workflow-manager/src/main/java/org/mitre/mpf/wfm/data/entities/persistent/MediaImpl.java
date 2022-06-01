@@ -84,6 +84,14 @@ public class MediaImpl implements Media {
     public Path getLocalPath() { return _localPath; }
 
 
+    /** The path to the media that the JSON output object should use. */
+    @Override
+    @JsonIgnore
+    public String getOutputUri() {
+        return getStorageUri().orElse(_uri);
+    }
+
+
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     private Path _convertedMediaPath;
     @Override
@@ -92,6 +100,17 @@ public class MediaImpl implements Media {
     }
     public void setConvertedMediaPath(Path path) {
         _convertedMediaPath = path;
+    }
+
+
+    /** For derivative media, this will contain the URI to the media once placed in storage at the end of a job. */
+    private String _storageUri;
+    @Override
+    public Optional<String> getStorageUri() {
+        return Optional.ofNullable(_storageUri);
+    }
+    public void setStorageUri(String storageUri) {
+        _storageUri = storageUri;
     }
 
 
@@ -245,6 +264,7 @@ public class MediaImpl implements Media {
         result.addMetadata(originalMedia.getMetadata());
 
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
+        originalMedia.getStorageUri().ifPresent(result::setStorageUri);
 
         return result;
     }

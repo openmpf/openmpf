@@ -36,7 +36,9 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -121,17 +123,18 @@ public class LocalStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) {
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) {
         return true;
     }
 
     @Override
-    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws IOException {
-        var storagePath = _propertiesUtil.getJobDerivativeMediaDirectory(jobId)
+    public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException {
+        var storagePath = _propertiesUtil.getJobDerivativeMediaDirectory(job.getId())
                 .toPath()
-                .resolve(localPath.getFileName())
+                .resolve(media.getLocalPath().getFileName())
                 .toAbsolutePath();
-        Files.move(localPath, storagePath);
-        return storagePath.toUri();
+        Files.move(media.getLocalPath(), storagePath);
+        media.setStorageUri(storagePath.toUri().toString());
+        return null;
     }
 }

@@ -49,7 +49,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -172,17 +174,19 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) throws StorageException {
-        return canStore(jobId);
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException {
+        return canStore(job.getId());
     }
 
 
     @Override
-    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws IOException, StorageException {
-        URI serviceUri = getServiceUri(jobId);
-        try (InputStream inputStream = Files.newInputStream(localPath)) {
-            return store(serviceUri, inputStream);
+    public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException {
+        URI serviceUri = getServiceUri(job.getId());
+        try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
+            URI newUri = store(serviceUri, inputStream);
+            media.setStorageUri(newUri.toString());
         }
+        return null;
     }
 
 

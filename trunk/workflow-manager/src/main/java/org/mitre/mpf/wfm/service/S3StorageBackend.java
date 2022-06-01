@@ -51,6 +51,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -204,19 +205,19 @@ public class S3StorageBackend implements StorageBackend {
 
 
     @Override
-    public boolean canStoreDerivativeMedia(long jobId, long parentMediaId) throws StorageException {
-        BatchJob job = _inProgressJobs.getJob(jobId);
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException {
         Function<String, String> combinedProperties =
                 _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
         return requiresS3ResultUpload(combinedProperties);
     }
 
     @Override
-    public URI storeDerivativeMedia(long jobId, long parentMediaId, Path localPath) throws StorageException, IOException {
-        BatchJob job = _inProgressJobs.getJob(jobId);
+    public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws StorageException, IOException {
         Function<String, String> combinedProperties =
-                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
-        return putInS3IfAbsent(localPath, combinedProperties, false);
+                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(media.getParentId()));
+        URI newUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties, false);
+        media.setStorageUri(newUri.toString());
+        return null;
     }
 
 

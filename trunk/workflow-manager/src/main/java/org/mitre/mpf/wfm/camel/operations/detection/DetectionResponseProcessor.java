@@ -43,7 +43,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,20 +69,17 @@ public class DetectionResponseProcessor
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
     private final InProgressBatchJobsService _inProgressJobs;
     private final MediaInspectionHelper _mediaInspectionHelper;
-    private final StorageService _storageService;
     private final PropertiesUtil _propertiesUtil;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
                                       MediaInspectionHelper mediaInspectionHelper,
-                                      StorageService storageService,
                                       PropertiesUtil propertiesUtil) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _storageService = storageService;
         _propertiesUtil = propertiesUtil;
     }
 
@@ -480,14 +476,15 @@ public class DetectionResponseProcessor
                                                              SortedMap<String, String> trackProperties) {
         Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH)).toAbsolutePath();
 
+        // TODO: Store media at end of job.
         // Derivative media may be stored remotely.
-        var newUri = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
+        // var newUri = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
 
         // Add the media id to allow users to associate media tracks with media elements in the JSON output.
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));
 
         Media derivativeMedia = _inProgressJobs.initDerivativeMedia(
-                mediaId, parentMediaId, taskIndex, newUri, localPath, trackProperties);
+                mediaId, parentMediaId, taskIndex, localPath, trackProperties);
 
         _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
 

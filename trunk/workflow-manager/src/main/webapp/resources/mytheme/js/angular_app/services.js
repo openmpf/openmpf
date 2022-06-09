@@ -567,19 +567,19 @@ AppServices.factory('ServerSidePush',
                                             if (job) {
                                                 if (msg.jobStatus == 'COMPLETE') {
                                                     console.log('job complete for id: ' + msg.id);
-                                                    NotificationSvc.jobSuccess(msg.id, 'Job ' + msg.id + ' is now complete!');
+                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete!');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
                                                     console.log('job complete (with errors) for id: ' + msg.id);
-                                                    NotificationSvc.jobError(msg.id, 'Job ' + msg.id + ' is now complete (with errors).');
+                                                    NotificationSvc.error('Job ' + msg.id + ' is now complete (with errors).');
                                                 } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
                                                     console.log('job complete (with warnings) for id: ' + msg.id);
-                                                    NotificationSvc.jobWarning(msg.id, 'Job ' + msg.id + ' is now complete (with warnings).');
+                                                    NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
                                                 } else if (msg.jobStatus == 'ERROR') {
                                                     console.log('job ' + msg.id + ' is in a critical error state');
-                                                    NotificationSvc.jobError(msg.id, 'Job ' + msg.id + ' is in a critical error state. Check the Workflow Manager log for details.');
+                                                    NotificationSvc.error('Job ' + msg.id + ' is in a critical error state. Check the Workflow Manager log for details.');
                                                 } else if (msg.jobStatus == 'UNKNOWN') {
                                                     console.log('job ' + msg.id + ' is in an unknown state');
-                                                    NotificationSvc.jobInfo(msg.id, 'Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
+                                                    NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
                                                 }
                                             }
                                         });
@@ -837,7 +837,6 @@ AppServices.factory('ServicesCatalogService', function ($http, $log, $filter) {
 
 AppServices.factory('NotificationSvc', [
     function () {
-        var lastJobMsgs = new Map();
 
         // Wrap lines in divs so they show up in separate lines in the notification
         var wrapLinesInDiv = function (message) {
@@ -847,13 +846,6 @@ AppServices.factory('NotificationSvc', [
             });
             return msgDivList.join('');
 
-        };
-
-        var generateJobNotyAlert = function (type, jobId, message, layout) {
-            if (lastJobMsgs.get(jobId) != message) { // prevent immediate duplicates
-                lastJobMsgs.set(jobId, message);
-                generateNotyAlert(type, message, layout);
-            }
         };
 
         var generateNotyAlert = function (type, message, layout) {
@@ -884,19 +876,6 @@ AppServices.factory('NotificationSvc', [
         };
 
         return {
-            jobError: function (jobId, message, layout) {
-                generateJobNotyAlert("error", jobId, message, layout);
-            },
-            jobWarning: function (jobId, message, layout) {
-                generateJobNotyAlert("warning", jobId, message, layout);
-            },
-            jobSuccess: function (jobId, message, layout) {
-                generateJobNotyAlert("success", jobId, message, layout);
-            },
-            jobInfo: function (jobId, message, layout) {
-                generateJobNotyAlert("information", jobId, message, layout);
-            },
-
             error: function (message, layout) {
                 generateNotyAlert("error", message, layout);
             },

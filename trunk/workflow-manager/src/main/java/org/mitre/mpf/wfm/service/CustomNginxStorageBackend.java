@@ -180,13 +180,12 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException {
+    public void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException {
         URI serviceUri = getServiceUri(job.getId());
         try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
             URI newUri = store(serviceUri, inputStream);
             media.setStorageUri(newUri.toString());
         }
-        return null;
     }
 
 

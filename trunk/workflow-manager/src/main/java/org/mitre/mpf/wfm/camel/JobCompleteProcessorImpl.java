@@ -127,13 +127,14 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.",
                 MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
+        BatchJob job = inProgressBatchJobs.getJob(jobId);
+
+        storageService.storeDerivativeMedia(job);
+
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         jobRequest.setTimeCompleted(Instant.now());
 
-        BatchJob job = inProgressBatchJobs.getJob(jobId);
         var completionStatus = job.getStatus().onComplete();
-
-        storageService.storeDerivativeMedia(job);
 
         URI outputObjectUri = null;
         var outputSha = new MutableObject<String>();

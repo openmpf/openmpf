@@ -50,5 +50,5 @@ public interface StorageBackend {
     public void store(MarkupResult markupResult) throws IOException, StorageException;
 
     public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException;
-    public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException;
+    public void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException;
 }

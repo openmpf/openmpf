@@ -217,7 +217,7 @@ public class StorageService {
                 }
             }
         }
-        ThreadUtil.allOf(futures);
+        ThreadUtil.allOf(futures).join();
     }
 
 
@@ -229,15 +229,17 @@ public class StorageService {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
-        var future = ThreadUtil.callAsync(
-                () -> remoteBackend.storeDerivativeMedia(job, media));
-        future.exceptionally(
-                err -> {
-                    handleDerivativeMediaRemoteStorageFailure(job.getId(), media, err);
+        CompletableFuture<Void> future = ThreadUtil.callAsync(
+                () -> {
                     try {
-                        _localBackend.storeDerivativeMedia(job, media);
-                    } catch (IOException ex) {
-                        handleDerivativeMediaLocalStorageFailure(job.getId(), media, ex);
+                        remoteBackend.storeDerivativeMedia(job, media);
+                    } catch (IOException | StorageException remoteEx) {
+                        handleDerivativeMediaRemoteStorageFailure(job.getId(), media, remoteEx);
+                        try {
+                            _localBackend.storeDerivativeMedia(job, media);
+                        } catch (IOException localEx) {
+                            handleDerivativeMediaLocalStorageFailure(job.getId(), media, localEx);
+                        }
                     }
                     return null;
                 });
@@ -255,7 +257,7 @@ public class StorageService {
                 media.getId(), media.getParentId(), jobId), error);
         _inProgressJobs.addWarning(
                 jobId, media.getId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Media was stored locally because storing it remotely failed due to: " + error);
+                "Derivative media was stored locally because storing it remotely failed due to: " + error);
     }
 
     private void handleDerivativeMediaLocalStorageFailure(long jobId, MediaImpl media, Exception e) {
@@ -264,6 +266,6 @@ public class StorageService {
                 media.getId(), media.getParentId(), jobId, media.getLocalPath()), e);
         _inProgressJobs.addWarning(
                 jobId, media.getId(), IssueCodes.LOCAL_STORAGE,
-                "Media was not moved because storing it locally failed due to: " + e);
+                "Derivative media was not moved because storing it locally failed due to: " + e);
     }
 }

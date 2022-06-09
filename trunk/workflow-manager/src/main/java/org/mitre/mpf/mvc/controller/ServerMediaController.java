@@ -36,6 +36,7 @@ import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -228,7 +229,9 @@ public class ServerMediaController {
         var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         Function<String, String> combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
-        if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
+        var uriScheme = UriScheme.parse(sourceUri.getScheme());
+        if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
+                S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
             S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
             try (InputStream inputStream = s3Object.getObjectContent()) {
                 ObjectMetadata metadata = s3Object.getObjectMetadata();

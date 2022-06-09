@@ -398,7 +398,7 @@ public class InProgressBatchJobsService {
         return new MediaImpl(mediaId,
                              parentMediaId,
                              taskIndex,
-                             localPath.toString(),
+                             localPath.toUri().toString(),
                              UriScheme.FILE,
                              localPath,
                              // Derivative media do not inherit parent media properties. For example, specifying

@@ -62,7 +62,7 @@ public interface Media {
     public Path getLocalPath();
 
     /** The path to the media that the JSON output object should use. */
-    public String getOutputUri();
+    public String getPersistentUri();
 
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     public Optional<Path> getConvertedMediaPath();

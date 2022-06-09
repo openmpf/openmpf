@@ -87,7 +87,7 @@ public class MediaImpl implements Media {
     /** The path to the media that the JSON output object should use. */
     @Override
     @JsonIgnore
-    public String getOutputUri() {
+    public String getPersistentUri() {
         return getStorageUri().orElse(_uri);
     }
 

@@ -52,8 +52,6 @@ import javax.inject.Inject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 /** Processes the responses which have been returned from a detection component. */
@@ -69,18 +67,15 @@ public class DetectionResponseProcessor
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
     private final InProgressBatchJobsService _inProgressJobs;
     private final MediaInspectionHelper _mediaInspectionHelper;
-    private final PropertiesUtil _propertiesUtil;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper,
-                                      PropertiesUtil propertiesUtil) {
+                                      MediaInspectionHelper mediaInspectionHelper) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _propertiesUtil = propertiesUtil;
     }
 
     @Override
@@ -318,9 +313,6 @@ public class DetectionResponseProcessor
 
         checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
 
-        var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
-        var futures = new HashMap<DetectionProtobuf.GenericTrack, CompletableFuture<SortedMap<String, String>>>();
-
         // Begin iterating through the tracks that were found by the detector.
         boolean isMediaType = genericResponse.getDetectionType().equals("MEDIA");
         for (DetectionProtobuf.GenericTrack objectTrack : genericResponse.getGenericTracksList()) {
@@ -328,31 +320,11 @@ public class DetectionResponseProcessor
 
             boolean hasDerivativeMedia = isMediaType &&
                                          trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
-            if (!hasDerivativeMedia) {
-                processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
-                        trackProperties);
-                continue;
+            if (hasDerivativeMedia) {
+                long mediaId = IdGenerator.next(); // get the media id before async call to preserve track order
+                trackProperties = processDerivativeMedia(jobId, mediaId, detectionResponse.getMediaId(),
+                        detectionResponse.getTaskIndex(), trackProperties);
             }
-
-            try {
-                semaphore.acquire();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-            long mediaId = IdGenerator.next(); // get the media id before async call to preserve track order
-            var future = ThreadUtil.callAsync(
-                    () -> processDerivativeMedia(jobId, mediaId, detectionResponse.getMediaId(),
-                            detectionResponse.getTaskIndex(), trackProperties));
-            future.whenComplete((x, y) -> semaphore.release());
-            futures.put(objectTrack, future);
-        }
-
-        for (var entry : futures.entrySet()) {
-            var objectTrack = entry.getKey();
-            var future = entry.getValue();
-
-            var trackProperties = future.join();
 
             processGenericTrack(jobId, detectionResponse, genericResponse, objectTrack, confidenceThreshold,
                     trackProperties);
@@ -475,10 +447,6 @@ public class DetectionResponseProcessor
                                                              int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
         Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH)).toAbsolutePath();
-
-        // TODO: Store media at end of job.
-        // Derivative media may be stored remotely.
-        // var newUri = _storageService.storeDerivativeMedia(jobId, mediaId, parentMediaId, localPath);
 
         // Add the media id to allow users to associate media tracks with media elements in the JSON output.
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));

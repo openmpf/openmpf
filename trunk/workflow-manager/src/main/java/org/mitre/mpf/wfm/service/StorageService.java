@@ -206,6 +206,7 @@ public class StorageService {
                     }
                 } catch (StorageException ex) {
                     handleDerivativeMediaRemoteStorageFailure(job.getId(), media, ex);
+                    storeRemotely = false;
                 }
             }
             if (!storeRemotely) {

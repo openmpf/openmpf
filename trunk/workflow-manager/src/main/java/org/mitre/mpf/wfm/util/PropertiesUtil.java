@@ -32,12 +32,14 @@ import com.google.common.collect.Maps;
 import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
@@ -382,6 +384,21 @@ public class PropertiesUtil {
     private File derivativeMediaDirectory;
     public File getJobDerivativeMediaDirectory(long jobId) {
         return new File(derivativeMediaDirectory, String.valueOf(jobId));
+    }
+
+    public Path createDerivativeMediaPath(long jobId, Media media) {
+        var extension = FilenameUtils.getExtension(media.getLocalPath().getFileName().toString());
+        try {
+            Path path = Paths.get(getJobDerivativeMediaDirectory(jobId).toURI())
+                    .resolve(String.format("%d/%s%s", media.getParentId(), UUID.randomUUID(), "." + extension))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            return path;
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private File markupDirectory;

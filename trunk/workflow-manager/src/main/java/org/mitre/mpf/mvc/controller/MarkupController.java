@@ -59,10 +59,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -110,6 +108,7 @@ public class MarkupController {
         return markupResultModels;
     }
 
+    // TODO: Remove this?
     @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
     @ResponseBody
     public List<MarkupResultModel> getMarkupResultsJsonSession(
@@ -162,13 +161,13 @@ public class MarkupController {
             model.setMediaId(med.getId());
             model.setParentMediaId(med.getParentId());
             model.setPipeline(job.getPipelineElements().getName());
-            model.setSourceUri(med.getUri());
+            model.setSourceUri(med.getPersistentUri());
             model.setSourceFileAvailable(false);
-            if (!StringUtils.isBlank(med.getUri())) {
-                Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
+            if (!StringUtils.isBlank(med.getPersistentUri())) {
+                Path path = IoUtils.toLocalPath(med.getPersistentUri()).orElse(null);
                 if (path == null || Files.exists(path)) { // if remote media or available local media
                     String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                            .queryParam("sourceUri", med.getUri())
+                            .queryParam("sourceUri", med.getPersistentUri())
                             .queryParam("jobId", jobId)
                             .toUriString();
                     model.setSourceDownloadUrl(downloadUrl);
@@ -200,8 +199,13 @@ public class MarkupController {
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered
                 .stream()
                 .sorted((o1, o2) -> { // group by parent
-                    long id1 = o1.getParentMediaId() == -1 ? o1.getMediaId() : o1.getParentMediaId();
-                    long id2 = o2.getParentMediaId() == -1 ? o2.getMediaId() : o2.getParentMediaId();
+                    boolean isParent1 = o1.getParentMediaId() == -1;
+                    boolean isParent2 = o2.getParentMediaId() == -1;
+                    long id1 = isParent1 ? o1.getMediaId() : o1.getParentMediaId();
+                    long id2 = isParent2 ? o2.getMediaId() : o2.getParentMediaId();
+                    if (id1 == id2) { // parent vs. child
+                        return isParent1 ? -1 : 1;
+                    }
                     return Long.compare(id1, id2);
                 })
                 .skip(start)
@@ -254,11 +258,11 @@ public class MarkupController {
 
         var media = job.getMedia()
                 .stream()
-                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .filter(m -> m.getId() == markupResult.getMediaId())
                 .findAny()
                 .orElse(null);
         if (media == null) {
-            log.error("Markup with id " + id + " download failed. Invalid media: " + markupResult.getSourceUri());
+            log.error("Markup with id " + id + " download failed. Invalid media with id " + media.getId() + ".");
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -305,17 +309,14 @@ public class MarkupController {
 
     private MarkupResultModel convertMarkupResult(MarkupResult markupResult) {
         boolean isImage = false;
-        boolean fileExists = true;
         if(markupResult.getMarkupUri() != null) {
             String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
             String markupContentType = ioUtils.getPathContentType(Paths.get(nonUrlPath));
             isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
-            fileExists = new File(nonUrlPath).exists();
         }
 
         return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
-                                     markupResult.getPipeline(), markupResult.getMarkupUri(),
-                                     markupResult.getSourceUri(), isImage, fileExists);
+                                     markupResult.getPipeline(), markupResult.getMarkupUri(), isImage);
     }
 
     private static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult,
@@ -336,23 +337,21 @@ public class MarkupController {
             }
         }
 
-        if (!StringUtils.isBlank(markupResult.getSourceUri())) {
-            Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
-            if (path == null || Files.exists(path))  { // if remote media or available local media
-                sourceDownloadUrl = UriComponentsBuilder
-                        .fromPath("server/download")
-                        .queryParam("sourceUri", markupResult.getSourceUri())
-                        .queryParam("jobId", markupResult.getJobId())
-                        .toUriString();
-                sourceFileAvailable = true;
-                sourceMediaType = media.getType().toString();
-            }
+        Path path = IoUtils.toLocalPath(media.getPersistentUri()).orElse(null);
+        if (path == null || Files.exists(path))  { // if remote media or available local media
+            sourceDownloadUrl = UriComponentsBuilder
+                    .fromPath("server/download")
+                    .queryParam("sourceUri", media.getPersistentUri())
+                    .queryParam("jobId", markupResult.getJobId())
+                    .toUriString();
+            sourceFileAvailable = true;
+            sourceMediaType = media.getType().toString();
         }
 
         return new MarkupResultConvertedModel(
                 markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), media.getParentId(),
                 markupResult.getPipeline(), markupResult.getMarkupUri(), markupMediaType,
-                markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(), sourceMediaType,
+                markupDownloadUrl, markupFileAvailable, media.getPersistentUri(), sourceMediaType,
                 sourceDownloadUrl, sourceFileAvailable);
     }
 }

@@ -129,10 +129,7 @@ public class LocalStorageBackend implements StorageBackend {
 
     @Override
     public Void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException {
-        var storagePath = _propertiesUtil.getJobDerivativeMediaDirectory(job.getId())
-                .toPath()
-                .resolve(media.getLocalPath().getFileName())
-                .toAbsolutePath();
+        var storagePath = _propertiesUtil.createDerivativeMediaPath(job.getId(), media);
         Files.move(media.getLocalPath(), storagePath);
         media.setStorageUri(storagePath.toUri().toString());
         return null;

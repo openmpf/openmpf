@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -422,28 +421,27 @@ public class AggregateJobPropertiesUtil {
     public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
         var tasksToMerge = new HashMap<Integer, Integer>();
 
-        for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
-            Task task = job.getPipelineElements().getTask(taskIndex);
+        for (var jobPart : JobPartsIter.of(job, media)) {
+            if (jobPart.getTaskIndex() == 0
+                    || jobPart.getAlgorithm().getActionType() != ActionType.DETECTION) {
+                continue;
+            }
 
-            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
-                ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
+            boolean shouldMerge = Boolean.parseBoolean(
+                    getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
+            if (!shouldMerge) {
+                continue;
+            }
 
-                boolean shouldMerge = Boolean.parseBoolean(
-                        getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action));
-
-                int mergeWithPrevTaskIndex = -1;
-                for (int prevTaskIndex = taskIndex - 1; prevTaskIndex >= 0; prevTaskIndex--) {
-                    if (job.wasActionProcessed(media.getId(), prevTaskIndex, 0)) {
-                        mergeWithPrevTaskIndex = prevTaskIndex;
-                        break;
-                    }
-                }
-
-                if (actionType == ActionType.DETECTION && shouldMerge && mergeWithPrevTaskIndex != -1) {
-                    tasksToMerge.put(taskIndex, mergeWithPrevTaskIndex);
+            for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
+                 prevTaskIndex >= 0;
+                 prevTaskIndex--) {
+                if (job.wasActionProcessed(media.getId(), prevTaskIndex, 0)) {
+                    tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
+                    break;
                 }
             }
+
         }
 
         return tasksToMerge;

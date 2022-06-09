@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -420,7 +420,7 @@ public class AggregateJobPropertiesUtil {
 
     // Get map of tasks that need to be merged. Values are the previous tasks to merge with.
     public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new TreeMap<Integer, Integer>();
+        var tasksToMerge = new HashMap<Integer, Integer>();
 
         for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
             Task task = job.getPipelineElements().getTask(taskIndex);

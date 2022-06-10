@@ -34,11 +34,7 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mockito.ArgumentCaptor;
@@ -50,7 +46,8 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
 public class TestMarkupResponseProcessor {
@@ -79,7 +76,7 @@ public class TestMarkupResponseProcessor {
         Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
                 .setHasError(false)
                 .clearErrorMessage();
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder, true);
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertNull(markupResult.getMessage());
         assertEquals(MarkupStatusType.COMPLETE, markupResult.getMarkupStatus());
 
@@ -97,7 +94,7 @@ public class TestMarkupResponseProcessor {
                 .setHasError(true)
                 .setErrorMessage(errorMessage);
 
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder, false);
+        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertEquals(errorMessage, markupResult.getMessage());
         assertEquals(MarkupStatusType.FAILED, markupResult.getMarkupStatus());
 
@@ -109,7 +106,7 @@ public class TestMarkupResponseProcessor {
     }
 
 
-    private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder, boolean storeMarkup) {
+    private MarkupResult runMarkupProcessor(Markup.MarkupResponse.Builder markupResponseBuilder) {
         long mediaId = 1532;
         int mediaIndex = 2;
         int taskIndex = 4;
@@ -163,14 +160,6 @@ public class TestMarkupResponseProcessor {
         assertEquals(mediaIndex, markupResult.getMediaIndex());
         assertEquals(mediaUri.toString(), markupResult.getSourceUri());
         assertEquals("TEST_MARKUP_PIPELINE", markupResult.getPipeline());
-
-        if (storeMarkup) {
-            ArgumentCaptor<MarkupResult> markupCaptorForStorage = ArgumentCaptor.forClass(MarkupResult.class);
-            verify(_mockStorageService)
-                    .store(markupCaptorForStorage.capture());
-
-            assertSame(markupResult, markupCaptorForStorage.getValue());
-        }
 
         return markupResult;
     }

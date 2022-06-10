@@ -40,10 +40,7 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -657,6 +654,98 @@ public class TestS3StorageBackend {
         catch (StorageException e) {
             assertFalse(Files.exists(localPath));
         }
+    }
+
+
+    @Test
+    public void canStoreDerivativeMedia() throws IOException, StorageException {
+        long jobId = 534;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+        Path filePath = getTestFileCopy();
+
+        var parentMedia = mock(Media.class);
+        var derivativeMedia = mock(MediaImpl.class);
+
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+
+        when(job.getMedia(parentMediaId))
+                .thenReturn(parentMedia);
+
+        when(job.getMedia(derivativeMediaId))
+                .thenReturn(derivativeMedia);
+
+        when(job.getJobProperties())
+                .thenReturn(ImmutableMap.of(
+                        MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>",
+                        MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>",
+                        MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET
+                ));
+
+        when(parentMedia.getMediaSpecificProperties())
+                .thenReturn(ImmutableMap.of());
+
+        when(derivativeMedia.getLocalPath())
+                .thenReturn(filePath);
+
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+
+        assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
+
+        _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
+
+        verify(derivativeMedia)
+                .setStorageUri(EXPECTED_URI.toString());
+
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+    }
+
+
+    @Test
+    public void canHandleStoreDerivativeMediaFailure() throws IOException, StorageException {
+        long jobId = 534;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+        Path filePath = getTestFileCopy();
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+
+        when(job.getMedia(parentMediaId))
+                .thenReturn(parentMedia);
+
+        when(job.getMedia(derivativeMediaId))
+                .thenReturn(derivativeMedia);
+
+        when(job.getJobProperties())
+                .thenReturn(ImmutableMap.of(
+                        MpfConstants.S3_ACCESS_KEY_PROPERTY, "<ACCESS_KEY>",
+                        MpfConstants.S3_SECRET_KEY_PROPERTY, "<SECRET_KEY>",
+                        MpfConstants.S3_RESULTS_BUCKET_PROPERTY, S3_HOST + RESULTS_BUCKET
+                ));
+
+        when(parentMedia.getMediaSpecificProperties())
+                .thenReturn(ImmutableMap.of());
+
+        when(derivativeMedia.getLocalPath())
+                .thenReturn(filePath);
+
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+
+        assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
+
+        _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
+
+        verify(derivativeMedia)
+                .setStorageUri(EXPECTED_URI.toString());
+
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 

@@ -406,13 +406,11 @@ public class MediaInspectionHelper {
 
     public static int calculateDurationMilliseconds(String durationStr) {
         if (durationStr != null) {
-            String[] durationArray = durationStr.split("\\.|:");
+            String[] durationArray = durationStr.split(":");
             int hours = Integer.parseInt(durationArray[0]);
             int minutes = Integer.parseInt(durationArray[1]);
-            int seconds = Integer.parseInt(durationArray[2]);
-            int milliseconds = Integer.parseInt(durationArray[3]);
-            milliseconds = milliseconds + 1000 * seconds + 1000 * 60 * minutes + 1000 * 60 * 60 * hours;
-            return milliseconds;
+            float seconds = Float.parseFloat(durationArray[2]);
+            return (int) (Math.ceil(1000 * seconds) + (1000 * 60 * minutes) + (1000 * 60 * 60 * hours));
         }
         return -1;
     }

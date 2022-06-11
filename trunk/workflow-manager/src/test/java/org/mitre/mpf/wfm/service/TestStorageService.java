@@ -460,7 +460,7 @@ public class TestStorageService {
             var media = (MediaImpl) invocation.getArgument(1);
             media.setStorageUri(TEST_REMOTE_URI.toString());
             return null;
-        }).when(_mockS3Backend).storeDerivativeMedia(same(job), same(derivativeMedia));
+        }).when(_mockS3Backend).storeDerivativeMedia(job, derivativeMedia);
 
         _storageService.storeDerivativeMedia(job);
 
@@ -493,7 +493,7 @@ public class TestStorageService {
             var media = (MediaImpl) invocation.getArgument(1);
             media.setStorageUri(TEST_LOCAL_URI.toString());
             return null;
-        }).when(_mockLocalBackend).storeDerivativeMedia(same(job), same(derivativeMedia));
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
 
         _storageService.storeDerivativeMedia(job);
 
@@ -538,10 +538,10 @@ public class TestStorageService {
             var media = (MediaImpl) invocation.getArgument(1);
             media.setStorageUri(TEST_LOCAL_URI.toString());
             return null;
-        }).when(_mockLocalBackend).storeDerivativeMedia(same(job), same(derivativeMedia));
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
 
         doThrow(StorageException.class)
-                .when(_mockS3Backend).storeDerivativeMedia(same(job), same(derivativeMedia));
+                .when(_mockS3Backend).storeDerivativeMedia(job, derivativeMedia);
 
         _storageService.storeDerivativeMedia(job);
 
@@ -550,33 +550,50 @@ public class TestStorageService {
         verifyWarning(jobId, derivativeMediaId);
     }
 
-    /*
     @Test
-    public void outputObjectGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
-        long jobId = 869;
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobId())
+    public void derivativeMediaGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
+        long jobId = 867;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+        var job = mock(BatchJob.class);
+
+        when(job.getId())
                 .thenReturn(jobId);
 
-        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
-        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
+        when(job.getMedia())
+                .thenReturn(Set.of(parentMedia, derivativeMedia));
+
+        when(derivativeMedia.isDerivative())
+                .thenReturn(true);
+
+        when(derivativeMedia.getParentId())
+                .thenReturn(parentMediaId);
+
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
 
         doThrow(StorageException.class)
-                .when(_mockNginxBackend).canStore(outputObject);
+                .when(_mockNginxBackend).canStoreDerivativeMedia(job,parentMediaId);
 
-        when(_mockLocalBackend.store(same(outputObject), any()))
-                .thenReturn(TEST_LOCAL_URI);
+        doAnswer(invocation -> {
+            var media = (MediaImpl) invocation.getArgument(1);
+            media.setStorageUri(TEST_LOCAL_URI.toString());
+            return null;
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
 
-        URI result = _storageService.store(outputObject, new MutableObject<>());
-        assertEquals(TEST_LOCAL_URI, result);
+        _storageService.storeDerivativeMedia(job);
 
-        verifyJobWarning(jobId);
-        verifySingleWarningAddedToOutputObject(0, warnings);
+        verify(derivativeMedia).setStorageUri(TEST_LOCAL_URI.toString());
+
+        verifyWarning(jobId, derivativeMediaId);
 
         verify(_mockNginxBackend, never())
                 .store(any(JsonOutputObject.class), any());
     }
-    */
+
 
     private static SortedSet<JsonMediaIssue> setupWarnings(JsonOutputObject outputObject) {
         SortedSet<JsonMediaIssue> warnings = new TreeSet<>();

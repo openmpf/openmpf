@@ -1207,4 +1207,11 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                       "/samples/text/lp-v8-texas.mp4");
     }
 
+
+    @Test(timeout = 10 * MINUTES)
+    public void runDerivativeMediaTextDetectPdf() throws Exception {
+        runSystemTest("TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA OCV FACE AND MARKUP PIPELINE",
+                "output/derivative-media/runDerivativeMediaTextDetectPdf.json",
+                "/samples/derivative-media/openmpf-overview.pdf");
+    }
 }

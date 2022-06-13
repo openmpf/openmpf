@@ -321,8 +321,7 @@ public class DetectionResponseProcessor
             boolean hasDerivativeMedia = isMediaType &&
                                          trackProperties.containsKey(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
             if (hasDerivativeMedia) {
-                long mediaId = IdGenerator.next(); // get the media id before async call to preserve track order
-                trackProperties = processDerivativeMedia(jobId, mediaId, detectionResponse.getMediaId(),
+                trackProperties = processDerivativeMedia(jobId, detectionResponse.getMediaId(),
                         detectionResponse.getTaskIndex(), trackProperties);
             }
 
@@ -442,11 +441,12 @@ public class DetectionResponseProcessor
     }
 
     private SortedMap<String, String> processDerivativeMedia(long jobId,
-                                                             long mediaId,
                                                              long parentMediaId,
                                                              int taskIndex,
                                                              SortedMap<String, String> trackProperties) {
         Path localPath = Paths.get(trackProperties.get(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH)).toAbsolutePath();
+
+        long mediaId = IdGenerator.next();
 
         // Add the media id to allow users to associate media tracks with media elements in the JSON output.
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));

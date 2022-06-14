@@ -91,6 +91,8 @@ public class OutputChecker {
                 actMedia.getMediaMetadata().size());
         _errorCollector.checkThat("MediaMetadata", actMedia.getMediaMetadata(), is(expMedia.getMediaMetadata()));
 
+        _errorCollector.checkThat("MarkupResult", actMedia.getMarkupResult() != null, is(expMedia.getMarkupResult() != null));
+
         Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
         Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
         // Check now to avoid NoSuchElementException during iteration
@@ -268,7 +270,10 @@ public class OutputChecker {
         }
     }
 
-    private final List<String> PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES = Arrays.asList("DERIVATIVE_MEDIA_TEMP_PATH");
+    private final List<String> PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES = Arrays.asList(
+            "DERIVATIVE_MEDIA_TEMP_PATH",
+            "DERIVATIVE_MEDIA_ID"
+    );
 
     /**
      * Compare the actual properties to the expected properties

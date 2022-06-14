@@ -1,12 +1,12 @@
 {
   "openmpfVersion": "6.3",
-  "jobId": 126,
+  "jobId": 152,
   "errors": [],
   "warnings": [],
-  "objectId": "f5136957-457f-4440-9bf7-93144634506d",
+  "objectId": "a8092bbf-b4ca-42da-bc0d-a778998ef6eb",
   "pipeline": {
-    "name": "TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA OCV FACE AND MARKUP PIPELINE",
-    "description": "Performs Tika image detection on source media followed by OpenCV face detection and markup on derivative media.",
+    "name": "TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA TESSERACT OCR (WITH EAST REGIONS) AND KEYWORD TAGGING AND MARKUP PIPELINE",
+    "description": "Performs Tika image detection followed by Tika text detection on source media. Performs Tesseract OCR and markup on feed-forward regions from EAST on derivative media. Keyword tagging is performed on all TEXT results.",
     "tasks": [
       {
         "actionType": "DETECTION",
@@ -23,15 +23,68 @@
       },
       {
         "actionType": "DETECTION",
-        "name": "OCV FACE DETECTION DERIVATIVE MEDIA ONLY TASK",
-        "description": "Performs OpenCV face detection on derivative media only.",
+        "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY TASK",
+        "description": "Performs Tika text detection on source media only, no derivatives.",
         "actions": [
           {
-            "algorithm": "FACECV",
-            "name": "OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "description": "Executes the OpenCV face detection algorithm using the default parameters on derivative media only.",
+            "algorithm": "TIKATEXT",
+            "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+            "description": "Executes the Tika text detection algorithm using the default parameters on source media only, no derivatives.",
+            "properties": {
+              "SOURCE_MEDIA_ONLY": "TRUE"
+            }
+          }
+        ]
+      },
+      {
+        "actionType": "DETECTION",
+        "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY TASK",
+        "description": "Runs EAST text detection on derivative media only.",
+        "actions": [
+          {
+            "algorithm": "EAST",
+            "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+            "description": "Runs EAST text detection on derivative media only.",
             "properties": {
               "DERIVATIVE_MEDIA_ONLY": "TRUE"
+            }
+          }
+        ]
+      },
+      {
+        "actionType": "DETECTION",
+        "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY TASK",
+        "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
+        "actions": [
+          {
+            "algorithm": "TESSERACTOCR",
+            "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+            "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
+            "properties": {
+              "FEED_FORWARD_TYPE": "REGION",
+              "UNSTRUCTURED_TEXT_SCALE": "3.2",
+              "MIN_OSD_SECONDARY_SCRIPT_THRESHOLD": "0.40",
+              "MIN_OSD_SCRIPT_SCORE": "0",
+              "MAX_OSD_SCRIPTS": "2",
+              "MIN_OSD_TEXT_ORIENTATION_CONFIDENCE": "0",
+              "DERIVATIVE_MEDIA_ONLY": "TRUE",
+              "MIN_OSD_PRIMARY_SCRIPT_CONFIDENCE": "0"
+            }
+          }
+        ]
+      },
+      {
+        "actionType": "DETECTION",
+        "name": "KEYWORD TAGGING (WITH FF REGION) TASK",
+        "description": "Performs keyword tagging on feed-forward tracks and detections.",
+        "actions": [
+          {
+            "algorithm": "KEYWORDTAGGING",
+            "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "description": "Performs keyword tagging on feed-forward tracks and detections.",
+            "properties": {
+              "FEED_FORWARD_TYPE": "REGION",
+              "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "TRUE"
             }
           }
         ]
@@ -55,19 +108,26 @@
   },
   "priority": 4,
   "siteId": "mpf1",
-  "externalJobId": "ba8321a2-4a3f-451e-8d11-3091222561c1",
-  "timeStart": "2022-06-10T21:29:38.36-04:00",
-  "timeStop": "2022-06-10T21:29:46.745-04:00",
+  "externalJobId": "c338b034-6308-4b3f-b03c-76330794e9e4",
+  "timeStart": "2022-06-13T20:51:50.448-04:00",
+  "timeStop": "2022-06-13T20:51:59.616-04:00",
   "status": "COMPLETE",
   "algorithmProperties": {},
-  "jobProperties": {},
+  "jobProperties": {
+    "CONFIDENCE_THRESHOLD": "0.2",
+    "TESSERACT_LANGUAGE": "eng",
+    "TEMPORARY_PADDING_Y": "1.0",
+    "TEMPORARY_PADDING_X": "1.0",
+    "FINAL_PADDING": "0.5",
+    "ENABLE_OSD_AUTOMATION": "false"
+  },
   "environmentVariableProperties": {},
   "media": [
     {
       "mediaId": 1,
       "parentMediaId": -1,
-      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/derivative-media/test-first-page-images.old.pdf",
-      "sha256": "62e792b96ab0f71937023fc770d021aa17d734f4c475da115dfd4560472cfae9",
+      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/derivative-media/text-embedded-and-images.pdf",
+      "sha256": "18dca7b9ca17382da30db2455de3f956bb436071a1db4aa223c80723755f7442",
       "mimeType": "application/pdf",
       "mediaType": "UNKNOWN",
       "length": -1,
@@ -79,86 +139,160 @@
       "detectionProcessingErrors": {},
       "markupResult": null,
       "output": {
-        "MEDIA": [
+        "NO TRACKS": [
           {
             "source": "+#TIKA IMAGE DETECTION ACTION",
-            "algorithm": "TIKAIMAGE",
+            "algorithm": "TIKAIMAGE"
+          },
+          {
+            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+            "algorithm": "TIKATEXT"
+          },
+          {
+            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "algorithm": "TIKATEXT"
+          }
+        ]
+      }
+    },
+    {
+      "mediaId": 2,
+      "parentMediaId": 1,
+      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/derivative-media/152/1/05a1c0a3-bad4-40e2-bff3-17d071622009.png",
+      "sha256": "71a64f6419a531c7a279e46ccf365fd7b6db9a88dd2a2a81deb5a44d4a66b830",
+      "mimeType": "image/png",
+      "mediaType": "IMAGE",
+      "length": 1,
+      "mediaMetadata": {
+        "FRAME_HEIGHT": "321",
+        "FRAME_WIDTH": "597",
+        "IS_DERIVATIVE_MEDIA": "TRUE",
+        "MIME_TYPE": "image/png",
+        "PAGE_NUM": "1"
+      },
+      "mediaProperties": {},
+      "status": "COMPLETE",
+      "detectionProcessingErrors": {},
+      "markupResult": {
+        "id": 1018,
+        "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/markup/152/2/27f6dd66-8b63-4e1f-a726-803674aa46a8.png",
+        "status": "COMPLETE",
+        "message": null
+      },
+      "output": {
+        "NO TRACKS": [
+          {
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+            "algorithm": "MARKUPCV"
+          }
+        ],
+        "TRACKS MERGED": [
+          {
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+            "algorithm": "TESSERACTOCR"
+          }
+        ],
+        "TEXT": [
+          {
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "algorithm": "TESSERACTOCR",
             "tracks": [
               {
-                "id": "f59df8c30222648af75f3041f163b99eb362e5537174bb1bc4079a03992e1f18",
+                "id": "1ceed7edbc2ae24a6ff507297962c2eba69b42320457c4a94ffcc2cfba92a671",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
-                "confidence": -1.0,
+                "type": "TEXT",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "confidence": 90.0,
                 "trackProperties": {
-                  "DERIVATIVE_MEDIA_ID": "2",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image0.jpg",
-                  "PAGE_NUM": "1"
+                  "MISSING_LANGUAGE_MODELS": "",
+                  "ROTATE_AND_DETECT_PASS": "0",
+                  "ROTATION": "0.000000",
+                  "TAGS": "",
+                  "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                  "TEXT_LANGUAGE": "eng",
+                  "TRIGGER_WORDS": "",
+                  "TRIGGER_WORDS_OFFSET": ""
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
+                  "x": 36,
+                  "y": 20,
+                  "width": 525,
+                  "height": 236,
+                  "confidence": 90.0,
                   "detectionProperties": {
-                    "DERIVATIVE_MEDIA_ID": "2",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image0.jpg",
-                    "PAGE_NUM": "1"
+                    "MISSING_LANGUAGE_MODELS": "",
+                    "ROTATE_AND_DETECT_PASS": "0",
+                    "ROTATION": "0.000000",
+                    "TAGS": "",
+                    "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                    "TEXT_LANGUAGE": "eng",
+                    "TRIGGER_WORDS": "",
+                    "TRIGGER_WORDS_OFFSET": ""
                   },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/2/4/0/0/frame-0.png"
                 },
                 "detections": [
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
+                    "x": 36,
+                    "y": 20,
+                    "width": 525,
+                    "height": 236,
+                    "confidence": 90.0,
                     "detectionProperties": {
-                      "DERIVATIVE_MEDIA_ID": "2",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image0.jpg",
-                      "PAGE_NUM": "1"
+                      "MISSING_LANGUAGE_MODELS": "",
+                      "ROTATE_AND_DETECT_PASS": "0",
+                      "ROTATION": "0.000000",
+                      "TAGS": "",
+                      "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                      "TEXT_LANGUAGE": "eng",
+                      "TRIGGER_WORDS": "",
+                      "TRIGGER_WORDS_OFFSET": ""
                     },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/2/4/0/0/frame-0.png"
                   }
                 ]
-              },
+              }
+            ]
+          }
+        ],
+        "TEXT REGION": [
+          {
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+            "algorithm": "EAST",
+            "tracks": [
               {
-                "id": "f59df8c30222648af75f3041f163b99eb362e5537174bb1bc4079a03992e1f18",
+                "id": "f10faadbb16ae7148eb747f949e62e6a77562d97b0d00d79a4233849eab49b01",
                 "startOffsetFrame": 0,
                 "stopOffsetFrame": 0,
                 "startOffsetTime": 0,
                 "stopOffsetTime": 0,
-                "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
-                "confidence": -1.0,
+                "type": "TEXT REGION",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                "confidence": 0.9999901,
                 "trackProperties": {
-                  "DERIVATIVE_MEDIA_ID": "3",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image1.png",
-                  "PAGE_NUM": "1"
+                  "ROTATION": "0.70849013",
+                  "TEXT_TYPE": "STRUCTURED"
                 },
                 "exemplar": {
                   "offsetFrame": 0,
                   "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
+                  "x": 36,
+                  "y": 20,
+                  "width": 525,
+                  "height": 236,
+                  "confidence": 0.9999901,
                   "detectionProperties": {
-                    "DERIVATIVE_MEDIA_ID": "3",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image1.png",
-                    "PAGE_NUM": "1"
+                    "ROTATION": "0.70849013",
+                    "TEXT_TYPE": "STRUCTURED"
                   },
                   "artifactExtractionStatus": "NOT_ATTEMPTED",
                   "artifactPath": null
@@ -167,64 +301,14 @@
                   {
                     "offsetFrame": 0,
                     "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
+                    "x": 36,
+                    "y": 20,
+                    "width": 525,
+                    "height": 236,
+                    "confidence": 0.9999901,
                     "detectionProperties": {
-                      "DERIVATIVE_MEDIA_ID": "3",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image1.png",
-                      "PAGE_NUM": "1"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "f59df8c30222648af75f3041f163b99eb362e5537174bb1bc4079a03992e1f18",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "DERIVATIVE_MEDIA_ID": "4",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image2.jpg",
-                  "PAGE_NUM": "1"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "DERIVATIVE_MEDIA_ID": "4",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image2.jpg",
-                    "PAGE_NUM": "1"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "DERIVATIVE_MEDIA_ID": "4",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/git/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/126/tika-extracted/b04d642f-2e48-4048-ab17-5db4c0d4fc10/image2.jpg",
-                      "PAGE_NUM": "1"
+                      "ROTATION": "0.70849013",
+                      "TEXT_TYPE": "STRUCTURED"
                     },
                     "artifactExtractionStatus": "NOT_ATTEMPTED",
                     "artifactPath": null
@@ -237,112 +321,276 @@
       }
     },
     {
-      "mediaId": 2,
-      "parentMediaId": 1,
-      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/derivative-media/126/1/79af2a8b-58b7-455b-be64-46c2bc7cbcb8.jpg",
-      "sha256": "4d5c5e9dfc26fa954fe60251c5c67c5f448847b36e84c30f85d20dd02e3d5d17",
-      "mimeType": "image/png",
-      "mediaType": "IMAGE",
-      "length": 1,
-      "mediaMetadata": {
-        "FRAME_HEIGHT": "1480",
-        "FRAME_WIDTH": "1386",
-        "IS_DERIVATIVE_MEDIA": "TRUE",
-        "MIME_TYPE": "image/png",
-        "PAGE_NUM": "1"
-      },
-      "mediaProperties": {},
-      "status": "COMPLETE",
-      "detectionProcessingErrors": {},
-      "markupResult": {
-        "id": 955,
-        "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/markup/126/2/41e2f8a2-dd57-459a-8115-f880e5d69ff0.png",
-        "status": "COMPLETE",
-        "message": null
-      },
-      "output": {
-        "NO TRACKS": [
-          {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "FACECV"
-          },
-          {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "MARKUPCV"
-          }
-        ]
-      }
-    },
-    {
       "mediaId": 3,
       "parentMediaId": 1,
-      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/derivative-media/126/1/62d13988-c6f2-48e2-9a65-0b3da3d30739.png",
-      "sha256": "a1a6ff4e93db84ea0c45af03924d9ab7c6b00c7364fad3ca35c6ed12a67c8d51",
-      "mimeType": "image/png",
+      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/derivative-media/152/1/6a178fee-357d-494f-8c6e-4549967bc28e.jpg",
+      "sha256": "e94d35a2a0792e9868c9a3340a76012f0f1e878fbfa0e405b3f5a851577fe8d5",
+      "mimeType": "image/jpeg",
       "mediaType": "IMAGE",
       "length": 1,
       "mediaMetadata": {
-        "FRAME_HEIGHT": "62",
-        "FRAME_WIDTH": "619",
+        "FRAME_HEIGHT": "95",
+        "FRAME_WIDTH": "229",
         "IS_DERIVATIVE_MEDIA": "TRUE",
-        "MIME_TYPE": "image/png",
-        "PAGE_NUM": "1"
+        "MIME_TYPE": "image/jpeg",
+        "PAGE_NUM": "2"
       },
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
       "markupResult": {
-        "id": 956,
-        "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/markup/126/3/420a1c4b-181a-448a-aae6-cad94ce4c927.png",
+        "id": 1017,
+        "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/markup/152/3/a0202dbc-8be6-4c3c-99c5-33a66dcbb688.png",
         "status": "COMPLETE",
         "message": null
       },
       "output": {
         "NO TRACKS": [
           {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "FACECV"
-          },
-          {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
             "algorithm": "MARKUPCV"
           }
-        ]
-      }
-    },
-    {
-      "mediaId": 4,
-      "parentMediaId": 1,
-      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/derivative-media/126/1/0ea4afce-dd22-4f89-928b-befc62e826ba.jpg",
-      "sha256": "bfd07ddaa5bf860978e441ad66fdfb1d6dc2a2d337c1e00bc4c0d46f14980e6a",
-      "mimeType": "image/png",
-      "mediaType": "IMAGE",
-      "length": 1,
-      "mediaMetadata": {
-        "FRAME_HEIGHT": "269",
-        "FRAME_WIDTH": "673",
-        "IS_DERIVATIVE_MEDIA": "TRUE",
-        "MIME_TYPE": "image/png",
-        "PAGE_NUM": "1"
-      },
-      "mediaProperties": {},
-      "status": "COMPLETE",
-      "detectionProcessingErrors": {},
-      "markupResult": {
-        "id": 957,
-        "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/markup/126/4/e1d0bbfa-b458-486e-b4de-f73e6f03a229.png",
-        "status": "COMPLETE",
-        "message": null
-      },
-      "output": {
-        "NO TRACKS": [
+        ],
+        "TRACKS MERGED": [
           {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "FACECV"
-          },
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+            "algorithm": "TESSERACTOCR"
+          }
+        ],
+        "TEXT": [
           {
-            "source": "+#OCV FACE DETECTION DERIVATIVE MEDIA ONLY ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "MARKUPCV"
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+            "algorithm": "TESSERACTOCR",
+            "tracks": [
+              {
+                "id": "44282806b4914e1bb764bac08d5a76bc6a3fa8db8ce5cc887b658355eb126a24",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "TEXT",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "confidence": 90.0,
+                "trackProperties": {
+                  "MISSING_LANGUAGE_MODELS": "",
+                  "ROTATE_AND_DETECT_PASS": "0",
+                  "ROTATION": "0.000000",
+                  "TAGS": "identity document",
+                  "TEXT": "Name\nAlice\nBob",
+                  "TEXT_LANGUAGE": "eng",
+                  "TRIGGER_WORDS": "Name",
+                  "TRIGGER_WORDS_OFFSET": "0-3"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 6,
+                  "y": 3,
+                  "width": 60,
+                  "height": 83,
+                  "confidence": 90.0,
+                  "detectionProperties": {
+                    "MISSING_LANGUAGE_MODELS": "",
+                    "ROTATE_AND_DETECT_PASS": "0",
+                    "ROTATION": "0.000000",
+                    "TAGS": "identity document",
+                    "TEXT": "Name\nAlice\nBob",
+                    "TEXT_LANGUAGE": "eng",
+                    "TRIGGER_WORDS": "Name",
+                    "TRIGGER_WORDS_OFFSET": "0-3"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/3/4/0/0/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 6,
+                    "y": 3,
+                    "width": 60,
+                    "height": 83,
+                    "confidence": 90.0,
+                    "detectionProperties": {
+                      "MISSING_LANGUAGE_MODELS": "",
+                      "ROTATE_AND_DETECT_PASS": "0",
+                      "ROTATION": "0.000000",
+                      "TAGS": "identity document",
+                      "TEXT": "Name\nAlice\nBob",
+                      "TEXT_LANGUAGE": "eng",
+                      "TRIGGER_WORDS": "Name",
+                      "TRIGGER_WORDS_OFFSET": "0-3"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/3/4/0/0/frame-0.png"
+                  }
+                ]
+              },
+              {
+                "id": "f27de3014698fdef1c68a99539ac6c55e051f66bf3021eb53451bdad9a0f1583",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "TEXT",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                "confidence": 91.0,
+                "trackProperties": {
+                  "MISSING_LANGUAGE_MODELS": "",
+                  "ROTATE_AND_DETECT_PASS": "0",
+                  "ROTATION": "0.000000",
+                  "TAGS": "personal",
+                  "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
+                  "TEXT_LANGUAGE": "eng",
+                  "TRIGGER_WORDS": "555-123-4567; 555-987-6543",
+                  "TRIGGER_WORDS_OFFSET": "13-24; 26-37"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 95,
+                  "y": 3,
+                  "width": 124,
+                  "height": 86,
+                  "confidence": 91.0,
+                  "detectionProperties": {
+                    "MISSING_LANGUAGE_MODELS": "",
+                    "ROTATE_AND_DETECT_PASS": "0",
+                    "ROTATION": "0.000000",
+                    "TAGS": "personal",
+                    "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
+                    "TEXT_LANGUAGE": "eng",
+                    "TRIGGER_WORDS": "555-123-4567; 555-987-6543",
+                    "TRIGGER_WORDS_OFFSET": "13-24; 26-37"
+                  },
+                  "artifactExtractionStatus": "COMPLETED",
+                  "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/3/4/0/1/frame-0.png"
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 95,
+                    "y": 3,
+                    "width": 124,
+                    "height": 86,
+                    "confidence": 91.0,
+                    "detectionProperties": {
+                      "MISSING_LANGUAGE_MODELS": "",
+                      "ROTATE_AND_DETECT_PASS": "0",
+                      "ROTATION": "0.000000",
+                      "TAGS": "personal",
+                      "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
+                      "TEXT_LANGUAGE": "eng",
+                      "TRIGGER_WORDS": "555-123-4567; 555-987-6543",
+                      "TRIGGER_WORDS_OFFSET": "13-24; 26-37"
+                    },
+                    "artifactExtractionStatus": "COMPLETED",
+                    "artifactPath": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/install/share/artifacts/152/3/4/0/1/frame-0.png"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "TEXT REGION": [
+          {
+            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+            "algorithm": "EAST",
+            "tracks": [
+              {
+                "id": "b04a189ceb28b0342e71abadd5a6c7eb1885f6ad37358d20aff18c0a749a659f",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "TEXT REGION",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                "confidence": 0.9998172,
+                "trackProperties": {
+                  "ROTATION": "359.49872",
+                  "TEXT_TYPE": "STRUCTURED"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 6,
+                  "y": 3,
+                  "width": 60,
+                  "height": 83,
+                  "confidence": 0.9998172,
+                  "detectionProperties": {
+                    "ROTATION": "359.49872",
+                    "TEXT_TYPE": "STRUCTURED"
+                  },
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 6,
+                    "y": 3,
+                    "width": 60,
+                    "height": 83,
+                    "confidence": 0.9998172,
+                    "detectionProperties": {
+                      "ROTATION": "359.49872",
+                      "TEXT_TYPE": "STRUCTURED"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              },
+              {
+                "id": "40169fcb1d179122969c2e893eeef586c337c779061bd3577e239055c93c8829",
+                "startOffsetFrame": 0,
+                "stopOffsetFrame": 0,
+                "startOffsetTime": 0,
+                "stopOffsetTime": 0,
+                "type": "TEXT REGION",
+                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                "confidence": 0.99991477,
+                "trackProperties": {
+                  "ROTATION": "0.8154934",
+                  "TEXT_TYPE": "STRUCTURED"
+                },
+                "exemplar": {
+                  "offsetFrame": 0,
+                  "offsetTime": 0,
+                  "x": 95,
+                  "y": 3,
+                  "width": 124,
+                  "height": 86,
+                  "confidence": 0.99991477,
+                  "detectionProperties": {
+                    "ROTATION": "0.8154934",
+                    "TEXT_TYPE": "STRUCTURED"
+                  },
+                  "artifactExtractionStatus": "NOT_ATTEMPTED",
+                  "artifactPath": null
+                },
+                "detections": [
+                  {
+                    "offsetFrame": 0,
+                    "offsetTime": 0,
+                    "x": 95,
+                    "y": 3,
+                    "width": 124,
+                    "height": 86,
+                    "confidence": 0.99991477,
+                    "detectionProperties": {
+                      "ROTATION": "0.8154934",
+                      "TEXT_TYPE": "STRUCTURED"
+                    },
+                    "artifactExtractionStatus": "NOT_ATTEMPTED",
+                    "artifactPath": null
+                  }
+                ]
+              }
+            ]
           }
         ]
       }

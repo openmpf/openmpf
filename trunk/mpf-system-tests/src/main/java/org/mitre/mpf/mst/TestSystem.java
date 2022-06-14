@@ -298,13 +298,19 @@ public abstract class TestSystem {
         }
     }
 
-    protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
+    protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles)
+            throws Exception {
+        runSystemTest(pipelineName, expectedOutputJsonPath, Collections.emptyMap(), testMediaFiles);
+    }
+
+    protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, Map<String, String> jobProperties,
+                                 String... testMediaFiles) throws Exception {
         List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
             mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
         }
 
-        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, jobProperties, propertiesUtil.getJmsPriority());
         if (!DISABLE_OUTPUT_CHECKING) {
             URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
             log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);

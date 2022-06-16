@@ -68,6 +68,7 @@ public class MediaImpl implements Media {
         _actionsIndexedByTask.put(taskIndex, actionIndex);
     }
     @Override
+    @JsonIgnore
     public int getLastProcessedTaskIndex() {
         var tasks = _actionsIndexedByTask.keySet();
         return tasks.isEmpty() ? -1 : Collections.max(tasks);

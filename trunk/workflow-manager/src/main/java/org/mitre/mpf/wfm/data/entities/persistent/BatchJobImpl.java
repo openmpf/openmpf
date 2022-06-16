@@ -31,9 +31,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Table;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -67,29 +65,6 @@ public class BatchJobImpl implements BatchJob {
     @Override
     public int getCurrentTaskIndex() { return _currentTaskIndex; }
     public void setCurrentTaskIndex(int currentTaskIndex) { _currentTaskIndex = currentTaskIndex; }
-
-
-    // Table of media id and task index to set of action indices
-    private final Table<Long, Integer, Set<Integer>> _mediaAndTaskToActions = HashBasedTable.create();
-    @Override
-    public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex) {
-        if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
-            return false;
-        }
-        return _mediaAndTaskToActions.get(mediaId, taskIndex).contains(actionIndex);
-    }
-    @Override
-    public void setProcessedAction(long mediaId, int taskIndex, int actionIndex) {
-        if (!_mediaAndTaskToActions.contains(mediaId, taskIndex)) {
-            _mediaAndTaskToActions.put(mediaId, taskIndex, new HashSet<>());
-        }
-        _mediaAndTaskToActions.get(mediaId, taskIndex).add(actionIndex);
-    }
-    @Override
-    public int getLastProcessedTaskIndex(long mediaId) {
-        var tasks = _mediaAndTaskToActions.row(mediaId).keySet();
-        return tasks.isEmpty() ? -1 : Collections.max(tasks);
-    }
 
 
     private final String _externalId;

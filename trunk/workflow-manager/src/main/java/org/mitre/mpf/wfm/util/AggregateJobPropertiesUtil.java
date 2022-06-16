@@ -436,7 +436,7 @@ public class AggregateJobPropertiesUtil {
             for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
                  prevTaskIndex >= 0;
                  prevTaskIndex--) {
-                if (job.wasActionProcessed(media.getId(), prevTaskIndex, 0)) {
+                if (media.wasActionProcessed(prevTaskIndex, 0)) {
                     tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
                     break;
                 }

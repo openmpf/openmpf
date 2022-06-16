@@ -103,7 +103,7 @@ public class DetectionTaskSplitter {
                 } else {
                     // Get the tracks for the last task that was processed for this media.
                     previousTracks = _inProgressBatchJobs.getTracks(
-                            job.getId(), media.getId(), job.getLastProcessedTaskIndex(media.getId()), 0);
+                            job.getId(), media.getId(), media.getLastProcessedTaskIndex(), 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -298,7 +298,7 @@ public class DetectionTaskSplitter {
             // Only need to check the first action. We would not be here in the splitter after a parallel action,
             // which can only be the last action in a pipeline.
             int actionIndex = 0;
-            boolean wasProcessed = job.wasActionProcessed(media.getId(), taskIndex, actionIndex);
+            boolean wasProcessed = media.wasActionProcessed(taskIndex, actionIndex);
             ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
             if (wasProcessed && actionType == ActionType.DETECTION) {
                 return false;

@@ -29,7 +29,9 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -55,6 +57,23 @@ public class MediaImpl implements Media {
     @Override
     @JsonIgnore
     public int getCreationTask() { return _creationTaskIndex; }
+
+
+    private final Multimap<Integer, Integer> _actionsIndexedByTask = HashMultimap.create();
+    @Override
+    public boolean wasActionProcessed(int taskIndex, int actionIndex) {
+        return _actionsIndexedByTask.containsEntry(taskIndex, actionIndex);
+    }
+    public void setProcessedAction(int taskIndex, int actionIndex) {
+        _actionsIndexedByTask.put(taskIndex, actionIndex);
+    }
+    @Override
+    public int getLastProcessedTaskIndex() {
+        var tasks = _actionsIndexedByTask.keySet();
+        return tasks.isEmpty() ? -1 : Collections.max(tasks);
+    }
+
+
 
     @Override
     @JsonIgnore

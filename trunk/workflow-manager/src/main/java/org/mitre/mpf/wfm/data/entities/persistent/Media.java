@@ -48,6 +48,10 @@ public interface Media {
 
     public int getCreationTask();
 
+    public boolean wasActionProcessed(int taskIndex, int actionIndex);
+
+    public int getLastProcessedTaskIndex();
+
     public boolean isDerivative();
 
     public String getUri();

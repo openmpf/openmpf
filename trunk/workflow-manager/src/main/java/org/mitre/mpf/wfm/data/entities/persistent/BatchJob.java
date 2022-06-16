@@ -44,12 +44,6 @@ public interface BatchJob {
 
     public int getCurrentTaskIndex();
 
-    public boolean wasActionProcessed(long mediaId, int taskIndex, int actionIndex);
-
-    public void setProcessedAction(long mediaId, int taskIndex, int actionIndex);
-
-    public int getLastProcessedTaskIndex(long mediaId);
-
     public Optional<String> getExternalId();
 
     public int getPriority();

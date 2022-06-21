@@ -30,17 +30,18 @@ package org.mitre.mpf.rest.api.pipelines;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
 import org.mitre.mpf.rest.api.util.Utils;
+import org.mitre.mpf.rest.api.util.ValidProcessingType;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
 
-@ScriptAssert(lang = "javascript", script = "_this.getSupportsBatchProcessing() || _this.getSupportsStreamProcessing()",
-        message = "must support batch processing, stream processing, or both")
+//@ScriptAssert(lang = "javascript", script = "_this.getSupportsBatchProcessing() || _this.getSupportsStreamProcessing()",
+//        message = "must support batch processing, stream processing, or both")
+@ValidProcessingType
 public class Algorithm implements PipelineElement {
 
     private final String _name;

@@ -30,21 +30,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
 
 import javax.validation.Valid;
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.util.Collection;
 import java.util.Objects;
 
 
-@ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
-        message = "must contain batchLibrary, streamLibrary, or both")
+//@ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
+//        message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
     private final String _componentName;
@@ -98,6 +98,11 @@ public class JsonComponentDescriptor {
 
     public boolean supportsStreamProcessing() {
         return StringUtils.isNotBlank(_streamLibrary);
+    }
+
+    @AssertTrue(message = "must contain batchLibrary, streamLibrary, or both")
+    public boolean getSupportsBatchOrStreaming() {
+        return supportsBatchProcessing() || supportsStreamProcessing();
     }
 
     private final ImmutableList<EnvironmentVariable> _environmentVariables;

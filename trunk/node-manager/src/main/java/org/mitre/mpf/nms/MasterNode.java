@@ -117,7 +117,8 @@ public class MasterNode {
         NodeManagers managers;
         try (InputStream inputStream = nodeManagerConfig.getInputStream()){
             log.info("Loading node manager config.");
-            managers = NodeManagers.fromXml(inputStream);
+//            managers = NodeManagers.fromXml(inputStream);
+            managers = NodeManagers.fromJson(inputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -148,7 +149,8 @@ public class MasterNode {
         if (updated) {
             try (OutputStream outputStream = nodeManagerConfig.getOutputStream()){
                 log.info("Saving updated node manager config.");
-                NodeManagers.toXml(managers, outputStream);
+//                NodeManagers.toXml(managers, outputStream);
+                NodeManagers.toJson(managers, outputStream);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

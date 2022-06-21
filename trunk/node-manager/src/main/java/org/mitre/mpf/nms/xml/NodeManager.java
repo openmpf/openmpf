@@ -26,30 +26,26 @@
 
 package org.mitre.mpf.nms.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import java.util.ArrayList;
 import java.util.List;
 
-@XStreamAlias("nodeManager")
 public class NodeManager {
-    
-    @XStreamAsAttribute()
+
     private String target;
 
-    @XStreamAsAttribute()
     private boolean autoConfigured;
 
-    @XStreamImplicit(itemFieldName="service") 
     private List<Service> services = new ArrayList<Service>();
 
     /**
-     * 
+     *
      * @param target JGroup NodeManager Name
      */
     public NodeManager(String target) {
          this.target = target;
+    }
+
+    public NodeManager() {
     }
 
     public void setTarget(String target) {

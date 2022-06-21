@@ -26,55 +26,29 @@
 
 package org.mitre.mpf.nms.xml;
 
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
-import com.thoughtworks.xstream.io.xml.StaxDriver;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 
-@XStreamAlias("nodeManagers")
 public class NodeManagers {
 
-    @XStreamImplicit(itemFieldName="nodeManager")
     private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
 
-    public static NodeManagers fromXml(InputStream inputStream) {
-        // Create Stax parser with default namespace
-        StaxDriver driver = new StaxDriver();
-        driver.getQnameMap().setDefaultNamespace("launch.xml.nms.mitre.org");
-        XStream xstream = new XStream(driver);
-        xstream.allowTypeHierarchy(NodeManagers.class);
-        xstream.autodetectAnnotations(true);
-        xstream.processAnnotations(NodeManagers.class);
-        NodeManagers retval = (NodeManagers) xstream.fromXML(inputStream);
 
-        // Stax parser will set the collection to null if the XML has no entries; instead use an empty collection
-        if (retval.getAll() == null) {
-            retval.setAll(new ArrayList<>());
-        }
-        return retval;
+    public static NodeManagers fromJson(InputStream inputStream) throws IOException {
+        var objectMaper = new ObjectMapper();
+        return objectMaper.readValue(inputStream, NodeManagers.class);
     }
 
-    public static void toXml(NodeManagers managers, OutputStream outputStream) {
-        XStream xStream = new XStream();
-        xStream.allowTypeHierarchy(NodeManagers.class);
-        //just adding all of them from the start - do not see a disadvantage from doing this
-        xStream.processAnnotations(NodeManagers.class);
-        xStream.processAnnotations(NodeManager.class);
-        xStream.processAnnotations(Service.class);
-        xStream.processAnnotations(EnvironmentVariable.class);
 
-        // Prevent using references. For example, when two NodeManager objects reference the same Service object:
-        // <nodeManager target="somehost2">
-        //    <service reference="../../nodeManager/service"/>
-        //  </nodeManager>
-        xStream.setMode(XStream.NO_REFERENCES);
-
-        xStream.toXML(managers, outputStream);
+    public static void toJson(NodeManagers managers, OutputStream outputStream) throws IOException {
+        var objectMapper = new ObjectMapper();
+        objectMapper.writeValue(outputStream, managers);
     }
 
     public List<NodeManager> getAll() {

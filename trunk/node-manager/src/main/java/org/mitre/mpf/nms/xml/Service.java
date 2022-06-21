@@ -26,9 +26,7 @@
 
 package org.mitre.mpf.nms.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,39 +34,34 @@ import java.util.List;
 
 
 /**
- * Backing class for Service (node) elements of a nodeManager element 
- * 
+ * Backing class for Service (node) elements of a nodeManager element
+ *
  * This uses {@link XStreamAlias}, so when building use {@link XStream#processAnnotations}
  */
-@XStreamAlias("service")
 public class Service  implements Serializable {
-    
-    @XStreamAsAttribute()
+
     private String cmd;
-    
-    @XStreamAsAttribute()
+
     private String name;
-    
-    @XStreamAsAttribute()
+
     private int count = 1;
-    
-    @XStreamAsAttribute()
+
     private String launcher = "generic";
-        
-    @XStreamImplicit(itemFieldName="arg")
+
     private List<String> args = new ArrayList<String>();
-   
-    @XStreamImplicit(itemFieldName="environmentVariable") 
+
     private List<EnvironmentVariable> envVars = new ArrayList<EnvironmentVariable>();
-    
-    @XStreamAlias("workingDirectory")
+
     private String wd = "";
-    
+
     private String description = "";
 
     public Service(String name, String cmdPath) {
         this.name = name;
         this.cmd = cmdPath;
+    }
+
+    public Service() {
     }
 
     public String getCmdPath() {
@@ -77,7 +70,7 @@ public class Service  implements Serializable {
 
     /**
      * full canonical path to the command to execute
-     * @param path 
+     * @param path
      */
     public void setCmdPath(String path) {
         this.cmd = path;
@@ -86,19 +79,19 @@ public class Service  implements Serializable {
     public void setWorkingDirectory(String path) {
         this.wd = path;
     }
-    
+
     public String getWorkingDirectory() {
         return this.wd;
     }
-    
+
     public String getDescription() {
         return this.description;
     }
-    
+
     public void setDescription(String desc) {
         this.description = desc;
     }
-    
+
     public List<String> getArgs() {
         return args;
     }
@@ -106,14 +99,14 @@ public class Service  implements Serializable {
     public void setArgs(List<String> args) {
         this.args = args;
     }
-    
+
     public void addArg(String arg) {
         this.args.add(arg);
     }
 
-    /** 
+    /**
      * How many to run
-     * @return 
+     * @return
      */
     public int getCount() {
         return count;
@@ -149,7 +142,8 @@ public class Service  implements Serializable {
     public void setEnvVars(List<EnvironmentVariable> vars) {
         this.envVars = vars;
     }
-    
+
+    @JsonIgnore
     public String getArgumentsString() {
       return Arrays.toString(this.args.toArray(new String[]{}));
     }

@@ -73,7 +73,8 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
         try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
-            NodeManagers.toXml(managers, outputStream);
+//            NodeManagers.toXml(managers, outputStream);
+            NodeManagers.toJson(managers, outputStream);
         }
 
         //could produce an InterruptedException from Thread.sleep - will be caught by the ErrorController super class
@@ -145,7 +146,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Override
     public synchronized List<NodeManagerModel> getNodeManagerModels() {
         try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-            NodeManagers managers = NodeManagers.fromXml(inputStream);
+            NodeManagers managers = NodeManagers.fromJson(inputStream);
 
             // get the current view once, and then update all the models
             Set<String> availableNodes = getAvailableNodes();

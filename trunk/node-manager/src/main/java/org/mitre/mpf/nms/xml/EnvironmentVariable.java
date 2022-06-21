@@ -25,24 +25,21 @@
  ******************************************************************************/
 package org.mitre.mpf.nms.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
 import java.io.Serializable;
 
 /**
- * Backing class for Service (node) elements of a nodeManager element 
- * 
+ * Backing class for Service (node) elements of a nodeManager element
+ *
  * This uses {@link XStreamAlias}, so when building use {@link XStream#processAnnotations}
  */
-@XStreamAlias("environmentVariable")
 public class EnvironmentVariable implements Serializable {
-   
+
     private String key;
-    
+
     private String value;
-    
+
     private String sep;
-    
+
     public String getKey() {
         return key;
     }
@@ -58,7 +55,7 @@ public class EnvironmentVariable implements Serializable {
     public void setValue(String value) {
         this.value = value;
     }
-    
+
     public String getSep() {
         return sep;
     }

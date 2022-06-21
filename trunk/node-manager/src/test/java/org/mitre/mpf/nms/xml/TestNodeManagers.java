@@ -57,7 +57,7 @@ public class TestNodeManagers {
         nodeManagers.add(testNode1);
         nodeManagers.add(testNode2);
 
-        NodeManagers.toXml(nodeManagers, outputStream);
+        NodeManagers.toJson(nodeManagers, outputStream);
         String content = outputStream.toString();
 
         Assert.assertFalse("XML should not be empty.", content.isEmpty());

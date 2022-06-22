@@ -74,7 +74,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
         ArrayList<String> cmd = new ArrayList<String>();
         Service s = this.getService().getService();
         cmd.add(this.getCommandPath());                 // do substitutions
-        for (String arg : s.getArgs()) {
+        for (String arg : s.args()) {
             // don't put in empty args: aka <arg></arg>
             if (null == arg || arg.isEmpty()) {
                 continue;

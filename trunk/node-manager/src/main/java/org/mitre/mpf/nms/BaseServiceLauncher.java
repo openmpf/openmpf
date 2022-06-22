@@ -101,7 +101,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
     public static BaseServiceLauncher getLauncher(ServiceDescriptor desc) {
 
-        final String launcher = desc.getService().getLauncher();
+        final String launcher = desc.getService().launcher();
         if (null == launcher || launcher.isEmpty() || "generic".equals(launcher)) {
             // default
             return new GenericServiceLauncher(desc);
@@ -120,7 +120,7 @@ public abstract class BaseServiceLauncher implements Runnable {
      * @param desc Service Descriptor to launch
      */
     public BaseServiceLauncher(ServiceDescriptor desc) {
-    	LOG.debug("Base Service Launcher '{}' created", desc.getService().getName());
+    	LOG.debug("Base Service Launcher '{}' created", desc.getService().name());
     	restarts = desc.getRestarts();
 
         this.mServiceDesc = desc;
@@ -131,7 +131,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.debug("Node [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.debug("Node [{}]: {}", mServiceDesc.getService().name(), output);
                 }
 
             };
@@ -140,7 +140,7 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 @Override
                 public void receiveOutput(String outputName, String output) {
-                    LOG.debug("Node stderr [{}]: {}", mServiceDesc.getService().getName(), output);
+                    LOG.debug("Node stderr [{}]: {}", mServiceDesc.getService().name(), output);
                 }
 
             };
@@ -353,8 +353,8 @@ public abstract class BaseServiceLauncher implements Runnable {
 
                 // check to see if we change working directory
                 final Service s = mServiceDesc.getService();
-                if (s.getWorkingDirectory() != null && !s.getWorkingDirectory().isEmpty()) {
-                    File cwd = new File(this.substituteVariables(s.getWorkingDirectory().trim()));
+                if (s.workingDirectory() != null && !s.workingDirectory().isEmpty()) {
+                    File cwd = new File(this.substituteVariables(s.workingDirectory().trim()));
                     if (cwd.isDirectory()) {
                         LOG.debug("Switching to working directory {}", cwd);
                         pb.directory(cwd);
@@ -371,21 +371,19 @@ public abstract class BaseServiceLauncher implements Runnable {
                 env.put("SERVICE_NAME", this.mServiceDesc.getFullyQualifiedName());
                 env.put("COMPONENT_NAME", this.mServiceDesc.getComponentName());
                 // add any given by the service
-                for (EnvironmentVariable envVar : s.getEnvVars()) {
-                    if (null != envVar.getSep() && !envVar.getSep().isEmpty()) {
-                        String subst_value = this.substituteVariables(envVar.getValue());
-                        envVar.setValue(subst_value);
-                        LOG.debug("Appending environment variable {} = {} using {} ", envVar.getKey(), envVar.getValue(), envVar.getSep());
-                        if (env.containsKey(envVar.getKey())) {
-                            env.put(envVar.getKey(), env.get(envVar.getKey()) + envVar.getSep() + envVar.getValue());
+                for (EnvironmentVariable envVar : s.envVars()) {
+                    if (null != envVar.sep() && !envVar.sep().isEmpty()) {
+                        String subst_value = this.substituteVariables(envVar.value());
+                        LOG.debug("Appending environment variable {} = {} using {} ", envVar.key(), subst_value, envVar.sep());
+                        if (env.containsKey(envVar.key())) {
+                            env.put(envVar.key(), env.get(envVar.key()) + envVar.sep() + subst_value);
                         } else {
-                            env.put(envVar.getKey(), envVar.getValue());
+                            env.put(envVar.key(), subst_value);
                         }
                     } else {
-                        String subst_value = this.substituteVariables(envVar.getValue());
-                        envVar.setValue(subst_value);
-                        LOG.debug("Adding environment variable {} = {}", envVar.getKey(), envVar.getValue());
-                        env.put(envVar.getKey(), envVar.getValue());
+                        String subst_value = this.substituteVariables(envVar.value());
+                        LOG.debug("Adding environment variable {} = {}", envVar.key(), subst_value);
+                        env.put(envVar.key(), subst_value);
                     }
                 }
 
@@ -403,7 +401,7 @@ public abstract class BaseServiceLauncher implements Runnable {
                     public void run() {
                         if (child != null) {
                             child.destroy();
-                            LOG.debug("Child process shutdown: " + s.getCmdPath());
+                            LOG.debug("Child process shutdown: " + s.cmdPath());
                         }
                     }
                 });
@@ -477,7 +475,7 @@ public abstract class BaseServiceLauncher implements Runnable {
             } catch (InterruptedException e) {
                 child.destroy();
             } catch (IOException e) {
-                LOG.error("IO Exception: check execution path: {}", this.mServiceDesc.getService().getCmdPath(), e);
+                LOG.error("IO Exception: check execution path: {}", this.mServiceDesc.getService().cmdPath(), e);
                 // force exit
                 restartOnFailure = false;
             } catch (Exception e) {
@@ -517,7 +515,7 @@ public abstract class BaseServiceLauncher implements Runnable {
      * @return
      */
     public String getCommandPath() {
-        return EnvironmentVariableExpander.expand(mServiceDesc.getService().getCmdPath());
+        return EnvironmentVariableExpander.expand(mServiceDesc.getService().cmdPath());
     }
 
     /**

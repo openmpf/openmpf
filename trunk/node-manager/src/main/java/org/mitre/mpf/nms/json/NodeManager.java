@@ -29,46 +29,20 @@ package org.mitre.mpf.nms.json;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NodeManager {
+public record NodeManager(
+        String target, // JGroup NodeManager Name
+        boolean autoConfigured,
+        List<Service> services) {
 
-    private String target;
+    public NodeManager(String target, boolean autoConfigured) {
+        this(target, autoConfigured, new ArrayList<>());
+    }
 
-    private boolean autoConfigured;
-
-    private List<Service> services = new ArrayList<Service>();
-
-    /**
-     *
-     * @param target JGroup NodeManager Name
-     */
     public NodeManager(String target) {
-         this.target = target;
+        this(target, false);
     }
 
-    public NodeManager() {
-    }
-
-    public void setTarget(String target) {
-         this.target = target;
-    }
-
-    public String getTarget() {
-        return this.target;
-    }
-
-    public void setAutoConfigured(boolean autoConfigured) {
-        this.autoConfigured = autoConfigured;
-    }
-
-    public boolean isAutoConfigured() {
-        return this.autoConfigured;
-    }
-
-    public void add(Service node) {
-        services.add(node);
-    }
-
-    public List<Service> getServices() {
-        return services;
+    public void add(Service service) {
+        services.add(service);
     }
 }

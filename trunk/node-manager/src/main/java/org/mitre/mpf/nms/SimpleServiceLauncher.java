@@ -70,7 +70,7 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
 
         String pythonPathKey = "PYTHONPATH";
         String pythonPathVal = env.get(pythonPathKey);
-        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().getName() + "/venv/lib/python3.8/site-packages";
+        String venvSitePackages = mpfHomeVal + "/plugins/" + serviceDescriptor.getService().name() + "/venv/lib/python3.8/site-packages";
         if (pythonPathVal != null) {
             env.put(pythonPathKey, pythonPathVal + System.getProperty("path.separator") + venvSitePackages);
         } else {
@@ -90,7 +90,7 @@ public class SimpleServiceLauncher extends GenericServiceLauncher {
         Service s = this.getService().getService();
         cmd.add(this.getCommandPath());     // do substitutions
         cmd.add(this.getService().getActiveMqHost());
-        for (String arg : s.getArgs()) {
+        for (String arg : s.args()) {
             // don't put in empty args: aka <arg></arg>
             if (null == arg || arg.isEmpty()) {
                 continue;

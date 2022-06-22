@@ -62,15 +62,15 @@ public class ServiceModel {
 	}
 
 	public ServiceModel(Service service) {
-    	this.serviceName = service.getName();
-		this.cmd = service.getCmdPath();
-	    this.args = service.getArgs();
-	    this.workingDirectory = service.getWorkingDirectory();
-    	this.serviceCount = service.getCount();
-    	this.serviceLauncher = service.getLauncher();
-    	this.serviceDescription = service.getDescription();
+    	this.serviceName = service.name();
+		this.cmd = service.cmdPath();
+	    this.args = service.args();
+	    this.workingDirectory = service.workingDirectory();
+    	this.serviceCount = service.count();
+    	this.serviceLauncher = service.launcher();
+    	this.serviceDescription = service.description();
 
-    	for (EnvironmentVariable envVar : service.getEnvVars()) {
+    	for (EnvironmentVariable envVar : service.envVars()) {
     		this.environmentVariables.add(new EnvironmentVariableModel(envVar));
     	}
 	}

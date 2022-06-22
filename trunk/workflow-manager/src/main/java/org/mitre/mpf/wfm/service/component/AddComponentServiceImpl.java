@@ -313,16 +313,8 @@ public class AddComponentServiceImpl implements AddComponentService {
         return descriptor
                 .getEnvironmentVariables()
                 .stream()
-                .map(AddComponentServiceImpl::convertJsonEnvVar)
+                .map(je -> new EnvironmentVariable(je.getName(), je.getValue(), je.getSep()))
                 .collect(toList());
-    }
-
-    private static EnvironmentVariable convertJsonEnvVar(JsonComponentDescriptor.EnvironmentVariable jsonEnvVar) {
-        EnvironmentVariable newEnvVar = new EnvironmentVariable();
-        newEnvVar.setKey(jsonEnvVar.getName());
-        newEnvVar.setValue(jsonEnvVar.getValue());
-        newEnvVar.setSep(jsonEnvVar.getSep());
-        return newEnvVar;
     }
 
 
@@ -462,33 +454,36 @@ public class AddComponentServiceImpl implements AddComponentService {
                     "Couldn't add the %s service because another service already has that name", serviceName));
         }
         String queueName = String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(), algorithm.getName());
-        Service algorithmService;
 
+        String path;
+        String launcher;
+        List<String> args;
         switch (descriptor.getSourceLanguage()) {
-            case JAVA:
-                algorithmService = new Service(serviceName, "${MPF_HOME}/bin/start-java-component.sh");
-                algorithmService.addArg(descriptor.getBatchLibrary());
-                algorithmService.addArg(queueName);
-                algorithmService.addArg(serviceName);
-                algorithmService.setLauncher("generic");
-                break;
-
-            case CPP:
-            case PYTHON:
-                algorithmService = new Service(serviceName, "${MPF_HOME}/bin/amq_detection_component");
-                algorithmService.addArg(descriptor.getBatchLibrary());
-                algorithmService.addArg(queueName);
-                algorithmService.addArg(descriptor.getSourceLanguage().getValue());
-                algorithmService.setLauncher("simple");
-                break;
-
-            default:
-                throw new IllegalStateException("Unknown component language: " + descriptor.getSourceLanguage());
+            case JAVA -> {
+                path = "${MPF_HOME}/bin/start-java-component.sh";
+                launcher = "generic";
+                args = List.of(descriptor.getBatchLibrary(), queueName, serviceName);
+            }
+            case CPP, PYTHON -> {
+                path = "${MPF_HOME}/bin/amq_detection_component";
+                launcher = "simple";
+                args = List.of(descriptor.getBatchLibrary(),
+                               queueName,
+                               descriptor.getSourceLanguage().getValue());
+            }
+            default -> throw new IllegalStateException(
+                    "Unknown component language: " + descriptor.getSourceLanguage());
         }
+        var algorithmService = new Service(
+                serviceName,
+                path,
+                1,
+                launcher,
+                args,
+                convertJsonEnvVars(descriptor),
+                "${MPF_HOME}/plugins/" + descriptor.getComponentName(),
+                algorithm.getDescription());
 
-        algorithmService.setWorkingDirectory("${MPF_HOME}/plugins/" + descriptor.getComponentName());
-        algorithmService.setDescription(algorithm.getDescription());
-        algorithmService.setEnvVars(convertJsonEnvVars(descriptor));
         _log.debug("Created service definition");
         if (_nodeManagerService.addService(algorithmService)) {
             _log.info("Successfully added the {} service", serviceName);

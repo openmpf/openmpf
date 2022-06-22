@@ -44,10 +44,6 @@ public interface NodeManagerService {
     // publicly exposed as part of the REST API
     public boolean addService(Service service);
 
-    // this method is used by the ComponentRegistrationController but should not be
-    // publicly exposed as part of the REST API
-    public Tuple<Boolean, String> removeService(Service service);
-
     public Tuple<Boolean, String> removeService(String serviceName);
 
     public Map<String, ServiceModel> getServiceModels();

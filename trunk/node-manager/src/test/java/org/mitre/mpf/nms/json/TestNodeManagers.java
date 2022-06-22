@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 public class TestNodeManagers {
@@ -42,10 +41,15 @@ public class TestNodeManagers {
     public void testToJson() throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        Service testService = new Service("SomeTestService", "SomeTestPath");
-        testService.setLauncher("simple");
-        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
-        testService.setArgs(argsList);
+        Service testService = new Service(
+                "SomeTestService",
+                 "SomeTestPath",
+                 1,
+                 "simple",
+                 List.of("SomeTestArg", "MPF.DETECTION_TEST_REQUEST"),
+                 List.of(),
+                 "",
+                 "");
 
         NodeManager testNode1 = new NodeManager("somehost1");
         testNode1.add(testService);
@@ -53,11 +57,7 @@ public class TestNodeManagers {
         NodeManager testNode2 = new NodeManager("somehost2");
         testNode2.add(testService);
 
-        NodeManagers nodeManagers = new NodeManagers();
-        nodeManagers.add(testNode1);
-        nodeManagers.add(testNode2);
-
-        NodeManagers.toJson(nodeManagers, outputStream);
+        NodeManagers.toJson(List.of(testNode1, testNode2), outputStream);
         String content = outputStream.toString();
 
         Assert.assertFalse("XML should not be empty.", content.isEmpty());

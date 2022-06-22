@@ -26,40 +26,27 @@
 
 package org.mitre.mpf.nms.json;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 
 public class NodeManagers {
+    private NodeManagers() {
+    }
 
-    private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
-
-
-    public static NodeManagers fromJson(InputStream inputStream) throws IOException {
+    public static List<NodeManager> fromJson(InputStream inputStream) throws IOException {
         var objectMaper = new ObjectMapper();
-        return objectMaper.readValue(inputStream, NodeManagers.class);
+        return objectMaper.readValue(inputStream, new TypeReference<>() { });
     }
 
 
-    public static void toJson(NodeManagers managers, OutputStream outputStream) throws IOException {
+    public static void toJson(List<NodeManager> managers, OutputStream outputStream) throws IOException {
         var objectMapper = new ObjectMapper();
         objectMapper.writeValue(outputStream, managers);
-    }
-
-    public List<NodeManager> getAll() {
-        return nodeManagers;
-    }
-
-    public void setAll(List<NodeManager> nodeManagers) {
-        this.nodeManagers = nodeManagers;
-    }
-
-    public void add(NodeManager node) {
-        nodeManagers.add(node);
     }
 }

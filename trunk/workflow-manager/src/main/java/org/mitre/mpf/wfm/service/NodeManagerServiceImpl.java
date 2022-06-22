@@ -51,6 +51,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toList;
 
 @org.springframework.stereotype.Service
 @Profile("!docker")
@@ -70,7 +71,7 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
     @Override
     public boolean saveAndReloadNodeManagerConfig(List<NodeManagerModel> nodeManagerModels) throws IOException {
-        NodeManagers managers = convertFromModels(nodeManagerModels);
+        var managers = convertFromModels(nodeManagerModels);
 
         try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
             NodeManagers.toJson(managers, outputStream);
@@ -83,18 +84,15 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     }
 
 
-    private static NodeManagers convertFromModels(Collection<NodeManagerModel> models) {
-        NodeManagers managers = new NodeManagers();
-        models.stream()
+    private static List<NodeManager> convertFromModels(Collection<NodeManagerModel> models) {
+        return models.stream()
                 .map(NodeManagerServiceImpl::convertFromModel)
-                .forEach(managers::add);
-        return managers;
+                .collect(toList());
     }
 
 
     private static NodeManager convertFromModel(NodeManagerModel model) {
-        NodeManager manager = new NodeManager(model.getHost());
-        manager.setAutoConfigured(model.isAutoConfigured());
+        var manager = new NodeManager(model.getHost(), model.isAutoConfigured());
         model.getServices().stream()
                 .map(NodeManagerServiceImpl::convertFromModel)
                 .forEach(manager::add);
@@ -103,38 +101,37 @@ public class NodeManagerServiceImpl implements NodeManagerService {
 
 
     private static Service convertFromModel(ServiceModel serviceModel) {
-        Service service = new Service(serviceModel.getServiceName(), serviceModel.getCmd());
-        service.setArgs(serviceModel.getArgs());
-        service.setWorkingDirectory(serviceModel.getWorkingDirectory());
-        service.setCount(serviceModel.getServiceCount());
-        service.setLauncher(serviceModel.getServiceLauncher());
-        service.setDescription(serviceModel.getServiceDescription());
-
-        serviceModel.getEnvironmentVariables().stream()
+        var envVars = serviceModel.getEnvironmentVariables()
+                .stream()
                 .map(NodeManagerServiceImpl::convertFromModel)
-                .forEach(ev -> service.getEnvVars().add(ev));
+                .collect(toList());
 
-        return service;
+        return new Service(
+                serviceModel.getServiceName(),
+                serviceModel.getCmd(),
+                serviceModel.getServiceCount(),
+                serviceModel.getServiceLauncher(),
+                serviceModel.getArgs(),
+                envVars,
+                serviceModel.getWorkingDirectory(),
+                serviceModel.getServiceDescription());
     }
 
 
     private static EnvironmentVariable convertFromModel(EnvironmentVariableModel envVarModel) {
-        EnvironmentVariable envVar = new EnvironmentVariable();
-        envVar.setKey(envVarModel.getName());
-        envVar.setValue(envVarModel.getValue());
-        envVar.setSep(envVarModel.getSep());
-        return envVar;
+        return new EnvironmentVariable(envVarModel.getName(), envVarModel.getValue(),
+                                       envVarModel.getSep());
     }
 
 
 
     private NodeManagerModel convertToModel(NodeManager nodeManager, Set<String> availableNodes) {
-        NodeManagerModel model = new NodeManagerModel(nodeManager.getTarget());
+        NodeManagerModel model = new NodeManagerModel(nodeManager.target());
         model.setCoreNode(isCoreNode(model.getHost()));
         model.setOnline(availableNodes.contains(model.getHost()));
-        model.setAutoConfigured(nodeManager.isAutoConfigured());
-        if (nodeManager.getServices() != null) {
-            nodeManager.getServices().stream()
+        model.setAutoConfigured(nodeManager.autoConfigured());
+        if (nodeManager.services() != null) {
+            nodeManager.services().stream()
                 .map(ServiceModel::new)
                 .forEach(sm -> model.getServices().add(sm));
         }
@@ -145,12 +142,12 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     @Override
     public synchronized List<NodeManagerModel> getNodeManagerModels() {
         try (InputStream inputStream = propertiesUtil.getNodeManagerConfigResource().getInputStream()) {
-            NodeManagers managers = NodeManagers.fromJson(inputStream);
+            var managers = NodeManagers.fromJson(inputStream);
 
             // get the current view once, and then update all the models
             Set<String> availableNodes = getAvailableNodes();
 
-            List<NodeManagerModel> nodeManagerModels = managers.getAll()
+            List<NodeManagerModel> nodeManagerModels = managers
                     .stream()
                     .map(m -> convertToModel(m, availableNodes))
                     .collect(toCollection(ArrayList::new));
@@ -192,36 +189,30 @@ public class NodeManagerServiceImpl implements NodeManagerService {
     // this method is used by the ComponentRegistrationController but should not be
     // publicly exposed as part of the REST API
     @Override
-    public Tuple<Boolean, String> removeService(Service service) {
+    public Tuple<Boolean, String> removeService(String serviceName) {
         Tuple<Boolean, String> returnTuple;
-        String returnMessage = "removed the " + service.getName() + " service";
+        String returnMessage = "removed the " + serviceName + " service";
         Boolean returnValue = true;
-        log.debug("service name is " + service.getName());
+        log.debug("service name is " + serviceName);
         // if service entry exists in nodeManagerPaletteMap, remove it
-        ServiceModel theService = new ServiceModel(service);
-        log.debug("the service name is " + theService.getServiceName());
+        log.debug("the service name is " + serviceName);
 
         Map<String, ServiceModel> nodeManagerFilePaletteMap = getServiceModels();
         if (nodeManagerFilePaletteMap != null) {
-            if (nodeManagerFilePaletteMap.containsKey(theService.getServiceName())) {
-                nodeManagerFilePaletteMap.remove(theService.getServiceName());
+            if (nodeManagerFilePaletteMap.containsKey(serviceName)) {
+                nodeManagerFilePaletteMap.remove(serviceName);
             } else {
-                returnMessage = "The " + service.getName() + " service does not appear to be registered";
+                returnMessage = "The " + serviceName + " service does not appear to be registered";
                 returnValue = false;
             }
         }
         // write the map back out to json file
         if (setServiceModels(nodeManagerFilePaletteMap) == false) {
-            returnMessage = "Could not remove the " + service.getName() + " service from the nodeServicesPalette.json file";
+            returnMessage = "Could not remove the " + serviceName + " service from the nodeServicesPalette.json file";
             returnValue = false;
         }
         returnTuple = new Tuple<Boolean, String>(returnValue, returnMessage);
         return returnTuple;
-    }
-
-    @Override
-    public Tuple<Boolean, String> removeService(String serviceName) {
-        return removeService(new Service(serviceName, ""));
     }
 
 

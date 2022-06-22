@@ -42,9 +42,9 @@ public class EnvironmentVariableModel {
 	}
 
 	public EnvironmentVariableModel(EnvironmentVariable envVar) {
-		this.name = envVar.getKey();
-		this.value = envVar.getValue();
-		this.sep = envVar.getSep();
+		this.name = envVar.key();
+		this.value = envVar.value();
+		this.sep = envVar.sep();
 	}
 
 	public String getName() {

@@ -73,7 +73,6 @@ public class NodeManagerServiceImpl implements NodeManagerService {
         NodeManagers managers = convertFromModels(nodeManagerModels);
 
         try (OutputStream outputStream = propertiesUtil.getNodeManagerConfigResource().getOutputStream()) {
-//            NodeManagers.toXml(managers, outputStream);
             NodeManagers.toJson(managers, outputStream);
         }
 

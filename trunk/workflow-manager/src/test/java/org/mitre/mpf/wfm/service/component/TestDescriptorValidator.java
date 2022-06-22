@@ -86,8 +86,7 @@ public class TestDescriptorValidator {
                 isNull("componentVersion"),
                 isNull("middlewareVersion"),
                 "sourceLanguage: must be java, c++, or python",
-//                "<root>: must contain batchLibrary, streamLibrary, or both",
-                "must contain batchLibrary, streamLibrary, or both",
+                "<root>: must contain batchLibrary, streamLibrary, or both",
                 isNull("algorithm"));
     }
 

@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
@@ -34,17 +35,18 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 
 import javax.validation.Valid;
-import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.util.Collection;
 import java.util.Objects;
 
 
-//@ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
-//        message = "must contain batchLibrary, streamLibrary, or both")
+@MethodReturnsTrue(
+        method = "supportsBatchOrStreaming",
+        message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
     private final String _componentName;
@@ -100,8 +102,8 @@ public class JsonComponentDescriptor {
         return StringUtils.isNotBlank(_streamLibrary);
     }
 
-    @AssertTrue(message = "must contain batchLibrary, streamLibrary, or both")
-    public boolean getSupportsBatchOrStreaming() {
+    @JsonIgnore
+    public boolean supportsBatchOrStreaming() {
         return supportsBatchProcessing() || supportsStreamProcessing();
     }
 

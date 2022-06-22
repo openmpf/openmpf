@@ -29,8 +29,6 @@ import java.io.Serializable;
 
 /**
  * Backing class for Service (node) elements of a nodeManager element
- *
- * This uses {@link XStreamAlias}, so when building use {@link XStream#processAnnotations}
  */
 public class EnvironmentVariable implements Serializable {
 

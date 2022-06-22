@@ -39,7 +39,7 @@ public class TestNodeManagers {
     private final String SERVICE_REFERENCE = "service reference=";
 
     @Test
-    public void testToXml() throws IOException {
+    public void testToJson() throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         Service testService = new Service("SomeTestService", "SomeTestPath");

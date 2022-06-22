@@ -32,7 +32,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.test.TestUtil;

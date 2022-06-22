@@ -25,7 +25,7 @@
  ******************************************************************************/
 package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;

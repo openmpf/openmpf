@@ -24,7 +24,7 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.xml;
+package org.mitre.mpf.nms.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;

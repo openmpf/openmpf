@@ -26,8 +26,8 @@
 package org.mitre.mpf.nms;
 
 import org.mitre.mpf.nms.util.EnvironmentVariableExpander;
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.EnvironmentVariable;
+import org.mitre.mpf.nms.json.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

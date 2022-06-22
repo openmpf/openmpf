@@ -24,42 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.xml;
+package org.mitre.mpf.nms.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
+import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+public class TestNodeManagers {
 
-public class NodeManagers {
+    private final String SERVICE_REFERENCE = "service reference=";
 
-    private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
+    @Test
+    public void testToJson() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
+        Service testService = new Service("SomeTestService", "SomeTestPath");
+        testService.setLauncher("simple");
+        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
+        testService.setArgs(argsList);
 
-    public static NodeManagers fromJson(InputStream inputStream) throws IOException {
-        var objectMaper = new ObjectMapper();
-        return objectMaper.readValue(inputStream, NodeManagers.class);
-    }
+        NodeManager testNode1 = new NodeManager("somehost1");
+        testNode1.add(testService);
 
+        NodeManager testNode2 = new NodeManager("somehost2");
+        testNode2.add(testService);
 
-    public static void toJson(NodeManagers managers, OutputStream outputStream) throws IOException {
-        var objectMapper = new ObjectMapper();
-        objectMapper.writeValue(outputStream, managers);
-    }
+        NodeManagers nodeManagers = new NodeManagers();
+        nodeManagers.add(testNode1);
+        nodeManagers.add(testNode2);
 
-    public List<NodeManager> getAll() {
-        return nodeManagers;
-    }
+        NodeManagers.toJson(nodeManagers, outputStream);
+        String content = outputStream.toString();
 
-    public void setAll(List<NodeManager> nodeManagers) {
-        this.nodeManagers = nodeManagers;
-    }
+        Assert.assertFalse("XML should not be empty.", content.isEmpty());
+        Assert.assertFalse("XML should not contain \"" + SERVICE_REFERENCE + "\".",
+                content.contains(SERVICE_REFERENCE));
 
-    public void add(NodeManager node) {
-        nodeManagers.add(node);
+        outputStream.close();
     }
 }

@@ -23,42 +23,43 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms.xml;
 
-import java.io.Serializable;
+package org.mitre.mpf.nms.json;
 
-/**
- * Backing class for Service (node) elements of a nodeManager element
- */
-public class EnvironmentVariable implements Serializable {
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    private String key;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-    private String value;
 
-    private String sep;
+public class NodeManagers {
 
-    public String getKey() {
-        return key;
+    private List<NodeManager> nodeManagers = new ArrayList<NodeManager>();
+
+
+    public static NodeManagers fromJson(InputStream inputStream) throws IOException {
+        var objectMaper = new ObjectMapper();
+        return objectMaper.readValue(inputStream, NodeManagers.class);
     }
 
-    public void setKey(String key) {
-        this.key = key;
+
+    public static void toJson(NodeManagers managers, OutputStream outputStream) throws IOException {
+        var objectMapper = new ObjectMapper();
+        objectMapper.writeValue(outputStream, managers);
     }
 
-    public String getValue() {
-        return value;
+    public List<NodeManager> getAll() {
+        return nodeManagers;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setAll(List<NodeManager> nodeManagers) {
+        this.nodeManagers = nodeManagers;
     }
 
-    public String getSep() {
-        return sep;
-    }
-
-    public void setSep(String sep) {
-        this.sep = sep;
+    public void add(NodeManager node) {
+        nodeManagers.add(node);
     }
 }

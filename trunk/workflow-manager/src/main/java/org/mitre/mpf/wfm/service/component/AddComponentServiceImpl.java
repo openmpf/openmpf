@@ -28,8 +28,8 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.EnvironmentVariable;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;

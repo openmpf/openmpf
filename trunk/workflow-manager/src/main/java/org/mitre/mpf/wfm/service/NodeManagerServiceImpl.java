@@ -28,10 +28,10 @@ package org.mitre.mpf.wfm.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.NodeManager;
-import org.mitre.mpf.nms.xml.NodeManagers;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.EnvironmentVariable;
+import org.mitre.mpf.nms.json.NodeManager;
+import org.mitre.mpf.nms.json.NodeManagers;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;

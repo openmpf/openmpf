@@ -23,52 +23,42 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
+package org.mitre.mpf.nms.json;
 
-package org.mitre.mpf.nms.xml;
+import java.io.Serializable;
 
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * Backing class for Service (node) elements of a nodeManager element
+ */
+public class EnvironmentVariable implements Serializable {
 
-public class NodeManager {
+    private String key;
 
-    private String target;
+    private String value;
 
-    private boolean autoConfigured;
+    private String sep;
 
-    private List<Service> services = new ArrayList<Service>();
-
-    /**
-     *
-     * @param target JGroup NodeManager Name
-     */
-    public NodeManager(String target) {
-         this.target = target;
+    public String getKey() {
+        return key;
     }
 
-    public NodeManager() {
+    public void setKey(String key) {
+        this.key = key;
     }
 
-    public void setTarget(String target) {
-         this.target = target;
+    public String getValue() {
+        return value;
     }
 
-    public String getTarget() {
-        return this.target;
+    public void setValue(String value) {
+        this.value = value;
     }
 
-    public void setAutoConfigured(boolean autoConfigured) {
-        this.autoConfigured = autoConfigured;
+    public String getSep() {
+        return sep;
     }
 
-    public boolean isAutoConfigured() {
-        return this.autoConfigured;
-    }
-
-    public void add(Service node) {
-        services.add(node);
-    }
-
-    public List<Service> getServices() {
-        return services;
+    public void setSep(String sep) {
+        this.sep = sep;
     }
 }

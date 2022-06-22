@@ -24,46 +24,51 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.xml;
+package org.mitre.mpf.nms.json;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
-public class TestNodeManagers {
+public class NodeManager {
 
-    private final String SERVICE_REFERENCE = "service reference=";
+    private String target;
 
-    @Test
-    public void testToJson() throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    private boolean autoConfigured;
 
-        Service testService = new Service("SomeTestService", "SomeTestPath");
-        testService.setLauncher("simple");
-        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
-        testService.setArgs(argsList);
+    private List<Service> services = new ArrayList<Service>();
 
-        NodeManager testNode1 = new NodeManager("somehost1");
-        testNode1.add(testService);
+    /**
+     *
+     * @param target JGroup NodeManager Name
+     */
+    public NodeManager(String target) {
+         this.target = target;
+    }
 
-        NodeManager testNode2 = new NodeManager("somehost2");
-        testNode2.add(testService);
+    public NodeManager() {
+    }
 
-        NodeManagers nodeManagers = new NodeManagers();
-        nodeManagers.add(testNode1);
-        nodeManagers.add(testNode2);
+    public void setTarget(String target) {
+         this.target = target;
+    }
 
-        NodeManagers.toJson(nodeManagers, outputStream);
-        String content = outputStream.toString();
+    public String getTarget() {
+        return this.target;
+    }
 
-        Assert.assertFalse("XML should not be empty.", content.isEmpty());
-        Assert.assertFalse("XML should not contain \"" + SERVICE_REFERENCE + "\".",
-                content.contains(SERVICE_REFERENCE));
+    public void setAutoConfigured(boolean autoConfigured) {
+        this.autoConfigured = autoConfigured;
+    }
 
-        outputStream.close();
+    public boolean isAutoConfigured() {
+        return this.autoConfigured;
+    }
+
+    public void add(Service node) {
+        services.add(node);
+    }
+
+    public List<Service> getServices() {
+        return services;
     }
 }

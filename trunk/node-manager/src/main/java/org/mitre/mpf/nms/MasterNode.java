@@ -30,9 +30,9 @@ import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.util.SleepUtil;
-import org.mitre.mpf.nms.xml.NodeManager;
-import org.mitre.mpf.nms.xml.NodeManagers;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.NodeManager;
+import org.mitre.mpf.nms.json.NodeManagers;
+import org.mitre.mpf.nms.json.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,7 +128,7 @@ public class MasterNode {
                 log.error("The <nodeManager> tag did not contain a target attribute describing the server to use.");
                 continue;
             }
-            // If user misconfigures the xml config by putting in duplicate hostnames, complain and continue
+            // If user misconfigures the json config by putting in duplicate hostnames, complain and continue
             if (configuredManagerHosts.containsKey(manager.getTarget())) {
                 log.error("Duplicate node-manager specified in config file. Dropping repeated node manager host: " + manager.getTarget());
                 continue;

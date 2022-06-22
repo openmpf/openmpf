@@ -26,50 +26,50 @@
 
 package org.mitre.mpf.rest.api.node;
 
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.EnvironmentVariable;
+import org.mitre.mpf.nms.json.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceModel {
-	private String serviceName;	
-	private String cmd;	
+	private String serviceName;
+	private String cmd;
     private List<String> args = new ArrayList<String>();
     private String workingDirectory;
 	private int serviceCount;
 	private String serviceLauncher;
-	
+
 	private String serviceDescription;
-	
+
 	List<EnvironmentVariableModel> environmentVariables = new ArrayList<EnvironmentVariableModel>();
-	
+
 	public ServiceModel() { }
-	
+
 	public ServiceModel(String serviceName, String cmd,
 			List<String> args, String workingDirectory,
-			int serviceCount, String serviceLauncher, 
+			int serviceCount, String serviceLauncher,
 			boolean serviceRestart, String serviceDescription,
 			List<EnvironmentVariableModel> environmentVariables) {
 		this.serviceName = serviceName;
 		this.cmd = cmd;
 	    this.args = args;
-	    this.workingDirectory = workingDirectory;		
+	    this.workingDirectory = workingDirectory;
 		this.serviceCount = serviceCount;
 		this.serviceLauncher = serviceLauncher;
 		this.serviceDescription = serviceDescription;
 		this.environmentVariables = environmentVariables;
 	}
-	
+
 	public ServiceModel(Service service) {
     	this.serviceName = service.getName();
 		this.cmd = service.getCmdPath();
 	    this.args = service.getArgs();
-	    this.workingDirectory = service.getWorkingDirectory();	
+	    this.workingDirectory = service.getWorkingDirectory();
     	this.serviceCount = service.getCount();
-    	this.serviceLauncher = service.getLauncher();    	
+    	this.serviceLauncher = service.getLauncher();
     	this.serviceDescription = service.getDescription();
-    	
+
     	for (EnvironmentVariable envVar : service.getEnvVars()) {
     		this.environmentVariables.add(new EnvironmentVariableModel(envVar));
     	}

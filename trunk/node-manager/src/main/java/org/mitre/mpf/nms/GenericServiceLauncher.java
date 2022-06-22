@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.nms;
 
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ import java.util.Arrays;
 public class GenericServiceLauncher extends BaseServiceLauncher  {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GenericServiceLauncher.class);
-	
+
     public GenericServiceLauncher(ServiceDescriptor desc) {
         super(desc);
     }
@@ -60,7 +60,7 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
         LOG.debug("Sending down 'q' to {}", this.getServiceName());
         // processbuilder doesn't give us the pid to send a signal and Windows doesn't have signals.
         this.sendLine("q\n");
-        
+
     }
 
     @Override
@@ -68,7 +68,6 @@ public class GenericServiceLauncher extends BaseServiceLauncher  {
 
     /**
      * Returns the full command to execute.
-     * @return 
      */
     @Override
     public String[] getCommand() {

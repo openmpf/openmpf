@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.util.Tuple;

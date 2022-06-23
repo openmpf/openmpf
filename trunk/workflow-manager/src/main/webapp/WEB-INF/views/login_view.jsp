@@ -52,7 +52,8 @@
 			<div class="msg">${msg}</div>
 		</c:if>
 
-		<form name='loginForm' action="<c:url value='j_spring_security_check' />" method='POST'>
+		<form name='loginForm' action="login" method='POST'>
+			<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 			<table>
 				<tr>
 					<td><input id='username' type='text' placeholder='Username' name='username' value=''></td>

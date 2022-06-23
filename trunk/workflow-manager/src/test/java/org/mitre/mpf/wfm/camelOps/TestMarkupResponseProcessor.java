@@ -44,7 +44,8 @@ import org.mockito.MockitoAnnotations;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -127,7 +128,8 @@ public class TestMarkupResponseProcessor {
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                    Paths.get(mediaUri), Collections.emptyMap(), Collections.emptyMap(), null);
+                                    Paths.get(mediaUri), Map.of(), Map.of(), List.of(), List.of(),
+                                    null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

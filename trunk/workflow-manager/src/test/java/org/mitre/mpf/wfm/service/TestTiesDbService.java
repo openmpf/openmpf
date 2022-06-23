@@ -39,6 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -62,6 +63,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.AdditionalMatchers.or;
 import static org.mockito.Mockito.*;
 
@@ -80,6 +82,9 @@ public class TestTiesDbService {
     @Mock
     private CallbackUtils _mockCallbackUtils;
 
+    @Mock
+    private JobRequestDao _mockJobRequestDao;
+
     private TiesDbService _tiesDbService;
 
 
@@ -92,7 +97,7 @@ public class TestTiesDbService {
     public void init() {
         MockitoAnnotations.initMocks(this);
         _tiesDbService = new TiesDbService(_mockPropertiesUtil, _mockAggregateJobPropertiesUtil,
-                                           _objectMapper, _mockCallbackUtils);
+                                           _objectMapper, _mockCallbackUtils, _mockJobRequestDao);
 
         when(_mockPropertiesUtil.getSemanticVersion())
                 .thenReturn("1.5");
@@ -102,15 +107,24 @@ public class TestTiesDbService {
 
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
                 .thenReturn(3);
+
+        when(_mockPropertiesUtil.getHostName())
+                .thenReturn("localhost");
+
+        when(_mockPropertiesUtil.getExportedJobId(anyLong()))
+                .thenReturn("localhost-123");
+
     }
 
 
     @Test
     public void testAddAssertions() {
-        var media1 = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media1 = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                   List.of(), List.of(), null);
         media1.setSha256("MEDIA1_SHA");
 
-        var media2 = new MediaImpl(325, "file:///media2", null, null, Map.of(), Map.of(), null);
+        var media2 = new MediaImpl(325, "file:///media2", null, null, Map.of(), Map.of(),
+                                   List.of(), List.of(), null);
         media2.setSha256("MEDIA2_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
@@ -133,7 +147,7 @@ public class TestTiesDbService {
 
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 or(eq(media1), eq(media2)),
                 eq(action1)
@@ -141,7 +155,7 @@ public class TestTiesDbService {
 
         String url2 = "http://localhost:90/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 eq(media1),
                 eq(action2)
@@ -180,7 +194,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media1,
                                 url1,
@@ -196,7 +210,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media1,
                                 url2,
@@ -212,7 +226,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 media2,
                                 url1,
@@ -224,6 +238,8 @@ public class TestTiesDbService {
                                 timeCompleted,
                                 req)),
                         eq(3));
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -289,7 +305,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -303,6 +319,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -362,7 +380,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE,
                                     job.getMedia().iterator().next(),
                                     url,
@@ -379,7 +397,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -393,6 +411,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -453,7 +473,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE,
                                     job.getMedia().iterator().next(),
                                     url,
@@ -470,7 +490,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -484,6 +504,8 @@ public class TestTiesDbService {
                         eq(3));
 
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -541,7 +563,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 job.getMedia().iterator().next(),
                                 url,
@@ -554,6 +576,8 @@ public class TestTiesDbService {
                                 req)),
                         eq(3));
         verifyNoMoreInteractions(_mockCallbackUtils);
+
+        assertReportsSuccess(job.getId());
     }
 
 
@@ -565,7 +589,7 @@ public class TestTiesDbService {
         var goodAction = job.getPipelineElements().getAction(1, 0);
 
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 eq(media),
                 eq(badAction))
@@ -573,7 +597,7 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 eq(media),
                 eq(goodAction))
@@ -608,7 +632,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE,
                                 media,
                                 url,
@@ -620,6 +644,8 @@ public class TestTiesDbService {
                                 timeCompleted,
                                 req)),
                         eq(3));
+
+        assertReportsError(job.getId());
     }
 
 
@@ -630,7 +656,7 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 eq(media),
                 any(Action.class))
@@ -644,8 +670,10 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
+        String jobId = _mockPropertiesUtil.getExportedJobId(job.getId());
+
         ArgumentMatcher<HttpUriRequest> action1Matcher = request -> httpRequestMatcher(
-                job.getId(),
+                jobId,
                 BatchJobStatusType.COMPLETE_WITH_ERRORS,
                 media,
                 url,
@@ -657,8 +685,9 @@ public class TestTiesDbService {
                 timeCompleted,
                 request);
 
+
         ArgumentMatcher<HttpUriRequest> action2Matcher = request -> httpRequestMatcher(
-                job.getId(),
+                jobId,
                 BatchJobStatusType.COMPLETE_WITH_ERRORS,
                 media,
                 url,
@@ -690,6 +719,8 @@ public class TestTiesDbService {
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt());
+
+        assertReportsError(job.getId());
     }
 
     private static HttpResponse createErrorResponse() {
@@ -703,7 +734,8 @@ public class TestTiesDbService {
 
 
     private static BatchJob createTwoStageTestJob() {
-        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                  List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
@@ -727,7 +759,8 @@ public class TestTiesDbService {
 
 
     private static BatchJob createThreeStageTestJob() {
-        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(), null);
+        var media = new MediaImpl(321, "file:///media1", null, null, Map.of(), Map.of(),
+                                  List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
         var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
@@ -758,7 +791,7 @@ public class TestTiesDbService {
 
 
     private boolean httpRequestMatcher(
-            long jobId,
+            String jobId,
             BatchJobStatusType jobStatus,
             Media media,
             String tiesDbBaseUrl,
@@ -817,7 +850,7 @@ public class TestTiesDbService {
         if (!trackType.equals(dataObject.get("outputType").textValue())) {
             return false;
         }
-        if (jobId != dataObject.get("jobId").longValue()) {
+        if (!jobId.equals(dataObject.get("jobId").textValue())) {
             return false;
         }
         if (!outputUri.toString().equals(dataObject.get("outputUri").textValue())) {
@@ -943,7 +976,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                     job.getMedia(700), // parent
                                     url,
@@ -961,7 +994,8 @@ public class TestTiesDbService {
     }
 
     private static BatchJob createDerivativeMediaThreeStageTestJobDiffTasks(boolean createChildren) {
-        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), List.of(), List.of(),
+                null);
         parentMedia.setSha256("PARENT_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -993,11 +1027,11 @@ public class TestTiesDbService {
 
         if (createChildren) {
             var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
             childMedia1.setSha256("CHILD1_SHA");
 
             var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
             childMedia2.setSha256("CHILD2_SHA");
 
             job.addDerivativeMedia(childMedia1);
@@ -1014,7 +1048,7 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 any(Media.class),
                 argThat(a -> a.getName().equals("EXTRACT_ACTION")
@@ -1048,7 +1082,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
@@ -1064,7 +1098,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
@@ -1087,7 +1121,7 @@ public class TestTiesDbService {
 
         String url = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"),
+                eq(MpfConstants.TIES_DB_URL),
                 eq(job),
                 any(Media.class),
                 argThat(a -> a.getName().equals("PARENT_ACTION")
@@ -1121,7 +1155,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
@@ -1138,15 +1172,16 @@ public class TestTiesDbService {
     }
 
     private static BatchJob createDerivativeMediaThreeStageTestJobDiffTasksSharedAlgo() {
-        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), List.of(), List.of(),
+                null);
         parentMedia.setSha256("PARENT_SHA");
 
         var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
         childMedia1.setSha256("CHILD1_SHA");
 
         var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
         childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -1216,7 +1251,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
@@ -1232,7 +1267,7 @@ public class TestTiesDbService {
         verify(_mockCallbackUtils)
                 .executeRequest(
                         argThat(req -> httpRequestMatcher(
-                                job.getId(),
+                                _mockPropertiesUtil.getExportedJobId(job.getId()),
                                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                 job.getMedia(700), // parent
                                 url,
@@ -1249,15 +1284,16 @@ public class TestTiesDbService {
     }
 
     private static BatchJob createDerivativeMediaTwoStageTestJobSharedTask() {
-        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), List.of(), List.of(),
+                null);
         parentMedia.setSha256("PARENT_SHA");
 
         var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
         childMedia1.setSha256("CHILD1_SHA");
 
         var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
         childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -1370,6 +1406,21 @@ public class TestTiesDbService {
         setTiesDbUrlForMedia(url, job.getMedia(700)); // parent
         runJob(trackCounter, assertionEntries, job);
     }
+
+
+    private void assertReportsSuccess(long jobId) {
+        verify(_mockJobRequestDao)
+                .setTiesDbSuccessful(jobId);
+        verifyNoMoreInteractions(_mockJobRequestDao);
+    }
+
+    private void assertReportsError(long jobId) {
+        verify(_mockJobRequestDao)
+                .setTiesDbError(eq(jobId), nonBlank());
+        verifyNoMoreInteractions(_mockJobRequestDao);
+    }
+
+
 
     //////////////////////////////////////////////////////////////////////
     // Test setting TiesDb URLs
@@ -1488,7 +1539,7 @@ public class TestTiesDbService {
             verify(_mockCallbackUtils)
                     .executeRequest(
                             argThat(req -> httpRequestMatcher(
-                                    job.getId(),
+                                    _mockPropertiesUtil.getExportedJobId(job.getId()),
                                     BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                                     job.getMedia(700), // parent
                                     assertionEntry.getTiesDbUrl(),
@@ -1506,7 +1557,8 @@ public class TestTiesDbService {
     }
 
     private static BatchJob createDerivativeMediaSixStageTestJob(boolean addChildren) {
-        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), null);
+        var parentMedia = new MediaImpl(700, "file:///parent", null, null, Map.of(), Map.of(), List.of(), List.of(),
+                null);
         parentMedia.setSha256("PARENT_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -1549,11 +1601,13 @@ public class TestTiesDbService {
 
         if (addChildren) {
             var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
+                                            List.of(), List.of(), null);
             childMedia1.setSha256("CHILD1_SHA");
 
             var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), null);
+                                            Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
+                                            List.of(), List.of(), null);
             childMedia2.setSha256("CHILD2_SHA");
             job.addDerivativeMedia(childMedia1);
             job.addDerivativeMedia(childMedia2);
@@ -1564,13 +1618,13 @@ public class TestTiesDbService {
 
     private void setTiesDbUrlForMedia(String url, Media media) {
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"), any(BatchJob.class), eq(media), any(Action.class)))
+                eq(MpfConstants.TIES_DB_URL), any(BatchJob.class), eq(media), any(Action.class)))
                 .thenReturn(url);
     }
 
     private void setTiesDbUrlForMediaAndAction(String url, Media media, Action action) {
         when(_mockAggregateJobPropertiesUtil.getValue(
-                eq("TIES_DB_URL"), any(BatchJob.class), eq(media), eq(action)))
+                eq(MpfConstants.TIES_DB_URL), any(BatchJob.class), eq(media), eq(action)))
                 .thenReturn(url);
     }
 }

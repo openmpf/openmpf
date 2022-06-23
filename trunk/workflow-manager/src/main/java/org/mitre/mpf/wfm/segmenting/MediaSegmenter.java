@@ -35,7 +35,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,33 +131,33 @@ public interface MediaSegmenter {
     }
 
 
-    public static List<TimePair> createTimePairsForTracks(Set<Track> tracks) {
-        List<TimePair> timePairs = new ArrayList<>();
+    public static List<MediaRange> createRangesForTracks(Set<Track> tracks) {
+        List<MediaRange> mediaRanges = new ArrayList<>();
         for (Track track : tracks) {
-            // form TimePairs for the set of tracks. Note that frame offsets are inclusive so no adjustments are necessary
-            timePairs.add(new TimePair(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive()));
+            // form MediaRanges for the set of tracks. Note that frame offsets are inclusive so no adjustments are necessary
+            mediaRanges.add(new MediaRange(track.getStartOffsetFrameInclusive(), track.getEndOffsetFrameInclusive()));
         }
-        Collections.sort(timePairs);
-        return timePairs;
+        Collections.sort(mediaRanges);
+        return mediaRanges;
     }
 
 
-    public static List<TimePair> createSegments(Collection<TimePair> inputs, int targetSegmentLength,
-                                                int minSegmentLength, int minGapBetweenSegments) {
+    public static List<MediaRange> createSegments(Collection<MediaRange> inputs, int targetSegmentLength,
+                                                  int minSegmentLength, int minGapBetweenSegments) {
         if (inputs == null || inputs.isEmpty()) {
             // If the input collection was empty (or null), no segments should be returned.
             return Collections.emptyList();
         }
 
         // Create a copy of the input list and sort it.
-        List<TimePair> tracks = new ArrayList<TimePair>(inputs);
+        List<MediaRange> tracks = new ArrayList<MediaRange>(inputs);
         Collections.sort(tracks);
 
         // Begin building the result list.
-        List<TimePair> result = new ArrayList<TimePair>();
+        List<MediaRange> result = new ArrayList<MediaRange>();
 
-        TimePair current = null;
-        for (TimePair nextTrack : tracks) {
+        MediaRange current = null;
+        for (MediaRange nextTrack : tracks) {
             if (current == null) {
                 current = nextTrack;
             }
@@ -187,27 +187,27 @@ public interface MediaSegmenter {
      * collection are guaranteed to have a length of targetSegmentLength. The last segment will have a length between
      * [minSegmentLength, targetSegmentLength + minSegmentLength - 1].
      *
-     * @param timePair The TimePair representing the inclusive start and stop times from which segments are
+     * @param mediaRange The MediaRange representing the inclusive start and stop times from which segments are
      *                      to be created.
      * @param targetSegmentLength The preferred size of each segment. If this value is less than or equal to 0,
      *                                 no segmenting will be performed.
      * @param minSegmentLength The minimum size of a segment.
-     * @return A collection of zero or more TimePair instances which represent the inclusive start and stop times.
+     * @return A collection of zero or more MediaRange instances which represent the inclusive start and stop times.
      */
-    public static Collection<TimePair> segment(TimePair timePair, int targetSegmentLength, int minSegmentLength) {
+    public static Collection<MediaRange> segment(MediaRange mediaRange, int targetSegmentLength, int minSegmentLength) {
         if (targetSegmentLength <= 0 || targetSegmentLength == Integer.MAX_VALUE) {
             // The targetSegmentLength indicates that segmenting should not be performed.
             // Return a list containing the unmodified input segment.
-            return Collections.singletonList(timePair);
+            return Collections.singletonList(mediaRange);
         }
 
-        List<TimePair> result = new ArrayList<>(timePair.length() / targetSegmentLength);
-        for (int start = timePair.getStartInclusive(); start <= timePair.getEndInclusive(); start += targetSegmentLength) {
-            if (timePair.getEndInclusive() <= (start + (targetSegmentLength - 1) + (minSegmentLength - 1))) {
-                result.add(new TimePair(start, timePair.getEndInclusive()));
+        List<MediaRange> result = new ArrayList<>(mediaRange.length() / targetSegmentLength);
+        for (int start = mediaRange.getStartInclusive(); start <= mediaRange.getEndInclusive(); start += targetSegmentLength) {
+            if (mediaRange.getEndInclusive() <= (start + (targetSegmentLength - 1) + (minSegmentLength - 1))) {
+                result.add(new MediaRange(start, mediaRange.getEndInclusive()));
                 break;
             }
-            result.add(new TimePair(start, start + targetSegmentLength - 1));
+            result.add(new MediaRange(start, start + targetSegmentLength - 1));
         }
         return result;
     }
@@ -216,7 +216,7 @@ public interface MediaSegmenter {
      * Returns {@link java.lang.Boolean#TRUE} iff the current and probe tracks overlap each other from a temporal context.
      * Assumes that the current track has a start time which is less than or equal to the target track's start time.
      */
-    public static boolean overlaps(TimePair current, TimePair target, int minGapBetweenSegments) {
+    public static boolean overlaps(MediaRange current, MediaRange target, int minGapBetweenSegments) {
         // Current spans [S, E], Target spans  [S*, E*], and it is known that S <= S*.
         // The tracks overlap if S <= S* <= E or (S* - E) <= G
         return (current.getStartInclusive() <= target.getStartInclusive() && target.getStartInclusive() <= current.getEndInclusive()) ||
@@ -224,11 +224,11 @@ public interface MediaSegmenter {
     }
 
     /**
-     * Modifies the current TimePair such that it includes the entire range represented by the current
-     * and target TimePairs.
+     * Modifies the current MediaRange such that it includes the entire range represented by the current
+     * and target MediaRanges.
      */
-    public static TimePair merge(TimePair current, TimePair target) {
-        return new TimePair(current.getStartInclusive(),
-                            Math.max(current.getEndInclusive(), target.getEndInclusive()));
+    public static MediaRange merge(MediaRange current, MediaRange target) {
+        return new MediaRange(current.getStartInclusive(),
+                              Math.max(current.getEndInclusive(), target.getEndInclusive()));
     }
 }

@@ -38,7 +38,6 @@ file(GLOB MATCHING_FILES
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
 ## Find Apache Portable Runtime
-set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:/usr/local/apr/lib/pkgconfig")
 pkg_search_module(APR REQUIRED apr-1)
 include_directories(${APR_INCLUDEDIR})
 
@@ -71,7 +70,7 @@ target_include_directories(batch_executor_lib PUBLIC
 	$<TARGET_PROPERTY:mpfDetectionComponentApi,INTERFACE_INCLUDE_DIRECTORIES>)
 
 target_link_libraries(batch_executor_lib PUBLIC mpfProtobufs
-	pybind11::embed ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES} ${QT_LIBRARIES})
+	pybind11::embed ${LOG4CXX_LIBRARIES} ${ACTIVEMQ-CPP_LIBRARIES})
 
 
 add_executable(amq_detection_component main.cpp)

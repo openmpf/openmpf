@@ -27,7 +27,7 @@
 cmake_minimum_required(VERSION 3.6)
 project(cpp-executors)
 
-set(PYBIND11_CPP_STANDARD -std=c++11)
+set(PYBIND11_CPP_STANDARD -std=c++17)
 set(PYBIND11_PYTHON_VERSION 3.8)
 add_subdirectory(pybind11)
 

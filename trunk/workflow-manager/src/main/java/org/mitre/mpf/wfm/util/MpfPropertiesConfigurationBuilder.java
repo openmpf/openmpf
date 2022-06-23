@@ -46,17 +46,18 @@ public class MpfPropertiesConfigurationBuilder {
 
     private static final Collection<String> MUTABLE_PREFIXES = ImmutableList.of(
             "detection.",
-            "http.callback",
+            "http.callback.retries",
             "http.object.storage.",
+            "http.callback.timeout.ms",
             "mpf.output.objects.",
             "node.auto.",
             "remote.media.download.",
             "web.broadcast.job.status.enabled",
             "web.job.polling.interval",
-            "http.callback.timeout.ms",
             "warn.",
             "markup.",
-            "ties.db.url"
+            "ties.db.url",
+            "s3."
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(
@@ -64,7 +65,8 @@ public class MpfPropertiesConfigurationBuilder {
             "markup.",
             "http.object.storage.nginx.service.uri",
             "mpf.output.objects.artifacts.and.exemplars.only",
-            "mpf.output.objects.last.task.only");
+            "mpf.output.objects.last.task.only",
+            "s3.");
 
     @javax.annotation.Resource(name="customPropFile")
     private FileSystemResource customPropFile;

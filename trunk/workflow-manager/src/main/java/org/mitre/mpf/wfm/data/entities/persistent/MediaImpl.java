@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -38,6 +39,7 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -192,7 +194,7 @@ public class MediaImpl implements Media {
     public int getLength() { return _length; }
     public void setLength(int length) { _length = length; }
 
-    /** The SHA 256 hash of the local file (assuming it could be retrieved. */
+    /** The SHA 256 hash of the local file (assuming it could be retrieved). */
     private String _sha256;
     @Override
     public String getSha256() { return _sha256; }
@@ -204,6 +206,15 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
+    private final ImmutableSet<MediaRange> _frameRanges;
+    @Override
+    public ImmutableSet<MediaRange> getFrameRanges() { return _frameRanges; }
+
+    private final ImmutableSet<MediaRange> _timeRanges;
+    @Override
+    public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
+
+
     public MediaImpl(
             long id,
             long parentId,
@@ -213,6 +224,8 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
             String errorMessage) {
         _id = id;
         _parentId = parentId;
@@ -222,7 +235,10 @@ public class MediaImpl implements Media {
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
         _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        _metadata.putAll(providedMetadata);
+        _metadata.putAll(providedMetadata);        
+        _frameRanges = ImmutableSet.copyOf(frameRanges);
+        _timeRanges = ImmutableSet.copyOf(timeRanges);
+
         if (StringUtils.isNotEmpty(errorMessage)) {
             _errorMessage = createErrorMessage(id, uri, errorMessage);
             _failed = true;
@@ -236,8 +252,11 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
             String errorMessage) {
-        this(id, -1, -1, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+        this(id, -1, -1, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, frameRanges, timeRanges,
+                errorMessage);
     }
 
 
@@ -252,9 +271,20 @@ public class MediaImpl implements Media {
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
-            @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, parentId, creationTaskIndex, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata,
-                errorMessage);
+            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
+        this(id,
+             parentId,
+             creationTaskIndex,
+             uri,
+             uriScheme,
+             localPath,
+             mediaSpecificProperties,
+             providedMetadata,
+             frameRanges,
+             timeRanges,
+             errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -275,6 +305,8 @@ public class MediaImpl implements Media {
                 originalMedia.getLocalPath(),
                 originalMedia.getMediaSpecificProperties(),
                 originalMedia.getProvidedMetadata(),
+                originalMedia.getFrameRanges(),
+                originalMedia.getTimeRanges(),
                 originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());

@@ -30,19 +30,17 @@
 project(VideoOverlay)
 aux_source_directory(./src/main/cpp SRC)
 
-find_package(OpenCV 4.5.0 EXACT REQUIRED PATHS /opt/opencv-4.5.0 COMPONENTS opencv_core opencv_freetype)
+find_package(OpenCV 4.5.5 EXACT REQUIRED PATHS /opt/opencv-4.5.5 COMPONENTS opencv_core opencv_freetype)
 
 find_package(mpfComponentInterface REQUIRED)
 find_package(mpfDetectionComponentApi REQUIRED)
 
 
-include_directories(${JNI_INCLUDE_DIRS} ${LOG4CXX_LIBS} ${OpenCV_INCLUDE_DIRS})
+include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2} ${OpenCV_INCLUDE_DIRS})
 add_library(mpfopencvjni SHARED ${SRC})
 
-set(JNI_LIBRARIES_WITHOUT_AWT ${JNI_LIBRARIES})
-list(REMOVE_AT JNI_LIBRARIES_WITHOUT_AWT 0)
 
-target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JNI_LIBRARIES_WITHOUT_AWT} ${Log_LIBS} heif
+target_link_libraries(mpfopencvjni ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} heif
     mpfDetectionComponentApi)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

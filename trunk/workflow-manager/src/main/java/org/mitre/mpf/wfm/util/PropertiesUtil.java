@@ -34,7 +34,6 @@ import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
@@ -48,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
@@ -157,7 +157,7 @@ public class PropertiesUtil {
     private void parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
-        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+        if (coreMpfNodesStr == null || coreMpfNodesStr.isBlank()) {
             coreMpfNodes = ImmutableSet.of(); // empty set
         } else {
             coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
@@ -265,6 +265,28 @@ public class PropertiesUtil {
 
     public String getSiteId() {
         return mpfPropertiesConfig.getString("output.site.name");
+    }
+
+    public String getHostName() {
+        return Objects.requireNonNullElseGet(
+                System.getenv("NODE_HOSTNAME"),
+                () -> System.getenv("HOSTNAME"));
+    }
+
+    public long getJobIdFromExportedId(String exportedId) {
+        String[] tokens = exportedId.split("-");
+        try {
+            return Long.parseLong(tokens[tokens.length - 1]);
+        }
+        catch (NumberFormatException e) {
+            throw new InvalidJobIdException(
+                    "Failed to parse job id of '" + exportedId +
+                            "'. Expected a job id like <hostname>-<integer>.", e);
+        }
+    }
+
+    public String getExportedJobId(long jobId) {
+        return getHostName() + '-' + jobId;
     }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {
@@ -770,7 +792,7 @@ public class PropertiesUtil {
     }
 
     public boolean dockerProfileEnabled() {
-        return springEnvironment.acceptsProfiles("docker");
+        return springEnvironment.acceptsProfiles(Profiles.of("docker"));
     }
 
     public int getHttpCallbackTimeoutMs() {
@@ -781,12 +803,28 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getInt("http.callback.retries");
     }
 
+    public int getHttpCallbackConcurrentConnections() {
+        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections");
+    }
+
+    public int getHttpCallbackConcurrentConnectionsPerRoute() {
+        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections.per.route");
+    }
+
+    public int getHttpCallbackSocketTimeout() {
+        return mpfPropertiesConfig.getInt("http.callback.socket.timeout.ms");
+    }
+
     public int getWarningFrameCountDiff() {
         return mpfPropertiesConfig.getInt("warn.frame.count.diff");
     }
 
     public int getProtobufSizeLimit() {
         return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
+    }
+
+    public int getS3ClientCacheCount() {
+        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
     }
 }
 

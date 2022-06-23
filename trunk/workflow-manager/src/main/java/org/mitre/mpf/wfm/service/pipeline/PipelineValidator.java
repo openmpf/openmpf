@@ -27,13 +27,21 @@
 
 package org.mitre.mpf.wfm.service.pipeline;
 
+import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.Multiset;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
+import org.mitre.mpf.rest.api.util.Utils;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.*;
@@ -55,7 +63,8 @@ public class PipelineValidator {
     public <T extends PipelineElement> void validateOnAdd(T newPipelineElement, Map<String, T> existingItems) {
         var violations = _validator.<PipelineElement>validate(newPipelineElement);
         if (!violations.isEmpty()) {
-            throw new PipelineValidationException(newPipelineElement, violations);
+            throw new InvalidPipelineException(
+                    createFieldErrorMessages(newPipelineElement.getName(), violations));
         }
 
         T existing = existingItems.get(newPipelineElement.getName());
@@ -67,90 +76,138 @@ public class PipelineValidator {
         }
     }
 
+    private static String createFieldErrorMessages(
+            String itemName, Collection<? extends ConstraintViolation<?>> violations) {
+        var prefix = itemName + " has errors in the following fields:\n";
+        return violations
+                .stream()
+                .map(v -> String.format("%s=\"%s\": %s", v.getPropertyPath(), v.getInvalidValue(),
+                                        v.getMessage()))
+                .sorted()
+                .collect(joining("\n", prefix, ""));
+    }
 
-    public void verifyBatchPipelineRunnable(
-            String pipelineName,
-            Map<String, Pipeline> pipelines,
-            Map<String, Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
-        verifyPipelineRunnable(pipelineName,pipelines, tasks, actions, algorithms,
+
+    public void validateTransientPipeline(
+            TransientPipelineDefinition transientPipeline,
+            TransientPipelinePartLookup pipelinePartLookup) {
+        var violations = _validator.validate(transientPipeline);
+        if (!violations.isEmpty()) {
+            throw new InvalidPipelineException(
+                    createFieldErrorMessages("The pipelineDefinition", violations));
+        }
+        checkForDuplicates(transientPipeline);
+        verifyBatchPipelineRunnable(pipelinePartLookup.getPipelineName(), pipelinePartLookup);
+    }
+
+    private static void checkForDuplicates(TransientPipelineDefinition transientPipeline) {
+        var duplicateTasks = getDuplicateNames(transientPipeline.getTasks(),
+                                               TransientTask::getName);
+        var duplicateActions = getDuplicateNames(transientPipeline.getActions(),
+                                                 TransientAction::getName);
+        if (duplicateTasks.isEmpty() && duplicateActions.isEmpty()) {
+            return;
+        }
+
+        var errorMsg = new StringBuilder("The pipeline definition was invalid. ");
+        if (!duplicateTasks.isEmpty()) {
+            errorMsg.append("The following task names were duplicated: ")
+                    .append(duplicateTasks)
+                    .append(". ");
+        }
+        if (!duplicateActions.isEmpty()) {
+            errorMsg.append("The following action names were duplicated: ")
+                    .append(duplicateActions)
+                    .append('.');
+        }
+        throw new InvalidPipelineException(errorMsg.toString());
+
+    }
+
+
+    private static <T> String getDuplicateNames(Collection<T> items, Function<T, String> toName) {
+        return items.stream()
+                .map(toName)
+                .map(Utils::trimAndUpper)
+                .collect(ImmutableMultiset.toImmutableMultiset())
+                .entrySet()
+                .stream()
+                .filter(e -> e.getCount() > 1)
+                .map(Multiset.Entry::getElement)
+                .collect(joining(", "));
+    }
+
+
+
+    public void verifyBatchPipelineRunnable(String pipelineName, PipelinePartLookup partLookup) {
+        verifyPipelineRunnable(pipelineName, partLookup,
                                Algorithm::getSupportsBatchProcessing, "batch");
     }
 
 
-    public void verifyStreamingPipelineRunnable(
-            String pipelineName,
-            Map<String, Pipeline> pipelines,
-            Map<String, Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
-        verifyPipelineRunnable(pipelineName, pipelines, tasks, actions, algorithms,
+    public void verifyStreamingPipelineRunnable(String pipelineName,
+                                                PipelinePartLookup partLookup) {
+        verifyPipelineRunnable(pipelineName, partLookup,
                                Algorithm::getSupportsStreamProcessing, "stream");
     }
 
     private void verifyPipelineRunnable(
             String pipelineName,
-            Map<String, Pipeline> pipelines,
-            Map<String, Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms,
+            PipelinePartLookup partLookup,
             Predicate<Algorithm> supportsPred,
             String processingType) {
 
-        var pipeline = pipelines.get(pipelineName);
+        var pipeline = partLookup.getPipeline(pipelineName);
         if (pipeline == null) {
             throw new InvalidPipelineException("No pipeline named: " + pipelineName);
         }
-        verifyAllPartsPresent(pipeline, tasks, actions, algorithms);
+        verifyAllPartsPresent(pipeline, partLookup);
 
-        verifyAlgorithmsSupportProcessingType(pipeline, tasks, actions, algorithms, supportsPred, processingType);
+        verifyAlgorithmsSupportProcessingType(pipeline, partLookup, supportsPred, processingType);
 
         var currentPipelineTasks = pipeline.getTasks()
                 .stream()
-                .map(tasks::get)
+                .map(partLookup::getTask)
                 .collect(toList());
-        validateStates(pipeline, currentPipelineTasks, actions, algorithms);
+        validateStates(pipeline, currentPipelineTasks, partLookup);
 
         var currentPipelineActions = currentPipelineTasks
                 .stream()
                 .flatMap(t -> t.getActions().stream())
-                .map(actions::get)
+                .map(partLookup::getAction)
                 .collect(toList());
-        validateActionPropertyTypes(currentPipelineActions, algorithms);
+        validateActionPropertyTypes(currentPipelineActions, partLookup);
 
-        validateActionTypes(currentPipelineTasks, actions, algorithms);
+        validateActionTypes(currentPipelineTasks, partLookup);
 
         verifyNothingFollowMultiActionTask(pipeline, currentPipelineTasks);
 
-        validateMarkupPipeline(pipeline, currentPipelineTasks, actions, algorithms);
+        validateMarkupPipeline(pipeline, currentPipelineTasks, partLookup);
     }
 
 
     private static void verifyAllPartsPresent(
             Pipeline pipeline,
-            Map<String, Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
+            PipelinePartLookup partLookup) {
         var missingTasks = new HashSet<String>();
         var missingActions = new HashSet<String>();
         var missingAlgorithms = new HashSet<String>();
 
         for (String taskName : pipeline.getTasks()) {
-            var task = tasks.get(taskName);
+            var task = partLookup.getTask(taskName);
             if (task == null) {
                 missingTasks.add(taskName);
                 continue;
             }
 
             for (String actionName : task.getActions()) {
-                Action action = actions.get(actionName);
+                Action action = partLookup.getAction(actionName);
                 if (action == null) {
                     missingActions.add(actionName);
                     continue;
                 }
 
-                var algorithm = algorithms.get(action.getAlgorithm());
+                var algorithm = partLookup.getAlgorithm(action.getAlgorithm());
                 if (algorithm == null) {
                     missingAlgorithms.add(action.getAlgorithm());
                 }
@@ -188,16 +245,14 @@ public class PipelineValidator {
 
     private static void verifyAlgorithmsSupportProcessingType(
             Pipeline pipeline,
-            Map<String, Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms,
+            PipelinePartLookup partLookup,
             Predicate<Algorithm> supportsPred,
             String processingType) {
         String invalidSupportOfBatchOrStreamingAlgorithms = pipeline.getTasks()
                 .stream()
-                .flatMap(taskName -> tasks.get(taskName).getActions().stream())
-                .map(actionName -> actions.get(actionName).getAlgorithm())
-                .filter(algoName -> !supportsPred.test(algorithms.get(algoName)))
+                .flatMap(taskName -> partLookup.getTask(taskName).getActions().stream())
+                .map(actionName -> partLookup.getAction(actionName).getAlgorithm())
+                .filter(algoName -> !supportsPred.test(partLookup.getAlgorithm(algoName)))
                 .collect(joining(", "));
 
         if (!invalidSupportOfBatchOrStreamingAlgorithms.isEmpty()) {
@@ -210,8 +265,7 @@ public class PipelineValidator {
     private static void validateStates(
             Pipeline pipeline,
             Collection<Task> tasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
+            PipelinePartLookup partLookup) {
 
         if (tasks.size() == 1) {
             return;
@@ -224,16 +278,16 @@ public class PipelineValidator {
             var task1 = tasksIter1.next();
             Set<String> providedStates = task1.getActions()
                     .stream()
-                    .map(actions::get)
-                    .map(action -> algorithms.get(action.getAlgorithm()))
+                    .map(partLookup::getAction)
+                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
                     .flatMap(algo -> algo.getProvidesCollection().getStates().stream())
                     .collect(toSet());
 
             var task2 = tasksIter2.next();
             Set<String> requiredStates = task2.getActions()
                     .stream()
-                    .map(actions::get)
-                    .map(action -> algorithms.get(action.getAlgorithm()))
+                    .map(partLookup::getAction)
+                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
                     .flatMap(algo -> algo.getRequiresCollection().getStates().stream())
                     .collect(toSet());
 
@@ -248,10 +302,10 @@ public class PipelineValidator {
 
     private void validateActionPropertyTypes(
             Iterable<Action> actions,
-            Map<String, Algorithm> algorithms) {
+            PipelinePartLookup partLookup) {
 
         for (var action : actions) {
-            var algorithm = algorithms.get(action.getAlgorithm());
+            var algorithm = partLookup.getAlgorithm(action.getAlgorithm());
 
             for (var actionProperty : action.getProperties()) {
                 var algoProperty = algorithm.getProperty(actionProperty.getName());
@@ -309,14 +363,13 @@ public class PipelineValidator {
 
     private static void validateActionTypes(
             Iterable<Task> currentPipelineTasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
+            PipelinePartLookup partLookup) {
 
         for (var task : currentPipelineTasks) {
             Set<ActionType> actionTypes = task.getActions()
                     .stream()
-                    .map(actions::get)
-                    .map(action -> algorithms.get(action.getAlgorithm()))
+                    .map(partLookup::getAction)
+                    .map(action -> partLookup.getAlgorithm(action.getAlgorithm()))
                     .map(Algorithm::getActionType)
                     .collect(toSet());
 
@@ -351,15 +404,14 @@ public class PipelineValidator {
     private static void validateMarkupPipeline(
             Pipeline pipeline,
             List<Task> currentPipelineTasks,
-            Map<String, Action> actions,
-            Map<String, Algorithm> algorithms) {
+            PipelinePartLookup pipelinePartLookup) {
 
         for (int i = 0; i < currentPipelineTasks.size(); i++) {
             var task = currentPipelineTasks.get(i);
             boolean taskHasMarkup = task.getActions()
                     .stream()
-                    .map(actions::get)
-                    .map(action -> algorithms.get(action.getAlgorithm()))
+                    .map(pipelinePartLookup::getAction)
+                    .map(action -> pipelinePartLookup.getAlgorithm(action.getAlgorithm()))
                     .map(Algorithm::getActionType)
                     .anyMatch(ActionType.MARKUP::equals);
             if (!taskHasMarkup) {

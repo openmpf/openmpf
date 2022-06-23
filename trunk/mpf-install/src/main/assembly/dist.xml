@@ -47,7 +47,7 @@
       <excludes>
 	<!-- don't want any sources -->
         <exclude>*:sources</exclude>
-	<!-- nothing from us, but this doesn't remove the warning :( 
+	<!-- nothing from us, but this doesn't remove the warning :(
 	<exclude>org.mitre.mpf:mpf-install:pom:${project.version}</exclude>
 	-->
       </excludes>
@@ -56,18 +56,6 @@
 
   <files>
     <file>
-     <source>${basedir}/../node-manager/src/scripts/node-manager</source>
-     <outputDirectory>libexec</outputDirectory>
-     <fileMode>755</fileMode>
-     <filtered>true</filtered>
-    </file>
-    <file>
-     <source>${basedir}/../node-manager/src/scripts/start-nodemanager.sh</source>
-     <outputDirectory>bin</outputDirectory>
-     <fileMode>755</fileMode>
-     <filtered>true</filtered>
-    </file>
-    <file>
      <source>${basedir}/../node-manager/src/scripts/start-service-java.sh</source>
      <outputDirectory>bin</outputDirectory>
      <fileMode>755</fileMode>
@@ -75,24 +63,6 @@
     </file>
     <file>
      <source>${basedir}/../node-manager/src/scripts/start-java-component.sh</source>
-     <outputDirectory>bin</outputDirectory>
-     <fileMode>755</fileMode>
-     <filtered>true</filtered>
-    </file>
-    <file>
-     <source>${basedir}/../node-manager/src/scripts/log4bash.sh</source>
-     <outputDirectory>bin</outputDirectory>
-     <fileMode>755</fileMode>
-     <filtered>true</filtered>
-    </file>
-    <file>
-     <source>${basedir}/../node-manager/src/scripts/handle-err.sh</source>
-     <outputDirectory>bin</outputDirectory>
-     <fileMode>755</fileMode>
-     <filtered>true</filtered>
-    </file>
-    <file>
-     <source>${basedir}/../node-manager/src/scripts/symlink.sh</source>
      <outputDirectory>bin</outputDirectory>
      <fileMode>755</fileMode>
      <filtered>true</filtered>

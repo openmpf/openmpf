@@ -58,9 +58,8 @@ public class TestFrameExtractor {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    // These tests determine whether the dimensions of the extracted artifact are the same as the
-    // detection bounding box dimensions in the extraction request. The bounding boxes used in each test are arbitrary;
-    // they do not necessarily correspond to actual detections in the test media.
+    // The bounding boxes used in each test are arbitrary. They do not correspond to actual objects in the test media.
+
     @Test
     public void testFrameExtractorOnVideo() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
@@ -96,25 +95,6 @@ public class TestFrameExtractor {
     }
 
     @Test
-    public void testFrameExtractorOnRotatedImage() throws IOException {
-        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
-        putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, false, requestedExtractions); // capture the subject's right eye
-
-        // not accounting for orientation, sample media has raw dimensions of 600 width by 480 height
-        // from exiftool: "Mirror horizontal and rotate 270 CW"
-        URI media = JniTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
-        Map metaMetadata = Map.of("ROTATION", "90", "HORIZONTAL_FLIP", "true"); // TODO
-
-        extractFrames(media, metaMetadata, true, requestedExtractions);
-        Table<Integer, Integer, String> results = extractFrames(media, metaMetadata, false, requestedExtractions);
-
-        String extraction = results.get(0, 0); // track id is set to 0 for full frame results
-        BufferedImage bimg = ImageIO.read(new File(extraction));
-        Assert.assertEquals(480, bimg.getWidth());
-        Assert.assertEquals(600, bimg.getHeight());
-    }
-
-    @Test
     public void testFrameExtractorOnImageWithMultipleDetections() throws IOException {
         SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
         putInExtractionMap(0, Arrays.asList(0), 652, 212, 277, 277, 0.0, false, requestedExtractions);
@@ -140,9 +120,53 @@ public class TestFrameExtractor {
         extractFrames(media, Map.of(), true, requestedExtractions);
         extractFrames(media, Map.of(), false, requestedExtractions);
     }
-    
+
+    @Test
+    public void testFrameExtractorOnRotatedImage() throws IOException {
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        putInExtractionMap(0, Arrays.asList(3), 200, 200, 150, 100, 90.0, false, requestedExtractions); // dummy
+
+        // from exiftool: "Orientation: Mirror horizontal and rotate 270 CW"
+        // from Tika: "tiff:Orientation=5"
+        URI media = JniTestUtils.getFileResource("samples/meds-aa-S001-01-exif-rotation.jpg");
+        Map metaMetadata = Map.of("ROTATION", "90", // rotate cw this much to fix
+                "HORIZONTAL_FLIP", "true");
+
+        extractFrames(media, metaMetadata, true, requestedExtractions);
+        Table<Integer, Integer, String> results = extractFrames(media, metaMetadata, false, requestedExtractions);
+
+        String extraction = results.get(0, 0); // track id is set to 0 for full frame results
+
+        // Raw source file is 600x480. Markup should be 480x600 due to corrected orientation.
+        BufferedImage bimg = ImageIO.read(new File(extraction));
+        Assert.assertEquals(480, bimg.getWidth());
+        Assert.assertEquals(600, bimg.getHeight());
+    }
+
+    @Test
+    public void testFrameExtractorOnRotatedVideo() throws IOException {
+        SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions = new TreeMap<>();
+        putInExtractionMap(100, Arrays.asList(3), 560, 70, 54, 54, 0.0, false, requestedExtractions); // dummy
+
+        // from exiftool: "Rotation: 270"
+        // from ffprobe: "rotate: 270"
+        URI media = JniTestUtils.getFileResource("samples/video_02_rotated.mp4");
+        Map metaMetadata = Map.of("ROTATION", "270", // rotate cw this much to fix
+                "HORIZONTAL_FLIP", "false");
+
+        Table<Integer, Integer, String> results = extractFrames(media, metaMetadata, false, requestedExtractions);
+
+        String extraction = results.get(0, 100); // track id is set to 0 for full frame results
+
+        // Raw source file is 480x640. Markup should be 640x480 due to corrected orientation.
+        BufferedImage bimg = ImageIO.read(new File(extraction));
+        Assert.assertEquals(640, bimg.getWidth());
+        Assert.assertEquals(480, bimg.getHeight());
+    }
+
+
     private Table<Integer, Integer, String> extractFrames(URI media, Map<String, String> mediaMetadata,
-                boolean cropFlag, SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions)
+                                                          boolean cropFlag, SortedMap<Integer, Map<Integer, JsonDetectionOutputObject>> requestedExtractions)
             throws IOException {
 
         Path outputDirectory = tempFolder.newFolder().toPath().toAbsolutePath();
@@ -173,7 +197,6 @@ public class TestFrameExtractor {
 
         return results;
     }
-
 
     private void putInExtractionMap(Integer frameNumber, List<Integer> trackIndices,
                                     int x, int y, int width, int height, double rotation, boolean flip,
@@ -216,7 +239,5 @@ public class TestFrameExtractor {
         assertEquals(expectedWidth, actualWidth);
         assertEquals(expectedHeight, actualHeight);
     }
-
-
 }
 

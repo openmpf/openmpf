@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -40,6 +41,7 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.MediaRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -349,9 +351,12 @@ public class InProgressBatchJobsService {
     private static final String LOCAL_FILE_NOT_READABLE = "File is not readable";
 
 
-    public synchronized Media initMedia(String uriStr,
-                                        Map<String, String> mediaSpecificProperties,
-                                        Map<String, String> providedMetadataProperties) {
+    public synchronized Media initMedia(
+            String uriStr,
+            Map<String, String> mediaSpecificProperties,
+            Map<String, String> providedMetadataProperties,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges) {
         long mediaId = IdGenerator.next();
         LOG.info("Initializing media from {} with id {}", uriStr, mediaId);
 
@@ -378,12 +383,28 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            return new MediaImpl(mediaId, uriStr, uriScheme, localPath, mediaSpecificProperties,
-                    providedMetadataProperties, errorMessage);
+            return new MediaImpl(
+                    mediaId,
+                    uriStr,
+                    uriScheme,
+                    localPath,
+                    mediaSpecificProperties,
+                    providedMetadataProperties,
+                    frameRanges,
+                    timeRanges,
+                    errorMessage);
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
-            return new MediaImpl(mediaId, uriStr, UriScheme.UNDEFINED, null,
-                    mediaSpecificProperties, providedMetadataProperties, e.getMessage());
+            return new MediaImpl(
+                    mediaId,
+                    uriStr,
+                    UriScheme.UNDEFINED,
+                    null,
+                    mediaSpecificProperties,
+                    providedMetadataProperties,
+                    frameRanges,
+                    timeRanges,
+                    e.getMessage());
         }
     }
 
@@ -411,6 +432,8 @@ public class InProgressBatchJobsService {
                              // a ROTATION value on the parent may not be appropriate for the children.
                              ImmutableMap.of(),
                              metadata,
+                             ImmutableSet.of(),
+                             ImmutableSet.of(),
                              errorMessage);
     }
 
@@ -425,8 +448,9 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void addMediaInspectionInfo(long jobId, long mediaId, String sha256, MediaType mediaType,
-                                                    String mimeType, int length, Map<String, String> metadata) {
+    public synchronized void addMediaInspectionInfo(
+            long jobId, long mediaId, String sha256, MediaType mediaType, String mimeType, int length,
+            Map<String, String> metadata) {
         LOG.info("Adding media metadata to job {}'s media {}.", jobId, mediaId);
         MediaImpl media = getMediaImpl(jobId, mediaId);
         media.setSha256(sha256);

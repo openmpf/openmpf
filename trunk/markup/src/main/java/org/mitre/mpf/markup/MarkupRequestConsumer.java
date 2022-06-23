@@ -27,8 +27,7 @@
 package org.mitre.mpf.markup;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import com.google.common.io.Files;
 import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.videooverlay.BoundingBoxSource;
@@ -213,13 +212,13 @@ public class MarkupRequestConsumer implements MessageListener {
 		        if (markupRequest.getMapEntriesCount() == 0) {
 			        try {
                         String sourceUri = markupRequest.getSourceUri();
-                        String sourceExt = FilenameUtils.getExtension(sourceUri);
+                        String sourceExt = Files.getFileExtension(sourceUri);
 			            String destinationUri = markupRequest.getDestinationUri();
-			            String destinationExt = FilenameUtils.getExtension(destinationUri);
+			            String destinationExt = Files.getFileExtension(destinationUri);
 			            if (destinationExt.isEmpty() && !sourceExt.isEmpty()) {
                             destinationUri += "." + sourceExt;
                         }
-				        FileUtils.copyFile(new File(URI.create(sourceUri)), new File(URI.create(destinationUri)));
+				        Files.copy(new File(URI.create(sourceUri)), new File(URI.create(destinationUri)));
 				        markupResponseBuilder.setOutputFileUri(destinationUri);
 			        } catch (Exception exception) {
 				        log.error("Failed to mark up the file '{}' because of an exception.",

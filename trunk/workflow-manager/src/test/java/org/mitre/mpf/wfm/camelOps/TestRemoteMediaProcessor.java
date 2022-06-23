@@ -28,11 +28,15 @@ package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -49,11 +53,13 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Spark;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -65,7 +71,7 @@ import static org.mockito.Mockito.*;
 public class TestRemoteMediaProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
-    private static final String EXT_IMG = "https://raw.githubusercontent.com/openmpf/openmpf/master/trunk/mpf-system-tests/src/test/resources/samples/face/meds-aa-S001-01.jpg";
+    private static final String EXT_IMG = "http://localhost:4587/test-image.jpg";
 
     private RemoteMediaProcessor _remoteMediaProcessor;
 
@@ -85,6 +91,12 @@ public class TestRemoteMediaProcessor {
     @BeforeClass
     public static void initClass() {
         setHttpProxies();
+        startSpark();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        Spark.stop();
     }
 
     private static void setHttpProxies() {
@@ -133,7 +145,7 @@ public class TestRemoteMediaProcessor {
 
         MediaImpl media = new MediaImpl(
                 mediaId, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)), _tempFolder.newFile().toPath(),
-                Collections.emptyMap(), Collections.emptyMap(), null);
+                Map.of(), Map.of(), List.of(), List.of(), null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -156,8 +168,8 @@ public class TestRemoteMediaProcessor {
         long mediaId = 321;
 
         MediaImpl media = new MediaImpl(
-                mediaId, "https://www.mitre.org/"+UUID.randomUUID().toString(), UriScheme.HTTPS,
-                _tempFolder.newFile().toPath(), Collections.emptyMap(), Collections.emptyMap(), null);
+                mediaId, "https://www.mitre.org/" + UUID.randomUUID(), UriScheme.HTTPS,
+                _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(), List.of(), null);
 
         Exchange exchange = setupExchange(jobId, media);
         _remoteMediaProcessor.process(exchange);
@@ -180,10 +192,11 @@ public class TestRemoteMediaProcessor {
         long mediaId2 = 458;
         ImmutableCollection<MediaImpl> media = ImmutableList.of(
                 new MediaImpl(mediaId1, "/some/local/path.jpg", UriScheme.FILE,
-                              Paths.get("/some/local/path.jpg"), Collections.emptyMap(), Collections.emptyMap(),
-                              null),
+                              Paths.get("/some/local/path.jpg"), Map.of(), Map.of(), List.of(),
+                              List.of(), null),
                 new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
-                              _tempFolder.newFile().toPath(), Collections.emptyMap(), Collections.emptyMap(), null));
+                              _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(),
+                              List.of(), null));
 
         var job = mock(BatchJob.class);
         when(job.isCancelled())
@@ -195,12 +208,12 @@ public class TestRemoteMediaProcessor {
         when(_mockInProgressJobs.getJob(jobId))
                 .thenReturn(job);
 
-        var inMessage = new DefaultMessage();
+        var context = new DefaultCamelContext();
+        var inMessage = new DefaultMessage(context);
         inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
 
-        var exchange = mock(Exchange.class);
-        when(exchange.getIn())
-                .thenReturn(inMessage);
+        var exchange = new DefaultExchange(context);
+        exchange.setIn(inMessage);
 
         List<Message> messages = _remoteMediaSplitter.split(exchange);
 
@@ -214,5 +227,18 @@ public class TestRemoteMediaProcessor {
 
     private Exchange setupExchange(long jobId, MediaImpl media) {
         return MediaTestUtil.setupExchange(jobId, media, _mockInProgressJobs);
+    }
+
+
+    private static void startSpark() {
+        Spark.port(4587);
+        Spark.get("/test-image.jpg", (req, resp) -> {
+            var path = Paths.get(TestUtil.findFile("/samples/meds1.jpg"));
+            try (var out = resp.raw().getOutputStream()) {
+                Files.copy(path, out);
+            }
+            resp.raw().flushBuffer();
+            return "";
+        });
     }
 }

@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 cmake_minimum_required(VERSION 3.6)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 ## Find and install activemq-cpp
 find_package(PkgConfig)
@@ -45,7 +45,7 @@ include_directories(${APR_INCLUDEDIR})
 file(GLOB MATCHING_FILES ${APR_LIBDIR}/libapr*.so* )
 install(FILES ${MATCHING_FILES} DESTINATION lib)
 
-find_package(OpenCV 4.5.0 EXACT REQUIRED PATHS /opt/opencv-4.5.0
+find_package(OpenCV 4.5.5 EXACT REQUIRED PATHS /opt/opencv-4.5.5
     COMPONENTS opencv_core opencv_imgcodecs opencv_imgproc opencv_videoio)
 
 

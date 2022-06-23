@@ -32,6 +32,10 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.mitre.mpf.interop.*;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientAction;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientTask;
 import org.mitre.mpf.wfm.WfmProcessingException;
 
 import java.util.*;
@@ -559,25 +563,25 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                                  "FACE", firstMotionFrame, maxXMotion);
     }
 
+
     @Test(timeout = 5 * MINUTES)
     public void runMogThenOcvFaceRotated40degFeedForwardRegionTest() {
         String actionTaskName = "TEST OCV FACE WITH FEED FORWARD SUPERSET REGION";
 
-        String actionName = actionTaskName + " ACTION";
-        addAction(actionName, "FACECV",
-                  ImmutableMap.of("FEED_FORWARD_TYPE", "SUPERSET_REGION"));
-
-        String taskName = actionTaskName + " TASK";
-        addTask(taskName, actionName);
-
-        String pipelineName = "MOG FEED SUPERSET REGION TO OCVFACE PIPELINE";
-        addPipeline(pipelineName, "MOG MOTION DETECTION (WITH TRACKING) TASK", taskName);
+        var ocvFaceAction = new TransientAction(
+                actionTaskName,
+                "FACECV",
+                List.of(new ActionProperty("FEED_FORWARD_TYPE", "SUPERSET_REGION")));
+        var ocvFaceTask = new TransientTask(actionTaskName, List.of(actionTaskName));
+        var transientPipeline = new TransientPipelineDefinition(
+                List.of("MOG MOTION DETECTION (WITH TRACKING) TASK", actionTaskName),
+                List.of(ocvFaceTask),
+                List.of(ocvFaceAction));
 
         int firstMotionFrame = 31; // The first 30 frames of the video are identical so there shouldn't be motion.
 
-
         List<JsonDetectionOutputObject> detections = runFeedForwardTest(
-                pipelineName, "/samples/face/ff-region-motion-face_40deg.avi",
+                transientPipeline, "/samples/face/ff-region-motion-face_40deg.avi",
                 getRotationMap(40), "FACE", firstMotionFrame);
 
         assertFalse(detections.isEmpty());
@@ -1097,6 +1101,24 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
 
         long jobId = runPipelineOnMedia(pipelineName, media, jobProperties);
+        return processFeedForwardTestOutput(jobId, detectionType, firstDetectionFrame);
+    }
+
+
+    private List<JsonDetectionOutputObject> runFeedForwardTest(
+            TransientPipelineDefinition pipeline, String mediaPath, Map<String, String> jobProperties,
+            String detectionType, int firstDetectionFrame) {
+
+        List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile(mediaPath));
+
+        long jobId = runPipelineOnMedia(pipeline, media, jobProperties, 4);
+        return processFeedForwardTestOutput(jobId, detectionType, firstDetectionFrame);
+    }
+
+
+    private List<JsonDetectionOutputObject> processFeedForwardTestOutput(
+            long jobId, String detectionType, int firstDetectionFrame) {
+
         JsonOutputObject outputObject = getJobOutputObject(jobId);
 
         assertEquals(1, outputObject.getMedia().size());
@@ -1118,8 +1140,8 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                            .allMatch(d -> d.getOffsetFrame() >= firstDetectionFrame));
 
         return detections;
-    }
 
+    }
 
 
 

@@ -124,9 +124,11 @@ extern "C" JNIEXPORT int JNICALL Java_org_mitre_mpf_frameextractor_FrameExtracto
     }
     catch (const std::exception &e) {
         jni.ReportCppException(e.what());
+        return -1;
     }
     catch (...) {
         jni.ReportCppException();
+        return -1;
     }
 }
 

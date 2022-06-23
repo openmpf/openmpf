@@ -90,5 +90,15 @@ public class JobRequest {
     private String outputObjectVersion;
     public void setOutputObjectVersion(String outputObjectVersion) { this.outputObjectVersion = outputObjectVersion; }
 
+    @Column
+    private String tiesDbStatus;
+    public String getTiesDbStatus() { return tiesDbStatus; }
+    public void setTiesDbStatus(String status) { tiesDbStatus = status; }
+
+    @Column
+    private String callbackStatus;
+    public String getCallbackStatus() { return callbackStatus; }
+    public void setCallbackStatus(String status) { callbackStatus = status; }
+
     public String toString() { return String.format("%s#<id='%d'>", this.getClass().getSimpleName(), getId()); }
 }

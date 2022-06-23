@@ -199,7 +199,7 @@ TEST_F(AMQMessengerTest, TestSegmentSummaryMessage) {
     int start_frame = 1000;
     int stop_frame = 1750;
     std::string type("FACE");
-    MPF::COMPONENT::MPFDetectionError err = MPF_INVALID_DATAFILE_URI;
+    MPF::COMPONENT::MPFDetectionError err = MPF_INVALID_PROPERTY;
 
     // Create the segment summary tracks
     int num_tracks = 3;

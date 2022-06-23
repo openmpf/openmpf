@@ -29,15 +29,20 @@ package org.mitre.mpf.wfm.data.access.hibernate;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
+import org.mitre.mpf.rest.api.AggregatePipelineStatsModel;
+import org.mitre.mpf.rest.api.AllJobsStatisticsModel;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.inject.Inject;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
@@ -45,16 +50,25 @@ import javax.persistence.criteria.Root;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.*;
 
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements JobRequestDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
 
-    public HibernateJobRequestDaoImpl() {
+    private final JobStatusBroadcaster _jobStatusBroadcaster;
+
+    @Inject
+    public HibernateJobRequestDaoImpl(JobStatusBroadcaster jobStatusBroadcaster) {
         super(JobRequest.class);
+        _jobStatusBroadcaster = jobStatusBroadcaster;
     }
 
 
@@ -130,6 +144,8 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 ilike.apply(root.get("id").as(String.class)),
                 ilike.apply(root.get("pipeline")),
                 ilike.apply(root.get("status").as(String.class)),
+                ilike.apply(root.get("tiesDbStatus")),
+                ilike.apply(root.get("callbackStatus")),
                 ilike.apply(cb.function("to_char", String.class, root.get("timeReceived"),
                                         cb.literal(dateFormat))),
                 ilike.apply(cb.function("to_char", String.class, root.get("timeCompleted"),
@@ -177,5 +193,133 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 .where(cb.equal(root.get("id"), jobId));
 
         return buildQuery(query).getSingleResult();
+    }
+
+
+    @Override
+    public void setTiesDbSuccessful(long jobId) {
+        var newStatus = CallbackStatus.complete();
+        setCallbackStatus(jobId, newStatus, "tiesDbStatus");
+        _jobStatusBroadcaster.tiesDbStatusChanged(jobId, newStatus);
+    }
+
+    @Override
+    public void setTiesDbError(long jobId, String status) {
+        var newStatus = CallbackStatus.error(status);
+        setCallbackStatus(jobId, newStatus, "tiesDbStatus");
+        _jobStatusBroadcaster.tiesDbStatusChanged(jobId, newStatus);
+    }
+
+
+    @Override
+    public void setCallbackSuccessful(long jobId) {
+        var newStatus = CallbackStatus.complete();
+        setCallbackStatus(jobId, newStatus, "callbackStatus");
+        _jobStatusBroadcaster.callbackStatusChanged(jobId, newStatus);
+    }
+
+    @Override
+    public void setCallbackError(long jobId, String status) {
+        var newStatus = CallbackStatus.error(status);
+        setCallbackStatus(jobId, newStatus, "callbackStatus");
+        _jobStatusBroadcaster.callbackStatusChanged(jobId, newStatus);
+    }
+
+    private void setCallbackStatus(long jobId, String status, String column) {
+        var cb = getCriteriaBuilder();
+        var update = cb.createCriteriaUpdate(JobRequest.class);
+        var root = update.from(JobRequest.class);
+
+        update.set(column, status)
+                .where(cb.equal(root.get("id"), jobId));
+
+        executeUpdate(update);
+    }
+
+
+    @Override
+    public AllJobsStatisticsModel getJobStats() {
+        long start = System.currentTimeMillis();
+
+        // Need to use createNativeQuery here because other methods were converting times to
+        // integers, but we want decimals for sub-second precision.
+        var query = getCurrentSession().createNativeQuery(
+            "SELECT pipeline, status, count(*), min(duration), max(duration), sum(duration), " +
+                    "sum(CASE WHEN duration IS NULL THEN 0 ELSE 1 END) as valid_count" +
+            " FROM ( " +
+                "SELECT pipeline, status, EXTRACT(EPOCH FROM (time_completed - time_received)) as duration " +
+                "FROM job_request " +
+            ") as sub " +
+            " GROUP BY pipeline, status");
+
+        Map<String, AggregatePipelineStatsModel> statsModels;
+        try (var queryResults = (Stream<Object[]>) query.stream()) {
+            statsModels = queryResults.collect(groupingBy(
+                    row -> row[0].toString(),
+                    collectingAndThen(toList(), HibernateJobRequestDaoImpl::getPipelineStats)));
+        }
+
+        long totalJobs = statsModels.values()
+                .stream()
+                .mapToLong(AggregatePipelineStatsModel::getCount)
+                .sum();
+
+        AllJobsStatisticsModel allJobsStatisticsModel = new AllJobsStatisticsModel();
+        allJobsStatisticsModel.setTotalJobs((int) totalJobs);
+        allJobsStatisticsModel.setJobTypes(statsModels.size());
+        allJobsStatisticsModel.setAggregatePipelineStatsMap(statsModels);
+        allJobsStatisticsModel.setElapsedTimeMs(System.currentTimeMillis() - start);
+
+        return allJobsStatisticsModel;
+    }
+
+    // Decided to manually combine pipeline status entries so that we don't need to do a
+    // "GROUP BY pipeline" query in addition to the "GROUP BY pipeline, status" we currently do.
+    private static AggregatePipelineStatsModel getPipelineStats(Iterable<Object[]> rows) {
+        long minDuration = 0;
+        long maxDuration = 0;
+        long totalDuration = 0;
+        long count = 0;
+        long validCount = 0;
+        var stateCounts = new HashMap<String, Long>();
+        for (Object[] row : rows) {
+            var status = row[1].toString();
+            long stateCount = ((Number) row[2]).longValue();
+            stateCounts.put(status, stateCount);
+            count += stateCount;
+
+            if (status.equals("CANCELLED_BY_SHUTDOWN")
+                    || status.equals("CANCELLED")
+                    || status.equals("CANCELLING")) {
+                continue;
+            }
+
+            validCount += ((Number) row[6]).longValue();
+            long currentRowMin = toMillis(row[3]);
+            if (currentRowMin > 0) {
+                if (minDuration == 0) {
+                    minDuration = currentRowMin;
+                }
+                else {
+                    minDuration = Math.min(minDuration, currentRowMin);
+                }
+            }
+
+            maxDuration = Math.max(maxDuration, toMillis(row[4]));
+            totalDuration += toMillis(row[5]);
+        }
+        return new AggregatePipelineStatsModel(
+                totalDuration, minDuration, maxDuration, count,
+                validCount, stateCounts);
+    }
+
+
+    private static long toMillis(Object secondsObj) {
+        if (secondsObj == null) {
+            return 0;
+        }
+        // Depending on the version of PostgreSQL, secondsObj will either be a Double or BigDecimal.
+        double seconds = ((Number) secondsObj).doubleValue();
+        return (long) (seconds * 1000);
     }
 }

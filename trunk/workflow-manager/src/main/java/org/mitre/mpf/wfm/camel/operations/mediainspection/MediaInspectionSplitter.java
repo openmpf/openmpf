@@ -64,7 +64,7 @@ public class MediaInspectionSplitter extends WfmSplitter {
             // If the job has not been cancelled, perform the split.
             for (Media media : job.getMedia()) {
                 if (!media.isFailed()) {
-                    Message message = new DefaultMessage();
+                    Message message = new DefaultMessage(exchange.getContext());
                     message.setHeader(MpfHeaders.JOB_ID, jobId);
                     message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
                     messages.add(message);

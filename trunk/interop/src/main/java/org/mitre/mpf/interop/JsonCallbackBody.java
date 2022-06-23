@@ -30,9 +30,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JsonCallbackBody {
-    /** The internal identifier assigned to this job by MPF. */
-    private final long _jobId;
-    public long getJobId() { return _jobId; }
+    /** The identifier assigned to this job by MPF. */
+    private final String _jobId;
+    public String getJobId() { return _jobId; }
 
     /** The ID that was provided to this job when it was initially submitted. */
     private final String _externalId;
@@ -43,7 +43,7 @@ public class JsonCallbackBody {
 
     @JsonCreator
     public JsonCallbackBody(
-            @JsonProperty("jobId") long jobId,
+            @JsonProperty("jobId") String jobId,
             @JsonProperty("externalId") String externalId,
             @JsonProperty("outputObjectUri") String outputObjectUri) {
         _jobId = jobId;

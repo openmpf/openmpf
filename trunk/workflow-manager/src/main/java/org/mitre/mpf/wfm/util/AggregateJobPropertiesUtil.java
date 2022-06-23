@@ -181,13 +181,20 @@ public class AggregateJobPropertiesUtil {
             }
         }
 
+
+        String workflowPropVal;
         if (mediaType != null) {
-            var workflowPropVal =  _workflowPropertyService.getPropertyValue(propertyName, mediaType,
-                                                                             systemPropertiesSnapshot);
-            if (workflowPropVal != null) {
-                return new PropertyInfo(propertyName, workflowPropVal, PropertyLevel.WORKFLOW);
-            }
+            workflowPropVal =  _workflowPropertyService.getPropertyValue(
+                    propertyName, mediaType, systemPropertiesSnapshot);
         }
+        else {
+            workflowPropVal =  _workflowPropertyService.getPropertyValue(
+                    propertyName, systemPropertiesSnapshot);
+        }
+        if (workflowPropVal != null) {
+            return new PropertyInfo(propertyName, workflowPropVal, PropertyLevel.WORKFLOW);
+        }
+
         return PropertyInfo.missing(propertyName);
     }
 
@@ -316,6 +323,18 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
+    public Function<String, String> getCombinedProperties(BatchJob job) {
+        return propName -> getPropertyInfo(
+                propName,
+                Map.of(),
+                null,
+                null,
+                job.getPipelineElements(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getJobProperties(),
+                job.getSystemPropertiesSnapshot()
+        ).getValue();
+    }
 
 
     public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {

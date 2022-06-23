@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
@@ -46,6 +44,7 @@ import org.mitre.mpf.wfm.service.StorageException;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,6 +93,9 @@ public class MarkupController {
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
+    @Autowired
+    private PropertiesUtil propertiesUtil;
+
     private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
         List<MarkupResultModel> markupResultModels = new ArrayList<>();
         if (jobId != null) {
@@ -108,7 +110,7 @@ public class MarkupController {
         return markupResultModels;
     }
 
-    // TODO: Remove this?
+    // TODO: Remove this? Takes a Long ...
     @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
     @ResponseBody
     public List<MarkupResultModel> getMarkupResultsJsonSession(
@@ -125,7 +127,7 @@ public class MarkupController {
     @RequestMapping(value = {"/markup/get-markup-results-filtered"}, method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<?> getMarkupResultsFiltered(
-            @RequestParam(value = "jobId", required = true) long jobId,
+            @RequestParam(value = "jobId", required = true) String jobId,
             @RequestParam(value = "draw", required = false) int draw,
             @RequestParam(value = "start", required = false) int start,
             @RequestParam(value = "length", required = false) int length,
@@ -133,14 +135,15 @@ public class MarkupController {
             @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             return ResponseEntity.notFound().build();
         }
 
         BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(jobId);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
 
         //convert markup objects
         Map<Long, MarkupResultConvertedModel> markupResultModels = new HashMap<>();
@@ -250,7 +253,8 @@ public class MarkupController {
                 .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
                 .orElse(null);
         if (job == null) {
-            log.error("Markup with id " + id + " download failed. Invalid job with id " + markupResult.getJobId() + ".");
+            log.error("Markup with id " + id + " download failed. Invalid job with id " +
+                    markupResult.getJobId() + ".");
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -262,7 +266,8 @@ public class MarkupController {
                 .findAny()
                 .orElse(null);
         if (media == null) {
-            log.error("Markup with id " + id + " download failed. Invalid media with id " + media.getId() + ".");
+            log.error("Markup with id " + id + " download failed. Invalid media with id " +
+                    markupResult.getMediaId() + ".");
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -272,11 +277,11 @@ public class MarkupController {
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
-                S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
-                try (InputStream inputStream = s3Object.getObjectContent()) {
-                    ObjectMetadata metadata = s3Object.getObjectMetadata();
-                    IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                            metadata.getContentLength());
+                try (var s3Stream = s3StorageBackend.getFromS3(
+                        markupResult.getMarkupUri(), combinedProperties)) {
+                    var s3Response = s3Stream.response();
+                    IoUtils.sendBinaryResponse(s3Stream, response,
+                            s3Response.contentType(), s3Response.contentLength());
                 }
                 return;
             } catch (StorageException e) {
@@ -319,8 +324,7 @@ public class MarkupController {
                                      markupResult.getPipeline(), markupResult.getMarkupUri(), isImage);
     }
 
-    private static MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult,
-                                                                                 Media media) {
+    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
         String markupMediaType = "";
         String markupDownloadUrl = "";
         String sourceMediaType = "";
@@ -349,9 +353,18 @@ public class MarkupController {
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), markupResult.getJobId(), markupResult.getMediaId(), media.getParentId(),
-                markupResult.getPipeline(), markupResult.getMarkupUri(), markupMediaType,
-                markupDownloadUrl, markupFileAvailable, media.getPersistentUri(), sourceMediaType,
-                sourceDownloadUrl, sourceFileAvailable);
+                markupResult.getId(),
+                propertiesUtil.getExportedJobId(markupResult.getJobId()),
+                markupResult.getMediaId(),
+                media.getParentId(),
+                markupResult.getPipeline(),
+                markupResult.getMarkupUri(),
+                markupMediaType,
+                markupDownloadUrl,
+                markupFileAvailable,
+                media.getPersistentUri(),
+                sourceMediaType,
+                sourceDownloadUrl,
+                sourceFileAvailable);
     }
 }

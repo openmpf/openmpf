@@ -180,7 +180,8 @@ public class BatchJobImpl implements BatchJob {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
-             callbackMethod, media, jobProperties, overriddenAlgorithmProperties, List.of(), Map.of(), Map.of());
+             callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
+             List.of(), Map.of(), Map.of());
     }
 
 

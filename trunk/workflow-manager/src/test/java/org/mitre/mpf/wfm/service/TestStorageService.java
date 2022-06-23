@@ -79,30 +79,38 @@ public class TestStorageService {
     @Mock
     private LocalStorageBackend _mockLocalBackend;
 
+    private final JsonOutputObject _mockOutputObject = mock(JsonOutputObject.class);
+
     private static final URI TEST_REMOTE_URI = URI.create("http://somehost.xyz/path");
 
     private static final URI TEST_LOCAL_URI = URI.create("file:///path");
 
+    private static final long TEST_INTERNAL_JOB_ID = 2;
+    private static final String TEST_EXPORTED_JOB_ID = "localhost-2";
+
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
+        when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_EXPORTED_JOB_ID))
+                .thenReturn(TEST_INTERNAL_JOB_ID);
+        when(_mockOutputObject.getJobId())
+                .thenReturn(TEST_EXPORTED_JOB_ID);
     }
 
 
     @Test
     public void S3BackendHasHigherPriorityThanNginx() throws IOException, StorageException {
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(_mockS3Backend.canStore(outputObject))
+        when(_mockS3Backend.canStore(_mockOutputObject))
                 .thenReturn(true);
-        when(_mockNginxBackend.canStore(outputObject))
+        when(_mockNginxBackend.canStore(_mockOutputObject))
                 .thenReturn(true);
 
         var outputSha = new MutableObject<String>();
-        _storageService.store(outputObject, outputSha);
+        _storageService.store(_mockOutputObject, outputSha);
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
-                .store(outputObject, outputSha);
+                .store(_mockOutputObject, outputSha);
         verify(_mockNginxBackend, never())
                 .store(any(JsonOutputObject.class), any());
     }
@@ -110,15 +118,14 @@ public class TestStorageService {
 
     @Test
     public void canStoreOutputObjectRemotely() throws IOException, StorageException {
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
 
-        when(_mockS3Backend.canStore(outputObject))
+        when(_mockS3Backend.canStore(_mockOutputObject))
                 .thenReturn(true);
 
-        when(_mockS3Backend.store(same(outputObject), any()))
+        when(_mockS3Backend.store(same(_mockOutputObject), any()))
                 .thenReturn(TEST_REMOTE_URI);
 
-        URI result = _storageService.store(outputObject, new MutableObject<>());
+        URI result = _storageService.store(_mockOutputObject, new MutableObject<>());
         assertEquals(TEST_REMOTE_URI, result);
 
         verifyZeroInteractions(_mockLocalBackend);
@@ -127,65 +134,57 @@ public class TestStorageService {
 
     @Test
     public void canStoreOutputObjectLocally() throws IOException, StorageException {
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(_mockLocalBackend.store(same(outputObject), any()))
+        when(_mockLocalBackend.store(same(_mockOutputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject, new MutableObject<>());
+        URI result = _storageService.store(_mockOutputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
 
         verifyNoInProgressJobWarnings();
         verify(_mockS3Backend)
-                .canStore(outputObject);
+                .canStore(_mockOutputObject);
         verify(_mockNginxBackend)
-                .canStore(outputObject);
+                .canStore(_mockOutputObject);
     }
 
     @Test
     public void outputObjectGetsStoredLocallyWhenBackendException() throws IOException, StorageException {
-        long jobId = 867;
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobId())
-                .thenReturn(jobId);
-        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
-        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(_mockOutputObject);
+        setInitialJobStatus(TEST_INTERNAL_JOB_ID, BatchJobStatusType.COMPLETE);
 
-        when(_mockS3Backend.canStore(outputObject))
+
+        when(_mockS3Backend.canStore(_mockOutputObject))
                 .thenReturn(true);
         doThrow(StorageException.class)
-                .when(_mockS3Backend).store(same(outputObject), any());
+                .when(_mockS3Backend).store(same(_mockOutputObject), any());
 
-        when(_mockLocalBackend.store(same(outputObject), any()))
+        when(_mockLocalBackend.store(same(_mockOutputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject, new MutableObject<>());
+        URI result = _storageService.store(_mockOutputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
 
-        verifyJobWarning(jobId);
+        verifyJobWarning(TEST_INTERNAL_JOB_ID);
         verifySingleWarningAddedToOutputObject(0, warnings);
     }
 
 
     @Test
     public void outputObjectGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
-        long jobId = 869;
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobId())
-                .thenReturn(jobId);
 
-        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
-        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(_mockOutputObject);
+        setInitialJobStatus(TEST_INTERNAL_JOB_ID, BatchJobStatusType.COMPLETE);
 
         doThrow(StorageException.class)
-                .when(_mockNginxBackend).canStore(outputObject);
+                .when(_mockNginxBackend).canStore(_mockOutputObject);
 
-        when(_mockLocalBackend.store(same(outputObject), any()))
+        when(_mockLocalBackend.store(same(_mockOutputObject), any()))
                 .thenReturn(TEST_LOCAL_URI);
 
-        URI result = _storageService.store(outputObject, new MutableObject<>());
+        URI result = _storageService.store(_mockOutputObject, new MutableObject<>());
         assertEquals(TEST_LOCAL_URI, result);
 
-        verifyJobWarning(jobId);
+        verifyJobWarning(TEST_INTERNAL_JOB_ID);
         verifySingleWarningAddedToOutputObject(0, warnings);
 
         verify(_mockNginxBackend, never())
@@ -195,24 +194,20 @@ public class TestStorageService {
 
     @Test
     public void throwsExceptionWhenFailsToStoreLocally() throws IOException, StorageException {
-        long jobId = 598;
-        JsonOutputObject outputObject = mock(JsonOutputObject.class);
-        when(outputObject.getJobId())
-                .thenReturn(jobId);
-        SortedSet<JsonMediaIssue> warnings = setupWarnings(outputObject);
-        setInitialJobStatus(jobId, BatchJobStatusType.COMPLETE);
+        SortedSet<JsonMediaIssue> warnings = setupWarnings(_mockOutputObject);
+        setInitialJobStatus(TEST_INTERNAL_JOB_ID, BatchJobStatusType.COMPLETE);
 
-        when(_mockS3Backend.canStore(outputObject))
+        when(_mockS3Backend.canStore(_mockOutputObject))
                 .thenReturn(true);
 
         doThrow(StorageException.class)
-                .when(_mockS3Backend).store(same(outputObject), any());
+                .when(_mockS3Backend).store(same(_mockOutputObject), any());
 
         doThrow(new IOException("test"))
-                .when(_mockLocalBackend).store(same(outputObject), any());
+                .when(_mockLocalBackend).store(same(_mockOutputObject), any());
 
         try {
-            _storageService.store(outputObject, new MutableObject<>());
+            _storageService.store(_mockOutputObject, new MutableObject<>());
             fail("Expected IOException");
         }
         catch (IOException e) {

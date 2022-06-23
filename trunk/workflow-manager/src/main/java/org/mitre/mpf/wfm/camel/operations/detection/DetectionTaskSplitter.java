@@ -96,7 +96,8 @@ public class DetectionTaskSplitter {
 
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
-                // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
+                // tracks. Note that the MediaRanges created for these Tracks use the
+                // non-feed-forward version of MediaSegmenter.createRangesForTracks
                 SortedSet<Track> previousTracks;
                 if (isFirstDetectionTaskForMedia) {
                     previousTracks = Collections.emptySortedSet();

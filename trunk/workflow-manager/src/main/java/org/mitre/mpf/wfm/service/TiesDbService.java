@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -42,10 +42,12 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +59,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -85,15 +84,19 @@ public class TiesDbService {
 
     private final CallbackUtils _callbackUtils;
 
+    private final JobRequestDao _jobRequestDao;
+
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                   ObjectMapper objectMapper,
-                  CallbackUtils callbackUtils) {
+                  CallbackUtils callbackUtils,
+                  JobRequestDao jobRequestDao) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
         _callbackUtils = callbackUtils;
+        _jobRequestDao = jobRequestDao;
     }
 
 
@@ -128,7 +131,7 @@ public class TiesDbService {
                 // this part of the job was not performed on this media
                 boolean mergeWithPrevTask = Boolean.parseBoolean(
                         _aggregateJobPropertiesUtil.getValue(
-                                "OUTPUT_MERGE_WITH_PREVIOUS_TASK", jobPart));
+                                MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
                 if (mergeWithPrevTask) {
                     // It is a merge source so its algorithm name should not appear in the output object.
                     continue;
@@ -176,7 +179,28 @@ public class TiesDbService {
                     entry.getValue().getTrackType(),
                     entry.getValue().getCount()));
         }
-        return ThreadUtil.allOf(futures);
+        if (futures.isEmpty()) {
+            return ThreadUtil.completedFuture(null);
+        }
+
+        return ThreadUtil.allOf(futures)
+                .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
+                .exceptionally(e -> reportExceptions(job.getId(), futures));
+    }
+
+
+    private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
+        var joiner = new StringJoiner(" ");
+        for (var future : futures) {
+            try {
+                future.join();
+            }
+            catch (CompletionException e) {
+                joiner.add(e.getCause().getMessage());
+            }
+        }
+        _jobRequestDao.setTiesDbError(jobId, joiner.toString());
+        return null;
     }
 
 
@@ -203,7 +227,7 @@ public class TiesDbService {
 
         // When actions are merged away, always use the URL for the action at the beginning of the merge chain.
         var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
-                "TIES_DB_URL", jobPart.getJob(), parentMedia, action);
+                MpfConstants.TIES_DB_URL, jobPart.getJob(), parentMedia, action);
 
         if (trackCount == 0) {
             return Triple.of(algo.getName(), "NO TRACKS", tiesDbUrl);
@@ -234,18 +258,18 @@ public class TiesDbService {
                 Map.entry("pipeline", job.getPipelineElements().getName()),
                 Map.entry("algorithm", algorithm),
                 Map.entry("outputType", trackType),
-                Map.entry("jobId", job.getId()),
+                Map.entry("jobId", _propertiesUtil.getExportedJobId(job.getId())),
                 Map.entry("outputUri", outputObjectLocation.toString()),
                 Map.entry("sha256OutputHash", outputObjectSha),
                 Map.entry("processDate", timeCompleted),
                 Map.entry("jobStatus", jobStatus),
                 Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
-                Map.entry("systemHostname", getHostName()),
+                Map.entry("systemHostname", _propertiesUtil.getHostName()),
                 Map.entry("trackCount", trackCount)
         );
 
         var assertionId = getAssertionId(
-                job.getId(),
+                _propertiesUtil.getExportedJobId(job.getId()),
                 trackType,
                 algorithm,
                 timeCompleted);
@@ -270,21 +294,14 @@ public class TiesDbService {
     }
 
 
-    private static String getAssertionId(long jobId, String detectionType, String algorithm,
+    private static String getAssertionId(String jobId, String detectionType, String algorithm,
                                          Instant endTime) {
         var digest = DigestUtils.getSha256Digest();
-        digest.update(String.valueOf(jobId).getBytes(StandardCharsets.UTF_8));
+        digest.update(jobId.getBytes(StandardCharsets.UTF_8));
         digest.update(detectionType.getBytes(StandardCharsets.UTF_8));
         digest.update(algorithm.getBytes(StandardCharsets.UTF_8));
         digest.update(String.valueOf(endTime.getEpochSecond()).getBytes(StandardCharsets.UTF_8));
         return Hex.encodeHexString(digest.digest());
-    }
-
-
-    private static String getHostName() {
-        return Objects.requireNonNullElseGet(
-                System.getenv("NODE_HOSTNAME"),
-                () -> System.getenv("HOSTNAME"));
     }
 
 
@@ -301,8 +318,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            handleHttpError(algorithm, tiesDbUrl, e);
-            return ThreadUtil.completedFuture(null);
+            return ThreadUtil.failedFuture(convertError(tiesDbUrl, algorithm, e));
         }
 
         try {
@@ -318,22 +334,25 @@ public class TiesDbService {
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
 
             return _callbackUtils.executeRequest(postRequest,
-                            _propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(TiesDbService::checkResponse)
-                    .exceptionally(err -> handleHttpError(algorithm, fullUrl.toString(),
-                            err));
+                                                 _propertiesUtil.getHttpCallbackRetryCount())
+                    .thenAccept(TiesDbService::checkResponse)
+                    .handle((x, err) -> {
+                        if (err != null) {
+                            throw convertError(fullUrl.toString(), algorithm, err);
+                        }
+                        return null;
+                    });
         }
         catch (JsonProcessingException e) {
-            handleHttpError(algorithm, fullUrl.toString(), e);
-            return ThreadUtil.completedFuture(null);
+            return ThreadUtil.failedFuture(convertError(fullUrl.toString(), algorithm, e));
         }
     }
 
 
-    private static Void checkResponse(HttpResponse response) {
+    private static void checkResponse(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode >= 200 && statusCode <= 299) {
-            return null;
+            return;
         }
         try {
             var responseContent = IOUtils.toString(response.getEntity().getContent(),
@@ -349,15 +368,15 @@ public class TiesDbService {
     }
 
 
-    private static Void handleHttpError(String url, String algorithm, Throwable error) {
+    private static TiesDbException convertError(String url, String algorithm, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
-        var warningMessage = String.format(
-                "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s",
+        var errorMessage = String.format(
+                "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s.",
                 url, algorithm, error);
-        LOG.warn(warningMessage, error);
-        return null;
+        LOG.error(errorMessage, error);
+        return new TiesDbException(errorMessage, error);
     }
 
     private static class ParentMediaAlgoTiesDbUrl extends MutableTriple<Long, String, String> {
@@ -388,6 +407,12 @@ public class TiesDbService {
             else {
                 return new TrackTypeCount(getTrackType(), getCount() + other.getCount());
             }
+        }
+    }
+
+    private static class TiesDbException extends RuntimeException {
+        public TiesDbException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

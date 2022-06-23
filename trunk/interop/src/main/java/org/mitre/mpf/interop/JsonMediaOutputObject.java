@@ -34,8 +34,9 @@ import static java.util.Comparator.comparingLong;
 import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 @JsonTypeName("MediaOutputObject")
-@JsonPropertyOrder({"mediaId", "parentMediaId", "path", "sha256", "mimeType", "mediaType", "length", "mediaMetadata",
-		            "mediaProperties", "status", "detectionProcessingErrors", "markupResult", "output"})
+@JsonPropertyOrder({
+		"mediaId", "parentMediaId", "path", "sha256", "mimeType", "mediaType", "length", "frameRanges", "timeRanges",
+		"mediaMetadata", "mediaProperties", "status", "detectionProcessingErrors", "markupResult", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -67,6 +68,18 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonPropertyDescription("The length of this medium. The meaning of this value depends on the context. For image files, the length is undefined. For video files, the length is the number of frames in the video. For audio files, the length is undefined.")
 	private int length;
 	public int getLength() { return length; }
+
+	private SortedSet<JsonMediaRange> frameRanges;
+	@JsonPropertyDescription("The ranges of frames for which processing was requested.")
+	public SortedSet<JsonMediaRange> getFrameRanges() {
+		return frameRanges;
+	}
+
+	private SortedSet<JsonMediaRange> timeRanges;
+	@JsonPropertyDescription("The ranges of times (in milliseconds) for which processing was requested.")
+	public SortedSet<JsonMediaRange> getTimeRanges() {
+		return timeRanges;
+	}
 
 	@JsonProperty("status")
 	@JsonPropertyDescription("A summary status indicating the system's ability to process the file. The expected value is COMPLETE.")
@@ -115,6 +128,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 		this.length = length;
 		this.sha256 = sha256;
 		this.status = status;
+		this.frameRanges = new TreeSet<>();
+		this.timeRanges = new TreeSet<>();
 		this.detectionTypes = new TreeMap<>(new DetectionTypeComparator());
 		this.detectionProcessingErrors = new TreeMap<>();
 		this.mediaMetadata = new TreeMap<>();
@@ -124,23 +139,32 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	public JsonMediaOutputObject(){}
 
 	@JsonCreator
-	public static JsonMediaOutputObject factory(@JsonProperty("mediaId") long mediaId,
-												@JsonProperty("parentMediaId") long parentMediaId,
-												@JsonProperty("path") String path,
-												@JsonProperty("mediaType") String mediaType,
-												@JsonProperty("mimeType") String mimeType,
-												@JsonProperty("length") int length,
-												@JsonProperty("sha256") String sha256,
-												@JsonProperty("status") String status,
-												@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
-												@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
-												@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
-												@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
-												@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
+	public static JsonMediaOutputObject factory(
+			@JsonProperty("mediaId") long mediaId,
+			@JsonProperty("parentMediaId") long parentMediaId,
+			@JsonProperty("path") String path,
+			@JsonProperty("mediaType") String mediaType,
+			@JsonProperty("mimeType") String mimeType,
+			@JsonProperty("length") int length,
+			@JsonProperty("frameRanges") SortedSet<JsonMediaRange> frameRanges,
+			@JsonProperty("timeRanges") SortedSet<JsonMediaRange> timeRanges,
+			@JsonProperty("sha256") String sha256,
+			@JsonProperty("status") String status,
+			@JsonProperty("mediaMetadata") SortedMap<String, String> mediaMetadata,
+			@JsonProperty("mediaProperties") SortedMap<String, String> mediaProperties,
+			@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
+			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
+			@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject =
 				new JsonMediaOutputObject(mediaId, parentMediaId, path, mediaType, mimeType, length, sha256, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
+		if (frameRanges != null) {
+			jsonMediaOutputObject.frameRanges.addAll(frameRanges);
+		}
+		if (timeRanges != null) {
+			jsonMediaOutputObject.timeRanges.addAll(timeRanges);
+		}
 		if(mediaMetadata != null) {
 			jsonMediaOutputObject.mediaMetadata.putAll(mediaMetadata);
 		}

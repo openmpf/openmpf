@@ -309,8 +309,8 @@ function (RoleService) {
 
 
 AppDirectives.directive('mpfComponentDropzone',
-[
-function () {
+['csrfHeaders',
+function (csrfHeaders) {
     return {
         restrict: 'E',
         templateUrl: 'resources/js/angular_app/directive_templates/component_dropzone.html',
@@ -321,6 +321,7 @@ function () {
             var dropzoneDiv = $el.find('.dropzone').get(0);
             var dropzone = new Dropzone(dropzoneDiv, {
                 url: "components",
+                headers: csrfHeaders(),
                 autoProcessQueue: true,
                 maxFiles: 1,
                 addRemoveLinks:false,

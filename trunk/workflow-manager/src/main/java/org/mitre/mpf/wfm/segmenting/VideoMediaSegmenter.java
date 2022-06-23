@@ -26,59 +26,75 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.VideoRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.util.TimePair;
+import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.UserSpecifiedRangesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
+
+import static java.util.stream.Collectors.toList;
 
 @Component(VideoMediaSegmenter.REF)
 public class VideoMediaSegmenter implements MediaSegmenter {
     private static final Logger log = LoggerFactory.getLogger(VideoMediaSegmenter.class);
     public static final String REF = "videoMediaSegmenter";
 
+    private final CamelContext _camelContext;
+
+    @Inject
+    VideoMediaSegmenter(CamelContext camelContext) {
+        _camelContext = camelContext;
+    }
 
     @Override
     public List<Message> createDetectionRequestMessages(
             Media media, DetectionContext context) {
         if (context.isFirstDetectionTask()) {
-            return createTimePairMessages(
-                    media, context, Collections.singletonList(new TimePair(0, media.getLength() - 1)));
+            Set<MediaRange> framesToProcess = UserSpecifiedRangesUtil.getCombinedRanges(media);
+            // Process each range separately to prevent createMediaRangeMessages from filling
+            // gaps between user specified ranges.
+            return framesToProcess.stream()
+                    .map(tp -> createMediaRangeMessages(media, context, List.of(tp)))
+                    .flatMap(Collection::stream)
+                    .collect(toList());
         }
         else if (MediaSegmenter.feedForwardIsEnabled(context)) {
             return createFeedForwardMessages(media, context);
         }
         else {
-            List<TimePair> trackTimePairs = MediaSegmenter.createTimePairsForTracks(context.getPreviousTracks());
-            return createTimePairMessages(media, context, trackTimePairs);
+            List<MediaRange> trackMediaRanges = MediaSegmenter.createRangesForTracks(context.getPreviousTracks());
+            return createMediaRangeMessages(media, context, trackMediaRanges);
         }
     }
 
+    private List<Message> createMediaRangeMessages(
+            Media media, DetectionContext context, Collection<MediaRange> trackMediaRanges) {
 
-    private static List<Message> createTimePairMessages(
-            Media media, DetectionContext context, Collection<TimePair> trackTimePairs) {
-
-        List<TimePair> segments = MediaSegmenter.createSegments(
-                trackTimePairs,
+        List<MediaRange> segments = MediaSegmenter.createSegments(
+                trackMediaRanges,
                 context.getSegmentingPlan().getTargetSegmentLength(),
                 context.getSegmentingPlan().getMinSegmentLength(),
                 context.getSegmentingPlan().getMinGapBetweenSegments());
 
         List<Message> messages = new ArrayList<>(segments.size());
-        for(TimePair segment : segments) {
+        for(MediaRange segment : segments) {
             assert segment.getStartInclusive() >= 0
                     : String.format("Segment start must always be GTE 0. Actual: %d", segment.getStartInclusive());
             assert segment.getEndInclusive() >= 0
                     : String.format("Segment end must always be GTE 0. Actual: %d", segment.getEndInclusive());
+
             log.debug("Creating segment [{}, {}] for {}.",
                       segment.getStartInclusive(), segment.getEndInclusive(), media.getId());
 
@@ -93,7 +109,7 @@ public class VideoMediaSegmenter implements MediaSegmenter {
     }
 
 
-    private static Message createProtobufMessage(
+    private Message createProtobufMessage(
             Media media,
             DetectionContext context,
             VideoRequest videoRequest) {
@@ -103,13 +119,13 @@ public class VideoMediaSegmenter implements MediaSegmenter {
                 .setVideoRequest(videoRequest)
                 .build();
 
-        Message message = new DefaultMessage();
+        Message message = new DefaultMessage(_camelContext);
         message.setBody(detectionRequest);
         return message;
     }
 
 
-    private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+    private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
         int topConfidenceCount = getTopConfidenceCount(context);
 
         List<Message> messages = new ArrayList<>();

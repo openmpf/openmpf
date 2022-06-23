@@ -160,7 +160,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             inProgressBatchJobs.setJobStatus(jobId, completionStatus);
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
+        checkCallbacks(job, jobRequest);
+
         jobRequestDao.persist(jobRequest);
+        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
@@ -181,12 +184,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 outputObjectUri,
                 outputSha.getValue(),
                 trackCounter);
-        if (!tiesDbFuture.isDone()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);
-        }
 
         if (job.getCallbackUrl().isPresent()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
                     .whenCompleteAsync(
@@ -199,10 +198,35 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
+    private void checkCallbacks(BatchJob job, JobRequest jobRequest) {
+        if (job.getCallbackUrl().isPresent()) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setCallbackStatus(newStatus);
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
+        }
+
+        boolean requiresTiesDb = JobPartsIter.stream(job)
+                .map(jp -> aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
+                .anyMatch(url -> url != null && !url.isBlank());
+        if (requiresTiesDb) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setTiesDbStatus(newStatus);
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), newStatus);
+        }
+    }
+
+
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
-            jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -229,7 +253,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         String callbackMethod = job.getCallbackMethod().orElse("POST");
 
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
         log.info("Starting {} callback to {} for job id {}.", callbackMethod, callbackUrl, job.getId());
@@ -237,7 +261,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
             return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(JobCompleteProcessorImpl::checkResponse)
+                    .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }
         catch (Exception e) {
@@ -246,13 +270,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private static Void checkResponse(HttpResponse response) {
+    private void checkResponse(long jobId, HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode < 200 || statusCode > 299) {
             throw new IllegalStateException(
                     "The remote server responded with a non-200 status code of: " + statusCode);
         }
-        return null;
+        jobRequestDao.setCallbackSuccessful(jobId);
     }
 
 
@@ -265,9 +289,11 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 .setConnectTimeout(propertiesUtil.getHttpCallbackTimeoutMs())
                 .build();
 
+        String exportedJobId = propertiesUtil.getExportedJobId(job.getId());
+
         if ("GET".equals(jsonCallbackMethod)) {
             URIBuilder callbackUriWithParamsBuilder = new URIBuilder(jsonCallbackURL)
-                    .setParameter("jobid", String.valueOf(job.getId()));
+                    .setParameter("jobid", exportedJobId);
 
             job.getExternalId()
                     .ifPresent(id -> callbackUriWithParamsBuilder.setParameter("externalid", id));
@@ -289,7 +315,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 : outputObjectUri.toString();
 
         JsonCallbackBody jsonBody = new JsonCallbackBody(
-                job.getId(), job.getExternalId().orElse(null), outputObjectUriString);
+                exportedJobId, job.getExternalId().orElse(null), outputObjectUriString);
 
         postRequest.setEntity(new StringEntity(jsonUtils.serializeAsTextString(jsonBody),
                                                ContentType.APPLICATION_JSON));
@@ -297,20 +323,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static Void handleFailedCallback(BatchJob job, Throwable callbackError) {
+    private Void handleFailedCallback(BatchJob job, Throwable callbackError) {
         if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
             callbackError = callbackError.getCause();
         }
 
         String callbackMethod = job.getCallbackMethod().orElse("POST");
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
-        log.warn(String.format(
-                    "Sending HTTP %s callback to \"%s\" failed due to: %s",
-                    callbackMethod, callbackUrl, callbackError),
-                 callbackError);
+        var errorMessage = String.format(
+                "Sending HTTP %s callback to \"%s\" failed due to: %s",
+                callbackMethod, callbackUrl, callbackError);
+        log.error(errorMessage, callbackError);
+        jobRequestDao.setCallbackError(job.getId(), errorMessage);
 
         return null;
     }
@@ -324,9 +351,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                   Mutable<String> outputSha,
                                   TrackCounter trackCounter) throws IOException {
         long jobId = job.getId();
-
+        String exportedJobId = propertiesUtil.getExportedJobId(jobId);
         JsonOutputObject jsonOutputObject = new JsonOutputObject(
-                jobId,
+                exportedJobId,
                 UUID.randomUUID().toString(),
                 convertPipeline(job.getPipelineElements()),
                 job.getPriority(),
@@ -364,6 +391,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getId(), media.getParentId(), media.getPersistentUri(),
                     media.getType() != null ? media.getType().toString() : null,
                     media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
+
+            for (var frameRange : media.getFrameRanges()) {
+                mediaOutputObject.getFrameRanges().add(new JsonMediaRange(
+                        frameRange.getStartInclusive(), frameRange.getEndInclusive()));
+            }
+
+            for (var timeRange : media.getTimeRanges()) {
+                mediaOutputObject.getTimeRanges().add(new JsonMediaRange(
+                        timeRange.getStartInclusive(), timeRange.getEndInclusive()));
+            }
 
             mediaOutputObject.getMediaMetadata().putAll(media.getMetadata());
             censorPropertiesService.copyAndCensorProperties(
@@ -531,7 +568,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             // there were other artifacts extracted.
             detections = track.getDetections().stream()
                          .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
-                         .map(d -> createDetectionOutputObject(d))
+                         .map(this::createDetectionOutputObject)
                          .collect(toList());
             detections.add(exemplar);
         }

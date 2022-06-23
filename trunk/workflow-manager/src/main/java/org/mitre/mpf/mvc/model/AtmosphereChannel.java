@@ -33,7 +33,7 @@ package org.mitre.mpf.mvc.model;
  *  	for each type described in the enum
  */
 public enum AtmosphereChannel {
-	/** SSPC_ATMOSPHERE: initial handshake, etc. 
+	/** SSPC_ATMOSPHERE: initial handshake, etc.
 	 * 	Event(s):
 	 * 		OnConnected - when Atmosphere first connects
 	 * 		OnCancelled - when unexpected disconnection happens
@@ -53,8 +53,8 @@ public enum AtmosphereChannel {
 	 *  channels for consistency of processing
 	 * 	Event(s):	None, since it is not within our control */
 	SSPC_HEARTBEAT,
-	
-	/** SSPC_JOBSTATUS: job related 
+
+	/** SSPC_JOBSTATUS: job related
 	 * 	Event(s):
 	 * 		OnStatusChanged - when the status of the job changed */
 	SSPC_JOBSTATUS,
@@ -98,5 +98,7 @@ public enum AtmosphereChannel {
 	 */
 	SSPC_SYSTEMMESSAGE,
 
-	SSPC_PROPERTIES_CHANGED
+	SSPC_PROPERTIES_CHANGED,
+
+	SSPC_CALLBACK_STATUS
 }

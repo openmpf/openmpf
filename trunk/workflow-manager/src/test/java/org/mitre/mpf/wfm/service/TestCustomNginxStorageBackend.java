@@ -79,7 +79,8 @@ import static org.mockito.Mockito.when;
 
 public class TestCustomNginxStorageBackend {
 
-    private static final long TEST_JOB_ID = 62343245;
+    private static final String TEST_JOB_ID = "localhost-555";
+    private static final long TEST_INTERNAL_JOB_ID = 555;
 
     private static final String TEST_FILE = "/samples/video_01.mp4";
 
@@ -124,6 +125,9 @@ public class TestCustomNginxStorageBackend {
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
 
+        when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_JOB_ID))
+                .thenReturn(TEST_INTERNAL_JOB_ID);
+
         setStorageUri(SERVICE_URI.toString());
 
         BAD_PATH_POST_COUNT.set(0);
@@ -139,13 +143,13 @@ public class TestCustomNginxStorageBackend {
         when(job.getSystemPropertiesSnapshot())
                 .thenReturn(propertiesSnapshot);
 
-        when(_mockInProgressJobs.getJob(TEST_JOB_ID))
+        when(_mockInProgressJobs.getJob(TEST_INTERNAL_JOB_ID))
                 .thenReturn(job);
     }
 
     private MarkupResult createMarkupResult() throws IOException {
         MarkupResult markup = new MarkupResult();
-        markup.setJobId(TEST_JOB_ID);
+        markup.setJobId(TEST_INTERNAL_JOB_ID);
         markup.setMarkupUri(getTestFileCopy().toUri().toString());
         return markup;
     }
@@ -292,7 +296,7 @@ public class TestCustomNginxStorageBackend {
         }
 
         ArtifactExtractionRequest request = new ArtifactExtractionRequest(
-                TEST_JOB_ID,
+                TEST_INTERNAL_JOB_ID,
                 0,
                 testFile.toString(),
                 MediaType.VIDEO,

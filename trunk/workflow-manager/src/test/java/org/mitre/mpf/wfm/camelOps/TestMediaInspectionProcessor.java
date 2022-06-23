@@ -49,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -338,8 +339,10 @@ public class TestMediaInspectionProcessor {
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/heic"), eq(1),
                                         metadataCaptor.capture());
-        assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));
-        assertEquals("4032", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+        var metadata = metadataCaptor.getValue();
+        assertEquals("4032", metadata.get("FRAME_WIDTH"));
+        assertEquals("3024", metadata.get("FRAME_HEIGHT"));
+        assertEquals("90", metadata.get("ROTATION"));
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(_mockInProgressJobs)
@@ -424,8 +427,8 @@ public class TestMediaInspectionProcessor {
 
     private MediaImpl inspectMedia(long jobId, long mediaId, URI mediaUri, Map<String, String> mediaMetadata) {
         MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                Map.of(), mediaMetadata, List.of(), List.of(), null);
         Exchange exchange = setupExchange(jobId, media);
         _mediaInspectionProcessor.process(exchange);
 

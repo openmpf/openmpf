@@ -31,8 +31,9 @@
      * ServerMediaCtrl
      * @constructor
      */
-    angular.module('mpf.wfm.controller.ServerMediaCtrl', []).controller('ServerMediaCtrl', ['$scope',  '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc',
-        function ($scope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc) {
+    angular.module('mpf.wfm.controller.ServerMediaCtrl', []).controller('ServerMediaCtrl',
+        ['$scope',  '$http', '$location', '$timeout', '$log', '$compile', 'MediaService', 'JobsService', 'NotificationSvc', 'csrfHeaders',
+        function ($scope, $http, $location, $timeout, $log, $compile, MediaService, JobsService, NotificationSvc, csrfHeaders) {
 
             var fileTable = null;//bootstrap datatable
             var fileList = [];//current list of files for the selected folder
@@ -325,6 +326,7 @@
                         ajax: {
                             url: "server/get-all-files-filtered",
                             type: "POST",
+                            headers: csrfHeaders(),
                             data: function (d) {//extra params
                                 d.fullPath = selectedNode.fullPath;
                                 d.search = d.search.value;//pull out because spring is a pain to pass params
@@ -736,7 +738,9 @@
                     //finally submit the job
                     MediaService.createJobFromMedia(jobCreationRequest).then(function (jobCreationResponse) {
                         if (jobCreationResponse.mpfResponse.responseCode == 0) {
-                            NotificationSvc.success('Job ' + jobCreationResponse.jobId + ' created!');
+                            const idTokens = jobCreationResponse.jobId.split("-");
+                            var internalJobId = idTokens[idTokens.length-1];
+                            NotificationSvc.success('Job ' + internalJobId + ' created!');
                             $log.info('successful job creation - switch to jobs view');
 
                             $location.path('/jobs');//go to jobs view
@@ -757,6 +761,7 @@
                 dropzone = new Dropzone("#fileManager",
                     {
                         url: fileUploadURL,
+                        headers: csrfHeaders(),
                         autoProcessQueue: true,
                         maxFiles: maxFileUploadCnt,
                         maxFilesize: 5000, //MB

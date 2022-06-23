@@ -31,29 +31,27 @@
 	   xsi:schemaLocation="http://www.springframework.org/schema/beans
 	                       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 	                       http://www.springframework.org/schema/security
-	                       http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+	                       http://www.springframework.org/schema/security/spring-security-5.6.xsd">
 
 	<!-- Stateless RESTful services use BASIC authentication -->
 	<!-- base64 encoded username:password example usage: curl -v -H "Authorization: Basic <base64encoded>" url_to_rest_endpoint -->
 	<security:http create-session="stateless" pattern="/rest/**">
 		<!-- Use CATALINA_OPTS to set the argument -Dweb.rest.protocol="<value>" where <value> must be set to http or https. -->
-		<security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" requires-channel="${web.rest.protocol}"/> <!-- requires-channel="http"/> -->
+		<security:intercept-url pattern="/**" access="isAuthenticated()"
+								requires-channel="${web.rest.protocol}"/>
 		<security:http-basic entry-point-ref="restBasicAuthEntryPoint" />
+		<security:csrf disabled="true" />
 	</security:http>
 	<!--  to Disable REST security and open up REST uncomment below and comment above -->
 	<!-- <http  pattern="/rest/**" security="none"> </http> -->
 
 	<!-- Forms Security -->
 	<security:http auto-config="true" entry-point-ref="authenticationEntryPoint">
-		<security:intercept-url pattern="/login/**"
-			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
-		<security:intercept-url pattern="/resources/**"
-			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
-		<security:intercept-url pattern="/timeout"
-			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
-		<security:intercept-url pattern="/bootout"
-			access="ROLE_ANONYMOUS,ROLE_USER,ROLE_ADMIN" />
-		<security:intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/login/**" access="permitAll" />
+		<security:intercept-url pattern="/resources/**" access="permitAll" />
+		<security:intercept-url pattern="/timeout" access="permitAll" />
+		<security:intercept-url pattern="/bootout" access="permitAll" />
+		<security:intercept-url pattern="/**" access="isAuthenticated()" />
 
 		<security:form-login login-page="/login" authentication-failure-url="/login?error"
 			default-target-url="/" always-use-default-target="true"

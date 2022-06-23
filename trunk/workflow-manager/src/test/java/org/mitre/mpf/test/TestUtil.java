@@ -26,8 +26,10 @@
 
 package org.mitre.mpf.test;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
 import org.junit.Assume;
 import org.junit.rules.TemporaryFolder;
@@ -45,7 +47,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TestUtil {
@@ -119,18 +120,12 @@ public class TestUtil {
 
 
     public static Exchange createTestExchange() {
-        return createTestExchange(new DefaultMessage(), new DefaultMessage());
-    }
-
-    public static Exchange createTestExchange(Message inMessage, Message outMessage) {
-        Exchange exchange = mock(Exchange.class);
-        when(exchange.getIn())
-                .thenReturn(inMessage);
-        when(exchange.getOut())
-                .thenReturn(outMessage);
+        var context = new DefaultCamelContext();
+        var exchange = new DefaultExchange(context);
+        exchange.setIn(new DefaultMessage(context));
+        exchange.setOut(new DefaultMessage(context));
         return exchange;
     }
-
 
     public static void initPipelineDataFiles(PropertiesUtil mockPropertiesUtil, TemporaryFolder temporaryFolder)
             throws IOException {

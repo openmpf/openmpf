@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
@@ -208,14 +206,14 @@ public class ServerMediaController {
     @RequestMapping(value = "/server/download", method = RequestMethod.GET)
     @ResponseBody
     public void download(HttpServletResponse response,
-                         @RequestParam("jobId") long jobId,
+                         @RequestParam("jobId") String jobId,
                          @RequestParam("sourceUri") URI sourceUri) throws IOException, StorageException {
 
         if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
             ioUtils.sendBinaryResponse(Paths.get(sourceUri), response);
         }
-
-        JobRequest jobRequest = jobRequestDao.findById(jobId);
+        long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
+        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
             log.error("Media for job id " + jobId + " download failed. Invalid job id.");
             response.setStatus(404);
@@ -232,11 +230,10 @@ public class ServerMediaController {
         var uriScheme = UriScheme.parse(sourceUri.getScheme());
         if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
                 S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+            try (var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties)) {
+                var s3Response = s3Stream.response();
+                IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
+                                           s3Response.contentLength());
             }
             return;
         }

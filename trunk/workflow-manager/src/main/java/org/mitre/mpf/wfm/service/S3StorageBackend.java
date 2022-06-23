@@ -118,13 +118,16 @@ public class S3StorageBackend implements StorageBackend {
     @Override
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException {
         URI localUri = _localStorageBackend.store(outputObject, outputSha);
+        Path localPath = Path.of(localUri);
         long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
         BatchJob job = _inProgressJobs.getJob(internalJobId);
         if (outputSha.getValue() == null) {
-            outputSha.setValue(hashExistingFile(Paths.get(localUri)));
+            outputSha.setValue(hashExistingFile(localPath));
         }
-        return putInS3IfAbsent(Paths.get(localUri), outputSha.getValue(),
-                               _aggregateJobPropertiesUtil.getCombinedProperties(job), true);
+        URI uploadedUri = putInS3IfAbsent(localPath, outputSha.getValue(),
+                _aggregateJobPropertiesUtil.getCombinedProperties(job));
+        Files.delete(localPath);
+        return uploadedUri;
     }
 
 
@@ -180,7 +183,12 @@ public class S3StorageBackend implements StorageBackend {
             }
 
             var future = ThreadUtil.callAsync(
-                    () -> putInS3IfAbsent(Path.of(entry.getValue()), combinedProperties, true));
+                    () -> {
+                        Path localPath = Path.of(entry.getValue());
+                        URI uploadedUri = putInS3IfAbsent(localPath, combinedProperties);
+                        Files.delete(localPath);
+                        return uploadedUri;
+                    });
             future.whenComplete((x, y) -> semaphore.release());
             futures.put(entry.getRowKey(), entry.getColumnKey(), future);
         }
@@ -210,7 +218,9 @@ public class S3StorageBackend implements StorageBackend {
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
-        URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties, true);
+        URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
+        Files.delete(markupPath);
+
         markupResult.setMarkupUri(uploadedUri.toString());
     }
 
@@ -226,8 +236,8 @@ public class S3StorageBackend implements StorageBackend {
     public void storeDerivativeMedia(BatchJob job, MediaImpl media) throws StorageException, IOException {
         Function<String, String> combinedProperties =
                 _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(media.getParentId()));
-        URI newUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties, false);
-        media.setStorageUri(newUri.toString());
+        URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
+        media.setStorageUri(uploadedUri.toString());
     }
 
 
@@ -345,13 +355,13 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private URI putInS3IfAbsent(Path path, Function<String, String> properties, boolean deleteLocal)
+    private URI putInS3IfAbsent(Path path, Function<String, String> properties)
             throws IOException, StorageException {
-        return putInS3IfAbsent(path, hashExistingFile(path), properties, deleteLocal);
+        return putInS3IfAbsent(path, hashExistingFile(path), properties);
     }
 
-    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties, boolean deleteLocal)
-            throws IOException, StorageException {
+    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties)
+            throws StorageException {
         String objectName = getObjectName(hash);
         URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET));
         var s3UrlUtil = S3UrlUtil.get(properties);
@@ -370,15 +380,7 @@ public class S3StorageBackend implements StorageBackend {
                 LOG.info("Successfully stored \"{}\" in S3 bucket \"{}\" with object key \"{}\".",
                          path, bucketUri, objectName);
             }
-
-            URI objectUri = s3UrlUtil.getFullUri(bucketUri, objectName);
-
-            // TODO: Remove this!
-            if (deleteLocal) {
-                Files.delete(path);
-            }
-
-            return objectUri;
+            return s3UrlUtil.getFullUri(bucketUri, objectName);
         }
         catch (S3Exception | SdkClientException e) {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);

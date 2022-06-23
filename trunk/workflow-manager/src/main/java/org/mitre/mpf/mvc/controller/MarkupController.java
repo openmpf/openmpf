@@ -96,29 +96,6 @@ public class MarkupController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
-        List<MarkupResultModel> markupResultModels = new ArrayList<>();
-        if (jobId != null) {
-            for (MarkupResult markupResult : markupResultDao.findByJobId(jobId)) {
-                markupResultModels.add(convertMarkupResult(markupResult));
-            }
-        } else {
-            for (MarkupResult markupResult : markupResultDao.findAll()) {
-                markupResultModels.add(convertMarkupResult(markupResult));
-            }
-        }
-        return markupResultModels;
-    }
-
-    // TODO: Remove this? Takes a Long ...
-    @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
-    @ResponseBody
-    public List<MarkupResultModel> getMarkupResultsJsonSession(
-            @ApiParam(value = "Job id - OPTIONAL")
-            @RequestParam(value = "jobId", required = false) Long jobId) {
-        return getMarkupResultsJson(jobId);
-    }
-
     //https://datatables.net/manual/server-side#Sent-parameters
     //draw is the counter of how many times it has called back
     //length is how many to return

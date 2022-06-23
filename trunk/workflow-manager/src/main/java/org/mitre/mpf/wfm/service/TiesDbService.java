@@ -190,7 +190,7 @@ public class TiesDbService {
 
 
     private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
-        var joiner = new StringJoiner(" ");
+        var joiner = new StringJoiner("\n\n ");
         for (var future : futures) {
             try {
                 future.join();

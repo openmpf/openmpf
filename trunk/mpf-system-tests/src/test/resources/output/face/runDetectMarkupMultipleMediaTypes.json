@@ -76,7 +76,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 1,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/1/1/dummy.avi",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {
@@ -198,7 +203,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 2,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/1/2/dummy.avi",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {
@@ -2026,7 +2036,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 3,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/1/3/dummy.avi",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {
@@ -4755,7 +4770,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 4,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/1/4/dummy.png",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {
@@ -4825,7 +4845,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 5,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/1/5/dummy.png",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {

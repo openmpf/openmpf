@@ -36,7 +36,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
@@ -188,66 +188,61 @@ public class StorageService {
 
 
     public void storeDerivativeMedia(BatchJob job) {
-        var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
+        var semaphore = new Semaphore(Math.max(
+                1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
+
         var futures = new ArrayList<CompletableFuture<Void>>();
 
-        for (MediaImpl media : job.getMedia()) {
+        for (Media media : job.getMedia()) {
             if (!media.isDerivative()) {
                 continue;
             }
-            boolean storeRemotely = false;
-            for (StorageBackend remoteBackend : _remoteBackends) {
-                try {
-                    if (remoteBackend.canStoreDerivativeMedia(job, media.getParentId())) {
-                        futures.add(createDerivativeMediaUploadFuture(remoteBackend, job, media, semaphore));
-                        storeRemotely = true;
-                        break;
-                    }
-                } catch (StorageException ex) {
-                    handleDerivativeMediaRemoteStorageFailure(job.getId(), media, ex);
-                    storeRemotely = false;
-                }
+
+            try {
+                semaphore.acquire();
             }
-            if (!storeRemotely) {
-                try {
-                    _localBackend.storeDerivativeMedia(job, media);
-                } catch (IOException ex) {
-                    handleDerivativeMediaLocalStorageFailure(job.getId(), media, ex);
-                }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
             }
+
+            var future = ThreadUtil
+                    .runAsync(() -> storeDerivativeMedia(job, media))
+                    .whenComplete((x, y) -> semaphore.release());
+            futures.add(future);
         }
         ThreadUtil.allOf(futures).join();
     }
 
 
-    private CompletableFuture<Void> createDerivativeMediaUploadFuture(StorageBackend remoteBackend, BatchJob job,
-                                                                      MediaImpl media, Semaphore semaphore) {
+    private void storeDerivativeMedia(BatchJob job, Media media) {
+        Exception remoteException = null;
         try {
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
+            for (var backend : _remoteBackends) {
+                if (backend.canStoreDerivativeMedia(job, media.getParentId())) {
+                    backend.storeDerivativeMedia(job, media);
+                    return;
+                }
+            }
         }
-        CompletableFuture<Void> future = ThreadUtil.callAsync(
-                () -> {
-                    try {
-                        remoteBackend.storeDerivativeMedia(job, media);
-                    } catch (IOException | StorageException remoteEx) {
-                        handleDerivativeMediaRemoteStorageFailure(job.getId(), media, remoteEx);
-                        try {
-                            _localBackend.storeDerivativeMedia(job, media);
-                        } catch (IOException localEx) {
-                            handleDerivativeMediaLocalStorageFailure(job.getId(), media, localEx);
-                        }
-                    }
-                    return null;
-                });
-        future.whenComplete((x, y) -> semaphore.release());
-        return future;
+        catch (StorageException | IOException e) {
+            remoteException = e;
+            handleDerivativeMediaRemoteStorageFailure(job.getId(), media, e);
+        }
+
+        try {
+            _localBackend.storeDerivativeMedia(job, media);
+        }
+        catch (IOException localException) {
+            if (remoteException != null) {
+                localException.addSuppressed(remoteException);
+            }
+            handleDerivativeMediaLocalStorageFailure(job.getId(), media, localException);
+        }
     }
 
 
-    private void handleDerivativeMediaRemoteStorageFailure(long jobId, MediaImpl media, Throwable error) {
+    private void handleDerivativeMediaRemoteStorageFailure(long jobId, Media media, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
@@ -259,7 +254,7 @@ public class StorageService {
                 "Derivative media was stored locally because storing it remotely failed due to: " + error);
     }
 
-    private void handleDerivativeMediaLocalStorageFailure(long jobId, MediaImpl media, Exception e) {
+    private void handleDerivativeMediaLocalStorageFailure(long jobId, Media media, Exception e) {
         LOG.warn(String.format("Failed to store derivative media with media id %d and parent media id %d for " +
                         "job id %d. File will remain in %s.",
                 media.getId(), media.getParentId(), jobId, media.getLocalPath()), e);

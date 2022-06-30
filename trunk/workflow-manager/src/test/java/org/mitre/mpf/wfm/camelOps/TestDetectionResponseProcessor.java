@@ -44,7 +44,6 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.mockito.*;
@@ -65,23 +64,16 @@ public class TestDetectionResponseProcessor {
     private PipelineService mockPipelineService;
 
     @Mock
-    private InProgressBatchJobsService inProgressJobs;
-
-    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
+    private InProgressBatchJobsService mockInProgressJobs;
 
     @Mock
     private AggregateJobPropertiesUtil mockAggregateJobPropertiesUtil;
 
     @Mock
-    private MediaInspectionHelper mockMediaInspectionHelper; // for DetectionResponseProcessor
+    private MediaInspectionHelper mockMediaInspectionHelper;
 
-    @Mock
-    private StorageService mockStorageService; // for DetectionResponseProcessor
+    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
 
-    @Mock
-    private PropertiesUtil mockPropertiesUtil; // for DetectionResponseProcessor
-
-    @InjectMocks
     private DetectionResponseProcessor detectionResponseProcessor;
 
     private final IoUtils ioUtils = new IoUtils();
@@ -107,6 +99,13 @@ public class TestDetectionResponseProcessor {
     public void init() {
 
         MockitoAnnotations.initMocks(this);
+
+        detectionResponseProcessor = new DetectionResponseProcessor(
+                mockAggregateJobPropertiesUtil,
+                mockInProgressJobs,
+                mockMediaInspectionHelper,
+                jsonUtils
+        );
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
@@ -153,10 +152,10 @@ public class TestDetectionResponseProcessor {
             Map.of(),
             Map.of());
 
-        when(inProgressJobs.containsJob(JOB_ID))
+        when(mockInProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);
 
-        when(inProgressJobs.getJob(JOB_ID))
+        when(mockInProgressJobs.getJob(JOB_ID))
                 .thenReturn(job);
 
         when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
@@ -211,13 +210,13 @@ public class TestDetectionResponseProcessor {
         Assert.assertEquals(JOB_ID, processorResponse.getJobId());
         Assert.assertEquals(1, processorResponse.getTaskIndex());
 
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addDetectionProcessingError(any());
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addTrack(track(JOB_ID, 5));
     }
 
@@ -227,10 +226,10 @@ public class TestDetectionResponseProcessor {
 
         processVideoJob(error);
 
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
                         START_TIME, STOP_TIME));
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
 
@@ -240,10 +239,10 @@ public class TestDetectionResponseProcessor {
 
         processVideoJob(error);
 
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, START_FRAME, STOP_FRAME,
                         START_TIME, STOP_TIME));
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
 
@@ -293,9 +292,9 @@ public class TestDetectionResponseProcessor {
 
         detectionResponseProcessor.wfmProcess(exchange);
 
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, START_TIME, STOP_TIME));
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
 
@@ -321,9 +320,9 @@ public class TestDetectionResponseProcessor {
 
         detectionResponseProcessor.wfmProcess(exchange);
 
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 1, 0 ,0));
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
 
@@ -349,9 +348,9 @@ public class TestDetectionResponseProcessor {
 
         detectionResponseProcessor.wfmProcess(exchange);
 
-        verify(inProgressJobs, times(1))
+        verify(mockInProgressJobs, times(1))
                 .addDetectionProcessingError(detectionProcessingError(JOB_ID, error, 0, 0, 0, 0));
-        verify(inProgressJobs, never())
+        verify(mockInProgressJobs, never())
                 .addJobWarning(eq(JOB_ID), any(), any());
     }
 

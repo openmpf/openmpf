@@ -39,11 +39,11 @@ public class OutputChecker {
 
     private static final Logger log = LoggerFactory.getLogger(OutputChecker.class);
 
-    // when comparing confidence, results can differ by this much (absolute value in comparison
-    private static final double delta = .01;
+    // when comparing confidence, results can differ by this much (absolute value in comparison)
+    private static final double confidenceDelta = .01;
 
     // when doing a fuzzy match and comparing confidence, results can differ by this much (scale is 1-10)
-    private static final double deltaFuzzy = 3.0;
+    private static final double confidenceDeltaFuzzy = 3.0;
 
     private final MpfErrorCollector _errorCollector;
 
@@ -210,7 +210,7 @@ public class OutputChecker {
                 break;
             default:
                 _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
-                        closeTo(expExtrResult.getExemplar().getConfidence(), delta));
+                        closeTo(expExtrResult.getExemplar().getConfidence(), confidenceDelta));
         }
     }
 
@@ -239,9 +239,8 @@ public class OutputChecker {
                         actObjLocation.getY(), actObjLocation.getWidth(), actObjLocation.getHeight());
                 _errorCollector.checkThat("Overlap", overlap, greaterThan(0.0));
 
-
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
-                        closeTo(expObjLocation.getConfidence(), deltaFuzzy));
+                        closeTo(expObjLocation.getConfidence(), confidenceDeltaFuzzy));
                 break;
             case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
                 // Only check detection properties, which should have the speech hypothesis.
@@ -266,14 +265,20 @@ public class OutputChecker {
                 compareProperties("Detection", actObjLocation.getDetectionProperties(),
                         expObjLocation.getDetectionProperties());
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
-                        closeTo(expObjLocation.getConfidence(), delta));
+                        closeTo(expObjLocation.getConfidence(), confidenceDelta));
         }
     }
 
-    private final List<String> PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES = Arrays.asList(
+    private static final List<String> PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES = Arrays.asList(
             "DERIVATIVE_MEDIA_TEMP_PATH",
             "DERIVATIVE_MEDIA_ID"
     );
+
+    private static final List<String> PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON = Arrays.asList(
+            "ROTATION"
+    );
+
+    private static final double propertyDeltaFuzzy = 0.1;
 
     /**
      * Compare the actual properties to the expected properties
@@ -283,12 +288,18 @@ public class OutputChecker {
      * @param actProperties
      */
     private void compareProperties(String type,
-                                   Map expProperties,
-                                   Map actProperties) {
+                                   Map<String, String> expProperties,
+                                   Map<String, String> actProperties) {
         _errorCollector.checkThat(type + " Property Keys", actProperties.keySet(), is(expProperties.keySet()));
 
         for (var expKey : expProperties.keySet()) {
             if (PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expKey)) {
+                continue;
+            }
+            if (PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON.contains(expKey)) {
+                _errorCollector.checkThat(type + " Property: " + expKey,
+                        Double.parseDouble(actProperties.get(expKey)),
+                        closeTo(Double.parseDouble(expProperties.get(expKey)), propertyDeltaFuzzy));
                 continue;
             }
             _errorCollector.checkThat(type + " Property: " + expKey,

@@ -33,7 +33,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
 import java.io.IOException;
 import java.net.URI;
@@ -50,5 +50,5 @@ public interface StorageBackend {
     public void store(MarkupResult markupResult) throws IOException, StorageException;
 
     public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException;
-    public void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException;
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException;
 }

@@ -408,7 +408,8 @@ public class InProgressBatchJobsService {
         }
     }
 
-    public synchronized Media initDerivativeMedia(long mediaId,
+    public synchronized Media initDerivativeMedia(long jobId,
+                                                  long mediaId,
                                                   long parentMediaId,
                                                   int taskIndex,
                                                   Path localPath,
@@ -422,19 +423,26 @@ public class InProgressBatchJobsService {
         metadata.remove(MpfConstants.DERIVATIVE_MEDIA_ID);
         metadata.put(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE");
 
-        return new MediaImpl(mediaId,
-                             parentMediaId,
-                             taskIndex,
-                             localPath.toUri().toString(),
-                             UriScheme.FILE,
-                             localPath,
-                             // Derivative media do not inherit parent media properties. For example, specifying
-                             // a ROTATION value on the parent may not be appropriate for the children.
-                             ImmutableMap.of(),
-                             metadata,
-                             ImmutableSet.of(),
-                             ImmutableSet.of(),
-                             errorMessage);
+        MediaImpl derivativeMedia = new MediaImpl(
+                mediaId,
+                parentMediaId,
+                taskIndex,
+                localPath.toUri().toString(),
+                UriScheme.FILE,
+                localPath,
+                // Derivative media do not inherit parent media properties. For example, specifying
+                // a ROTATION value on the parent may not be appropriate for the children.
+                ImmutableMap.of(),
+                ImmutableMap.of(),
+                ImmutableSet.of(),
+                ImmutableSet.of(),
+                errorMessage);
+
+        derivativeMedia.addMetadata(metadata);
+
+        getJob(jobId).addDerivativeMedia(derivativeMedia);
+
+        return derivativeMedia;
     }
 
     private static String checkForLocalFileError(Path path) {
@@ -465,6 +473,13 @@ public class InProgressBatchJobsService {
         LOG.info("Setting job {}'s media {}'s converted media path to {}",
                  jobId, mediaId, convertedMediaPath);
         getMediaImpl(jobId, mediaId).setConvertedMediaPath(convertedMediaPath);
+    }
+
+    public synchronized void addStorageUri(long jobId, long mediaId,
+                                           String storageUri) {
+        LOG.info("Setting job {}'s media {}'s storage URI to {}",
+                jobId, mediaId, storageUri);
+        getMediaImpl(jobId, mediaId).setStorageUri(storageUri);
     }
 
     public synchronized void addFrameTimeInfo(long jobId, long mediaId,

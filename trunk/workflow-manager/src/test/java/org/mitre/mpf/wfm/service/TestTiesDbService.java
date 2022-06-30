@@ -57,10 +57,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
@@ -1026,12 +1023,12 @@ public class TestTiesDbService {
                 Map.of(), Map.of());
 
         if (createChildren) {
-            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
             childMedia1.setSha256("CHILD1_SHA");
 
-            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(), Map.of(), null,
+                    Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
             childMedia2.setSha256("CHILD2_SHA");
 
             job.addDerivativeMedia(childMedia1);
@@ -1176,12 +1173,12 @@ public class TestTiesDbService {
                 null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
         childMedia1.setSha256("CHILD1_SHA");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
         childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -1288,12 +1285,12 @@ public class TestTiesDbService {
                 null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+        var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
         childMedia1.setSha256("CHILD1_SHA");
 
-        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
-                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), null);
+        var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(), Map.of(), null,
+                Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of());
         childMedia2.setSha256("CHILD2_SHA");
 
         var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
@@ -1600,14 +1597,14 @@ public class TestTiesDbService {
                 Map.of(), Map.of());
 
         if (addChildren) {
-            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(),
+            var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
                                             Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                                            List.of(), List.of(), null);
+                                            List.of(), List.of());
             childMedia1.setSha256("CHILD1_SHA");
 
-            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(),
+            var childMedia2 = new MediaImpl(702, 700, 0, "file:///child2", null, null, Map.of(), Map.of(), null,
                                             Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"),
-                                            List.of(), List.of(), null);
+                                            List.of(), List.of());
             childMedia2.setSha256("CHILD2_SHA");
             job.addDerivativeMedia(childMedia1);
             job.addDerivativeMedia(childMedia2);

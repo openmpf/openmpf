@@ -178,15 +178,21 @@ public class MarkupController {
         //handle paging
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered
                 .stream()
-                .sorted((o1, o2) -> { // group by parent
-                    boolean isParent1 = o1.getParentMediaId() == -1;
-                    boolean isParent2 = o2.getParentMediaId() == -1;
-                    long id1 = isParent1 ? o1.getMediaId() : o1.getParentMediaId();
-                    long id2 = isParent2 ? o2.getMediaId() : o2.getParentMediaId();
-                    if (id1 == id2) { // parent vs. child
-                        return isParent1 ? -1 : 1;
+                .sorted((m1, m2) -> { // group by parent media id first, then by media id
+                    boolean isParent1 = m1.getParentMediaId() == -1;
+                    boolean isParent2 = m2.getParentMediaId() == -1;
+                    long m1Group = isParent1 ? m1.getMediaId() : m1.getParentMediaId();
+                    long m2Group = isParent2 ? m2.getMediaId() : m2.getParentMediaId();
+                    if (m1Group != m2Group) {
+                        return Long.compare(m1Group, m2Group);
                     }
-                    return Long.compare(id1, id2);
+                    if (isParent1) {
+                        return -1;
+                    }
+                    if (isParent2) {
+                        return 1;
+                    }
+                    return Long.compare(m1.getMediaId(), m2.getMediaId());
                 })
                 .skip(start)
                 .limit(length)

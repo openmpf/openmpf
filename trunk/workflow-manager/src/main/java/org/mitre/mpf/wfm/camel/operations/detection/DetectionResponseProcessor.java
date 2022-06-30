@@ -62,20 +62,21 @@ public class DetectionResponseProcessor
 
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
-    private static final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
-
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
     private final InProgressBatchJobsService _inProgressJobs;
     private final MediaInspectionHelper _mediaInspectionHelper;
+    private final JsonUtils _jsonUtils;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper) {
+                                      MediaInspectionHelper mediaInspectionHelper,
+                                      JsonUtils jsonUtils) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
+        _jsonUtils = jsonUtils;
     }
 
     @Override
@@ -124,7 +125,7 @@ public class DetectionResponseProcessor
         _inProgressJobs.setProcessedAction(jobId, detectionResponse.getMediaId(), detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex());
 
-        return jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
+        return _jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {
@@ -453,9 +454,7 @@ public class DetectionResponseProcessor
         trackProperties.put(MpfConstants.DERIVATIVE_MEDIA_ID, String.valueOf(mediaId));
 
         Media derivativeMedia = _inProgressJobs.initDerivativeMedia(
-                mediaId, parentMediaId, taskIndex, localPath, trackProperties);
-
-        _inProgressJobs.getJob(jobId).addDerivativeMedia(derivativeMedia);
+                jobId, mediaId, parentMediaId, taskIndex, localPath, trackProperties);
 
         _mediaInspectionHelper.inspectMedia(derivativeMedia, jobId);
 

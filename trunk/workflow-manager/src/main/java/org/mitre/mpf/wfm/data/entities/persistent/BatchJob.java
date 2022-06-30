@@ -48,7 +48,7 @@ public interface BatchJob {
 
     public int getPriority();
 
-    public Collection<MediaImpl> getMedia();
+    public Collection<Media> getMedia();
 
     public Media getMedia(long mediaId);
 

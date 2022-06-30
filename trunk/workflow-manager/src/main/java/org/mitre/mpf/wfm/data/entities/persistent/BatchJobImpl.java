@@ -79,7 +79,7 @@ public class BatchJobImpl implements BatchJob {
 
     private final SortedMap<Long, MediaImpl> _media;
     @Override
-    public Collection<MediaImpl> getMedia() {
+    public Collection<Media> getMedia() {
         return Collections.unmodifiableCollection(_media.values());
     }
     @Override

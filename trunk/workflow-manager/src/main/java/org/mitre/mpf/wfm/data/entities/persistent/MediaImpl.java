@@ -234,8 +234,7 @@ public class MediaImpl implements Media {
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        _metadata.putAll(providedMetadata);        
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);      
         _frameRanges = ImmutableSet.copyOf(frameRanges);
         _timeRanges = ImmutableSet.copyOf(timeRanges);
 

@@ -51,7 +51,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -182,11 +182,11 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
 
     @Override
-    public void storeDerivativeMedia(BatchJob job, MediaImpl media) throws IOException, StorageException {
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException {
         URI serviceUri = getServiceUri(job.getId());
         try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
             URI newUri = store(serviceUri, inputStream);
-            media.setStorageUri(newUri.toString());
+            _inProgressBatchJobs.addStorageUri(job.getId(), media.getId(), newUri.toString());
         }
     }
 

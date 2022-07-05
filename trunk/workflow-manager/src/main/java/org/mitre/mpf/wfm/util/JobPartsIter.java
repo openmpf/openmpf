@@ -60,11 +60,12 @@ public class JobPartsIter {
     private static class JobPartsFixedMediaIter extends AbstractSequentialIterator<JobPart> {
 
         public JobPartsFixedMediaIter(BatchJob job, Media media) {
-            super(new JobPart(job, media, getMediaIndex(job, media), 0, 0));
+            this(job, media, getMediaIndex(job, media));
         }
 
         public JobPartsFixedMediaIter(BatchJob job, Media media, int mediaIndex) {
-            super(new JobPart(job, media, mediaIndex, 0, 0));
+            // parent media have a creation task of -1, so +1 gets task 0
+            super(new JobPart(job, media, mediaIndex, media.getCreationTask() + 1, 0));
         }
 
         @Override

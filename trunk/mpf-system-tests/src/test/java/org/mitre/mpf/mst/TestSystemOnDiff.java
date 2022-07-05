@@ -1229,4 +1229,20 @@ public class TestSystemOnDiff extends TestSystemWithDefaultConfig {
                       "/samples/text/lp-v8-texas.mp4");
     }
 
+
+    @Test(timeout = 10 * MINUTES)
+    public void runDerivativeMediaTextDetectPdf() throws Exception {
+        var jobProperties = Map.of(
+                "CONFIDENCE_THRESHOLD", "0.2",
+                "TEMPORARY_PADDING_X", "1.0",
+                "TEMPORARY_PADDING_Y", "1.0",
+                "FINAL_PADDING", "0.5",
+                "ENABLE_OSD_AUTOMATION", "false",
+                "TESSERACT_LANGUAGE", "eng"
+        );
+        runSystemTest("TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA TESSERACT OCR (WITH EAST REGIONS) AND KEYWORD TAGGING AND MARKUP PIPELINE",
+                "output/derivative-media/runDerivativeMediaTextDetectPdf.json",
+                jobProperties,
+                "/samples/derivative-media/text-embedded-and-images.pdf");
+    }
 }

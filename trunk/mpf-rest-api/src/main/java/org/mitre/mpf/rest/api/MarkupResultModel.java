@@ -31,28 +31,19 @@ public class MarkupResultModel {
 	private long jobId;
 	private String actionHistory;
 	private String outputPath;
-	private String sourceMedium;
 	private boolean image; //is an image
-	private boolean fileAvail; //file is available
 	
 	public long getId() { return id; }	
 	public long getJobId() { return jobId; }	
     public String getActionHistory() { return actionHistory; }
     public String getOutputPath() { return outputPath; }
-    public String getSourceMedium() { return sourceMedium; }
     public boolean isImage() { return image; }
-	public boolean fileExists() { return fileAvail; }
-
-    public MarkupResultModel() {}
     
-    public MarkupResultModel(long id, long jobId, String actionHistory,
-			String outputPath, String sourceMedium, boolean image,boolean fileExists) {
+    public MarkupResultModel(long id, long jobId, String actionHistory, String outputPath, boolean image) {
 		this.id = id;
 		this.jobId = jobId;
 		this.actionHistory = actionHistory;
 		this.outputPath = outputPath;
-		this.sourceMedium = sourceMedium;
 		this.image = image;
-		this.fileAvail = fileExists;
 	}
 }

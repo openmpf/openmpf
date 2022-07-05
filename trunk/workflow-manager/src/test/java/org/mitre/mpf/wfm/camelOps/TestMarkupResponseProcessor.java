@@ -79,7 +79,7 @@ public class TestMarkupResponseProcessor {
                 .clearErrorMessage();
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertNull(markupResult.getMessage());
-        assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.COMPLETE, markupResult.getMarkupStatus());
 
         verify(_mockStorageService)
                 .store(markupResult);
@@ -97,35 +97,13 @@ public class TestMarkupResponseProcessor {
 
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertEquals(errorMessage, markupResult.getMessage());
-        assertEquals(MarkupStatus.FAILED, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.FAILED, markupResult.getMarkupStatus());
 
         verify(_mockStorageService, never())
                 .store(any());
         verify(_mockInProgressJobs)
                 .addError(TEST_JOB_ID, 1532, IssueCodes.MARKUP, errorMessage,
                           IssueSources.MARKUP);
-    }
-
-
-    @Test
-    public void canHandleMarkupWarning() {
-        doAnswer(invocation -> {
-            invocation.getArgument(0, MarkupResult.class)
-                    .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
-            return null;
-        }).when(_mockStorageService).store(any(MarkupResult.class));
-
-        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
-                .setHasError(false);
-
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
-        assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
-
-        verify(_mockStorageService)
-                .store(markupResult);
-        verify(_mockInProgressJobs)
-                .addWarning(TEST_JOB_ID, 1532, IssueCodes.MARKUP, "COMPLETE_WITH_WARNING",
-                            IssueSources.MARKUP);
     }
 
 

@@ -196,7 +196,7 @@ public class TestRemoteMediaProcessor {
                               List.of(), null),
                 new MediaImpl(mediaId2, EXT_IMG, UriScheme.get(URI.create(EXT_IMG)),
                               _tempFolder.newFile().toPath(), Map.of(), Map.of(), List.of(),
-                              List.of(),null));
+                              List.of(), null));
 
         var job = mock(BatchJob.class);
         when(job.isCancelled())

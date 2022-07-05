@@ -510,30 +510,44 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 data: function (d) {//extra params
                     d.search = d.search.value;//pull out because spring is a pain to pass params
                     d.jobId = $scope.selectedJob.jobId;
+                },
+                error: function (xhr, error, code) {
+                    alert("Error while retrieving data: " + xhr.status);
                 }
             },
             renderer: "bootstrap",
             columns: [
                 {
-                    data: "sourceImg",
+                    data: "parentMediaId",
+                    className: "smart-wrap",
+                    render: function (data, type, obj) {
+                        if (obj.parentMediaId == -1) {
+                            return '<p class="text-muted">N/A</p>'
+                        }
+                        return '<p>' + obj.parentMediaId + '</p>'
+                    }
+                },
+                {
+                    data: "mediaId",
+                    className: "smart-wrap"
+                },
+                {
+                    data: "sourceImgUrl",
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
-                            obj.sourceImg = "server/node-image?nodeFullPath=" + obj.sourceUri.replace("file:", "");
-                            obj.sourceDownload = "server/download?sourceUri=" + obj.sourceUri + "&jobId=" + obj.jobId;
-                            obj.sourceType = getMarkupType(obj.sourceUriContentType);
-                            if (obj.sourceType == 'image') {
+                            if (obj.sourceMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', obj.sourceImg)
+                                    .attr('src', obj.sourceDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;
                             }
-                            else if (obj.sourceType == 'audio') {
+                            else if (obj.sourceMediaType == 'AUDIO') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
-                            else if (obj.sourceType == 'video') {
+                            else if (obj.sourceMediaType == 'VIDEO') {
                                 var sourceEl = $('<source>')
-                                    .attr('src', obj.sourceDownload)
+                                    .attr('src', obj.sourceDownloadUrl)
                                     .text('Your browser does not support the video tag.');
 
                                 return $('<video>')
@@ -554,7 +568,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     className: "smart-wrap"
                 },
                 {
-                    data: "sourceDownload",
+                    data: "sourceDownloadUrl",
                     render: function (data, type, obj) {
                         if (obj.sourceDownloadUrl) {
                             return '<a href="' + obj.sourceDownloadUrl + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
@@ -564,24 +578,22 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     }
                 },
                 {
-                    data: "markupImg",
+                    data: "markupImgUrl",
                     render: function (data, type, obj) {
                         if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
-                            obj.markupDownload = "markup/download?id=" + obj.id;
-                            obj.markupType = getMarkupType(obj.markupUriContentType);
-                            if (obj.markupType == 'image') {
+                            if (obj.markupMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', "markup/content?id=" + obj.id)
+                                    .attr('src', obj.markupDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;
                             }
-                            else if (obj.markupType == 'audio') {
+                            else if (obj.markupMediaType == 'AUDIO') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
-                            else if (obj.markupType == 'video') {
+                            else if (obj.markupMediaType == 'VIDEO') {
                                 var sourceEl = $('<source>')
-                                    .attr('src', obj.markupDownload)
+                                    .attr('src', obj.markupDownloadUrl)
                                     .text('Your browser does not support the video tag.');
 
                                 return $('<video>')
@@ -608,10 +620,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     }
                 },
                 {
-                    data: "markupDownload",
+                    data: "markupDownloadUrl",
                     render: function (data, type, obj) {
-                        if (obj.markupDownload) {
-                            return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.markupDownloadUrl) {
+                            return '<a href="' + obj.markupDownloadUrl + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
                         } else {
                             return '<p class="text-muted">No markup</p>';
                         }
@@ -627,17 +639,6 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 });
             }
         });
-    };
-
-    var getMarkupType = function (content_type) {
-        if (content_type != null) {
-            var type = content_type.split("/")[0].toLowerCase();
-            if ((type == "image" && content_type.indexOf("tif") == -1) || type == "audio" || type == "video") {
-                return type;
-            }
-            return "file";
-        }
-        return null;
     };
 
     init();

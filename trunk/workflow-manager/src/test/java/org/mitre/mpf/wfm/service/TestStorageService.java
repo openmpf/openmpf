@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactE
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
@@ -49,6 +50,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -63,6 +65,9 @@ public class TestStorageService {
     private StorageService _storageService;
 
     @Mock
+    private PropertiesUtil _mockPropertiesUtil;
+
+    @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
     @Mock
@@ -73,9 +78,6 @@ public class TestStorageService {
 
     @Mock
     private LocalStorageBackend _mockLocalBackend;
-
-    @Mock
-    private PropertiesUtil _mockPropertiesUtil;
 
     private final JsonOutputObject _mockOutputObject = mock(JsonOutputObject.class);
 
@@ -407,6 +409,8 @@ public class TestStorageService {
                 .thenReturn(jobId);
         when(markup.getMediaId())
                 .thenReturn(mediaId);
+        when(markup.getMarkupStatus())
+                .thenReturn(MarkupStatusType.COMPLETE);
 
         when(_mockS3Backend.canStore(markup))
                 .thenReturn(true);
@@ -423,7 +427,166 @@ public class TestStorageService {
         verify(markup)
                 .setMessage(nonBlank());
         verify(markup)
-                .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+                .setMarkupStatus(MarkupStatusType.COMPLETE_WITH_WARNING);
+    }
+
+
+    @Test
+    public void canStoreDerivatveMediaRemotely() throws IOException, StorageException {
+        long parentMediaId = 420;
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+        var job = mock(BatchJob.class);
+
+        when(job.getMedia())
+                .thenReturn(Set.of(parentMedia, derivativeMedia));
+
+        when(derivativeMedia.isDerivative())
+                .thenReturn(true);
+
+        when(derivativeMedia.getParentId())
+                .thenReturn(parentMediaId);
+
+        when(_mockS3Backend.canStoreDerivativeMedia(job, parentMediaId))
+                .thenReturn(true);
+
+        doAnswer(invocation -> {
+            var media = (MediaImpl) invocation.getArgument(1);
+            media.setStorageUri(TEST_REMOTE_URI.toString());
+            return null;
+        }).when(_mockS3Backend).storeDerivativeMedia(job, derivativeMedia);
+
+        _storageService.storeDerivativeMedia(job);
+
+        verify(_mockPropertiesUtil).getDerivativeMediaParallelUploadCount();
+
+        verify(derivativeMedia).setStorageUri(TEST_REMOTE_URI.toString());
+
+        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInProgressJobWarnings();
+    }
+
+    @Test
+    public void canStoreDerivatveMediaLocally() throws IOException, StorageException {
+        long parentMediaId = 420;
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+        var job = mock(BatchJob.class);
+
+        when(job.getMedia())
+                .thenReturn(Set.of(parentMedia, derivativeMedia));
+
+        when(derivativeMedia.isDerivative())
+                .thenReturn(true);
+
+        when(derivativeMedia.getParentId())
+                .thenReturn(parentMediaId);
+
+        doAnswer(invocation -> {
+            var media = (MediaImpl) invocation.getArgument(1);
+            media.setStorageUri(TEST_LOCAL_URI.toString());
+            return null;
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
+
+        _storageService.storeDerivativeMedia(job);
+
+        verify(derivativeMedia).setStorageUri(TEST_LOCAL_URI.toString());
+
+        verifyNoInProgressJobWarnings();
+        verify(_mockS3Backend)
+                .canStoreDerivativeMedia(job, parentMediaId);
+        verify(_mockNginxBackend)
+                .canStoreDerivativeMedia(job, parentMediaId);
+    }
+
+    @Test
+    public void derivativeMediaGetsStoredLocallyWhenBackendException() throws IOException, StorageException {
+        long jobId = 867;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+        var job = mock(BatchJob.class);
+
+        when(job.getId())
+                .thenReturn(jobId);
+
+        when(job.getMedia())
+                .thenReturn(Set.of(parentMedia, derivativeMedia));
+
+        when(derivativeMedia.isDerivative())
+                .thenReturn(true);
+
+        when(derivativeMedia.getParentId())
+                .thenReturn(parentMediaId);
+
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
+        when(_mockS3Backend.canStoreDerivativeMedia(job, parentMediaId))
+                .thenReturn(true);
+
+        doAnswer(invocation -> {
+            var media = (MediaImpl) invocation.getArgument(1);
+            media.setStorageUri(TEST_LOCAL_URI.toString());
+            return null;
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
+
+        doThrow(StorageException.class)
+                .when(_mockS3Backend).storeDerivativeMedia(job, derivativeMedia);
+
+        _storageService.storeDerivativeMedia(job);
+
+        verify(derivativeMedia).setStorageUri(TEST_LOCAL_URI.toString());
+
+        verifyWarning(jobId, derivativeMediaId);
+    }
+
+    @Test
+    public void derivativeMediaGetsStoredLocallyWhenCanStoreFails() throws StorageException, IOException {
+        long jobId = 867;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+        var job = mock(BatchJob.class);
+
+        when(job.getId())
+                .thenReturn(jobId);
+
+        when(job.getMedia())
+                .thenReturn(Set.of(parentMedia, derivativeMedia));
+
+        when(derivativeMedia.isDerivative())
+                .thenReturn(true);
+
+        when(derivativeMedia.getParentId())
+                .thenReturn(parentMediaId);
+
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
+        doThrow(StorageException.class)
+                .when(_mockNginxBackend).canStoreDerivativeMedia(job,parentMediaId);
+
+        doAnswer(invocation -> {
+            var media = (MediaImpl) invocation.getArgument(1);
+            media.setStorageUri(TEST_LOCAL_URI.toString());
+            return null;
+        }).when(_mockLocalBackend).storeDerivativeMedia(job, derivativeMedia);
+
+        _storageService.storeDerivativeMedia(job);
+
+        verify(derivativeMedia).setStorageUri(TEST_LOCAL_URI.toString());
+
+        verifyWarning(jobId, derivativeMediaId);
+
+        verify(_mockNginxBackend, never())
+                .store(any(JsonOutputObject.class), any());
     }
 
 

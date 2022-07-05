@@ -31,7 +31,9 @@ import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
 import java.io.IOException;
 import java.net.URI;
@@ -41,10 +43,12 @@ public interface StorageBackend {
     public boolean canStore(JsonOutputObject outputObject) throws StorageException;
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException;
 
-
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException;
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException;
 
     public boolean canStore(MarkupResult markupResult) throws StorageException;
     public void store(MarkupResult markupResult) throws IOException, StorageException;
+
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException;
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException;
 }

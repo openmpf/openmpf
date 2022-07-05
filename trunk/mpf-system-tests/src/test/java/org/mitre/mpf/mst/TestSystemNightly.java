@@ -39,7 +39,7 @@ import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
-import org.mitre.mpf.wfm.enums.MarkupStatus;
+import org.mitre.mpf.wfm.enums.MarkupStatusType;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.pipeline.InvalidPipelineException;
 import org.mitre.mpf.wfm.util.JsonUtils;
@@ -184,7 +184,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
             Assert.assertNotEquals(
                     DigestUtils.sha256Hex(FileUtils.readFileToByteArray(new File(URI.create(mediaOutputObject.getPath())))),
                     DigestUtils.sha256Hex(FileUtils.readFileToByteArray(new File(URI.create(mediaOutputObject.getMarkupResult().getPath())))));
-            Assert.assertEquals(mediaOutputObject.getMarkupResult().getStatus(), MarkupStatus.COMPLETE.toString());
+            Assert.assertEquals(MarkupStatusType.COMPLETE.toString(), mediaOutputObject.getMarkupResult().getStatus());
         }
     }
 

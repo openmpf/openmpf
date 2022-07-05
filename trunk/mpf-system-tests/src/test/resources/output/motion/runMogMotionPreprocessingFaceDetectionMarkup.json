@@ -49,7 +49,7 @@
           {
             "algorithm": "MARKUPCV",
             "name": "OCV GENERIC MARKUP ACTION",
-            "description": "Marks up all of the objects detected in the given video.",
+            "description": "Performs object markup in images and videos.",
             "properties": {}
           }
         ]
@@ -85,7 +85,12 @@
       "mediaProperties": {},
       "status": "COMPLETE",
       "detectionProcessingErrors": {},
-      "markupResult": null,
+      "markupResult": {
+        "id": 7,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/5/12/dummy.avi",
+        "status": "COMPLETE",
+        "message": null
+      },
       "output": {
         "NO TRACKS": [
           {

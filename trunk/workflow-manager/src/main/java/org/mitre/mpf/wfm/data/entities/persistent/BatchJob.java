@@ -27,15 +27,10 @@
 package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 // Suppress because it's better than having to explicitly use BatchJobImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
@@ -53,9 +48,11 @@ public interface BatchJob {
 
     public int getPriority();
 
-    public ImmutableCollection<? extends Media> getMedia();
+    public Collection<Media> getMedia();
 
     public Media getMedia(long mediaId);
+
+    public void addDerivativeMedia(Media media);
 
     // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();

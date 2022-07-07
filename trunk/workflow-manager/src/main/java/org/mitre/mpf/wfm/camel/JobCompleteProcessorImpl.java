@@ -53,10 +53,7 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.service.CensorPropertiesService;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
-import org.mitre.mpf.wfm.service.StorageService;
-import org.mitre.mpf.wfm.service.TiesDbService;
+import org.mitre.mpf.wfm.service.*;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,6 +152,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
                                             }
         completionStatus = job.getStatus().onComplete();
+        tiesDbService.storeAssertions(job,
+                                      completionStatus,
+                                      jobRequest.getTimeCompleted(),
+                                      outputObjectUri,
+                                      outputSha.getValue(),
+                                      trackCounter);
 
         jobProgressStore.setJobProgress(jobId, 100);
             inProgressBatchJobs.setJobStatus(jobId, completionStatus);
@@ -177,14 +180,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             " If this job is resubmitted, it will likely not complete again!", jobId), exception);
         }
 
-        var tiesDbFuture = tiesDbService.addAssertions(
-                job,
-                completionStatus,
-                jobRequest.getTimeCompleted(),
-                outputObjectUri,
-                outputSha.getValue(),
-                trackCounter);
-
+        var tiesDbFuture = tiesDbService.postAssertions(job);
         if (job.getCallbackUrl().isPresent()) {
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
@@ -209,9 +205,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
         }
 
-        boolean requiresTiesDb = JobPartsIter.stream(job)
-                .map(jp -> aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
-                .anyMatch(url -> url != null && !url.isBlank());
+        boolean requiresTiesDb = job.getMedia()
+                .stream()
+                .anyMatch(m -> !m.getTiesDbInfo().isEmpty());
+
         if (requiresTiesDb) {
             inProgressBatchJobs.setCallbacksInProgress(job.getId());
             jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());

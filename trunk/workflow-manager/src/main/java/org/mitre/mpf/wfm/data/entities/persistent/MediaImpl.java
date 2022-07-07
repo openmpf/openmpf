@@ -214,6 +214,15 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
+    private final List<TiesDbInfo> _tiesDbInfo = new ArrayList<>();
+    @Override
+    public List<TiesDbInfo> getTiesDbInfo() {
+        return Collections.unmodifiableList(_tiesDbInfo);
+    }
+    public void addTiesDbInfo(TiesDbInfo info) {
+        _tiesDbInfo.add(info);
+    }
+
 
     public MediaImpl(
             long id,
@@ -234,7 +243,7 @@ public class MediaImpl implements Media {
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.copyOf(providedMetadata);      
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
         _frameRanges = ImmutableSet.copyOf(frameRanges);
         _timeRanges = ImmutableSet.copyOf(timeRanges);
 
@@ -272,7 +281,8 @@ public class MediaImpl implements Media {
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
-            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
+            @JsonProperty("tiesDbInfo") Collection<TiesDbInfo> tiesDbInfo) {
         this(id,
              parentId,
              creationTaskIndex,
@@ -286,6 +296,9 @@ public class MediaImpl implements Media {
              errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
+        }
+        if (tiesDbInfo != null) {
+            _tiesDbInfo.addAll(tiesDbInfo);
         }
     }
 

@@ -488,6 +488,13 @@ public class InProgressBatchJobsService {
         getMediaImpl(jobId, mediaId).setFrameTimeInfo(frameTimeInfo);
     }
 
+
+    public synchronized void addTiesDbInfo(long jobId, long mediaId, TiesDbInfo tiesDbInfo) {
+        getMediaImpl(jobId, mediaId)
+                .addTiesDbInfo(tiesDbInfo);
+    }
+
+
     private MediaImpl getMediaImpl(long jobId, long mediaId) {
         MediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {

@@ -65,10 +65,6 @@ public class MediaInspectionProcessor extends WfmProcessor {
         Media media = _inProgressJobs.getJob(jobId).getMedia(mediaId);
         _mediaInspectionHelper.inspectMedia(media, jobId);
         setHeaders(exchange, jobId, mediaId);
-
-        if (media.isFailed()) {
-            _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
-        }
     }
 
     private static void setHeaders(Exchange exchange, long jobId, long mediaId) {

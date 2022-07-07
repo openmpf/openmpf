@@ -1017,7 +1017,7 @@ public class TestTiesDbService {
                 List.of(action1, action2, action3),
                 List.of(algo1, algo2, algo3));
 
-        BatchJob job = new BatchJobImpl(
+        BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of());
@@ -1202,7 +1202,7 @@ public class TestTiesDbService {
                 List.of(action1, action2, action3),
                 List.of(algo1, algo2));
 
-        BatchJob job = new BatchJobImpl(
+        BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of());
@@ -1310,7 +1310,7 @@ public class TestTiesDbService {
                 List.of(action1, action2),
                 List.of(algo1, algo2));
 
-        BatchJob job = new BatchJobImpl(
+        BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of());
@@ -1591,7 +1591,7 @@ public class TestTiesDbService {
                 List.of(action1, action2, action3, action4, action5, action6),
                 List.of(algo1, algo2, algo3, algo4, algo5, algo6));
 
-        BatchJob job = new BatchJobImpl(
+        BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
                 Map.of(), Map.of());

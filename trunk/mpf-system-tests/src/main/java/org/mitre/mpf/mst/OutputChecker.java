@@ -118,10 +118,25 @@ public class OutputChecker {
         while (expIter.hasNext()){
             expTrackOutput = expIter.next();
             actTrackOutput = actIter.next();
-            log.debug("Comparing expected actions at Source={} to actual actions at Source={}", expTrackOutput.getSource(),
-                    actTrackOutput.getSource());
-            compareJsonTrackOutputObjects(expTrackOutput.getTracks(), actTrackOutput.getTracks(), pipeline);
+            log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
+                    expTrackOutput.getSource(), actTrackOutput.getSource());
+            compareJsonTrackOutputObjects(
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
+                    pipeline);
         }
+    }
+
+    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(String detectionType, JsonActionOutputObject actionOutput) {
+        // MEDIA track default sort order is determined by DERIVATIVE_MEDIA_ID, which can cause issues. For example,
+        // a track with { DERIVATIVE_MEDIA_ID=10, PAGE_NUM=2 } will appear before { DERIVATIVE_MEDIA_ID=9, PAGE_NUM=1 }
+        // due to lexicographical String ordering. To address this, we sort by PAGE_NUM after converting to an int.
+        if (detectionType.equals("MEDIA") &&
+                actionOutput.getTracks().stream().allMatch(t -> t.getTrackProperties().containsKey("PAGE_NUM"))) {
+            return new TreeSet<>(Comparator.comparingInt(
+                    t -> Integer.parseInt(t.getTrackProperties().get("PAGE_NUM"))));
+        }
+        return actionOutput.getTracks();
     }
 
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,

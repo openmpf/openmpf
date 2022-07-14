@@ -35,15 +35,19 @@ import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 @JsonTypeName("MediaOutputObject")
 @JsonPropertyOrder({
-		"mediaId", "path", "sha256", "mimeType", "mediaType", "length", "frameRanges", "timeRanges",
-		"mediaMetadata", "mediaProperties", "status", "detectionProcessingErrors", "markupResult",
-		"output"})
+		"mediaId", "parentMediaId", "path", "sha256", "mimeType", "mediaType", "length", "frameRanges", "timeRanges",
+		"mediaMetadata", "mediaProperties", "status", "detectionProcessingErrors", "markupResult", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
 	@JsonPropertyDescription("An internal identifier assigned to this media file. The value of this identifier may be useful when debugging system errors.")
 	private long mediaId;
 	public long getMediaId() { return mediaId; }
+
+	@JsonProperty("parentMediaId")
+	@JsonPropertyDescription("If this is derivative media, the id of the source media it was derived from. Set to -1 for non-derivative media.")
+	private long parentMediaId;
+	public long getParentMediaId() { return parentMediaId; }
 
 	@JsonProperty("path")
 	@JsonPropertyDescription("The URI to this media file.")
@@ -114,9 +118,10 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors;
 	public SortedMap<String, SortedSet<JsonDetectionProcessingError>> getDetectionProcessingErrors() { return detectionProcessingErrors; }
 
-	public JsonMediaOutputObject(long mediaId, String path, String mediaType, String mimeType, int length,
-								 String sha256, String status) {
+	public JsonMediaOutputObject(long mediaId, long parentMediaId, String path, String mediaType, String mimeType,
+								 int length, String sha256, String status) {
 		this.mediaId = mediaId;
+		this.parentMediaId = parentMediaId;
 		this.path = path;
 		this.type = mediaType;
 		this.mimeType = mimeType;
@@ -136,6 +141,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonCreator
 	public static JsonMediaOutputObject factory(
 			@JsonProperty("mediaId") long mediaId,
+			@JsonProperty("parentMediaId") long parentMediaId,
 			@JsonProperty("path") String path,
 			@JsonProperty("mediaType") String mediaType,
 			@JsonProperty("mimeType") String mimeType,
@@ -150,7 +156,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
 			@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
 		JsonMediaOutputObject jsonMediaOutputObject =
-				new JsonMediaOutputObject(mediaId, path, mediaType, mimeType, length, sha256, status);
+				new JsonMediaOutputObject(mediaId, parentMediaId, path, mediaType, mimeType, length, sha256, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
 		if (frameRanges != null) {
@@ -180,7 +186,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(mediaId, path, sha256, length, status, type, mimeType);
+		return Objects.hash(parentMediaId, mediaId, path, sha256, length, status, type, mimeType);
 	}
 
 	@Override
@@ -190,7 +196,8 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 
 	private static final Comparator<JsonMediaOutputObject> DEFAULT_COMPARATOR = Comparator
 			.nullsFirst(
-					comparingLong(JsonMediaOutputObject::getMediaId)
+					comparingLong(JsonMediaOutputObject::getParentMediaId)
+					.thenComparingLong(JsonMediaOutputObject::getMediaId)
 					.thenComparing(stringCompare(JsonMediaOutputObject::getPath))
 					.thenComparing(stringCompare(JsonMediaOutputObject::getSha256))
 					.thenComparingInt(JsonMediaOutputObject::getLength)

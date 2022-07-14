@@ -32,11 +32,13 @@ import com.google.common.collect.Maps;
 import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
@@ -126,6 +128,7 @@ public class PropertiesUtil {
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
+        derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -147,6 +150,7 @@ public class PropertiesUtil {
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
         log.debug("Remote Media Directory = {}", remoteMediaDirectory);
         log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
+        log.debug("Derivative Media Directory = {}", derivativeMediaDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 
@@ -399,6 +403,26 @@ public class PropertiesUtil {
     private File temporaryMediaDirectory;
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
+    private File derivativeMediaDirectory;
+    public File getJobDerivativeMediaDirectory(long jobId) {
+        return new File(derivativeMediaDirectory, String.valueOf(jobId));
+    }
+
+    public Path createDerivativeMediaPath(long jobId, Media media) {
+        var extension = FilenameUtils.getExtension(media.getLocalPath().getFileName().toString());
+        try {
+            Path path = Paths.get(getJobDerivativeMediaDirectory(jobId).toURI())
+                    .resolve(String.format("%d/%s%s", media.getParentId(), UUID.randomUUID(), "." + extension))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            return path;
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private File markupDirectory;
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
@@ -440,6 +464,10 @@ public class PropertiesUtil {
 
     public int getArtifactParallelUploadCount() {
         return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
+    }
+
+    public int getDerivativeMediaParallelUploadCount() {
+        return mpfPropertiesConfig.getInt("detection.derivative.media.parallel.upload.count");
     }
 
     public int getSamplingInterval() {

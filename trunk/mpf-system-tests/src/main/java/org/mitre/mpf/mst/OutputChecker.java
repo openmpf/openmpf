@@ -30,25 +30,20 @@ import org.mitre.mpf.interop.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.*;
 
 public class OutputChecker {
 
     private static final Logger log = LoggerFactory.getLogger(OutputChecker.class);
 
-    // when comparing confidence, results can differ by this much (absolute value in comparison
-    private static final double delta = .01;
+    // when comparing confidence, results can differ by this much (absolute value in comparison)
+    private static final double confidenceDelta = .01;
 
     // when doing a fuzzy match and comparing confidence, results can differ by this much (scale is 1-10)
-    private static final double deltaFuzzy = 3.0;
+    private static final double confidenceDeltaFuzzy = 3.0;
 
     private final MpfErrorCollector _errorCollector;
 
@@ -96,6 +91,8 @@ public class OutputChecker {
                 actMedia.getMediaMetadata().size());
         _errorCollector.checkThat("MediaMetadata", actMedia.getMediaMetadata(), is(expMedia.getMediaMetadata()));
 
+        _errorCollector.checkThat("MarkupResult", actMedia.getMarkupResult() != null, is(expMedia.getMarkupResult() != null));
+
         Map<String, SortedSet<JsonActionOutputObject>> expExtrResults = expMedia.getDetectionTypes();
         Map<String, SortedSet<JsonActionOutputObject>> actExtrResults = actMedia.getDetectionTypes();
         // Check now to avoid NoSuchElementException during iteration
@@ -121,10 +118,25 @@ public class OutputChecker {
         while (expIter.hasNext()){
             expTrackOutput = expIter.next();
             actTrackOutput = actIter.next();
-            log.debug("Comparing expected actions at Source={} to actual actions at Source={}", expTrackOutput.getSource(),
-                    actTrackOutput.getSource());
-            compareJsonTrackOutputObjects(expTrackOutput.getTracks(), actTrackOutput.getTracks(), pipeline);
+            log.debug("Comparing expected actions at Source={} to actual actions at Source={}",
+                    expTrackOutput.getSource(), actTrackOutput.getSource());
+            compareJsonTrackOutputObjects(
+                    sortJsonActionOutputObjectSets(expectedTypeEntry.getKey(), expTrackOutput),
+                    sortJsonActionOutputObjectSets(actualTypeEntry.getKey(), actTrackOutput),
+                    pipeline);
         }
+    }
+
+    private SortedSet<JsonTrackOutputObject> sortJsonActionOutputObjectSets(String detectionType, JsonActionOutputObject actionOutput) {
+        // MEDIA track default sort order is determined by DERIVATIVE_MEDIA_ID, which can cause issues. For example,
+        // a track with { DERIVATIVE_MEDIA_ID=10, PAGE_NUM=2 } will appear before { DERIVATIVE_MEDIA_ID=9, PAGE_NUM=1 }
+        // due to lexicographical String ordering. To address this, we sort by PAGE_NUM after converting to an int.
+        if (detectionType.equals("MEDIA") &&
+                actionOutput.getTracks().stream().allMatch(t -> t.getTrackProperties().containsKey("PAGE_NUM"))) {
+            return new TreeSet<>(Comparator.comparingInt(
+                    t -> Integer.parseInt(t.getTrackProperties().get("PAGE_NUM"))));
+        }
+        return actionOutput.getTracks();
     }
 
     private void compareJsonTrackOutputObjects(SortedSet<JsonTrackOutputObject> expectedTracksSet,
@@ -182,8 +194,7 @@ public class OutputChecker {
         _errorCollector.checkThat("Track Confidence", (double) actExtrResult.getConfidence(),
                 closeTo(expExtrResult.getConfidence(), 0.01));
 
-        _errorCollector.checkThat("TrackProperties", actExtrResult.getTrackProperties(),
-                is(expExtrResult.getTrackProperties()));
+        compareProperties("Track", actExtrResult.getTrackProperties(), expExtrResult.getTrackProperties());
 
         // Check now to avoid NoSuchElementException during iteration
         _errorCollector.checkNowThat("ObjectLocations size", actObjLocations.size(), is(expObjLocations.size()));
@@ -214,7 +225,7 @@ public class OutputChecker {
                 break;
             default:
                 _errorCollector.checkThat("BestFrame Confidence", (double) actExtrResult.getExemplar().getConfidence(),
-                        closeTo(expExtrResult.getExemplar().getConfidence(), delta));
+                        closeTo(expExtrResult.getExemplar().getConfidence(), confidenceDelta));
         }
     }
 
@@ -243,9 +254,8 @@ public class OutputChecker {
                         actObjLocation.getY(), actObjLocation.getWidth(), actObjLocation.getHeight());
                 _errorCollector.checkThat("Overlap", overlap, greaterThan(0.0));
 
-
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
-                        closeTo(expObjLocation.getConfidence(), deltaFuzzy));
+                        closeTo(expObjLocation.getConfidence(), confidenceDeltaFuzzy));
                 break;
             case "TEST DEFAULT SPHINX SPEECH DETECTION PIPELINE":
                 // Only check detection properties, which should have the speech hypothesis.
@@ -267,10 +277,48 @@ public class OutputChecker {
                         is(expObjLocation.getOffsetFrame()));
                 _errorCollector.checkThat("X", actObjLocation.getX(), is(expObjLocation.getX()));
                 _errorCollector.checkThat("Y", actObjLocation.getY(), is(expObjLocation.getY()));
-                _errorCollector.checkThat("Detection Properties", actObjLocation.getDetectionProperties(),
-                        is(expObjLocation.getDetectionProperties()));
+                compareProperties("Detection", actObjLocation.getDetectionProperties(),
+                        expObjLocation.getDetectionProperties());
                 _errorCollector.checkThat("Confidence", (double) actObjLocation.getConfidence(),
-                        closeTo(expObjLocation.getConfidence(), delta));
+                        closeTo(expObjLocation.getConfidence(), confidenceDelta));
+        }
+    }
+
+    private static final List<String> PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES = Arrays.asList(
+            "DERIVATIVE_MEDIA_TEMP_PATH",
+            "DERIVATIVE_MEDIA_ID"
+    );
+
+    private static final List<String> PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON = Arrays.asList(
+            "ROTATION"
+    );
+
+    private static final double propertyDeltaFuzzy = 0.1;
+
+    /**
+     * Compare the actual properties to the expected properties
+     *
+     * @param type
+     * @param expProperties
+     * @param actProperties
+     */
+    private void compareProperties(String type,
+                                   Map<String, String> expProperties,
+                                   Map<String, String> actProperties) {
+        _errorCollector.checkThat(type + " Property Keys", actProperties.keySet(), is(expProperties.keySet()));
+
+        for (var expKey : expProperties.keySet()) {
+            if (PROPERTIES_THAT_CAN_HAVE_DIFFERENT_VALUES.contains(expKey)) {
+                continue;
+            }
+            if (PROPERTIES_THAT_REQUIRE_FUZZY_COMPARISON.contains(expKey)) {
+                _errorCollector.checkThat(type + " Property: " + expKey,
+                        Double.parseDouble(actProperties.get(expKey)),
+                        closeTo(Double.parseDouble(expProperties.get(expKey)), propertyDeltaFuzzy));
+                continue;
+            }
+            _errorCollector.checkThat(type + " Property: " + expKey,
+                    actProperties.get(expKey), is(expProperties.get(expKey)));
         }
     }
 

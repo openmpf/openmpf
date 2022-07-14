@@ -28,6 +28,8 @@
 package org.mitre.mpf.wfm.data;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -37,6 +39,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.slf4j.Logger;
@@ -160,6 +163,7 @@ public class InProgressBatchJobsService {
         _redis.clearTracks(job);
         _jobs.remove(jobId);
         _jobsWithCallbacksInProgress.remove(jobId);
+
         for (Media media : job.getMedia()) {
             if (media.getUriScheme().isRemote()) {
                 try {
@@ -184,6 +188,13 @@ public class InProgressBatchJobsService {
                             media.getConvertedMediaPath().get()), e);
                 }
             }
+        }
+
+        // Clean up derivative media directory for this job in case any media was moved to remote storage.
+        boolean hasDerivativeMedia = job.getMedia().stream().anyMatch(Media::isDerivative);
+        if (hasDerivativeMedia) {
+            Path derivativeMediaPath = _propertiesUtil.getJobDerivativeMediaDirectory(jobId).toPath();
+            IoUtils.deleteEmptyDirectoriesRecursively(derivativeMediaPath);
         }
     }
 
@@ -325,6 +336,12 @@ public class InProgressBatchJobsService {
     }
 
 
+    public synchronized void setProcessedAction(long jobId, long mediaId, int taskIndex, int actionIndex) {
+        var job = getJobImpl(jobId);
+        job.getMedia(mediaId).setProcessedAction(taskIndex, actionIndex);
+    }
+
+
 
     private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(UriScheme.FILE, UriScheme.HTTP,
                                                                            UriScheme.HTTPS);
@@ -391,6 +408,43 @@ public class InProgressBatchJobsService {
         }
     }
 
+    public synchronized Media initDerivativeMedia(long jobId,
+                                                  long mediaId,
+                                                  long parentMediaId,
+                                                  int taskIndex,
+                                                  Path localPath,
+                                                  SortedMap<String, String> trackProperties) {
+        LOG.info("Initializing derivative media from {} with id {}", localPath.toString(), mediaId);
+
+        String errorMessage = checkForLocalFileError(localPath);
+
+        var metadata = new HashMap<>(trackProperties); // include page number and other info, if available
+        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_TEMP_PATH);
+        metadata.remove(MpfConstants.DERIVATIVE_MEDIA_ID);
+        metadata.put(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE");
+
+        MediaImpl derivativeMedia = new MediaImpl(
+                mediaId,
+                parentMediaId,
+                taskIndex,
+                localPath.toUri().toString(),
+                UriScheme.FILE,
+                localPath,
+                // Derivative media do not inherit parent media properties. For example, specifying
+                // a ROTATION value on the parent may not be appropriate for the children.
+                ImmutableMap.of(),
+                ImmutableMap.of(),
+                ImmutableSet.of(),
+                ImmutableSet.of(),
+                errorMessage);
+
+        derivativeMedia.addMetadata(metadata);
+
+        getJobImpl(jobId).addDerivativeMedia(derivativeMedia);
+
+        return derivativeMedia;
+    }
+
     private static String checkForLocalFileError(Path path) {
         if (Files.notExists(path)) {
             return LOCAL_FILE_DOES_NOT_EXIST;
@@ -419,6 +473,13 @@ public class InProgressBatchJobsService {
         LOG.info("Setting job {}'s media {}'s converted media path to {}",
                  jobId, mediaId, convertedMediaPath);
         getMediaImpl(jobId, mediaId).setConvertedMediaPath(convertedMediaPath);
+    }
+
+    public synchronized void addStorageUri(long jobId, long mediaId,
+                                           String storageUri) {
+        LOG.info("Setting job {}'s media {}'s storage URI to {}",
+                jobId, mediaId, storageUri);
+        getMediaImpl(jobId, mediaId).setStorageUri(storageUri);
     }
 
     public synchronized void addFrameTimeInfo(long jobId, long mediaId,

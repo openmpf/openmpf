@@ -33,20 +33,19 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 
 public abstract class ResponseProcessor<T extends MessageLite> extends WfmProcessor {
 	private static final Logger log = LoggerFactory.getLogger(ResponseProcessor.class);
 
-	@Autowired
-	private InProgressBatchJobsService inProgressJobs;
+	private final InProgressBatchJobsService _inProgressJobs;
 
 	private final Class<T> clazz;
 
-
-	protected ResponseProcessor(Class<T> clazz) {
+	protected ResponseProcessor(InProgressBatchJobsService inProgressJobs,
+								Class<T> clazz) {
+		_inProgressJobs = inProgressJobs;
 		this.clazz = clazz;
 	}
 
@@ -72,9 +71,9 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 		exchange.getOut().getHeaders().put(MpfHeaders.CORRELATION_ID, exchange.getIn().getHeader(MpfHeaders.CORRELATION_ID));
 		exchange.getOut().getHeaders().put(MpfHeaders.SPLIT_SIZE, exchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE));
 
-		var jobExists = inProgressJobs.containsJob(jobId);
+		var jobExists = _inProgressJobs.containsJob(jobId);
 		if (jobExists) {
-			var job = inProgressJobs.getJob(jobId);
+			var job = _inProgressJobs.getJob(jobId);
 			exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
 			Object newBody = processResponse(jobId, exchange.getIn().getBody(clazz), exchange.getIn().getHeaders());
 			if (newBody != null) {

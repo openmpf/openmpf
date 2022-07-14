@@ -59,6 +59,7 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.joining;
 
@@ -173,6 +174,7 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
+                .filter(Predicate.not(Media::isDerivative))
                 .map(m -> _inProgressJobs.initMedia(
                         m.getUri(),
                         m.getMediaSpecificProperties(),
@@ -197,6 +199,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobArtifactsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobMarkupDirectory(jobId));
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobDerivativeMediaDirectory(jobId));
 
         submit(jobRequestEntity);
         return jobRequestEntity;
@@ -265,7 +268,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobRequestEntity.setStatus(jobStatus);
                 jobRequestEntity.setTimeReceived(Instant.now());
                 jobRequestEntity.setPipeline(pipelineElements.getName());
-                jobRequestEntity.setTimeCompleted(null);jobRequestEntity.setOutputObjectPath(null);
+                jobRequestEntity.setTimeCompleted(null);
+                jobRequestEntity.setOutputObjectPath(null);
                 jobRequestEntity.setOutputObjectVersion(null);
                 jobRequestEntity.setTiesDbStatus(null);
                 jobRequestEntity.setCallbackStatus(null);

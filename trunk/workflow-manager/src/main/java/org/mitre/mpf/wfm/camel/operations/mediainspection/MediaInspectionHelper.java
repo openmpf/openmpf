@@ -191,10 +191,6 @@ public class MediaInspectionHelper {
         } else {
             LOG.error("Skipping inspection of Media #{} as it is in an error state.", media.getId());
         }
-
-        if (media.isFailed()) {
-            _inProgressJobs.setJobStatus(jobId, BatchJobStatusType.ERROR);
-        }
     }
 
     private int inspectAudio(long jobId, long mediaId, Map<String, String> mediaMetadata, Metadata ffmpegMetadata) {

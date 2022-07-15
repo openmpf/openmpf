@@ -440,7 +440,7 @@ public class InProgressBatchJobsService {
 
         derivativeMedia.addMetadata(metadata);
 
-        getJob(jobId).addDerivativeMedia(derivativeMedia);
+        getJobImpl(jobId).addDerivativeMedia(derivativeMedia);
 
         return derivativeMedia;
     }

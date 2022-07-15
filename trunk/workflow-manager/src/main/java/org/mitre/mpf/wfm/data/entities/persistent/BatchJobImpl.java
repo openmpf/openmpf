@@ -88,7 +88,6 @@ public class BatchJobImpl implements BatchJob {
     }
 
 
-    @Override
     public void addDerivativeMedia(Media media) {
         _media.put(media.getId(), MediaImpl.toMediaImpl(media));
     }

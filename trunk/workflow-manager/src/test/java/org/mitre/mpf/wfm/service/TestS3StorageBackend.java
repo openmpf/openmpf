@@ -689,6 +689,9 @@ public class TestS3StorageBackend {
 
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
 
+        when(job.getId())
+                .thenReturn(jobId);
+
         when(job.getMedia(parentMediaId))
                 .thenReturn(parentMedia);
 
@@ -701,6 +704,9 @@ public class TestS3StorageBackend {
         when(parentMedia.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of());
 
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
         when(derivativeMedia.getLocalPath())
                 .thenReturn(filePath);
 
@@ -712,8 +718,8 @@ public class TestS3StorageBackend {
 
         _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
 
-        verify(derivativeMedia)
-                .setStorageUri(EXPECTED_URI.toString());
+        verify(_mockInProgressJobs)
+                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
 
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
@@ -731,6 +737,9 @@ public class TestS3StorageBackend {
 
         var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
 
+        when(job.getId())
+                .thenReturn(jobId);
+
         when(job.getMedia(parentMediaId))
                 .thenReturn(parentMedia);
 
@@ -743,6 +752,9 @@ public class TestS3StorageBackend {
         when(parentMedia.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of());
 
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
         when(derivativeMedia.getLocalPath())
                 .thenReturn(filePath);
 
@@ -754,8 +766,8 @@ public class TestS3StorageBackend {
 
         _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
 
-        verify(derivativeMedia)
-                .setStorageUri(EXPECTED_URI.toString());
+        verify(_mockInProgressJobs)
+                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
 
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }

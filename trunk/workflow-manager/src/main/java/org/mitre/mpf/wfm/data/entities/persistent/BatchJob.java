@@ -52,8 +52,6 @@ public interface BatchJob {
 
     public Media getMedia(long mediaId);
 
-    public void addDerivativeMedia(Media media);
-
     // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
     public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
 

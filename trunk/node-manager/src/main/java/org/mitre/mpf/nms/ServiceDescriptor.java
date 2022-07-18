@@ -27,7 +27,7 @@
 package org.mitre.mpf.nms;
 
 import org.mitre.mpf.nms.NodeManagerConstants.ServiceTypes;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -73,8 +73,8 @@ public class ServiceDescriptor implements Serializable {
         this.mService = service;
         this.mTargetHost = target;
         this.mRank = rank;
-        this.componentName = service.getName();
-        this.mFQN = target + FQN_SEP + this.mService.getName() + FQN_SEP + rank;
+        this.componentName = service.name();
+        this.mFQN = target + FQN_SEP + this.mService.name() + FQN_SEP + rank;
     }
 
     /**
@@ -104,7 +104,7 @@ public class ServiceDescriptor implements Serializable {
      */
     public ServiceTypes getServiceType() {
         try {
-            return ServiceTypes.valueOf(this.mService.getName().trim());
+            return ServiceTypes.valueOf(this.mService.name().trim());
         } catch (IllegalArgumentException iae) {
             return ServiceTypes.Unknown;
         }
@@ -120,8 +120,8 @@ public class ServiceDescriptor implements Serializable {
 
     @Override
     public String toString() {
-        String args = Arrays.toString(mService.getArgs().toArray(new String[]{}));
-        return "Name: " + mService.getName() + " Host: " +  this.mTargetHost + " Launcher: " + mService.getLauncher() + " App: \"" + mService.getCmdPath() + " " + args + "\"";
+        String args = Arrays.toString(mService.args().toArray(new String[]{}));
+        return "Name: " + mService.name() + " Host: " +  this.mTargetHost + " Launcher: " + mService.launcher() + " App: \"" + mService.cmdPath() + " " + args + "\"";
     }
 
     public String getActiveMqHost() {

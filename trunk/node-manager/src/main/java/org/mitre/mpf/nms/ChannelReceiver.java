@@ -147,7 +147,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
                     String mgrHost = hostNodeTypePair.getLeft();
                     managersInView.put(mgrHost, Boolean.TRUE);
 
-                    // Normally, managers are known in advance by masters after loading an XML configuration file.
+                    // Normally, managers are known in advance by masters after loading a JSON configuration file.
                     // It could happen that someone starts up a manager elsewhere on the network that isn't enumerated.
                     // Also, we have to consider that we've got one stopping/restarting over its lifecycle.
                     NodeDescriptor mgr = nodeTable.get(mgrHost);
@@ -257,7 +257,7 @@ public abstract class ChannelReceiver extends ReceiverAdapter {
     }
 
     /**
-     * 
+     *
      * @return true if no longer connected (false if still connected).
      */
     public boolean shutdown() {

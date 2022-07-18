@@ -24,55 +24,29 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.nms.xml;
+package org.mitre.mpf.nms.json;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
-import java.util.ArrayList;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
-@XStreamAlias("nodeManager")
-public class NodeManager {
-    
-    @XStreamAsAttribute()
-    private String target;
 
-    @XStreamAsAttribute()
-    private boolean autoConfigured;
-
-    @XStreamImplicit(itemFieldName="service") 
-    private List<Service> services = new ArrayList<Service>();
-
-    /**
-     * 
-     * @param target JGroup NodeManager Name
-     */
-    public NodeManager(String target) {
-         this.target = target;
+public class NodeManagers {
+    private NodeManagers() {
     }
 
-    public void setTarget(String target) {
-         this.target = target;
+    public static List<NodeManager> fromJson(InputStream inputStream) throws IOException {
+        var objectMaper = new ObjectMapper();
+        return objectMaper.readValue(inputStream, new TypeReference<>() { });
     }
 
-    public String getTarget() {
-        return this.target;
-    }
 
-    public void setAutoConfigured(boolean autoConfigured) {
-        this.autoConfigured = autoConfigured;
-    }
-
-    public boolean isAutoConfigured() {
-        return this.autoConfigured;
-    }
-
-    public void add(Service node) {
-        services.add(node);
-    }
-
-    public List<Service> getServices() {
-        return services;
+    public static void toJson(List<NodeManager> managers, OutputStream outputStream) throws IOException {
+        var objectMapper = new ObjectMapper();
+        objectMapper.writeValue(outputStream, managers);
     }
 }

@@ -30,9 +30,9 @@ import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.nms.util.SleepUtil;
-import org.mitre.mpf.nms.xml.NodeManager;
-import org.mitre.mpf.nms.xml.NodeManagers;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.NodeManager;
+import org.mitre.mpf.nms.json.NodeManagers;
+import org.mitre.mpf.nms.json.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,50 +111,50 @@ public class MasterNode {
      */
     public synchronized List<NodeManager> loadConfigFile(WritableResource nodeManagerConfig, boolean autoUnconfigNodes) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
-        // This is only used in this code area to prevent collisions due to bad XMl configs
+        // This is only used in this code area to prevent collisions due to bad JSON configs
         configuredManagerHosts.clear();
 
-        NodeManagers managers;
+        List<NodeManager> managers;
         try (InputStream inputStream = nodeManagerConfig.getInputStream()){
             log.info("Loading node manager config.");
-            managers = NodeManagers.fromXml(inputStream);
+            managers = new ArrayList<>(NodeManagers.fromJson(inputStream));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         // Iterate through node manager servers, dropping those that are invalid
-        for (NodeManager manager : managers.getAll()) {
-            if (manager.getTarget() == null) {
+        for (NodeManager manager : managers) {
+            if (manager.target() == null) {
                 log.error("The <nodeManager> tag did not contain a target attribute describing the server to use.");
                 continue;
             }
-            // If user misconfigures the xml config by putting in duplicate hostnames, complain and continue
-            if (configuredManagerHosts.containsKey(manager.getTarget())) {
-                log.error("Duplicate node-manager specified in config file. Dropping repeated node manager host: " + manager.getTarget());
+            // If user misconfigures the json config by putting in duplicate hostnames, complain and continue
+            if (configuredManagerHosts.containsKey(manager.target())) {
+                log.error("Duplicate node-manager specified in config file. Dropping repeated node manager host: " + manager.target());
                 continue;
             }
-            if (autoUnconfigNodes && manager.isAutoConfigured()) {
-                log.info("Node auto-unconfiguration is enabled. Dropping auto-configured node manager host: " + manager.getTarget());
+            if (autoUnconfigNodes && manager.autoConfigured()) {
+                log.info("Node auto-unconfiguration is enabled. Dropping auto-configured node manager host: " + manager.target());
                 continue;
             }
 
             // Note that we've seen this node manager host from the current config file
-            configuredManagerHosts.put(manager.getTarget(), false); // configuration not applied yet
+            configuredManagerHosts.put(manager.target(), false); // configuration not applied yet
         }
 
-        boolean updated = managers.getAll().removeIf(node -> !configuredManagerHosts.containsKey(node.getTarget()));
+        boolean updated = managers.removeIf(node -> !configuredManagerHosts.containsKey(node.target()));
 
         // Save the configuration if node manager servers have been dropped
         if (updated) {
             try (OutputStream outputStream = nodeManagerConfig.getOutputStream()){
                 log.info("Saving updated node manager config.");
-                NodeManagers.toXml(managers, outputStream);
+                NodeManagers.toJson(managers, outputStream);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
 
-        return managers.getAll();
+        return managers;
     }
 
     /**
@@ -174,10 +174,10 @@ public class MasterNode {
             // Tell the world about this manager we have configured (until we hear from it, designate it CONFIGURED)
             // If it already exists, the master must be restarting, don't recreate it.
             synchronized (nodeStateManager.getNodeTable()) {
-                NodeDescriptor mgr = nodeStateManager.getNodeTable().get(manager.getTarget()); // see if it exists already
+                NodeDescriptor mgr = nodeStateManager.getNodeTable().get(manager.target()); // see if it exists already
                 if (mgr == null) {
-                    mgr = new NodeDescriptor(manager.getTarget());
-                    nodeStateManager.getNodeTable().put(manager.getTarget(), mgr);
+                    mgr = new NodeDescriptor(manager.target());
+                    nodeStateManager.getNodeTable().put(manager.target(), mgr);
                     nodeStateManager.updateState(mgr, States.Configured);
                     log.info("Node descriptor created for expected (not yet discovered) NodeManager: " + mgr.getHostname());
                 } else if(!mgr.isAlive()){
@@ -187,17 +187,17 @@ public class MasterNode {
             }
 
             // Note that we've seen this node-manager host from the current config file
-            configuredManagerHosts.put(manager.getTarget(), true);
+            configuredManagerHosts.put(manager.target(), true);
 
-            if(CollectionUtils.isEmpty(manager.getServices())) {
-                log.warn("no services present in the node at target {}", manager.getTarget());
+            if(CollectionUtils.isEmpty(manager.services())) {
+                log.warn("no services present in the node at target {}", manager.target());
                 continue;
             }
 
             // Configure the nodes under this node-manager
-            for (Service serviceFromConfig : manager.getServices()) {
-                for (int rank = 1; rank <= serviceFromConfig.getCount(); ++rank) {
-                    ServiceDescriptor descriptorFromConfig = new ServiceDescriptor(serviceFromConfig, manager.getTarget(), rank);
+            for (Service serviceFromConfig : manager.services()) {
+                for (int rank = 1; rank <= serviceFromConfig.count(); ++rank) {
+                    ServiceDescriptor descriptorFromConfig = new ServiceDescriptor(serviceFromConfig, manager.target(), rank);
                     descriptorFromConfig.setActiveMqHost(activeMqBrokerUri);
 
                     serviceNamesFromConfig.add(descriptorFromConfig.getFullyQualifiedName());

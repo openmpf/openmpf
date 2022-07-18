@@ -35,7 +35,7 @@ import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.nms.*;
 import org.mitre.mpf.nms.NodeManagerConstants.States;
 import org.mitre.mpf.nms.streaming.messages.StreamingJobExitedMessage;
-import org.mitre.mpf.nms.xml.NodeManager;
+import org.mitre.mpf.nms.json.NodeManager;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobStatus;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;

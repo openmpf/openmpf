@@ -200,8 +200,8 @@ public class TestAddComponentService {
         when(_mockNodeManager.getServiceModels())
                 .thenReturn(Collections.emptyMap());
 
-        when(_mockNodeManager.addService(argThat(s -> s.getName().equals(COMPONENT_NAME)
-                    && s.getArgs().contains("/path/to/batch/lib.so"))))
+        when(_mockNodeManager.addService(argThat(s -> s.name().equals(COMPONENT_NAME)
+                    && s.args().contains("/path/to/batch/lib.so"))))
                 .thenReturn(true);
 
         // Act
@@ -238,7 +238,7 @@ public class TestAddComponentService {
                 .deployComponent(_testPackageName);
 
         verify(_mockNodeManager)
-                .addService(argThat(s -> s.getName().equals(COMPONENT_NAME)));
+                .addService(argThat(s -> s.name().equals(COMPONENT_NAME)));
 
         verify(_mockStreamingServiceManager)
                 .addService(argThat(
@@ -320,7 +320,7 @@ public class TestAddComponentService {
         verifyCustomPipelinesSaved(descriptor);
 
         verify(_mockNodeManager)
-                .addService(argThat(s -> s.getName().equals(COMPONENT_NAME)));
+                .addService(argThat(s -> s.name().equals(COMPONENT_NAME)));
 
         verify(_mockStreamingServiceManager)
                 .addService(argThat(

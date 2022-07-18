@@ -48,7 +48,7 @@ export MASTER_MPF_NODE=localhost
 export THIS_MPF_NODE=localhost
 export CORE_MPF_NODES=$THIS_MPF_NODE
 
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 export JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
 export JGROUPS_TCP_PORT=7800

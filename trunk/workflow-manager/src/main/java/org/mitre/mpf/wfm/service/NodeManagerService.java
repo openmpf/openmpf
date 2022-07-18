@@ -26,7 +26,7 @@
 
 package org.mitre.mpf.wfm.service;
 
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.wfm.util.Tuple;
@@ -43,10 +43,6 @@ public interface NodeManagerService {
     // this method is used by the ComponentRegistrationController but should not be
     // publicly exposed as part of the REST API
     public boolean addService(Service service);
-
-    // this method is used by the ComponentRegistrationController but should not be
-    // publicly exposed as part of the REST API
-    public Tuple<Boolean, String> removeService(Service service);
 
     public Tuple<Boolean, String> removeService(String serviceName);
 

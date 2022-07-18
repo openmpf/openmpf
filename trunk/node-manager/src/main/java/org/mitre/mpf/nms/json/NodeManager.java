@@ -23,47 +23,26 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
-package org.mitre.mpf.nms.xml;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
-import java.io.Serializable;
+package org.mitre.mpf.nms.json;
 
-/**
- * Backing class for Service (node) elements of a nodeManager element 
- * 
- * This uses {@link XStreamAlias}, so when building use {@link XStream#processAnnotations}
- */
-@XStreamAlias("environmentVariable")
-public class EnvironmentVariable implements Serializable {
-   
-    private String key;
-    
-    private String value;
-    
-    private String sep;
-    
-    public String getKey() {
-        return key;
+import java.util.ArrayList;
+import java.util.List;
+
+public record NodeManager(
+        String target, // JGroup NodeManager Name
+        boolean autoConfigured,
+        List<Service> services) {
+
+    public NodeManager(String target, boolean autoConfigured) {
+        this(target, autoConfigured, new ArrayList<>());
     }
 
-    public void setKey(String key) {
-        this.key = key;
+    public NodeManager(String target) {
+        this(target, false);
     }
 
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-    
-    public String getSep() {
-        return sep;
-    }
-
-    public void setSep(String sep) {
-        this.sep = sep;
+    public void add(Service service) {
+        services.add(service);
     }
 }

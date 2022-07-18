@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -38,9 +37,9 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -437,23 +436,31 @@ public class AggregateJobPropertiesUtil {
 
 
 
-    // Get collection of tasks that need to be merged with the tasks that come immediately before them.
-    public Set<Integer> getTasksToMerge(Media media, BatchJob job) {
-        var tasksToMerge = new HashSet<Integer>();
-        for (int taskIndex = 1; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
-            Task task = job.getPipelineElements().getTask(taskIndex);
+    // Get map of tasks that need to be merged. Values are the previous tasks to merge with.
+    public Map<Integer, Integer> getTasksToMerge(Media media, BatchJob job) {
+        var tasksToMerge = new HashMap<Integer, Integer>();
 
-            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
-                ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
+        for (var jobPart : JobPartsIter.of(job, media)) {
+            if (jobPart.getTaskIndex() == 0
+                    || jobPart.getAlgorithm().getActionType() != ActionType.DETECTION) {
+                continue;
+            }
 
-                boolean shouldMergeWithPreviousTask = Boolean.parseBoolean(
-                        getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, job, media, action));
+            boolean shouldMerge = Boolean.parseBoolean(
+                    getValue(MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
+            if (!shouldMerge) {
+                continue;
+            }
 
-                if (actionType == ActionType.DETECTION && shouldMergeWithPreviousTask) {
-                    tasksToMerge.add(taskIndex);
+            for (int prevTaskIndex = jobPart.getTaskIndex() - 1;
+                 prevTaskIndex >= 0;
+                 prevTaskIndex--) {
+                if (media.wasActionProcessed(prevTaskIndex, 0)) {
+                    tasksToMerge.put(jobPart.getTaskIndex(), prevTaskIndex);
+                    break;
                 }
             }
+
         }
 
         return tasksToMerge;
@@ -479,5 +486,29 @@ public class AggregateJobPropertiesUtil {
     public boolean isExemptFromTrackMerging(String type) {
         return _propertiesUtil.getTrackMergingExemptionList().stream()
                 .anyMatch(type::equalsIgnoreCase);
+    }
+
+    public boolean actionAppliesToMedia(BatchJob job, Media media, Action action) {
+        return actionAppliesToMedia(
+                media,
+                Boolean.parseBoolean(getValue("DERIVATIVE_MEDIA_ONLY", job, media, action)),
+                Boolean.parseBoolean(getValue("SOURCE_MEDIA_ONLY", job, media, action)));
+    }
+
+    public static boolean actionAppliesToMedia(Media media, Map<String, String> combinedProperties) {
+        return actionAppliesToMedia(
+                media,
+                Boolean.parseBoolean(combinedProperties.get("DERIVATIVE_MEDIA_ONLY")),
+                Boolean.parseBoolean(combinedProperties.get("SOURCE_MEDIA_ONLY")));
+    }
+
+    private static boolean actionAppliesToMedia(Media media, boolean isDerivativeMediaOnly, boolean isSourceMediaOnly) {
+        if (isDerivativeMediaOnly && !media.isDerivative()) {
+            return false;
+        }
+        if (isSourceMediaOnly && media.isDerivative()) {
+            return false;
+        }
+        return true;
     }
 }

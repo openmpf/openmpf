@@ -32,7 +32,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.MutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
@@ -41,8 +44,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +59,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -71,8 +73,6 @@ import java.util.concurrent.CompletionException;
  */
 @Component
 public class TiesDbService {
-
-    public static String URL_PROP = "TIES_DB_URL";
 
     private static final Logger LOG = LoggerFactory.getLogger(TiesDbService.class);
 
@@ -106,46 +106,78 @@ public class TiesDbService {
                                                  URI outputObjectLocation,
                                                  String outputObjectSha,
                                                  TrackCounter trackCounter) {
-        var futures = new ArrayList<CompletableFuture<Void>>();
+        var parentWithDerivativeCounts = new HashMap<ParentMediaAlgoTiesDbUrl, TrackTypeCount>();
 
-        for (var media : job.getMedia()) {
+        for (var jobPart : JobPartsIter.of(job)) {
+            var media = jobPart.getMedia();
+
             boolean outputLastTaskOnly
                     = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
-            var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-
-            for (var jobPart : JobPartsIter.of(job, media)) {
-                if (outputLastTaskOnly
-                        && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) {
-                    continue;
-                }
-
-                if (tasksToMerge.contains(jobPart.getTaskIndex() + 1)) {
-                    continue;
-                }
-
-                var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(URL_PROP, jobPart);
-                if (tiesDbUrl == null || tiesDbUrl.isBlank()) {
-                    continue;
-                }
-
-                var trackCountEntry = trackCounter.get(
-                        jobPart.getMedia().getId(),
-                        jobPart.getTaskIndex(),
-                        jobPart.getActionIndex());
-                var algoAndDetectionType = getAlgoAndTypeToUse(
-                        jobPart, trackCountEntry.getCount(), trackCounter, tasksToMerge);
-
-                futures.add(addActionAssertion(
-                        jobPart,
-                        jobStatus,
-                        timeCompleted,
-                        outputObjectLocation,
-                        outputObjectSha,
-                        algoAndDetectionType.getLeft(),
-                        algoAndDetectionType.getRight(),
-                        trackCountEntry.getCount(),
-                        tiesDbUrl));
+            if (outputLastTaskOnly && jobPart.getTaskIndex()
+                    != job.getPipelineElements().getTaskCount() - 1) {
+                // suppressed
+                continue;
             }
+
+            var tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+            if (tasksToMerge.containsValue(jobPart.getTaskIndex())) {
+                // task will be merged away
+                continue;
+            }
+
+            var trackCountEntry = trackCounter.get(jobPart);
+            int trackCount;
+            if (trackCountEntry == null) {
+                // this part of the job was not performed on this media
+                boolean mergeWithPrevTask = Boolean.parseBoolean(
+                        _aggregateJobPropertiesUtil.getValue(
+                                MpfConstants.OUTPUT_MERGE_WITH_PREVIOUS_TASK_PROPERTY, jobPart));
+                if (mergeWithPrevTask) {
+                    // It is a merge source so its algorithm name should not appear in the output object.
+                    continue;
+                }
+                // Ensure that even if no derivative media was generated, or this task was skipped because no tracks
+                // were generated in the previous task, that we create a "NO TRACKS" entry.
+                trackCount = 0;
+            }
+            else {
+                trackCount = trackCountEntry.getCount();
+            }
+
+            var parentMedia = media.isDerivative() ? job.getMedia(media.getParentId()) : media;
+            var algoAndTypeAndTiesDbUrlToUse = getAlgoAndTypeAndTiesDbUrlToUse(
+                    jobPart,
+                    parentMedia,
+                    trackCount,
+                    trackCounter,
+                    tasksToMerge);
+            String algoName = algoAndTypeAndTiesDbUrlToUse.getLeft();
+            String trackType = algoAndTypeAndTiesDbUrlToUse.getMiddle();
+            String tiesDbUrl = algoAndTypeAndTiesDbUrlToUse.getRight();
+
+            if (StringUtils.isBlank(tiesDbUrl)) {
+                continue;
+            }
+
+            parentWithDerivativeCounts.merge(
+                    new ParentMediaAlgoTiesDbUrl(parentMedia.getId(), algoName, tiesDbUrl),
+                    new TrackTypeCount(trackType, trackCount),
+                    TrackTypeCount::merge);
+        }
+
+        var futures = new ArrayList<CompletableFuture<Void>>();
+        for (var entry : parentWithDerivativeCounts.entrySet()) {
+            futures.add(addActionAssertion(
+                    job,
+                    jobStatus,
+                    timeCompleted,
+                    outputObjectLocation,
+                    outputObjectSha,
+                    job.getMedia(entry.getKey().getParentMediaId()),
+                    entry.getKey().getTiesDbUrl(),
+                    entry.getKey().getAlgorithmName(),
+                    entry.getValue().getTrackType(),
+                    entry.getValue().getCount()));
         }
         if (futures.isEmpty()) {
             return ThreadUtil.completedFuture(null);
@@ -158,7 +190,7 @@ public class TiesDbService {
 
 
     private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
-        var joiner = new StringJoiner(" ");
+        var joiner = new StringJoiner("\n\n ");
         for (var future : futures) {
             try {
                 future.join();
@@ -172,50 +204,61 @@ public class TiesDbService {
     }
 
 
-    private static Pair<String, String> getAlgoAndTypeToUse(
+    private Triple<String, String, String> getAlgoAndTypeAndTiesDbUrlToUse(
             JobPart jobPart,
+            Media parentMedia,
             int trackCount,
             TrackCounter trackCounter,
-            Collection<Integer> tasksToMerge) {
+            Map<Integer, Integer> tasksToMerge) {
         int taskIndexToUse = jobPart.getTaskIndex();
         int actionIndexToUse = jobPart.getActionIndex();
-        while (tasksToMerge.contains(taskIndexToUse) && taskIndexToUse > 0) {
-            taskIndexToUse -= 1;
+
+        // Traverse the chain of merged tasks backwards to find the first one in the chain.
+        while (tasksToMerge.containsKey(taskIndexToUse)) {
+            taskIndexToUse = tasksToMerge.get(taskIndexToUse);
             actionIndexToUse = 0;
         }
 
         var algo = jobPart.getJob().getPipelineElements()
                 .getAlgorithm(taskIndexToUse, actionIndexToUse);
 
+        var action = jobPart.getJob().getPipelineElements()
+                .getAction(taskIndexToUse, actionIndexToUse);
+
+        // When actions are merged away, always use the URL for the action at the beginning of the merge chain.
+        var tiesDbUrl = _aggregateJobPropertiesUtil.getValue(
+                MpfConstants.TIES_DB_URL, jobPart.getJob(), parentMedia, action);
+
         if (trackCount == 0) {
-            return Pair.of(algo.getName(), "NO TRACKS");
+            return Triple.of(algo.getName(), "NO TRACKS", tiesDbUrl);
         }
         else {
             var trackCountEntry = trackCounter.get(
                     jobPart.getMedia().getId(),
                     taskIndexToUse,
                     actionIndexToUse);
-            return Pair.of(algo.getName(), trackCountEntry.getTrackType());
+            return Triple.of(algo.getName(), trackCountEntry.getTrackType(), tiesDbUrl);
         }
     }
 
 
     private CompletableFuture<Void> addActionAssertion(
-            JobPart jobPart,
+            BatchJob job,
             BatchJobStatusType jobStatus,
             Instant timeCompleted,
             URI outputObjectLocation,
             String outputObjectSha,
-            String algoName,
+            Media media,
+            String tiesDbUrl,
+            String algorithm,
             String trackType,
-            int trackCount,
-            String tiesDbUrl) {
+            int trackCount) {
 
         var dataObject = Map.ofEntries(
-                Map.entry("pipeline", jobPart.getPipeline().getName()),
-                Map.entry("algorithm", algoName),
+                Map.entry("pipeline", job.getPipelineElements().getName()),
+                Map.entry("algorithm", algorithm),
                 Map.entry("outputType", trackType),
-                Map.entry("jobId", _propertiesUtil.getExportedJobId(jobPart.getJob().getId())),
+                Map.entry("jobId", _propertiesUtil.getExportedJobId(job.getId())),
                 Map.entry("outputUri", outputObjectLocation.toString()),
                 Map.entry("sha256OutputHash", outputObjectSha),
                 Map.entry("processDate", timeCompleted),
@@ -226,9 +269,10 @@ public class TiesDbService {
         );
 
         var assertionId = getAssertionId(
-                _propertiesUtil.getExportedJobId(jobPart.getJob().getId()),
+                _propertiesUtil.getExportedJobId(job.getId()),
                 trackType,
-                jobPart.getAlgorithm().getName(), timeCompleted);
+                algorithm,
+                timeCompleted);
 
         var assertion = Map.of(
                 "assertionId", assertionId,
@@ -237,13 +281,16 @@ public class TiesDbService {
                 "system", "OpenMPF",
                 "dataObject", dataObject);
 
-        LOG.info("Posting assertion to TiesDb for the {} action.",
-                 jobPart.getAction().getName());
+        LOG.info("Posting assertion to TiesDb for the {} algorithm. Track type = {}. Track count = {}",
+                algorithm,
+                trackType,
+                trackCount);
 
-        return postAssertion(jobPart.getAction().getName(),
-                             tiesDbUrl,
-                             jobPart.getMedia().getSha256(),
-                             assertion);
+        return postAssertion(
+                algorithm,
+                tiesDbUrl,
+                media.getSha256(),
+                assertion);
     }
 
 
@@ -258,7 +305,7 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(String action,
+    private CompletableFuture<Void> postAssertion(String algorithm,
                                                   String tiesDbUrl,
                                                   String mediaSha,
                                                   Map<String, Object> assertions) {
@@ -271,7 +318,7 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            return ThreadUtil.failedFuture(convertError(tiesDbUrl, action, e));
+            return ThreadUtil.failedFuture(convertError(tiesDbUrl, algorithm, e));
         }
 
         try {
@@ -291,13 +338,13 @@ public class TiesDbService {
                     .thenAccept(TiesDbService::checkResponse)
                     .handle((x, err) -> {
                         if (err != null) {
-                            throw convertError(fullUrl.toString(), action, err);
+                            throw convertError(fullUrl.toString(), algorithm, err);
                         }
                         return null;
                     });
         }
         catch (JsonProcessingException e) {
-            return ThreadUtil.failedFuture(convertError(fullUrl.toString(), action, e));
+            return ThreadUtil.failedFuture(convertError(fullUrl.toString(), algorithm, e));
         }
     }
 
@@ -321,17 +368,47 @@ public class TiesDbService {
     }
 
 
-    private static TiesDbException convertError(String url, String action, Throwable error) {
+    private static TiesDbException convertError(String url, String algorithm, Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
         var errorMessage = String.format(
                 "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s.",
-                url, action, error);
+                url, algorithm, error);
         LOG.error(errorMessage, error);
         return new TiesDbException(errorMessage, error);
     }
 
+    private static class ParentMediaAlgoTiesDbUrl extends MutableTriple<Long, String, String> {
+        public ParentMediaAlgoTiesDbUrl(Long parent, String algo, String url) {
+            super(parent, algo, url);
+        }
+
+        public long getParentMediaId()  { return getLeft(); }
+        public String getAlgorithmName() { return getMiddle(); }
+        public String getTiesDbUrl() { return getRight(); }
+    }
+
+    private static class TrackTypeCount extends MutablePair<String, Integer> {
+        public TrackTypeCount(String trackType, Integer trackCount) {
+            super(trackType, trackCount);
+        }
+
+        public String getTrackType() { return getLeft(); }
+        public int getCount() { return getRight(); }
+
+        public TrackTypeCount merge(TrackTypeCount other) {
+            if (getCount() == 0) {
+                return other;
+            }
+            else if (other.getCount() == 0) {
+                return this;
+            }
+            else {
+                return new TrackTypeCount(getTrackType(), getCount() + other.getCount());
+            }
+        }
+    }
 
     private static class TiesDbException extends RuntimeException {
         public TiesDbException(String message, Throwable cause) {

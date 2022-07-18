@@ -27,12 +27,20 @@
 
 package org.mitre.mpf.wfm.data.entities.transients;
 
+import org.mitre.mpf.wfm.util.JobPart;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class TrackCounter {
 
     private final Map<TrackCountKey, TrackCountEntry> _counts = new HashMap<>();
+
+    public TrackCountEntry get(JobPart jobPart) {
+        return _counts.get(new TrackCountKey(jobPart.getMedia().getId(),
+                                             jobPart.getTaskIndex(),
+                                             jobPart.getActionIndex()));
+    }
 
     public TrackCountEntry get(long mediaId, int taskIdx, int actionIdx) {
         return _counts.get(new TrackCountKey(mediaId, taskIdx, actionIdx));

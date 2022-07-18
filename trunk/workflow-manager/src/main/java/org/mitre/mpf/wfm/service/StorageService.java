@@ -34,9 +34,12 @@ import org.mitre.mpf.interop.JsonIssueDetails;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,7 +47,11 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Semaphore;
 
 @Service
 public class StorageService {
@@ -66,7 +73,6 @@ public class StorageService {
             S3StorageBackend s3StorageBackend,
             CustomNginxStorageBackend nginxStorageBackend,
             LocalStorageBackend localStorageBackend) {
-
         _inProgressJobs = inProgressJobs;
         _propertiesUtil = propertiesUtil;
         _remoteBackends = ImmutableList.of(s3StorageBackend, nginxStorageBackend);
@@ -149,7 +155,7 @@ public class StorageService {
                                request.getJobId()), e);
         _inProgressJobs.addWarning(
                 request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                "Artifacts were stored locally because storing them remotely failed due to: " + e);
+                "Some artifacts were stored locally because storing them remotely failed due to: " + e);
     }
 
 
@@ -167,17 +173,93 @@ public class StorageService {
                     "Failed to remotely store markup for job id %d. It will be stored locally instead.",
                     markupResult.getJobId()), ex);
 
-
-            String message = "Markup was stored locally because storing it remotely failed due to: " + ex;
+            String message = "Some markup was stored locally because storing it remotely failed due to: " + ex;
             String existingMessage = markupResult.getMessage();
             if (existingMessage != null && !existingMessage.isEmpty()) {
                 message = existingMessage + "; " + message;
             }
             markupResult.setMessage(message);
-            markupResult.setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
+            markupResult.setMarkupStatus(markupResult.getMarkupStatus().onWarning());
             _inProgressJobs.addWarning(markupResult.getJobId(), markupResult.getMediaId(),
                                        IssueCodes.REMOTE_STORAGE_UPLOAD, message);
         }
         _localBackend.store(markupResult);
+    }
+
+
+    public void storeDerivativeMedia(BatchJob job) {
+        var semaphore = new Semaphore(Math.max(
+                1, _propertiesUtil.getDerivativeMediaParallelUploadCount()));
+
+        var futures = new ArrayList<CompletableFuture<Void>>();
+
+        for (Media media : job.getMedia()) {
+            if (!media.isDerivative()) {
+                continue;
+            }
+
+            try {
+                semaphore.acquire();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+
+            var future = ThreadUtil
+                    .runAsync(() -> storeDerivativeMedia(job, media))
+                    .whenComplete((x, y) -> semaphore.release());
+            futures.add(future);
+        }
+        ThreadUtil.allOf(futures).join();
+    }
+
+
+    private void storeDerivativeMedia(BatchJob job, Media media) {
+        Exception remoteException = null;
+        try {
+            for (var backend : _remoteBackends) {
+                if (backend.canStoreDerivativeMedia(job, media.getParentId())) {
+                    backend.storeDerivativeMedia(job, media);
+                    return;
+                }
+            }
+        }
+        catch (StorageException | IOException e) {
+            remoteException = e;
+            handleDerivativeMediaRemoteStorageFailure(job.getId(), media, e);
+        }
+
+        try {
+            _localBackend.storeDerivativeMedia(job, media);
+        }
+        catch (IOException localException) {
+            if (remoteException != null) {
+                localException.addSuppressed(remoteException);
+            }
+            handleDerivativeMediaLocalStorageFailure(job.getId(), media, localException);
+        }
+    }
+
+
+    private void handleDerivativeMediaRemoteStorageFailure(long jobId, Media media, Throwable error) {
+        if (error instanceof CompletionException && error.getCause() != null) {
+            error = error.getCause();
+        }
+        LOG.warn(String.format("Failed to store derivative media with media id %d and parent media id %d for " +
+                        "job id %d. File will be stored locally instead.",
+                media.getId(), media.getParentId(), jobId), error);
+        _inProgressJobs.addWarning(
+                jobId, media.getId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
+                "Derivative media was stored locally because storing it remotely failed due to: " + error);
+    }
+
+    private void handleDerivativeMediaLocalStorageFailure(long jobId, Media media, Exception e) {
+        LOG.warn(String.format("Failed to store derivative media with media id %d and parent media id %d for " +
+                        "job id %d. File will remain in %s.",
+                media.getId(), media.getParentId(), jobId, media.getLocalPath()), e);
+        _inProgressJobs.addWarning(
+                jobId, media.getId(), IssueCodes.LOCAL_STORAGE,
+                "Derivative media was not moved because storing it locally failed due to: " + e);
     }
 }

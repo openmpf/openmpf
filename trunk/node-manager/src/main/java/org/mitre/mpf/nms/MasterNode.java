@@ -111,7 +111,7 @@ public class MasterNode {
      */
     public synchronized List<NodeManager> loadConfigFile(WritableResource nodeManagerConfig, boolean autoUnconfigNodes) {
         // Don't let the config file have multiple node-managers with the same hostname/IP
-        // This is only used in this code area to prevent collisions due to bad XMl configs
+        // This is only used in this code area to prevent collisions due to bad JSON configs
         configuredManagerHosts.clear();
 
         List<NodeManager> managers;

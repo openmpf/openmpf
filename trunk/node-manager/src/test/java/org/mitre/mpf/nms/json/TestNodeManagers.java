@@ -60,8 +60,8 @@ public class TestNodeManagers {
         NodeManagers.toJson(List.of(testNode1, testNode2), outputStream);
         String content = outputStream.toString();
 
-        Assert.assertFalse("XML should not be empty.", content.isEmpty());
-        Assert.assertFalse("XML should not contain \"" + SERVICE_REFERENCE + "\".",
+        Assert.assertFalse("JSON should not be empty.", content.isEmpty());
+        Assert.assertFalse("JSON should not contain \"" + SERVICE_REFERENCE + "\".",
                 content.contains(SERVICE_REFERENCE));
 
         outputStream.close();

@@ -23,41 +23,10 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  ******************************************************************************/
+package org.mitre.mpf.nms.json;
 
-package org.mitre.mpf.rest.api.node;
+import java.io.Serializable;
 
-import org.mitre.mpf.nms.ServiceDescriptor;
 
-public class DeployedServiceModel {
-	private String name;
-	private int rank;
-	private String /*States*/ lastKnownState;
-
-	private boolean unlaunchable;
-	private String kind;
-	private int serviceCount;
-	private int restartCount;
-
-    public DeployedServiceModel() {}
-
-	public DeployedServiceModel(ServiceDescriptor sd) {
-		//serviceName
-		this.name = sd.getFullyQualifiedName();
-		this.rank = sd.getRank();
-		this.lastKnownState = sd.getLastKnownState().name();
-		this.unlaunchable = sd.getFatalIssueFlag();
-		if(sd.getService() != null) {
-			this.kind = sd.getService().launcher();
-			this.serviceCount = sd.getService().count();
-		}
-		this.restartCount = sd.getRestarts();
-	}
-
-	public String getName() { return name; }
-	public Integer getRank() { return rank; }
-	public String getLastKnownState() { return lastKnownState; }
-	public boolean isUnlaunchable() { return unlaunchable; }
-	public String getKind() { return kind; }
-	public int getServiceCount() { return serviceCount; }
-	public int getRestartCount() { return restartCount; }
+public record EnvironmentVariable(String key, String value, String sep) implements Serializable {
 }

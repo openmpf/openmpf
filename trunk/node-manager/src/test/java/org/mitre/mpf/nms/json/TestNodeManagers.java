@@ -24,40 +24,46 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api.node;
+package org.mitre.mpf.nms.json;
 
-import org.mitre.mpf.nms.ServiceDescriptor;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class DeployedServiceModel {
-	private String name;
-	private int rank;
-	private String /*States*/ lastKnownState;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
 
-	private boolean unlaunchable;
-	private String kind;
-	private int serviceCount;
-	private int restartCount;
+public class TestNodeManagers {
 
-    public DeployedServiceModel() {}
+    private final String SERVICE_REFERENCE = "service reference=";
 
-	public DeployedServiceModel(ServiceDescriptor sd) {
-		//serviceName
-		this.name = sd.getFullyQualifiedName();
-		this.rank = sd.getRank();
-		this.lastKnownState = sd.getLastKnownState().name();
-		this.unlaunchable = sd.getFatalIssueFlag();
-		if(sd.getService() != null) {
-			this.kind = sd.getService().launcher();
-			this.serviceCount = sd.getService().count();
-		}
-		this.restartCount = sd.getRestarts();
-	}
+    @Test
+    public void testToJson() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-	public String getName() { return name; }
-	public Integer getRank() { return rank; }
-	public String getLastKnownState() { return lastKnownState; }
-	public boolean isUnlaunchable() { return unlaunchable; }
-	public String getKind() { return kind; }
-	public int getServiceCount() { return serviceCount; }
-	public int getRestartCount() { return restartCount; }
+        Service testService = new Service(
+                "SomeTestService",
+                 "SomeTestPath",
+                 1,
+                 "simple",
+                 List.of("SomeTestArg", "MPF.DETECTION_TEST_REQUEST"),
+                 List.of(),
+                 "",
+                 "");
+
+        NodeManager testNode1 = new NodeManager("somehost1");
+        testNode1.add(testService);
+
+        NodeManager testNode2 = new NodeManager("somehost2");
+        testNode2.add(testService);
+
+        NodeManagers.toJson(List.of(testNode1, testNode2), outputStream);
+        String content = outputStream.toString();
+
+        Assert.assertFalse("JSON should not be empty.", content.isEmpty());
+        Assert.assertFalse("JSON should not contain \"" + SERVICE_REFERENCE + "\".",
+                content.contains(SERVICE_REFERENCE));
+
+        outputStream.close();
+    }
 }

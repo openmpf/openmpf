@@ -27,11 +27,12 @@
 
 package org.mitre.mpf.rest.api.pipelines;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.util.AllNotBlank;
+import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 import org.mitre.mpf.rest.api.util.Utils;
 
 import javax.validation.Valid;
@@ -39,7 +40,8 @@ import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
 
-@ScriptAssert(lang = "javascript", script = "_this.getSupportsBatchProcessing() || _this.getSupportsStreamProcessing()",
+@MethodReturnsTrue(
+        method = "supportsBatchOrStreaming",
         message = "must support batch processing, stream processing, or both")
 public class Algorithm implements PipelineElement {
 
@@ -109,6 +111,11 @@ public class Algorithm implements PipelineElement {
                 .filter(p -> p.getName().equalsIgnoreCase(name))
                 .findAny()
                 .orElse(null);
+    }
+
+    @JsonIgnore
+    public boolean supportsBatchOrStreaming() {
+        return getSupportsBatchProcessing() || getSupportsStreamProcessing();
     }
 
 

@@ -26,15 +26,16 @@
 
 package org.mitre.mpf.wfm.service.component;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.ScriptAssert;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.util.MethodReturnsTrue;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -43,7 +44,8 @@ import java.util.Collection;
 import java.util.Objects;
 
 
-@ScriptAssert(lang = "javascript", script = "_this.supportsBatchProcessing() || _this.supportsStreamProcessing()",
+@MethodReturnsTrue(
+        method = "supportsBatchOrStreaming",
         message = "must contain batchLibrary, streamLibrary, or both")
 public class JsonComponentDescriptor {
 
@@ -98,6 +100,11 @@ public class JsonComponentDescriptor {
 
     public boolean supportsStreamProcessing() {
         return StringUtils.isNotBlank(_streamLibrary);
+    }
+
+    @JsonIgnore
+    public boolean supportsBatchOrStreaming() {
+        return supportsBatchProcessing() || supportsStreamProcessing();
     }
 
     private final ImmutableList<EnvironmentVariable> _environmentVariables;

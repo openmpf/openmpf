@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
@@ -51,8 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.io.PathResource;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,21 +58,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
 @Controller
@@ -105,26 +96,6 @@ public class MarkupController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
-    private List<MarkupResultModel> getMarkupResultsJson(Long jobId) {
-        List<MarkupResultModel> markupResultModels = new ArrayList<>();
-        if (jobId != null) {
-            for (MarkupResult markupResult : markupResultDao.findByJobId(jobId)) {
-                markupResultModels.add(convertMarkupResult(markupResult));
-            }
-        } else {
-            for (MarkupResult markupResult : markupResultDao.findAll()) {
-                markupResultModels.add(convertMarkupResult(markupResult));
-            }
-        }
-        return markupResultModels;
-    }
-
-    @RequestMapping(value = "/markup/results", method = RequestMethod.GET)
-    @ResponseBody
-    public List<MarkupResultModel> getMarkupResultsJsonSession(@ApiParam(value = "Job id - OPTIONAL") @RequestParam(value = "jobId", required = false) Long jobId) {
-        return getMarkupResultsJson(jobId);
-    }
-
     //https://datatables.net/manual/server-side#Sent-parameters
     //draw is the counter of how many times it has called back
     //length is how many to return
@@ -132,114 +103,114 @@ public class MarkupController {
     //search is string to filter
     @RequestMapping(value = {"/markup/get-markup-results-filtered"}, method = RequestMethod.POST)
     @ResponseBody
-    public MarkupPageListModel getMarkupResultsFiltered(@RequestParam(value = "jobId", required = true) String jobId,
-                                           @RequestParam(value = "draw", required = false) int draw,
-                                           @RequestParam(value = "start", required = false) int start,
-                                           @RequestParam(value = "length", required = false) int length,
-                                           @RequestParam(value = "search", required = false) String search,
-                                           @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
+    public ResponseEntity<?> getMarkupResultsFiltered(
+            @RequestParam(value = "jobId", required = true) String jobId,
+            @RequestParam(value = "draw", required = false) int draw,
+            @RequestParam(value = "start", required = false) int start,
+            @RequestParam(value = "length", required = false) int length,
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
         log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
 
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
-        //all MarkupResult objects
-        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
-        Collections.reverse(markupResults);
-
-        //convert markup objects
-        List<MarkupResultConvertedModel> markupResultModels = new ArrayList<>();
-        for (MarkupResult markupResult : markupResults) {
-            MarkupResultConvertedModel model = convertMarkupResultWithContentType(markupResult);
-            markupResultModels.add(model);
+        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
+        if (jobRequest == null) {
+            return ResponseEntity.notFound().build();
         }
 
-        //add job media that may exist without markup
-        JobRequest jobRequest = jobRequestDao.findById(internalJobId);
-        if (jobRequest != null) {
-            BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+        BatchJob job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
 
-            for (Media med : job.getMedia()) {
-                MarkupResultConvertedModel model = new MarkupResultConvertedModel();
-                model.setJobId(jobId);
-                model.setPipeline(job.getPipelineElements().getName());
-                model.setSourceUri(med.getUri());
-                model.setSourceFileAvailable(false);
-                if (med.getUri() != null) {
-                    Path path = IoUtils.toLocalPath(med.getUri()).orElse(null);
-                    if (path == null || Files.exists(path)) {
-                        String downloadUrl = UriComponentsBuilder.fromPath("server/download")
-                                .queryParam("sourceUri", med.getUri())
-                                .queryParam("jobId", jobId)
-                                .toUriString();
-                        model.setSourceDownloadUrl(downloadUrl);
-                        model.setSourceFileAvailable(true);
-                    }
-                    if (path != null && Files.exists(path)) {
-                        model.setSourceURIContentType(med.getMimeType());
-                        model.setSourceImgUrl("server/node-image?nodeFullPath=" + path);
-                    }
-                }
-                //add to the list
-                boolean found = false;
-                for (MarkupResultConvertedModel existing : markupResultModels) {
-                    if (existing.getSourceUri().equals(model.getSourceUri())) found = true;
-                }
-                if (!found) markupResultModels.add(model);
+        List<MarkupResult> markupResults = markupResultDao.findByJobId(internalJobId);
+
+        //convert markup objects
+        Map<Long, MarkupResultConvertedModel> markupResultModels = new HashMap<>();
+        for (MarkupResult markupResult : markupResults) {
+            MarkupResultConvertedModel model =
+                    convertMarkupResultWithContentType(markupResult, job.getMedia(markupResult.getMediaId()));
+            markupResultModels.put(model.getMediaId(), model);
+        }
+
+        //add media that doesn't have markup
+        for (Media med : job.getMedia()) {
+            if (markupResultModels.containsKey(med.getId())) {
+                continue;
             }
+
+            MarkupResultConvertedModel model = new MarkupResultConvertedModel();
+            model.setJobId(jobId);
+            model.setMediaId(med.getId());
+            model.setParentMediaId(med.getParentId());
+            model.setPipeline(job.getPipelineElements().getName());
+            model.setSourceUri(med.getPersistentUri());
+            model.setSourceFileAvailable(false);
+            if (!StringUtils.isBlank(med.getPersistentUri())) {
+                Path path = IoUtils.toLocalPath(med.getPersistentUri()).orElse(null);
+                if (path == null || Files.exists(path)) { // if remote media or available local media
+                    String downloadUrl = UriComponentsBuilder.fromPath("server/download")
+                            .queryParam("sourceUri", med.getPersistentUri())
+                            .queryParam("jobId", jobId)
+                            .toUriString();
+                    model.setSourceDownloadUrl(downloadUrl);
+                    model.setSourceFileAvailable(true);
+                    model.setSourceMediaType(med.getType().toString());
+                }
+            }
+            markupResultModels.put(med.getId(), model);
         }
 
         //handle search
-        List<MarkupResultConvertedModel> markupResultModelsFinal = new ArrayList<MarkupResultConvertedModel>();
-        for (MarkupResultConvertedModel markupResult : markupResultModels) {
+        List<MarkupResultConvertedModel> markupResultModelsFiltered = new ArrayList<>();
+        for (MarkupResultConvertedModel markupResult : markupResultModels.values()) {
             if (search != null && search.length() > 0) {
                 search = search.toLowerCase();
-                if ((markupResult.getJobId() + "").toLowerCase().contains(search) ||
+                if ((markupResult.getJobId() + "").contains(search) ||
+                        (markupResult.getParentMediaId() + "").contains(search) ||
+                        (markupResult.getMediaId() + "").contains(search) ||
                         (markupResult.getMarkupUri() != null && markupResult.getMarkupUri().toLowerCase().contains(search)) ||
                         (markupResult.getSourceUri() != null && markupResult.getSourceUri().toLowerCase().contains(search))) {
-                    markupResultModelsFinal.add(markupResult);
+                    markupResultModelsFiltered.add(markupResult);
                 }
             } else {
-                markupResultModelsFinal.add(markupResult);
+                markupResultModelsFiltered.add(markupResult);
             }
         }
-
-        int records_total = markupResultModelsFinal.size();
-        int records_filtered = records_total;// Total records, after filtering (i.e. the total number of records after filtering has been applied - not just the number of records being returned for this page of data).
 
         //handle paging
-        int end = start + length;
-        end = (end > markupResultModelsFinal.size()) ? markupResultModelsFinal.size() : end;
-        start = (start <= end) ? start : end;
-        List<MarkupResultConvertedModel> modelsFiltered = markupResultModelsFinal.subList(start,end);
+        List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered
+                .stream()
+                .sorted((m1, m2) -> { // group by parent media id first, then by media id
+                    boolean isParent1 = m1.getParentMediaId() == -1;
+                    boolean isParent2 = m2.getParentMediaId() == -1;
+                    long m1Group = isParent1 ? m1.getMediaId() : m1.getParentMediaId();
+                    long m2Group = isParent2 ? m2.getMediaId() : m2.getParentMediaId();
+                    if (m1Group != m2Group) {
+                        return Long.compare(m1Group, m2Group);
+                    }
+                    if (isParent1) {
+                        return -1;
+                    }
+                    if (isParent2) {
+                        return 1;
+                    }
+                    return Long.compare(m1.getMediaId(), m2.getMediaId());
+                })
+                .skip(start)
+                .limit(length)
+                .collect(Collectors.toList());
 
-        //build output
-        String error = null;
-        MarkupPageListModel model = new MarkupPageListModel(draw,records_total,records_filtered,error,modelsFiltered);
+        MarkupPageListModel pageListModel = new MarkupPageListModel(
+                draw,
+                markupResultModels.size(),
+                markupResultModelsFiltered.size(),
+                null,
+                markupResultModelsFinal);
 
-        return model;
-    }
-
-    @RequestMapping(value = "/markup/content", method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseEntity<?> serve(@RequestParam(value = "id") long id) throws IOException, URISyntaxException {
-        MarkupResult mediaMarkupResult = markupResultDao.findById(id);
-        if (mediaMarkupResult != null) {
-            String nonUrlPath = mediaMarkupResult.getMarkupUri().replace("file:", "");
-            File file = new File(nonUrlPath);
-            if (file.canRead()) {
-                Path path = file.toPath();
-                var contentType= Optional.ofNullable(Files.probeContentType(path))
-                        .map(MediaType::parseMediaType)
-                        .orElse(MediaType.APPLICATION_OCTET_STREAM);
-                return ResponseEntity.ok()
-                        .contentType(contentType)
-                        .body(new PathResource(path));
-            }
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(pageListModel);
     }
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
-    public void getFile(@RequestParam("id") long id, HttpServletResponse response) throws IOException, StorageException {
+    public void getFile(@RequestParam("id") long id,
+                        HttpServletResponse response) throws IOException, StorageException {
         MarkupResult markupResult = markupResultDao.findById(id);
         if (markupResult == null) {
             log.error("Markup with id " + id + " download failed. Invalid id.");
@@ -265,7 +236,8 @@ public class MarkupController {
                 .map(bytes -> jsonUtils.deserialize(bytes, BatchJob.class))
                 .orElse(null);
         if (job == null) {
-            log.error("Markup with id " + id + " download failed. Invalid job with id " + markupResult.getJobId() + ".");
+            log.error("Markup with id " + id + " download failed. Invalid job with id " +
+                    markupResult.getJobId() + ".");
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -273,11 +245,12 @@ public class MarkupController {
 
         var media = job.getMedia()
                 .stream()
-                .filter(m -> URI.create(m.getUri()).equals(URI.create(markupResult.getSourceUri())))
+                .filter(m -> m.getId() == markupResult.getMediaId())
                 .findAny()
                 .orElse(null);
         if (media == null) {
-            log.error("Markup with id " + id + " download failed. Invalid media: " + markupResult.getSourceUri());
+            log.error("Markup with id " + id + " download failed. Invalid media with id " +
+                    markupResult.getMediaId() + ".");
             response.setStatus(404);
             response.flushBuffer();
             return;
@@ -286,20 +259,34 @@ public class MarkupController {
         Function<String, String> combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(markupResult.getMarkupUri(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+            try {
+                try (var s3Stream = s3StorageBackend.getFromS3(
+                        markupResult.getMarkupUri(), combinedProperties)) {
+                    var s3Response = s3Stream.response();
+                    IoUtils.sendBinaryResponse(s3Stream, response,
+                            s3Response.contentType(), s3Response.contentLength());
+                }
+                return;
+            } catch (StorageException e) {
+                log.error("Markup with id " + id + " download failed: " + e.getMessage());
+                response.setStatus(500);
+                response.flushBuffer();
+                return;
             }
-            return;
         }
 
-        URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
-        URLConnection urlConnection = mediaUrl.openConnection();
-        try (InputStream inputStream = urlConnection.getInputStream()) {
-            IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
-                                       urlConnection.getContentLength());
+        try {
+            URL mediaUrl = IoUtils.toUrl(markupResult.getMarkupUri());
+            URLConnection urlConnection = mediaUrl.openConnection();
+            try (InputStream inputStream = urlConnection.getInputStream()) {
+                IoUtils.sendBinaryResponse(inputStream, response, urlConnection.getContentType(),
+                        urlConnection.getContentLength());
+            }
+        } catch (IOException e) {
+            log.error("Markup with id " + id + " download failed: " + e.getMessage());
+            response.setStatus(500);
+            response.flushBuffer();
+            return;
         }
     }
 
@@ -310,63 +297,57 @@ public class MarkupController {
 
     private MarkupResultModel convertMarkupResult(MarkupResult markupResult) {
         boolean isImage = false;
-        boolean fileExists = true;
         if(markupResult.getMarkupUri() != null) {
             String nonUrlPath = markupResult.getMarkupUri().replace("file:", "");
             String markupContentType = ioUtils.getPathContentType(Paths.get(nonUrlPath));
             isImage = (markupContentType != null && StringUtils.startsWithIgnoreCase(markupContentType, "IMAGE"));
-            fileExists = new File(nonUrlPath).exists();
         }
 
         return new MarkupResultModel(markupResult.getId(), markupResult.getJobId(),
-                                     markupResult.getPipeline(), markupResult.getMarkupUri(),
-                                     markupResult.getSourceUri(), isImage, fileExists);
+                                     markupResult.getPipeline(), markupResult.getMarkupUri(), isImage);
     }
 
-    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult) {
-        String markupUriContentType = "";
-        String markupImgUrl = "";
-        String markupDownloadUrl ="";
-        String sourceUriContentType="";
-        String sourceImgUrl = "";
+    private MarkupResultConvertedModel convertMarkupResultWithContentType(MarkupResult markupResult, Media media) {
+        String markupMediaType = "";
+        String markupDownloadUrl = "";
+        String sourceMediaType = "";
         String sourceDownloadUrl ="";
         boolean markupFileAvailable = false;
         boolean sourceFileAvailable = false;
 
-        if (markupResult.getMarkupUri() != null) {
+        if (!StringUtils.isBlank(markupResult.getMarkupUri())) {
             Path path = IoUtils.toLocalPath(markupResult.getMarkupUri()).orElse(null);
-            if (path != null && Files.exists(path)) {
-                markupUriContentType = ioUtils.getPathContentType(path);
-                markupFileAvailable = true;
-                markupImgUrl = "markup/content?id=" + markupResult.getId();
+            if (path == null || Files.exists(path)) { // if remote markup or available local markup
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
-            }
-            if (path == null) {
                 markupFileAvailable = true;
-                markupDownloadUrl = markupResult.getMarkupUri();
+                markupMediaType = media.getType().toString(); // markup type is the same as media type
             }
         }
 
-        if (markupResult.getSourceUri() != null) {
-            Path path = IoUtils.toLocalPath(markupResult.getSourceUri()).orElse(null);
-            if (path == null || Files.exists(path)) {
-                sourceDownloadUrl = UriComponentsBuilder
-                        .fromPath("server/download")
-                        .queryParam("sourceUri", markupResult.getSourceUri())
-                        .queryParam("jobId", markupResult.getJobId())
-                        .toUriString();
-                sourceFileAvailable = true;
-            }
-            if (path != null && Files.exists(path))  {
-                sourceUriContentType = ioUtils.getPathContentType(path);
-                sourceImgUrl = "server/node-image?nodeFullPath=" + path;
-            }
+        Path path = IoUtils.toLocalPath(media.getPersistentUri()).orElse(null);
+        if (path == null || Files.exists(path))  { // if remote media or available local media
+            sourceDownloadUrl = UriComponentsBuilder
+                    .fromPath("server/download")
+                    .queryParam("sourceUri", media.getPersistentUri())
+                    .queryParam("jobId", markupResult.getJobId())
+                    .toUriString();
+            sourceFileAvailable = true;
+            sourceMediaType = media.getType().toString();
         }
 
         return new MarkupResultConvertedModel(
-                markupResult.getId(), propertiesUtil.getExportedJobId(markupResult.getJobId()),
-                markupResult.getPipeline(), markupResult.getMarkupUri(), markupUriContentType,
-                markupImgUrl, markupDownloadUrl, markupFileAvailable, markupResult.getSourceUri(),
-                sourceUriContentType, sourceImgUrl, sourceDownloadUrl, sourceFileAvailable);
+                markupResult.getId(),
+                propertiesUtil.getExportedJobId(markupResult.getJobId()),
+                markupResult.getMediaId(),
+                media.getParentId(),
+                markupResult.getPipeline(),
+                markupResult.getMarkupUri(),
+                markupMediaType,
+                markupDownloadUrl,
+                markupFileAvailable,
+                media.getPersistentUri(),
+                sourceMediaType,
+                sourceDownloadUrl,
+                sourceFileAvailable);
     }
 }

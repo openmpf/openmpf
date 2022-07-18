@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PngDefry;
 import org.mitre.mpf.wfm.util.TextUtils;
@@ -79,6 +80,10 @@ public class MediaMetadataValidator {
     }
 
     public boolean skipInspection(long jobId, Media media) {
+        if (media.isDerivative()) {
+            return false;
+        }
+
         var mediaMetadata = media.getProvidedMetadata();
         if (mediaMetadata.isEmpty()) {
             return false;
@@ -116,6 +121,8 @@ public class MediaMetadataValidator {
                     }
                     if (!missingVideoMetadata) {
                         checkMetadataTypes(mediaMetadata, REQUIRED_VIDEO_METADATA, true);
+                        _inProgressJobs.addFrameTimeInfo(jobId, mediaId,
+                                                         getFrameTimeInfo(mediaMetadata));
                         length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
                         break;
                     }
@@ -239,5 +246,18 @@ public class MediaMetadataValidator {
 
     private static boolean isBoolean(String value) {
         return value.equalsIgnoreCase("TRUE") || value.equalsIgnoreCase("FALSE");
+    }
+
+
+    private static FrameTimeInfo getFrameTimeInfo(Map<String, String> mediaMetadata) {
+        boolean hasConstantFrameRate = Boolean.parseBoolean(
+                mediaMetadata.get("HAS_CONSTANT_FRAME_RATE"));
+        double fps = Double.parseDouble(mediaMetadata.get("FPS"));
+        if (hasConstantFrameRate) {
+            return FrameTimeInfo.forConstantFrameRate(fps, 0, false);
+        }
+        else {
+            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps);
+        }
     }
 }

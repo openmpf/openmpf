@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.QueryParam;
 import java.io.IOException;
 import java.util.List;
 
@@ -159,25 +158,41 @@ public class SystemMessageController {
         return responseEntity;
     }
 
-    @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.POST )
+
+    @RequestMapping(value = {"/rest/system-message"}, method = RequestMethod.POST)
     @ApiOperation(value="Adds a system message.",
+            notes="Use a \"quoted string\" for the message in the request body.",
             produces = "application/json", response = MpfResponse.class )
     @ApiResponses(@ApiResponse(code = 201, message = "Successfully added"))
-    @ApiImplicitParams({    // need to use this instead of ApiParam because it causes the rendering of the Swagger page to be wrong for the type of parameter
-            @ApiImplicitParam(name = "msg", value = "The message", required = true, dataType = "string", paramType = "body"),
-            @ApiImplicitParam(name = "msgType", value = "The message type refers to the audience it is intended for (defaults to 'all')", allowableValues = "all,admin,login", required = false, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "removeStrategy", value = "Strategy governing how a message is to be removed from the queue (defaults to 'manual'", allowableValues = "atServerStartup,manual", required = false, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "severity", value = "Severity of the message (defaults to 'info')", allowableValues = "info,warning,error", required = false, dataType = "string", paramType = "query")
-    })
     @ResponseBody
     public ResponseEntity<MpfResponse> postSystemMessageRest(
-            @RequestBody String msg,
-            @QueryParam("msgType") String msgType,
-            @QueryParam ("removeStrategy") String removeStrategy,
-            @QueryParam("severity") String severity,
-            HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse )
-            throws InterruptedException, IOException
-    {
+            @ApiParam(required = true, value = "The message")
+            @RequestBody
+            String msg,
+
+            @ApiParam(
+                    required = false,
+                    value = "The message type refers to the audience it is intended for (defaults to 'all')",
+                    allowableValues = "all,admin,login")
+            @RequestParam(value = "msgType", required = false)
+            String msgType,
+
+            @ApiParam(
+                    required = false,
+                    value = "Strategy governing how a message is to be removed from the queue (defaults to 'manual')",
+                    allowableValues = "atServerStartup,manual")
+            @RequestParam(value = "removeStrategy", required = false)
+            String removeStrategy,
+
+            @ApiParam(
+                    required = false,
+                    value = "Severity of the message (defaults to 'info')",
+                    allowableValues = "info,warning,error")
+            @RequestParam(value = "severity", required = false)
+            String severity,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse )
+            throws InterruptedException, IOException {
         SystemMessage systemMessage = new SystemMessage();
         systemMessage.setMsg( msg );
         systemMessage.setMsgType( msgType );

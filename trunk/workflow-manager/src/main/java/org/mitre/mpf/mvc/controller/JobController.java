@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.*;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -44,10 +43,8 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
-import org.mitre.mpf.wfm.util.InvalidJobIdException;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +64,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
@@ -102,6 +100,9 @@ public class JobController {
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
+
+    @Autowired
+    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -146,7 +147,9 @@ public class JobController {
                     "specified as frame ranges or time ranges in milliseconds." +
                     " \n\nWithin media, an optional metadata object containing String key-value pairs can override" +
                     " media inspection once the required metadata information is provided for audio, image, generic, and video jobs." +
-                    " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided.",
+                    " \nFor media metadata, note that optional parameters like `ROTATION` and `HORIZONTAL_FLIP` can also be provided." +
+                    "\n\nFull documentation for the REST API can be found " +
+                    "<a href=\"https://openmpf.github.io/docs/site/html/REST-API.html\">here</a>.",
             produces = "application/json", response = JobCreationResponse.class)
     @ApiResponses({
             @ApiResponse(code = 201, message = "Job created"),
@@ -202,7 +205,9 @@ public class JobController {
             .put("2", "timeReceived")
             .put("3", "timeCompleted")
             .put("4", "status")
-            .put("5", "priority")
+            .put("5", "tiesDbStatus")
+            .put("6", "callbackStatus")
+            .put("7", "priority")
             .build();
 
 
@@ -308,11 +313,12 @@ public class JobController {
                 }
 
                 var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+                var combinedProperties = aggregateJobPropertiesUtil.getCombinedProperties(job);
                 InputStreamResource inputStreamResource;
-                if (S3StorageBackend.requiresS3ResultUpload(job.getJobProperties()::get)) {
-                    S3Object s3Object = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
-                                                                   job.getJobProperties()::get);
-                    inputStreamResource = new InputStreamResource(s3Object.getObjectContent());
+                if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
+                    var s3Stream = s3StorageBackend.getFromS3(jobRequest.getOutputObjectPath(),
+                                                              combinedProperties);
+                    inputStreamResource = new InputStreamResource(s3Stream);
                 }
                 else {
                     inputStreamResource = new InputStreamResource(IoUtils.openStream(
@@ -466,6 +472,7 @@ public class JobController {
             else {
                 var batchJob = jsonUtils.deserialize(job.getJob(), BatchJob.class);
                 mediaUris = batchJob.getMedia().stream()
+                        .filter(Predicate.not(Media::isDerivative)) // only report source media URIs
                         .map(Media::getUri)
                         .collect(toList());
             }
@@ -494,8 +501,9 @@ public class JobController {
                     job.getTimeReceived(),
                     job.getTimeCompleted(),
                     job.getOutputObjectPath(),
-                    inProgressJobs.jobHasCallbacksInProgress(job.getId()),
                     job.getStatus().isTerminal(),
+                    getCallbackStatus(job, job.getTiesDbStatus()),
+                    getCallbackStatus(job, job.getCallbackStatus()),
                     mediaUris);
         }
     }
@@ -516,8 +524,9 @@ public class JobController {
                                     job.getTimeReceived(),
                                     job.getTimeCompleted(),
                                     job.getOutputObjectPath(),
-                                    inProgressJobs.jobHasCallbacksInProgress(job.getId()),
                                     job.getStatus().isTerminal(),
+                                    getCallbackStatus(job, job.getTiesDbStatus()),
+                                    getCallbackStatus(job, job.getCallbackStatus()),
                                     mediaUris);
 
             if(job.getOutputObjectPath() != null) {
@@ -527,6 +536,22 @@ public class JobController {
                                 .orElse(true));
             }
             return jobModel;
+        }
+    }
+
+
+    private String getCallbackStatus(JobRequest job, String dbStatus) {
+        if (dbStatus != null) {
+            return dbStatus;
+        }
+        else if (inProgressJobs.jobHasCallbacksInProgress(job.getId())) {
+            return CallbackStatus.inProgress();
+        }
+        else if (!job.getStatus().isTerminal()) {
+            return CallbackStatus.jobRunning();
+        }
+        else {
+            return null;
         }
     }
 

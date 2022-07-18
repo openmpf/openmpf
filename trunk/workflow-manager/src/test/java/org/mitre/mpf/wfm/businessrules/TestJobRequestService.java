@@ -351,8 +351,8 @@ public class TestJobRequestService {
         assertEquals(newJob.getMedia().size(), originalJob.getMedia().size());
         assertEquals(1, newJob.getMedia().size());
 
-        Media newMedia = newJob.getMedia().asList().get(0);
-        Media originalMedia = originalJob.getMedia().asList().get(0);
+        Media newMedia = newJob.getMedia().iterator().next();
+        Media originalMedia = originalJob.getMedia().iterator().next();
         assertEquals(newMedia.getUri(), originalMedia.getUri());
         assertEquals(newMedia.getMediaSpecificProperties(), originalMedia.getMediaSpecificProperties());
         assertNull(newMedia.getErrorMessage());

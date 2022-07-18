@@ -32,6 +32,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 
 public interface PipelineService {
@@ -40,10 +41,11 @@ public interface PipelineService {
 
     public JobPipelineElements getStreamingPipelineElements(String pipelineName);
 
+    public JobPipelineElements getBatchPipelineElements(TransientPipelineDefinition tempPipeline);
+
     public Algorithm getAlgorithm(String name);
 
     public ImmutableList<Algorithm> getAlgorithms();
-
 
     public Action getAction(String name);
 
@@ -67,11 +69,6 @@ public interface PipelineService {
     public void save(Task task);
 
     public void save(Pipeline pipeline);
-
-
-    public void verifyBatchPipelineRunnable(String pipelineName);
-
-    public void verifyStreamingPipelineRunnable(String pipelineName);
 
 
     public void deleteAlgorithm(String algorithmName);

@@ -36,7 +36,10 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.stereotype.Component;
 
@@ -57,11 +60,16 @@ public class LocalStorageBackend implements StorageBackend {
 
     private final ObjectMapper _objectMapper;
 
+    private final InProgressBatchJobsService _inProgressJobs;
+
 
     @Inject
-    LocalStorageBackend(PropertiesUtil propertiesUtil, ObjectMapper objectMapper) {
+    LocalStorageBackend(PropertiesUtil propertiesUtil,
+                        ObjectMapper objectMapper,
+                        InProgressBatchJobsService inProgressBatchJobsService) {
         _propertiesUtil = propertiesUtil;
         _objectMapper = objectMapper;
+        _inProgressJobs = inProgressBatchJobsService;
     }
 
 
@@ -118,5 +126,18 @@ public class LocalStorageBackend implements StorageBackend {
 
         Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
         return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
+    }
+
+
+    @Override
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) {
+        return true;
+    }
+
+    @Override
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException {
+        var storagePath = _propertiesUtil.createDerivativeMediaPath(job.getId(), media);
+        Files.move(media.getLocalPath(), storagePath);
+        _inProgressJobs.addStorageUri(job.getId(), media.getId(), storagePath.toUri().toString());
     }
 }

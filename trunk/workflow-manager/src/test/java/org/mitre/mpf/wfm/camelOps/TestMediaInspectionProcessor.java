@@ -30,6 +30,7 @@ import org.apache.camel.Exchange;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -69,9 +70,12 @@ public class TestMediaInspectionProcessor {
     private final MediaMetadataValidator _mockMediaMetadataValidator
             = mock(MediaMetadataValidator.class);
 
+    private final MediaInspectionHelper _mediaInspectionHelper
+            = new MediaInspectionHelper(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
+                                        _mockMediaMetadataValidator);
+
     private final MediaInspectionProcessor _mediaInspectionProcessor
-            = new MediaInspectionProcessor(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                           _mockMediaMetadataValidator);
+            = new MediaInspectionProcessor(_mockInProgressJobs, _mediaInspectionHelper);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -391,12 +395,12 @@ public class TestMediaInspectionProcessor {
 
     @Test
     public void testCalculateDurationMilliseconds() {
-        Assert.assertEquals(7800, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.8"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.86"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.860"));
-        Assert.assertEquals(7080, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.08"));
-        Assert.assertEquals(7086, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.086"));
-        Assert.assertEquals(45_296_789, MediaInspectionProcessor.calculateDurationMilliseconds("12:34:56.789"));
+        Assert.assertEquals(7800, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.8"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.86"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.860"));
+        Assert.assertEquals(7080, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.08"));
+        Assert.assertEquals(7086, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.086"));
+        Assert.assertEquals(45_296_789, MediaInspectionHelper.calculateDurationMilliseconds("12:34:56.789"));
     }
 
 

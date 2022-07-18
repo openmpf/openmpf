@@ -41,6 +41,8 @@
                 <th><i class="fa fa-clock-o" title="Stop"></i> Start Date</th>
                 <th><i class="fa fa-clock-o" title="Stop"></i> End Date</th>
                 <th>Status <i class="fa fa-info-circle helper-icon" id="infoModalBtn"></i></th>
+                <th>TiesDb</th>
+                <th>Callback</th>
                 <th>Priority</th>
                 <th>Actions</th>
             </tr>
@@ -135,14 +137,18 @@
             <div class="modal-body ">
                 <table id="markupsTable" class="table table-bordered table-striped dataTable" role="grid" style="width: 100%;table-layout: auto;">
                     <colgroup>
-                        <col style="width: 35%">
+                        <col style="width: 4%">
+                        <col style="width: 4%">
+                        <col style="width: 32%">
                         <col style="width: 10%">
-                        <col style="width: 5%">
-                        <col style="width: 35%">
+                        <col style="width: 4%">
+                        <col style="width: 32%">
                         <col style="width: 10%">
-                        <col style="width: 5%">
+                        <col style="width: 4%">
                     </colgroup>
                     <thead>
+                        <th>Parent Media Id</th>
+                        <th>Media Id</th>
                         <th>Source Preview</th>
                         <th>Source Path</th>
                         <th>Source Actions</th>
@@ -151,6 +157,29 @@
                         <th>Markup Actions</th>
                     </thead>
                 </table>
+            </div>
+            <div class="modal-footer">
+                <div class="pull-right">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="errorDetailsModal" tabindex="-1" role="dialog" aria-labelledby="errorDetailsModalLabel">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="errorDetailsModalLabel">
+                    Job {{selectedJob.jobId}} {{errorType}} Error:
+                </h4>
+            </div>
+            <div class="modal-body smart-wrap" style="white-space: pre-line">
+                {{errorDetails}}
             </div>
             <div class="modal-footer">
                 <div class="pull-right">

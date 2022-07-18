@@ -1,0 +1,24 @@
+{
+    "pipeline": [
+        "task1",
+        "task2"
+    ],
+    "tasks": [
+        {
+            "name": "task2",
+            "actions": ["action1", "action2"]
+        }
+    ],
+    "actions": [
+        {
+            "name": "action1",
+            "algorithm": "algo1",
+            "properties": [
+                {
+                    "name": "prop1",
+                    "value": "value1"
+                }
+            ]
+        }
+    ]
+}

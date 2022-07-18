@@ -28,6 +28,7 @@
 package org.mitre.mpf.wfm.service;
 
 import org.mitre.mpf.mvc.controller.AtmosphereController;
+import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.mvc.model.JobStatusMessage;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.time.Instant;
+import java.util.Map;
 
 @Service
 public class JobStatusBroadcaster {
@@ -76,5 +78,25 @@ public class JobStatusBroadcaster {
         if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
             AtmosphereController.broadcast(new JobStatusMessage(jobId, progress, jobStatus, endDate));
         }
+    }
+
+
+    public void tiesDbStatusChanged(long jobId, String status) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            broadcastCallbackStatus(jobId, "tiesDb", status);
+        }
+    }
+
+    public void callbackStatusChanged(long jobId, String status) {
+        if (_propertiesUtil.isBroadcastJobStatusEnabled()) {
+            broadcastCallbackStatus(jobId, "callBack", status);
+        }
+    }
+
+    private static void broadcastCallbackStatus(long jobId, String type, String status) {
+        AtmosphereController.broadcast(
+                AtmosphereChannel.SSPC_CALLBACK_STATUS,
+                type,
+                Map.of("jobId", jobId, "status", status));
     }
 }

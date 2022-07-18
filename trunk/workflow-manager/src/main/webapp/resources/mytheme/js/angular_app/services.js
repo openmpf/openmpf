@@ -575,8 +575,8 @@ AppServices.factory('ServerSidePush',
                                                     console.log('job complete (with warnings) for id: ' + msg.id);
                                                     NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
                                                 } else if (msg.jobStatus == 'ERROR') {
-                                                    console.log('job ' + msg.id + ' terminated due to an error');
-                                                    NotificationSvc.error('Job ' + msg.id + ' terminated due to an error. Check the Workflow Manager log for details.');
+                                                    console.log('job ' + msg.id + ' is in a critical error state');
+                                                    NotificationSvc.error('Job ' + msg.id + ' is in a critical error state. Check the Workflow Manager log for details.');
                                                 } else if (msg.jobStatus == 'UNKNOWN') {
                                                     console.log('job ' + msg.id + ' is in an unknown state');
                                                     NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
@@ -608,6 +608,9 @@ AppServices.factory('ServerSidePush',
                             break;
                         case 'SSPC_PROPERTIES_CHANGED':
                             $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
+                            break;
+                        case 'SSPC_CALLBACK_STATUS':
+                            $rootScope.$broadcast('SSPC_CALLBACK_STATUS', json);
                             break;
                         default:
                             console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));

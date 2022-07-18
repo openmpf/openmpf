@@ -1,4 +1,3 @@
-package org.mitre.mpf.wfm.camel.operations.detection;
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,6 +24,7 @@ package org.mitre.mpf.wfm.camel.operations.detection;
  * limitations under the License.                                             *
  ******************************************************************************/
 
+package org.mitre.mpf.wfm.camel.operations.detection;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -34,6 +34,7 @@ import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingCon
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -193,7 +194,7 @@ public class TestMovingTrackLabelProcessor {
                 .thenReturn(1);
 
         long mediaId = 3242;
-        var mockMedia = mock(Media.class);
+        var mockMedia = mock(MediaImpl.class);
         when(mockMedia.getId())
                 .thenReturn(mediaId);
         when(mockJob.getMedia())

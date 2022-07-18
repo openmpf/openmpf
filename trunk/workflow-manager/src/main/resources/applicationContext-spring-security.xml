@@ -59,6 +59,9 @@
 			username-parameter="username" password-parameter="password"
 			authentication-failure-handler-ref="authenticationFailureHandler" />
 
+		<security:logout invalidate-session="true" logout-url="/login?reason=timeout"
+			logout-success-url="/login?reason=logout" delete-cookies="JSESSIONID" />
+
 		<security:session-management>
 			<security:concurrency-control max-sessions="1" expired-url="/bootout" />
 		</security:session-management>

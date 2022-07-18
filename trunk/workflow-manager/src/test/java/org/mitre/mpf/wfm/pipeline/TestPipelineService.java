@@ -32,10 +32,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.service.pipeline.PipelineServiceImpl;
 import org.mitre.mpf.wfm.service.pipeline.PipelineValidator;
+import org.mitre.mpf.wfm.service.pipeline.TransientPipelinePartLookup;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 
@@ -43,9 +45,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.mitre.mpf.test.TestUtil.nonEmptyMap;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class TestPipelineService {
@@ -63,6 +65,11 @@ public class TestPipelineService {
     private List<Action> _actions;
     private List<Task> _tasks;
     private List<Pipeline> _pipelines;
+
+    private Algorithm _algo1;
+    private Algorithm _algo2;
+    private Task _task1;
+    private Action _action2;
 
 
     @Rule
@@ -83,52 +90,52 @@ public class TestPipelineService {
                                       "1", null),
                 new AlgorithmProperty("PROP2", "PROP2 description", ValueType.STRING,
                                       null, "prop2.value"));
-        var algo1 = new Algorithm(
+        _algo1 = new Algorithm(
                 "ALGO1", "algo1 description", ActionType.DETECTION,
                 new Algorithm.Requires(List.of("STATE1", "STATE2")),
                 new Algorithm.Provides(List.of("STATE3", "STATE3"), algo1Properties),
                 true, true);
 
-        var algo2 = new Algorithm(
+        _algo2 = new Algorithm(
                 "ALGO2", "algo2 description", ActionType.DETECTION,
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
 
-        _algorithms = List.of(algo1, algo2);
+        _algorithms = List.of(_algo1, _algo2);
 
 
-        var action1 = new Action("ACTION1", "Action1 description", algo1.getName(),
+        var action1 = new Action("ACTION1", "Action1 description", _algo1.getName(),
                                  List.of(new ActionProperty("PROP1", "PROP1Val"),
                                          new ActionProperty("Prop2", "Prop2Val")));
 
-        var action2 = new Action("ACTION2", "Action 2 description", algo2.getName(), List.of());
+        _action2 = new Action("ACTION2", "Action 2 description", _algo2.getName(), List.of());
 
         var action3 = new Action("ACTION3", "Action 3 - missing algo", "SOME ALGO",
                                  List.of());
-        _actions = List.of(action1, action2, action3);
+        _actions = List.of(action1, _action2, action3);
 
 
-        var task1 = new Task("TASK1", "Task1 description",
-                             List.of(action1.getName()));
+        _task1 = new Task("TASK1", "Task1 description",
+                          List.of(action1.getName()));
 
         var task2 = new Task("TASK2", "Task2",
-                             List.of(action2.getName()));
+                             List.of(_action2.getName()));
 
         var task3 = new Task("TASK3", "Task3 description - missing action and missing algorithm",
                              List.of("SOME ACTION", action3.getName()));
 
-        _tasks = List.of(task1, task2, task3);
+        _tasks = List.of(_task1, task2, task3);
 
 
         var pipeline1 = new Pipeline("PIPELINE1", "Pipeline 1 description",
-                                     List.of(task1.getName(), task2.getName()));
+                                     List.of(_task1.getName(), task2.getName()));
 
         var pipeline2 = new Pipeline("PIPELINE2", "Pipeline 2 - missing task",
                                      List.of("SOME TASK"));
 
         var pipeline3 = new Pipeline("PIPELINE3", "Pipeline 3 - task missing action",
-                                     List.of(task1.getName(), task3.getName()));
+                                     List.of(_task1.getName(), task3.getName()));
 
 
         _pipelines = List.of(pipeline1, pipeline2, pipeline3);
@@ -244,7 +251,7 @@ public class TestPipelineService {
 
         verify(_mockPipelineValidator)
                 .verifyBatchPipelineRunnable(eq(_pipelines.get(0).getName()),
-                                             nonEmptyMap(), nonEmptyMap(), nonEmptyMap(), nonEmptyMap());
+                                             same(_pipelineService));
 
         assertEquals(_pipelines.get(0), pipelineElements.getPipeline());
 
@@ -280,8 +287,7 @@ public class TestPipelineService {
         JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipeline.getName());
 
         verify(_mockPipelineValidator)
-                .verifyBatchPipelineRunnable(eq(pipeline.getName()),
-                                             nonEmptyMap(), nonEmptyMap(), nonEmptyMap(), nonEmptyMap());
+                .verifyBatchPipelineRunnable(eq(pipeline.getName()), same(_pipelineService));
 
         assertEquals(pipeline, pipelineElements.getPipeline());
 
@@ -307,5 +313,83 @@ public class TestPipelineService {
         _actions.forEach(_pipelineService::save);
         _tasks.forEach(_pipelineService::save);
         _pipelines.forEach(_pipelineService::save);
+    }
+
+
+    @Test
+    public void canConvertTransientPipelineToRegularPipeline() throws IOException {
+        saveAllPipelineElements();
+
+        var path = TestUtil.findFilePath("/transient-pipelines/all-transient.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var pipelineElements = _pipelineService.getBatchPipelineElements(transientPipeline);
+
+        verify(_mockPipelineValidator)
+                .validateTransientPipeline(same(transientPipeline),
+                                           any(TransientPipelinePartLookup.class));
+
+        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().getTasks());
+
+        var task1 = pipelineElements.getTask("TASK1");
+        assertEquals("TASK1", task1.getName());
+        assertThat(task1.getDescription(), containsString("transient"));
+        assertEquals(List.of("ACTION1"), task1.getActions());
+
+
+        var task2 = pipelineElements.getTask("TASK2");
+        assertEquals("TASK2", task2.getName());
+        assertThat(task2.getDescription(), containsString("transient"));
+        assertEquals(List.of("ACTION2", "ACTION3"), task2.getActions());
+
+        var action1 = pipelineElements.getAction("ACTION1");
+        assertEquals("ALGO1", action1.getAlgorithm());
+        assertThat(action1.getDescription(), containsString("transient"));
+        assertThat(action1.getProperties(), hasSize(1));
+        assertEquals("value1", action1.getPropertyValue("prop1"));
+        assertEquals(_algo1, pipelineElements.getAlgorithm(0, 0));
+
+        var action2 = pipelineElements.getAction("ACTION2");
+        assertEquals("ALGO2", action2.getAlgorithm());
+        assertThat(action2.getProperties(), hasSize(1));
+        assertEquals("value2", action2.getPropertyValue("prop2"));
+        assertEquals(_algo2, pipelineElements.getAlgorithm(1, 0));
+
+
+        var action3 = pipelineElements.getAction("ACTION3");
+        assertEquals("ALGO2", action3.getAlgorithm());
+        assertThat(action3.getProperties(), empty());
+        assertEquals(_algo2, pipelineElements.getAlgorithm(1, 1));
+    }
+
+
+    @Test
+    public void transientPipelineCanUseRegularTasksAndActions() throws IOException {
+        saveAllPipelineElements();
+
+        var path = TestUtil.findFilePath("/transient-pipelines/partial-transient.json");
+        var transientPipeline = _objectMapper.readValue(path.toFile(),
+                                                        TransientPipelineDefinition.class);
+        var pipelineElements = _pipelineService.getBatchPipelineElements(transientPipeline);
+
+        verify(_mockPipelineValidator)
+                .validateTransientPipeline(same(transientPipeline),
+                                           any(TransientPipelinePartLookup.class));
+
+        assertEquals(List.of("TASK1", "TASK2"), pipelineElements.getPipeline().getTasks());
+        assertEquals(_task1, pipelineElements.getTask("TASK1"));
+        assertEquals(_action2, pipelineElements.getAction(1, 1));
+
+        var task2 = pipelineElements.getTask("TASK2");
+        assertEquals("TASK2", task2.getName());
+        assertThat(task2.getDescription(), containsString("transient"));
+        assertEquals(List.of("ACTION1", "ACTION2"), task2.getActions());
+
+        var action1 = pipelineElements.getAction("ACTION1");
+        assertEquals("ALGO1", action1.getAlgorithm());
+        assertThat(action1.getDescription(), containsString("transient"));
+        assertThat(action1.getProperties(), hasSize(1));
+        assertEquals("value1", action1.getPropertyValue("prop1"));
+        assertEquals(_algo1, pipelineElements.getAlgorithm(0, 0));
     }
 }

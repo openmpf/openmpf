@@ -49,7 +49,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PipeStream;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -170,6 +172,22 @@ public class CustomNginxStorageBackend implements StorageBackend {
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException, StorageException {
         URI serviceUri = getServiceUri(request.getJobId());
         return StreamableFrameExtractor.run(request, inStream -> store(serviceUri, inStream));
+    }
+
+
+    @Override
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException {
+        return canStore(job.getId());
+    }
+
+
+    @Override
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException, StorageException {
+        URI serviceUri = getServiceUri(job.getId());
+        try (InputStream inputStream = Files.newInputStream(media.getLocalPath())) {
+            URI newUri = store(serviceUri, inputStream);
+            _inProgressBatchJobs.addStorageUri(job.getId(), media.getId(), newUri.toString());
+        }
     }
 
 
@@ -375,7 +393,12 @@ public class CustomNginxStorageBackend implements StorageBackend {
 
     private static URIBuilder buildUploadUri(URI serviceUri) {
         URIBuilder builder = new URIBuilder(serviceUri);
-        builder.setPath(builder.getPath() + "/api/uploadS3.php");
+        if (builder.getPath() == null) {
+            builder.setPath("/api/uploadS3.php");
+        }
+        else {
+            builder.setPath(builder.getPath() + "/api/uploadS3.php");
+        }
         return builder;
     }
 

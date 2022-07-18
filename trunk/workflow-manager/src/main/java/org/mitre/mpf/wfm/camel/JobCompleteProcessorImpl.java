@@ -127,11 +127,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         assert jobId != null : String.format("The header '%s' (value=%s) was not set or is not a Long.",
                 MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
+        BatchJob job = inProgressBatchJobs.getJob(jobId);
+
+        storageService.storeDerivativeMedia(job);
+
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         jobRequest.setTimeCompleted(Instant.now());
 
-        BatchJob job = inProgressBatchJobs.getJob(jobId);
         var completionStatus = job.getStatus().onComplete();
+
         URI outputObjectUri = null;
         var outputSha = new MutableObject<String>();
         var trackCounter = new TrackCounter();
@@ -156,7 +160,10 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             inProgressBatchJobs.setJobStatus(jobId, completionStatus);
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
+        checkCallbacks(job, jobRequest);
+
         jobRequestDao.persist(jobRequest);
+        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
@@ -176,12 +183,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 jobRequest.getTimeCompleted(),
                 outputObjectUri,
                 outputSha.getValue(),
-                trackCounter);if (!tiesDbFuture.isDone()) {
-                inProgressBatchJobs.setCallbacksInProgress(jobId);
-            }
+                trackCounter);
 
         if (job.getCallbackUrl().isPresent()) {
-            inProgressBatchJobs.setCallbacksInProgress(jobId);
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
                     .whenCompleteAsync(
@@ -194,10 +198,35 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
+    private void checkCallbacks(BatchJob job, JobRequest jobRequest) {
+        if (job.getCallbackUrl().isPresent()) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setCallbackStatus(newStatus);
+            jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
+        }
+
+        boolean requiresTiesDb = JobPartsIter.stream(job)
+                .map(jp -> aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
+                .anyMatch(url -> url != null && !url.isBlank());
+        if (requiresTiesDb) {
+            inProgressBatchJobs.setCallbacksInProgress(job.getId());
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());
+        }
+        else {
+            var newStatus = CallbackStatus.notRequested();
+            jobRequest.setTiesDbStatus(newStatus);
+            jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), newStatus);
+        }
+    }
+
+
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
-            jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -224,7 +253,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         String callbackMethod = job.getCallbackMethod().orElse("POST");
 
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
         log.info("Starting {} callback to {} for job id {}.", callbackMethod, callbackUrl, job.getId());
@@ -232,7 +261,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
             return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
-                    .thenApply(JobCompleteProcessorImpl::checkResponse)
+                    .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }
         catch (Exception e) {
@@ -241,13 +270,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
     }
 
-    private static Void checkResponse(HttpResponse response) {
+    private void checkResponse(long jobId, HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode < 200 || statusCode > 299) {
             throw new IllegalStateException(
                     "The remote server responded with a non-200 status code of: " + statusCode);
         }
-        return null;
+        jobRequestDao.setCallbackSuccessful(jobId);
     }
 
 
@@ -294,20 +323,21 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     }
 
 
-    private static Void handleFailedCallback(BatchJob job, Throwable callbackError) {
+    private Void handleFailedCallback(BatchJob job, Throwable callbackError) {
         if (callbackError instanceof CompletionException && callbackError.getCause() != null) {
             callbackError = callbackError.getCause();
         }
 
         String callbackMethod = job.getCallbackMethod().orElse("POST");
         String callbackUrl = job.getCallbackUrl()
-                // This is will never throw because we already checked that the URL is present.
+                // This will never throw because we already checked that the URL is present.
                 .orElseThrow();
 
-        log.warn(String.format(
-                    "Sending HTTP %s callback to \"%s\" failed due to: %s",
-                    callbackMethod, callbackUrl, callbackError),
-                 callbackError);
+        var errorMessage = String.format(
+                "Sending HTTP %s callback to \"%s\" failed due to: %s",
+                callbackMethod, callbackUrl, callbackError);
+        log.error(errorMessage, callbackError);
+        jobRequestDao.setCallbackError(job.getId(), errorMessage);
 
         return null;
     }
@@ -357,7 +387,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(media.getId(), media.getUri(),
+            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
+                    media.getId(), media.getParentId(), media.getPersistentUri(),
                     media.getType() != null ? media.getType().toString() : null,
                     media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
 
@@ -385,17 +416,23 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                     mr.getMessage())));
 
             Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
-            Set<Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+            Map<Integer, Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
 
             String prevUnmergedTaskType = null;
             String prevUnmergedAlgorithm = null;
 
-            for (int taskIndex = 0; taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
                 Task task = job.getPipelineElements().getTask(taskIndex);
 
                 for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                    Action action = job.getPipelineElements().getAction(taskIndex, actionIndex);
-                    String stateKey = String.format("%s#%s", stateKeyBuilder.toString(), action.getName());
+                    String actionName = task.getActions().get(actionIndex);
+                    Action action = job.getPipelineElements().getAction(actionName);
+
+                    if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
+                        continue;
+                    }
+
+                    String stateKey = String.format("%s#%s", stateKeyBuilder, action.getName());
 
                     for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
                              job, media.getId(), taskIndex, actionIndex)) {
@@ -424,14 +461,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     }
                     else {
                         var type = tracks.iterator().next().getType();
-                        trackCounter.set(media.getId(), taskIndex, actionIndex, type,
-                                         tracks.size());
+                        trackCounter.set(media.getId(), taskIndex, actionIndex, type, tracks.size());
                     }
 
                     if (tracks.isEmpty()) {
                         // Always include detection actions in the output object,
                         // even if they do not generate any results.
-                        if (tasksToMerge.contains(taskIndex)) {
+                        if (tasksToMerge.containsKey(taskIndex)) {
                             addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
                                                 prevUnmergedAlgorithm, mediaOutputObject);
                         }
@@ -444,8 +480,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);
                     }
-                    else if (tasksToMerge.contains(taskIndex + 1)) {
-                        // This task will be merged with the next one.
+                    else if (tasksToMerge.containsValue(taskIndex)) {
+                        // This task will be merged with one that follows.
                         addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
                                 action.getAlgorithm(), mediaOutputObject);
                     }
@@ -453,9 +489,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         for (Track track : tracks) {
                             // tasksToMerge will never contain task 0, so the initial null values of
                             // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
-                            String type = tasksToMerge.contains(taskIndex) ? prevUnmergedTaskType :
+                            String type = tasksToMerge.containsKey(taskIndex) ? prevUnmergedTaskType :
                                     track.getType();
-                            String algo = tasksToMerge.contains(taskIndex) ? prevUnmergedAlgorithm :
+                            String algo = tasksToMerge.containsKey(taskIndex) ? prevUnmergedAlgorithm :
                                     action.getAlgorithm();
 
                             JsonTrackOutputObject jsonTrackOutputObject
@@ -483,7 +519,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                         }
                     }
 
-                    if (!tasksToMerge.contains(taskIndex)) {
+                    if (!tasksToMerge.containsKey(taskIndex)) {
                         // NOTE: If and when we support parallel actions in tasks other then the final one in a
                         // pipeline, this code will need to be updated.
                         prevUnmergedTaskType = tracks.isEmpty() ? JsonActionOutputObject.NO_TRACKS_TYPE :
@@ -532,7 +568,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             // there were other artifacts extracted.
             detections = track.getDetections().stream()
                          .filter(d -> (d.getArtifactExtractionStatus() == ArtifactExtractionStatus.COMPLETED))
-                         .map(d -> createDetectionOutputObject(d))
+                         .map(this::createDetectionOutputObject)
                          .collect(toList());
             detections.add(exemplar);
         }

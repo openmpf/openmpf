@@ -26,8 +26,6 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
 import io.swagger.annotations.Api;
 import org.mitre.mpf.mvc.model.DirectoryTreeNode;
 import org.mitre.mpf.mvc.model.ServerMediaFile;
@@ -36,6 +34,7 @@ import org.mitre.mpf.mvc.model.ServerMediaListing;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.ServerMediaService;
 import org.mitre.mpf.wfm.service.StorageException;
@@ -216,20 +215,25 @@ public class ServerMediaController {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
         if (jobRequest == null) {
+            log.error("Media for job id " + jobId + " download failed. Invalid job id.");
             response.setStatus(404);
             response.flushBuffer();
             return;
         }
 
+        // If any of the code below throws an uncaught exception it will result in printing a stack trace
+        // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
+
         var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
         Function<String, String> combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
-        if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
-            S3Object s3Object = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties);
-            try (InputStream inputStream = s3Object.getObjectContent()) {
-                ObjectMetadata metadata = s3Object.getObjectMetadata();
-                IoUtils.sendBinaryResponse(inputStream, response, metadata.getContentType(),
-                                           metadata.getContentLength());
+        var uriScheme = UriScheme.parse(sourceUri.getScheme());
+        if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&
+                S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
+            try (var s3Stream = s3StorageBackend.getFromS3(sourceUri.toString(), combinedProperties)) {
+                var s3Response = s3Stream.response();
+                IoUtils.sendBinaryResponse(s3Stream, response, s3Response.contentType(),
+                                           s3Response.contentLength());
             }
             return;
         }

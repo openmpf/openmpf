@@ -109,7 +109,7 @@ public class TestMediaMetadataValidator {
         var frameTimeInfo = frameTimeInfoCaptor.getValue();
         assertFalse(frameTimeInfo.hasConstantFrameRate());
         assertTrue(frameTimeInfo.requiresTimeEstimation());
-        assertEquals(1_000, frameTimeInfo.getFrameTimeMs(30));
+        assertEquals(1_000, frameTimeInfo.getTimeMsFromFrame(30));
     }
 
     @Test

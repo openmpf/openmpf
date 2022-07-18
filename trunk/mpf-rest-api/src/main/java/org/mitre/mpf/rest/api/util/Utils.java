@@ -28,6 +28,7 @@
 package org.mitre.mpf.rest.api.util;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.stream.Collector;
 
 public class Utils {
@@ -49,7 +50,9 @@ public class Utils {
 
 
     public static <R> R trimAndUpper(Collection<String> strings, Collector<String, ?, R> collector) {
-        return strings.stream()
+        return Optional.ofNullable(strings)
+                .stream()
+                .flatMap(Collection::stream)
                 .map(Utils::trimAndUpper)
                 .collect(collector);
     }

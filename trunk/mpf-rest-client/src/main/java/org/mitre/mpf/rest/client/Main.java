@@ -26,7 +26,6 @@
 
 package org.mitre.mpf.rest.client;
 
-import org.apache.commons.codec.binary.Base64;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.interop.util.MpfObjectMapper;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
@@ -43,6 +42,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -101,8 +101,7 @@ public class Main {
 
         // Base64 encoding does not mean encryption or hashing.
         // HTTP Authorization is as secure as sending the credentials in clear text. Consider using HTTPS.
-        byte[] encodedBytes = Base64.encodeBase64((userName + ":" + password).getBytes());
-        String base64 = new String(encodedBytes);
+        String base64 = Base64.getEncoder().encodeToString((userName + ':' + password).getBytes());
         String mpfAuth = "Basic " + base64;
 
         HttpHeaders headers = new HttpHeaders();
@@ -177,7 +176,7 @@ public class Main {
 
         // Create a job using the first FACE pipeline
 
-        long jobId = jobCreationResponseEntity.getBody().getJobId();
+        String   jobId = jobCreationResponseEntity.getBody().getJobId();
         System.out.println("Created job with id: " + jobId + "\n");
 
         System.out.println("---Sleeping for 10 seconds to let the job process---\n");

@@ -5,5 +5,12 @@
         "actions": [
             "OCV GENERIC MARKUP ACTION"
         ]
+    },
+    {
+        "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY TASK",
+        "description": "Performs object markup in images and videos for derivative media only.",
+        "actions": [
+            "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION"
+        ]
     }
 ]

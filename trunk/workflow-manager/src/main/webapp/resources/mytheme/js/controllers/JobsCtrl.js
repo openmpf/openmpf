@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices) {
+var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
     $.fn.dataTable.ext.errMode = 'throw';
 
     $scope.selectedJob = {};
@@ -60,6 +60,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 ajax: {
                     url: "jobs-paged",
                     type: "POST",
+                    headers: csrfHeaders(),
                     data: function (d) {//extra params
                         d.search = d.search.value;
                     }
@@ -112,16 +113,31 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                             } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
                                 type = "label-primary";
                             }
-                            var jobStatus = job.jobStatus;
-                            if (job.hasCallbacksInProgress) {
-                                jobStatus += ' (callbacks in progress)';
-                            }
 
                             var hideProgress = 'style="display:none;"';
                             if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
                             var progress = job.jobProgress.toFixed();
                             var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + jobStatus + '</span>' + progressDiv;
+                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
+                        }
+                    },
+                    {
+                        data: 'tiesDbStatus',
+                        render: function (data, type, job) {
+                            var statusCell = createCallbackStatusCell(job.tiesDbStatus, 'ties-db');
+                            return $('<span>')
+                                .addClass('ties-db-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
+                        }
+                    },
+                    {
+                        data: 'callbackStatus',
+                        render: function (data, type, job) {
+                            var statusCell = createCallbackStatusCell(
+                                job.callbackStatus, 'callback');
+                            return $('<span>')
+                                .addClass('callback-status-' + job.jobId)
+                                .html(statusCell)[0].outerHTML;
                         }
                     },
                     {
@@ -190,19 +206,45 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
     };
 
     var bindButtons = function () {
-        $(".markupBtn").click(function () {
-            showMarkup(getJobFromTableEle(this));
+        $(".markupBtn").click(function (event) {
+            $scope.$apply(function () {
+                showMarkup(getJobFromTableEle(event.target));
+            });
         });
-        $(".cancelBtn").click(function () {
-            cancelJob(getJobFromTableEle(this));
+        $(".cancelBtn").click(function (event) {
+            $scope.$apply(function () {
+                cancelJob(getJobFromTableEle(event.target));
+            });
         });
-        $(".resubmitBtn").click(function () {
-            resubmitJob(getJobFromTableEle(this));
+        $(".resubmitBtn").click(function (event) {
+            $scope.$apply(function () {
+                resubmitJob(getJobFromTableEle(event.target));
+            });
         });
-        $("#infoModalBtn").click(function (evt) {
-            // Prevent table from sorting by status when clicking info icon.
-            evt.stopPropagation();
-            $("#infoModal").modal('show');
+        $("#infoModalBtn").click(function (event) {
+            $scope.$apply(function () {
+                // Prevent table from sorting by status when clicking info icon.
+                event.stopPropagation();
+                $("#infoModal").modal('show');
+            });
+        });
+
+        $('#jobTable').on('click', '.ties-db-error-details', function(event) {
+            $scope.$apply(function () {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'TiesDb';
+                $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
+                $("#errorDetailsModal").modal('show');
+            });
+        });
+
+        $('#jobTable').on('click', '.callback-error-details', function(event) {
+            $scope.$apply(function() {
+                $scope.selectedJob = getJobFromTableEle(event.target);
+                $scope.errorType = 'Callback';
+                $scope.errorDetails = $scope.selectedJob.callbackStatus;
+                $("#errorDetailsModal").modal('show');
+            });
         });
     };
 
@@ -364,6 +406,41 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         }
     });
 
+
+    var createCallbackStatusCell = function (status, type) {
+        if (!status) {
+            return "";
+        }
+        else if (status.startsWith('ERROR:')) {
+            return $('<button>')
+                .addClass(type + '-error-details')
+                .addClass('btn btn-danger btn-block btn-xs')
+                .text('ERROR');
+        }
+        else if (status === 'IN PROGRESS') {
+            return status + ' <i class="fa fa-spinner fa-spin"></i>';
+        }
+        else {
+            return status;
+        }
+    };
+
+    $scope.$on('SSPC_CALLBACK_STATUS', function (event, msg) {
+        var jobId = msg.content.jobId;
+        var status = msg.content.status;
+        var job = _.findWhere(jobTable.data(), {jobId: jobId});
+        if (msg.event === "tiesDb") {
+            job.tiesDbStatus = status;
+            $('.ties-db-status-' + jobId).html(
+                createCallbackStatusCell(status, 'ties-db'));
+        }
+        if (msg.event === "callBack") {
+            job.callbackStatus = status;
+            $('.callback-status-' + jobId).html(
+                createCallbackStatusCell(status, 'callback'));
+        }
+    });
+
     var resubmitJob = function (job) {
         $log.debug("resubmitJob:", job);
         var statusCell = $("#jobStatusCell" + job.jobId);
@@ -429,33 +506,48 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             ajax: {
                 url: "markup/get-markup-results-filtered",
                 type: "POST",
+                headers: csrfHeaders(),
                 data: function (d) {//extra params
                     d.search = d.search.value;//pull out because spring is a pain to pass params
                     d.jobId = $scope.selectedJob.jobId;
+                },
+                error: function (xhr, error, code) {
+                    alert("Error while retrieving data: " + xhr.status);
                 }
             },
             renderer: "bootstrap",
             columns: [
                 {
-                    data: "sourceImg",
+                    data: "parentMediaId",
+                    className: "smart-wrap",
+                    render: function (data, type, obj) {
+                        if (obj.parentMediaId == -1) {
+                            return '<p class="text-muted">N/A</p>'
+                        }
+                        return '<p>' + obj.parentMediaId + '</p>'
+                    }
+                },
+                {
+                    data: "mediaId",
+                    className: "smart-wrap"
+                },
+                {
+                    data: "sourceImgUrl",
                     render: function (data, type, obj) {
                         if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
-                            obj.sourceImg = "server/node-image?nodeFullPath=" + obj.sourceUri.replace("file:", "");
-                            obj.sourceDownload = "server/download?sourceUri=" + obj.sourceUri + "&jobId=" + obj.jobId;
-                            obj.sourceType = getMarkupType(obj.sourceUriContentType);
-                            if (obj.sourceType == 'image') {
+                            if (obj.sourceMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', obj.sourceImg)
+                                    .attr('src', obj.sourceDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;
                             }
-                            else if (obj.sourceType == 'audio') {
+                            else if (obj.sourceMediaType == 'AUDIO') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
-                            else if (obj.sourceType == 'video') {
+                            else if (obj.sourceMediaType == 'VIDEO') {
                                 var sourceEl = $('<source>')
-                                    .attr('src', obj.sourceDownload)
+                                    .attr('src', obj.sourceDownloadUrl)
                                     .text('Your browser does not support the video tag.');
 
                                 return $('<video>')
@@ -476,7 +568,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     className: "smart-wrap"
                 },
                 {
-                    data: "sourceDownload",
+                    data: "sourceDownloadUrl",
                     render: function (data, type, obj) {
                         if (obj.sourceDownloadUrl) {
                             return '<a href="' + obj.sourceDownloadUrl + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
@@ -486,25 +578,22 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     }
                 },
                 {
-                    data: "markupImg",
+                    data: "markupImgUrl",
                     render: function (data, type, obj) {
                         if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
-                            obj.markupImg = "markup/content?id=" + obj.id;
-                            obj.markupDownload = "markup/download?id=" + obj.id;
-                            obj.markupType = getMarkupType(obj.markupUriContentType);
-                            if (obj.markupType == 'image') {
+                            if (obj.markupMediaType == 'IMAGE') {
                                 return $('<img>')
-                                    .attr('src', obj.markupImg)
+                                    .attr('src', obj.markupDownloadUrl)
                                     .addClass('img-btn')
                                     .css('width', '100%')
                                     .css('height', 'auto')[0].outerHTML;
                             }
-                            else if (obj.markupType == 'audio') {
+                            else if (obj.markupMediaType == 'AUDIO') {
                                 return '<span class="glyphicon glyphicon-music"></span>';
                             }
-                            else if (obj.markupType == 'video') {
+                            else if (obj.markupMediaType == 'VIDEO') {
                                 var sourceEl = $('<source>')
-                                    .attr('src', obj.markupDownload)
+                                    .attr('src', obj.markupDownloadUrl)
                                     .text('Your browser does not support the video tag.');
 
                                 return $('<video>')
@@ -531,10 +620,10 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     }
                 },
                 {
-                    data: "markupDownload",
+                    data: "markupDownloadUrl",
                     render: function (data, type, obj) {
-                        if (obj.markupDownload) {
-                            return '<a href="' + obj.markupDownload + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
+                        if (obj.markupDownloadUrl) {
+                            return '<a href="' + obj.markupDownloadUrl + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
                         } else {
                             return '<p class="text-muted">No markup</p>';
                         }
@@ -550,17 +639,6 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 });
             }
         });
-    };
-
-    var getMarkupType = function (content_type) {
-        if (content_type != null) {
-            var type = content_type.split("/")[0].toLowerCase();
-            if ((type == "image" && content_type.indexOf("tif") == -1) || type == "audio" || type == "video") {
-                return type;
-            }
-            return "file";
-        }
-        return null;
     };
 
     init();

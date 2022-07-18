@@ -71,7 +71,10 @@ public class RemoteMediaSplitter extends WfmSplitter {
 
 				// Check that the media has not previously failed. This will happen if the input URIs are invalid.
 				if (!media.isFailed() && media.getUriScheme() != UriScheme.FILE && media.getUriScheme() != UriScheme.UNDEFINED) {
-					messages.add(createMessage(jobId, media));
+					var message = new DefaultMessage(exchange.getContext());
+					message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
+					message.setHeader(MpfHeaders.JOB_ID, jobId);
+					messages.add(message);
 				}
 			}
 		} else {
@@ -80,13 +83,5 @@ public class RemoteMediaSplitter extends WfmSplitter {
 		}
 
 		return messages;
-	}
-
-	private static Message createMessage(long jobId, Media sourceMessage) {
-        Message message = new DefaultMessage();
-        message.setHeader(MpfHeaders.MEDIA_ID, sourceMessage.getId());
-        message.setHeader(MpfHeaders.JOB_ID, jobId);
-        return message;
-
 	}
 }

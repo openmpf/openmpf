@@ -24,10 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-#include <chrono>
-
 #include <activemq/library/ActiveMQCPP.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <activemq/core/ActiveMQConnectionFactory.h>
+#pragma GCC diagnostic pop
 
 #include "detection.pb.h"
 

@@ -40,10 +40,7 @@ import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -75,10 +72,7 @@ public class TestS3StorageBackend {
     private final WorkflowPropertyService _mockWorkflowPropertyService
             = mock(WorkflowPropertyService.class);
 
-    private final S3StorageBackend _s3StorageBackend = new S3StorageBackend(
-            _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
-            new AggregateJobPropertiesUtil(_mockPropertiesUtil,
-                                           _mockWorkflowPropertyService));
+    private S3StorageBackend _s3StorageBackend;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -119,6 +113,14 @@ public class TestS3StorageBackend {
         GET_COUNT.set(0);
         REQUESTED_GET_FAILURES.set(0);
         REQUESTED_PUT_FAILURES.set(0);
+
+        when(_mockPropertiesUtil.getS3ClientCacheCount())
+                .thenReturn(20);
+
+        _s3StorageBackend = new S3StorageBackend(
+                _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
+                new AggregateJobPropertiesUtil(_mockPropertiesUtil,
+                                               _mockWorkflowPropertyService));
     }
 
     private static Map<String, String> getS3Properties() {
@@ -226,14 +228,14 @@ public class TestS3StorageBackend {
     }
 
     @Test
-    public void doesNotUploadToS3WhenNoAccessKey() throws StorageException {
+    public void doesNotUploadToS3WhenNoAccessKey() {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_ACCESS_KEY);
         assertThrowsWhenCallingCanStore(s3Properties);
     }
 
     @Test
-    public void doesNotUploadToS3WhenNoSecretKey() throws StorageException {
+    public void doesNotUploadToS3WhenNoSecretKey() {
         Map<String, String> s3Properties = getS3Properties();
         s3Properties.remove(MpfConstants.S3_SECRET_KEY);
         assertThrowsWhenCallingCanStore(s3Properties);
@@ -261,9 +263,13 @@ public class TestS3StorageBackend {
 
     private JsonOutputObject setJobProperties(Map<String, String> properties) {
         long jobId = 123;
+        String exportedJobId = "localhost-123";
+        when(_mockPropertiesUtil.getJobIdFromExportedId(exportedJobId))
+                .thenReturn(jobId);
+
         JsonOutputObject outputObject = mock(JsonOutputObject.class);
         when(outputObject.getJobId())
-                .thenReturn(jobId);
+                .thenReturn(exportedJobId);
 
         var mockJob = mock(BatchJob.class);
         when(mockJob.getJobProperties())
@@ -409,8 +415,7 @@ public class TestS3StorageBackend {
                                       true, true);
         var action = new Action(
                 "TEST_ACTION", "description", algorithm.getName(),
-                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY,
-                                                              "<ACCESS_KEY>")));
+                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY, "<ACCESS_KEY>")));
         var task = new Task("TEST_TASK", "description", List.of(action.getName()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",
                                     List.of(task.getName()));
@@ -669,6 +674,102 @@ public class TestS3StorageBackend {
         catch (StorageException e) {
             assertFalse(Files.exists(localPath));
         }
+    }
+
+
+    @Test
+    public void canStoreDerivativeMedia() throws IOException, StorageException {
+        long jobId = 534;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+        Path filePath = getTestFileCopy();
+
+        var parentMedia = mock(Media.class);
+        var derivativeMedia = mock(MediaImpl.class);
+
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+
+        when(job.getId())
+                .thenReturn(jobId);
+
+        when(job.getMedia(parentMediaId))
+                .thenReturn(parentMedia);
+
+        when(job.getMedia(derivativeMediaId))
+                .thenReturn(derivativeMedia);
+
+        when(job.getJobProperties())
+                .thenReturn(ImmutableMap.copyOf(getS3Properties()));
+
+        when(parentMedia.getMediaSpecificProperties())
+                .thenReturn(ImmutableMap.of());
+
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
+        when(derivativeMedia.getLocalPath())
+                .thenReturn(filePath);
+
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+
+        assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
+
+        _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
+
+        verify(_mockInProgressJobs)
+                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
+
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+    }
+
+
+    @Test
+    public void canHandleStoreDerivativeMediaFailure() throws IOException, StorageException {
+        long jobId = 534;
+        long parentMediaId = 420;
+        long derivativeMediaId = 421;
+        Path filePath = getTestFileCopy();
+
+        var parentMedia = mock(MediaImpl.class);
+        var derivativeMedia = mock(MediaImpl.class);
+
+        var job = mock(BatchJob.class, RETURNS_DEEP_STUBS);
+
+        when(job.getId())
+                .thenReturn(jobId);
+
+        when(job.getMedia(parentMediaId))
+                .thenReturn(parentMedia);
+
+        when(job.getMedia(derivativeMediaId))
+                .thenReturn(derivativeMedia);
+
+        when(job.getJobProperties())
+                .thenReturn(ImmutableMap.copyOf(getS3Properties()));
+
+        when(parentMedia.getMediaSpecificProperties())
+                .thenReturn(ImmutableMap.of());
+
+        when(derivativeMedia.getId())
+                .thenReturn(derivativeMediaId);
+
+        when(derivativeMedia.getLocalPath())
+                .thenReturn(filePath);
+
+        when(_mockInProgressJobs.getJob(jobId))
+                .thenReturn(job);
+
+
+        assertTrue(_s3StorageBackend.canStoreDerivativeMedia(job, parentMediaId));
+
+        _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
+
+        verify(_mockInProgressJobs)
+                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
+
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
 
 

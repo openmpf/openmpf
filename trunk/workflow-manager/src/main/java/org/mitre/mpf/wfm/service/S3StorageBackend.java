@@ -27,10 +27,13 @@
 
 package org.mitre.mpf.wfm.service;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -54,12 +57,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.RetryPolicyContext;
+import software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -68,6 +70,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Semaphore;
@@ -77,6 +81,8 @@ import java.util.function.Function;
 public class S3StorageBackend implements StorageBackend {
 
     private static final Logger LOG = LoggerFactory.getLogger(S3StorageBackend.class);
+
+    private static LoadingCache<S3ClientConfig, S3Client> _s3ClientCache;
 
     private final PropertiesUtil _propertiesUtil;
 
@@ -91,6 +97,9 @@ public class S3StorageBackend implements StorageBackend {
                             LocalStorageBackend localStorageBackend,
                             InProgressBatchJobsService inProgressBatchJobsService,
                             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        synchronized (S3StorageBackend.class) {
+            _s3ClientCache = createClientCache(propertiesUtil.getS3ClientCacheCount());
+        }
         _propertiesUtil = propertiesUtil;
         _localStorageBackend = localStorageBackend;
         _inProgressJobs = inProgressBatchJobsService;
@@ -100,19 +109,24 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStore(JsonOutputObject outputObject) throws StorageException {
-        BatchJob job = _inProgressJobs.getJob(outputObject.getJobId());
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        BatchJob job = _inProgressJobs.getJob(internalJobId);
         return requiresS3ResultUpload(_aggregateJobPropertiesUtil.getCombinedProperties(job));
     }
 
     @Override
     public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws StorageException, IOException {
         URI localUri = _localStorageBackend.store(outputObject, outputSha);
-        BatchJob job = _inProgressJobs.getJob(outputObject.getJobId());
+        Path localPath = Path.of(localUri);
+        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
+        BatchJob job = _inProgressJobs.getJob(internalJobId);
         if (outputSha.getValue() == null) {
-            outputSha.setValue(hashExistingFile(Paths.get(localUri)));
+            outputSha.setValue(hashExistingFile(localPath));
         }
-        return putInS3IfAbsent(Paths.get(localUri), outputSha.getValue(),
-                               _aggregateJobPropertiesUtil.getCombinedProperties(job));
+        URI uploadedUri = putInS3IfAbsent(localPath, outputSha.getValue(),
+                _aggregateJobPropertiesUtil.getCombinedProperties(job));
+        Files.delete(localPath);
+        return uploadedUri;
     }
 
 
@@ -142,7 +156,8 @@ public class S3StorageBackend implements StorageBackend {
             catch (CompletionException e) {
                 _inProgressJobs.addWarning(
                         request.getJobId(), request.getMediaId(), IssueCodes.REMOTE_STORAGE_UPLOAD,
-                        "Artifact stored locally due to: " + e.getCause().getMessage());
+                        "Some artifacts were stored locally because storing them remotely failed due to: " +
+                                e.getCause().getMessage());
 
                 resultUri = localResults.get(cell.getRowKey(), cell.getColumnKey());
             }
@@ -167,7 +182,12 @@ public class S3StorageBackend implements StorageBackend {
             }
 
             var future = ThreadUtil.callAsync(
-                    () -> putInS3IfAbsent(Path.of(entry.getValue()), combinedProperties));
+                    () -> {
+                        Path localPath = Path.of(entry.getValue());
+                        URI uploadedUri = putInS3IfAbsent(localPath, combinedProperties);
+                        Files.delete(localPath);
+                        return uploadedUri;
+                    });
             future.whenComplete((x, y) -> semaphore.release());
             futures.put(entry.getRowKey(), entry.getColumnKey(), future);
         }
@@ -198,8 +218,27 @@ public class S3StorageBackend implements StorageBackend {
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
         URI uploadedUri = putInS3IfAbsent(markupPath, combinedProperties);
+        Files.delete(markupPath);
+
         markupResult.setMarkupUri(uploadedUri.toString());
     }
+
+
+    @Override
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException {
+        Function<String, String> combinedProperties =
+                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
+        return requiresS3ResultUpload(combinedProperties);
+    }
+
+    @Override
+    public void storeDerivativeMedia(BatchJob job, Media media) throws StorageException, IOException {
+        Function<String, String> combinedProperties =
+                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(media.getParentId()));
+        URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
+        _inProgressJobs.addStorageUri(job.getId(), media.getId(), uploadedUri.toString());
+    }
+
 
     /**
      * Ensures that the S3-related properties are valid.
@@ -315,11 +354,13 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private URI putInS3IfAbsent(Path path, Function<String, String> properties) throws IOException, StorageException {
+    private URI putInS3IfAbsent(Path path, Function<String, String> properties)
+            throws IOException, StorageException {
         return putInS3IfAbsent(path, hashExistingFile(path), properties);
     }
 
-    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties) throws IOException, StorageException {
+    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties)
+            throws StorageException {
         String objectName = getObjectName(hash);
         URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET));
         var s3UrlUtil = S3UrlUtil.get(properties);
@@ -338,15 +379,12 @@ public class S3StorageBackend implements StorageBackend {
                 LOG.info("Successfully stored \"{}\" in S3 bucket \"{}\" with object key \"{}\".",
                          path, bucketUri, objectName);
             }
-
-            URI objectUri = s3UrlUtil.getFullUri(bucketUri, objectName);
-            Files.delete(path);
-            return objectUri;
+            return s3UrlUtil.getFullUri(bucketUri, objectName);
         }
         catch (S3Exception | SdkClientException e) {
-            var errorMsg = String.format("Failed to upload %s due to S3 error: %s", path, e);
-            LOG.error(errorMsg, e);
-            throw new StorageException(errorMsg, e);
+            LOG.error("Failed to upload {} due to S3 error: {}", path, e);
+            // Don't include path so multiple failures appear as one issue in JSON output object.
+            throw new StorageException("Failed to upload due to S3 error: " + e, e);
         }
     }
 
@@ -379,8 +417,10 @@ public class S3StorageBackend implements StorageBackend {
             String mediaUri,
             S3UrlUtil s3UrlUtil,
             Function<String, String> properties) throws StorageException {
-        var endpoint = s3UrlUtil.getS3Endpoint(mediaUri);
-        return getS3Client(endpoint, _propertiesUtil.getRemoteMediaDownloadRetries(), properties);
+        return _s3ClientCache.getUnchecked(new S3ClientConfig(
+                s3UrlUtil.getS3Endpoint(mediaUri),
+                _propertiesUtil.getRemoteMediaDownloadRetries(),
+                properties));
     }
 
     private S3Client getS3UploadClient(
@@ -388,37 +428,111 @@ public class S3StorageBackend implements StorageBackend {
             Function<String, String> properties) throws StorageException {
         var endpoint = s3UrlUtil.getS3Endpoint(
                 properties.apply(MpfConstants.S3_RESULTS_BUCKET));
-        return getS3Client(endpoint, _propertiesUtil.getHttpStorageUploadRetryCount(), properties);
-
+        return _s3ClientCache.getUnchecked(new S3ClientConfig(
+                endpoint,
+                _propertiesUtil.getHttpStorageUploadRetryCount(),
+                properties));
     }
 
-    private static S3Client getS3Client(URI endpoint, int retryCount,
-                                        Function<String, String> properties) {
-        var sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
+
+    private static boolean shouldRetry(RetryPolicyContext context, int maxRetries) {
+        if (context.originalRequest() instanceof HeadObjectRequest
+                && context.httpStatusCode() == 404) {
+            // A HEAD request is sent prior to uploading an object to determine if the object
+            // already exists and the upload can be avoided. In most cases the object will not
+            // exist, so we expect the 404 error in that case.
+            return false;
+        }
+        int attemptsRemaining = maxRetries - context.retriesAttempted();
+        LOG.warn("\"{}\" responded with a non-200 status code of {}. " +
+                         "There are {} attempts remaining.",
+                 context.request().getUri(), context.httpStatusCode(), attemptsRemaining);
+        return true;
+    }
+
+
+    private static LoadingCache<S3ClientConfig, S3Client> createClientCache(int cacheSize) {
+        return CacheBuilder.newBuilder()
+                .maximumSize(cacheSize)
+                .<S3ClientConfig, S3Client>removalListener(l -> l.getValue().close())
+                .build(CacheLoader.from(S3StorageBackend::buildClient));
+    }
+
+
+    private static S3Client buildClient(S3ClientConfig clientConfig) {
         AwsCredentials credentials;
-        if (sessionToken != null && !sessionToken.isBlank()) {
+        if (clientConfig.sessionToken != null && !clientConfig.sessionToken.isBlank()) {
             credentials = AwsSessionCredentials.create(
-                    properties.apply(MpfConstants.S3_ACCESS_KEY),
-                    properties.apply(MpfConstants.S3_SECRET_KEY),
-                    sessionToken);
+                    clientConfig.accessKey,
+                    clientConfig.secretKey,
+                    clientConfig.sessionToken);
         }
         else {
             credentials = AwsBasicCredentials.create(
-                    properties.apply(MpfConstants.S3_ACCESS_KEY),
-                    properties.apply(MpfConstants.S3_SECRET_KEY));
+                    clientConfig.accessKey,
+                    clientConfig.secretKey);
         }
 
-        var retry = RetryPolicy.builder()
-                .numRetries(retryCount)
+        var backoff = FullJitterBackoffStrategy.builder()
+                .baseDelay(Duration.ofMillis(100))
+                .maxBackoffTime(Duration.ofSeconds(30))
                 .build();
 
-        LOG.info("Creating S3 client for endpoint \"{}\"", endpoint);
+        var retry = RetryPolicy.builder()
+                .backoffStrategy(backoff)
+                .numRetries(clientConfig.retryCount)
+                .retryCondition(ctx -> shouldRetry(ctx, clientConfig.retryCount))
+                .build();
+
+
+        LOG.info("Creating S3 client for endpoint \"{}\"", clientConfig.endpoint);
         return S3Client.builder()
-                .region(Region.of(properties.apply(MpfConstants.S3_REGION)))
-                .endpointOverride(endpoint)
+                .region(Region.of(clientConfig.region))
+                .endpointOverride(clientConfig.endpoint)
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
                 .overrideConfiguration(o -> o.retryPolicy(retry))
                 .build();
+    }
+
+
+    private static class S3ClientConfig {
+        final URI endpoint;
+        final int retryCount;
+        final String accessKey;
+        final String secretKey;
+        final String sessionToken;
+        final String region;
+
+        S3ClientConfig(URI endpoint, int retryCount, Function<String, String> properties) {
+            this.endpoint = endpoint;
+            this.retryCount = retryCount;
+            accessKey = properties.apply(MpfConstants.S3_ACCESS_KEY);
+            secretKey = properties.apply(MpfConstants.S3_SECRET_KEY);
+            sessionToken = properties.apply(MpfConstants.S3_SESSION_TOKEN);
+            region = properties.apply(MpfConstants.S3_REGION);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)  {
+                return true;
+            }
+            if (!(o instanceof S3ClientConfig)) {
+                return false;
+            }
+            var that = (S3ClientConfig) o;
+            return endpoint.equals(that.endpoint)
+                    && retryCount == that.retryCount
+                    && accessKey.equals(that.accessKey)
+                    && secretKey.equals(that.secretKey)
+                    && Objects.equals(sessionToken, that.sessionToken)
+                    && region.equals(that.region);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(endpoint, retryCount, accessKey, secretKey, sessionToken, region);
+        }
     }
 }

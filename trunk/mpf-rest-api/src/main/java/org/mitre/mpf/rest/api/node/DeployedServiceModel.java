@@ -47,8 +47,8 @@ public class DeployedServiceModel {
 		this.lastKnownState = sd.getLastKnownState().name();
 		this.unlaunchable = sd.getFatalIssueFlag();
 		if(sd.getService() != null) {
-			this.kind = sd.getService().getLauncher();
-			this.serviceCount = sd.getService().getCount();
+			this.kind = sd.getService().launcher();
+			this.serviceCount = sd.getService().count();
 		}
 		this.restartCount = sd.getRestarts();
 	}

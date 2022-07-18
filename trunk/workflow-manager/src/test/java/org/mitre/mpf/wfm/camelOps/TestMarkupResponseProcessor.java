@@ -34,11 +34,7 @@ import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mockito.ArgumentCaptor;
@@ -48,9 +44,11 @@ import org.mockito.MockitoAnnotations;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
 public class TestMarkupResponseProcessor {
@@ -81,7 +79,7 @@ public class TestMarkupResponseProcessor {
                 .clearErrorMessage();
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertNull(markupResult.getMessage());
-        assertEquals(MarkupStatus.COMPLETE, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.COMPLETE, markupResult.getMarkupStatus());
 
         verify(_mockStorageService)
                 .store(markupResult);
@@ -99,35 +97,13 @@ public class TestMarkupResponseProcessor {
 
         MarkupResult markupResult = runMarkupProcessor(responseBuilder);
         assertEquals(errorMessage, markupResult.getMessage());
-        assertEquals(MarkupStatus.FAILED, markupResult.getMarkupStatus());
+        assertEquals(MarkupStatusType.FAILED, markupResult.getMarkupStatus());
 
         verify(_mockStorageService, never())
                 .store(any());
         verify(_mockInProgressJobs)
                 .addError(TEST_JOB_ID, 1532, IssueCodes.MARKUP, errorMessage,
                           IssueSources.MARKUP);
-    }
-
-
-    @Test
-    public void canHandleMarkupWarning() {
-        doAnswer(invocation -> {
-            invocation.getArgument(0, MarkupResult.class)
-                    .setMarkupStatus(MarkupStatus.COMPLETE_WITH_WARNING);
-            return null;
-        }).when(_mockStorageService).store(any(MarkupResult.class));
-
-        Markup.MarkupResponse.Builder responseBuilder = Markup.MarkupResponse.newBuilder()
-                .setHasError(false);
-
-        MarkupResult markupResult = runMarkupProcessor(responseBuilder);
-        assertEquals(MarkupStatus.COMPLETE_WITH_WARNING, markupResult.getMarkupStatus());
-
-        verify(_mockStorageService)
-                .store(markupResult);
-        verify(_mockInProgressJobs)
-                .addWarning(TEST_JOB_ID, 1532, IssueCodes.MARKUP, "COMPLETE_WITH_WARNING",
-                            IssueSources.MARKUP);
     }
 
 
@@ -152,7 +128,8 @@ public class TestMarkupResponseProcessor {
 
         URI mediaUri = URI.create("file:///samples/meds1.jpg");
         Media media = new MediaImpl(mediaId, mediaUri.toString(), UriScheme.get(mediaUri),
-                                    Paths.get(mediaUri), Collections.emptyMap(), Collections.emptyMap(), null);
+                                    Paths.get(mediaUri), Map.of(), Map.of(), List.of(), List.of(),
+                                    null);
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(TEST_JOB_ID);

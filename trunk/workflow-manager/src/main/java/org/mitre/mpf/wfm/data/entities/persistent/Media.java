@@ -28,9 +28,11 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -44,6 +46,16 @@ public interface Media {
     /** The unique identifier for this file. */
     public long getId();
 
+    public long getParentId();
+
+    public int getCreationTask();
+
+    public boolean wasActionProcessed(int taskIndex, int actionIndex);
+
+    public int getLastProcessedTaskIndex();
+
+    public boolean isDerivative();
+
     public String getUri();
 
     /** The URI scheme (protocol) associated with the input URI, as obtained from the media resource. */
@@ -55,8 +67,14 @@ public interface Media {
     /** The local file path of the file once it has been retrieved. May be null if the media is not a file, or the file path has not been externally set. */
     public Path getLocalPath();
 
+    /** The path to the media that the JSON output object should use. */
+    public String getPersistentUri();
+
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     public Optional<Path> getConvertedMediaPath();
+
+    /** For derivative media, this will contain the URI to the media once placed in storage at the end of a job. */
+    public Optional<String> getStorageUri();
 
     /** A flag indicating if the medium has encountered an error during processing. Will be false if no error occurred. */
     public boolean isFailed();
@@ -88,4 +106,8 @@ public interface Media {
     public String getSha256();
 
     public FrameTimeInfo getFrameTimeInfo();
+
+    public ImmutableSet<MediaRange> getFrameRanges();
+
+    public ImmutableSet<MediaRange> getTimeRanges();
 }

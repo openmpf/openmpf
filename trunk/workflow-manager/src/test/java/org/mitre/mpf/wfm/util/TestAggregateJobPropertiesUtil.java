@@ -161,9 +161,10 @@ public class TestAggregateJobPropertiesUtil {
 
         // Test with batch job
         {
-            var media = new MediaImpl(2, "file:/example.mp4", UriScheme.FILE,
-                                      Path.of("remote-media", "example.mp4"), mediaProperties, Map.of(),
-                                      null);
+            var media = new MediaImpl(
+                    2, "file:/example.mp4", UriScheme.FILE,
+                    Path.of("remote-media", "example.mp4"), mediaProperties, Map.of(),
+                    List.of(), List.of(), null);
             media.setType(MediaType.VIDEO);
             media.setMimeType("video/mp4");
 
@@ -223,7 +224,7 @@ public class TestAggregateJobPropertiesUtil {
 
         var mockObjectMapper = mock(ObjectMapper.class);
 
-        when(mockObjectMapper.readValue((InputStream) any(), (TypeReference<?>) any()))
+        when(mockObjectMapper.readValue((InputStream) any(), (TypeReference<List<WorkflowProperty>>) any()))
                 .thenReturn(workflowProperties);
 
         var workflowPropertyService = new WorkflowPropertyService(mockPropertiesUtil, mockObjectMapper);

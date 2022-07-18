@@ -40,14 +40,14 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.segmenting.*;
+import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
+import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.*;
 
 // DetectionSplitter will take in Job and Task, breaking them into manageable work units for the Components
@@ -58,37 +58,33 @@ public class DetectionTaskSplitter {
 
     private static final Logger log = LoggerFactory.getLogger(DetectionTaskSplitter.class);
 
-    @Autowired
-    private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
+    private final MediaSegmenter _imageMediaSegmenter;
+    private final MediaSegmenter _videoMediaSegmenter;
+    private final MediaSegmenter _audioMediaSegmenter;
+    private final MediaSegmenter _defaultMediaSegmenter;
 
-    @Autowired
-    private InProgressBatchJobsService inProgressBatchJobs;
-
-    @Autowired
-    @Qualifier(ImageMediaSegmenter.REF)
-    private MediaSegmenter imageMediaSegmenter;
-
-    @Autowired
-    @Qualifier(VideoMediaSegmenter.REF)
-    private MediaSegmenter videoMediaSegmenter;
-
-    @Autowired
-    @Qualifier(AudioMediaSegmenter.REF)
-    private MediaSegmenter audioMediaSegmenter;
-
-    @Autowired
-    @Qualifier(DefaultMediaSegmenter.REF)
-    private MediaSegmenter defaultMediaSegmenter;
-
-
+    @Inject
+    public DetectionTaskSplitter(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
+                                 InProgressBatchJobsService inProgressBatchJobs,
+                                 MediaSegmenter imageMediaSegmenter,
+                                 MediaSegmenter videoMediaSegmenter,
+                                 MediaSegmenter audioMediaSegmenter,
+                                 MediaSegmenter defaultMediaSegmenter)
+    {
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _imageMediaSegmenter = imageMediaSegmenter;
+        _videoMediaSegmenter = videoMediaSegmenter;
+        _audioMediaSegmenter = audioMediaSegmenter;
+        _defaultMediaSegmenter = defaultMediaSegmenter;
+    }
 
     public List<Message> performSplit(BatchJob job, Task task) {
         List<Message> messages = new ArrayList<>();
 
-        // Is this the first detection task in the pipeline?
-        boolean isFirstDetectionTask = isFirstDetectionTask(job);
-
-        for (Media media : job.getMedia()) {
+        for (Media media : job.getMedia()) { // this may include derivative media
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
@@ -96,16 +92,19 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
+                boolean isFirstDetectionTaskForMedia = isFirstDetectionTask(job, media);
+
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
-                // tracks. Note that the TimePairs created for these Tracks use the non-feed-forward version of timeUtils.createTimePairsForTracks
+                // tracks. Note that the MediaRanges created for these Tracks use the
+                // non-feed-forward version of MediaSegmenter.createRangesForTracks
                 SortedSet<Track> previousTracks;
-                if (isFirstDetectionTask) {
+                if (isFirstDetectionTaskForMedia) {
                     previousTracks = Collections.emptySortedSet();
-                }
-                else {
-                    previousTracks = inProgressBatchJobs.getTracks(
-                            job.getId(), media.getId(), job.getCurrentTaskIndex() - 1, 0);
+                } else {
+                    // Get the tracks for the last task that was processed for this media.
+                    previousTracks = _inProgressBatchJobs.getTracks(
+                            job.getId(), media.getId(), media.getLastProcessedTaskIndex(), 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -114,8 +113,12 @@ public class DetectionTaskSplitter {
                     String actionName = task.getActions().get(actionIndex);
                     Action action = job.getPipelineElements().getAction(actionName);
 
-                    var combinedProperties = new HashMap<String, String>(
-                            aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
+                    var combinedProperties = new HashMap<>(
+                            _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
+
+                    if (!_aggregateJobPropertiesUtil.actionAppliesToMedia(media, combinedProperties)) {
+                        continue;
+                    }
 
                     // Segmenting plan is only used by the VideoMediaSegmenter,
                     // so only create the DetectionContext to include the segmenting plan for jobs with video media.
@@ -129,7 +132,7 @@ public class DetectionTaskSplitter {
                             fps = Double.valueOf(fpsFromMetadata);
                         }
 
-                        String calcframeInterval = aggregateJobPropertiesUtil.calculateFrameInterval(
+                        String calcframeInterval = _aggregateJobPropertiesUtil.calculateFrameInterval(
                                 action, job, media,
                                 job.getSystemPropertiesSnapshot().getSamplingInterval(),
                                 job.getSystemPropertiesSnapshot().getFrameRateCap(), fps);
@@ -148,13 +151,12 @@ public class DetectionTaskSplitter {
                             task.getName(),
                             actionIndex,
                             action.getName(),
-                            isFirstDetectionTask,
+                            isFirstDetectionTaskForMedia,
                             algorithmProperties,
                             previousTracks,
                             segmentingPlan);
 
                     // get detection request messages from ActiveMQ
-
                     List<Message> detectionRequestMessages = createDetectionRequestMessages(media, detectionContext);
 
                     ActionType actionType = job.getPipelineElements()
@@ -174,7 +176,7 @@ public class DetectionTaskSplitter {
                             detectionRequestMessages.size(), media.getId());
                 }
             } catch (WfmProcessingException e) {
-                inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER,
+                _inProgressBatchJobs.addError(job.getId(), media.getId(), IssueCodes.OTHER,
                                              e.getMessage());
             }
         }
@@ -214,13 +216,13 @@ public class DetectionTaskSplitter {
     private MediaSegmenter getSegmenter(MediaType mediaType) {
         switch (mediaType) {
             case IMAGE:
-                return imageMediaSegmenter;
+                return _imageMediaSegmenter;
             case VIDEO:
-                return videoMediaSegmenter;
+                return _videoMediaSegmenter;
             case AUDIO:
-                return audioMediaSegmenter;
+                return _audioMediaSegmenter;
             default:
-                return defaultMediaSegmenter;
+                return _defaultMediaSegmenter;
         }
     }
 
@@ -290,21 +292,19 @@ public class DetectionTaskSplitter {
     }
 
     /**
-     * Returns {@literal true} iff the current task of this job is the first detection task in the job.
+     * Returns {@literal true} iff the current task of this job is the first detection task in the job for the media.
      */
-    private static boolean isFirstDetectionTask(BatchJob job) {
-        boolean isFirst = false;
-        for (int i = 0; i < job.getPipelineElements().getTaskCount(); i++) {
-            ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
-            // This is a detection task.
-            if (actionType == ActionType.DETECTION) {
-                // If this is the first detection task, it must be true that the current task's index is at most the
-                // current job task's index.
-                isFirst = i >= job.getCurrentTaskIndex();
-                break;
+    private static boolean isFirstDetectionTask(BatchJob job, Media media) {
+        for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
+            // Only need to check the first action. We would not be here in the splitter after a parallel action,
+            // which can only be the last action in a pipeline.
+            int actionIndex = 0;
+            boolean wasProcessed = media.wasActionProcessed(taskIndex, actionIndex);
+            ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
+            if (wasProcessed && actionType == ActionType.DETECTION) {
+                return false;
             }
         }
-
-        return isFirst;
+        return true;
     }
 }

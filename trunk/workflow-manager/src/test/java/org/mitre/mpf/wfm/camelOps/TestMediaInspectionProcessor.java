@@ -30,6 +30,7 @@ import org.apache.camel.Exchange;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -48,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,9 +70,12 @@ public class TestMediaInspectionProcessor {
     private final MediaMetadataValidator _mockMediaMetadataValidator
             = mock(MediaMetadataValidator.class);
 
+    private final MediaInspectionHelper _mediaInspectionHelper
+            = new MediaInspectionHelper(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
+                                        _mockMediaMetadataValidator);
+
     private final MediaInspectionProcessor _mediaInspectionProcessor
-            = new MediaInspectionProcessor(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                           _mockMediaMetadataValidator);
+            = new MediaInspectionProcessor(_mockInProgressJobs, _mediaInspectionHelper);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -334,8 +339,10 @@ public class TestMediaInspectionProcessor {
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/heic"), eq(1),
                                         metadataCaptor.capture());
-        assertEquals("3024", metadataCaptor.getValue().get("FRAME_WIDTH"));
-        assertEquals("4032", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+        var metadata = metadataCaptor.getValue();
+        assertEquals("4032", metadata.get("FRAME_WIDTH"));
+        assertEquals("3024", metadata.get("FRAME_HEIGHT"));
+        assertEquals("90", metadata.get("ROTATION"));
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(_mockInProgressJobs)
@@ -388,12 +395,12 @@ public class TestMediaInspectionProcessor {
 
     @Test
     public void testCalculateDurationMilliseconds() {
-        Assert.assertEquals(7800, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.8"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.86"));
-        Assert.assertEquals(7860, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.860"));
-        Assert.assertEquals(7080, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.08"));
-        Assert.assertEquals(7086, MediaInspectionProcessor.calculateDurationMilliseconds("00:00:07.086"));
-        Assert.assertEquals(45_296_789, MediaInspectionProcessor.calculateDurationMilliseconds("12:34:56.789"));
+        Assert.assertEquals(7800, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.8"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.86"));
+        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.860"));
+        Assert.assertEquals(7080, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.08"));
+        Assert.assertEquals(7086, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.086"));
+        Assert.assertEquals(45_296_789, MediaInspectionHelper.calculateDurationMilliseconds("12:34:56.789"));
     }
 
 
@@ -420,8 +427,8 @@ public class TestMediaInspectionProcessor {
 
     private MediaImpl inspectMedia(long jobId, long mediaId, URI mediaUri, Map<String, String> mediaMetadata) {
         MediaImpl media = new MediaImpl(
-                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Collections.emptyMap(),
-                mediaMetadata, null);
+                mediaId, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri),
+                Map.of(), mediaMetadata, List.of(), List.of(), null);
         Exchange exchange = setupExchange(jobId, media);
         _mediaInspectionProcessor.process(exchange);
 

@@ -1,8 +1,19 @@
 [
     {
         "name": "OCV GENERIC MARKUP ACTION",
-        "description": "Marks up all of the objects detected in the given video.",
+        "description": "Performs object markup in images and videos.",
         "algorithm": "MARKUPCV",
         "properties": []
+    },
+    {
+        "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+        "description": "Performs object markup in images and videos for derivative media only.",
+        "algorithm": "MARKUPCV",
+        "properties": [
+            {
+                "name": "DERIVATIVE_MEDIA_ONLY",
+                "value": "TRUE"
+            }
+        ]
     }
 ]

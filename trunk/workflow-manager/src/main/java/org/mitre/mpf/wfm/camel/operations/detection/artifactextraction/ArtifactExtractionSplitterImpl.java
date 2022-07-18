@@ -125,12 +125,12 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 continue;
             }
 
-            // If the user has requested that this task be merged with the next one, then skip media extraction.
-            // Media extraction will be performed for the next task this one is merged with.
-            Set<Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-            if (tasksToMerge.contains(taskIndex + 1)) {
+            // If the user has requested that this task be merged with one that follows, then skip artifact extraction.
+            // Artifact extraction will be performed for the next task this one is merged with.
+            Map<Integer, Integer> tasksToMerge = _aggregateJobPropertiesUtil.getTasksToMerge(media, job);
+            if (tasksToMerge.containsValue(taskIndex)) {
                 LOG.info("ARTIFACT EXTRACTION IS SKIPPED for pipeline task {} and media {}" +
-                                " due to being merged with the following task.",
+                                " due to being merged with a following task.",
                         pipelineElements.getTask(taskIndex).getName(), media.getId());
                 continue;
             }
@@ -158,7 +158,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 LOG.debug("Action {} has {} tracks", actionIndex, tracks.size());
                 processTracks(request, tracks, job, media, action, actionIndex, extractionPolicy);
 
-                Message message = new DefaultMessage();
+                Message message = new DefaultMessage(exchange.getContext());
                 message.setBody(_jsonUtils.serialize(request));
                 messages.add(message);
             }

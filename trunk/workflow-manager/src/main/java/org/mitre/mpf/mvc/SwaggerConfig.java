@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc;
 
+import io.swagger.annotations.ApiOperation;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +37,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.builders.ResponseMessageBuilder;
+import springfox.documentation.oas.annotations.EnableOpenApi;
 import springfox.documentation.schema.AlternateTypeRules;
 import springfox.documentation.schema.ModelRef;
 import springfox.documentation.service.ApiInfo;
@@ -43,15 +45,16 @@ import springfox.documentation.service.ResponseMessage;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.UiConfiguration;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import springfox.documentation.swagger.web.UiConfigurationBuilder;
 
+import javax.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.List;
 
 //reference - http://springfox.github.io/springfox/docs/snapshot/
 @Configuration
 @EnableWebMvc //NOTE: Only needed in a non-springboot application
-@EnableSwagger2
+@EnableOpenApi
 // This class causes issues when running Maven tests, so we disable it when the jenkins profile is active.
 @Profile("!jenkins")
 public class SwaggerConfig {
@@ -60,16 +63,15 @@ public class SwaggerConfig {
     public Docket api(){
         var globalResponses = getGlobalResponses();
 
-        return new Docket(DocumentationType.SWAGGER_2)
+        return new Docket(DocumentationType.OAS_30)
             .select()
             // only show APIs which has the @ApiOperation annotation
             //  alternative is any(), but that defaults to somewhat useless autogen documentation
-            .apis(RequestHandlerSelectors.withMethodAnnotation(
-                io.swagger.annotations.ApiOperation.class))
-            .paths(PathSelectors.ant("/rest/**"))
+            .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
+            .paths(PathSelectors.ant("/workflow-manager/rest/**"))
             .build()
             // list classes to be ignored in parameters (useful for optional internal parameters)
-            .ignoredParameterTypes(javax.servlet.http.HttpSession.class)
+            .ignoredParameterTypes(HttpSession.class)
             // opt out of auto-generated response code and their default message
             .useDefaultResponseMessages(false)
             .alternateTypeRules(AlternateTypeRules.newRule(Instant.class, String.class))
@@ -95,7 +97,10 @@ public class SwaggerConfig {
 
     @Bean
     UiConfiguration uiConfig() {
-        return new UiConfiguration( null );  // disable validation of resulting Swagger JSON at http://online.swagger.io/validator
+        return UiConfigurationBuilder.builder()
+                // disable validation of resulting Swagger JSON at http://online.swagger.io/validator
+                .validatorUrl(null)
+                .build();
     }
 
 

@@ -103,7 +103,7 @@ public abstract class WfmSplitter implements MonitoredWfmSplitter {
             boolean emptySplit = messages == null || messages.isEmpty();
             if (emptySplit) {
                 // No messages were produced. Unless a dummy message is produced, the workflow will hang.
-                Message defaultMessage = new DefaultMessage();
+                Message defaultMessage = new DefaultMessage(exchange.getContext());
                 defaultMessage.setHeader(MpfHeaders.EMPTY_SPLIT, true);
                 defaultMessage.setHeader(MpfHeaders.SPLITTING_ERROR, failed);
                 defaultMessage.setHeader(MpfHeaders.JMS_PRIORITY,

@@ -26,26 +26,31 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest.ImageRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Component(ImageMediaSegmenter.REF)
 public class ImageMediaSegmenter implements MediaSegmenter {
-	private static final Logger log = LoggerFactory.getLogger(ImageMediaSegmenter.class);
 	public static final String REF = "imageMediaSegmenter";
 
+	private final CamelContext _camelContext;
+
+	@Inject
+	ImageMediaSegmenter(CamelContext camelContext) {
+		_camelContext = camelContext;
+	}
 
 	@Override
 	public List<Message> createDetectionRequestMessages(Media media, DetectionContext context) {
@@ -65,20 +70,20 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private static Message createProtobufMessage(Media media, DetectionContext context,
-	                                             ImageRequest imageRequest) {
+	private Message createProtobufMessage(Media media, DetectionContext context,
+	                                      ImageRequest imageRequest) {
 		DetectionProtobuf.DetectionRequest detectionRequest = MediaSegmenter.initializeRequest(media, context)
 				.setDataType(DetectionProtobuf.DetectionRequest.DataType.IMAGE)
 				.setImageRequest(imageRequest)
 				.build();
 
-		Message message = new DefaultMessage();
+		Message message = new DefaultMessage(_camelContext);
 		message.setBody(detectionRequest);
 		return message;
 	}
 
 
-	private static List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
+	private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
 		List<Message> messages = new ArrayList<>();
 		for (Track track : context.getPreviousTracks()) {
 			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());

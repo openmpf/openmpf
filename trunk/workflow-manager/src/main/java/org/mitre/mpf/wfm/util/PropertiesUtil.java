@@ -32,12 +32,13 @@ import com.google.common.collect.Maps;
 import com.google.common.io.MoreFiles;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.h2.util.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.core.io.Resource;
@@ -126,6 +128,7 @@ public class PropertiesUtil {
         outputObjectsDirectory = createOrFail(share, "output-objects", permissions);
         remoteMediaDirectory = createOrFail(share, "remote-media", permissions);
         temporaryMediaDirectory = createOrClear(share, "tmp", permissions);
+        derivativeMediaDirectory = createOrFail(share, "derivative-media", permissions);
         uploadedComponentsDirectory = createOrFail(share, getComponentUploadDirName(), permissions);
         createOrFail(getPluginDeploymentPath(), "",
                 EnumSet.of(
@@ -147,13 +150,14 @@ public class PropertiesUtil {
         log.debug("Output Objects Directory = {}", outputObjectsDirectory);
         log.debug("Remote Media Directory = {}", remoteMediaDirectory);
         log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
+        log.debug("Derivative Media Directory = {}", derivativeMediaDirectory);
         log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 
     private void parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
-        if (StringUtils.isNullOrEmpty(coreMpfNodesStr)) {
+        if (coreMpfNodesStr == null || coreMpfNodesStr.isBlank()) {
             coreMpfNodes = ImmutableSet.of(); // empty set
         } else {
             coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
@@ -261,6 +265,28 @@ public class PropertiesUtil {
 
     public String getSiteId() {
         return mpfPropertiesConfig.getString("output.site.name");
+    }
+
+    public String getHostName() {
+        return Objects.requireNonNullElseGet(
+                System.getenv("NODE_HOSTNAME"),
+                () -> System.getenv("HOSTNAME"));
+    }
+
+    public long getJobIdFromExportedId(String exportedId) {
+        String[] tokens = exportedId.split("-");
+        try {
+            return Long.parseLong(tokens[tokens.length - 1]);
+        }
+        catch (NumberFormatException e) {
+            throw new InvalidJobIdException(
+                    "Failed to parse job id of '" + exportedId +
+                            "'. Expected a job id like <hostname>-<integer>.", e);
+        }
+    }
+
+    public String getExportedJobId(long jobId) {
+        return getHostName() + '-' + jobId;
     }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {
@@ -377,6 +403,26 @@ public class PropertiesUtil {
     private File temporaryMediaDirectory;
     public File getTemporaryMediaDirectory() { return temporaryMediaDirectory; }
 
+    private File derivativeMediaDirectory;
+    public File getJobDerivativeMediaDirectory(long jobId) {
+        return new File(derivativeMediaDirectory, String.valueOf(jobId));
+    }
+
+    public Path createDerivativeMediaPath(long jobId, Media media) {
+        var extension = FilenameUtils.getExtension(media.getLocalPath().getFileName().toString());
+        try {
+            Path path = Paths.get(getJobDerivativeMediaDirectory(jobId).toURI())
+                    .resolve(String.format("%d/%s%s", media.getParentId(), UUID.randomUUID(), "." + extension))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.createDirectories(path.getParent());
+            return path;
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private File markupDirectory;
     public File getJobMarkupDirectory(long jobId) {
         return new File(markupDirectory, String.valueOf(jobId));
@@ -418,6 +464,10 @@ public class PropertiesUtil {
 
     public int getArtifactParallelUploadCount() {
         return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
+    }
+
+    public int getDerivativeMediaParallelUploadCount() {
+        return mpfPropertiesConfig.getInt("detection.derivative.media.parallel.upload.count");
     }
 
     public int getSamplingInterval() {
@@ -742,7 +792,7 @@ public class PropertiesUtil {
     }
 
     public boolean dockerProfileEnabled() {
-        return springEnvironment.acceptsProfiles("docker");
+        return springEnvironment.acceptsProfiles(Profiles.of("docker"));
     }
 
     public int getHttpCallbackTimeoutMs() {
@@ -771,6 +821,10 @@ public class PropertiesUtil {
 
     public int getProtobufSizeLimit() {
         return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
+    }
+
+    public int getS3ClientCacheCount() {
+        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
     }
 }
 

@@ -196,12 +196,12 @@ public class ChildNodeStateManager extends ChannelReceiver {
                     updateState(desc, NodeManagerConstants.States.Running);
                     LOG.debug("Sending {} state for {}", NodeManagerConstants.States.Running, desc.getFullyQualifiedName());
                 } else {
-                    LOG.error("Could not launch: {} at path: {}", desc.getFullyQualifiedName(), desc.getService().getCmdPath());
+                    LOG.error("Could not launch: {} at path: {}", desc.getFullyQualifiedName(), desc.getService().cmdPath());
                     error = true;
                 }
             } else {
                 LOG.error("Could not create launcher for: {} at path: {}", desc.getFullyQualifiedName(),
-                        desc.getService().getCmdPath());
+                        desc.getService().cmdPath());
                 error = true;
             }
         }

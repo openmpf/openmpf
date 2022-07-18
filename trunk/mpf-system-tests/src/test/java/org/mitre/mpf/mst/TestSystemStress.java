@@ -66,7 +66,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString());  // 1.25G
 
         String pipelineName = addDefaultMotionMogPipeline();
-        long jobId = runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia(pipelineName, media);
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
     }
@@ -76,7 +76,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
     public void runSpeechSphinxDetectAudio() throws Exception {
         // 28MG
         List<JobCreationMediaData> media = toMediaObjectList(ioUtils.findFile("/samples/speech/obamastateoftheunion2015.mp3"));
-        long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media, Collections.emptyMap(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("SPHINX SPEECH DETECTION PIPELINE", media);
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, 1);
     }
@@ -99,8 +99,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
             media.add(new JobCreationMediaData(file.getAbsoluteFile().toPath().toUri().toString()));
             i++;
         }
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, i);
     }
@@ -120,8 +119,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
         // rejects:
         //        mediaPaths.add(ioUtils.findFile("/mpfdata/datasets/systemTests/stress/face/092515_VPOTUS_HD.mp4").toString();  // 1.25G, times out at 5 hours
 
-        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
-                propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
         URI actualOutputPath = propertiesUtil.createDetectionOutputObjectFile(jobId).toUri();
         checkOutput(actualOutputPath, media.size());
     }
@@ -178,8 +176,7 @@ public class TestSystemStress extends TestSystemWithDefaultConfig {
                 while (!fQueue.isEmpty()) {
                     List<JobCreationMediaData> media = new LinkedList<>();
                     media.add(new JobCreationMediaData(fQueue.take().getAbsoluteFile().toPath().toUri().toString()));
-                    runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media, Collections.emptyMap(),
-                            propertiesUtil.getJmsPriority());
+                    runPipelineOnMedia("OCV FACE DETECTION PIPELINE", media);
                     manyJobsNumFilesProcessed++;
                 }
             } catch (InterruptedException ie) {

@@ -44,6 +44,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionProperty;
 import org.mitre.mpf.rest.api.pipelines.Pipeline;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.transients.TransientPipelineDefinition;
 import org.mitre.mpf.wfm.WfmStartup;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
@@ -226,32 +227,56 @@ public abstract class TestSystem {
         return media;
     }
 
-    protected long runPipelineOnMedia(String pipelineName, List<JobCreationMediaData> media) {
-        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(),
-                                  propertiesUtil.getJmsPriority());
+    protected long runPipelineOnMedia(String pipelineName,
+                                      List<JobCreationMediaData> media) {
+        return runPipelineOnMedia(
+                pipelineName,
+                media,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(String pipelineName,
                                       List<JobCreationMediaData> media,
                                       Map<String, String> jobProperties) {
-        return runPipelineOnMedia(pipelineName, media, jobProperties, propertiesUtil.getJmsPriority());
-    }
-
-    protected long runPipelineOnMedia(String pipelineName,
-                                      List<JobCreationMediaData> media,
-                                      int priority) {
-        return runPipelineOnMedia(pipelineName, media, Collections.emptyMap(), priority);
+        return runPipelineOnMedia(
+                pipelineName,
+                media,
+                Collections.emptyMap(),
+                jobProperties,
+                propertiesUtil.getJmsPriority());
     }
 
     protected long runPipelineOnMedia(
             String pipelineName,
             List<JobCreationMediaData> media,
+            Map<String, Map<String, String>> algorithmProperties,
             Map<String, String> jobProperties,
             int priority) {
 
         var jobRequest = new JobCreationRequest();
         jobRequest.setExternalId(UUID.randomUUID().toString());
         jobRequest.setPipelineName(pipelineName);
+        jobRequest.setMedia(media);
+        jobRequest.setAlgorithmProperties(algorithmProperties);
+        jobRequest.setJobProperties(jobProperties);
+        jobRequest.setPriority(priority);
+
+        long jobRequestId = jobRequestService.run(jobRequest).getId();
+        Assert.assertTrue(waitFor(jobRequestId));
+        return jobRequestId;
+    }
+
+    protected long runPipelineOnMedia(
+            TransientPipelineDefinition pipelineDef,
+            List<JobCreationMediaData> media,
+            Map<String, String> jobProperties,
+            int priority) {
+
+        var jobRequest = new JobCreationRequest();
+        jobRequest.setExternalId(UUID.randomUUID().toString());
+        jobRequest.setPipelineDefinition(pipelineDef);
         jobRequest.setMedia(media);
         jobRequest.setJobProperties(jobProperties);
         jobRequest.setPriority(priority);
@@ -260,6 +285,7 @@ public abstract class TestSystem {
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
+
 
     protected long runPipelineOnStream(
             String pipelineName, JobCreationStreamData stream, Map<String, String> jobProperties,
@@ -298,13 +324,34 @@ public abstract class TestSystem {
         }
     }
 
-    protected void runSystemTest(String pipelineName, String expectedOutputJsonPath, String... testMediaFiles) throws Exception {
+    protected void runSystemTest(String pipelineName,
+                                 String expectedOutputJsonPath,
+                                 String... testMediaFiles) throws Exception {
+        runSystemTest(
+                pipelineName,
+                expectedOutputJsonPath,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                testMediaFiles);
+    }
+
+    protected void runSystemTest(String pipelineName,
+                                 String expectedOutputJsonPath,
+                                 Map<String, Map<String, String>> algorithmProperties,
+                                 Map<String, String> jobProperties,
+                                 String... testMediaFiles) throws Exception {
         List<JobCreationMediaData> mediaPaths = new LinkedList<>();
         for (String filePath : testMediaFiles) {
             mediaPaths.add(new JobCreationMediaData(ioUtils.findFile(filePath).toString()));
         }
 
-        long jobId = runPipelineOnMedia(pipelineName, mediaPaths, Collections.emptyMap(), propertiesUtil.getJmsPriority());
+        long jobId = runPipelineOnMedia(
+                pipelineName,
+                mediaPaths,
+                algorithmProperties,
+                jobProperties,
+                propertiesUtil.getJmsPriority());
+
         if (!DISABLE_OUTPUT_CHECKING) {
             URL expectedOutputPath = getClass().getClassLoader().getResource(expectedOutputJsonPath);
             log.info("Deserializing expected output {} and actual output for job {}", expectedOutputPath, jobId);

@@ -26,31 +26,31 @@
 
 package org.mitre.mpf.rest.api.node;
 
-import org.mitre.mpf.nms.xml.EnvironmentVariable;
+import org.mitre.mpf.nms.json.EnvironmentVariable;
 
 public class EnvironmentVariableModel {
 	private String name; //env var vname
 	private String value; //env var value
 	private String sep;
-	
+
 	public EnvironmentVariableModel() { }
-	
+
 	public EnvironmentVariableModel(String name, String value, String sep) {
 		this.name = name;
 		this.value = value;
 		this.sep = sep;
 	}
-	
-	public EnvironmentVariableModel(EnvironmentVariable envVar) {	
-		this.name = envVar.getKey();
-		this.value = envVar.getValue();
-		this.sep = envVar.getSep();
+
+	public EnvironmentVariableModel(EnvironmentVariable envVar) {
+		this.name = envVar.key();
+		this.value = envVar.value();
+		this.sep = envVar.sep();
 	}
 
 	public String getName() {
 		return name;
 	}
-	
+
 	public String getValue() {
 		return value;
 	}

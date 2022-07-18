@@ -32,7 +32,7 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <TCP bind_port="${JGROUPS_TCP_PORT:7800}"
-         bind_addr="${JGROUPS_TCP_ADDRESS:localhost.localdomain}"
+         bind_addr="${JGROUPS_TCP_ADDRESS:localhost}"
          recv_buf_size="${tcp.recv_buf_size:130K}"
          send_buf_size="${tcp.send_buf_size:130K}"
          max_bundle_size="64K"

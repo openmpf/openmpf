@@ -32,7 +32,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import org.mitre.mpf.nms.xml.Service;
+import org.mitre.mpf.nms.json.Service;
 import org.mitre.mpf.rest.api.node.NodeManagerModel;
 import org.mitre.mpf.rest.api.node.ServiceModel;
 import org.mitre.mpf.test.TestUtil;
@@ -46,7 +46,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -195,13 +194,19 @@ public class TestNodeService {
 
         // ADD NEW SERVICE
 
-        Service testService = new Service(TEST_SERVICE_NAME, "SomeTestPath");
-        testService.setLauncher("simple");
-        List<String> argsList = Arrays.asList("SomeTestArg", "MPF.DETECTION_TEST_REQUEST");
-        testService.setArgs(argsList);
+        var testService = new Service(
+                TEST_SERVICE_NAME,
+                "SomeTestPath",
+                1,
+                "simple",
+                List.of("SomeTestArg", "MPF.DETECTION_TEST_REQUEST"),
+                List.of(),
+                "",
+                "");
+
 
         // Check the palette map and make sure the new service doesn't already exist
-        int origServiceModelCount = getServiceModelCount(testService.getName());
+        int origServiceModelCount = getServiceModelCount(testService.name());
         Assert.assertTrue(origServiceModelCount == 0);
 
         // Add the service
@@ -210,7 +215,7 @@ public class TestNodeService {
         // nodeManagerStatus.serviceChange(new ServiceDescriptor(testService, "localhost:localdomain", origCount + 1));
 
         // Check the palette map and note the addition of the new service
-        int addedServiceModelCount = getServiceModelCount(testService.getName());
+        int addedServiceModelCount = getServiceModelCount(testService.name());
         Assert.assertTrue(addedServiceModelCount == origServiceModelCount+ 1);
 
 
@@ -220,11 +225,11 @@ public class TestNodeService {
         // REMOVE NEW SERVICE
 
         // Remove the service
-        Tuple<Boolean, String> result = nodeManagerService.removeService(testService);
+        Tuple<Boolean, String> result = nodeManagerService.removeService(testService.name());
         Assert.assertTrue(result.getFirst());
 
         // Check palette map and make sure the new service doesn't already exist
-        int removedServiceModelCount = getServiceModelCount(testService.getName());
+        int removedServiceModelCount = getServiceModelCount(testService.name());
         Assert.assertTrue(removedServiceModelCount == origServiceModelCount);
     }
 

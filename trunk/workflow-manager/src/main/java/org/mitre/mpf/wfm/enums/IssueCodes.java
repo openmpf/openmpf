@@ -42,7 +42,8 @@ public enum IssueCodes {
     MEDIA_INITIALIZATION,
     MARKUP,
     PADDING,
-    INVALID_DETECTION;
+    INVALID_DETECTION,
+    LOCAL_STORAGE;
 
     public static final IssueCodes DEFAULT = OTHER;
 

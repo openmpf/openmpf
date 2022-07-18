@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.junit.Test;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
@@ -40,11 +41,13 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
+import static org.mockito.Mockito.mock;
 
 public class TestImageMediaSegmenter {
 
@@ -132,7 +135,7 @@ public class TestImageMediaSegmenter {
 
 
 	private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new ImageMediaSegmenter();
+		MediaSegmenter segmenter = new ImageMediaSegmenter(mock(CamelContext.class));
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}
@@ -140,8 +143,9 @@ public class TestImageMediaSegmenter {
 
 	private static Media createTestMedia() {
 		URI uri = URI.create("file:///example.jpg");
-		MediaImpl media = new MediaImpl(1, uri.toString(), UriScheme.get(uri),
-                                        Paths.get(uri), Collections.emptyMap(), Collections.emptyMap(), null);
+		MediaImpl media = new MediaImpl(
+				1, uri.toString(), UriScheme.get(uri), Paths.get(uri),
+				Map.of(), Map.of(), List.of(), List.of(), null);
 		media.setLength(1);
 		media.addMetadata("mediaKey1", "mediaValue1");
 		return media;

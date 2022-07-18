@@ -29,18 +29,20 @@ package org.mitre.mpf.wfm.data.entities.persistent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class MediaImpl implements Media {
 
@@ -49,6 +51,36 @@ public class MediaImpl implements Media {
     @Override
     public long getId() { return _id; }
 
+    private final long _parentId;
+    @Override
+    public long getParentId() { return _parentId; }
+
+    private final int _creationTaskIndex;
+    @Override
+    @JsonIgnore
+    public int getCreationTask() { return _creationTaskIndex; }
+
+
+    private final Multimap<Integer, Integer> _actionsIndexedByTask = HashMultimap.create();
+    @Override
+    public boolean wasActionProcessed(int taskIndex, int actionIndex) {
+        return _actionsIndexedByTask.containsEntry(taskIndex, actionIndex);
+    }
+    public void setProcessedAction(int taskIndex, int actionIndex) {
+        _actionsIndexedByTask.put(taskIndex, actionIndex);
+    }
+    @Override
+    @JsonIgnore
+    public int getLastProcessedTaskIndex() {
+        var tasks = _actionsIndexedByTask.keySet();
+        return tasks.isEmpty() ? -1 : Collections.max(tasks);
+    }
+
+
+
+    @Override
+    @JsonIgnore
+    public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }
 
     private final String _uri;
     @Override
@@ -74,6 +106,14 @@ public class MediaImpl implements Media {
     public Path getLocalPath() { return _localPath; }
 
 
+    /** The path to the media that the JSON output object should use. */
+    @Override
+    @JsonIgnore
+    public String getPersistentUri() {
+        return getStorageUri().orElse(_uri);
+    }
+
+
     /** If the media needed to be converted to another format, this will contain the path to converted media. */
     private Path _convertedMediaPath;
     @Override
@@ -82,6 +122,17 @@ public class MediaImpl implements Media {
     }
     public void setConvertedMediaPath(Path path) {
         _convertedMediaPath = path;
+    }
+
+
+    /** For derivative media, this will contain the URI to the media once placed in storage at the end of a job. */
+    private String _storageUri;
+    @Override
+    public Optional<String> getStorageUri() {
+        return Optional.ofNullable(_storageUri);
+    }
+    public void setStorageUri(String storageUri) {
+        _storageUri = storageUri;
     }
 
 
@@ -143,7 +194,7 @@ public class MediaImpl implements Media {
     public int getLength() { return _length; }
     public void setLength(int length) { _length = length; }
 
-    /** The SHA 256 hash of the local file (assuming it could be retrieved. */
+    /** The SHA 256 hash of the local file (assuming it could be retrieved). */
     private String _sha256;
     @Override
     public String getSha256() { return _sha256; }
@@ -155,6 +206,43 @@ public class MediaImpl implements Media {
     public FrameTimeInfo getFrameTimeInfo() { return _frameTimeInfo; }
     public void setFrameTimeInfo(FrameTimeInfo frameTimeInfo) { _frameTimeInfo = frameTimeInfo; }
 
+    private final ImmutableSet<MediaRange> _frameRanges;
+    @Override
+    public ImmutableSet<MediaRange> getFrameRanges() { return _frameRanges; }
+
+    private final ImmutableSet<MediaRange> _timeRanges;
+    @Override
+    public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
+
+
+    public MediaImpl(
+            long id,
+            long parentId,
+            int creationTaskIndex,
+            String uri,
+            UriScheme uriScheme,
+            Path localPath,
+            Map<String, String> mediaSpecificProperties,
+            Map<String, String> providedMetadata,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
+            String errorMessage) {
+        _id = id;
+        _parentId = parentId;
+        _creationTaskIndex = creationTaskIndex;
+        _uri = IoUtils.normalizeUri(uri);
+        _uriScheme = uriScheme;
+        _localPath = localPath;
+        _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);      
+        _frameRanges = ImmutableSet.copyOf(frameRanges);
+        _timeRanges = ImmutableSet.copyOf(timeRanges);
+
+        if (StringUtils.isNotEmpty(errorMessage)) {
+            _errorMessage = createErrorMessage(id, uri, errorMessage);
+            _failed = true;
+        }
+    }
 
     public MediaImpl(
             long id,
@@ -163,31 +251,39 @@ public class MediaImpl implements Media {
             Path localPath,
             Map<String, String> mediaSpecificProperties,
             Map<String, String> providedMetadata,
+            Collection<MediaRange> frameRanges,
+            Collection<MediaRange> timeRanges,
             String errorMessage) {
-        _id = id;
-        _uri = IoUtils.normalizeUri(uri);
-        _uriScheme = uriScheme;
-        _localPath = localPath;
-        _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
-        if (StringUtils.isNotEmpty(errorMessage)) {
-            _errorMessage = createErrorMessage(id, uri, errorMessage);
-            _failed = true;
-        }
+        this(id, -1, -1, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, frameRanges, timeRanges,
+                errorMessage);
     }
 
 
     @JsonCreator
     public MediaImpl(
             @JsonProperty("id") long id,
+            @JsonProperty("parentId") long parentId,
+            @JsonProperty("creationTaskIndex") int creationTaskIndex,
             @JsonProperty("uri") String uri,
             @JsonProperty("uriScheme") UriScheme uriScheme,
             @JsonProperty("localPath") Path localPath,
             @JsonProperty("mediaSpecificProperties") Map<String, String> mediaSpecificProperties,
             @JsonProperty("providedMetadata") Map<String, String> providedMetadata,
             @JsonProperty("errorMessage") String errorMessage,
-            @JsonProperty("metadata") Map<String, String> metadata) {
-        this(id, uri, uriScheme, localPath, mediaSpecificProperties, providedMetadata, errorMessage);
+            @JsonProperty("metadata") Map<String, String> metadata,
+            @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
+        this(id,
+             parentId,
+             creationTaskIndex,
+             uri,
+             uriScheme,
+             localPath,
+             mediaSpecificProperties,
+             providedMetadata,
+             frameRanges,
+             timeRanges,
+             errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
         }
@@ -200,15 +296,27 @@ public class MediaImpl implements Media {
         }
 
         MediaImpl result = new MediaImpl(
-                originalMedia.getId(), originalMedia.getUri(), originalMedia.getUriScheme(),
-                originalMedia.getLocalPath(), originalMedia.getMediaSpecificProperties(),
-                originalMedia.getProvidedMetadata(), originalMedia.getErrorMessage());
+                originalMedia.getId(),
+                originalMedia.getParentId(),
+                originalMedia.getCreationTask(),
+                originalMedia.getUri(),
+                originalMedia.getUriScheme(),
+                originalMedia.getLocalPath(),
+                originalMedia.getMediaSpecificProperties(),
+                originalMedia.getProvidedMetadata(),
+                originalMedia.getFrameRanges(),
+                originalMedia.getTimeRanges(),
+                originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
         result.setType(originalMedia.getType());
         result.setLength(originalMedia.getLength());
         result.setSha256(originalMedia.getSha256());
+        result.addMetadata(originalMedia.getMetadata());
+
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
+        originalMedia.getStorageUri().ifPresent(result::setStorageUri);
+
         return result;
     }
 
@@ -221,9 +329,10 @@ public class MediaImpl implements Media {
 
     @Override
     public String toString() {
-        return String.format("%s#<id=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%d, sha256='%s'>",
+        return String.format("%s#<id=%d, parentId=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%d, sha256='%s'>",
                              getClass().getSimpleName(),
                              _id,
+                             _parentId,
                              _uri,
                              _uriScheme,
                              _localPath,
@@ -233,5 +342,4 @@ public class MediaImpl implements Media {
                              _length,
                              _sha256);
     }
-
 }

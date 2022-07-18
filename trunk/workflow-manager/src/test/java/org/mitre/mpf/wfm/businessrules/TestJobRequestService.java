@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
@@ -55,6 +56,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -104,6 +107,10 @@ public class TestJobRequestService {
     private static JobCreationRequest createTestJobCreationRequest() {
         var jobCreationMedia1 = new JobCreationMediaData("http://my_media1.mp4");
         jobCreationMedia1.getProperties().put("media_prop1", "media_val1");
+        jobCreationMedia1.setFrameRanges(List.of(
+                new JobCreationMediaRange(0, 50),
+                new JobCreationMediaRange(100, 300)));
+
         var jobCreationMedia2 = new JobCreationMediaData("http://my_media2.mp4");
         jobCreationMedia2.getProperties().put("media_prop2", "media_val2");
 
@@ -130,6 +137,31 @@ public class TestJobRequestService {
         var task = new Task("Test Task", "desc", List.of(action.getName()));
         var pipeline = new Pipeline("TEST PIPELINE", "desc", List.of(task.getName()));
         return new JobPipelineElements(pipeline, List.of(task), List.of(action), List.of(algorithm));
+    }
+
+
+    private static void assertSegmentBoundariesEqual(
+            Collection<JobCreationMediaRange> creationBoundaries,
+            Collection<MediaRange> jobBoundaries) {
+        assertEquals(creationBoundaries.size(), jobBoundaries.size());
+
+        var creationBoundariesIter = creationBoundaries
+                .stream()
+                .sorted(Comparator.comparingInt(JobCreationMediaRange::getStart)
+                                .thenComparingInt(JobCreationMediaRange::getStop))
+                .iterator();
+
+        var jobBoundariesIter = jobBoundaries
+                .stream()
+                .sorted()
+                .iterator();
+
+        while (jobBoundariesIter.hasNext()) {
+            MediaRange jobBoundary = jobBoundariesIter.next();
+            JobCreationMediaRange creationBoundary = creationBoundariesIter.next();
+            assertEquals(jobBoundary.getStartInclusive(), creationBoundary.getStart());
+            assertEquals(jobBoundary.getEndInclusive(), creationBoundary.getStop());
+        }
     }
 
 
@@ -205,6 +237,21 @@ public class TestJobRequestService {
 
         assertEquals(jobCreationRequest.getJobProperties(), job.getJobProperties());
         assertEquals(jobCreationRequest.getAlgorithmProperties(), job.getOverriddenAlgorithmProperties());
+
+        assertFalse(media1.getFrameRanges().isEmpty());
+        assertTrue(media1.getTimeRanges().isEmpty());
+
+        assertTrue(media2.getFrameRanges().isEmpty());
+        assertTrue(media2.getTimeRanges().isEmpty());
+
+        var jobCreationMedia1 = jobCreationRequest.getMedia()
+                .stream()
+                .filter(m -> m.getMediaUri().equals("http://my_media1.mp4"))
+                .findAny()
+                .orElseThrow();
+
+        assertSegmentBoundariesEqual(jobCreationMedia1.getFrameRanges(),
+                                     media1.getFrameRanges());
     }
 
 
@@ -220,7 +267,8 @@ public class TestJobRequestService {
                 "http://callback",
                 "POST",
                 List.of(new MediaImpl(567, "http://media.mp4", UriScheme.HTTP, Paths.get("temp"),
-                                      Map.of("media_prop1", "media_val1"), Map.of(), "error")),
+                                      Map.of("media_prop1", "media_val1"), Map.of(),
+                                      List.of(), List.of(), "error")),
                 Map.of("job_prop1", "job_val1"),
                 Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
         originalJob.addDetectionProcessingError(
@@ -303,8 +351,8 @@ public class TestJobRequestService {
         assertEquals(newJob.getMedia().size(), originalJob.getMedia().size());
         assertEquals(1, newJob.getMedia().size());
 
-        Media newMedia = newJob.getMedia().asList().get(0);
-        Media originalMedia = originalJob.getMedia().asList().get(0);
+        Media newMedia = newJob.getMedia().iterator().next();
+        Media originalMedia = originalJob.getMedia().iterator().next();
         assertEquals(newMedia.getUri(), originalMedia.getUri());
         assertEquals(newMedia.getMediaSpecificProperties(), originalMedia.getMediaSpecificProperties());
         assertNull(newMedia.getErrorMessage());
@@ -329,8 +377,8 @@ public class TestJobRequestService {
         _inProgressJobs.addJob(
                 jobId, null, new SystemPropertiesSnapshot(Map.of()), createJobPipelineElements(),
                 3, null, null,
-                List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"), Map.of(),
-                                      Map.of(), null)),
+                List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"),
+                                      Map.of(), Map.of(), List.of(), List.of(), null)),
                 Map.of(), Map.of());
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);

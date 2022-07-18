@@ -27,10 +27,12 @@
 package org.mitre.mpf.wfm.businessrules.impl;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -57,6 +59,7 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.joining;
 
@@ -110,15 +113,36 @@ public class JobRequestServiceImpl implements JobRequestService {
     public JobRequest run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getMediaUri(), m.getProperties(), m.getMetadata()))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getMediaUri(),
+                        m.getProperties(),
+                        m.getMetadata(),
+                        convertRanges(m.getFrameRanges()),
+                        convertRanges(m.getTimeRanges())))
                 .collect(ImmutableList.toImmutableList());
 
         int priority = Optional.ofNullable(jobCreationRequest.getPriority())
                 .orElseGet(_propertiesUtil::getJmsPriority);
 
+        JobPipelineElements pipelineElements;
+        if (jobCreationRequest.getPipelineDefinition() == null) {
+            pipelineElements = _pipelineService.getBatchPipelineElements(
+                    jobCreationRequest.getPipelineName());
+        }
+        else if (jobCreationRequest.getPipelineName() == null
+                || jobCreationRequest.getPipelineName().isBlank()) {
+            pipelineElements = _pipelineService.getBatchPipelineElements(
+                    jobCreationRequest.getPipelineDefinition());
+        }
+        else {
+            throw new WfmProcessingException("Job request must either contain \"pipelineName\" " +
+                                                     "or \"pipelineDefinition\", but not both.");
+        }
+
+
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
-                jobCreationRequest.getPipelineName(),
+                pipelineElements,
                 media,
                 jobCreationRequest.getJobProperties(),
                 jobCreationRequest.getAlgorithmProperties(),
@@ -132,7 +156,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             return jobRequestEntity;
         }
     }
-
 
 
     @Override
@@ -151,12 +174,18 @@ public class JobRequestServiceImpl implements JobRequestService {
 
         List<Media> media = originalJob.getMedia()
                 .stream()
-                .map(m -> _inProgressJobs.initMedia(m.getUri(), m.getMediaSpecificProperties(), m.getProvidedMetadata()))
+                .filter(Predicate.not(Media::isDerivative))
+                .map(m -> _inProgressJobs.initMedia(
+                        m.getUri(),
+                        m.getMediaSpecificProperties(),
+                        m.getProvidedMetadata(),
+                        m.getFrameRanges(),
+                        m.getTimeRanges()))
                 .collect(ImmutableList.toImmutableList());
 
 
         jobRequestEntity = initialize(jobRequestEntity,
-                    originalJob.getPipelineElements().getName(),
+                    originalJob.getPipelineElements(),
                     media,
                     originalJob.getJobProperties(),
                     originalJob.getOverriddenAlgorithmProperties(),
@@ -170,15 +199,25 @@ public class JobRequestServiceImpl implements JobRequestService {
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobArtifactsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobOutputObjectsDirectory(jobId));
         FileSystemUtils.deleteRecursively(_propertiesUtil.getJobMarkupDirectory(jobId));
+        FileSystemUtils.deleteRecursively(_propertiesUtil.getJobDerivativeMediaDirectory(jobId));
 
         submit(jobRequestEntity);
         return jobRequestEntity;
     }
 
 
+    private static ImmutableSet<MediaRange> convertRanges(
+            Collection<JobCreationMediaRange> ranges) {
+        return ranges
+                .stream()
+                .map(r -> new MediaRange(r.getStart(), r.getStop()))
+                .collect(ImmutableSet.toImmutableSet());
+    }
+
+
     private JobRequest initialize(
             JobRequest jobRequestEntity,
-            String pipelineName,
+            JobPipelineElements pipelineElements,
             Collection<Media> media,
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
@@ -187,7 +226,6 @@ public class JobRequestServiceImpl implements JobRequestService {
             String callbackUrl,
             String callbackMethod) {
 
-        JobPipelineElements pipelineElements = _pipelineService.getBatchPipelineElements(pipelineName);
         // Capture the current state of the detection system properties at the time when this job is created.
         // Since the detection system properties may be changed by an administrator, we must ensure that the job
         // uses a consistent set of detection system properties through all stages of the job's pipeline.
@@ -230,8 +268,11 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobRequestEntity.setStatus(jobStatus);
                 jobRequestEntity.setTimeReceived(Instant.now());
                 jobRequestEntity.setPipeline(pipelineElements.getName());
-                jobRequestEntity.setTimeCompleted(null);jobRequestEntity.setOutputObjectPath(null);
+                jobRequestEntity.setTimeCompleted(null);
+                jobRequestEntity.setOutputObjectPath(null);
                 jobRequestEntity.setOutputObjectVersion(null);
+                jobRequestEntity.setTiesDbStatus(null);
+                jobRequestEntity.setCallbackStatus(null);
 
 
                 jobRequestEntity.setJob(_jsonUtils.serialize(job));

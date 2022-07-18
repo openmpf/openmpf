@@ -27,8 +27,6 @@ package org.mitre.mpf.nms.json;
 
 import java.io.Serializable;
 
-/**
- * Backing class for Service (node) elements of a nodeManager element
- */
+
 public record EnvironmentVariable(String key, String value, String sep) implements Serializable {
 }

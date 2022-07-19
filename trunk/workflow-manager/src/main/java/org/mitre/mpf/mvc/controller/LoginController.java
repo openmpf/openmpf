@@ -103,7 +103,7 @@ public class LoginController {
         return mv;
     }
 
-    @RequestMapping(value = { "/logout" }, method = RequestMethod.GET)
+    @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
     public String getLogout(
             @RequestParam(value = "reason", required = false) String reason,
             HttpSession session) {

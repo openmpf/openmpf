@@ -46,7 +46,7 @@ public class AuthenticationFailureHandler extends SimpleUrlAuthenticationFailure
                                         AuthenticationException exception) throws IOException, ServletException {
 
         if (BAD_CREDENTIALS_MESSAGE.equals(exception.getMessage())) {
-            response.sendRedirect(request.getContextPath() + "/login?error");
+            response.sendRedirect(request.getContextPath() + "/login?reason=error");
         }
     }
 

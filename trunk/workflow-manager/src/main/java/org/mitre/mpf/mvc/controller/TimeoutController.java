@@ -25,6 +25,7 @@
  ******************************************************************************/
 
 package org.mitre.mpf.mvc.controller;
+
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,7 +62,7 @@ public class TimeoutController {
 
 
     @RequestMapping(value = "/timeout", method = RequestMethod.GET)
-    public ModelAndView timeout(HttpServletRequest request, HttpServletResponse response, HttpSession session)
+    public String timeout(HttpServletRequest request, HttpServletResponse response, HttpSession session)
             throws IOException {
 
         log.info("session {} timed out", session);
@@ -77,6 +77,6 @@ public class TimeoutController {
             return null;
         }
 
-        return new ModelAndView("timeout");
+        return "redirect:/login?reason=timeout";
     }
 }

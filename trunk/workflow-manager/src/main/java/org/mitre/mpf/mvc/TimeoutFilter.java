@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.OptionalLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,16 +54,13 @@ public class TimeoutFilter implements Filter {
 
     // these calls do not require the user to be logged in; also, they do not count towards resetting the timeout countdown
     private static final Pattern excludeUrls =
-			Pattern.compile("^.*(css|js|fonts|jpg|login|timeout|bootout|rest).*$",
+			Pattern.compile("^.*(css|js|fonts|jpg|login|logout|timeout|bootout|rest).*$",
             Pattern.CASE_INSENSITIVE);
 
     // these ajax calls are on timers and should not count towards resetting the timeout countdown
     private static final Pattern ajaxUrls =
     		Pattern.compile("^.*(adminLogsMap|adminLogsUpdate|info|stats|javasimon-console).*$",
             Pattern.CASE_INSENSITIVE);
-
-    // map between session IDs and last action times
-    private final Map<String, Long> lastActionMap = new HashMap<String, Long>();
 
     // session timeout in minutes
     private int webSessionTimeout;
@@ -93,7 +90,7 @@ public class TimeoutFilter implements Filter {
 
         if (request.getRequestURI().equals("/workflow-manager/")) {
             // user has just logged in
-            lastActionMap.put(session.getId(), System.currentTimeMillis());
+            setLastActionTime(session, System.currentTimeMillis());
             session.setMaxInactiveInterval(webSessionTimeout * 60); // convert min to sec // DEBUG
             chain.doFilter(request, response);
         } else {
@@ -105,18 +102,19 @@ public class TimeoutFilter implements Filter {
                 log.debug("URI matches exclude pattern={}, keep going", excludeUrl);
                 chain.doFilter(request, response);
 
-            } else {
+            }
+            else if (session == null) {
+                // Timed out due to previous call to session.setMaxInactiveInterval;
+                handleSessionTimeout(request, response, chain);
+            }
+            else {
                 m = ajaxUrls.matcher(request.getRequestURI());
                 boolean ajaxUrl = m.matches();
 
                 // NOTE: We might be here if the same user has multiple browser tabs open.
                 // If so, and the session has already timed out, the session entry was already
                 // removed from the map so set lastAction to 0 to ensure the timeout behavior.
-                long lastAction = 0;
-                if (lastActionMap.containsKey(session.getId())) {
-                    lastAction = lastActionMap.get(session.getId());
-                }
-
+                long lastAction = getLastActionTime(session).orElse(0);
                 int sessionTimeoutMillisecs = webSessionTimeout * 60 * 1000; // convert min to millisec
 
                 long now = System.currentTimeMillis();
@@ -128,7 +126,7 @@ public class TimeoutFilter implements Filter {
                 long grace = sessionTimeoutMillisecs - warningPeriod;
                 if ( ( diff < grace ) || request.getRequestURI().startsWith("/workflow-manager/resetSession") ) {
                     if (!ajaxUrl) {
-                        lastActionMap.put(session.getId(), now);
+                        setLastActionTime(session, now);
                     }
                     log.debug("Keep going due to no timeout");
                     chain.doFilter(request, response);
@@ -144,7 +142,6 @@ public class TimeoutFilter implements Filter {
                     else {
                         //the session has timed out
                         log.debug("Session has timed out");
-                        lastActionMap.remove(session.getId());
 
                         HashMap<String,Object> data = new HashMap<String,Object>();
                         data.put( "timeLeftInSecs", -1 );
@@ -156,15 +153,42 @@ public class TimeoutFilter implements Filter {
                         //necessary to prevent a user from recovering a session
                         SecurityContextHolder.clearContext();
 
-                        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-                            response.sendError(TimeoutController.CUSTOM_SESSION_TIMEOUT_ERROR_CODE);
-                        } else {
-                            response.sendRedirect(request.getContextPath() + "/timeout");
-                        }
+                        handleSessionTimeout(request, response, chain);
                     }
                 }
             }
         }
+    }
+
+    private static void handleSessionTimeout(HttpServletRequest request,
+                                             HttpServletResponse response,
+                                             FilterChain chain) throws IOException, ServletException {
+        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+            response.sendError(TimeoutController.CUSTOM_SESSION_TIMEOUT_ERROR_CODE);
+        }
+        else {
+            var redirectPath = request.getContextPath() + "/login";
+            if (request.getRequestURI().equals(redirectPath)) {
+                chain.doFilter(request, response);
+            }
+            else {
+                response.sendRedirect(redirectPath + "?reason=timeout");
+            }
+        }
+    }
+
+
+    private static final String LAST_ACTIVITY_TIME_KEY = "lastActivityTime";
+
+    private static void setLastActionTime(HttpSession session, long time) {
+        session.setAttribute(LAST_ACTIVITY_TIME_KEY, time);
+    }
+
+    private static OptionalLong getLastActionTime(HttpSession session) {
+        Object lastActivityTime = session.getAttribute(LAST_ACTIVITY_TIME_KEY);
+        return lastActivityTime == null
+                ? OptionalLong.empty()
+                : OptionalLong.of((long) lastActivityTime);
     }
 
     @Override

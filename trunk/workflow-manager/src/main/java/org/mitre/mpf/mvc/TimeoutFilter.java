@@ -85,11 +85,6 @@ public class TimeoutFilter implements Filter {
     private void doHttpFilter(HttpServletRequest request, HttpServletResponse response,
                               FilterChain chain) throws IOException, ServletException {
         HttpSession session = request.getSession(false);
-        if (session == null) {
-            // Timed out due to previous call to session.setMaxInactiveInterval;
-            handleSessionTimeout(request, response, chain);
-            return;
-        }
 
         log.debug("request.getRequestURI()={}", request.getRequestURI());
 
@@ -107,7 +102,12 @@ public class TimeoutFilter implements Filter {
                 log.debug("URI matches exclude pattern={}, keep going", excludeUrl);
                 chain.doFilter(request, response);
 
-            } else {
+            }
+            else if (session == null) {
+                // Timed out due to previous call to session.setMaxInactiveInterval;
+                handleSessionTimeout(request, response, chain);
+            }
+            else {
                 m = ajaxUrls.matcher(request.getRequestURI());
                 boolean ajaxUrl = m.matches();
 

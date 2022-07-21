@@ -87,7 +87,7 @@
         <maven.test.failure.ignore>true</maven.test.failure.ignore>
 
         <!-- Version numbers that are used more than once. -->
-        <spring.framework.version>5.3.18</spring.framework.version>
+        <spring.framework.version>5.3.20</spring.framework.version>
         <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
         <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
         <camel.framework.version>2.24.0</camel.framework.version>
@@ -100,7 +100,7 @@
         <jackson.version>2.13.2</jackson.version>
         <jackson.databind.version>2.13.2.1</jackson.databind.version>
         <spring.security.version>5.6.1</spring.security.version>
-        <commons.configuration2.version>2.7</commons.configuration2.version>
+        <commons.configuration2.version>2.8.0</commons.configuration2.version>
         <javax.jms-api.version>2.0.1</javax.jms-api.version>
         <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
         <commons.lang3.version>3.10</commons.lang3.version>

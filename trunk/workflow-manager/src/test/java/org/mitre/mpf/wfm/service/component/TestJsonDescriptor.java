@@ -47,7 +47,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloWorld", descriptor.getComponentName());
         assertEquals(ComponentLanguage.CPP, descriptor.getSourceLanguage());
-        assertEquals("6.3", descriptor.getComponentVersion());
+        assertEquals("7.0", descriptor.getComponentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfCplusplusHelloWorld.so",
                      descriptor.getBatchLibrary());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloWorld/lib/libmpfStreamingCplusplusHelloWorld.so",
@@ -71,7 +71,7 @@ public class TestJsonDescriptor {
 
         assertEquals("CplusplusHelloCustomPipelinesComponent", descriptor.getComponentName());
         assertEquals(ComponentLanguage.CPP, descriptor.getSourceLanguage());
-        assertEquals("6.3", descriptor.getComponentVersion());
+        assertEquals("7.0", descriptor.getComponentVersion());
         assertEquals("${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
                      descriptor.getBatchLibrary());
         assertNull(descriptor.getStreamLibrary());
@@ -123,9 +123,9 @@ public class TestJsonDescriptor {
         assertTrue(descriptor.getPipelines().isEmpty());
         assertEquals("JavaTestDetection", descriptor.getComponentName());
         assertEquals(ComponentLanguage.JAVA, descriptor.getSourceLanguage());
-        assertEquals("6.3", descriptor.getComponentVersion());
-        assertEquals("6.3", descriptor.getMiddlewareVersion());
-        assertEquals("mpf-java-test-detection-component-6.3.jar", descriptor.getBatchLibrary());
+        assertEquals("7.0", descriptor.getComponentVersion());
+        assertEquals("7.0", descriptor.getMiddlewareVersion());
+        assertEquals("mpf-java-test-detection-component-7.0.jar", descriptor.getBatchLibrary());
         assertNull(descriptor.getStreamLibrary());
         assertEquals(1, descriptor.getEnvironmentVariables().size());
         JsonComponentDescriptor.EnvironmentVariable envVar = descriptor.getEnvironmentVariables().get(0);

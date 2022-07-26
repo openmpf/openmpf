@@ -32,7 +32,7 @@
     <parent>
         <artifactId>mpf-project</artifactId>
         <groupId>org.mitre.mpf</groupId>
-        <version>6.3</version>
+        <version>7.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 

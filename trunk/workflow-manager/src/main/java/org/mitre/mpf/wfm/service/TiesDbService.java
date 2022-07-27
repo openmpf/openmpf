@@ -40,6 +40,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.rest.api.TiesDbRepostResponse;
+import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -59,10 +61,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
@@ -85,6 +84,8 @@ public class TiesDbService {
 
     private final ObjectMapper _objectMapper;
 
+    private final JsonUtils _jsonUtils;
+
     private final CallbackUtils _callbackUtils;
 
     private final JobRequestDao _jobRequestDao;
@@ -95,6 +96,7 @@ public class TiesDbService {
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                   ObjectMapper objectMapper,
+                  JsonUtils jsonUtils,
                   CallbackUtils callbackUtils,
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs) {
@@ -102,6 +104,7 @@ public class TiesDbService {
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
         _callbackUtils = callbackUtils;
+        _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
     }
@@ -203,12 +206,61 @@ public class TiesDbService {
         }
 
         return ThreadUtil.allOf(futures)
-                .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
-                .exceptionally(e -> reportExceptions(job.getId(), futures));
+                .whenComplete((x, err) -> {
+                    if (err == null) {
+                        _jobRequestDao.setTiesDbSuccessful(job.getId());
+                    }
+                    else {
+                        reportExceptions(job.getId(), futures);
+                    }
+                });
     }
 
 
-    private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
+    public TiesDbRepostResponse repost(Collection<Long> jobIds) {
+        var failures = new ArrayList<TiesDbRepostResponse.Failure>();
+        var futures = new HashMap<Long, CompletableFuture<Void>>(jobIds.size());
+        for (long jobId : jobIds) {
+            var jobRequest = _jobRequestDao.findById(jobId);
+            if (jobRequest == null) {
+                failures.add(new TiesDbRepostResponse.Failure(
+                        jobId, String.format("Could not find job with id %s.", jobId)));
+            }
+            else if (_inProgressJobs.containsJob(jobId)) {
+                failures.add(new TiesDbRepostResponse.Failure(
+                        jobId, "Job is still running."));
+            }
+            else {
+                try {
+                    var job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+                    futures.put(jobId, postAssertions(job));
+                }
+                catch (WfmProcessingException e) {
+                    failures.add(new TiesDbRepostResponse.Failure(
+                            jobId, e.getMessage()));
+                }
+            }
+        }
+
+        var success = new ArrayList<Long>();
+        for (var entry : futures.entrySet()) {
+            try {
+                entry.getValue().join();
+                success.add(entry.getKey());
+            }
+            catch (CompletionException e) {
+                var errorMsg = e.getCause().getMessage();
+                failures.add(new TiesDbRepostResponse.Failure(entry.getKey(), errorMsg));
+            }
+        }
+        success.sort(Comparator.naturalOrder());
+        failures.sort(Comparator.comparingLong(TiesDbRepostResponse.Failure::jobId));
+        return new TiesDbRepostResponse(success, failures);
+    }
+
+
+
+    private void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
         var joiner = new StringJoiner("\n\n ");
         for (var future : futures) {
             try {
@@ -219,7 +271,6 @@ public class TiesDbService {
             }
         }
         _jobRequestDao.setTiesDbError(jobId, joiner.toString());
-        return null;
     }
 
 

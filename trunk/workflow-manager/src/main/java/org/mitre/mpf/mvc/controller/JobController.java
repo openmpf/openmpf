@@ -43,7 +43,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +103,9 @@ public class JobController {
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
+    @Autowired
+    private TiesDbService tiesDbService;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -426,6 +429,20 @@ public class JobController {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         return MdcUtil.job(internalJobId, () -> cancelJobInternal(internalJobId));
     }
+
+
+    @RequestMapping(value = "/rest/jobs/tiesdbrepost", method = RequestMethod.POST)
+    @ApiOperation("Retry posting job results to TiesDB.")
+    public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
+        var tiesDbResult = tiesDbService.repost(jobIds);
+        if (tiesDbResult.failures().isEmpty()) {
+            return ResponseEntity.ok(tiesDbResult);
+        }
+        else {
+            return ResponseEntity.internalServerError().body(tiesDbResult);
+        }
+    }
+
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {

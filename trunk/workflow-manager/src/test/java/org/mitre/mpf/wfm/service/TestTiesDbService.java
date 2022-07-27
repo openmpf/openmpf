@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
@@ -58,11 +59,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
 import static org.mockito.AdditionalMatchers.or;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class TestTiesDbService {
@@ -76,6 +79,8 @@ public class TestTiesDbService {
     private AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil;
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
+
+    private final JsonUtils _jsonUtils = new JsonUtils(_objectMapper);
 
     @Mock
     private CallbackUtils _mockCallbackUtils;
@@ -98,8 +103,13 @@ public class TestTiesDbService {
     public void init() {
         MockitoAnnotations.initMocks(this);
         _tiesDbService = new TiesDbService(
-                _mockPropertiesUtil, _mockAggregateJobPropertiesUtil,
-                _objectMapper, _mockCallbackUtils, _mockJobRequestDao, _mockInProgressJobs);
+                _mockPropertiesUtil,
+                _mockAggregateJobPropertiesUtil,
+                _objectMapper,
+                _jsonUtils,
+                _mockCallbackUtils,
+                _mockJobRequestDao,
+                _mockInProgressJobs);
 
         when(_mockPropertiesUtil.getSemanticVersion())
                 .thenReturn("1.5");
@@ -1484,8 +1494,8 @@ public class TestTiesDbService {
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
-        // TiesDbService logs a warning and always returns a successful future.
-        _tiesDbService.postAssertions(job).join();
+        var future = _tiesDbService.postAssertions(job);
+        TestUtil.assertThrows(CompletionException.class, future::join);
 
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
         verify(_mockCallbackUtils, times(1))
@@ -1530,7 +1540,8 @@ public class TestTiesDbService {
                     ? ThreadUtil.completedFuture(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok"))
                     : ThreadUtil.completedFuture(createErrorResponse()));
 
-        _tiesDbService.postAssertions(job).join();
+        var future = _tiesDbService.postAssertions(job);
+        TestUtil.assertThrows(CompletionException.class, future::join);
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt());
@@ -1590,5 +1601,85 @@ public class TestTiesDbService {
                                 "1.5",
                                 "hostname",
                                 100)));
+    }
+
+
+    @Test
+    public void testRepost() {
+        initJob(100);
+        initJob(101);
+        initJob(102);
+        initJob(500);
+        initJob(501);
+
+        when(_mockInProgressJobs.containsJob(102))
+                .thenReturn(true);
+
+
+        var svcSpy = spy(_tiesDbService);
+        doReturn(ThreadUtil.completedFuture(null))
+                .when(svcSpy)
+                .postAssertions(argThat(j -> j.getId() == 100 || j.getId() == 101));
+        doReturn(ThreadUtil.failedFuture(new IllegalStateException("Failure for job 500")))
+                .when(svcSpy)
+                .postAssertions(argThat(j -> j.getId() == 500));
+        doReturn(ThreadUtil.failedFuture(new IllegalStateException("Different failure")))
+                .when(svcSpy)
+                .postAssertions(argThat(j -> j.getId() == 501));
+
+
+        var result = svcSpy.repost(List.of(101L, 100L, 404L, 102L, 500L, 501L));
+        assertThat(result.success(), is(List.of(100L, 101L)));
+
+        var failures = result.failures();
+        assertThat(failures, hasSize(4));
+
+        var missingJob = failures.stream()
+                .filter(f -> f.jobId() == 404)
+                .findAny()
+                .orElseThrow();
+        assertThat(missingJob.error(), containsString("Could not find job"));
+
+        var runningJob = failures.stream()
+                .filter(f -> f.jobId() == 102)
+                .findAny()
+                .orElseThrow();
+        assertThat(runningJob.error(), is("Job is still running."));
+
+        var postError1 = failures.stream()
+                .filter(j -> j.jobId() == 500)
+                .findAny()
+                .orElseThrow();
+        assertThat(postError1.error(), is("Failure for job 500"));
+
+        var postError2 = failures.stream()
+                .filter(j -> j.jobId() == 501)
+                .findAny()
+                .orElseThrow();
+        assertThat(postError2.error(), is("Different failure"));
+    }
+
+    private void initJob(long jobId) {
+        var jobRequest = new JobRequest();
+        var job = createBatchJob(jobId);
+        jobRequest.setJob(_jsonUtils.serialize(job));
+
+        when(_mockJobRequestDao.findById(jobId))
+                .thenReturn(jobRequest);
+    }
+
+    private static BatchJob createBatchJob(long jobId) {
+        return new BatchJobImpl(
+                jobId,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                List.of(),
+                Map.of(),
+                Map.of());
+
     }
 }

@@ -1,26 +1,18 @@
 # Intermediate and Final Products
-
 *.o
 *.class
 *.idea*
 *.user
 *.iml
-*.pyc
-
 
 # Temporary Files
-
 *~
 \#*
 
-
 # OS-Specific Files
-
 .DS_Store
 
-
 # Generated and Copied Files
-
 target/
 trunk/target/
 trunk/protobuf/target/
@@ -52,12 +44,8 @@ trunk/workflow-manager/src/test/resources/CplusplusHelloWorldComponent.json
 trunk/audio-video-utils/target/
 trunk/audio-video-utils/target/
 trunk/bin/mpf-scripts/dist/
-trunk/bin/mpf-scripts/mpf.egg-info/
-
-
 
 # IDE Files
-
 cmake-build-debug
 cmake-build-release
 .classpath
@@ -66,21 +54,20 @@ cmake-build-release
 .settings
 
 # Build Scripts
-
 clean.pl
 run.pl
 build.pl
 wfmwebapp.sh
 integrationtest.sh
 
-
 # npm generated
 npm-debug.log
 node_modules/
 
-
 # Other Files
-
 trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 trunk/ansible/**/tasks/*.retry
 
+# Python
+*.egg-info
+*.pyc

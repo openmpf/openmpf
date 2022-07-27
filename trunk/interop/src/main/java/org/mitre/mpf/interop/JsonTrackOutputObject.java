@@ -34,11 +34,16 @@ import java.util.*;
 import static org.mitre.mpf.interop.util.CompareUtils.nullsFirst;
 
 @JsonTypeName("TrackOutputObject")
-@JsonPropertyOrder({ "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
+@JsonPropertyOrder({ "index", "id", "startOffsetFrame", "stopOffsetFrame", "startOffsetTime", "stopOffsetTime",
 		"type", "source", "confidence", "trackProperties", "exemplar", "detections", "startOffset", "stopOffset" })
 // Deprecated. Use startOffsetFrame and stopOffsetFrame instead, respectively. Left for backwards compatibility.
 @JsonIgnoreProperties({ "startOffset", "stopOffset" })
 public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> {
+
+	@JsonProperty("index")
+	@JsonPropertyDescription("An index for this track relative to the medium and job.")
+	private final int index;
+	public int getIndex() { return index; }
 
 	@JsonProperty("id")
 	@JsonPropertyDescription("The unique identifier for this track.")
@@ -99,6 +104,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 
 	@JsonCreator
 	public JsonTrackOutputObject(
+			@JsonProperty("index") int index,
 			@JsonProperty("id") String id,
 			@JsonProperty("startOffsetFrame") int startOffsetFrame,
 			@JsonProperty("stopOffsetFrame") int stopOffsetFrame,
@@ -110,6 +116,7 @@ public class JsonTrackOutputObject implements Comparable<JsonTrackOutputObject> 
 			@JsonProperty("trackProperties") Map<String, String> trackProperties,
 			@JsonProperty("exemplar") JsonDetectionOutputObject exemplar,
 			@JsonProperty("detections") Collection<JsonDetectionOutputObject> detections) {
+		this.index = index;
 		this.id = id;
 		this.startOffsetFrame = startOffsetFrame;
 		this.stopOffsetFrame = stopOffsetFrame;

@@ -1,9 +1,9 @@
 {
   "componentName": "JavaTestDetection",
-  "componentVersion": "6.3",
-  "middlewareVersion": "6.3",
+  "componentVersion": "7.0",
+  "middlewareVersion": "7.0",
   "sourceLanguage": "java",
-  "batchLibrary": "mpf-java-test-detection-component-6.3.jar",
+  "batchLibrary": "mpf-java-test-detection-component-7.0.jar",
   "environmentVariables": [
     {
       "name": "DUMMY_VAR",

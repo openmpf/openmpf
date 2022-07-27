@@ -30,6 +30,12 @@
                     "propertiesKey": "markup.labels.from.detections"
                 },
                 {
+                    "name": "MARKUP_LABELS_TRACK_INDEX_ENABLED",
+                    "description": "If true, add the track index to the start of every bounding box label.",
+                    "type": "BOOLEAN",
+                    "propertiesKey": "markup.labels.track.index.enabled"
+                },
+                {
                     "name": "MARKUP_LABELS_TEXT_PROP_TO_SHOW",
                     "description": "Name of the text property to show in the label before the numeric property. If using track-level details, and this property is not present at the track level, then the detection property for the track's exemplar will be used. Leave empty to omit.",
                     "type": "STRING",
@@ -88,6 +94,12 @@
                     "description": "The CRF value can be from 0-63. Lower values mean better quality. Recommended values range from 15-35, with 31 being recommended for 1080p HD video. This property is only used if generating VP9-encoded .webm files.",
                     "type": "INT",
                     "propertiesKey": "markup.video.vp9.crf"
+                },
+                {
+                    "name": "MARKUP_ANIMATION_ENABLED",
+                    "description": "If true, draw bounding boxes to fill in the gaps between detections in each track. Interpolate size and position.",
+                    "type": "BOOLEAN",
+                    "propertiesKey": "markup.video.animation.enabled"
                 }
             ]
         },

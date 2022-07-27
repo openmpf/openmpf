@@ -840,12 +840,12 @@
                         <fileset>
                             <directory>${env.MPF_HOME}/share/data</directory>
                             <includes>
-                                <include>nodeManagerConfig.xml</include>
+                                <include>nodeManagerConfig.json</include>
                                 <include>nodeServicesPalette.json</include>
-                                <include>Algorithms.xml</include>
-                                <include>Actions.xml</include>
-                                <include>Tasks.xml</include>
-                                <include>Pipelines.xml</include>
+                                <include>Algorithms.json</include>
+                                <include>Actions.json</include>
+                                <include>Tasks.json</include>
+                                <include>Pipelines.json</include>
                                 <include>components.json</include>
                             </includes>
                         </fileset>
@@ -911,7 +911,7 @@
                                     <directory>src/main/resources</directory>
                                     <filtering>true</filtering>
                                     <includes>
-                                        <include>**/nodeManagerConfig.xml</include>
+                                        <include>**/nodeManagerConfig.json</include>
                                         <include>**/properties/mpf.properties</include>
                                     </includes>
                                 </resource>

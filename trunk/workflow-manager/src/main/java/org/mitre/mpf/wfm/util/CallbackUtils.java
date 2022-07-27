@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
@@ -154,19 +155,29 @@ public class CallbackUtils implements AutoCloseable {
 
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
-        return executeRequest(request, retries, 100);
+        return executeRequest(request, retries, 100, r -> true);
+    }
+
+
+    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,
+                                                          Predicate<HttpResponse> isRetryable) {
+        return executeRequest(request, retries, 100, isRetryable);
     }
 
 
     private CompletableFuture<HttpResponse> executeRequest(
-            HttpUriRequest request, int retries, long delayMs) {
+            HttpUriRequest request,
+            int retries,
+            long delayMs,
+            Predicate<HttpResponse> isRetryable) {
 
         log.info("Starting {} callback to \"{}\".", request.getMethod(), request.getURI());
         long nextDelay = Math.min(delayMs * 2, 30_000);
 
         return executeRequest(request).thenApply(resp -> {
             int statusCode = resp.getStatusLine().getStatusCode();
-            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0) {
+            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
+                    || !isRetryable.test(resp)) {
                 return ThreadUtil.completedFuture(resp);
             }
 
@@ -193,7 +204,7 @@ public class CallbackUtils implements AutoCloseable {
             if (future.isCompletedExceptionally() && retries > 0) {
                 return ThreadUtil.delayAndUnwrap(
                         nextDelay, TimeUnit.MILLISECONDS,
-                        () -> executeRequest(request, retries - 1, nextDelay));
+                        () -> executeRequest(request, retries - 1, nextDelay, isRetryable));
             }
             return future;
         });

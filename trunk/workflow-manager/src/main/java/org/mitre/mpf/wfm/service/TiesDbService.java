@@ -259,7 +259,6 @@ public class TiesDbService {
     }
 
 
-
     private void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
         var joiner = new StringJoiner("\n\n ");
         for (var future : futures) {
@@ -355,8 +354,6 @@ public class TiesDbService {
     }
 
 
-
-
     private CompletableFuture<Void> postAssertion(TiesDbInfo tiesDbInfo, String mediaSha) {
         URI fullUrl;
         try {
@@ -367,10 +364,10 @@ public class TiesDbService {
                     .build();
         }
         catch (URISyntaxException e) {
-            return ThreadUtil.failedFuture(convertError(
+            return convertError(
                     tiesDbInfo.tiesDbUrl(),
                     tiesDbInfo.assertion().dataObject().algorithm(),
-                    e));
+                    e);
         }
 
         var assertion = tiesDbInfo.assertion();
@@ -391,48 +388,25 @@ public class TiesDbService {
             postRequest.setConfig(requestConfig);
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
 
-            return _callbackUtils.executeRequest(postRequest,
-                                                 _propertiesUtil.getHttpCallbackRetryCount())
-                    .thenAccept(TiesDbService::checkResponse)
-                    .handle((x, err) -> {
-                        if (err != null) {
-                            throw convertError(
-                                    fullUrl.toString(),
-                                    assertion.dataObject().algorithm(),
-                                    err);
-                        }
-                        return null;
-                    });
+            var responseChecker = new ResponseChecker();
+            return _callbackUtils.executeRequest(
+                        postRequest,
+                        _propertiesUtil.getHttpCallbackRetryCount(),
+                        responseChecker::shouldRetry)
+                    .thenAccept(responseChecker::checkResponse)
+                    .exceptionallyCompose(err -> convertError(
+                            fullUrl.toString(),
+                            assertion.dataObject().algorithm(),
+                            err));
         }
         catch (JsonProcessingException e) {
-            return ThreadUtil.failedFuture(convertError(
-                    fullUrl.toString(),
-                    assertion.dataObject().algorithm(),
-                    e));
+            return convertError(fullUrl.toString(), assertion.dataObject().algorithm(), e);
         }
     }
 
 
-    private static void checkResponse(HttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode >= 200 && statusCode <= 299) {
-            return;
-        }
-        try {
-            var responseContent = IOUtils.toString(response.getEntity().getContent(),
-                                                   StandardCharsets.UTF_8);
-            throw new IllegalStateException(String.format(
-                    "TiesDb responded with a non-200 status code of %s and body: %s",
-                    statusCode, responseContent));
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(
-                    "TiesDb responded with a non-200 status code of " + statusCode, e);
-        }
-    }
-
-
-    private static TiesDbException convertError(String url, String algorithm, Throwable error) {
+    private static CompletableFuture<Void> convertError(String url, String algorithm,
+                                                        Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
@@ -440,7 +414,7 @@ public class TiesDbService {
                 "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s.",
                 url, algorithm, error);
         LOG.error(errorMessage, error);
-        return new TiesDbException(errorMessage, error);
+        return ThreadUtil.failedFuture(new TiesDbException(errorMessage, error));
     }
 
 
@@ -466,6 +440,47 @@ public class TiesDbService {
     private static class TiesDbException extends RuntimeException {
         public TiesDbException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+
+    // The response content steam can only be read from once, but we need to read it twice. Once
+    // to check for MISSING_MEDIA_MSG and another time to report the final error. This class
+    // will hold on to the most recently tested response.
+    private static class ResponseChecker {
+        private static final String MISSING_MEDIA_MSG = "could not identify referenced item";
+        private String _responseContent;
+        private IOException _exception;
+
+        public boolean shouldRetry(HttpResponse resp) {
+            try {
+                _responseContent = IOUtils.toString(resp.getEntity().getContent(),
+                                                    StandardCharsets.UTF_8);
+                _exception = null;
+                return !_responseContent.contains(MISSING_MEDIA_MSG);
+            }
+            catch (IOException e) {
+                _responseContent = null;
+                _exception = e;
+                return true;
+            }
+        }
+
+        public void checkResponse(HttpResponse response) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 200 && statusCode <= 299) {
+                return;
+            }
+            if (_exception != null) {
+                throw new IllegalStateException(
+                        "TiesDb responded with a non-200 status code of " + statusCode,
+                        _exception);
+            }
+            else {
+                throw new IllegalStateException(String.format(
+                        "TiesDb responded with a non-200 status code of %s and body: %s",
+                        statusCode, _responseContent));
+            }
         }
     }
 }

@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
+import java.util.function.Predicate;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -1400,7 +1401,7 @@ public class TestTiesDbService {
                 .thenReturn(List.of(tiesDbInfo3));
 
 
-        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3), any()))
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
@@ -1408,7 +1409,7 @@ public class TestTiesDbService {
 
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
         verify(_mockCallbackUtils, times(3))
-                .executeRequest(httpRequestCaptor.capture(), eq(3));
+                .executeRequest(httpRequestCaptor.capture(), eq(3), any());
 
         {
             var expectedUri = URI.create(
@@ -1490,7 +1491,7 @@ public class TestTiesDbService {
                 .thenReturn(List.of(validTiesDbInfo, invalidTiesDbInfo));
 
 
-        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3)))
+        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3), any()))
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
@@ -1499,7 +1500,7 @@ public class TestTiesDbService {
 
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
         verify(_mockCallbackUtils, times(1))
-                .executeRequest(httpRequestCaptor.capture(), anyInt());
+                .executeRequest(httpRequestCaptor.capture(), anyInt(), any());
 
         verify(_mockJobRequestDao)
                 .setTiesDbError(eq(10L), nonBlank());
@@ -1534,17 +1535,27 @@ public class TestTiesDbService {
         var successUri = URI.create(
                 "http://localhost:81/api/db/supplementals?sha256Hash=MEDIA_1_SHA");
 
-        when(_mockCallbackUtils.executeRequest(any(), eq(3)))
-            .thenAnswer(inv ->
-                    inv.getArgument(0, HttpPost.class).getURI().equals(successUri)
-                    ? ThreadUtil.completedFuture(new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok"))
-                    : ThreadUtil.completedFuture(createErrorResponse()));
+        var errorMsg = "test error message";
+        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+                .thenAnswer(inv -> {
+                    if (inv.getArgument(0, HttpPost.class).getURI().equals(successUri)) {
+                        return ThreadUtil.completedFuture(
+                                new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "ok"));
+                    }
+                    var errorResponse = createErrorResponse(errorMsg);
+                    var retryPred = (Predicate<HttpResponse>) inv.getArgument(2);
+                    assertTrue(retryPred.test(errorResponse));
+                    return ThreadUtil.completedFuture(errorResponse);
+                });
+
 
         var future = _tiesDbService.postAssertions(job);
-        TestUtil.assertThrows(CompletionException.class, future::join);
+        var exception = TestUtil.assertThrows(CompletionException.class, future::join);
+        System.out.println(exception.getMessage());
+        assertThat(exception.getMessage(), containsString(errorMsg));
 
         verify(_mockCallbackUtils, times(2))
-                .executeRequest(any(), anyInt());
+                .executeRequest(any(), anyInt(), any());
 
         verify(_mockJobRequestDao)
                 .setTiesDbError(eq(10L), nonBlank());
@@ -1552,11 +1563,50 @@ public class TestTiesDbService {
     }
 
 
-    private static HttpResponse createErrorResponse() {
+    @Test
+    public void doesNotRetryOnMediaMissingFromTiesDb() {
+        var job = mock(BatchJob.class);
+        when(job.getId())
+                .thenReturn(10L);
+
+        var media1 = mock(Media.class);
+        when(job.getMedia())
+                .thenReturn(List.of(media1));
+        when(media1.getSha256())
+                .thenReturn("MEDIA_1_SHA");
+
+        when(media1.getTiesDbInfo())
+                .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));
+
+        var errorMsg = "<other content> could not identify referenced item <other content>";
+        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+                .thenAnswer(inv -> {
+                    var errorResponse = createErrorResponse(errorMsg);
+                    var retryPred = (Predicate<HttpResponse>) inv.getArgument(2);
+                    assertFalse(retryPred.test(errorResponse));
+                    return ThreadUtil.completedFuture(errorResponse);
+                });
+
+        var future = _tiesDbService.postAssertions(job);
+        var exception = TestUtil.assertThrows(CompletionException.class, future::join);
+        System.out.println(exception.getMessage());
+        assertThat(exception.getMessage(), containsString(errorMsg));
+
+        verify(_mockCallbackUtils, times(2))
+                .executeRequest(any(), anyInt(), any());
+
+        verify(_mockJobRequestDao)
+                .setTiesDbError(eq(10L), nonBlank());
+        verifyNoMoreInteractions(_mockJobRequestDao);
+    }
+
+
+
+    private static HttpResponse createErrorResponse(String errorMsg) {
         var response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 400, "BAD REQUEST");
         var entity = new BasicHttpEntity();
         response.setEntity(entity);
-        var bytes = "<error>".getBytes(StandardCharsets.UTF_8);
+        var bytes = errorMsg.getBytes(StandardCharsets.UTF_8);
         entity.setContent(new ByteArrayInputStream(bytes));
         return response;
     }

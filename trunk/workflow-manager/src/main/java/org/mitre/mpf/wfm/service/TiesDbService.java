@@ -206,14 +206,8 @@ public class TiesDbService {
         }
 
         return ThreadUtil.allOf(futures)
-                .whenComplete((x, err) -> {
-                    if (err == null) {
-                        _jobRequestDao.setTiesDbSuccessful(job.getId());
-                    }
-                    else {
-                        reportExceptions(job.getId(), futures);
-                    }
-                });
+                .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
+                .exceptionally(e -> reportExceptions(job.getId(), futures));
     }
 
 
@@ -259,7 +253,7 @@ public class TiesDbService {
     }
 
 
-    private void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
+    private Void reportExceptions(long jobId, Iterable<CompletableFuture<Void>> futures) {
         var joiner = new StringJoiner("\n\n ");
         for (var future : futures) {
             try {
@@ -269,7 +263,9 @@ public class TiesDbService {
                 joiner.add(e.getCause().getMessage());
             }
         }
-        _jobRequestDao.setTiesDbError(jobId, joiner.toString());
+        var combinedErrorMsgs = joiner.toString();
+        _jobRequestDao.setTiesDbError(jobId, combinedErrorMsgs);
+        throw new TiesDbException(combinedErrorMsgs);
     }
 
 
@@ -441,10 +437,14 @@ public class TiesDbService {
         public TiesDbException(String message, Throwable cause) {
             super(message, cause);
         }
+
+        public TiesDbException(String message) {
+            super(message);
+        }
     }
 
 
-    // The response content steam can only be read from once, but we need to read it twice. Once
+    // The response content stream can only be read from once, but we need to read it twice. Once
     // to check for MISSING_MEDIA_MSG and another time to report the final error. This class
     // will hold on to the most recently tested response.
     private static class ResponseChecker {

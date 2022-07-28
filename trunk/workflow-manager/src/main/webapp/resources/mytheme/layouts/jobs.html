@@ -178,11 +178,24 @@
                     Job {{selectedJob.jobId}} {{errorType}} Error:
                 </h4>
             </div>
-            <div class="modal-body smart-wrap" style="white-space: pre-line">
+            <div class="modal-body smart-wrap" style="white-space: pre-line; hyphens: initial">
                 {{errorDetails}}
             </div>
             <div class="modal-footer">
                 <div class="pull-right">
+                    <button ng-if="errorType == 'TiesDb'"
+                            ng-click="tiesDbRepost()"
+                            ng-disabled="isReposting() || repostWasSuccessful()"
+                            ng-class="{'btn-success': repostWasSuccessful()}"
+                            type="button"
+                            class="btn btn-default">
+
+                        <i ng-if="isReposting()" class="fa fa-refresh fa-spin fa-fw"></i>
+
+                        <span ng-if="!isReposting()"> Re-Post </span>
+
+                        <i ng-if="repostWasSuccessful()" class="fa fa-check fa-fw"></i>
+                    </button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>

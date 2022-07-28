@@ -324,6 +324,10 @@ AppServices.service('JobsService', function ($http) {
         });
         return promise;
     };
+
+    this.tiesDbRepost = function (jobId) {
+        return $http.post('jobs/tiesdbrepost', [jobId]);
+    };
 });
 
 AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {

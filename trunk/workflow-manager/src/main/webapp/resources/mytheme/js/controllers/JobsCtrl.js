@@ -25,6 +25,8 @@
  ******************************************************************************/
 
 'use strict';
+/*jshint esversion: 6 */
+
 /**
  * JobsCtrl
  * @constructor
@@ -247,6 +249,38 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             });
         });
     };
+
+    const isRepostingSym = Symbol();
+
+    $scope.tiesDbRepost = () => {
+        const repostingJob = $scope.selectedJob;
+        repostingJob[isRepostingSym] = true;
+
+        const userOnSameModal = () => repostingJob.jobId === $scope.selectedJob.jobId &&
+                                        $scope.errorType === 'TiesDb';
+
+        JobsService.tiesDbRepost(repostingJob.jobId)
+            .then(() => {
+                repostingJob[isRepostingSym] = false;
+                repostingJob.tiesDbStatus = 'COMPLETE';
+                if (userOnSameModal()) {
+                    $scope.errorDetails = 'Success';
+                }
+                jobTable.draw('page');
+            })
+            .catch(err => {
+                repostingJob[isRepostingSym] = false;
+                const errorMsg = err.data.failures[0].error;
+                repostingJob.tiesDbStatus = 'ERROR: ' + errorMsg;
+                if (userOnSameModal()) {
+                    $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
+                }
+            });
+    };
+
+    $scope.isReposting = () => $scope.selectedJob[isRepostingSym];
+
+    $scope.repostWasSuccessful = () => $scope.errorDetails === 'Success' && !$scope.isReposting();
 
 
     var scheduleUpdates = function () {

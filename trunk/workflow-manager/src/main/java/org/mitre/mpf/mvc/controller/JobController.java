@@ -431,7 +431,8 @@ public class JobController {
     }
 
 
-    @RequestMapping(value = "/rest/jobs/tiesdbrepost", method = RequestMethod.POST)
+    @RequestMapping(value = {"/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost"},
+            method = RequestMethod.POST)
     @ApiOperation("Retry posting job results to TiesDB.")
     public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
         var tiesDbResult = tiesDbService.repost(jobIds);

@@ -1518,7 +1518,7 @@ public class TestTiesDbService {
 
 
     @Test
-    public void canHandleHttpError() {
+    public void reportsErrorWhenOneRequestFailsAndOtherSucceeds() {
         var job = mock(BatchJob.class);
         when(job.getId())
                 .thenReturn(10L);
@@ -1551,8 +1551,57 @@ public class TestTiesDbService {
 
         var future = _tiesDbService.postAssertions(job);
         var exception = TestUtil.assertThrows(CompletionException.class, future::join);
-        System.out.println(exception.getMessage());
         assertThat(exception.getMessage(), containsString(errorMsg));
+
+        verify(_mockCallbackUtils, times(2))
+                .executeRequest(any(), anyInt(), any());
+
+        verify(_mockJobRequestDao)
+                .setTiesDbError(eq(10L), nonBlank());
+        verifyNoMoreInteractions(_mockJobRequestDao);
+    }
+
+
+    @Test
+    public void reportsAllErrorsWhenMultipleFailures() {
+        var job = mock(BatchJob.class);
+        when(job.getId())
+                .thenReturn(10L);
+
+        var media1 = mock(Media.class);
+        when(job.getMedia())
+                .thenReturn(List.of(media1));
+        when(media1.getSha256())
+                .thenReturn("MEDIA_1_SHA");
+
+        when(media1.getTiesDbInfo())
+                .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));
+
+        var uri1 = URI.create(
+                "http://localhost:81/api/db/supplementals?sha256Hash=MEDIA_1_SHA");
+
+        var errorMsg1 = "test error message";
+        var errorMsg2 = "other failure message";
+        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+                .thenAnswer(inv -> {
+                    String errorMsg;
+                    if (inv.getArgument(0, HttpPost.class).getURI().equals(uri1)) {
+                        errorMsg = errorMsg1;
+                    }
+                    else {
+                        errorMsg = errorMsg2;
+                    }
+                    var errorResponse = createErrorResponse(errorMsg);
+                    var retryPred = (Predicate<HttpResponse>) inv.getArgument(2);
+                    assertTrue(retryPred.test(errorResponse));
+                    return ThreadUtil.completedFuture(errorResponse);
+                });
+
+
+        var future = _tiesDbService.postAssertions(job);
+        var exception = TestUtil.assertThrows(CompletionException.class, future::join);
+        assertThat(exception.getMessage(), containsString(errorMsg1));
+        assertThat(exception.getMessage(), containsString(errorMsg2));
 
         verify(_mockCallbackUtils, times(2))
                 .executeRequest(any(), anyInt(), any());
@@ -1589,7 +1638,6 @@ public class TestTiesDbService {
 
         var future = _tiesDbService.postAssertions(job);
         var exception = TestUtil.assertThrows(CompletionException.class, future::join);
-        System.out.println(exception.getMessage());
         assertThat(exception.getMessage(), containsString(errorMsg));
 
         verify(_mockCallbackUtils, times(2))

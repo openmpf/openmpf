@@ -186,7 +186,7 @@
                     <button ng-if="errorType == 'TiesDb'"
                             ng-click="tiesDbRepost()"
                             ng-disabled="isReposting() || repostWasSuccessful()"
-                            ng-class="{'btn-success': repostWasSuccessful()}"
+                            ng-class="{'btn-success': repostWasSuccessful(), 'btn-warning': isReposting()}"
                             type="button"
                             class="btn btn-default">
 

@@ -250,18 +250,18 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         });
     };
 
-    const isRepostingSym = Symbol();
+    const jobsCurrentlyReposting = new Set();
 
     $scope.tiesDbRepost = () => {
         const repostingJob = $scope.selectedJob;
-        repostingJob[isRepostingSym] = true;
+        jobsCurrentlyReposting.add(repostingJob.jobId);
 
         const userOnSameModal = () => repostingJob.jobId === $scope.selectedJob.jobId &&
                                         $scope.errorType === 'TiesDb';
 
         JobsService.tiesDbRepost(repostingJob.jobId)
             .then(() => {
-                repostingJob[isRepostingSym] = false;
+                jobsCurrentlyReposting.delete(repostingJob.jobId);
                 repostingJob.tiesDbStatus = 'COMPLETE';
                 if (userOnSameModal()) {
                     $scope.errorDetails = 'Success';
@@ -269,7 +269,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 jobTable.draw('page');
             })
             .catch(err => {
-                repostingJob[isRepostingSym] = false;
+                jobsCurrentlyReposting.delete(repostingJob.jobId);
                 const errorMsg = err.data.failures[0].error;
                 repostingJob.tiesDbStatus = 'ERROR: ' + errorMsg;
                 if (userOnSameModal()) {
@@ -278,7 +278,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
             });
     };
 
-    $scope.isReposting = () => $scope.selectedJob[isRepostingSym];
+    $scope.isReposting = () => jobsCurrentlyReposting.has($scope.selectedJob.jobId);
 
     $scope.repostWasSuccessful = () => $scope.errorDetails === 'Success' && !$scope.isReposting();
 

@@ -32,7 +32,7 @@
         <param name="file" value="${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/${COMPONENT_NAME}.log"/>
         <param name="DatePattern" value="'.'yyyy-MM-dd"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %m%n"/>
+            <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %X{job} %m%n"/>
         </layout>
     </appender>
 
@@ -40,7 +40,7 @@
         <param name="target" value="System.err"/>
         <param name="DatePattern" value="'.'yyyy-MM-dd"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %m%n"/>
+            <param name="ConversionPattern" value="%d %p [%t] %c{36}:%L - %X{job} %m%n"/>
         </layout>
     </appender>
 

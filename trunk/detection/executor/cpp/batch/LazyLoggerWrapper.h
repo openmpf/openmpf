@@ -82,6 +82,10 @@ public:
         }
     }
 
+    [[nodiscard]] auto GetJobContext(const std::string &job_name) {
+        return base_logger_.GetJobContext(job_name);
+    }
+
 
 private:
     Logger base_logger_;

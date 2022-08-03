@@ -37,7 +37,7 @@
 #include "LazyLoggerWrapper.h"
 
 
-namespace MPF { namespace COMPONENT {
+namespace MPF::COMPONENT {
 
     class PythonLogger;
 
@@ -46,15 +46,7 @@ namespace MPF { namespace COMPONENT {
         PythonComponentHandle(const LazyLoggerWrapper<PythonLogger> &logger,
                               const std::string &lib_path);
 
-        PythonComponentHandle(PythonComponentHandle &&other) noexcept;
-
-        PythonComponentHandle(const PythonComponentHandle &other) = delete;
-
         ~PythonComponentHandle();
-
-        PythonComponentHandle& operator=(PythonComponentHandle &&other) noexcept;
-
-        PythonComponentHandle& operator=(const PythonComponentHandle &other) = delete;
 
         void SetRunDirectory(const std::string &run_dir);
 
@@ -84,13 +76,22 @@ namespace MPF { namespace COMPONENT {
     };
 
 
+    class PythonLoggerJobContext {
+    public:
+        explicit PythonLoggerJobContext(std::shared_ptr<std::string> job_name_log_prefix_ptr);
+
+        ~PythonLoggerJobContext();
+
+    private:
+        std::shared_ptr<std::string> job_name_log_prefix_ptr_;
+    };
+
+
     class PythonLogger {
     public:
         PythonLogger(const std::string &log_level,  const std::string &component_name);
 
         PythonLogger(const PythonLogger& other);
-
-        PythonLogger(PythonLogger &&other) noexcept;
 
         ~PythonLogger();
 
@@ -104,16 +105,21 @@ namespace MPF { namespace COMPONENT {
 
         void Fatal(const std::string &message);
 
+        PythonLoggerJobContext GetJobContext(const std::string& job_name);
+
     private:
+        std::shared_ptr<std::string> job_name_log_prefix_ptr_ = std::make_shared<std::string>();
+
         class logger_impl;
         std::unique_ptr<logger_impl> impl_;
 
         static void ConfigureLogging(const std::string &log_level,
-                                     const std::string &component_name);
+                                     const std::string &component_name,
+                                     std::shared_ptr<std::string> job_name_log_prefix_ptr);
 
         static std::string GetLogFilePath(const std::string &component_name);
     };
-}}
+}
 
 
 #endif //MPF_PYTHONCOMPONENTHANDLE_H

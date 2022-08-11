@@ -227,14 +227,14 @@
         "name": "AUTO_ROTATE",
         "description": "Specifies whether not to rotate media based on EXIF data or video metadata.",
         "type": "BOOLEAN",
-        "defaultValue": "false",
+        "defaultValue": "true",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
         "name": "AUTO_FLIP",
         "description": "Specifies whether or not to flip media based on EXIF data.",
         "type": "BOOLEAN",
-        "defaultValue": "false",
+        "defaultValue": "true",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
@@ -375,6 +375,20 @@
         "description": "When S3_USE_VIRTUAL_HOST is true, this should contain the S3 hostname without the bucket. For example, if the bucket URI is \"https://bucket.s3.amazonaws.com\", this should be set to \"s3.amazonaws.com\".",
         "type": "STRING",
         "propertiesKey": "s3.host",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "SOURCE_MEDIA_ONLY",
+        "description": "When set to true, the action will only be executed on the source media, not derivative media.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "DERIVATIVE_MEDIA_ONLY",
+        "description": "When set to true, the action will only be executed on derivative media, not the source media.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

@@ -42,7 +42,7 @@
             <match key="xmpDM:videoFrameRate">\s*Stream.*:\s+Video:.*,\s+([0-9\.]+)\s+fps,.*</match>
             <match key="encoder">\s*encoder\s*\:\s*(\w+).*</match>
             <match key="videoResolution">\s*Stream.*:\s+Video:.*,\s+([0-9]+x[0-9]+)(?:\s+\[.*\]){0,1},.*</match>
-            <match key="rotation">rotate\s*:\s*(\d+)</match>
+            <match key="rotation">displaymatrix: rotation of\s+(-?\d*\.?\d*)</match>
             <match key="frameCount">frame=\s*(\d+)</match>
         </metadata>
     </parser>

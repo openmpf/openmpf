@@ -42,7 +42,6 @@ import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.*;
@@ -246,9 +245,9 @@ public class MediaInspectionHelper {
             mediaMetadata.put("DURATION", Integer.toString(duration));
         }
 
-        String rotation = ffmpegMetadata.get("rotation");
-        if (rotation != null) {
-            mediaMetadata.put("ROTATION", rotation);
+        String ffmpegRotationStr = ffmpegMetadata.get("rotation");
+        if (ffmpegRotationStr != null) {
+            mediaMetadata.put("ROTATION", String.valueOf(parseFfmpegRotation(ffmpegRotationStr)));
         }
 
         var frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, fps);
@@ -481,6 +480,21 @@ public class MediaInspectionHelper {
                 LOG.warn(message);
             }
             return frameCount;
+        }
+    }
+
+    private static double parseFfmpegRotation(String rotationStr) {
+        double ffmpegRotation = Double.parseDouble(rotationStr);
+        double rotation = 360 - ffmpegRotation;
+        if (0 <= rotation && rotation < 360) {
+            return rotation;
+        }
+        rotation %= 360;
+        if (rotation >= 0) {
+            return rotation;
+        }
+        else {
+            return 360 + rotation;
         }
     }
 }

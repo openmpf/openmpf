@@ -266,9 +266,9 @@ public class MediaInspectionProcessor extends WfmProcessor {
             mediaMetadata.put("DURATION", Integer.toString(duration));
         }
 
-        String rotation = ffmpegMetadata.get("rotation");
-        if (rotation != null) {
-            mediaMetadata.put("ROTATION", rotation);
+        String ffmpegRotationStr = ffmpegMetadata.get("rotation");
+        if (ffmpegRotationStr != null) {
+            mediaMetadata.put("ROTATION", String.valueOf(parseFfmpegRotation(ffmpegRotationStr)));
         }
 
         var frameTimeInfo = FrameTimeInfoBuilder.getFrameTimeInfo(localPath, fps);
@@ -502,6 +502,20 @@ public class MediaInspectionProcessor extends WfmProcessor {
                 LOG.warn(message);
             }
             return frameCount;
+        }
+    }
+    private static double parseFfmpegRotation(String rotationStr) {
+        double ffmpegRotation = Double.parseDouble(rotationStr);
+        double rotation = 360 - ffmpegRotation;
+        if (0 <= rotation && rotation < 360) {
+            return rotation;
+        }
+        rotation %= 360;
+        if (rotation >= 0) {
+            return rotation;
+        }
+        else {
+            return 360 + rotation;
         }
     }
 }

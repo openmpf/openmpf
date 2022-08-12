@@ -142,6 +142,43 @@ public class TestMediaInspectionProcessor {
         LOG.info("Video media inspection test passed.");
     }
 
+
+    @Test(timeout = 5 * MINUTES)
+    public void testRotatedVideoInspection() {
+        LOG.info("Starting rotated video media inspection test.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/new_face_video-90.mp4",
+                                       Collections.emptyMap());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+
+        String mediaHash = "c059a6fe6d6340bebc20eb8f2803317b6c9b57e7fcec60f4e352062a7b800be4";
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
+                                        eq("video/mp4"), eq(511),
+                                        metadataCaptor.capture());
+        verifyNoJobOrMediaError();
+
+        var mediaMetadata = metadataCaptor.getValue();
+        assertTrue(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
+        assertEquals(90.0, Double.parseDouble(mediaMetadata.get("ROTATION")), 0.001);
+        assertEquals(511, Integer.parseInt(mediaMetadata.get("FRAME_COUNT")));
+        assertEquals(480, Integer.parseInt(mediaMetadata.get("FRAME_WIDTH")));
+        assertEquals(640, Integer.parseInt(mediaMetadata.get("FRAME_HEIGHT")));
+        assertEquals(29.97, Double.parseDouble(mediaMetadata.get("FPS")), 0.001);
+        assertEquals("video/mp4", mediaMetadata.get("MIME_TYPE"));
+        assertEquals(17090, Integer.parseInt(mediaMetadata.get("DURATION")));
+
+        LOG.info("Rotated video media inspection test passed.");
+    }
+
+
     @Test(timeout = 5 * MINUTES)
     public void testAudioInspection() {
         LOG.info("Starting audio media inspection test.");

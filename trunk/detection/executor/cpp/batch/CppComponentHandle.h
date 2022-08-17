@@ -37,7 +37,7 @@
 #include <MPFDetectionObjects.h>
 
 
-namespace MPF { namespace COMPONENT {
+namespace MPF::COMPONENT {
 
     class CppComponentHandle {
     public:
@@ -80,10 +80,12 @@ namespace MPF { namespace COMPONENT {
 
         void Fatal(const std::string &message);
 
+        log4cxx::MDC GetJobContext(const std::string& job_name);
+
     private:
         log4cxx::LoggerPtr logger_;
     };
-}}
+}
 
 
 #endif //MPF_CPPCOMPONENTHANDLE_H

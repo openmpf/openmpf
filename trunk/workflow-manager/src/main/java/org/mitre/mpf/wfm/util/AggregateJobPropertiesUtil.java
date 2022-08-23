@@ -28,9 +28,11 @@ package org.mitre.mpf.wfm.util;
 
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +42,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -223,6 +226,12 @@ public class AggregateJobPropertiesUtil {
                 null);
     }
 
+
+    // In order to properly support AUTO_ROTATE and AUTO_FLIP we need to determine if ROTATION
+    // and HORIZONTAL_FLIP were provided by the user.
+    private static final Set<String> PROPERTIES_EXCLUDED_FROM_DEFAULT
+            = Set.of("ROTATION", "HORIZONTAL_FLIP");
+
     private Map<String, String> getPropertyMap(
             Action action,
             Map<String, String> mediaProperties,
@@ -246,10 +255,16 @@ public class AggregateJobPropertiesUtil {
         pipelineElements.getAlgorithm(action.getAlgorithm())
                 .getProvidesCollection()
                 .getProperties()
-                .forEach(p -> allKeys.add(p.getName()));
+                .stream()
+                .map(AlgorithmProperty::getName)
+                .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
+                .forEach(allKeys::add);
 
         _workflowPropertyService.getProperties(mediaType)
-                .forEach(p -> allKeys.add(p.getName()));
+                .stream()
+                .map(WorkflowProperty::getName)
+                .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
+                .forEach(allKeys::add);
 
         return allKeys.stream()
                 .map(pn -> getPropertyInfo(pn, mediaProperties, mediaType, action, pipelineElements,

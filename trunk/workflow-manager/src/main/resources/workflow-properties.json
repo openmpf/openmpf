@@ -227,14 +227,14 @@
         "name": "AUTO_ROTATE",
         "description": "Specifies whether not to rotate media based on EXIF data or video metadata.",
         "type": "BOOLEAN",
-        "defaultValue": "false",
+        "defaultValue": "true",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {
         "name": "AUTO_FLIP",
         "description": "Specifies whether or not to flip media based on EXIF data.",
         "type": "BOOLEAN",
-        "defaultValue": "false",
+        "defaultValue": "true",
         "mediaTypes": ["VIDEO", "IMAGE"]
     },
     {

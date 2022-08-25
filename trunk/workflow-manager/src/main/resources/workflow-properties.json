@@ -376,7 +376,7 @@
         "type": "STRING",
         "propertiesKey": "s3.host",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
-    },    
+    },
     {
         "name": "SOURCE_MEDIA_ONLY",
         "description": "When set to true, the action will only be executed on the source media, not derivative media.",
@@ -390,5 +390,12 @@
         "type": "BOOLEAN",
         "defaultValue": "false",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "EXEMPLAR_POLICY",
+        "description": "Sets the policy for determining a track's exemplar. When set to anything other than a named policy, the detection with the maximum confidence is selected. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track).",
+        "type": "STRING",
+        "defaultValue": "CONFIDENCE",
+        "mediaTypes": ["VIDEO"]
     }
 ]

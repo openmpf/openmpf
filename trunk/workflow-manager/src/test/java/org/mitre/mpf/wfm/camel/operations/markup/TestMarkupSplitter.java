@@ -66,7 +66,8 @@ public class TestMarkupSplitter {
                          "type",  // type
                          7.7777f, // confidence
                          List.of(createDetection(detectionProperties)),
-                         trackProperties);
+                         trackProperties,
+                         "");
     }
 
     @Test

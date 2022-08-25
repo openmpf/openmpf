@@ -26,44 +26,16 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.trackmerging;
 
-public class TrackMergingPlan {
-	// Indicates whether to merge tracks. If track merging is turned off, minGapBetweenTracks is invalid,
-	// but minTrackLength is still respected.
-	private final boolean mergeTracks;
+import org.mitre.mpf.wfm.util.ExemplarFinder;
 
-	// The allowable distance between similar tracks without merging.
-	private final int minGapBetweenTracks;
-
-	// Indicates the shortest track length to keep.
-	private final int minTrackLength;
-
-	// Indicates the minimum amount of frame region overlap to merge tracks.
-	private final double minTrackOverlap;
-
-	public boolean isMergeTracks() { return mergeTracks; }
-
-	public int getMinGapBetweenTracks() {
-		return minGapBetweenTracks;
-	}
-
-	public int getMinTrackLength() {
-		return minTrackLength;
-	}
-
-	public double getMinTrackOverlap() {
-		return minTrackOverlap;
-	}
-
-	public TrackMergingPlan(boolean mergeTracks, int minGapBetweenTracks, int minTrackLength, double minTrackOverlap) {
-		this.mergeTracks = mergeTracks;
-		this.minGapBetweenTracks = minGapBetweenTracks;
-		this.minTrackLength = minTrackLength;
-		this.minTrackOverlap = minTrackOverlap;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s#<mergeTracks=%s, minGapBetweenTracks=%d, minTrackLength=%d, minTrackOverlap=%d>",
-				this.getClass().getSimpleName(), Boolean.toString(mergeTracks), minGapBetweenTracks, minTrackLength, minTrackOverlap);
-	}
+/**
+ * @param mergeTracks Indicates whether to merge tracks. If track merging is turned off,
+ *                     minGapBetweenTracks is invalid, but minTrackLength is still respected.
+ * @param minGapBetweenTracks The allowable distance between similar tracks without merging.
+ * @param minTrackLength Indicates the shortest track length to keep.
+ * @param minTrackOverlap Indicates the minimum amount of frame region overlap to merge tracks.
+ */
+public record TrackMergingPlan(boolean mergeTracks, int minGapBetweenTracks, int minTrackLength,
+                               double minTrackOverlap,
+                               ExemplarFinder exemplarFinder) {
 }

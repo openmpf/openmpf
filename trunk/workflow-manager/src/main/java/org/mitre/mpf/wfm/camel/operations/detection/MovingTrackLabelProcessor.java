@@ -189,7 +189,8 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                 track.getType(),
                 track.getConfidence(),
                 newDetectionsBuilder.build(),
-                newTrackProperties);
+                newTrackProperties,
+                track.getExemplar());
     }
 
 

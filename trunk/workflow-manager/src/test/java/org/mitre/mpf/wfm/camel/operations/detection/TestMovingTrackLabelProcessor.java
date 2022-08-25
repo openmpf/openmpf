@@ -33,7 +33,6 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -292,6 +291,7 @@ public class TestMovingTrackLabelProcessor {
                 "VIDEO", //type
                 -1, //confidence
                 detections, //detections
-                Map.of()); //trackProperties
+                Map.of(), //trackProperties
+                detections.iterator().next());
     }
 }

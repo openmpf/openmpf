@@ -32,9 +32,7 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
-import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.*;
 import org.mockito.ArgumentCaptor;
 
 import java.util.*;
@@ -396,7 +394,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -424,7 +422,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -451,7 +449,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -478,7 +476,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -505,7 +503,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -532,7 +530,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "SPEECH", 1, detections, Collections.emptyMap());
+                1, 3, "SPEECH", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -555,7 +553,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection1);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 1,
-                1, 1, "FACE", 1, detections, Collections.emptyMap());
+                1, 1, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -576,7 +574,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection3);
 
         Track track1 = new Track(1, 2, 1, 1, 1, 3,
-                1, 3, "FACE", 1, detections, Collections.emptyMap());
+                1, 3, "FACE", 1, detections, Collections.emptyMap(), detection1);
 
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track1);
@@ -683,8 +681,9 @@ public class TestDetectionTransformationProcessor {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
 
-        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(jobId, mediaId,
-                0, 0, frameWidth, frameHeight, tracks);
+        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(
+                jobId, mediaId, 0, 0, frameWidth, frameHeight, tracks,
+                ExemplarFinder.create(x -> "CONFIDENCE"));
         if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
             verify(_mockInProgressJobs, times(0))
                     .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
@@ -762,7 +761,7 @@ public class TestDetectionTransformationProcessor {
         detections.add(detection);
 
         Track track = new Track(1, 2, 1, 1, 0, 0,
-                0, 0, "FACE", 1, detections, Collections.emptyMap());
+                0, 0, "FACE", 1, detections, Collections.emptyMap(), detection);
         SortedSet<Track> tracks = new TreeSet<>();
         tracks.add(track);
 

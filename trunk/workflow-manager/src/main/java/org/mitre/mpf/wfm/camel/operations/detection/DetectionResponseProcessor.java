@@ -107,7 +107,15 @@ public class DetectionResponseProcessor
             double confidenceThreshold = calculateConfidenceThreshold(action, job, media);
 
             if (detectionResponse.getVideoResponsesCount() != 0) {
-                processVideoResponse(jobId, detectionResponse, detectionResponse.getVideoResponses(0), confidenceThreshold, media);
+                var combinedProps
+                        = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
+                var exemplarFinder = ExemplarFinder.create(combinedProps);
+                processVideoResponse(jobId,
+                                     detectionResponse,
+                                     detectionResponse.getVideoResponses(0),
+                                     confidenceThreshold,
+                                     media,
+                                     exemplarFinder);
             } else if (detectionResponse.getAudioResponsesCount() != 0) {
                 processAudioResponse(jobId, detectionResponse, detectionResponse.getAudioResponses(0), confidenceThreshold);
             } else if (detectionResponse.getImageResponsesCount() != 0) {
@@ -145,7 +153,9 @@ public class DetectionResponseProcessor
     private void processVideoResponse(long jobId,
                                       DetectionProtobuf.DetectionResponse detectionResponse,
                                       DetectionProtobuf.DetectionResponse.VideoResponse videoResponse,
-                                      double confidenceThreshold, Media media) {
+                                      double confidenceThreshold,
+                                      Media media,
+                                      ExemplarFinder exemplarFinder) {
         int startFrame = videoResponse.getStartFrame();
         int stopFrame = videoResponse.getStopFrame();
         var frameTimeInfo = media.getFrameTimeInfo();
@@ -188,6 +198,9 @@ public class DetectionResponseProcessor
                     .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
             if (!detections.isEmpty()) {
+                var exemplar = exemplarFinder.find(objectTrack.getStartFrame(),
+                                                   objectTrack.getStopFrame(),
+                                                   detections);
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -200,12 +213,13 @@ public class DetectionResponseProcessor
                         videoResponse.getDetectionType(),
                         objectTrack.getConfidence(),
                         detections,
-                        trackProperties);
-
+                        trackProperties,
+                        exemplar);
                 _inProgressJobs.addTrack(track);
             }
         }
     }
+
 
     private void processAudioResponse(long jobId,
                                       DetectionProtobuf.DetectionResponse detectionResponse,
@@ -259,7 +273,8 @@ public class DetectionResponseProcessor
                         audioResponse.getDetectionType(),
                         objectTrack.getConfidence(),
                         ImmutableSortedSet.of(detection),
-                        trackProperties);
+                        trackProperties,
+                        detection);
 
                 _inProgressJobs.addTrack(track);
             }
@@ -288,6 +303,7 @@ public class DetectionResponseProcessor
             }
 
             if (location.getConfidence() >= confidenceThreshold) {
+                var detection = toDetection(location, 0, 0);
                 Track track = new Track(
                         jobId,
                         detectionResponse.getMediaId(),
@@ -299,8 +315,9 @@ public class DetectionResponseProcessor
                         0,
                         imageResponse.getDetectionType(),
                         location.getConfidence(),
-                        ImmutableSortedSet.of(toDetection(location, 0, 0)),
-                        locationProperties);
+                        ImmutableSortedSet.of(detection),
+                        locationProperties,
+                        detection);
                 _inProgressJobs.addTrack(track);
             }
         }
@@ -362,7 +379,8 @@ public class DetectionResponseProcessor
                     genericResponse.getDetectionType(),
                     objectTrack.getConfidence(),
                     ImmutableSortedSet.of(detection),
-                    trackProperties);
+                    trackProperties,
+                    detection);
 
             _inProgressJobs.addTrack(track);
         }

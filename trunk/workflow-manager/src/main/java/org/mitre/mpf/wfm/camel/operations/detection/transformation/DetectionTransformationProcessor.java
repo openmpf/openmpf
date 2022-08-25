@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ExemplarFinder;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,9 +108,11 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
-                    Collection<Track> updatedTracks = removeIllFormedDetections(job.getId(), media.getId(),
+                    Collection<Track> updatedTracks = removeIllFormedDetections(
+                            job.getId(), media.getId(),
                             trackMergingContext.getTaskIndex(), actionIndex,
-                            frameWidth, frameHeight, tracks);
+                            frameWidth, frameHeight, tracks,
+                            ExemplarFinder.create(combinedProperties));
 
                     try {
                         if (requiresPadding(combinedProperties)) {
@@ -182,9 +185,10 @@ public class DetectionTransformationProcessor extends WfmProcessor {
         }
     }
 
-    public Collection<Track> removeIllFormedDetections(long jobId, long mediaId, int taskIndex, int actionIndex,
-                                                       int frameWidth, int frameHeight,
-                                                       Collection<Track> tracks) {
+    public Collection<Track> removeIllFormedDetections(
+            long jobId, long mediaId, int taskIndex, int actionIndex,
+            int frameWidth, int frameHeight, Collection<Track> tracks,
+            ExemplarFinder exemplarFinder) {
         // Remove any detections with zero width/height, or that are entirely outside of the frame.
         // If the number of detections goes to 0, drop the track.
         // Do not remove ill-formed detections for those types that are exempted, because they normally do not generate
@@ -227,6 +231,10 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 }
             }
             if (goodDetections.size() > 0) {
+                var exemplar = exemplarFinder.find(
+                        goodDetections.first().getMediaOffsetFrame(),
+                        goodDetections.last().getMediaOffsetFrame(),
+                        goodDetections);
                 newTracks.add(new Track(
                         track.getJobId(),
                         track.getMediaId(),
@@ -239,7 +247,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         track.getType(),
                         track.getConfidence(),
                         goodDetections,
-                        track.getTrackProperties()));
+                        track.getTrackProperties(),
+                        exemplar));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -363,7 +372,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getType(),
                     track.getConfidence(),
                     newDetections,
-                    track.getTrackProperties()));
+                    track.getTrackProperties(),
+                    track.getExemplar()));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

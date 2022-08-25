@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.ExemplarFinder;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +120,8 @@ public class TrackMergingProcessor extends WfmProcessor {
 
                 TrackMergingPlan trackMergingPlan = createTrackMergingPlan(job, media, action);
 
-                boolean mergeRequested = trackMergingPlan.isMergeTracks();
-                boolean pruneRequested = trackMergingPlan.getMinTrackLength() > 1;
+                boolean mergeRequested = trackMergingPlan.mergeTracks();
+                boolean pruneRequested = trackMergingPlan.minTrackLength() > 1;
 
                 if (!mergeRequested && !pruneRequested) {
                     continue; // nothing to do
@@ -144,7 +145,7 @@ public class TrackMergingProcessor extends WfmProcessor {
 
                 if (pruneRequested) {
                     int initialSize = tracks.size();
-                    int minTrackLength = trackMergingPlan.getMinTrackLength();
+                    int minTrackLength = trackMergingPlan.minTrackLength();
                     tracks = tracks.stream()
                             .filter(t -> t.getEndOffsetFrameInclusive() - t.getStartOffsetFrameInclusive() >= minTrackLength - 1)
                             .collect(toCollection(TreeSet::new));
@@ -220,7 +221,9 @@ public class TrackMergingProcessor extends WfmProcessor {
             }
         }
 
-        return new TrackMergingPlan(mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap);
+        return new TrackMergingPlan(
+                mergeTracks, minGapBetweenTracks, minTrackLength, minTrackOverlap,
+                ExemplarFinder.create(combinedProperties));
     }
 
     private static Set<Track> combine(SortedSet<Track> sourceTracks, TrackMergingPlan plan) {
@@ -242,7 +245,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                 // Iterate through the remaining tracks until a track is found which is within the frame gap and has sufficient region overlap.
                 if (canMerge(merged, candidate, plan)) {
                     // If one is found, merge them and then push this track back to the beginning of the collection.
-                    tracks.add(0, merge(merged, candidate));
+                    tracks.add(0, merge(merged, candidate, plan.exemplarFinder()));
                     performedMerge = true;
 
                     // Keep a reference to the track which was merged into the original - it will be removed.
@@ -267,9 +270,9 @@ public class TrackMergingProcessor extends WfmProcessor {
     }
 
     /** Combines two tracks. This is a destructive method. The contents of track1 reflect the merged track. */
-    public static Track merge(Track track1, Track track2){
+    public static Track merge(Track track1, Track track2, ExemplarFinder exemplarFinder){
 
-        Collection<Detection> detections = Stream.of(track1, track2)
+        SortedSet<Detection> detections = Stream.of(track1, track2)
                 .flatMap(t -> t.getDetections().stream())
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
 
@@ -280,6 +283,9 @@ public class TrackMergingProcessor extends WfmProcessor {
                         Map.Entry::getKey,
                         Map.Entry::getValue,
                         (v1, v2) -> v1.equals(v2) ? v1 : v1 + "; " + v2));
+        var exemplar = exemplarFinder.find(track1.getStartOffsetFrameInclusive(),
+                                           track2.getEndOffsetFrameInclusive(),
+                                           detections);
 
         Track merged = new Track(
                 track1.getJobId(),
@@ -293,15 +299,16 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track1.getType(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
-                properties);
+                properties,
+                exemplar);
         return merged;
     }
 
     private static boolean canMerge(Track track1, Track track2, TrackMergingPlan plan) {
         return StringUtils.equalsIgnoreCase(track1.getType(), track2.getType())
                 && isEligibleForMerge(track1, track2)
-                && isWithinGap(track1, track2, plan.getMinGapBetweenTracks())
-                && intersects(track1, track2, plan.getMinTrackOverlap());
+                && isWithinGap(track1, track2, plan.minGapBetweenTracks())
+                && intersects(track1, track2, plan.minTrackOverlap());
     }
 
     private boolean isEligibleForFixup(SortedSet<Track> tracks) {

@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.data.entities.transients;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -64,7 +63,7 @@ public class Track implements Comparable<Track> {
     /** The zero-based action index in the task of the pipeline which produced this track. */
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
-    
+
     private int artifactExtractionTrackIndex;
     public int getArtifactExtractionTrackIndex() {return artifactExtractionTrackIndex; }
     public void setArtifactExtractionTrackIndex(int trackNumber) { artifactExtractionTrackIndex = trackNumber; }
@@ -104,7 +103,6 @@ public class Track implements Comparable<Track> {
 
     /** The detection with the highest confidence in the track. */
     private final Detection _exemplar;
-    @JsonIgnore
     public Detection getExemplar() { return _exemplar; }
 
 
@@ -143,7 +141,8 @@ public class Track implements Comparable<Track> {
             @JsonProperty("type") String type,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
-            @JsonProperty("trackProperties") Map<String, String> trackProperties) {
+            @JsonProperty("trackProperties") Map<String, String> trackProperties,
+            @JsonProperty("exemplar") Detection exemplar) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -156,9 +155,7 @@ public class Track implements Comparable<Track> {
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
-        _exemplar = _detections.stream()
-                .max(Comparator.comparingDouble(Detection::getConfidence))
-                .orElse(null);
+        _exemplar = exemplar;
     }
 
 

@@ -128,7 +128,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             for (Table.Cell<Integer, Integer, URI> entry : trackAndFrameToUri.cellSet()) {
                 URI uri = entry.getValue();
                 jobTracks.stream().filter(t -> t.getArtifactExtractionTrackIndex() == entry.getRowKey())
-                        .flatMap(t -> t.getDetections().stream())
+                        .flatMap(ArtifactExtractionProcessor::getDetectionsWithExemplar)
                         .filter(d -> d.getMediaOffsetFrame() == entry.getColumnKey())
                         .forEach(d -> setStatus(d, uri));
             }
@@ -137,7 +137,8 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             for (Integer frame : trackAndFrameToUri.columnKeySet()) {
                 // When we are not cropping, the track number is a don't care; it is set to 0 in the frame extraction code.
                 URI uri = trackAndFrameToUri.get(0, frame);
-                jobTracks.stream().flatMap(t -> t.getDetections().stream())
+                jobTracks.stream()
+                        .flatMap(ArtifactExtractionProcessor::getDetectionsWithExemplar)
                         .filter(d -> d.getMediaOffsetFrame() == frame)
                         .forEach(d -> setStatus(d, uri));
             }
@@ -150,6 +151,11 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
         missingFramesString.ifPresent(s -> _inProgressBatchJobs.addError(
                 request.getJobId(), request.getMediaId(), IssueCodes.ARTIFACT_EXTRACTION,
                 "Error extracting artifact(s). " + s));
+    }
+
+
+    private static Stream<Detection> getDetectionsWithExemplar(Track track) {
+        return Stream.concat(Stream.of(track.getExemplar()), track.getDetections().stream());
     }
 
     private static Optional<String> createMissingFramesString(SortedSet<Track> jobTracks,

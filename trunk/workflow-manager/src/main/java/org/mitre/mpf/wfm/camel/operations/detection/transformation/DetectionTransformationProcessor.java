@@ -108,11 +108,12 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     int frameWidth = Integer.parseInt(media.getMetadata().get("FRAME_WIDTH"));
                     int frameHeight = Integer.parseInt(media.getMetadata().get("FRAME_HEIGHT"));
 
+                    var exemplarFinder = ExemplarFinder.create(combinedProperties);
                     Collection<Track> updatedTracks = removeIllFormedDetections(
                             job.getId(), media.getId(),
                             trackMergingContext.getTaskIndex(), actionIndex,
                             frameWidth, frameHeight, tracks,
-                            ExemplarFinder.create(combinedProperties));
+                            exemplarFinder);
 
                     try {
                         if (requiresPadding(combinedProperties)) {
@@ -121,7 +122,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                             String yPadding = combinedProperties.apply(MpfConstants.DETECTION_PADDING_Y);
 
                             padTracks(job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex,
-                                    xPadding, yPadding, frameWidth, frameHeight, updatedTracks);
+                                      xPadding, yPadding, frameWidth, frameHeight, updatedTracks,
+                                      exemplarFinder);
                         }
                     } catch (DetectionTransformationException e) {
                         // This should not happen because we checked that the detection properties were valid when the
@@ -345,7 +347,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
 
     private void padTracks(long jobId, long mediaId, int taskIndex, int actionIndex,
                            String xPadding, String yPadding, int frameWidth,
-                           int frameHeight, Collection<Track> tracks) {
+                           int frameHeight, Collection<Track> tracks,
+                           ExemplarFinder exemplarFinder) {
         var newTracks = new TreeSet<Track>();
         var shrunkToNothingFrames = IntStream.builder();
 
@@ -360,6 +363,11 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                 newDetections.add(newDetection);
             }
 
+            var newExemplar = exemplarFinder.find(
+                    track.getStartOffsetFrameInclusive(),
+                    track.getEndOffsetFrameInclusive(),
+                    newDetections);
+
             newTracks.add(new Track(
                     track.getJobId(),
                     track.getMediaId(),
@@ -373,7 +381,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getConfidence(),
                     newDetections,
                     track.getTrackProperties(),
-                    track.getExemplar()));
+                    newExemplar));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

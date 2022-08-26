@@ -160,6 +160,8 @@ public class TestDetectionResponseProcessor {
 
         when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
+        when(mockAggregateJobPropertiesUtil.getCombinedProperties(any(), any(), any()))
+                .thenReturn(x -> null);
 
     }
 

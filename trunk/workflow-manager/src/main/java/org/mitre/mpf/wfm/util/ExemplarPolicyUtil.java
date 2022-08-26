@@ -61,10 +61,6 @@ public class ExemplarPolicyUtil {
     }
 
     private static Detection findMiddle(int begin, int end, SortedSet<Detection> detections) {
-        if (detections.isEmpty()) {
-            return null;
-        }
-
         int middleFrame = (begin + end) / 2;
         var iter = detections.iterator();
         var minDet = iter.next();

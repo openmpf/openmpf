@@ -71,7 +71,8 @@ template<typename TMediaHandle>
 void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstance, jobject mediaMetadata,
             jobject requestProperties, const ResolutionConfig &resCfg, TMediaHandle &boundingBoxMediaHandle);
 
-ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height);
+ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frameSize,
+                                     int maxLabelLength);
 
 pFreeType2 initFreeType2(JniHelper &jni);
 
@@ -96,7 +97,7 @@ extern "C" {
 
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupVideoNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceVideoPathJString, jobject mediaMetadata,
-   jstring destinationVideoPathJString, jobject requestProperties)
+   jstring destinationVideoPathJString, jobject requestProperties, jint maxLabelLength)
 {
     JniHelper jni(env);
     try {
@@ -127,8 +128,10 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
         pFreeType2 freeType2 = initFreeType2(jni);
         MPF::COMPONENT::MPFVideoCapture videoCapture(sourceVideoPath);
-        ResolutionConfig resCfg =
-            getResolutionConfig(freeType2, videoCapture.GetFrameSize().width, videoCapture.GetFrameSize().height);
+        ResolutionConfig resCfg = getResolutionConfig(
+                freeType2,
+                videoCapture.GetFrameSize(),
+                maxLabelLength);
 
         BoundingBoxVideoHandle boundingBoxVideoHandle(destinationVideoPath, encoder, vp9Crf, std::move(videoCapture));
 
@@ -147,7 +150,7 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupV
 
 JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupImageNative
   (JNIEnv *env, jobject boundingBoxWriterInstance, jstring sourceImagePathJString, jobject mediaMetadata,
-   jstring destinationImagePathJString, jobject requestProperties)
+   jstring destinationImagePathJString, jobject requestProperties, jint maxLabelLength)
 {
     JniHelper jni(env);
     try {
@@ -156,8 +159,10 @@ JNIEXPORT void JNICALL Java_org_mitre_mpf_videooverlay_BoundingBoxWriter_markupI
                 jni.ToStdString(destinationImagePathJString));
 
         pFreeType2 freeType2 = initFreeType2(jni);
-        ResolutionConfig resCfg = getResolutionConfig(freeType2, boundingBoxImageHandle.GetFrameSize().width,
-                                                      boundingBoxImageHandle.GetFrameSize().height);
+        ResolutionConfig resCfg = getResolutionConfig(
+                freeType2,
+                boundingBoxImageHandle.GetFrameSize(),
+                maxLabelLength);
 
         markup(env, freeType2, boundingBoxWriterInstance, mediaMetadata, requestProperties, resCfg,
                boundingBoxImageHandle);
@@ -398,8 +403,9 @@ void markup(JNIEnv *env, pFreeType2 freeType2, jobject &boundingBoxWriterInstanc
 }
 
 
-ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height) {
-    int minDim = width < height ? width : height;
+ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frameSize,
+                                     int maxLabelLength) {
+    int minDim = std::min(frameSize.height, frameSize.width);
 
     int textLabelFont = cv::FONT_HERSHEY_SIMPLEX;
     int fontBaseHeight = 21; // px
@@ -431,8 +437,9 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, int width, int height
 
     // Calculate frame padding for worst-case scenario.
     int baseline = 0;
-    Size textLabelSize = getTextSize("WWWWWWWWWW 888.888", // "W" is the widest character
-                                     textLabelFont, textLabelScale, textLabelThickness, &baseline);
+    std::string maxSizeLabel(std::max(maxLabelLength, 1), 'W'); // "W" is the widest character
+    Size textLabelSize = getTextSize(maxSizeLabel, textLabelFont, textLabelScale,
+                                     textLabelThickness, &baseline);
 
     int emojiHeight = textLabelSize.height;
     Size emojiLabelSize = freeType2->getTextSize(std::string(magGlassEmoji) + magGlassEmoji, // magnifying glass is the widest emoji

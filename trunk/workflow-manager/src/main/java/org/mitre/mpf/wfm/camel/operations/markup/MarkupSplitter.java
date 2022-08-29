@@ -45,10 +45,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -206,6 +203,21 @@ public class MarkupSplitter {
         var animate = Boolean.parseBoolean(markupProperties.get(
                 MpfConstants.MARKUP_ANIMATION_ENABLED));
 
+        int labelMaxLength;
+        try {
+            labelMaxLength = Integer.parseInt(markupProperties.get(
+                    MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH));
+        }
+        catch (NumberFormatException e) {
+            labelMaxLength = 10;
+            var errorMsg = String.format(
+                "Could not convert the value of the %s property to an integer. Using %s instead.",
+                MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH, labelMaxLength);
+            _inProgressBatchJobs.addWarning(job.getId(), media.getId(), IssueCodes.MARKUP,
+                                            errorMsg);
+
+        }
+
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
 
@@ -222,7 +234,7 @@ public class MarkupSplitter {
             }
             addTrackToBoundingBoxMap(
                     track, boundingBoxMap, trackColors.next(), labelPrefix, labelFromDetections,
-                    labelTextPropToShow, labelNumericPropToShow, animate);
+                    labelTextPropToShow, labelNumericPropToShow, animate, labelMaxLength);
             trackIndex++;
         }
 
@@ -244,16 +256,24 @@ public class MarkupSplitter {
                 .map(s -> Boolean.parseBoolean(s.strip()));
     }
 
-    private void addTrackToBoundingBoxMap(Track track, BoundingBoxMap boundingBoxMap, Color trackColor,
-                                          String labelPrefix, boolean labelFromDetections, String labelTextPropToShow,
-                                          String labelNumericPropToShow, boolean animate) {
+    private void addTrackToBoundingBoxMap(
+            Track track,
+            BoundingBoxMap boundingBoxMap,
+            Color trackColor,
+            String labelPrefix,
+            boolean labelFromDetections,
+            String labelTextPropToShow,
+            String labelNumericPropToShow,
+            boolean animate,
+            int textLength) {
         OptionalDouble trackRotation = getRotation(track.getTrackProperties());
         Optional<Boolean> trackFlip = getFlip(track.getTrackProperties());
 
         Optional<String> label = Optional.empty();
         boolean moving = false;
         if (!labelFromDetections) { // get track-level details
-            label = getLabel(track, labelPrefix, labelTextPropToShow, labelNumericPropToShow);
+            label = getLabel(track, labelPrefix, labelTextPropToShow, textLength,
+                             labelNumericPropToShow);
             moving = Boolean.parseBoolean(track.getTrackProperties().get("MOVING"));
         }
 
@@ -272,7 +292,8 @@ public class MarkupSplitter {
             Optional<Boolean> detectionFlip = getFlip(detection.getDetectionProperties());
 
             if (labelFromDetections) { // get detection-level details
-                label = getLabel(detection, labelPrefix, labelTextPropToShow, labelNumericPropToShow);
+                label = getLabel(detection, labelPrefix, labelTextPropToShow, textLength,
+                                 labelNumericPropToShow);
                 moving = Boolean.parseBoolean(detection.getDetectionProperties().get("MOVING"));
             }
 
@@ -323,7 +344,8 @@ public class MarkupSplitter {
                 Optional<Boolean> nextDetectionFlip = getFlip(nextDetection.getDetectionProperties());
 
                 if (labelFromDetections) { // get detection-level details
-                    label = getLabel(nextDetection, labelPrefix, labelTextPropToShow, labelNumericPropToShow);
+                    label = getLabel(nextDetection, labelPrefix, labelTextPropToShow, textLength,
+                                     labelNumericPropToShow);
                 }
 
                 BoundingBox nextBoundingBox = new BoundingBox(
@@ -391,10 +413,18 @@ public class MarkupSplitter {
                 .iterator();
     }
 
-    private static Optional<String> getLabel(String prefix, String textPart, String numericPart) {
+    private static Optional<String> getLabel(String prefix,
+                                             String textPart,
+                                             int textLength,
+                                             String numericPart) {
         String label = prefix;
         if (textPart != null) {
-            label += String.format("%.10s", textPart).strip();
+            if (textPart.length() <= textLength) {
+                label += textPart.strip();
+            }
+            else {
+                label += textPart.substring(0, textLength).strip();
+            }
         }
         if (numericPart != null) {
             try {
@@ -408,7 +438,11 @@ public class MarkupSplitter {
         return label.isBlank() ? Optional.empty() : Optional.of(label);
     }
 
-    public static Optional<String> getLabel(Track track, String prefix, String textProp, String numericProp) {
+    public static Optional<String> getLabel(Track track,
+                                            String prefix,
+                                            String textProp,
+                                            int textLength,
+                                            String numericProp) {
         String textStr = track.getTrackProperties().get(textProp);
         if (textStr == null) {
             textStr = track.getExemplar().getDetectionProperties().get(textProp);
@@ -420,15 +454,19 @@ public class MarkupSplitter {
         if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
             numericStr = Float.toString(track.getConfidence());
         }
-        return getLabel(prefix, textStr, numericStr);
+        return getLabel(prefix, textStr, textLength, numericStr);
     }
 
-    public static Optional<String> getLabel(Detection detection, String prefix, String textProp, String numericProp) {
+    public static Optional<String> getLabel(Detection detection,
+                                            String prefix,
+                                            String textProp,
+                                            int textLength,
+                                            String numericProp) {
         String textStr = detection.getDetectionProperties().get(textProp);
         String numericStr = detection.getDetectionProperties().get(numericProp);
         if (numericStr == null && numericProp.equalsIgnoreCase("CONFIDENCE")) {
             numericStr = Float.toString(detection.getConfidence());
         }
-        return getLabel(prefix, textStr, numericStr);
+        return getLabel(prefix, textStr, textLength, numericStr);
     }
 }

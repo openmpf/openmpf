@@ -144,33 +144,46 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
 
     private static VideoRequest createFeedForwardVideoRequest(Track track, int topConfidenceCount) {
+        Collection<Detection> includedDetections;
+        int startFrame;
+        int stopFrame;
+        if (topConfidenceCount <= 0) {
+            includedDetections = track.getDetections();
+            startFrame = track.getStartOffsetFrameInclusive();
+            stopFrame = track.getEndOffsetFrameInclusive();
+        }
+        else {
+            includedDetections = getTopConfidenceDetections(track.getDetections(),
+                                                            topConfidenceCount);
+            var frameSummaryStats = includedDetections.stream()
+                    .mapToInt(Detection::getMediaOffsetFrame)
+                    .summaryStatistics();
+            startFrame = frameSummaryStats.getMin();
+            stopFrame = frameSummaryStats.getMax();
+        }
 
-        Collection<Detection> topDetections = getTopConfidenceDetections(track.getDetections(), topConfidenceCount);
-        IntSummaryStatistics frameSummaryStats = topDetections.stream()
-                .mapToInt(Detection::getMediaOffsetFrame)
-                .summaryStatistics();
 
-        DetectionProtobuf.VideoTrack.Builder videoTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
-                .setStartFrame(frameSummaryStats.getMin())
-                .setStopFrame(frameSummaryStats.getMax())
-                .setConfidence(track.getExemplar().getConfidence());
+        var protobufTrackBuilder = DetectionProtobuf.VideoTrack.newBuilder()
+                .setStartFrame(startFrame)
+                .setStopFrame(stopFrame)
+                .setConfidence(track.getConfidence());
 
         for (Map.Entry<String, String> entry : track.getTrackProperties().entrySet()) {
-            videoTrackBuilder.addDetectionPropertiesBuilder()
+            protobufTrackBuilder.addDetectionPropertiesBuilder()
                     .setKey(entry.getKey())
                     .setValue(entry.getValue());
         }
 
-        for (Detection detection : topDetections) {
-            videoTrackBuilder.addFrameLocationsBuilder()
+        for (Detection detection : includedDetections) {
+            protobufTrackBuilder.addFrameLocationsBuilder()
                     .setFrame(detection.getMediaOffsetFrame())
                     .setImageLocation(MediaSegmenter.createImageLocation(detection));
         }
 
         return VideoRequest.newBuilder()
-                .setStartFrame(frameSummaryStats.getMin())
-                .setStopFrame(frameSummaryStats.getMax())
-                .setFeedForwardTrack(videoTrackBuilder)
+                .setStartFrame(startFrame)
+                .setStopFrame(stopFrame)
+                .setFeedForwardTrack(protobufTrackBuilder)
                 .build();
     }
 

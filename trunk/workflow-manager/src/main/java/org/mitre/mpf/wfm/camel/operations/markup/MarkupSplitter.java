@@ -202,21 +202,7 @@ public class MarkupSplitter {
                 MpfConstants.MARKUP_LABELS_NUMERIC_PROP_TO_SHOW);
         var animate = Boolean.parseBoolean(markupProperties.get(
                 MpfConstants.MARKUP_ANIMATION_ENABLED));
-
-        int labelMaxLength;
-        try {
-            labelMaxLength = Integer.parseInt(markupProperties.get(
-                    MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH));
-        }
-        catch (NumberFormatException e) {
-            labelMaxLength = 10;
-            var errorMsg = String.format(
-                "Could not convert the value of the %s property to an integer. Using %s instead.",
-                MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH, labelMaxLength);
-            _inProgressBatchJobs.addWarning(job.getId(), media.getId(), IssueCodes.MARKUP,
-                                            errorMsg);
-
-        }
+        int labelMaxLength = getMaxLabelLength(job.getId(), media.getId(), markupProperties);
 
         Iterator<Color> trackColors = getTrackColors();
         BoundingBoxMap boundingBoxMap = new BoundingBoxMap();
@@ -239,6 +225,32 @@ public class MarkupSplitter {
         }
 
         return boundingBoxMap.toBoundingBoxMapEntryList();
+    }
+
+
+    private int getMaxLabelLength(long jobId, long mediaId, Map<String, String> properties) {
+        var labelMaxLengthStr = properties.getOrDefault(
+                MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH, "");
+        int labelMaxLength;
+        try {
+            labelMaxLength = Integer.parseInt(labelMaxLengthStr);
+            if (labelMaxLength > 0) {
+                return labelMaxLength;
+            }
+            labelMaxLength = 10;
+        }
+        catch (NumberFormatException e) {
+            labelMaxLength = 10;
+        }
+
+        var errorMsg = """
+                Expected the value of the "%s" property to be a positive integer, \
+                but it was "%s". Using %s instead."""
+                .formatted(MpfConstants.MARKUP_TEXT_LABEL_MAX_LENGTH, labelMaxLengthStr,
+                           labelMaxLength);
+        _inProgressBatchJobs.addWarning(jobId, mediaId, IssueCodes.MARKUP,
+                                        errorMsg);
+        return labelMaxLength;
     }
 
 

@@ -32,7 +32,6 @@
 
     <context:annotation-config/>
     <context:component-scan base-package="org.mitre.mpf.markup"/>
-    <context:property-placeholder location="classpath:markup.properties"/>
 
     <import resource="activeMqConfig.xml"/>
 </beans>

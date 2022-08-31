@@ -437,7 +437,7 @@ ResolutionConfig getResolutionConfig(pFreeType2 freeType2, const cv::Size &frame
 
     // Calculate frame padding for worst-case scenario.
     int baseline = 0;
-    std::string maxSizeLabel(std::max(maxLabelLength, 1), 'W'); // "W" is the widest character
+    std::string maxSizeLabel(std::max(maxLabelLength, 1), 'm'); // "m" is the widest character
     Size textLabelSize = getTextSize(maxSizeLabel, textLabelFont, textLabelScale,
                                      textLabelThickness, &baseline);
 

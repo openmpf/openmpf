@@ -393,7 +393,7 @@
     },
     {
         "name": "EXEMPLAR_POLICY",
-        "description": "Sets the policy for determining a track's exemplar. When set to anything other than a named policy, the detection with the maximum confidence is selected. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track).",
+        "description": "Sets the policy for determining a track's exemplar. When set to \"CONFIDENCE\" or anything other than a named policy, the detection with the maximum confidence is selected. The named policies are \"FIRST\" (select the detection with the minimum frame number), \"LAST\" (select the detection with the maximum frame number), and \"MIDDLE\" (select the detection with the frame number closest the middle frame of the track).",
         "type": "STRING",
         "defaultValue": "CONFIDENCE",
         "mediaTypes": ["VIDEO"]

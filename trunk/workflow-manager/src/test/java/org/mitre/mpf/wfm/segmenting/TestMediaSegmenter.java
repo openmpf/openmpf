@@ -459,7 +459,7 @@ public class TestMediaSegmenter {
 				.get();
 
 		Track track = new Track(1, 1, 1, 0, start, stop, 0, 0, "type",
-				exemplar.getConfidence(), detectionList, Collections.emptyMap());
+				exemplar.getConfidence(), detectionList, Collections.emptyMap(), "");
 		return track;
 	}
 

@@ -293,7 +293,8 @@ public class TrackMergingProcessor extends WfmProcessor {
                 track1.getType(),
                 Math.max(track1.getConfidence(), track2.getConfidence()),
                 detections,
-                properties);
+                properties,
+                track1.getExemplarPolicy());
         return merged;
     }
 

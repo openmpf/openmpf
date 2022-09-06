@@ -56,7 +56,7 @@ public class UserSpecifiedRangesUtil {
     public static Set<MediaRange> getCombinedRanges(Media media) {
         if (media.getFrameRanges().isEmpty()
                 && media.getTimeRanges().isEmpty()) {
-            return Set.of(new MediaRange(0, media.getLength() - 1));
+            return Set.of(new MediaRange(0, media.getLength().orElse(1) - 1));
         }
 
         // TreeRangeSet will get us the minimal set of ranges enclosing all Range's added to it.
@@ -74,7 +74,7 @@ public class UserSpecifiedRangesUtil {
         }
 
         // Chop off ranges past the end of the video.
-        var boundedRangeSet = rangeSet.subRangeSet(createRange(0, media.getLength() - 1));
+        var boundedRangeSet = rangeSet.subRangeSet(createRange(0, media.getLength().orElse(1) - 1));
 
         return boundedRangeSet.asRanges()
                 .stream()

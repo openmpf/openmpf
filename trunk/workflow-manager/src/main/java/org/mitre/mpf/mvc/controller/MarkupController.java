@@ -27,12 +27,12 @@
 package org.mitre.mpf.mvc.controller;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
 import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -96,6 +96,9 @@ public class MarkupController {
     @Autowired
     private PropertiesUtil propertiesUtil;
 
+    @Autowired
+    private InProgressBatchJobsService inProgressJobs;
+
     //https://datatables.net/manual/server-side#Sent-parameters
     //draw is the counter of how many times it has called back
     //length is how many to return
@@ -152,7 +155,9 @@ public class MarkupController {
                             .toUriString();
                     model.setSourceDownloadUrl(downloadUrl);
                     model.setSourceFileAvailable(true);
-                    model.setSourceMediaType(med.getType().toString());
+                    med.getType()
+                        .or(() -> inProgressJobs.getMediaType(internalJobId, med.getId()))
+                        .ifPresent(mt -> model.setSourceMediaType(mt.toString()));
                 }
             }
             markupResultModels.put(med.getId(), model);
@@ -320,7 +325,10 @@ public class MarkupController {
             if (path == null || Files.exists(path)) { // if remote markup or available local markup
                 markupDownloadUrl = "markup/download?id=" + markupResult.getId();
                 markupFileAvailable = true;
-                markupMediaType = media.getType().toString(); // markup type is the same as media type
+                // markup type is the same as media type
+                markupMediaType = media.getType()
+                        .map(Enum::toString)
+                        .orElse("");
             }
         }
 
@@ -332,7 +340,9 @@ public class MarkupController {
                     .queryParam("jobId", markupResult.getJobId())
                     .toUriString();
             sourceFileAvailable = true;
-            sourceMediaType = media.getType().toString();
+            sourceMediaType = media.getType()
+                    .map(Enum::toString)
+                    .orElse("");
         }
 
         return new MarkupResultConvertedModel(

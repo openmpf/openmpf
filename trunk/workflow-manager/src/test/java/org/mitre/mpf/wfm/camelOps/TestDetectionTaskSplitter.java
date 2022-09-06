@@ -460,7 +460,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setType(mediaType);
         testMedia.setMimeType(mimeType);
         // Video media must have FPS in metadata to support adaptive frame interval processing.
-        if ( testMedia.getType() == MediaType.VIDEO ) {
+        if (testMedia.matchesType(MediaType.VIDEO)) {
             testMedia.addMetadata("FPS", "30");
         }
 

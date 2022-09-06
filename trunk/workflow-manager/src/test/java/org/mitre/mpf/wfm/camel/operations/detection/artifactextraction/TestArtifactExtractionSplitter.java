@@ -578,6 +578,8 @@ public class TestArtifactExtractionSplitter {
                 .thenReturn(mediaId);
         when(media.getType())
                 .thenReturn(Optional.of(MediaType.VIDEO));
+        when(media.matchesType(MediaType.VIDEO, MediaType.IMAGE))
+                .thenReturn(true);
         when(media.getLength())
                 .thenReturn(OptionalInt.of(1000));
         when(media.getProcessingPath())

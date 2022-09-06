@@ -168,8 +168,8 @@ public class DetectionTaskSplitter {
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
-                        media.getType()
-                                .ifPresent(mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt));
+                        media.getType().ifPresent(
+                                mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("Created {} work units for Media #{}.",

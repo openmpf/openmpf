@@ -91,8 +91,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             Action action = job.getPipelineElements().getAction(trackMergingContext.getTaskIndex(), actionIndex);
 
             for (Media media : job.getMedia()) {
-                if (media.isFailed()
-                        || (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO)) {
+                if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
                     continue;
                 }
 

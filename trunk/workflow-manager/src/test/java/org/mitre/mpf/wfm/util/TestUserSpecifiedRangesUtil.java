@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
+import java.util.OptionalInt;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -161,7 +162,7 @@ public class TestUserSpecifiedRangesUtil {
 
         var media = mock(Media.class);
         when(media.getLength())
-                .thenReturn(frameTimes.length);
+                .thenReturn(OptionalInt.of(frameTimes.length));
         when(media.getFrameRanges())
                 .thenReturn(frameRanges);
         when(media.getTimeRanges())

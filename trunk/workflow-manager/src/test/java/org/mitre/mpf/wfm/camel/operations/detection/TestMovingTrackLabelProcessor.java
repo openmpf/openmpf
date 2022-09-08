@@ -33,7 +33,6 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -43,10 +42,7 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -201,8 +197,8 @@ public class TestMovingTrackLabelProcessor {
                 .thenAnswer(inv -> ImmutableList.of(mockMedia));
         when(mockMedia.isFailed())
                 .thenReturn(false);
-        when(mockMedia.getType())
-                .thenReturn(MediaType.VIDEO);
+        when(mockMedia.matchesType(MediaType.VIDEO))
+                .thenReturn(true);
 
         var mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 

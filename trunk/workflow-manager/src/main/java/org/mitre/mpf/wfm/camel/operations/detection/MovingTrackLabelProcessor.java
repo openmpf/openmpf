@@ -85,7 +85,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                    trackMergingContext.getTaskIndex(), actionIndex);
 
            for (var media : job.getMedia())  {
-               if (media.isFailed() || media.getType() != MediaType.VIDEO) {
+               if (media.isFailed() || !media.matchesType(MediaType.VIDEO)) {
                    continue;
                }
 

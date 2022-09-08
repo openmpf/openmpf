@@ -109,7 +109,7 @@ public class MarkupSplitter {
                          media.getId(), media.getLocalPath());
                 continue;
             }
-            if (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
+            if (!media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
                 log.debug("Skipping Media {} - only image and video files are eligible for markup.",
                           media.getId());
                 continue;
@@ -127,8 +127,11 @@ public class MarkupSplitter {
 
             Path destinationPath;
             if (boundingBoxMapEntryList.isEmpty()) {
+                var fileExtension = media.getMimeType()
+                        .map(MarkupSplitter::getFileExtension)
+                        .orElse(".bin");
                 destinationPath = _propertiesUtil.createMarkupPath(
-                        job.getId(), media.getId(), getFileExtension(media.getMimeType()));
+                        job.getId(), media.getId(), fileExtension);
             }
             else {
                 destinationPath = _propertiesUtil.createMarkupPath(
@@ -137,12 +140,16 @@ public class MarkupSplitter {
             }
 
 
+            var mediaType = media.getType()
+                    .map(mt -> Markup.MediaType.valueOf(mt.toString().toUpperCase()))
+                    .orElse(Markup.MediaType.UNKNOWN);
+
             Markup.MarkupRequest.Builder requestBuilder = Markup.MarkupRequest.newBuilder()
                     .setMediaIndex(mediaIndex)
                     .setTaskIndex(job.getCurrentTaskIndex())
                     .setActionIndex(0)
                     .setMediaId(media.getId())
-                    .setMediaType(Markup.MediaType.valueOf(media.getType().toString().toUpperCase()))
+                    .setMediaType(mediaType)
                     .setRequestId(IdGenerator.next())
                     .setSourceUri(media.getProcessingPath().toUri().toString())
                     .setDestinationUri(destinationPath.toUri().toString())
@@ -351,11 +358,11 @@ public class MarkupSplitter {
     private static String getMarkedUpMediaExtensionForMediaType(
             Media media, Map<String, String> markupProperties) {
 
-        if (media.getType() == MediaType.IMAGE) {
+        if (media.matchesType(MediaType.IMAGE)) {
             return ".png";
         }
         // Already verified media is image or video.
-        assert media.getType() == MediaType.VIDEO;
+        assert media.getType().isPresent() && media.getType().get() == MediaType.VIDEO;
 
         var encoder = markupProperties.get(MpfConstants.MARKUP_VIDEO_ENCODER).toLowerCase();
         switch (encoder) {

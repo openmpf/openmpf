@@ -439,7 +439,7 @@ public class TestS3StorageBackend {
         when(media.getMediaSpecificProperties())
                 .thenReturn(ImmutableMap.of(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + RESULTS_BUCKET));
         when(media.getType())
-                .thenReturn(MediaType.VIDEO);
+                .thenReturn(Optional.of(MediaType.VIDEO));
 
         var overriddenAlgoProps
                 = ImmutableMap.of("TEST_ALGO",

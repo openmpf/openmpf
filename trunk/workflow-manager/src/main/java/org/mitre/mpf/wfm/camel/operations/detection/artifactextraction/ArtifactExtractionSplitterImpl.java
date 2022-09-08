@@ -105,7 +105,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
 
         List<Message> messages = new ArrayList<>();
         for (Media media : job.getMedia()) {
-            if (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO) {
+            if (!media.matchesType(MediaType.VIDEO, MediaType.IMAGE)) {
                 continue;
             }
 
@@ -148,9 +148,16 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 boolean cropping = Boolean.parseBoolean(_aggregateJobPropertiesUtil
                                    .getValue(MpfConstants.ARTIFACT_EXTRACTION_POLICY_CROPPING, job, media, action));
                 boolean isRotationFillBlack = isRotationFillBlack(job, media, action);
-                ArtifactExtractionRequest request = new ArtifactExtractionRequest(
-                        job.getId(), media.getId(), media.getProcessingPath().toString(), media.getType(),
-                        media.getMetadata(), taskIndex, actionIndex, cropping, isRotationFillBlack);
+                var request = new ArtifactExtractionRequest(
+                        job.getId(),
+                        media.getId(),
+                        media.getProcessingPath().toString(),
+                        media.getType().orElseThrow(),
+                        media.getMetadata(),
+                        taskIndex,
+                        actionIndex,
+                        cropping,
+                        isRotationFillBlack);
 
                 Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
                         request.getTaskIndex(), request.getActionIndex());

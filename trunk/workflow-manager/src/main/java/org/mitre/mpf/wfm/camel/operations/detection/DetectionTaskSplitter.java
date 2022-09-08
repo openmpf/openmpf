@@ -123,8 +123,7 @@ public class DetectionTaskSplitter {
                     // Segmenting plan is only used by the VideoMediaSegmenter,
                     // so only create the DetectionContext to include the segmenting plan for jobs with video media.
                     SegmentingPlan segmentingPlan = null;
-                    if (media.getType() == MediaType.VIDEO) {
-
+                    if (media.matchesType(MediaType.VIDEO)) {
                         // Note that single-frame gifs are treated like videos, but have no native frame rate
                         double fps = 1.0;
                         String fpsFromMetadata = media.getMetadata("FPS");
@@ -169,7 +168,8 @@ public class DetectionTaskSplitter {
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,
                                 StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
-                        message.setHeader(MpfHeaders.MEDIA_TYPE, media.getType().toString());
+                        media.getType().ifPresent(
+                                mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
                     }
                     messages.addAll(detectionRequestMessages);
                     log.debug("Created {} work units for Media #{}.",
@@ -209,21 +209,17 @@ public class DetectionTaskSplitter {
     }
 
     private List<Message> createDetectionRequestMessages(Media media, DetectionContext detectionContext) {
-        MediaSegmenter segmenter = getSegmenter(media.getType());
+        MediaSegmenter segmenter = getSegmenter(media.getType().orElse(MediaType.UNKNOWN));
         return segmenter.createDetectionRequestMessages(media, detectionContext);
     }
 
     private MediaSegmenter getSegmenter(MediaType mediaType) {
-        switch (mediaType) {
-            case IMAGE:
-                return _imageMediaSegmenter;
-            case VIDEO:
-                return _videoMediaSegmenter;
-            case AUDIO:
-                return _audioMediaSegmenter;
-            default:
-                return _defaultMediaSegmenter;
-        }
+        return switch (mediaType) {
+            case IMAGE -> _imageMediaSegmenter;
+            case VIDEO -> _videoMediaSegmenter;
+            case AUDIO -> _audioMediaSegmenter;
+            default -> _defaultMediaSegmenter;
+        };
     }
 
     /**

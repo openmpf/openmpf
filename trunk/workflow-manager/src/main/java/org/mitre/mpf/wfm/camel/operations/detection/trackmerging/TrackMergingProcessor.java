@@ -113,7 +113,7 @@ public class TrackMergingProcessor extends WfmProcessor {
             for (Media media : job.getMedia()) {
 
                 // NOTE: Only perform track merging and track pruning on video data.
-                if (media.getType() != MediaType.VIDEO || media.isFailed()) {
+                if (media.isFailed() || !media.matchesType(MediaType.VIDEO)) {
                     continue;
                 }
 

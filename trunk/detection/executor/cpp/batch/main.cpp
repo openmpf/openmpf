@@ -74,7 +74,7 @@ std::string get_component_name_and_set_env_var();
 
 std::string get_log_level_and_set_env_var();
 
-bool quit_received(bool gotMessageOnLastPull);
+bool quit_received(bool got_message_on_last_pull);
 
 /**
  * This is the main program for the Detection Component.  It accepts two
@@ -307,15 +307,15 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
         logger.Info("Completed initialization of ", service_name, '.');
 
         // Initially set to true to avoid blocking on the first iteration.
-        bool gotMessageOnLastPull = true;
+        bool got_message_on_last_pull = true;
         // Remain in loop handling job request messages until 'q\n' is received on stdin
-        while (!quit_received(gotMessageOnLastPull)) {
+        while (!quit_received(got_message_on_last_pull)) {
             // Receive job request
             MPFMessageMetadata msg_metadata;
             std::vector<unsigned char> request_contents = messenger.ReceiveMessage(msg_metadata);
 
-            gotMessageOnLastPull = !request_contents.empty();
-            if (gotMessageOnLastPull) {
+            got_message_on_last_pull = !request_contents.empty();
+            if (got_message_on_last_pull) {
                 MPFDetectionBuffer detection_buf(request_contents);
 
                 std::vector<unsigned char> detection_response_body;
@@ -637,19 +637,19 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
     return error_occurred ? 1 : 0;
 }
 
-bool quit_received(bool gotMessageOnLastPull) {
+bool quit_received(bool got_message_on_last_pull) {
     // Check for 'q\n' input
     // Read from file descriptor 0 (stdin)
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(0, &readfds);
+    fd_set stdin_fd_set;
+    FD_ZERO(&stdin_fd_set);
+    FD_SET(0, &stdin_fd_set);
     // Set timeout on check for 'q\n'
     struct timeval select_timeout {
-            .tv_sec = gotMessageOnLastPull ? 0 : 5,
+            .tv_sec = got_message_on_last_pull ? 0 : 5,
             .tv_usec = 0 };
 
-    int nfds = select(1, &readfds, nullptr, nullptr, &select_timeout);
-    if (nfds < 1 || !FD_ISSET(0, &readfds)) {
+    int nfds = select(1, &stdin_fd_set, nullptr, nullptr, &select_timeout);
+    if (nfds < 1 || !FD_ISSET(0, &stdin_fd_set)) {
         return false;
     }
 

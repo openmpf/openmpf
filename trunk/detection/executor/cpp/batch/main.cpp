@@ -74,6 +74,7 @@ std::string get_component_name_and_set_env_var();
 
 std::string get_log_level_and_set_env_var();
 
+bool quit_received(bool got_message_on_last_pull);
 
 /**
  * This is the main program for the Detection Component.  It accepts two
@@ -286,25 +287,9 @@ string get_file_name(const string& s) {
 template <typename Logger, typename ComponentHandle>
 int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &request_queue,
              const std::string &app_dir, ComponentHandle &detection_engine) {
-    int pollingInterval = 1;
 
-    // Remain in loop handling job request messages
-    // until 'q\n' is received on stdin
     bool error_occurred = false;
     try {
-
-        int nfds = 0;
-        int bytes_read = 0;
-        int input_buf_size = 2;
-        char input_buf[input_buf_size];
-        string quit_string("q\n");
-        fd_set readfds;
-        struct timeval tv;
-        bool keep_running = true;
-
-        // Set timeout on check for 'q\n' to 5 seconds
-        tv.tv_sec = 5;
-        tv.tv_usec = 0;
 
         MPFMessenger<Logger> messenger(logger, broker_uri, request_queue);
 
@@ -321,22 +306,16 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
         string service_name(getenv("SERVICE_NAME"));
         logger.Info("Completed initialization of ", service_name, '.');
 
-        bool gotMessageOnLastPull = false;
-        while (keep_running) {
-            //	Sleep for pollingInterval seconds between polls.
-            if (gotMessageOnLastPull == false) {
-                sleep(pollingInterval);
-            }
-            gotMessageOnLastPull = false;
-
+        // Initially set to true to avoid blocking on the first iteration.
+        bool got_message_on_last_pull = true;
+        // Remain in loop handling job request messages until 'q\n' is received on stdin
+        while (!quit_received(got_message_on_last_pull)) {
             // Receive job request
             MPFMessageMetadata msg_metadata;
             std::vector<unsigned char> request_contents = messenger.ReceiveMessage(msg_metadata);
 
-            if (!request_contents.empty()) {
-                //  Set not to sleep flag.
-                gotMessageOnLastPull = true;
-
+            got_message_on_last_pull = !request_contents.empty();
+            if (got_message_on_last_pull) {
                 MPFDetectionBuffer detection_buf(request_contents);
 
                 std::vector<unsigned char> detection_response_body;
@@ -347,7 +326,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
 
                 map<string, string> algorithm_properties;
                 detection_buf.GetAlgorithmProperties(algorithm_properties);
-                for (auto env_prop_pair : env_job_props) {
+                for (const auto& env_prop_pair : env_job_props) {
                     algorithm_properties[env_prop_pair.first] = env_prop_pair.second;
                 }
 
@@ -626,22 +605,8 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                     logger.Error("Failed to generate a detection response.");
                 }
             }
-
-            // Check for 'q\n' input
-            // Read from file descriptor 0 (stdin)
-            FD_ZERO(&readfds);
-            FD_SET(0, &readfds);
-            nfds = select(1, &readfds, NULL, NULL, &tv);
-            if (nfds != 0 && FD_ISSET(0, &readfds)) {
-                bytes_read = read(0, input_buf, input_buf_size);
-                string std_input(input_buf);
-                std_input.resize(input_buf_size);
-                if ((bytes_read > 0) && (std_input == quit_string)) {
-                    logger.Info("Received quit command.");
-                    keep_running = false;
-                }
-            }
         } // end while
+        logger.Info("Received quit command.");
     } catch (std::exception &e) {
         error_occurred = true;
         logger.Error("Standard Exception caught in main.cpp: ", e.what(), '\n');
@@ -659,4 +624,25 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
     // Close the logger
     log4cxx::LogManager::shutdown();
     return error_occurred ? 1 : 0;
+}
+
+bool quit_received(bool got_message_on_last_pull) {
+    // Check for 'q\n' input
+    // Read from file descriptor 0 (stdin)
+    fd_set stdin_fd_set;
+    FD_ZERO(&stdin_fd_set);
+    FD_SET(0, &stdin_fd_set);
+    // Set timeout on check for 'q\n'
+    struct timeval select_timeout {
+            .tv_sec = got_message_on_last_pull ? 0 : 5,
+            .tv_usec = 0 };
+
+    int nfds = select(1, &stdin_fd_set, nullptr, nullptr, &select_timeout);
+    if (nfds < 1 || !FD_ISSET(0, &stdin_fd_set)) {
+        return false;
+    }
+
+    char input_buf[2];
+    size_t bytes_read = read(0, input_buf, 2);
+    return bytes_read >= 2 && input_buf[0] == 'q' && input_buf[1] == '\n';
 }

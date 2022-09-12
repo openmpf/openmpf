@@ -832,7 +832,7 @@ public class TestTiesDbService {
 
         // Assertions specific to given arguments
         var requestUri = httpRequest.getURI().toString();
-        var expectedUri = tiesDbBaseUrl + "/api/db/supplementals?sha256Hash=" + media.getSha256();
+        var expectedUri = tiesDbBaseUrl + "/api/db/supplementals?sha256Hash=" + media.getSha256().get();
         if (!expectedUri.equals(requestUri)) {
             return false;
         }

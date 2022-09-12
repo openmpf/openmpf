@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
@@ -103,7 +104,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setMimeType("video/avi");
         // Video media must have FPS in metadata to support adaptive frame interval processing.
         testMedia.addMetadata("FPS", "30");
-        // Note that because media length is not set, the split will result in no responses later.
+        // Note that because media length is not set, the split will result in an exception.
 
         Algorithm algorithm = new Algorithm(
                 "detectionAlgo",
@@ -142,8 +143,8 @@ public class TestDetectionTaskSplitter {
                 Collections.emptyMap(),
                 Collections.emptyMap());
 
-        List<Message> responseList = detectionSplitter.performSplit(testJob, task);
-        Assert.assertTrue(responseList.isEmpty());
+        TestUtil.assertThrows(NoSuchElementException.class,
+                              () -> detectionSplitter.performSplit(testJob, task));
     }
 
     @Test
@@ -460,7 +461,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setType(mediaType);
         testMedia.setMimeType(mimeType);
         // Video media must have FPS in metadata to support adaptive frame interval processing.
-        if ( testMedia.getType() == MediaType.VIDEO ) {
+        if (testMedia.matchesType(MediaType.VIDEO)) {
             testMedia.addMetadata("FPS", "30");
         }
 

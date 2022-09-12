@@ -289,7 +289,7 @@ public class TiesDbService {
         return postAssertion(
                 algorithm,
                 tiesDbUrl,
-                media.getSha256(),
+                media.getSha256().orElseThrow(),
                 assertion);
     }
 

@@ -55,10 +55,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.function.Predicate;
 
@@ -1366,10 +1363,10 @@ public class TestTiesDbService {
                 .thenReturn(10L);
         var media1 = mock(Media.class);
         when(media1.getSha256())
-                .thenReturn("MEDIA_1_SHA");
+                .thenReturn(Optional.of("MEDIA_1_SHA"));
         var media2 = mock(Media.class);
         when(media2.getSha256())
-                .thenReturn("MEDIA_2_SHA");
+                .thenReturn(Optional.of("MEDIA_2_SHA"));
 
         when(job.getMedia())
                 .thenReturn(List.of(media1, media2));
@@ -1465,7 +1462,7 @@ public class TestTiesDbService {
         when(job.getMedia())
                 .thenReturn(List.of(media1));
         when(media1.getSha256())
-                .thenReturn("MEDIA_1_SHA");
+                .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         var validTiesDbInfo = createValidTiesDbInfoFace();
 
@@ -1527,7 +1524,7 @@ public class TestTiesDbService {
         when(job.getMedia())
                 .thenReturn(List.of(media1));
         when(media1.getSha256())
-                .thenReturn("MEDIA_1_SHA");
+                .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())
                 .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));
@@ -1572,7 +1569,7 @@ public class TestTiesDbService {
         when(job.getMedia())
                 .thenReturn(List.of(media1));
         when(media1.getSha256())
-                .thenReturn("MEDIA_1_SHA");
+                .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())
                 .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));
@@ -1622,7 +1619,7 @@ public class TestTiesDbService {
         when(job.getMedia())
                 .thenReturn(List.of(media1));
         when(media1.getSha256())
-                .thenReturn("MEDIA_1_SHA");
+                .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())
                 .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));

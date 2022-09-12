@@ -43,6 +43,7 @@ import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class MediaImpl implements Media {
 
@@ -151,13 +152,19 @@ public class MediaImpl implements Media {
     /** The data type of the medium. For example, VIDEO. */
     private MediaType _type;
     @Override
-    public MediaType getType() { return _type; }
+    public Optional<MediaType> getType() { return Optional.ofNullable(_type); }
     public void setType(MediaType type) { _type = type; }
+
+    @JsonIgnore
+    @Override
+    public boolean matchesType(MediaType... mediaTypes) {
+        return Stream.of(mediaTypes).anyMatch(mt -> mt == _type);
+    }
 
     /** The MIME type of the medium. */
     private String _mimeType;
     @Override
-    public String getMimeType() { return _mimeType; }
+    public Optional<String> getMimeType() { return Optional.ofNullable(_mimeType); }
     public void setMimeType(String mimeType) { _mimeType = mimeType; }
 
 
@@ -189,15 +196,15 @@ public class MediaImpl implements Media {
     public ImmutableMap<String, String> getProvidedMetadata() { return _providedMetadata; }
 
     /** The _length of the medium in frames (for images and videos) or milliseconds (for audio). */
-    private int _length;
+    private OptionalInt _length = OptionalInt.empty();
     @Override
-    public int getLength() { return _length; }
-    public void setLength(int length) { _length = length; }
+    public OptionalInt getLength() { return _length; }
+    public void setLength(int length) { _length = OptionalInt.of(length); }
 
     /** The SHA 256 hash of the local file (assuming it could be retrieved). */
     private String _sha256;
     @Override
-    public String getSha256() { return _sha256; }
+    public Optional<String> getSha256() { return Optional.ofNullable(_sha256); }
     public void setSha256(String sha256) { _sha256 = sha256; }
 
     private FrameTimeInfo _frameTimeInfo;
@@ -243,7 +250,7 @@ public class MediaImpl implements Media {
         _uriScheme = uriScheme;
         _localPath = localPath;
         _mediaSpecificProperties = ImmutableMap.copyOf(mediaSpecificProperties);
-        _providedMetadata = ImmutableMap.copyOf(providedMetadata);      
+        _providedMetadata = ImmutableMap.copyOf(providedMetadata);
         _frameRanges = ImmutableSet.copyOf(frameRanges);
         _timeRanges = ImmutableSet.copyOf(timeRanges);
 
@@ -322,9 +329,9 @@ public class MediaImpl implements Media {
                 originalMedia.getErrorMessage());
 
         result.setFailed(originalMedia.isFailed());
-        result.setType(originalMedia.getType());
-        result.setLength(originalMedia.getLength());
-        result.setSha256(originalMedia.getSha256());
+        result.setType(originalMedia.getType().orElse(null));
+        originalMedia.getLength().ifPresent(result::setLength);
+        result.setSha256(originalMedia.getSha256().orElse(null));
         result.addMetadata(originalMedia.getMetadata());
 
         originalMedia.getConvertedMediaPath().ifPresent(result::setConvertedMediaPath);
@@ -342,7 +349,7 @@ public class MediaImpl implements Media {
 
     @Override
     public String toString() {
-        return String.format("%s#<id=%d, parentId=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%d, sha256='%s'>",
+        return String.format("%s#<id=%d, parentId=%d, uri='%s', uriScheme='%s', localPath='%s', failed=%s, errorMessage='%s', type='%s', length=%s, sha256='%s'>",
                              getClass().getSimpleName(),
                              _id,
                              _parentId,

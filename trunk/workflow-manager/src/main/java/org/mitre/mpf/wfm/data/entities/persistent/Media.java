@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 // Suppress because it's better than having to explicitly use MediaImpl during deserialization.
 @SuppressWarnings("ClassReferencesSubclass")
@@ -84,10 +85,12 @@ public interface Media {
     public String getErrorMessage();
 
     /** The data type of the medium. For example, VIDEO. */
-    public MediaType getType();
+    public Optional<MediaType> getType();
+
+    public boolean matchesType(MediaType... mediaTypes);
 
     /** The MIME type of the medium. */
-    public String getMimeType();
+    public Optional<String> getMimeType();
 
     /** The Metadata for the medium. */
     public Map<String,String> getMetadata();
@@ -101,10 +104,10 @@ public interface Media {
     public ImmutableMap<String, String> getProvidedMetadata();
 
     /** The length of the medium in frames (for images and videos) or milliseconds (for audio). */
-    public int getLength();
+    public OptionalInt getLength();
 
     /** The SHA 256 hash of the local file (assuming it could be retrieved. */
-    public String getSha256();
+    public Optional<String> getSha256();
 
     public FrameTimeInfo getFrameTimeInfo();
 

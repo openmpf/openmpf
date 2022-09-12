@@ -429,7 +429,6 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                     $("#cancelBtn" + job.id).removeAttr("disabled");
                 }
                 $("#resubmitBtn" + job.id).attr("disabled", "disabled");
-                $("#markupBtn" + job.id).attr("disabled", "disabled");
                 $("#jsonBtn" + job.id).attr("disabled", "disabled");
             }
 

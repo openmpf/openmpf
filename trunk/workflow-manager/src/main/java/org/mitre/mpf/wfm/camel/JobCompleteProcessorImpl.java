@@ -384,10 +384,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         for (Media media : job.getMedia()) {
             StringBuilder stateKeyBuilder = new StringBuilder("+");
 
-            JsonMediaOutputObject mediaOutputObject = new JsonMediaOutputObject(
-                    media.getId(), media.getParentId(), media.getPersistentUri(),
-                    media.getType() != null ? media.getType().toString() : null,
-                    media.getMimeType(), media.getLength(), media.getSha256(), media.isFailed() ? "ERROR" : "COMPLETE");
+            var mediaOutputObject = new JsonMediaOutputObject(
+                    media.getId(),
+                    media.getParentId(),
+                    media.getPersistentUri(),
+                    media.getType().map(Enum::toString).orElse(null),
+                    media.getMimeType().orElse(null),
+                    media.getLength().orElse(0),
+                    media.getSha256().orElse(null),
+                    media.isFailed() ? "ERROR" : "COMPLETE");
 
             for (var frameRange : media.getFrameRanges()) {
                 mediaOutputObject.getFrameRanges().add(new JsonMediaRange(
@@ -577,7 +582,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         return new JsonTrackOutputObject(
             trackIndex,
-            TextUtils.getTrackUuid(media.getSha256(),
+            TextUtils.getTrackUuid(media.getSha256().orElse(""),
                                    track.getExemplar().getMediaOffsetFrame(),
                                    track.getExemplar().getX(),
                                    track.getExemplar().getY(),

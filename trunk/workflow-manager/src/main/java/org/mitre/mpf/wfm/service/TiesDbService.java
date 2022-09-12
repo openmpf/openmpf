@@ -197,7 +197,7 @@ public class TiesDbService {
         var futures = new ArrayList<CompletableFuture<Void>>();
         for (var media : job.getMedia()) {
             for (var tiesDbInfo : media.getTiesDbInfo()) {
-                futures.add(postAssertion(tiesDbInfo, media.getSha256()));
+                futures.add(postAssertion(tiesDbInfo, media.getSha256().orElseThrow()));
             }
         }
 

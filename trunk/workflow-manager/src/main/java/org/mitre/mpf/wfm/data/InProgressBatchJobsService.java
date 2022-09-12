@@ -495,6 +495,12 @@ public class InProgressBatchJobsService {
     }
 
 
+    public synchronized Optional<MediaType> getMediaType(long jobId, long mediaId) {
+        return Optional.ofNullable(_jobs.get(jobId))
+                .map(j -> j.getMedia(mediaId))
+                .flatMap(MediaImpl::getType);
+    }
+
     private MediaImpl getMediaImpl(long jobId, long mediaId) {
         MediaImpl media = getJobImpl(jobId).getMedia(mediaId);
         if (media == null) {

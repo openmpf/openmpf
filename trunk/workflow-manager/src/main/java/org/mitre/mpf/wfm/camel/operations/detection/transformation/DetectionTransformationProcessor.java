@@ -91,8 +91,7 @@ public class DetectionTransformationProcessor extends WfmProcessor {
             Action action = job.getPipelineElements().getAction(trackMergingContext.getTaskIndex(), actionIndex);
 
             for (Media media : job.getMedia()) {
-                if (media.isFailed()
-                        || (media.getType() != MediaType.IMAGE && media.getType() != MediaType.VIDEO)) {
+                if (media.isFailed() || !media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
                     continue;
                 }
 
@@ -239,7 +238,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                         track.getType(),
                         track.getConfidence(),
                         goodDetections,
-                        track.getTrackProperties()));
+                        track.getTrackProperties(),
+                        track.getExemplarPolicy()));
             }
             else {
                 _log.warn(String.format("Empty track dropped after removing ill-formed detection(s): %s", track));
@@ -363,7 +363,8 @@ public class DetectionTransformationProcessor extends WfmProcessor {
                     track.getType(),
                     track.getConfidence(),
                     newDetections,
-                    track.getTrackProperties()));
+                    track.getTrackProperties(),
+                    track.getExemplarPolicy()));
         }
 
         Optional<String> shrunkToNothingString = shrunkToNothingFrames.build()

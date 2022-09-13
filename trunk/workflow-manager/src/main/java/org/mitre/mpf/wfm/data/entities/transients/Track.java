@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.interop.util.CompareUtils;
+import org.mitre.mpf.wfm.util.ExemplarPolicyUtil;
 import org.mitre.mpf.wfm.util.TextUtils;
 
 import java.util.*;
@@ -64,7 +65,7 @@ public class Track implements Comparable<Track> {
     /** The zero-based action index in the task of the pipeline which produced this track. */
     private final int _actionIndex;
     public int getActionIndex() { return _actionIndex; }
-    
+
     private int artifactExtractionTrackIndex;
     public int getArtifactExtractionTrackIndex() {return artifactExtractionTrackIndex; }
     public void setArtifactExtractionTrackIndex(int trackNumber) { artifactExtractionTrackIndex = trackNumber; }
@@ -107,6 +108,8 @@ public class Track implements Comparable<Track> {
     @JsonIgnore
     public Detection getExemplar() { return _exemplar; }
 
+    private final String _exemplarPolicy;
+    public String getExemplarPolicy() { return _exemplarPolicy; }
 
     /**
      * Creates a new track instance with the given immutable parameters.
@@ -143,7 +146,8 @@ public class Track implements Comparable<Track> {
             @JsonProperty("type") String type,
             @JsonProperty("confidence") float confidence,
             @JsonProperty("detections") Iterable<Detection> detections,
-            @JsonProperty("trackProperties") Map<String, String> trackProperties) {
+            @JsonProperty("trackProperties") Map<String, String> trackProperties,
+            @JsonProperty("exemplarPolicy") String exemplarPolicy) {
         _jobId = jobId;
         _mediaId = mediaId;
         _taskIndex = taskIndex;
@@ -156,9 +160,12 @@ public class Track implements Comparable<Track> {
         _confidence = confidence;
         _detections = ImmutableSortedSet.copyOf(detections);
         _trackProperties = ImmutableSortedMap.copyOf(trackProperties);
-        _exemplar = _detections.stream()
-                .max(Comparator.comparingDouble(Detection::getConfidence))
-                .orElse(null);
+        _exemplarPolicy = exemplarPolicy;
+        _exemplar = ExemplarPolicyUtil.getExemplar(
+                _exemplarPolicy,
+                _startOffsetFrameInclusive,
+                _endOffsetFrameInclusive,
+                _detections);
     }
 
 

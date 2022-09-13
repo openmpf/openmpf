@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
@@ -43,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -124,7 +126,7 @@ public class AggregateJobPropertiesUtil {
     private PropertyInfo getPropertyInfo(
             String propertyName,
             Map<String, String> mediaSpecificProperties,
-            MediaType mediaType,
+            Optional<MediaType> mediaType,
             Action action,
             JobPipelineElements pipeline,
             Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
@@ -186,9 +188,9 @@ public class AggregateJobPropertiesUtil {
 
 
         String workflowPropVal;
-        if (mediaType != null) {
+        if (mediaType.isPresent()) {
             workflowPropVal =  _workflowPropertyService.getPropertyValue(
-                    propertyName, mediaType, systemPropertiesSnapshot);
+                    propertyName, mediaType.get(), systemPropertiesSnapshot);
         }
         else {
             workflowPropVal =  _workflowPropertyService.getPropertyValue(
@@ -219,7 +221,7 @@ public class AggregateJobPropertiesUtil {
         return getPropertyMap(
                 action,
                 job.getStream().getMediaProperties(),
-                MediaType.VIDEO,
+                Optional.of(MediaType.VIDEO),
                 job.getOverriddenAlgorithmProperties(),
                 job.getJobProperties(),
                 job.getPipelineElements(),
@@ -235,7 +237,7 @@ public class AggregateJobPropertiesUtil {
     private Map<String, String> getPropertyMap(
             Action action,
             Map<String, String> mediaProperties,
-            MediaType mediaType,
+            Optional<MediaType> mediaType,
             Map<String, ? extends Map<String, String>> allOverriddenAlgorithmProperties,
             Map<String, String> jobProperties,
             JobPipelineElements pipelineElements,
@@ -260,8 +262,8 @@ public class AggregateJobPropertiesUtil {
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
 
-        _workflowPropertyService.getProperties(mediaType)
-                .stream()
+        mediaType.stream()
+                .flatMap(mt -> _workflowPropertyService.getProperties(mt).stream())
                 .map(WorkflowProperty::getName)
                 .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
                 .forEach(allKeys::add);
@@ -342,7 +344,7 @@ public class AggregateJobPropertiesUtil {
         return propName -> getPropertyInfo(
                 propName,
                 Map.of(),
-                null,
+                Optional.empty(),
                 null,
                 job.getPipelineElements(),
                 job.getOverriddenAlgorithmProperties(),
@@ -353,11 +355,11 @@ public class AggregateJobPropertiesUtil {
 
 
     public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
-        Media matchingMedia = null;
+        var matchingMedia = Optional.<Media>empty();
         for (var media : job.getMedia()) {
             try {
                 if (mediaUri.equals(new URI(media.getUri()))) {
-                    matchingMedia = media;
+                    matchingMedia = Optional.of(media);
                     break;
                 }
             }
@@ -366,13 +368,11 @@ public class AggregateJobPropertiesUtil {
             }
         }
 
-        Map<String, String> mediaProperties = matchingMedia == null
-                ? Map.of()
-                : matchingMedia.getMediaSpecificProperties();
+        var mediaProperties = matchingMedia
+                .map(Media::getMediaSpecificProperties)
+                .orElseGet(ImmutableMap::of);
 
-        MediaType mediaType = matchingMedia == null
-                ? null
-                : matchingMedia.getType();
+        var mediaType = matchingMedia.flatMap(Media::getType);
 
         return propName -> getPropertyInfo(
                 propName,

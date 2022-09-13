@@ -229,8 +229,14 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    // In order to properly support AUTO_ROTATE and AUTO_FLIP we need to determine if ROTATION
-    // and HORIZONTAL_FLIP were provided by the user.
+
+    // In order to properly support AUTO_ROTATE and AUTO_FLIP, we need to determine in the
+    // MPFVideoCapture and MPFImageReader tools if ROTATION and HORIZONTAL_FLIP were provided by
+    // the user. We suppress the algorithm and workflow-properties.json default values for those
+    // properties, since those are not set by the user, and the tools have no way to determine
+    // which properties are set where. They only get the final set. The algorithm properties also
+    // need to be filtered since a component developer might have included ROTATION or
+    // HORIZONTAL_FLIP in their descriptor.json to indicate support for rotation and flip.
     private static final Set<String> PROPERTIES_EXCLUDED_FROM_DEFAULT
             = Set.of("ROTATION", "HORIZONTAL_FLIP");
 

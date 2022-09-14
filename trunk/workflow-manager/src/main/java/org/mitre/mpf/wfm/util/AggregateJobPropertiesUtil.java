@@ -29,9 +29,11 @@ package org.mitre.mpf.wfm.util;
 import com.google.common.collect.ImmutableMap;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.service.WorkflowProperty;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -225,6 +228,18 @@ public class AggregateJobPropertiesUtil {
                 null);
     }
 
+
+
+    // In order to properly support AUTO_ROTATE and AUTO_FLIP, we need to determine in the
+    // MPFVideoCapture and MPFImageReader tools if ROTATION and HORIZONTAL_FLIP were provided by
+    // the user. We suppress the algorithm and workflow-properties.json default values for those
+    // properties, since those are not set by the user, and the tools have no way to determine
+    // which properties are set where. They only get the final set. The algorithm properties also
+    // need to be filtered since a component developer might have included ROTATION or
+    // HORIZONTAL_FLIP in their descriptor.json to indicate support for rotation and flip.
+    private static final Set<String> PROPERTIES_EXCLUDED_FROM_DEFAULT
+            = Set.of("ROTATION", "HORIZONTAL_FLIP");
+
     private Map<String, String> getPropertyMap(
             Action action,
             Map<String, String> mediaProperties,
@@ -248,11 +263,16 @@ public class AggregateJobPropertiesUtil {
         pipelineElements.getAlgorithm(action.getAlgorithm())
                 .getProvidesCollection()
                 .getProperties()
-                .forEach(p -> allKeys.add(p.getName()));
+                .stream()
+                .map(AlgorithmProperty::getName)
+                .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
+                .forEach(allKeys::add);
 
         mediaType.stream()
                 .flatMap(mt -> _workflowPropertyService.getProperties(mt).stream())
-                .forEach(p -> allKeys.add(p.getName()));
+                .map(WorkflowProperty::getName)
+                .filter(p -> !PROPERTIES_EXCLUDED_FROM_DEFAULT.contains(p))
+                .forEach(allKeys::add);
 
         return allKeys.stream()
                 .map(pn -> getPropertyInfo(pn, mediaProperties, mediaType, action, pipelineElements,

@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 3.6)
 cmake_policy(SET CMP0015 NEW)
 
 #add_definitions(-Wno-cpp)
-ADD_DEFINITIONS("-std=c++0x")
+set(CMAKE_CXX_STANDARD 17)
 
 set(FIND_LIBRARY_USE_LIB64_PATHS true)
 

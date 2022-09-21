@@ -437,6 +437,7 @@ public class S3StorageBackend implements StorageBackend {
 
     private static boolean shouldRetry(RetryPolicyContext context, int maxRetries) {
         if (context.originalRequest() instanceof HeadObjectRequest
+                && context.httpStatusCode() != null
                 && context.httpStatusCode() == 404) {
             // A HEAD request is sent prior to uploading an object to determine if the object
             // already exists and the upload can be avoided. In most cases the object will not

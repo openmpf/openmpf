@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 import com.google.common.base.Preconditions;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -90,14 +91,18 @@ public class MediaInspectionHelper {
 
     private final MediaMetadataValidator _mediaMetadataValidator;
 
+    private final TikaConfig _tikaConfig;
+
     @Inject
     public MediaInspectionHelper(
             PropertiesUtil propertiesUtil, InProgressBatchJobsService inProgressJobs,
-            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator) {
+            IoUtils ioUtils, MediaMetadataValidator mediaMetadataValidator)
+            throws TikaException, IOException, SAXException {
         _propertiesUtil = propertiesUtil;
         _inProgressJobs = inProgressJobs;
         _ioUtils = ioUtils;
         _mediaMetadataValidator = mediaMetadataValidator;
+        _tikaConfig = new TikaConfig(getClass().getResource("/tika.config"));
     }
 
     public void inspectMedia(Media media, long jobId) throws WfmProcessingException {
@@ -385,7 +390,7 @@ public class MediaInspectionHelper {
         return metadata;
     }
 
-    private static Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
+    private Metadata generateExifMetadata(Path path, String mimeType) throws IOException, TikaException, SAXException {
         Metadata metadata = new Metadata();
         try (InputStream stream = Preconditions.checkNotNull(TikaInputStream.get(path),
                 "Cannot open file '%s'", path)) {
@@ -393,7 +398,8 @@ public class MediaInspectionHelper {
 
             Parser parser = mimeType.equals("image/jpeg")
                     ? new CustomJpegParser()
-                    : new AutoDetectParser();
+                    : new AutoDetectParser(_tikaConfig);
+
             parser.parse(stream, new DefaultHandler(), metadata, new ParseContext());
         }
         return metadata;

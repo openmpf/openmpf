@@ -50,14 +50,10 @@ from . import mpf_util
           help='path to ActiveMQ binary')
 @mpf_util.env_arg('--activemq-data', 'ACTIVEMQ_DATA', default='/opt/activemq/data',
                   help='path to ActiveMQ data directory')
-@argh.arg('--catalina', default='/opt/apache-tomcat/bin/catalina.sh',
-          help='path to catalina.sh')
 @argh.arg('--node-manager-port', default=8008,
           help='port number that the Node Manager listens on')
 @argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
           help='Url to Workflow Manager')
-@mpf_util.env_arg('--catalina-pid-file', 'CATALINA_PID', default='/tmp/mpf-script/catalina.pid',
-                  help='Path to catalina pid file')
 def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=False,
           delete_logs=False, sql_host='localhost', sql_user='mpf', sql_password='password',
           **opt_args):
@@ -79,7 +75,7 @@ def clean(mpf_home=None, mpf_log_path=None, force=False, delete_uploaded_media=F
 
 
 must_be_stopped_dependencies = (mpf_sys.ActiveMqManager, mpf_sys.NodeManagerManager,
-                                mpf_sys.TomcatManager)
+                                mpf_sys.WorkflowManagerManager)
 
 
 def ensure_mpf_stopped(sys_config):

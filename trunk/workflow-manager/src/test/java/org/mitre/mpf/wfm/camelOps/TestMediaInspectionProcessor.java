@@ -75,8 +75,7 @@ public class TestMediaInspectionProcessor {
 
     private MediaInspectionHelper _mediaInspectionHelper;
 
-    private final MediaInspectionProcessor _mediaInspectionProcessor
-            = new MediaInspectionProcessor(_mockInProgressJobs, _mediaInspectionHelper);
+    private MediaInspectionProcessor _mediaInspectionProcessor;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -99,6 +98,9 @@ public class TestMediaInspectionProcessor {
         _mediaInspectionHelper = new MediaInspectionHelper(
                 _mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
                 _mockMediaMetadataValidator);
+
+        _mediaInspectionProcessor = new MediaInspectionProcessor(
+                _mockInProgressJobs, _mediaInspectionHelper);
 
         when(_mockMediaMetadataValidator.skipInspection(anyLong(), any()))
                 .thenReturn(false);

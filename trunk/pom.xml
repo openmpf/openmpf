@@ -214,7 +214,7 @@
                                 <argument>--buffer</argument>
                                 <argument>--start-directory</argument>
                                 <argument>
-                                    ${components.build.sdks.python}/detection/component_util
+                                    ${components.build.sdks.python}/detection/component_util/tests
                                 </argument>
                             </arguments>
                             <environmentVariables>

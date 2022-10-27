@@ -66,7 +66,7 @@ import java.util.*;
 
 import static java.util.stream.Collectors.*;
 
-@Component
+@Component("wfmPropertiesUtil")
 @Monitored
 public class PropertiesUtil {
 

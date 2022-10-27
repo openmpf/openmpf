@@ -72,6 +72,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 
 import javax.annotation.PostConstruct;
 import java.awt.*;
@@ -88,6 +89,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.*;
 
+@WebAppConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.
 @ActiveProfiles("jenkins")

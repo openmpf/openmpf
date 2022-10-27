@@ -69,7 +69,7 @@ public abstract class WfmSplitter implements MonitoredWfmSplitter {
 
 
     @Override
-    public final List<Message> split(Exchange exchange) {
+    public List<Message> split(Exchange exchange) {
         // Assume that the Job ID has been provided as a Long.
         assert exchange.getIn().getHeaders().containsKey(MpfHeaders.JOB_ID) : String.format(
                 "The '%s' header must be provided.",

@@ -49,7 +49,7 @@ public class CountBasedWfmAggregator implements WfmAggregator {
 	}
 
 	@Override
-	public final Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+	public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
 		int aggregateCount = 1;
 		int splitSize = newExchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
 

@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
+import org.apache.tika.exception.TikaException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.test.TestUtil;
@@ -43,7 +44,9 @@ import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,12 +73,9 @@ public class TestMediaInspectionProcessor {
     private final MediaMetadataValidator _mockMediaMetadataValidator
             = mock(MediaMetadataValidator.class);
 
-    private final MediaInspectionHelper _mediaInspectionHelper
-            = new MediaInspectionHelper(_mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                                        _mockMediaMetadataValidator);
+    private MediaInspectionHelper _mediaInspectionHelper;
 
-    private final MediaInspectionProcessor _mediaInspectionProcessor
-            = new MediaInspectionProcessor(_mockInProgressJobs, _mediaInspectionHelper);
+    private MediaInspectionProcessor _mediaInspectionProcessor;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -94,7 +94,14 @@ public class TestMediaInspectionProcessor {
     }
 
     @Before
-    public void init() {
+    public void init() throws TikaException, IOException, SAXException {
+        _mediaInspectionHelper = new MediaInspectionHelper(
+                _mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
+                _mockMediaMetadataValidator);
+
+        _mediaInspectionProcessor = new MediaInspectionProcessor(
+                _mockInProgressJobs, _mediaInspectionHelper);
+
         when(_mockMediaMetadataValidator.skipInspection(anyLong(), any()))
                 .thenReturn(false);
     }

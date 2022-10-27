@@ -57,7 +57,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-//mvn -Dtest=ITWebREST test if running tomcat before
+//mvn -Dtest=ITWebREST test if running wfm before
 //mvn verify -Dtest=none -DfailIfNoTests=false -Dit.test=ITWebREST
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)

@@ -60,7 +60,7 @@ public class WebRESTUtils {
 	private WebRESTUtils() {}
 
 	private static String getBaseUrl() {
-		var baseUrl = System.getenv(EnvVar.TOMCAT_BASE_URL);
+		var baseUrl = System.getenv(EnvVar.WFM_BASE_URL);
 		if (baseUrl != null && !baseUrl.isBlank()) {
 			return baseUrl;
 		}

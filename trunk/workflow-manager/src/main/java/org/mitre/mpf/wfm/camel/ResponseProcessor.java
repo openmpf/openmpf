@@ -62,7 +62,7 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 	 * Copies the JOB_ID (from WfmProcessor), CORRELATION_ID, and SPLIT_SIZE headers to the output exchange and then calls processResponse.
 	 */
 	@Override
-	public final void wfmProcess(Exchange exchange) throws WfmProcessingException {
+	public void wfmProcess(Exchange exchange) throws WfmProcessingException {
 		assert exchange.getIn().getBody() != null : "The message body must not be null.";
 		assert clazz != null : "The clazz member must not be null.";
 		assert clazz.isAssignableFrom(exchange.getIn().getBody().getClass()) : String.format("The message body must be convertible to '%s'.", clazz.getSimpleName());

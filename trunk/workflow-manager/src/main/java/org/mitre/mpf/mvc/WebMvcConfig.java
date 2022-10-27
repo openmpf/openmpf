@@ -24,36 +24,32 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.util;
+package org.mitre.mpf.mvc;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mitre.mpf.wfm.enums.MediaType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import java.util.List;
 
-@WebAppConfiguration
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles("jenkins")
-public class TestMediaTypeUtils {
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.smile.MappingJackson2SmileHttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-    @Autowired
-    private MediaTypeUtils mediaTypeUtils;
+@EnableWebMvc
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Test
-    public void testParse() {
-        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-matroska"));
-        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/x-vnd.rn-realmedia"));
-        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("application/mp4"));
-        Assert.assertEquals(MediaType.VIDEO, mediaTypeUtils.parse("image/gif"));
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.removeIf(
+            // Remove preexisting Jackson so we can register our custom version.
+            c -> c instanceof MappingJackson2HttpMessageConverter
+                        // Prevent HTTP responses from using the Smile format.
+                        || c instanceof MappingJackson2SmileHttpMessageConverter);
 
-        Assert.assertEquals(MediaType.IMAGE, mediaTypeUtils.parse("image/jpeg"));
-        Assert.assertEquals(MediaType.AUDIO, mediaTypeUtils.parse("audio/mpeg"));
-        Assert.assertEquals(MediaType.UNKNOWN, mediaTypeUtils.parse("text/plain"));
+        var converter = new MappingJackson2HttpMessageConverter(
+                ObjectMapperFactory.customObjectMapper());
+        converters.add(converter);
     }
 }

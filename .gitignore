@@ -4,6 +4,7 @@
 *.idea*
 *.user
 *.iml
+.vscode
 
 # Temporary Files
 *~

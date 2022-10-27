@@ -44,8 +44,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <tomcat.port>8080</tomcat.port>
-        <cargo.spring.profiles.active>jenkins</cargo.spring.profiles.active>
+        <wfm.port>8080</wfm.port>
     </properties>
 
     <dependencyManagement>
@@ -639,12 +638,12 @@
         <profile>
             <id>jenkins</id>
             <properties>
-                <tomcat.port>8181</tomcat.port>
+                <wfm.port>8181</wfm.port>
             </properties>
             <build>
                 <plugins>
                     <plugin>
-                        <!--you will also need to have the environmental variable DISPLAY=:99 for xvfb, and TOMCAT_BASE_URL=http://localhost:8181-->
+                        <!--you will also need to have the environmental variable DISPLAY=:99 for xvfb, and WFM_BASE_URL=http://localhost:8181-->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <version>${maven.surefire.plugin.version}</version>
@@ -886,7 +885,7 @@
                 <version>2.7.4</version>
                 <executions>
                     <execution>
-                        <id>start-tc</id>
+                        <id>start-wfm</id>
                         <phase>pre-integration-test</phase>
                         <goals>
                             <goal>start</goal>
@@ -894,13 +893,13 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <arguments>
-                                <argument>--server.port=${tomcat.port}</argument>
+                                <argument>--server.port=${wfm.port}</argument>
                                 <argument>--spring.profiles.active=jenkins</argument>
                             </arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>stop-tc</id>
+                        <id>stop-wfm</id>
                         <phase>post-integration-test</phase>
                         <goals>
                             <goal>stop</goal>

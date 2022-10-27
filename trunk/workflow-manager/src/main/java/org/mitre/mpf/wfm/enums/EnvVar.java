@@ -35,5 +35,5 @@ public class EnvVar {
             THIS_MPF_NODE = "THIS_MPF_NODE",
             HOSTNAME = "HOSTNAME",
             MPF_HOME = "MPF_HOME",
-            TOMCAT_BASE_URL = "TOMCAT_BASE_URL";
+            WFM_BASE_URL = "WFM_BASE_URL";
 }

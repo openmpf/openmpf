@@ -97,7 +97,7 @@ public class AdminLogsController
         nodeSelection, logSelection, logLevelSelection, maxLines,, cycleId, lastChecked, lastPosition, lastLineLevel);
         */
 
-        // check for empty nodes and logs lists; this won't happen ordinarily but could happen if tomcat is restarted
+        // check for empty nodes and logs lists; this won't happen ordinarily but could happen if wfm is restarted
         // after the user has viewed logs(?)
         if (nodesAndLogFiles.isEmpty()) {
             nodesAndLogs = getNodesAndLogs();

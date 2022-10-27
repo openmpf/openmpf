@@ -25,7 +25,6 @@
 #############################################################################
 
 import abc
-import errno
 import os
 import signal
 import socket
@@ -40,10 +39,6 @@ import argh
 from . import mpf_util
 
 
-def start_up_order():
-    return ActiveMqManager, PostgresManager, RedisManager, NodeManagerManager, TomcatManager
-
-
 class BaseMpfSystemDependencyManager(abc.ABC):
 
     def __init__(self, mpf_config):
@@ -54,7 +49,7 @@ class BaseMpfSystemDependencyManager(abc.ABC):
             self._config = mpf_config
             self._shell = ShellHelper(mpf_config.verbose)
 
-    def status(self, is_stopping=False):
+    def status(self):
         """ Determines whether the component is currently running
 
         Returns:
@@ -106,7 +101,7 @@ class BaseMpfSystemDependencyManager(abc.ABC):
     def stop(self):
         """ Stops the component if it is running
         """
-        if not self.status(is_stopping=True):
+        if not self.status():
             print(Messages.not_running(self.dependency_name()))
             return
 
@@ -121,7 +116,7 @@ class BaseMpfSystemDependencyManager(abc.ABC):
 
         time.sleep(.2)
 
-        if self.status(is_stopping=True):
+        if self.status():
             raise FailedToStopError(self.dependency_name())
         else:
             print(Messages.stopped(self.dependency_name()))
@@ -273,7 +268,7 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
                 status_msg.append('\t' + Messages.not_running(host))
         return '\n'.join(status_msg)
 
-    def status(self, is_stopping=False):
+    def status(self):
         if self._config.local_only:
             return self._local_status()
         else:
@@ -365,72 +360,42 @@ class NodeManagerManager(BaseMpfSystemDependencyManager):
         raise NotImplementedError()
 
 
-class TomcatManager(BaseMpfSystemDependencyManager):
-    SERVICE_NAME = 'tomcat7'
 
-    def __init__(self, mpf_config):
-        super(TomcatManager, self).__init__(mpf_config)
-        self._is_service = self._config.tomcat_is_service
-
+class WorkflowManagerManager(BaseMpfSystemDependencyManager):
     def dependency_name(self):
-        return 'Tomcat'
+        return 'Workflow Manager'
 
-    def status(self, is_stopping=False):
+    def status(self):
         request = urllib.request.Request(self._config.wfm_url)
         request.get_method = lambda: 'HEAD'
         try:
-            # While Tomcat is starting or stopping this call will block until it finishes.
-            # When Tomcat finishes deploying the request will receive a success response.
-            # When Tomcat finishes shutting down the request will fail with ECONNRESET
-            urllib.request.urlopen(request)
-            return True
-        except urllib.error.HTTPError as err:
-            if err.code != 404:
-                raise
-            if is_stopping:
+            with urllib.request.urlopen(request):
                 return True
-            else:
-                raise FailedToStartError(self.dependency_name(),
-                                         'Tomcat is running but the Workflow Manager is not.')
-        except urllib.error.URLError as err:
-            # ECONNREFUSED occurs when Tomcat isn't running
-            # ECONNRESET occurs when Tomcat shuts down
-            if err.reason.errno in (errno.ECONNREFUSED, errno.ECONNRESET):
-                return False
-            raise
-        except socket.error as err:
-            if err.errno == errno.ECONNRESET:
-                return False
-            raise
+        except (urllib.error.HTTPError, urllib.error.URLError, socket.error):
+            return False
 
-    def _run_start_command(self):
-        if self._is_service:
-            self._shell.start_service(TomcatManager.SERVICE_NAME)
-        else:
-            self._run_with_catalina_pid((self._config.catalina, 'start'))
-        time.sleep(20)
+    def stop(self):
+        if self.status():
+            # Workflow Manager starts synchronously and exits when ctrl-c is pressed, but we
+            # don't want to shutdown the other dependencies while it is still running.
+            raise mpf_util.MpfError('Workflow Manager must be manually stopped.')
 
-    def _run_stop_command(self):
-        if self._is_service:
-            self._shell.stop_service(TomcatManager.SERVICE_NAME)
-        else:
+    def start(self):
+        if self.status():
+            print(Messages.running(self.dependency_name()))
+            return
+
+        with subprocess.Popen(
+                ('mvn', 'spring-boot:run', '-Dstartup.auto.registration.skip=false'),
+                cwd=self._config.wfm_project) as proc:
             try:
-                self._run_with_catalina_pid((self._config.catalina, 'stop', '120'))
-            except subprocess.CalledProcessError as err:
-                if err.returncode != 1:
-                    raise
-                self._create_pid_file()
-                self._run_with_catalina_pid((self._config.catalina, 'stop', '120'))
-
-        print('Waiting for Node Manager to clean up...')
-        time.sleep(15)
-
-    def _run_with_catalina_pid(self, cmd_args):
-        # Need to set CATALINA_PID to enable synchronous stop
-        if 'CATALINA_PID' in os.environ:
-            self._shell.check_call(cmd_args)
-        else:
-            self._shell.check_call(cmd_args, env={'CATALINA_PID': self._config.catalina_pid_file})
+                rv = proc.wait()
+            except KeyboardInterrupt:
+                # Need to wait after KeyboardInterrupt because Python will finish handling ctrl-c
+                # before Workflow Manager finishes shutting down.
+                rv = proc.wait()
+            if rv != 0:
+                raise FailedToStartError(self.dependency_name())
 
     def _not_running_status_code(self):
         raise NotImplementedError()
@@ -438,30 +403,19 @@ class TomcatManager(BaseMpfSystemDependencyManager):
     def _run_status_command(self):
         raise NotImplementedError()
 
-    def _get_listening_port(self):
-        parse_result = urllib.parse.urlparse(self._config.wfm_url)
-        if parse_result.port:
-            return parse_result.port
-        elif parse_result.scheme == 'http':
-            return 80
-        elif parse_result.scheme == 'https':
-            return 443
+    def _run_stop_command(self):
+        raise NotImplementedError()
 
-    def _create_pid_file(self):
-        catalina_pid_dir = os.path.dirname(self._config.catalina_pid_file)
-        if not os.path.exists(catalina_pid_dir):
-            os.makedirs(catalina_pid_dir)
-
-        pid = self._shell.get_pid_bound_to_port(self._get_listening_port())
-        with open(self._config.catalina_pid_file, 'w') as pidFile:
-            pidFile.write(str(pid))
+    def _run_start_command(self):
+        raise NotImplementedError()
 
 
 class MpfConfig:
-    def __init__(self, verbose=False, activemq_bin=None, activemq_data=None, redis_server_bin=None, redis_cli_bin=None,
-                 redis_conf=None, node_manager_port=None, catalina=None, catalina_pid_file=None,
-                 workflow_manager_url=None, local_only=False, skip_activemq=False, skip_redis=False,
-                 skip_node_manager=False, skip_tomcat=False, **_):
+    def __init__(self, verbose=False, activemq_bin=None, activemq_data=None, redis_server_bin=None,
+                 redis_cli_bin=None, redis_conf=None, node_manager_port=None,
+                 workflow_manager_url=None, wfm_project=None,
+                 local_only=False, skip_activemq=False, skip_redis=False,
+                 skip_node_manager=False, skip_wfm=False, **_):
 
         self.verbose = verbose
         self._shell = ShellHelper(self.verbose)
@@ -499,17 +453,14 @@ class MpfConfig:
                 self.child_nodes = self._get_child_nodes()
                 self.local_only = self._only_node_manager_is_local(self.child_nodes)
 
-        if not skip_tomcat:
+        if not skip_wfm:
             self.wfm_url = workflow_manager_url
-            self.tomcat_is_service = self._shell.service_exists(TomcatManager.SERVICE_NAME)
-            if not self.tomcat_is_service:
-                self.catalina = catalina
-                self._verify_exists('Tomcat', self.catalina, '--catalina')
+            self.wfm_project = os.path.expandvars(os.path.expanduser(wfm_project))
+            if not os.path.isfile(os.path.join(self.wfm_project, 'pom.xml')):
+                raise mpf_util.MpfError(
+                    f'Expected to find a directory containing a pom.xml at "{self.wfm_project}". '
+                    'Try setting --wfm-project.')
 
-                self.catalina_pid_file = catalina_pid_file
-                catalina_pid_dir = os.path.dirname(self.catalina_pid_file)
-                if not os.path.exists(catalina_pid_dir):
-                    os.makedirs(catalina_pid_dir)
 
     def _verify_exists(self, component, executable, cmd_line_arg):
         if not self._shell.executable_exists(executable):
@@ -566,11 +517,10 @@ class Messages(object):
 
     @staticmethod
     def _create_msg(component, action):
-        if len(component) < 7:
-            prefix = '\t\t'
-        else:
-            prefix = '\t'
-        return '%s:%s [  %s  ]' % (component, prefix, action)
+        required_len = 17
+        spaces = ' ' * (required_len - len(component))
+        return f'{component}:{spaces}[  {action}  ]'
+
 
 
 class FailedToStartError(mpf_util.MpfError):
@@ -669,9 +619,6 @@ sys_args = mpf_util.arg_group(
 
     argh.arg('--redis-conf', default='/etc/redis/redis.conf', help='path to redis.conf file'),
 
-    argh.arg('--catalina', default='/opt/apache-tomcat/bin/catalina.sh',
-             help='path to catalina.sh'),
-
     argh.arg('--node-manager-port', default=8008,
              help='port number that the Node Manager listens on'),
 
@@ -679,17 +626,18 @@ sys_args = mpf_util.arg_group(
 
     argh.arg('--workflow-manager-url', default='http://localhost:8080/workflow-manager',
              help='Url to Workflow Manager'),
-    mpf_util.env_arg('--catalina-pid-file', 'CATALINA_PID', default='/tmp/mpf-script/catalina.pid'),
+    argh.arg('--wfm-project', default='~/openmpf-projects/openmpf/trunk/workflow-manager',
+             help='Path to the Workflow Manager Maven project.'),
 
     argh.arg('--skip-activemq', '--xaq', default=False, help='Exclude ActiveMQ from command'),
     argh.arg('--skip-sql', '--xsql', default=False, help='Exclude SQL from command'),
     argh.arg('--skip-redis', '--xrds', default=False, help='Exclude Redis from command'),
     argh.arg('--skip-node-manager', '--xnm', default=False, help='Exclude Node Manager from command'),
-    argh.arg('--skip-tomcat', '--xtc', default=False, help='Exclude Tomcat from command')
+    argh.arg('--skip-wfm', '--xwfm', default=False, help='Exclude Workflow Manager from command')
 )
 
 
-def filtered_start_up_order(skip_activemq, skip_sql, skip_redis, skip_node_manager, skip_tomcat,
+def filtered_start_up_order(skip_activemq, skip_sql, skip_redis, skip_node_manager, skip_wfm,
                             **_):
     if not skip_activemq:
         yield ActiveMqManager
@@ -699,8 +647,8 @@ def filtered_start_up_order(skip_activemq, skip_sql, skip_redis, skip_node_manag
         yield RedisManager
     if not skip_node_manager:
         yield NodeManagerManager
-    if not skip_tomcat:
-        yield TomcatManager
+    if not skip_wfm:
+        yield WorkflowManagerManager
 
 
 @sys_args

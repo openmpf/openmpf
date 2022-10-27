@@ -31,7 +31,7 @@
     <!-- Default set of monitored resources -->
     <WatchedResource>WEB-INF/web.xml</WatchedResource>
 
-    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!-- Uncomment this to disable session persistence across Workflow Manager restarts -->
     <Manager pathname="" />
 
     <!-- Uncomment this to enable Comet connection tacking (provides events

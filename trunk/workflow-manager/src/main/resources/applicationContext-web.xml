@@ -26,36 +26,44 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:tx="http://www.springframework.org/schema/tx"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-                           http://www.springframework.org/schema/beans/spring-beans.xsd
-                           http://www.springframework.org/schema/tx
-                           http://www.springframework.org/schema/tx/spring-tx.xsd">
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/mvc
+            http://www.springframework.org/schema/mvc/spring-mvc.xsd
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <import resource="classpath:applicationContext.xml"/>
 
-    <!--<bean id="transactionManager" class="org.springframework.data.transaction.ChainedTransactionManager">-->
-        <!--<constructor-arg>-->
-            <!--<list>-->
-                <!--<ref bean="jmsTransactionManager"/>-->
-                <!--<ref bean="hibernateTransactionManager"/>-->
-            <!--</list>-->
-        <!--</constructor-arg>-->
-    <!--</bean>-->
+    <beans>
+        <!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+        <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+            <property name="prefix" value="/WEB-INF/views/" />
+            <property name="suffix" value=".jsp" />
+            <property name="order" value="1" />
+        </bean>
 
-    <bean id="jmsTransactionManager" class="org.springframework.jms.connection.JmsTransactionManager">
-        <property name="connectionFactory" ref="jmsProxyFactory" />
-    </bean>
+        <!--  needed for fileupload -->
+        <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"/>
 
-    <bean id="transactionManager" primary="true"
-          class="org.springframework.orm.hibernate5.HibernateTransactionManager">
-        <property name="sessionFactory" ref="sessionFactory" />
-    </bean>
+        <mvc:resources mapping="/resources/**" location="/resources/mytheme/" />
 
-    <bean id="propagationRequiresNew" class="org.apache.camel.spring.spi.SpringTransactionPolicy">
-        <property name="transactionManager" ref="transactionManager"/>
-        <!--<property name="propagationBehaviorName" value="PROPAGATION_REQUIRES_NEW"/>-->
-    </bean>
+        <mvc:resources mapping="/swagger-ui/**"
+                       location="classpath:/META-INF/resources/webjars/springfox-swagger-ui/" />
 
+        <!-- Enables the Spring MVC @Controller programming model -->
+        <mvc:annotation-driven>
+            <mvc:message-converters>
+                <bean class="org.mitre.mpf.mvc.CustomJacksonHttpMessageConverter" />
+            </mvc:message-converters>
+        </mvc:annotation-driven>
+
+        <!-- added for swagger 2 -->
+        <context:annotation-config /> <!-- does not break the xml config -->
+        <!-- not sure if needed for swagger 2, but kept -->
+        <mvc:default-servlet-handler />
+    </beans>
 </beans>

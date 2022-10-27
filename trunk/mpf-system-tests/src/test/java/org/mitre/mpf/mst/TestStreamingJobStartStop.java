@@ -57,6 +57,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
 
 import java.net.URI;
 import java.util.*;
@@ -71,6 +72,7 @@ import static org.mockito.AdditionalMatchers.gt;
 import static org.mockito.Mockito.*;
 
 
+@WebAppConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(initializers = TestSystemWithDefaultConfig.AppCtxInit.class)
 @DirtiesContext // Make sure TestStreamingJobStartStop does not use same application context as other tests.

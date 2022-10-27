@@ -34,12 +34,14 @@ import org.mitre.mpf.interop.util.TrimKeysModule;
 import org.mitre.mpf.interop.util.TrimValuesModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class ObjectMapperFactory {
 
     @Bean
+    @Primary
     public static ObjectMapper customObjectMapper() {
         return Jackson2ObjectMapperBuilder.json()
                 .modules(new InstantJsonModule(),

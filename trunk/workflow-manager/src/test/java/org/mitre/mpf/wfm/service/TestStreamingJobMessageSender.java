@@ -50,6 +50,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -119,6 +120,7 @@ public class TestStreamingJobMessageSender {
                 "TEST ALGO",
                 "Algo Description",
                 ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), algoProperties),
                 true,

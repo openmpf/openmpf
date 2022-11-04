@@ -24,52 +24,23 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.persistent;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.interop.JsonIssueDetails;
+package org.mitre.mpf.wfm.service;
+
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import java.util.*;
 
-// Suppress because it's better than having to explicitly use BatchJobImpl during deserialization.
-@SuppressWarnings("ClassReferencesSubclass")
-@JsonDeserialize(as = BatchJobImpl.class)
-public interface BatchJob {
-    public long getId();
+import java.net.URI;
+import java.time.Instant;
+import java.util.Optional;
 
-    public BatchJobStatusType getStatus();
+public record TiesDbCheckResult(TiesDbCheckStatus status, Optional<CheckInfo> checkInfo) {
 
-    public JobPipelineElements getPipelineElements();
+    public record CheckInfo(URI outputObjectUri,
+                            BatchJobStatusType jobStatus,
+                            Instant processDate){}
 
-    public int getCurrentTaskIndex();
-
-    public Optional<String> getExternalId();
-
-    public int getPriority();
-
-    public Collection<Media> getMedia();
-
-    public Media getMedia(long mediaId);
-
-    // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
-    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
-
-    public ImmutableMap<String, String> getJobProperties();
-
-    public boolean isCancelled();
-
-    public Optional<String> getCallbackUrl();
-
-    public Optional<String> getCallbackMethod();
-
-    public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
-
-    public Map<Long, Set<JsonIssueDetails>> getWarnings();
-
-    public Map<Long, Set<JsonIssueDetails>> getErrors();
-
-    public List<DetectionProcessingError> getDetectionProcessingErrors();
-
-    public boolean shouldCheckTiesDbAfterMediaInspection();
+    public static TiesDbCheckResult noResult(TiesDbCheckStatus status) {
+        return new TiesDbCheckResult(status, Optional.empty());
+    }
 }

@@ -40,11 +40,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -393,6 +389,21 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+    public MediaActionProps getMediaActionProps(
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements pipelineElements) {
+        return (propName, media, action) -> getPropertyInfo(
+                propName,
+                media.getMediaSpecificProperties(),
+                media.getType(),
+                action,
+                pipelineElements,
+                algorithmProperties,
+                jobProperties,
+                systemPropertiesSnapshot).getValue();
+    }
 
 
     public String calculateFrameInterval(Action action, BatchJob job, Media media, int systemFrameInterval,

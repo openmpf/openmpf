@@ -447,14 +447,23 @@ public class JobController {
 
     private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
         try {
-            long jobId = jobRequestService.run(jobCreationRequest).getId();
+            var jobCreationResult = jobRequestService.run(jobCreationRequest);
+            long jobId = jobCreationResult.jobId();
 
             if (useSession) {
                 sessionModel.getSessionJobs().add(jobId);
             }
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
+            var tiesDbOutputObjectUri = jobCreationResult
+                    .tiesDbCheckResult()
+                    .checkInfo()
+                    .map(ci -> ci.outputObjectUri())
+                    .orElse(null);
             // the job request has been successfully parsed, construct the job creation response
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(
+                    exportedJobId,
+                    jobCreationResult.tiesDbCheckResult().status(),
+                    tiesDbOutputObjectUri);
         }
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
@@ -585,7 +594,7 @@ public class JobController {
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(exportedJobId, TiesDbCheckStatus.NOT_REQUESTED, null);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);

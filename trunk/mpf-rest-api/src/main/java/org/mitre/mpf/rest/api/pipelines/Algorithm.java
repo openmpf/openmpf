@@ -39,6 +39,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.OptionalInt;
 
 @MethodReturnsTrue(
         method = "supportsBatchOrStreaming",
@@ -62,6 +63,11 @@ public class Algorithm implements PipelineElement {
     @NotNull
     public ActionType getActionType() {
         return _actionType;
+    }
+
+    private final OptionalInt _outputVersion;
+    public OptionalInt getOutputVersion() {
+        return _outputVersion;
     }
 
     private final Requires _requiresCollection;
@@ -91,6 +97,7 @@ public class Algorithm implements PipelineElement {
             @JsonProperty("name") String name,
             @JsonProperty("description") String description,
             @JsonProperty("actionType") ActionType actionType,
+            @JsonProperty("outputVersion") OptionalInt outputVersion,
             @JsonProperty("requiresCollection") Requires requiresCollection,
             @JsonProperty("providesCollection") Provides providesCollection,
             @JsonProperty("supportsBatchProcessing") boolean supportsBatchProcessing,
@@ -98,6 +105,7 @@ public class Algorithm implements PipelineElement {
         _name = Utils.trimAndUpper(name);
         _description = Utils.trim(description);
         _actionType = actionType;
+        _outputVersion = outputVersion;
         _requiresCollection = requiresCollection;
         _providesCollection = providesCollection;
         _supportsBatchProcessing = supportsBatchProcessing;
@@ -131,6 +139,7 @@ public class Algorithm implements PipelineElement {
         return Objects.equals(_name, other._name)
                 && Objects.equals(_description, other._description)
                 && _actionType == other._actionType
+                && Objects.equals(_outputVersion, other._outputVersion)
                 && Objects.equals(_requiresCollection, other._requiresCollection)
                 && Objects.equals(_providesCollection, other._providesCollection)
                 && Objects.equals(_supportsBatchProcessing, other._supportsBatchProcessing)
@@ -139,8 +148,9 @@ public class Algorithm implements PipelineElement {
 
     @Override
     public int hashCode() {
-        return Objects.hash(_name, _description, _actionType, _requiresCollection, _providesCollection,
-                            _supportsBatchProcessing, _supportsStreamProcessing);
+        return Objects.hash(
+                _name, _description, _actionType, _outputVersion, _requiresCollection,
+                _providesCollection, _supportsBatchProcessing, _supportsStreamProcessing);
     }
 
 

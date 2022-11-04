@@ -28,13 +28,15 @@ package org.mitre.mpf.wfm.businessrules;
 
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.service.TiesDbCheckResult;
 
 public interface JobRequestService {
 
-    JobRequest run(JobCreationRequest jobCreationRequest);
+    CreationResult run(JobCreationRequest jobCreationRequest);
 
     JobRequest resubmit(long jobId, int priority);
 
     boolean cancel(long jobId);
 
+    record CreationResult(long jobId, TiesDbCheckResult tiesDbCheckResult) {}
 }

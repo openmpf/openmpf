@@ -54,6 +54,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -108,6 +109,7 @@ public class TestPipelineController {
 
         var algorithm1 = new Algorithm(
                 "TEST_DETECTION_ALG", "Test algorithm for detection.", ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of(testAlgoProp)),
                 true, false);
@@ -115,6 +117,7 @@ public class TestPipelineController {
 
         var markupAlgo = new Algorithm(
                 "TEST_MARKUP_ALG", "Test algorithm for markup.", ActionType.MARKUP,
+                OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);

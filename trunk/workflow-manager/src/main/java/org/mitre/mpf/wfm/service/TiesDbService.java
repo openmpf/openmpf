@@ -86,7 +86,7 @@ public class TiesDbService {
 
     private final JsonUtils _jsonUtils;
 
-    private final CallbackUtils _callbackUtils;
+    private final HttpClientUtils _httpClientUtils;
 
     private final JobRequestDao _jobRequestDao;
 
@@ -97,13 +97,13 @@ public class TiesDbService {
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                   ObjectMapper objectMapper,
                   JsonUtils jsonUtils,
-                  CallbackUtils callbackUtils,
+                  HttpClientUtils httpClientUtils,
                   JobRequestDao jobRequestDao,
                   InProgressBatchJobsService inProgressJobs) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
-        _callbackUtils = callbackUtils;
+        _httpClientUtils = httpClientUtils;
         _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
@@ -385,7 +385,7 @@ public class TiesDbService {
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
 
             var responseChecker = new ResponseChecker();
-            return _callbackUtils.executeRequest(
+            return _httpClientUtils.executeRequest(
                         postRequest,
                         _propertiesUtil.getHttpCallbackRetryCount(),
                         responseChecker::shouldRetry)

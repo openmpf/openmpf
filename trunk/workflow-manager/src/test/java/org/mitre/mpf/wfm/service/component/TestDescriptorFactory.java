@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static java.util.stream.Collectors.toCollection;
 import static org.mitre.mpf.wfm.service.component.TestDescriptorConstants.*;
@@ -81,6 +82,7 @@ public class TestDescriptorFactory {
                 "Test Algorithm Name",
                 "Test Algorithm Description",
                 ActionType.DETECTION,
+                OptionalInt.empty(),
                 requiresCollection,
                 providesCollection,
                 true,
@@ -163,7 +165,7 @@ public class TestDescriptorFactory {
         propertyList.add(new AlgorithmProperty("foo", "2", ValueType.INT, "0", null));
 
         return new Algorithm(
-                REFERENCED_ALGO_NAME, "description", ActionType.DETECTION,
+                REFERENCED_ALGO_NAME, "description", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), propertyList),
                 true, false);

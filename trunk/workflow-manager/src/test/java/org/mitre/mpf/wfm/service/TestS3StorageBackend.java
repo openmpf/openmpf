@@ -410,6 +410,7 @@ public class TestS3StorageBackend {
         var media = mock(Media.class);
 
         var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+                                      OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);

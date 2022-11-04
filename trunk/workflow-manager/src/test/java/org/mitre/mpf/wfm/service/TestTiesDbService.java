@@ -81,7 +81,7 @@ public class TestTiesDbService {
     private final JsonUtils _jsonUtils = new JsonUtils(_objectMapper);
 
     @Mock
-    private CallbackUtils _mockCallbackUtils;
+    private HttpClientUtils _mockHttpClientUtils;
 
     @Mock
     private JobRequestDao _mockJobRequestDao;
@@ -105,7 +105,7 @@ public class TestTiesDbService {
                 _mockAggregateJobPropertiesUtil,
                 _objectMapper,
                 _jsonUtils,
-                _mockCallbackUtils,
+                _mockHttpClientUtils,
                 _mockJobRequestDao,
                 _mockInProgressJobs);
 
@@ -136,8 +136,8 @@ public class TestTiesDbService {
                                    List.of(), List.of(), null);
         media2.setSha256("MEDIA2_SHA");
 
-        var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
-        var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
+        var algo1 = new Algorithm("ALGO1", null, null, OptionalInt.empty(), null,  null, true, false);
+        var algo2 = new Algorithm("ALGO2", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
         var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
@@ -152,7 +152,7 @@ public class TestTiesDbService {
         var job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(media1, media2),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         String url1 = "http://localhost:81/qwer";
         when(_mockAggregateJobPropertiesUtil.getValue(
@@ -539,8 +539,8 @@ public class TestTiesDbService {
                                   List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
-        var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
-        var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
+        var algo1 = new Algorithm("ALGO1", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("ALGO2", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
         var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
@@ -555,7 +555,7 @@ public class TestTiesDbService {
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(media),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
     }
 
 
@@ -564,9 +564,9 @@ public class TestTiesDbService {
                                   List.of(), List.of(), null);
         media.setSha256("MEDIA1_SHA");
 
-        var algo1 = new Algorithm("ALGO1", null, null, null, null, true, false);
-        var algo2 = new Algorithm("ALGO2", null, null, null, null, true, false);
-        var algo3 = new Algorithm("ALGO3", null, null, null, null, true, false);
+        var algo1 = new Algorithm("ALGO1", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("ALGO2", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo3 = new Algorithm("ALGO3", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("ACTION1", null, algo1.getName(), List.of());
         var action2 = new Action("ACTION2", null, algo2.getName(), List.of());
@@ -587,7 +587,7 @@ public class TestTiesDbService {
         return new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(media),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
     }
 
 
@@ -774,9 +774,9 @@ public class TestTiesDbService {
                 null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
-        var algo2 = new Algorithm("PARENT_ALGO", null, null, null, null, true, false);
-        var algo3 = new Algorithm("CHILD_ALGO", null, null, null, null, true, false);
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("PARENT_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo3 = new Algorithm("CHILD_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
         var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
@@ -799,7 +799,7 @@ public class TestTiesDbService {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         if (createChildren) {
             var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
@@ -942,8 +942,8 @@ public class TestTiesDbService {
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), List.of());
         childMedia2.setSha256("CHILD2_SHA");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
-        var algo2 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("SHARED_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
         var action2 = new Action("PARENT_ACTION", null, algo2.getName(),
@@ -966,7 +966,7 @@ public class TestTiesDbService {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         job.addDerivativeMedia(childMedia1);
         job.addDerivativeMedia(childMedia2);
@@ -1045,8 +1045,8 @@ public class TestTiesDbService {
                 Map.of(MpfConstants.IS_DERIVATIVE_MEDIA, "TRUE"), List.of(), List.of(), List.of());
         childMedia2.setSha256("CHILD2_SHA");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
-        var algo2 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("SHARED_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
 
         var action1 = new Action("EXTRACT_ACTION", null, algo1.getName(), List.of());
         var action2 = new Action("SHARED_ACTION", null, algo2.getName(), List.of());
@@ -1065,7 +1065,7 @@ public class TestTiesDbService {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         job.addDerivativeMedia(childMedia1);
         job.addDerivativeMedia(childMedia2);
@@ -1288,12 +1288,12 @@ public class TestTiesDbService {
                 null);
         parentMedia.setSha256("PARENT_SHA");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, null, null, true, false);
-        var algo2 = new Algorithm("PARENT_ALGO1", null, null, null, null, true, false);
-        var algo3 = new Algorithm("PARENT_ALGO2", null, null, null, null, true, false);
-        var algo4 = new Algorithm("CHILD_ALGO1", null, null, null, null, true, false);
-        var algo5 = new Algorithm("CHILD_ALGO2", null, null, null, null, true, false);
-        var algo6 = new Algorithm("SHARED_ALGO", null, null, null, null, true, false);
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo2 = new Algorithm("PARENT_ALGO1", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo3 = new Algorithm("PARENT_ALGO2", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo4 = new Algorithm("CHILD_ALGO1", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo5 = new Algorithm("CHILD_ALGO2", null, null, OptionalInt.empty(), null, null, true, false);
+        var algo6 = new Algorithm("SHARED_ALGO", null, null, OptionalInt.empty(), null, null, true, false);
 
         var sourceOnlyProperty = new ActionProperty("SOURCE_MEDIA_ONLY", "TRUE");
         var derivativeOnlyProperty = new ActionProperty("DERIVATIVE_MEDIA_ONLY", "TRUE");
@@ -1324,7 +1324,7 @@ public class TestTiesDbService {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         if (addChildren) {
             var childMedia1 = new MediaImpl(701, 700, 0, "file:///child1", null, null, Map.of(), Map.of(), null,
@@ -1398,14 +1398,14 @@ public class TestTiesDbService {
                 .thenReturn(List.of(tiesDbInfo3));
 
 
-        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3), any()))
+        when(_mockHttpClientUtils.executeRequest(any(HttpPost.class), eq(3), any()))
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
         _tiesDbService.postAssertions(job).join();
 
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
-        verify(_mockCallbackUtils, times(3))
+        verify(_mockHttpClientUtils, times(3))
                 .executeRequest(httpRequestCaptor.capture(), eq(3), any());
 
         {
@@ -1488,7 +1488,7 @@ public class TestTiesDbService {
                 .thenReturn(List.of(validTiesDbInfo, invalidTiesDbInfo));
 
 
-        when(_mockCallbackUtils.executeRequest(any(HttpPost.class), eq(3), any()))
+        when(_mockHttpClientUtils.executeRequest(any(HttpPost.class), eq(3), any()))
                 .thenReturn(ThreadUtil.completedFuture(
                         new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "OK")));
 
@@ -1496,7 +1496,7 @@ public class TestTiesDbService {
         TestUtil.assertThrows(CompletionException.class, future::join);
 
         var httpRequestCaptor = ArgumentCaptor.forClass(HttpPost.class);
-        verify(_mockCallbackUtils, times(1))
+        verify(_mockHttpClientUtils, times(1))
                 .executeRequest(httpRequestCaptor.capture(), anyInt(), any());
 
         verify(_mockJobRequestDao)
@@ -1533,7 +1533,7 @@ public class TestTiesDbService {
                 "http://localhost:81/api/db/supplementals?sha256Hash=MEDIA_1_SHA");
 
         var errorMsg = "test error message";
-        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+        when(_mockHttpClientUtils.executeRequest(any(), eq(3), any()))
                 .thenAnswer(inv -> {
                     if (inv.getArgument(0, HttpPost.class).getURI().equals(successUri)) {
                         return ThreadUtil.completedFuture(
@@ -1550,7 +1550,7 @@ public class TestTiesDbService {
         var exception = TestUtil.assertThrows(CompletionException.class, future::join);
         assertThat(exception.getMessage(), containsString(errorMsg));
 
-        verify(_mockCallbackUtils, times(2))
+        verify(_mockHttpClientUtils, times(2))
                 .executeRequest(any(), anyInt(), any());
 
         verify(_mockJobRequestDao)
@@ -1579,7 +1579,7 @@ public class TestTiesDbService {
 
         var errorMsg1 = "test error message";
         var errorMsg2 = "other failure message";
-        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+        when(_mockHttpClientUtils.executeRequest(any(), eq(3), any()))
                 .thenAnswer(inv -> {
                     String errorMsg;
                     if (inv.getArgument(0, HttpPost.class).getURI().equals(uri1)) {
@@ -1600,7 +1600,7 @@ public class TestTiesDbService {
         assertThat(exception.getMessage(), containsString(errorMsg1));
         assertThat(exception.getMessage(), containsString(errorMsg2));
 
-        verify(_mockCallbackUtils, times(2))
+        verify(_mockHttpClientUtils, times(2))
                 .executeRequest(any(), anyInt(), any());
 
         verify(_mockJobRequestDao)
@@ -1625,7 +1625,7 @@ public class TestTiesDbService {
                 .thenReturn(List.of(createValidTiesDbInfoMotion(), createValidTiesDbInfoFace()));
 
         var errorMsg = "<other content> could not identify referenced item <other content>";
-        when(_mockCallbackUtils.executeRequest(any(), eq(3), any()))
+        when(_mockHttpClientUtils.executeRequest(any(), eq(3), any()))
                 .thenAnswer(inv -> {
                     var errorResponse = createErrorResponse(errorMsg);
                     var retryPred = (Predicate<HttpResponse>) inv.getArgument(2);
@@ -1637,7 +1637,7 @@ public class TestTiesDbService {
         var exception = TestUtil.assertThrows(CompletionException.class, future::join);
         assertThat(exception.getMessage(), containsString(errorMsg));
 
-        verify(_mockCallbackUtils, times(2))
+        verify(_mockHttpClientUtils, times(2))
                 .executeRequest(any(), anyInt(), any());
 
         verify(_mockJobRequestDao)
@@ -1774,7 +1774,8 @@ public class TestTiesDbService {
                 null,
                 List.of(),
                 Map.of(),
-                Map.of());
+                Map.of(),
+                false);
 
     }
 }

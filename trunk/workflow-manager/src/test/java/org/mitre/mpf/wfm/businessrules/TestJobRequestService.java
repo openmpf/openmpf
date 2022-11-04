@@ -35,8 +35,10 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.JobCreationMediaData;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.businessrules.impl.JobRequestServiceImpl;
+import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -46,6 +48,8 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
+import org.mitre.mpf.wfm.service.TiesDbCheckResult;
 import org.mitre.mpf.wfm.service.WorkflowPropertyService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
@@ -53,13 +57,17 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -86,12 +94,15 @@ public class TestJobRequestService {
 
     private final MarkupResultDao _mockMarkupResultDao = mock(MarkupResultDao.class);
 
+    private final TiesDbBeforeJobCheckService _mockTiesDbBeforeJobCheckService
+                    = mock(TiesDbBeforeJobCheckService.class);
+
     private final ProducerTemplate _mockProduceTemplate = mock(ProducerTemplate.class);
 
-    private final JobRequestService _jobRequestService
-            = new JobRequestServiceImpl(_mockPropertiesUtil, _aggregateJobPropertiesUtil, _mockPipelineService,
-                                        _jsonUtils, _mockJmsUtils, _inProgressJobs, _mockJobRequestDao,
-                                        _mockMarkupResultDao, _mockProduceTemplate);
+    private final JobRequestService _jobRequestService = new JobRequestServiceImpl(
+                    _mockPropertiesUtil, _aggregateJobPropertiesUtil, _mockPipelineService,
+                    _jsonUtils, _mockJmsUtils, _inProgressJobs, _mockJobRequestDao,
+                    _mockMarkupResultDao, _mockTiesDbBeforeJobCheckService, _mockProduceTemplate);
 
     @Rule
     public TemporaryFolder _temporaryFolder = new TemporaryFolder();
@@ -130,6 +141,7 @@ public class TestJobRequestService {
 
     private static JobPipelineElements createJobPipelineElements() {
         var algorithm = new Algorithm("TEST ALGO", "desc", ActionType.DETECTION,
+                                      OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
@@ -179,21 +191,25 @@ public class TestJobRequestService {
         when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
                 .thenReturn(systemPropsSnapshot);
 
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(any(), any(), any(), any()))
+                .thenReturn(TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH));
+
         when(_mockJobRequestDao.getNextId())
                 .thenReturn(123L);
 
-        when(_mockJobRequestDao.persist(any()))
+        var jobRequestEntityCaptor = ArgumentCaptor.forClass(JobRequest.class);
+        when(_mockJobRequestDao.persist(jobRequestEntityCaptor.capture()))
                 .thenAnswer(i -> i.getArgument(0));
 
-
         var jobCreationRequest = createTestJobCreationRequest();
-
-        var jobRequestEntity = _jobRequestService.run(jobCreationRequest);
+        var creationResult = _jobRequestService.run(jobCreationRequest);
+        var jobRequestEntity = jobRequestEntityCaptor.getValue();
 
         verify(_mockJobStatusBroadcaster)
                 .broadcast(123, BatchJobStatusType.IN_PROGRESS);
         verifyNoMoreInteractions(_mockJobStatusBroadcaster);
 
+        assertEquals(123, creationResult.jobId());
         assertEquals(123, jobRequestEntity.getId());
         assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
         assertEquals("TEST PIPELINE", jobRequestEntity.getPipeline());
@@ -270,7 +286,8 @@ public class TestJobRequestService {
                                       Map.of("media_prop1", "media_val1"), Map.of(),
                                       List.of(), List.of(), "error")),
                 Map.of("job_prop1", "job_val1"),
-                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")));
+                Map.of("TEST ALGO" , Map.of("algo_prop1", "algo_val1")),
+                false);
         originalJob.addDetectionProcessingError(
             new DetectionProcessingError(321, 1, 0, 0, 0, 10, 0, 10,
                                              "error", "errorMessage"));
@@ -360,6 +377,8 @@ public class TestJobRequestService {
         assertFalse(Files.exists(artifactsDir.toPath()));
         assertFalse(Files.exists(outputObjectsDir.toPath()));
         assertFalse(Files.exists(markupDir.toPath()));
+
+        verifyZeroInteractions(_mockTiesDbBeforeJobCheckService);
     }
 
 
@@ -379,7 +398,7 @@ public class TestJobRequestService {
                 3, null, null,
                 List.of(new MediaImpl(323, "http://example.mp4", UriScheme.HTTP, Path.of("temp"),
                                       Map.of(), Map.of(), List.of(), List.of(), null)),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         jobRequestEntity.setStatus(BatchJobStatusType.IN_PROGRESS);
 
@@ -405,5 +424,64 @@ public class TestJobRequestService {
         JobRequest persistedRequest = persistedRequestCaptor.getValue();
         assertEquals(BatchJobStatusType.CANCELLING, persistedRequest.getStatus());
         assertArrayEquals(persistedRequest.getJob(), _jsonUtils.serialize(job));
+    }
+
+
+    @Test
+    public void testTiesDbCheck() {
+        var pipelineElements = createJobPipelineElements();
+        when(_mockPipelineService.getBatchPipelineElements("TEST PIPELINE"))
+                .thenReturn(pipelineElements);
+
+        var systemPropsSnapshot = new SystemPropertiesSnapshot(Map.of());
+        when(_mockPropertiesUtil.createSystemPropertiesSnapshot())
+                .thenReturn(systemPropsSnapshot);
+
+        when(_mockJobRequestDao.getNextId())
+                .thenReturn(123L);
+
+        var jobRequestEntityCaptor = ArgumentCaptor.forClass(JobRequest.class);
+        when(_mockJobRequestDao.persist(jobRequestEntityCaptor.capture()))
+                .thenAnswer(i -> i.getArgument(0));
+
+        var jobCreationRequest = createTestJobCreationRequest();
+        jobCreationRequest.setPriority(5);
+
+        var tiesDbCheckResult = new TiesDbCheckResult(
+                TiesDbCheckStatus.FOUND_MATCH,
+                Optional.of(new TiesDbCheckResult.CheckInfo(
+                        URI.create("file:///opt/mpf/share/1.json"),
+                        BatchJobStatusType.COMPLETE,
+                        Instant.ofEpochSecond(1667480850))));
+
+        when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+                        eq(jobCreationRequest),
+                        eq(systemPropsSnapshot),
+                        argThat(x -> x.size() == 2),
+                        eq(pipelineElements)))
+                .thenReturn(tiesDbCheckResult);
+
+        var creationResult = _jobRequestService.run(jobCreationRequest);
+
+        assertEquals(tiesDbCheckResult, creationResult.tiesDbCheckResult());
+
+        var expectedHeaders = Map.<String, Object>of(
+                MpfHeaders.JOB_ID, 123L,
+                MpfHeaders.JMS_PRIORITY, 5,
+                MpfHeaders.JOB_COMPLETE, true,
+                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, URI.create("file:///opt/mpf/share/1.json"));
+
+        // Verify job is routed past media inspection.
+        verify(_mockProduceTemplate)
+                .sendBodyAndHeaders(
+                        JobRouterRouteBuilder.ENTRY_POINT, null, expectedHeaders);
+        verifyNoMoreInteractions(_mockProduceTemplate);
+
+        // Verify job data is persisted in the database like a regular job.
+        var jobRequestEntity = jobRequestEntityCaptor.getValue();
+        assertEquals(123L, jobRequestEntity.getId());
+        assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
+        assertTrue(Instant.now().compareTo(jobRequestEntity.getTimeReceived()) >= 0);
+        assertNull(jobRequestEntity.getTimeCompleted());
     }
 }

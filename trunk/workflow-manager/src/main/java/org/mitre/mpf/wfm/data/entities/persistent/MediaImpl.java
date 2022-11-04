@@ -230,6 +230,16 @@ public class MediaImpl implements Media {
         _tiesDbInfo.add(info);
     }
 
+    @Override
+    @JsonIgnore
+    public Optional<String> getHash() {
+        var hash = getMetadata("MEDIA_HASH");
+        if (hash != null && !hash.isBlank()) {
+            return Optional.of(hash);
+        }
+        return Optional.ofNullable(getProvidedMetadata().get("MEDIA_HASH"))
+            .filter(h -> !h.isBlank());
+    }
 
     public MediaImpl(
             long id,

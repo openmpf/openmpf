@@ -26,33 +26,49 @@
 
 package org.mitre.mpf.rest.api;
 
+import java.net.URI;
+
 public class JobCreationResponse {
-	private String jobId;  // Will be null if there is an error creating the job
-	private MpfResponse mpfResponse = new MpfResponse();	
-	
-	/*
-	 * Constructors
-	 */
-	public JobCreationResponse() { }
-	
+	private final String _jobId;  // Will be null if there is an error creating the job
+	private final MpfResponse _mpfResponse = new MpfResponse();
+
+	private final TiesDbCheckStatus _tiesDbCheckStatus;
+
+	private final URI _outputObjectUri;
+
+
 	public JobCreationResponse(int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = null;
+		_mpfResponse.setMessage(errorCode, errorMessage);
+		_jobId = null;
+		_tiesDbCheckStatus = null;
+		_outputObjectUri = null;
 	}
 
-	public JobCreationResponse(String jobId) {
-		this.mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
-		this.jobId = jobId;
+	public JobCreationResponse(String jobId,
+	                           TiesDbCheckStatus tiesDbCheckStatus,
+	                           URI outputObjectUri) {
+		_mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+		_jobId = jobId;
+		_tiesDbCheckStatus = tiesDbCheckStatus;
+		_outputObjectUri = outputObjectUri;
 	}
-	
+
 	/*
 	 * Getters
 	 */
 	public String getJobId() {
-		return jobId;
+		return _jobId;
 	}
-	
+
 	public MpfResponse getMpfResponse() {
-		return mpfResponse;
+		return _mpfResponse;
+	}
+
+	public TiesDbCheckStatus getTiesDbCheckStatus() {
+		return _tiesDbCheckStatus;
+	}
+
+	public URI getOutputObjectUri() {
+		return _outputObjectUri;
 	}
 }

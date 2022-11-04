@@ -45,6 +45,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
+        <extraArgLine/>
     </properties>
 
     <dependencyManagement>
@@ -678,7 +679,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
-                    <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
+                    <argLine>@{extraArgLine} -Djava.library.path=${env.MPF_HOME}/lib</argLine>
                 </configuration>
             </plugin>
             <plugin>

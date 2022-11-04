@@ -412,6 +412,7 @@ public class TestAddComponentService {
                 existingAlgo.getName(),
                 existingAlgo.getDescription(),
                 existingAlgo.getActionType(),
+                existingAlgo.getOutputVersion(),
                 // Just pick a random field to change
                 new Algorithm.Requires(Collections.singleton("asdf")),
                 existingAlgo.getProvidesCollection(),

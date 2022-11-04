@@ -95,7 +95,8 @@ public class TestMediaInspectionSplitter {
                 null,
                 List.of(testMedia),
                 Map.of(),
-                Map.of());
+                Map.of(),
+                false);
         when(mockInProgressJobs.getJob(jobId))
                 .thenReturn(testJob);
 

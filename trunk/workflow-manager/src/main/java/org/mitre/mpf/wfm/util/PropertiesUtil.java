@@ -534,6 +534,22 @@ public class PropertiesUtil {
         return getDataResource(getPipelinesData(), getPipelinesTemplate());
     }
 
+
+    private FileSystemResource getImportantPropertiesData() {
+        return new FileSystemResource(mpfPropertiesConfig.getString(
+                "data.important.properties.file"));
+    }
+
+    private Resource getImportantPropertiesTemplate() {
+        return appContext.getResource(mpfPropertiesConfig.getString(
+                "data.important.properties.template"));
+    }
+
+    public Resource getImportantPropertiesResource() {
+        return getDataResource(getImportantPropertiesData(), getImportantPropertiesTemplate());
+    }
+
+
     private FileSystemResource getNodeManagerPaletteData() {
         return new FileSystemResource(mpfPropertiesConfig.getString("data.nodemanagerpalette.file"));
     }

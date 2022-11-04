@@ -62,9 +62,9 @@ import static java.util.stream.Collectors.toList;
 
 
 @Component
-public class CallbackUtils implements AutoCloseable {
+public class HttpClientUtils implements AutoCloseable {
 
-    private static final Logger log = LoggerFactory.getLogger(CallbackUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpClientUtils.class);
 
     private final JsonUtils jsonUtils;
 
@@ -72,7 +72,7 @@ public class CallbackUtils implements AutoCloseable {
 
 
     @Inject
-    CallbackUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
+    public HttpClientUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
         this.jsonUtils = jsonUtils;
 
         IOReactorConfig ioConfig = IOReactorConfig.custom()
@@ -171,7 +171,7 @@ public class CallbackUtils implements AutoCloseable {
             long delayMs,
             Predicate<HttpResponse> isRetryable) {
 
-        log.info("Starting {} callback to \"{}\".", request.getMethod(), request.getURI());
+        log.info("Starting {} request to \"{}\".", request.getMethod(), request.getURI());
         long nextDelay = Math.min(delayMs * 2, 30_000);
 
         return executeRequest(request).thenApply(resp -> {
@@ -189,13 +189,13 @@ public class CallbackUtils implements AutoCloseable {
         .exceptionally(err -> {
             if (retries > 0) {
                 log.error(String.format(
-                        "Failed to issue %s callback to '%s'. There are %s attempts remaining " +
+                        "Failed to issue %s request to '%s'. There are %s attempts remaining " +
                                 "and the next attempt will begin in %s ms.",
                         request.getMethod(), request.getURI(), retries, nextDelay), err);
             }
             else {
                 log.error(String.format(
-                        "Failed to issue %s callback to '%s'. All retry attempts exhausted.",
+                        "Failed to issue %s request to '%s'. All retry attempts exhausted.",
                         request.getMethod(), request.getURI()), err);
             }
             return ThreadUtil.failedFuture(err);

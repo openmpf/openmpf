@@ -53,7 +53,10 @@ import org.mitre.mpf.wfm.enums.*;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
-import org.mitre.mpf.wfm.service.*;
+import org.mitre.mpf.wfm.service.CensorPropertiesService;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
+import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +113,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @Autowired
-    private CallbackUtils callbackUtils;
+    private HttpClientUtils _httpClientUtils;
 
     @Autowired
     private JmsUtils jmsUtils;
@@ -125,8 +128,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
         BatchJob job = inProgressBatchJobs.getJob(jobId);
+        var outputObjectFromTiesDbUri = exchange.getIn().getHeader(
+                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, URI.class);
+        var skippedJobDueToTiesDbEntry = outputObjectFromTiesDbUri != null;
 
-        storageService.storeDerivativeMedia(job);
+        if (!skippedJobDueToTiesDbEntry) {
+            storageService.storeDerivativeMedia(job);
+        }
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         jobRequest.setTimeCompleted(Instant.now());
@@ -137,33 +145,43 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var outputSha = new MutableObject<String>();
         var trackCounter = new TrackCounter();
         try {
-            outputObjectUri = createOutputObject(
-                    job,
-                    jobRequest.getTimeReceived(),
-                    jobRequest.getTimeCompleted(),
-                    completionStatus,
-                    outputSha,
-                    trackCounter); // this may update the job status
+            if (skippedJobDueToTiesDbEntry) {
+                outputObjectUri = outputObjectFromTiesDbUri;
+            }
+            else {
+                outputObjectUri = createOutputObject(
+                        job,
+                        jobRequest.getTimeReceived(),
+                        jobRequest.getTimeCompleted(),
+                        completionStatus,
+                        outputSha,
+                        trackCounter); // this may update the job status
+            }
             jobRequest.setOutputObjectPath(outputObjectUri.toString());
             jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
         } catch (Exception exception) {
             var message = "Failed to create the output object due to: " + exception;
-                     log.error(message, exception);
+            log.error(message, exception);
             inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
-                                            }
+        }
         completionStatus = job.getStatus().onComplete();
-        tiesDbService.storeAssertions(job,
-                                      completionStatus,
-                                      jobRequest.getTimeCompleted(),
-                                      outputObjectUri,
-                                      outputSha.getValue(),
-                                      trackCounter);
+        if (!skippedJobDueToTiesDbEntry) {
+            tiesDbService.storeAssertions(job,
+                                          completionStatus,
+                                          jobRequest.getTimeCompleted(),
+                                          outputObjectUri,
+                                          outputSha.getValue(),
+                                          trackCounter);
+        }
 
         jobProgressStore.setJobProgress(jobId, 100);
-            inProgressBatchJobs.setJobStatus(jobId, completionStatus);
+        inProgressBatchJobs.setJobStatus(jobId, completionStatus);
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
         checkCallbacks(job, jobRequest);
+        if (!skippedJobDueToTiesDbEntry) {
+            checkTiesDbRequired(job, jobRequest);
+        }
 
         jobRequestDao.persist(jobRequest);
         jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
@@ -180,12 +198,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             " If this job is resubmitted, it will likely not complete again!", jobId), exception);
         }
 
-        var tiesDbFuture = tiesDbService.postAssertions(job);
+        var tiesDbFuture = skippedJobDueToTiesDbEntry
+                ? ThreadUtil.completedFuture(null)
+                : tiesDbService.postAssertions(job);
+
         if (job.getCallbackUrl().isPresent()) {
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
-                    .whenCompleteAsync(
-                            (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
+                    .exceptionally(x -> null)
+                    .thenCompose(x -> sendCallbackAsync(job, finalOutputUri))
                     .whenCompleteAsync((x, err) -> completeJob(job));
         }
         else {
@@ -204,7 +225,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setCallbackStatus(newStatus);
             jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
         }
+    }
 
+    private void checkTiesDbRequired(BatchJob job, JobRequest jobRequest) {
         boolean requiresTiesDb = job.getMedia()
                 .stream()
                 .anyMatch(m -> !m.getTiesDbInfo().isEmpty());
@@ -257,7 +280,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         try {
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
-            return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
+            return _httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
                     .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }

@@ -36,6 +36,7 @@ import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitte
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckServiceImpl;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +111,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
 			.completionPredicate(new SplitCompletedPredicate())
 			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
+			.process(TiesDbBeforeJobCheckServiceImpl.REF)
 			.to(exitPoint);
 	}
 }

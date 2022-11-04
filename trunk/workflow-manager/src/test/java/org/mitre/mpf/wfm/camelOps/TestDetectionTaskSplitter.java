@@ -112,6 +112,7 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true,
@@ -143,7 +144,8 @@ public class TestDetectionTaskSplitter {
                 null,
                 Collections.singletonList(testMedia),
                 Collections.emptyMap(),
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                false);
 
         TestUtil.assertThrows(NoSuchElementException.class,
                               () -> detectionSplitter.performSplit(testJob, task));
@@ -414,6 +416,7 @@ public class TestDetectionTaskSplitter {
                 "detectionAlgo",
                 "algo description",
                 ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true,
@@ -477,7 +480,8 @@ public class TestDetectionTaskSplitter {
                 null,
                 Collections.singletonList(testMedia),
                 jobProperties,
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                false);
 
         return testJob;
     }
@@ -498,7 +502,7 @@ public class TestDetectionTaskSplitter {
         testMedia.setMimeType("video/dummy");
 
         Algorithm algorithm = new Algorithm(
-                "FACECV", "description", ActionType.DETECTION,
+                "FACECV", "description", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
@@ -535,7 +539,8 @@ public class TestDetectionTaskSplitter {
                 null,
                 Collections.singletonList(testMedia),
                 jobProperties,
-                algorithmProperties);
+                algorithmProperties,
+                false);
 
     }
 
@@ -894,16 +899,16 @@ public class TestDetectionTaskSplitter {
         parentMedia.setType(MediaType.UNKNOWN);
         parentMedia.setMimeType("application/pdf");
 
-        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION,
+        var algo1 = new Algorithm("EXTRACT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION,
+        var algo2 = new Algorithm("PARENT_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION,
+        var algo3 = new Algorithm("CHILD_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
-        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION,
+        var algo4 = new Algorithm("SHARED_ALGO", null, ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()), true, false);
 
@@ -930,7 +935,7 @@ public class TestDetectionTaskSplitter {
         BatchJobImpl job = new BatchJobImpl(
                 123, null, null, pipelineElements, 4,
                 null, null, List.of(parentMedia),
-                Map.of(), Map.of());
+                Map.of(), Map.of(), false);
 
         List<Message> responseList = detectionSplitter.performSplit(job, task1);
         Assert.assertEquals(1, responseList.size()); // parent only

@@ -7,7 +7,6 @@
  *                                                                            *
  * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
-
 /******************************************************************************
  * Copyright 2022 The MITRE Corporation                                       *
  *                                                                            *
@@ -24,52 +23,22 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.entities.persistent;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableMap;
-import org.mitre.mpf.interop.JsonIssueDetails;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import java.util.*;
+package org.mitre.mpf.wfm.service;
 
-// Suppress because it's better than having to explicitly use BatchJobImpl during deserialization.
-@SuppressWarnings("ClassReferencesSubclass")
-@JsonDeserialize(as = BatchJobImpl.class)
-public interface BatchJob {
-    public long getId();
+import java.util.Collection;
 
-    public BatchJobStatusType getStatus();
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 
-    public JobPipelineElements getPipelineElements();
+public interface TiesDbBeforeJobCheckService extends WfmProcessorInterface {
 
-    public int getCurrentTaskIndex();
-
-    public Optional<String> getExternalId();
-
-    public int getPriority();
-
-    public Collection<Media> getMedia();
-
-    public Media getMedia(long mediaId);
-
-    // The key of the top level map is the algorithm name. The sub-map is the overridden properties for that algorithm.
-    public ImmutableMap<String, ImmutableMap<String, String>> getOverriddenAlgorithmProperties();
-
-    public ImmutableMap<String, String> getJobProperties();
-
-    public boolean isCancelled();
-
-    public Optional<String> getCallbackUrl();
-
-    public Optional<String> getCallbackMethod();
-
-    public SystemPropertiesSnapshot getSystemPropertiesSnapshot();
-
-    public Map<Long, Set<JsonIssueDetails>> getWarnings();
-
-    public Map<Long, Set<JsonIssueDetails>> getErrors();
-
-    public List<DetectionProcessingError> getDetectionProcessingErrors();
-
-    public boolean shouldCheckTiesDbAfterMediaInspection();
+    public TiesDbCheckResult checkTiesDbBeforeJob(
+            JobCreationRequest jobCreationRequest,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            Collection<Media> media,
+            JobPipelineElements jobPipelineElements);
 }

@@ -3,957 +3,1709 @@
   "jobId": "openmpf-dev-ubuntu-68",
   "errors": [],
   "warnings": [],
-  "objectId": "5ff39454-49f4-4e36-9e41-f2a6f653d5a5",
+  "objectId": "c9aaa5c3-ff4d-44a1-bfad-1d536bad0155",
   "pipeline": {
-    "name": "TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA TESSERACT OCR (WITH EAST REGIONS) AND KEYWORD TAGGING AND MARKUP PIPELINE",
-    "description": "Performs Tika image detection followed by Tika text detection on source media. Performs Tesseract OCR and markup on feed-forward regions from EAST on derivative media. Keyword tagging is performed on all TEXT results.",
-    "tasks": [
-      {
-        "actionType": "DETECTION",
-        "name": "TIKA IMAGE DETECTION TASK",
-        "description": "Performs Tika image detection.",
-        "actions": [
-          {
-            "algorithm": "TIKAIMAGE",
-            "name": "TIKA IMAGE DETECTION ACTION",
-            "description": "Executes the Tika image detection algorithm using the default parameters.",
-            "properties": {}
-          }
-        ]
-      },
-      {
-        "actionType": "DETECTION",
-        "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY TASK",
-        "description": "Performs Tika text detection on source media only, no derivatives.",
-        "actions": [
-          {
-            "algorithm": "TIKATEXT",
-            "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
-            "description": "Executes the Tika text detection algorithm using the default parameters on source media only, no derivatives.",
-            "properties": {
-              "SOURCE_MEDIA_ONLY": "TRUE"
-            }
-          }
-        ]
-      },
-      {
-        "actionType": "DETECTION",
-        "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY TASK",
-        "description": "Runs EAST text detection on derivative media only.",
-        "actions": [
-          {
-            "algorithm": "EAST",
-            "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "description": "Runs EAST text detection on derivative media only.",
-            "properties": {
-              "DERIVATIVE_MEDIA_ONLY": "TRUE"
-            }
-          }
-        ]
-      },
-      {
-        "actionType": "DETECTION",
-        "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY TASK",
-        "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
-        "actions": [
-          {
-            "algorithm": "TESSERACTOCR",
-            "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
-            "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
-            "properties": {
-              "FEED_FORWARD_TYPE": "REGION",
-              "UNSTRUCTURED_TEXT_SCALE": "3.2",
-              "MIN_OSD_SECONDARY_SCRIPT_THRESHOLD": "0.40",
-              "MIN_OSD_SCRIPT_SCORE": "0",
-              "MAX_OSD_SCRIPTS": "2",
-              "MIN_OSD_TEXT_ORIENTATION_CONFIDENCE": "0",
-              "DERIVATIVE_MEDIA_ONLY": "TRUE",
-              "MIN_OSD_PRIMARY_SCRIPT_CONFIDENCE": "0"
-            }
-          }
-        ]
-      },
-      {
-        "actionType": "DETECTION",
-        "name": "KEYWORD TAGGING (WITH FF REGION) TASK",
-        "description": "Performs keyword tagging on feed-forward tracks and detections.",
-        "actions": [
-          {
-            "algorithm": "KEYWORDTAGGING",
-            "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
-            "description": "Performs keyword tagging on feed-forward tracks and detections.",
-            "properties": {
-              "FEED_FORWARD_TYPE": "REGION",
-              "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "TRUE"
-            }
-          }
-        ]
-      },
-      {
-        "actionType": "MARKUP",
-        "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY TASK",
-        "description": "Performs object markup in images and videos for derivative media only.",
-        "actions": [
-          {
-            "algorithm": "MARKUPCV",
-            "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
-            "description": "Performs object markup in images and videos for derivative media only.",
-            "properties": {
-              "DERIVATIVE_MEDIA_ONLY": "TRUE"
-            }
-          }
-        ]
-      }
-    ]
+     "name": "TIKA IMAGE DETECTION WITH DERIVATIVE MEDIA TESSERACT OCR (WITH EAST REGIONS) AND KEYWORD TAGGING AND MARKUP PIPELINE",
+     "description": "Performs Tika image detection followed by Tika text detection on source media. Performs Tesseract OCR and markup on feed-forward regions from EAST on derivative media. Keyword tagging is performed on all TEXT results.",
+     "tasks": [
+        {
+           "actionType": "DETECTION",
+           "name": "TIKA IMAGE DETECTION TASK",
+           "description": "Performs Tika image detection.",
+           "actions": [
+              {
+                 "algorithm": "TIKAIMAGE",
+                 "name": "TIKA IMAGE DETECTION ACTION",
+                 "description": "Executes the Tika image detection algorithm using the default parameters.",
+                 "properties": {}
+              }
+           ]
+        },
+        {
+           "actionType": "DETECTION",
+           "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY TASK",
+           "description": "Performs Tika text detection on source media only, no derivatives.",
+           "actions": [
+              {
+                 "algorithm": "TIKATEXT",
+                 "name": "TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+                 "description": "Executes the Tika text detection algorithm using the default parameters on source media only, no derivatives.",
+                 "properties": {
+                    "SOURCE_MEDIA_ONLY": "TRUE"
+                 }
+              }
+           ]
+        },
+        {
+           "actionType": "DETECTION",
+           "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY TASK",
+           "description": "Runs EAST text detection on derivative media only.",
+           "actions": [
+              {
+                 "algorithm": "EAST",
+                 "name": "EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                 "description": "Runs EAST text detection on derivative media only.",
+                 "properties": {
+                    "DERIVATIVE_MEDIA_ONLY": "TRUE"
+                 }
+              }
+           ]
+        },
+        {
+           "actionType": "DETECTION",
+           "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY TASK",
+           "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
+           "actions": [
+              {
+                 "algorithm": "TESSERACTOCR",
+                 "name": "TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+                 "description": "Performs Tesseract OCR on feed-forward regions on derivative media only.",
+                 "properties": {
+                    "FEED_FORWARD_TYPE": "REGION",
+                    "UNSTRUCTURED_TEXT_SCALE": "3.2",
+                    "MIN_OSD_SECONDARY_SCRIPT_THRESHOLD": "0.40",
+                    "MIN_OSD_SCRIPT_SCORE": "0",
+                    "MAX_OSD_SCRIPTS": "2",
+                    "MIN_OSD_TEXT_ORIENTATION_CONFIDENCE": "0",
+                    "DERIVATIVE_MEDIA_ONLY": "TRUE",
+                    "MIN_OSD_PRIMARY_SCRIPT_CONFIDENCE": "0"
+                 }
+              }
+           ]
+        },
+        {
+           "actionType": "DETECTION",
+           "name": "KEYWORD TAGGING (WITH FF REGION) TASK",
+           "description": "Performs keyword tagging on feed-forward tracks and detections.",
+           "actions": [
+              {
+                 "algorithm": "KEYWORDTAGGING",
+                 "name": "KEYWORD TAGGING (WITH FF REGION) ACTION",
+                 "description": "Performs keyword tagging on feed-forward tracks and detections.",
+                 "properties": {
+                    "FEED_FORWARD_TYPE": "REGION",
+                    "OUTPUT_MERGE_WITH_PREVIOUS_TASK": "TRUE"
+                 }
+              }
+           ]
+        },
+        {
+           "actionType": "MARKUP",
+           "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY TASK",
+           "description": "Performs object markup in images and videos for derivative media only.",
+           "actions": [
+              {
+                 "algorithm": "MARKUPCV",
+                 "name": "OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+                 "description": "Performs object markup in images and videos for derivative media only.",
+                 "properties": {
+                    "DERIVATIVE_MEDIA_ONLY": "TRUE"
+                 }
+              }
+           ]
+        }
+     ]
   },
-  "priority": 4,
+  "priority": 6,
   "siteId": "mpf1",
-  "externalJobId": "dca3b3b2-d39e-4e0f-8f7c-9d892bb2c1ba",
-  "timeStart": "2022-07-11T14:42:59.458-04:00",
-  "timeStop": "2022-07-11T14:43:14.931-04:00",
+  "externalJobId": null,
+  "timeStart": "2022-11-06T14:08:16.691-05:00",
+  "timeStop": "2022-11-06T14:08:55.209-05:00",
   "status": "COMPLETE",
-  "algorithmProperties": {
-    "TESSERACTOCR": {
-      "TESSERACT_LANGUAGE": "eng",
-      "ENABLE_OSD_AUTOMATION": "false"
-    },
-    "EAST": {
-      "CONFIDENCE_THRESHOLD": "0.2",
-      "TEMPORARY_PADDING_Y": "1.0",
-      "TEMPORARY_PADDING_X": "1.0",
-      "FINAL_PADDING": "0.5"
-    }
-  },
+  "algorithmProperties": {},
   "jobProperties": {},
   "environmentVariableProperties": {},
   "media": [
-    {
-      "mediaId": 1,
-      "parentMediaId": -1,
-      "path": "file:///home/mpf/git/openmpf-projects/openmpf/trunk/mpf-system-tests/target/test-classes/samples/derivative-media/text-embedded-and-images.pdf",
-      "sha256": "b569868e00729d164085b7cf9eca3766188397f6408eb570bb544152f0a71c6f",
-      "mimeType": "application/pdf",
-      "mediaType": "UNKNOWN",
-      "length": -1,
-      "frameRanges": [],
-      "timeRanges": [],
-      "mediaMetadata": {
-        "MIME_TYPE": "application/pdf"
-      },
-      "mediaProperties": {},
-      "status": "COMPLETE",
-      "detectionProcessingErrors": {},
-      "markupResult": null,
-      "output": {
-        "TRACKS MERGED": [
-          {
-            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
-            "algorithm": "TIKATEXT"
-          }
-        ],
-        "MEDIA": [
-          {
-            "source": "+#TIKA IMAGE DETECTION ACTION",
-            "algorithm": "TIKAIMAGE",
-            "tracks": [
-              {
-                "id": "dee029f2e1b09a0a5cdcdc995ed3a06afba8cfa03bf66c230499591687d547bf",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "DERIVATIVE_MEDIA_ID": "2",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image0.png",
-                  "PAGE_NUM": "1"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "DERIVATIVE_MEDIA_ID": "2",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image0.png",
-                    "PAGE_NUM": "1"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "DERIVATIVE_MEDIA_ID": "2",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image0.png",
-                      "PAGE_NUM": "1"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "dee029f2e1b09a0a5cdcdc995ed3a06afba8cfa03bf66c230499591687d547bf",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "MEDIA",
-                "source": "+#TIKA IMAGE DETECTION ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "DERIVATIVE_MEDIA_ID": "3",
-                  "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image1.jpg",
-                  "PAGE_NUM": "2"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "DERIVATIVE_MEDIA_ID": "3",
-                    "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image1.jpg",
-                    "PAGE_NUM": "2"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "DERIVATIVE_MEDIA_ID": "3",
-                      "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/68/tika-extracted/feaa7dbd-134d-4b50-ad5c-7bb099319c2b/image1.jpg",
-                      "PAGE_NUM": "2"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        "TEXT": [
-          {
-            "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-            "algorithm": "TIKATEXT",
-            "tracks": [
-              {
-                "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "PAGE_NUM": "1",
-                  "SECTION_NUM": "1",
-                  "TAGS": "personal",
-                  "TEXT": "This is a line of text on page 1.",
-                  "TEXT TRIGGER WORDS": "text",
-                  "TEXT TRIGGER WORDS OFFSET": "18-21",
-                  "TEXT_LANGUAGE": "English"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "PAGE_NUM": "1",
-                    "SECTION_NUM": "1",
-                    "TAGS": "personal",
-                    "TEXT": "This is a line of text on page 1.",
-                    "TEXT TRIGGER WORDS": "text",
-                    "TEXT TRIGGER WORDS OFFSET": "18-21",
-                    "TEXT_LANGUAGE": "English"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "PAGE_NUM": "1",
-                      "SECTION_NUM": "1",
-                      "TAGS": "personal",
-                      "TEXT": "This is a line of text on page 1.",
-                      "TEXT TRIGGER WORDS": "text",
-                      "TEXT TRIGGER WORDS OFFSET": "18-21",
-                      "TEXT_LANGUAGE": "English"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "PAGE_NUM": "1",
-                  "SECTION_NUM": "2",
-                  "TAGS": "personal",
-                  "TEXT": "Again, a line of text on page 1.",
-                  "TEXT TRIGGER WORDS": "text",
-                  "TEXT TRIGGER WORDS OFFSET": "17-20",
-                  "TEXT_LANGUAGE": "English"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "PAGE_NUM": "1",
-                    "SECTION_NUM": "2",
-                    "TAGS": "personal",
-                    "TEXT": "Again, a line of text on page 1.",
-                    "TEXT TRIGGER WORDS": "text",
-                    "TEXT TRIGGER WORDS OFFSET": "17-20",
-                    "TEXT_LANGUAGE": "English"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "PAGE_NUM": "1",
-                      "SECTION_NUM": "2",
-                      "TAGS": "personal",
-                      "TEXT": "Again, a line of text on page 1.",
-                      "TEXT TRIGGER WORDS": "text",
-                      "TEXT TRIGGER WORDS OFFSET": "17-20",
-                      "TEXT_LANGUAGE": "English"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "PAGE_NUM": "2",
-                  "SECTION_NUM": "1",
-                  "TAGS": "personal",
-                  "TEXT": "This is a line of text on page 2.",
-                  "TEXT TRIGGER WORDS": "text",
-                  "TEXT TRIGGER WORDS OFFSET": "18-21",
-                  "TEXT_LANGUAGE": "English"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "PAGE_NUM": "2",
-                    "SECTION_NUM": "1",
-                    "TAGS": "personal",
-                    "TEXT": "This is a line of text on page 2.",
-                    "TEXT TRIGGER WORDS": "text",
-                    "TEXT TRIGGER WORDS OFFSET": "18-21",
-                    "TEXT_LANGUAGE": "English"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "PAGE_NUM": "2",
-                      "SECTION_NUM": "1",
-                      "TAGS": "personal",
-                      "TEXT": "This is a line of text on page 2.",
-                      "TEXT TRIGGER WORDS": "text",
-                      "TEXT TRIGGER WORDS OFFSET": "18-21",
-                      "TEXT_LANGUAGE": "English"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": -1.0,
-                "trackProperties": {
-                  "PAGE_NUM": "3",
-                  "SECTION_NUM": "1",
-                  "TAGS": "personal",
-                  "TEXT": "This is a line of text on page 3.",
-                  "TEXT TRIGGER WORDS": "text",
-                  "TEXT TRIGGER WORDS OFFSET": "18-21",
-                  "TEXT_LANGUAGE": "English"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 0,
-                  "y": 0,
-                  "width": 0,
-                  "height": 0,
-                  "confidence": -1.0,
-                  "detectionProperties": {
-                    "PAGE_NUM": "3",
-                    "SECTION_NUM": "1",
-                    "TAGS": "personal",
-                    "TEXT": "This is a line of text on page 3.",
-                    "TEXT TRIGGER WORDS": "text",
-                    "TEXT TRIGGER WORDS OFFSET": "18-21",
-                    "TEXT_LANGUAGE": "English"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 0,
-                    "y": 0,
-                    "width": 0,
-                    "height": 0,
-                    "confidence": -1.0,
-                    "detectionProperties": {
-                      "PAGE_NUM": "3",
-                      "SECTION_NUM": "1",
-                      "TAGS": "personal",
-                      "TEXT": "This is a line of text on page 3.",
-                      "TEXT TRIGGER WORDS": "text",
-                      "TEXT TRIGGER WORDS OFFSET": "18-21",
-                      "TEXT_LANGUAGE": "English"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "mediaId": 2,
-      "parentMediaId": 1,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/derivative-media/68/1/4b6dbd31-78d9-409d-a8e3-384439bad14c.png",
-      "sha256": "71a64f6419a531c7a279e46ccf365fd7b6db9a88dd2a2a81deb5a44d4a66b830",
-      "mimeType": "image/png",
-      "mediaType": "IMAGE",
-      "length": 1,
-      "frameRanges": [],
-      "timeRanges": [],
-      "mediaMetadata": {
-        "FRAME_HEIGHT": "321",
-        "FRAME_WIDTH": "597",
-        "IS_DERIVATIVE_MEDIA": "TRUE",
-        "MIME_TYPE": "image/png",
-        "PAGE_NUM": "1"
-      },
-      "mediaProperties": {},
-      "status": "COMPLETE",
-      "detectionProcessingErrors": {},
-      "markupResult": {
-        "id": 131,
-        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/68/2/5ceaf198-b85b-4d71-a57e-49492c21b0e0.png",
+     {
+        "mediaId": 2,
+        "parentMediaId": -1,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/remote-media/text-embedded-and-images.pdf",
+        "sha256": "b569868e00729d164085b7cf9eca3766188397f6408eb570bb544152f0a71c6f",
+        "mimeType": "application/pdf",
+        "mediaType": "UNKNOWN",
+        "length": -1,
+        "frameRanges": [],
+        "timeRanges": [],
+        "mediaMetadata": {
+           "MIME_TYPE": "application/pdf"
+        },
+        "mediaProperties": {},
         "status": "COMPLETE",
-        "message": null
-      },
-      "output": {
-        "NO TRACKS": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "MARKUPCV"
-          }
-        ],
-        "TRACKS MERGED": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "TESSERACTOCR"
-          }
-        ],
-        "TEXT": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-            "algorithm": "TESSERACTOCR",
-            "tracks": [
+        "detectionProcessingErrors": {},
+        "markupResult": null,
+        "output": {
+           "TRACKS MERGED": [
               {
-                "id": "1ceed7edbc2ae24a6ff507297962c2eba69b42320457c4a94ffcc2cfba92a671",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": 90.0,
-                "trackProperties": {
-                  "MISSING_LANGUAGE_MODELS": "",
-                  "ROTATE_AND_DETECT_PASS": "0",
-                  "ROTATION": "0.000000",
-                  "TAGS": "",
-                  "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
-                  "TEXT TRIGGER WORDS": "",
-                  "TEXT TRIGGER WORDS OFFSET": "",
-                  "TEXT_LANGUAGE": "eng"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 36,
-                  "y": 20,
-                  "width": 525,
-                  "height": 236,
-                  "confidence": 90.0,
-                  "detectionProperties": {
-                    "MISSING_LANGUAGE_MODELS": "",
-                    "ROTATE_AND_DETECT_PASS": "0",
-                    "ROTATION": "0.000000",
-                    "TAGS": "",
-                    "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
-                    "TEXT TRIGGER WORDS": "",
-                    "TEXT TRIGGER WORDS OFFSET": "",
-                    "TEXT_LANGUAGE": "eng"
-                  },
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/2/4/0/0/frame-0.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 36,
-                    "y": 20,
-                    "width": 525,
-                    "height": 236,
-                    "confidence": 90.0,
-                    "detectionProperties": {
-                      "MISSING_LANGUAGE_MODELS": "",
-                      "ROTATE_AND_DETECT_PASS": "0",
-                      "ROTATION": "0.000000",
-                      "TAGS": "",
-                      "TEXT": "Human Rights. Bulgarian and English.\nUNIVERSAL DECLARATION OF HUMAN RIGHTS\nArticle 1\nAll human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
-                      "TEXT TRIGGER WORDS": "",
-                      "TEXT TRIGGER WORDS OFFSET": "",
-                      "TEXT_LANGUAGE": "eng"
-                    },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/2/4/0/0/frame-0.png"
-                  }
-                ]
+                 "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION",
+                 "algorithm": "TIKATEXT"
               }
-            ]
-          }
-        ],
-        "TEXT REGION": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "EAST",
-            "tracks": [
+           ],
+           "MEDIA": [
               {
-                "id": "f10faadbb16ae7148eb747f949e62e6a77562d97b0d00d79a4233849eab49b01",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-                "confidence": 0.9999901,
-                "trackProperties": {
-                  "ROTATION": "0.7084896",
-                  "TEXT_TYPE": "STRUCTURED"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 36,
-                  "y": 20,
-                  "width": 525,
-                  "height": 236,
-                  "confidence": 0.9999901,
-                  "detectionProperties": {
-                    "ROTATION": "0.7084896",
-                    "TEXT_TYPE": "STRUCTURED"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 36,
-                    "y": 20,
-                    "width": 525,
-                    "height": 236,
-                    "confidence": 0.9999901,
-                    "detectionProperties": {
-                      "ROTATION": "0.7084896",
-                      "TEXT_TYPE": "STRUCTURED"
+                 "source": "+#TIKA IMAGE DETECTION ACTION",
+                 "algorithm": "TIKAIMAGE",
+                 "tracks": [
+                    {
+                       "index": 0,
+                       "id": "dee029f2e1b09a0a5cdcdc995ed3a06afba8cfa03bf66c230499591687d547bf",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "MEDIA",
+                       "source": "+#TIKA IMAGE DETECTION ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "DERIVATIVE_MEDIA_ID": "3",
+                          "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image0.png",
+                          "PAGE_NUM": "1"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "DERIVATIVE_MEDIA_ID": "3",
+                             "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image0.png",
+                             "PAGE_NUM": "1"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "DERIVATIVE_MEDIA_ID": "3",
+                                "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image0.png",
+                                "PAGE_NUM": "1"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
                     },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
+                    {
+                       "index": 1,
+                       "id": "dee029f2e1b09a0a5cdcdc995ed3a06afba8cfa03bf66c230499591687d547bf",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "MEDIA",
+                       "source": "+#TIKA IMAGE DETECTION ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "DERIVATIVE_MEDIA_ID": "4",
+                          "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image1.jpeg",
+                          "PAGE_NUM": "2"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "DERIVATIVE_MEDIA_ID": "4",
+                             "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image1.jpeg",
+                             "PAGE_NUM": "2"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "DERIVATIVE_MEDIA_ID": "4",
+                                "DERIVATIVE_MEDIA_TEMP_PATH": "/home/mpf/openmpf-projects/openmpf/trunk/install/share/tmp/derivative-media/4/tika-extracted/5955d83a-0eec-4d8c-9f2a-6e355fa657d6/image1.jpeg",
+                                "PAGE_NUM": "2"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    }
+                 ]
               }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "mediaId": 3,
-      "parentMediaId": 1,
-      "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/derivative-media/68/1/1d8981c4-5719-402f-94fd-f7cbb43087c6.jpg",
-      "sha256": "e94d35a2a0792e9868c9a3340a76012f0f1e878fbfa0e405b3f5a851577fe8d5",
-      "mimeType": "image/jpeg",
-      "mediaType": "IMAGE",
-      "length": 1,
-      "frameRanges": [],
-      "timeRanges": [],
-      "mediaMetadata": {
-        "FRAME_HEIGHT": "95",
-        "FRAME_WIDTH": "229",
-        "IS_DERIVATIVE_MEDIA": "TRUE",
-        "MIME_TYPE": "image/jpeg",
-        "PAGE_NUM": "2"
-      },
-      "mediaProperties": {},
-      "status": "COMPLETE",
-      "detectionProcessingErrors": {},
-      "markupResult": {
-        "id": 130,
-        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/68/3/03c96dfc-d04a-410a-9f57-1ac263b90735.png",
+           ],
+           "TEXT": [
+              {
+                 "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                 "algorithm": "TIKATEXT",
+                 "tracks": [
+                    {
+                       "index": 0,
+                       "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "ISO_LANGUAGE": "ENG",
+                          "PAGE_NUM": "1",
+                          "SECTION_NUM": "1",
+                          "TAGS": "personal",
+                          "TEXT": "This is a line of text on page 1.",
+                          "TEXT TRIGGER WORDS": "text",
+                          "TEXT TRIGGER WORDS OFFSET": "18-21",
+                          "TEXT_LANGUAGE": "English"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "ISO_LANGUAGE": "ENG",
+                             "PAGE_NUM": "1",
+                             "SECTION_NUM": "1",
+                             "TAGS": "personal",
+                             "TEXT": "This is a line of text on page 1.",
+                             "TEXT TRIGGER WORDS": "text",
+                             "TEXT TRIGGER WORDS OFFSET": "18-21",
+                             "TEXT_LANGUAGE": "English"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "ISO_LANGUAGE": "ENG",
+                                "PAGE_NUM": "1",
+                                "SECTION_NUM": "1",
+                                "TAGS": "personal",
+                                "TEXT": "This is a line of text on page 1.",
+                                "TEXT TRIGGER WORDS": "text",
+                                "TEXT TRIGGER WORDS OFFSET": "18-21",
+                                "TEXT_LANGUAGE": "English"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 1,
+                       "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "ISO_LANGUAGE": "ENG",
+                          "PAGE_NUM": "1",
+                          "SECTION_NUM": "2",
+                          "TAGS": "personal",
+                          "TEXT": "Again, a line of text on page 1.",
+                          "TEXT TRIGGER WORDS": "text",
+                          "TEXT TRIGGER WORDS OFFSET": "17-20",
+                          "TEXT_LANGUAGE": "English"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "ISO_LANGUAGE": "ENG",
+                             "PAGE_NUM": "1",
+                             "SECTION_NUM": "2",
+                             "TAGS": "personal",
+                             "TEXT": "Again, a line of text on page 1.",
+                             "TEXT TRIGGER WORDS": "text",
+                             "TEXT TRIGGER WORDS OFFSET": "17-20",
+                             "TEXT_LANGUAGE": "English"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "ISO_LANGUAGE": "ENG",
+                                "PAGE_NUM": "1",
+                                "SECTION_NUM": "2",
+                                "TAGS": "personal",
+                                "TEXT": "Again, a line of text on page 1.",
+                                "TEXT TRIGGER WORDS": "text",
+                                "TEXT TRIGGER WORDS OFFSET": "17-20",
+                                "TEXT_LANGUAGE": "English"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 2,
+                       "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "ISO_LANGUAGE": "ENG",
+                          "PAGE_NUM": "2",
+                          "SECTION_NUM": "1",
+                          "TAGS": "personal",
+                          "TEXT": "This is a line of text on page 2.",
+                          "TEXT TRIGGER WORDS": "text",
+                          "TEXT TRIGGER WORDS OFFSET": "18-21",
+                          "TEXT_LANGUAGE": "English"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "ISO_LANGUAGE": "ENG",
+                             "PAGE_NUM": "2",
+                             "SECTION_NUM": "1",
+                             "TAGS": "personal",
+                             "TEXT": "This is a line of text on page 2.",
+                             "TEXT TRIGGER WORDS": "text",
+                             "TEXT TRIGGER WORDS OFFSET": "18-21",
+                             "TEXT_LANGUAGE": "English"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "ISO_LANGUAGE": "ENG",
+                                "PAGE_NUM": "2",
+                                "SECTION_NUM": "1",
+                                "TAGS": "personal",
+                                "TEXT": "This is a line of text on page 2.",
+                                "TEXT TRIGGER WORDS": "text",
+                                "TEXT TRIGGER WORDS OFFSET": "18-21",
+                                "TEXT_LANGUAGE": "English"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 3,
+                       "id": "d51babc1a3ea467210973aaed9079c0b7cae302b0ec219c79e25e18ea04ff5d6",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#TIKA IMAGE DETECTION ACTION#TIKA TEXT DETECTION SOURCE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": -1,
+                       "trackProperties": {
+                          "ISO_LANGUAGE": "ENG",
+                          "PAGE_NUM": "3",
+                          "SECTION_NUM": "1",
+                          "TAGS": "personal",
+                          "TEXT": "This is a line of text on page 3.",
+                          "TEXT TRIGGER WORDS": "text",
+                          "TEXT TRIGGER WORDS OFFSET": "18-21",
+                          "TEXT_LANGUAGE": "English"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "confidence": -1,
+                          "detectionProperties": {
+                             "ISO_LANGUAGE": "ENG",
+                             "PAGE_NUM": "3",
+                             "SECTION_NUM": "1",
+                             "TAGS": "personal",
+                             "TEXT": "This is a line of text on page 3.",
+                             "TEXT TRIGGER WORDS": "text",
+                             "TEXT TRIGGER WORDS OFFSET": "18-21",
+                             "TEXT_LANGUAGE": "English"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 0,
+                             "y": 0,
+                             "width": 0,
+                             "height": 0,
+                             "confidence": -1,
+                             "detectionProperties": {
+                                "ISO_LANGUAGE": "ENG",
+                                "PAGE_NUM": "3",
+                                "SECTION_NUM": "1",
+                                "TAGS": "personal",
+                                "TEXT": "This is a line of text on page 3.",
+                                "TEXT TRIGGER WORDS": "text",
+                                "TEXT TRIGGER WORDS OFFSET": "18-21",
+                                "TEXT_LANGUAGE": "English"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    }
+                 ]
+              }
+           ]
+        }
+     },
+     {
+        "mediaId": 3,
+        "parentMediaId": 2,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/derivative-media/4/2/a7be4c12-0ba5-4d01-8bbe-79a06584a62e.png",
+        "sha256": "71a64f6419a531c7a279e46ccf365fd7b6db9a88dd2a2a81deb5a44d4a66b830",
+        "mimeType": "image/png",
+        "mediaType": "IMAGE",
+        "length": 1,
+        "frameRanges": [],
+        "timeRanges": [],
+        "mediaMetadata": {
+           "FRAME_HEIGHT": "321",
+           "FRAME_WIDTH": "597",
+           "IS_DERIVATIVE_MEDIA": "TRUE",
+           "MIME_TYPE": "image/png",
+           "PAGE_NUM": "1"
+        },
+        "mediaProperties": {},
         "status": "COMPLETE",
-        "message": null
-      },
-      "output": {
-        "NO TRACKS": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "MARKUPCV"
-          }
-        ],
-        "TRACKS MERGED": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "TESSERACTOCR"
-          }
-        ],
-        "TEXT": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-            "algorithm": "TESSERACTOCR",
-            "tracks": [
+        "detectionProcessingErrors": {},
+        "markupResult": {
+           "id": 2,
+           "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/4/3/620b4b20-ed40-4f72-a4c1-c96a02d19b94.png",
+           "status": "COMPLETE",
+           "message": null
+        },
+        "output": {
+           "NO TRACKS": [
               {
-                "id": "44282806b4914e1bb764bac08d5a76bc6a3fa8db8ce5cc887b658355eb126a24",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": 90.0,
-                "trackProperties": {
-                  "MISSING_LANGUAGE_MODELS": "",
-                  "ROTATE_AND_DETECT_PASS": "0",
-                  "ROTATION": "0.000000",
-                  "TAGS": "identity document",
-                  "TEXT": "Name\nAlice\nBob",
-                  "TEXT TRIGGER WORDS": "Name",
-                  "TEXT TRIGGER WORDS OFFSET": "0-3",
-                  "TEXT_LANGUAGE": "eng"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 6,
-                  "y": 3,
-                  "width": 60,
-                  "height": 83,
-                  "confidence": 90.0,
-                  "detectionProperties": {
-                    "MISSING_LANGUAGE_MODELS": "",
-                    "ROTATE_AND_DETECT_PASS": "0",
-                    "ROTATION": "0.000000",
-                    "TAGS": "identity document",
-                    "TEXT": "Name\nAlice\nBob",
-                    "TEXT TRIGGER WORDS": "Name",
-                    "TEXT TRIGGER WORDS OFFSET": "0-3",
-                    "TEXT_LANGUAGE": "eng"
-                  },
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/3/4/0/0/frame-0.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 6,
-                    "y": 3,
-                    "width": 60,
-                    "height": 83,
-                    "confidence": 90.0,
-                    "detectionProperties": {
-                      "MISSING_LANGUAGE_MODELS": "",
-                      "ROTATE_AND_DETECT_PASS": "0",
-                      "ROTATION": "0.000000",
-                      "TAGS": "identity document",
-                      "TEXT": "Name\nAlice\nBob",
-                      "TEXT TRIGGER WORDS": "Name",
-                      "TEXT TRIGGER WORDS OFFSET": "0-3",
-                      "TEXT_LANGUAGE": "eng"
-                    },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/3/4/0/0/frame-0.png"
-                  }
-                ]
-              },
-              {
-                "id": "f27de3014698fdef1c68a99539ac6c55e051f66bf3021eb53451bdad9a0f1583",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
-                "confidence": 91.0,
-                "trackProperties": {
-                  "MISSING_LANGUAGE_MODELS": "",
-                  "ROTATE_AND_DETECT_PASS": "0",
-                  "ROTATION": "0.000000",
-                  "TAGS": "personal",
-                  "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
-                  "TEXT TRIGGER WORDS": "555-123-4567; 555-987-6543",
-                  "TEXT TRIGGER WORDS OFFSET": "13-24; 26-37",
-                  "TEXT_LANGUAGE": "eng"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 95,
-                  "y": 3,
-                  "width": 124,
-                  "height": 86,
-                  "confidence": 91.0,
-                  "detectionProperties": {
-                    "MISSING_LANGUAGE_MODELS": "",
-                    "ROTATE_AND_DETECT_PASS": "0",
-                    "ROTATION": "0.000000",
-                    "TAGS": "personal",
-                    "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
-                    "TEXT TRIGGER WORDS": "555-123-4567; 555-987-6543",
-                    "TEXT TRIGGER WORDS OFFSET": "13-24; 26-37",
-                    "TEXT_LANGUAGE": "eng"
-                  },
-                  "artifactExtractionStatus": "COMPLETED",
-                  "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/3/4/0/1/frame-0.png"
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 95,
-                    "y": 3,
-                    "width": 124,
-                    "height": 86,
-                    "confidence": 91.0,
-                    "detectionProperties": {
-                      "MISSING_LANGUAGE_MODELS": "",
-                      "ROTATE_AND_DETECT_PASS": "0",
-                      "ROTATION": "0.000000",
-                      "TAGS": "personal",
-                      "TEXT": "Phone Number\n555-123-4567\n555-987-6543",
-                      "TEXT TRIGGER WORDS": "555-123-4567; 555-987-6543",
-                      "TEXT TRIGGER WORDS OFFSET": "13-24; 26-37",
-                      "TEXT_LANGUAGE": "eng"
-                    },
-                    "artifactExtractionStatus": "COMPLETED",
-                    "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/68/3/4/0/1/frame-0.png"
-                  }
-                ]
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "MARKUPCV"
               }
-            ]
-          }
-        ],
-        "TEXT REGION": [
-          {
-            "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-            "algorithm": "EAST",
-            "tracks": [
+           ],
+           "TRACKS MERGED": [
               {
-                "id": "b04a189ceb28b0342e71abadd5a6c7eb1885f6ad37358d20aff18c0a749a659f",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-                "confidence": 0.9998172,
-                "trackProperties": {
-                  "ROTATION": "359.49872",
-                  "TEXT_TYPE": "STRUCTURED"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 6,
-                  "y": 3,
-                  "width": 60,
-                  "height": 83,
-                  "confidence": 0.9998172,
-                  "detectionProperties": {
-                    "ROTATION": "359.49872",
-                    "TEXT_TYPE": "STRUCTURED"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 6,
-                    "y": 3,
-                    "width": 60,
-                    "height": 83,
-                    "confidence": 0.9998172,
-                    "detectionProperties": {
-                      "ROTATION": "359.49872",
-                      "TEXT_TYPE": "STRUCTURED"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
-              },
-              {
-                "id": "40169fcb1d179122969c2e893eeef586c337c779061bd3577e239055c93c8829",
-                "startOffsetFrame": 0,
-                "stopOffsetFrame": 0,
-                "startOffsetTime": 0,
-                "stopOffsetTime": 0,
-                "type": "TEXT REGION",
-                "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
-                "confidence": 0.99991477,
-                "trackProperties": {
-                  "ROTATION": "0.8154963",
-                  "TEXT_TYPE": "STRUCTURED"
-                },
-                "exemplar": {
-                  "offsetFrame": 0,
-                  "offsetTime": 0,
-                  "x": 95,
-                  "y": 3,
-                  "width": 124,
-                  "height": 86,
-                  "confidence": 0.99991477,
-                  "detectionProperties": {
-                    "ROTATION": "0.8154963",
-                    "TEXT_TYPE": "STRUCTURED"
-                  },
-                  "artifactExtractionStatus": "NOT_ATTEMPTED",
-                  "artifactPath": null
-                },
-                "detections": [
-                  {
-                    "offsetFrame": 0,
-                    "offsetTime": 0,
-                    "x": 95,
-                    "y": 3,
-                    "width": 124,
-                    "height": 86,
-                    "confidence": 0.99991477,
-                    "detectionProperties": {
-                      "ROTATION": "0.8154963",
-                      "TEXT_TYPE": "STRUCTURED"
-                    },
-                    "artifactExtractionStatus": "NOT_ATTEMPTED",
-                    "artifactPath": null
-                  }
-                ]
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "TESSERACTOCR"
               }
-            ]
-          }
-        ]
-      }
-    }
+           ],
+           "TEXT": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                 "algorithm": "TESSERACTOCR",
+                 "tracks": [
+                    {
+                       "index": 0,
+                       "id": "8960274a79d6068387b5241cd5c37e9b53466b6604ce430ca8d4230a078e9f4c",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 72,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "script/Greek, script/Thai",
+                          "OSD_FALLBACK_OCCURRED": "false",
+                          "OSD_PRIMARY_SCRIPT": "Greek",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "1.666667",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "6.000000",
+                          "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                          "OSD_SECONDARY_SCRIPT_SCORES": "4.000000",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "0.727051",
+                          "ROTATE_AND_DETECT_PASS": "180",
+                          "ROTATION": "360.000000",
+                          "TAGS": "",
+                          "TEXT": "ОМІМЕВЅАІ ОЕСГАВАТІОМ ОҒ НОМАМ ВІСНТ$\nАгѓісіе 1",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Cyrillic"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 45,
+                          "y": 90,
+                          "width": 425,
+                          "height": 46,
+                          "confidence": 72,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "script/Greek, script/Thai",
+                             "OSD_FALLBACK_OCCURRED": "false",
+                             "OSD_PRIMARY_SCRIPT": "Greek",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "1.666667",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "6.000000",
+                             "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                             "OSD_SECONDARY_SCRIPT_SCORES": "4.000000",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "0.727051",
+                             "ROTATE_AND_DETECT_PASS": "180",
+                             "ROTATION": "360.000000",
+                             "TAGS": "",
+                             "TEXT": "ОМІМЕВЅАІ ОЕСГАВАТІОМ ОҒ НОМАМ ВІСНТ$\nАгѓісіе 1",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Cyrillic"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/0/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 45,
+                             "y": 90,
+                             "width": 425,
+                             "height": 46,
+                             "confidence": 72,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "script/Greek, script/Thai",
+                                "OSD_FALLBACK_OCCURRED": "false",
+                                "OSD_PRIMARY_SCRIPT": "Greek",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "1.666667",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "6.000000",
+                                "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                                "OSD_SECONDARY_SCRIPT_SCORES": "4.000000",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "0.727051",
+                                "ROTATE_AND_DETECT_PASS": "180",
+                                "ROTATION": "360.000000",
+                                "TAGS": "",
+                                "TEXT": "ОМІМЕВЅАІ ОЕСГАВАТІОМ ОҒ НОМАМ ВІСНТ$\nАгѓісіе 1",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Cyrillic"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/0/frame-0.png"
+                          }
+                       ]
+                    },
+                    {
+                       "index": 1,
+                       "id": "3b4b06d22fe64299c17416c1413027d98652fdccb2c6c03fa70c58d961c8ab69",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 95,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "false",
+                          "OSD_PRIMARY_SCRIPT": "Latin",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "11.666669",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "27.000000",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "5.335403",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "0.000000",
+                          "TAGS": "",
+                          "TEXT": "All human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 51,
+                          "y": 145,
+                          "width": 504,
+                          "height": 103,
+                          "confidence": 95,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "false",
+                             "OSD_PRIMARY_SCRIPT": "Latin",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "11.666669",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "27.000000",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "5.335403",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "0.000000",
+                             "TAGS": "",
+                             "TEXT": "All human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/1/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 51,
+                             "y": 145,
+                             "width": 504,
+                             "height": 103,
+                             "confidence": 95,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "false",
+                                "OSD_PRIMARY_SCRIPT": "Latin",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "11.666669",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "27.000000",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "5.335403",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "0.000000",
+                                "TAGS": "",
+                                "TEXT": "All human beings are born free and equal in dignity and\nrights. They are endowed with reason and conscience\nand should act towards one another in a spirit of\nbrotherhood.",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/1/frame-0.png"
+                          }
+                       ]
+                    },
+                    {
+                       "index": 2,
+                       "id": "063221f911c6c46ac3c61a05a51277bc52cc7052833024d6342e401c6bddc42f",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 95,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "Latin",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "20.000004",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "28.000000",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "2.187759",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "1.209372",
+                          "TAGS": "",
+                          "TEXT": "Bulgarian and English.",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 188,
+                          "y": 27,
+                          "width": 196,
+                          "height": 23,
+                          "confidence": 95,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "Latin",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "20.000004",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "28.000000",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "2.187759",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "1.209372",
+                             "TAGS": "",
+                             "TEXT": "Bulgarian and English.",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/2/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 188,
+                             "y": 27,
+                             "width": 196,
+                             "height": 23,
+                             "confidence": 95,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "Latin",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "20.000004",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "28.000000",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "2.187759",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "1.209372",
+                                "TAGS": "",
+                                "TEXT": "Bulgarian and English.",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/2/frame-0.png"
+                          }
+                       ]
+                    },
+                    {
+                       "index": 3,
+                       "id": "2948bb5bfdec150e803c8d7b1874bf5c227761b693456c7be54d2e7bc61f36da",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 96,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "Latin",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.000001",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "20.000000",
+                          "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                          "OSD_SECONDARY_SCRIPT_SCORES": "8.000000",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "1.663670",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "0.000000",
+                          "TAGS": "",
+                          "TEXT": "Human Rights",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Latin+script/Cyrillic"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 48,
+                          "y": 27,
+                          "width": 133,
+                          "height": 19,
+                          "confidence": 96,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "Latin",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.000001",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "20.000000",
+                             "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                             "OSD_SECONDARY_SCRIPT_SCORES": "8.000000",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "1.663670",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "0.000000",
+                             "TAGS": "",
+                             "TEXT": "Human Rights",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Latin+script/Cyrillic"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/3/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 48,
+                             "y": 27,
+                             "width": 133,
+                             "height": 19,
+                             "confidence": 96,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "Latin",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.000001",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "20.000000",
+                                "OSD_SECONDARY_SCRIPTS": "Cyrillic",
+                                "OSD_SECONDARY_SCRIPT_SCORES": "8.000000",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "1.663670",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "0.000000",
+                                "TAGS": "",
+                                "TEXT": "Human Rights",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Latin+script/Cyrillic"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/3/4/0/3/frame-0.png"
+                          }
+                       ]
+                    }
+                 ]
+              }
+           ],
+           "TEXT REGION": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "EAST",
+                 "tracks": [
+                    {
+                       "index": 0,
+                       "id": "90265e787ff3154286d0b78d9f54d43442310ea3df86056559c26ee62fa78484",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.99998224,
+                       "trackProperties": {
+                          "ROTATION": "0.7672718",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 48,
+                          "y": 27,
+                          "width": 133,
+                          "height": 19,
+                          "confidence": 0.99998224,
+                          "detectionProperties": {
+                             "ROTATION": "0.7672718",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 48,
+                             "y": 27,
+                             "width": 133,
+                             "height": 19,
+                             "confidence": 0.99998224,
+                             "detectionProperties": {
+                                "ROTATION": "0.7672718",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 1,
+                       "id": "7761d45b197666b44fd66f064001d974152c928b1f6a655801dfb0d2e0a829e2",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.99998295,
+                       "trackProperties": {
+                          "ROTATION": "0.6578368",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 45,
+                          "y": 90,
+                          "width": 425,
+                          "height": 46,
+                          "confidence": 0.99998295,
+                          "detectionProperties": {
+                             "ROTATION": "0.6578368",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 45,
+                             "y": 90,
+                             "width": 425,
+                             "height": 46,
+                             "confidence": 0.99998295,
+                             "detectionProperties": {
+                                "ROTATION": "0.6578368",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 2,
+                       "id": "a1a1fe7ad57f33ddaaf4c62698e3e783dbe6e7216c7892273a179625e399dbc5",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.9999838,
+                       "trackProperties": {
+                          "ROTATION": "1.2093723",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 188,
+                          "y": 27,
+                          "width": 196,
+                          "height": 23,
+                          "confidence": 0.9999838,
+                          "detectionProperties": {
+                             "ROTATION": "1.2093723",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 188,
+                             "y": 27,
+                             "width": 196,
+                             "height": 23,
+                             "confidence": 0.9999838,
+                             "detectionProperties": {
+                                "ROTATION": "1.2093723",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 3,
+                       "id": "81aa4fcf6c69811b464ef8aeccc7cba7b136fe0373c89cf02210e5fba885784f",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.9999901,
+                       "trackProperties": {
+                          "ROTATION": "0.6351771",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 51,
+                          "y": 145,
+                          "width": 504,
+                          "height": 103,
+                          "confidence": 0.9999901,
+                          "detectionProperties": {
+                             "ROTATION": "0.6351771",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 51,
+                             "y": 145,
+                             "width": 504,
+                             "height": 103,
+                             "confidence": 0.9999901,
+                             "detectionProperties": {
+                                "ROTATION": "0.6351771",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    }
+                 ]
+              }
+           ]
+        }
+     },
+     {
+        "mediaId": 4,
+        "parentMediaId": 2,
+        "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/derivative-media/4/2/48f069a3-a1e3-40ab-8e68-c60146acc251.jpeg",
+        "sha256": "e94d35a2a0792e9868c9a3340a76012f0f1e878fbfa0e405b3f5a851577fe8d5",
+        "mimeType": "image/jpeg",
+        "mediaType": "IMAGE",
+        "length": 1,
+        "frameRanges": [],
+        "timeRanges": [],
+        "mediaMetadata": {
+           "FRAME_HEIGHT": "95",
+           "FRAME_WIDTH": "229",
+           "IS_DERIVATIVE_MEDIA": "TRUE",
+           "MIME_TYPE": "image/jpeg",
+           "PAGE_NUM": "2"
+        },
+        "mediaProperties": {},
+        "status": "COMPLETE",
+        "detectionProcessingErrors": {},
+        "markupResult": {
+           "id": 1,
+           "path": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/markup/4/4/812f609d-23ce-45d4-ace6-9672f679e909.png",
+           "status": "COMPLETE",
+           "message": null
+        },
+        "output": {
+           "NO TRACKS": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION#OCV GENERIC MARKUP DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "MARKUPCV"
+              }
+           ],
+           "TRACKS MERGED": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "TESSERACTOCR"
+              }
+           ],
+           "TEXT": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                 "algorithm": "TESSERACTOCR",
+                 "tracks": [
+                    {
+                       "index": 1,
+                       "id": "9963abe978d8fc6e38dfce9975ab9f106f692f3b4e0123dd167d04b0c992b49c",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 95,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "NULL",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "1.363855",
+                          "TAGS": "",
+                          "TEXT": "Alice",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 18,
+                          "y": 37,
+                          "width": 35,
+                          "height": 16,
+                          "confidence": 95,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "NULL",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "1.363855",
+                             "TAGS": "",
+                             "TEXT": "Alice",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/1/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 18,
+                             "y": 37,
+                             "width": 35,
+                             "height": 16,
+                             "confidence": 95,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "NULL",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "1.363855",
+                                "TAGS": "",
+                                "TEXT": "Alice",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/1/frame-0.png"
+                          }
+                       ]
+                    },
+                    {
+                       "index": 0,
+                       "id": "2c5c59ec6cbdf251f5f49b1dd41b08e4566ef9f947087688e5eaedeaf9e41228",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 95,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "Latin",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.555557",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "32.000000",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "3.804031",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "0.000000",
+                          "TAGS": "personal",
+                          "TEXT": "Phone Number\n555-123-4567",
+                          "TEXT TRIGGER WORDS": "555-123-4567",
+                          "TEXT TRIGGER WORDS OFFSET": "13-24",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 104,
+                          "y": 10,
+                          "width": 107,
+                          "height": 44,
+                          "confidence": 95,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "Latin",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.555557",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "32.000000",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "3.804031",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "0.000000",
+                             "TAGS": "personal",
+                             "TEXT": "Phone Number\n555-123-4567",
+                             "TEXT TRIGGER WORDS": "555-123-4567",
+                             "TEXT TRIGGER WORDS OFFSET": "13-24",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/0/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 104,
+                             "y": 10,
+                             "width": 107,
+                             "height": 44,
+                             "confidence": 95,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "Latin",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "5.555557",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "32.000000",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "3.804031",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "0.000000",
+                                "TAGS": "personal",
+                                "TEXT": "Phone Number\n555-123-4567",
+                                "TEXT TRIGGER WORDS": "555-123-4567",
+                                "TEXT TRIGGER WORDS OFFSET": "13-24",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/0/frame-0.png"
+                          }
+                       ]DerivativeMediaTextDetectPdf
+                    },
+                    {
+                       "index": 3,
+                       "id": "5204c0422c8a1f5d1543dee1becbf42c47ed127add11d45fc8e760ff31c0f5c3",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 96,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "NULL",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "358.845340",
+                          "TAGS": "identity document",
+                          "TEXT": "Name",
+                          "TEXT TRIGGER WORDS": "Name",
+                          "TEXT TRIGGER WORDS OFFSET": "0-3",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 14,
+                          "y": 10,
+                          "width": 44,
+                          "height": 17,
+                          "confidence": 96,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "NULL",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "358.845340",
+                             "TAGS": "identity document",
+                             "TEXT": "Name",
+                             "TEXT TRIGGER WORDS": "Name",
+                             "TEXT TRIGGER WORDS OFFSET": "0-3",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/3/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 14,
+                             "y": 10,
+                             "width": 44,
+                             "height": 17,
+                             "confidence": 96,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "NULL",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "358.845340",
+                                "TAGS": "identity document",
+                                "TEXT": "Name",
+                                "TEXT TRIGGER WORDS": "Name",
+                                "TEXT TRIGGER WORDS OFFSET": "0-3",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/3/frame-0.png"
+                          }
+                       ]
+                    },
+                    {
+                       "index": 2,
+                       "id": "697b41d5d2a3d5770a6f82f8eb90e6f3474c57a94fc7256a5f57b91075624d9c",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION#TESSERACT OCR TEXT DETECTION (WITH FF REGION) DERIVATIVE MEDIA ONLY ACTION#KEYWORD TAGGING (WITH FF REGION) ACTION",
+                       "confidence": 96,
+                       "trackProperties": {
+                          "MISSING_LANGUAGE_MODELS": "",
+                          "OSD_FALLBACK_OCCURRED": "true",
+                          "OSD_PRIMARY_SCRIPT": "NULL",
+                          "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                          "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                          "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                          "ROTATE_AND_DETECT_PASS": "0",
+                          "ROTATION": "358.528170",
+                          "TAGS": "",
+                          "TEXT": "Bob",
+                          "TEXT TRIGGER WORDS": "",
+                          "TEXT TRIGGER WORDS OFFSET": "",
+                          "TEXT_LANGUAGE": "script/Latin"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 15,
+                          "y": 62,
+                          "width": 31,
+                          "height": 16,
+                          "confidence": 96,
+                          "detectionProperties": {
+                             "MISSING_LANGUAGE_MODELS": "",
+                             "OSD_FALLBACK_OCCURRED": "true",
+                             "OSD_PRIMARY_SCRIPT": "NULL",
+                             "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                             "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                             "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                             "ROTATE_AND_DETECT_PASS": "0",
+                             "ROTATION": "358.528170",
+                             "TAGS": "",
+                             "TEXT": "Bob",
+                             "TEXT TRIGGER WORDS": "",
+                             "TEXT TRIGGER WORDS OFFSET": "",
+                             "TEXT_LANGUAGE": "script/Latin"
+                          },
+                          "artifactExtractionStatus": "COMPLETED",
+                          "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/2/frame-0.png"
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 15,
+                             "y": 62,
+                             "width": 31,
+                             "height": 16,
+                             "confidence": 96,
+                             "detectionProperties": {
+                                "MISSING_LANGUAGE_MODELS": "",
+                                "OSD_FALLBACK_OCCURRED": "true",
+                                "OSD_PRIMARY_SCRIPT": "NULL",
+                                "OSD_PRIMARY_SCRIPT_CONFIDENCE": "-1",
+                                "OSD_PRIMARY_SCRIPT_SCORE": "-1",
+                                "OSD_TEXT_ORIENTATION_CONFIDENCE": "-1",
+                                "ROTATE_AND_DETECT_PASS": "0",
+                                "ROTATION": "358.528170",
+                                "TAGS": "",
+                                "TEXT": "Bob",
+                                "TEXT TRIGGER WORDS": "",
+                                "TEXT TRIGGER WORDS OFFSET": "",
+                                "TEXT_LANGUAGE": "script/Latin"
+                             },
+                             "artifactExtractionStatus": "COMPLETED",
+                             "artifactPath": "file:///home/mpf/openmpf-projects/openmpf/trunk/install/share/artifacts/4/4/4/0/2/frame-0.png"
+                          }
+                       ]
+                    }
+                 ]
+              }
+           ],
+           "TEXT REGION": [
+              {
+                 "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                 "algorithm": "EAST",
+                 "tracks": [
+                    {
+                       "index": 0,
+                       "id": "aae9102198c5c02c0c59657319402c60d9eb5015b13a7ccf1cf964fed408e162",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.9994796,
+                       "trackProperties": {
+                          "ROTATION": "358.52817",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 15,
+                          "y": 62,
+                          "width": 31,
+                          "height": 16,
+                          "confidence": 0.9994796,
+                          "detectionProperties": {
+                             "ROTATION": "358.52817",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 15,
+                             "y": 62,
+                             "width": 31,
+                             "height": 16,
+                             "confidence": 0.9994796,
+                             "detectionProperties": {
+                                "ROTATION": "358.52817",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 1,
+                       "id": "0a3619fde647e07f8cf540e8ec510a2c481460643c4f121018bf70f528ec2b14",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.9996731,
+                       "trackProperties": {
+                          "ROTATION": "358.84534",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 14,
+                          "y": 10,
+                          "width": 44,
+                          "height": 17,
+                          "confidence": 0.9996731,
+                          "detectionProperties": {
+                             "ROTATION": "358.84534",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 14,
+                             "y": 10,
+                             "width": 44,
+                             "height": 17,
+                             "confidence": 0.9996731,
+                             "detectionProperties": {
+                                "ROTATION": "358.84534",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 2,
+                       "id": "c0365d74a10e2fdfd2dc1a2231bc1fa530755425fdfdef981b6ae77d0cc4de61",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.9998172,
+                       "trackProperties": {
+                          "ROTATION": "1.3638551",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 18,
+                          "y": 37,
+                          "width": 35,
+                          "height": 16,
+                          "confidence": 0.9998172,
+                          "detectionProperties": {
+                             "ROTATION": "1.3638551",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 18,
+                             "y": 37,
+                             "width": 35,
+                             "height": 16,
+                             "confidence": 0.9998172,
+                             "detectionProperties": {
+                                "ROTATION": "1.3638551",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 3,
+                       "id": "10862ba88bc8b112fa6d73601901e3e6841063a8fbd59f0adab5e126208302ec",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.99990976,
+                       "trackProperties": {
+                          "ROTATION": "0.8722743",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 104,
+                          "y": 10,
+                          "width": 107,
+                          "height": 44,
+                          "confidence": 0.99990976,
+                          "detectionProperties": {
+                             "ROTATION": "0.8722743",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 104,
+                             "y": 10,
+                             "width": 107,
+                             "height": 44,
+                             "confidence": 0.99990976,
+                             "detectionProperties": {
+                                "ROTATION": "0.8722743",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    },
+                    {
+                       "index": 4,
+                       "id": "b96464cb70e097bb4d59a4bf0d1031fdafd06283ca170d3e512f3e6add63da69",
+                       "startOffsetFrame": 0,
+                       "stopOffsetFrame": 0,
+                       "startOffsetTime": 0,
+                       "stopOffsetTime": 0,
+                       "type": "TEXT REGION",
+                       "source": "+#EAST TEXT DETECTION DERIVATIVE MEDIA ONLY ACTION",
+                       "confidence": 0.99991477,
+                       "trackProperties": {
+                          "ROTATION": "0.5820488",
+                          "TEXT_TYPE": "STRUCTURED"
+                       },
+                       "exemplar": {
+                          "offsetFrame": 0,
+                          "offsetTime": 0,
+                          "x": 103,
+                          "y": 62,
+                          "width": 94,
+                          "height": 17,
+                          "confidence": 0.99991477,
+                          "detectionProperties": {
+                             "ROTATION": "0.5820488",
+                             "TEXT_TYPE": "STRUCTURED"
+                          },
+                          "artifactExtractionStatus": "NOT_ATTEMPTED",
+                          "artifactPath": null
+                       },
+                       "detections": [
+                          {
+                             "offsetFrame": 0,
+                             "offsetTime": 0,
+                             "x": 103,
+                             "y": 62,
+                             "width": 94,
+                             "height": 17,
+                             "confidence": 0.99991477,
+                             "detectionProperties": {
+                                "ROTATION": "0.5820488",
+                                "TEXT_TYPE": "STRUCTURED"
+                             },
+                             "artifactExtractionStatus": "NOT_ATTEMPTED",
+                             "artifactPath": null
+                          }
+                       ]
+                    }
+                 ]
+              }
+           ]
+        }
+     }
   ]
 }

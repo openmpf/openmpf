@@ -469,12 +469,13 @@ public class TestJobRequestService {
                 MpfHeaders.JOB_ID, 123L,
                 MpfHeaders.JMS_PRIORITY, 5,
                 MpfHeaders.JOB_COMPLETE, true,
-                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, URI.create("file:///opt/mpf/share/1.json"));
+                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, "file:///opt/mpf/share/1.json");
 
         // Verify job is routed past media inspection.
         verify(_mockProduceTemplate)
                 .sendBodyAndHeaders(
-                        JobRouterRouteBuilder.ENTRY_POINT, null, expectedHeaders);
+                        JobRouterRouteBuilder.ENTRY_POINT, ExchangePattern.InOnly, null,
+                        expectedHeaders);
         verifyNoMoreInteractions(_mockProduceTemplate);
 
         // Verify job data is persisted in the database like a regular job.

@@ -28,9 +28,12 @@ package org.mitre.mpf.rest.api;
 
 import java.net.URI;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JobCreationResponse {
 	private final String _jobId;  // Will be null if there is an error creating the job
-	private final MpfResponse _mpfResponse = new MpfResponse();
+	private final MpfResponse _mpfResponse;
 
 	private final TiesDbCheckStatus _tiesDbCheckStatus;
 
@@ -38,6 +41,7 @@ public class JobCreationResponse {
 
 
 	public JobCreationResponse(int errorCode, String errorMessage) {
+		_mpfResponse = new MpfResponse();
 		_mpfResponse.setMessage(errorCode, errorMessage);
 		_jobId = null;
 		_tiesDbCheckStatus = null;
@@ -47,8 +51,21 @@ public class JobCreationResponse {
 	public JobCreationResponse(String jobId,
 	                           TiesDbCheckStatus tiesDbCheckStatus,
 	                           URI outputObjectUri) {
+		_mpfResponse = new MpfResponse();
 		_mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
 		_jobId = jobId;
+		_tiesDbCheckStatus = tiesDbCheckStatus;
+		_outputObjectUri = outputObjectUri;
+	}
+
+	@JsonCreator
+	public JobCreationResponse(
+			@JsonProperty("jobId") String jobId,
+			@JsonProperty("mpfResponse") MpfResponse mpfResponse,
+			@JsonProperty("tiesDbCheckStatus") TiesDbCheckStatus tiesDbCheckStatus,
+			@JsonProperty("outputObjectUri") URI outputObjectUri) {
+		_jobId = jobId;
+		_mpfResponse = mpfResponse;
 		_tiesDbCheckStatus = tiesDbCheckStatus;
 		_outputObjectUri = outputObjectUri;
 	}

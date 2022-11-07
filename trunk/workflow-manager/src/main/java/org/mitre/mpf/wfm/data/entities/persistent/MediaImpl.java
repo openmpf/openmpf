@@ -164,7 +164,13 @@ public class MediaImpl implements Media {
     /** The MIME type of the medium. */
     private String _mimeType;
     @Override
-    public Optional<String> getMimeType() { return Optional.ofNullable(_mimeType); }
+    public Optional<String> getMimeType() {
+        if (_mimeType != null) {
+            return Optional.of(_mimeType);
+        }
+        return Optional.ofNullable(getProvidedMetadata().get("MIME_TYPE"))
+                .filter(h -> !h.isBlank());
+    }
     public void setMimeType(String mimeType) { _mimeType = mimeType; }
 
 
@@ -233,9 +239,8 @@ public class MediaImpl implements Media {
     @Override
     @JsonIgnore
     public Optional<String> getHash() {
-        var hash = getMetadata("MEDIA_HASH");
-        if (hash != null && !hash.isBlank()) {
-            return Optional.of(hash);
+        if (_sha256 != null) {
+            return Optional.of(_sha256);
         }
         return Optional.ofNullable(getProvidedMetadata().get("MEDIA_HASH"))
             .filter(h -> !h.isBlank());

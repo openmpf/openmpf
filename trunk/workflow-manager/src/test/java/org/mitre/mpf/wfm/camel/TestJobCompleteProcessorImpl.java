@@ -124,7 +124,7 @@ public class TestJobCompleteProcessorImpl {
         var exchange = TestUtil.createTestExchange();
         long jobId = 123;
         exchange.getIn().setHeader(MpfHeaders.JOB_ID, jobId);
-        var outputUri = URI.create("file:///opt/mpf/share/output/1.json");
+        var outputUri = "file:///opt/mpf/share/output/1.json";
         exchange.getIn().setHeader(MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, outputUri);
 
         var jobRequestEntity = new JobRequest();
@@ -165,7 +165,7 @@ public class TestJobCompleteProcessorImpl {
         _jobCompleteProcessorImpl.wfmProcess(exchange);
 
         assertNotNull(jobRequestEntity.getTimeCompleted());
-        assertEquals(outputUri, URI.create(jobRequestEntity.getOutputObjectPath()));
+        assertEquals(outputUri, jobRequestEntity.getOutputObjectPath());
         assertEquals(BatchJobStatusType.COMPLETE, jobRequestEntity.getStatus());
         assertEquals(serializedJob, jobRequestEntity.getJob());
 

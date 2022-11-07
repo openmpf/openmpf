@@ -153,6 +153,9 @@ public class JobRequestServiceImpl implements JobRequestService {
                 systemPropertiesSnapshot,
                 media,
                 pipelineElements);
+        boolean shouldCheckTiesDbAfterMediaInspection
+                = tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_HASHES_ABSENT
+                        || tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT;
 
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
@@ -165,7 +168,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.getCallbackURL(),
                 jobCreationRequest.getCallbackMethod(),
                 systemPropertiesSnapshot,
-                tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
+                shouldCheckTiesDbAfterMediaInspection);
 
         try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
             if (tiesDbCheckResult.checkInfo().isPresent()) {
@@ -175,9 +178,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                         MpfHeaders.JMS_PRIORITY, getPriority(jobRequestEntity),
                         MpfHeaders.JOB_COMPLETE, true,
                         MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
-                        tiesDbCheckResult.checkInfo().get().outputObjectUri());
+                        tiesDbCheckResult.checkInfo().get().outputObjectUri().toString());
                 _jobRequestProducerTemplate.sendBodyAndHeaders(
                         JobRouterRouteBuilder.ENTRY_POINT,
+                        ExchangePattern.InOnly,
                         null,
                         headers);
             }

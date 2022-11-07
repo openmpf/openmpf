@@ -62,12 +62,15 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -81,6 +84,9 @@ public class TiesDbBeforeJobCheckServiceImpl
         extends WfmProcessor implements TiesDbBeforeJobCheckService {
 
     public static final String REF = "tiesDbBeforeJobCheckServiceImpl";
+
+    private static final Logger LOG
+            = LoggerFactory.getLogger(TiesDbBeforeJobCheckServiceImpl.class);
 
     private final PropertiesUtil _propertiesUtil;
 
@@ -126,12 +132,19 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     @Override
     public void wfmProcess(Exchange exchange) {
-        checkTiesDbAfterMediaInspection(exchange);
+        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, long.class);
+        try {
+            checkTiesDbAfterMediaInspection(jobId, exchange);
+        }
+        catch (Exception e) {
+            LOG.error("TiesDb check failed due to: " + e, e);
+            _inProgressJobs.addFatalError(
+                    jobId, IssueCodes.TIES_DB_BEFORE_JOB_CHECK, e.getMessage());
+        }
     }
 
-    private void checkTiesDbAfterMediaInspection(Exchange exchange) {
-        var job = _inProgressJobs.getJob(
-                exchange.getIn().getHeader(MpfHeaders.JOB_ID, long.class));
+    private void checkTiesDbAfterMediaInspection(long jobId, Exchange exchange) {
+        var job = _inProgressJobs.getJob(jobId);
         if (!job.shouldCheckTiesDbAfterMediaInspection()) {
             return;
         }
@@ -169,9 +182,14 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         var allMediaHaveHashes = media.stream()
                 .allMatch(m -> m.getHash().isPresent());
-
         if (!allMediaHaveHashes) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
+        }
+
+        var allMediaHaveMimeTypes = media.stream()
+                .allMatch(m -> m.getMimeType().isPresent());
+        if (!allMediaHaveMimeTypes) {
+            return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT);
         }
 
         var mediaHashToBaseUris = getBaseTiesDbUris(
@@ -245,9 +263,10 @@ public class TiesDbBeforeJobCheckServiceImpl
         var futures = Stream.<CompletableFuture<HttpResponse>>builder();
         for (var supplementalUri : supplementalUris) {
             var future = _httpClientUtils.executeRequest(
-                new HttpGet(supplementalUri),
-                _propertiesUtil.getHttpCallbackRetryCount()
-            ).thenApply(this::checkResponse);
+                    new HttpGet(supplementalUri),
+                    _propertiesUtil.getHttpCallbackRetryCount())
+                .thenApply(this::checkResponse)
+                .exceptionally(err -> convertError(supplementalUri, err));
             futures.add(future);
         }
 
@@ -310,6 +329,17 @@ public class TiesDbBeforeJobCheckServiceImpl
         }
     }
 
+
+    private static HttpResponse convertError(URI url, Throwable error) {
+        if (error instanceof CompletionException && error.getCause() != null) {
+            error = error.getCause();
+        }
+        var errorMessage
+                = "Sending HTTP GET to TiesDb (%s) failed due to: %s.".formatted(url, error);
+        LOG.error(errorMessage, error);
+        throw new IllegalStateException(errorMessage, error);
+    }
+
     private Stream<JsonNode> parseResponse(
             CompletableFuture<HttpResponse> responseFuture,
             MutableObject<Throwable> exception) {
@@ -344,7 +374,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             outputUri = new URI(outputUriStr);
         }
         catch (URISyntaxException e) {
-            exception.setValue(e);
+            LOG.error("Failed to parse the outputUri in the TiesDb data object due to: " + e, e);
             return Optional.empty();
         }
 

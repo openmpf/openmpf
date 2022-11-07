@@ -47,7 +47,10 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -58,6 +61,8 @@ import com.google.common.collect.ImmutableSetMultimap;
 
 @Service
 public class JobConfigHasher {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JobConfigHasher.class);
 
     private final ImportantProperties _importantProperties;
 
@@ -98,7 +103,7 @@ public class JobConfigHasher {
                                     () -> hasher.add("none"));
 
                     var importantProperties = _importantProperties.get(
-                            medium.getType().orElseThrow(), algorithm.getName());
+                            getMediaType(medium), algorithm.getName());
                     for (var propName : importantProperties) {
                         hasher.add(propName);
                         var propVal = props.get(propName, medium, action);
@@ -112,9 +117,21 @@ public class JobConfigHasher {
                 hasher.add("$");
             }
         }
-        return hasher.getHash();
+        var hash = hasher.getHash();
+        LOG.info("The job config hash is: {}", hash);
+        return hash;
     }
 
+    private static MediaType getMediaType(Media media) {
+        var optType = media.getType();
+        if (optType.isPresent()) {
+            return optType.get();
+        }
+        // The job config hash may be requested before media inspection.
+        // In that case, media.getType() will not be present.
+        var mimeType = media.getMimeType().orElseThrow();
+        return MediaTypeUtils.parse(mimeType);
+    }
 
     private static void hashMediaRanges(Collection<MediaRange> mediaRanges, Hasher hasher) {
         if (mediaRanges.isEmpty()) {

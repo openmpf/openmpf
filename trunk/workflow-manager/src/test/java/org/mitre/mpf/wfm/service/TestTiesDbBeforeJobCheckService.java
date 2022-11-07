@@ -32,9 +32,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -68,6 +70,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
@@ -182,6 +185,39 @@ public class TestTiesDbBeforeJobCheckService {
 
 
     @Test
+    public void testMediaMissingMimeType() {
+        var elements = mock(JobPipelineElements.class);
+        when(elements.getAllActions())
+            .thenReturn(ImmutableList.of(mock(Action.class)));
+
+        var media1 = mock(Media.class);
+        when(media1.getHash())
+                .thenReturn(Optional.of("HASH"));
+        when(media1.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
+
+        var media2 = mock(Media.class);
+        when(media2.getHash())
+                .thenReturn(Optional.of("HASH2"));
+        when(media2.getMimeType())
+                .thenReturn(Optional.empty());
+
+        when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
+            .thenReturn((p, m, a) -> null);
+
+
+        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+                new JobCreationRequest(),
+                null,
+                List.of(media1, media2),
+                elements);
+
+        assertEquals(TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT, result.status());
+        assertTrue(result.checkInfo().isEmpty());
+    }
+
+
+    @Test
     public void testNoTiesDbUrl() {
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -190,6 +226,8 @@ public class TestTiesDbBeforeJobCheckService {
         var media = mock(Media.class);
         when(media.getHash())
                 .thenReturn(Optional.of("HASH"));
+        when(media.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
 
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
@@ -217,6 +255,8 @@ public class TestTiesDbBeforeJobCheckService {
         var media = mock(Media.class);
         when(media.getHash())
                 .thenReturn(Optional.of("HASH"));
+        when(media.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
 
         var mockMediaActionProps = mock(MediaActionProps.class);
         when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media, action))
@@ -302,6 +342,8 @@ public class TestTiesDbBeforeJobCheckService {
         var media = mock(Media.class);
         when(media.getHash())
                 .thenReturn(Optional.of("HASH"));
+        when(media.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
 
         var mockMediaActionProps = mock(MediaActionProps.class);
         when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media, action))
@@ -446,9 +488,8 @@ public class TestTiesDbBeforeJobCheckService {
                 IllegalStateException.class,
                 () -> testPartialFailure(tiesDbData));
 
-        assertEquals(
-                "TiesDb responded with a non-200 status code of 400 and body: test-error",
-                ex.getMessage());
+        assertThat(ex.getMessage(), containsString(
+                "TiesDb responded with a non-200 status code of 400 and body: test-error"));
     }
 
 
@@ -461,9 +502,13 @@ public class TestTiesDbBeforeJobCheckService {
         var media1 = mock(Media.class);
         when(media1.getHash())
                 .thenReturn(Optional.of("HASH"));
+        when(media1.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
         var media2 = mock(Media.class);
         when(media2.getHash())
                 .thenReturn(Optional.of("HASH2"));
+        when(media2.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
 
         var mockMediaActionProps = mock(MediaActionProps.class);
         when(mockMediaActionProps.get(MpfConstants.TIES_DB_URL, media1, action))
@@ -502,14 +547,14 @@ public class TestTiesDbBeforeJobCheckService {
 
     @Test
     public void testCheckAfterMediaInspectionNoMatch() throws IOException {
-        var exchange = runAfterMediaInspectionTest("WRONG_JOB_HASH");
+        var exchange = runSuccessfulAfterMediaInspectionTest("WRONG_JOB_HASH");
         assertTrue(exchange.getOut().getHeaders().isEmpty());
     }
 
 
     @Test
     public void testCheckAfterMediaInspectionWithMatch() throws IOException {
-        var exchange = runAfterMediaInspectionTest("JOB_HASH");
+        var exchange = runSuccessfulAfterMediaInspectionTest("JOB_HASH");
         assertEquals(true, exchange.getOut().getHeader(MpfHeaders.JOB_COMPLETE));
         assertEquals(
             URI.create("file:///1.json"),
@@ -517,7 +562,49 @@ public class TestTiesDbBeforeJobCheckService {
     }
 
 
-    private Exchange runAfterMediaInspectionTest(String tiesDbHash) throws IOException {
+    @Test
+    public void testFailureAfterMediaInspection() throws IOException {
+        var errorMsg = "<custom error message>";
+        when(_mockHttpClientUtils.executeRequest(any(), eq(3)))
+            .thenReturn(createErrorResponse(errorMsg));
+
+        runAfterMediaInspectionTest();
+
+        verify(_mockInProgressJobs)
+            .addFatalError(
+                        eq(123L), eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                        contains(errorMsg));
+    }
+
+    private Exchange runSuccessfulAfterMediaInspectionTest(String tiesDbHash) throws IOException {
+        var tiesDbData = List.of(
+            Map.of(
+                "assertionId", "s10",
+                "dataObject", Map.of(
+                    "algorithm", "FACECV",
+                    "jobConfigHash", tiesDbHash,
+                    "outputUri", "file:///1.json",
+                    "jobStatus", "COMPLETE",
+                    "processDate", "2021-06-04T13:35:58.981Z"
+                )
+            )
+        );
+        var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
+        when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
+                .thenReturn(createHttpResponse(tiesDbData));
+
+        var exchange = runAfterMediaInspectionTest();
+
+        var request = requestCaptor.getValue();
+        assertEquals(
+                URI.create("http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH"),
+                request.getURI());
+
+       return exchange;
+    }
+
+
+    private Exchange runAfterMediaInspectionTest() throws IOException {
         var exchange = TestUtil.createTestExchange();
 
         var action = mock(Action.class);
@@ -537,6 +624,8 @@ public class TestTiesDbBeforeJobCheckService {
         var media = mock(Media.class);
         when(media.getHash())
                 .thenReturn(Optional.of("MEDIA_HASH"));
+        when(media.getMimeType())
+                .thenReturn(Optional.of("image/jpeg"));
         when(job.getMedia())
                 .thenReturn(List.of(media));
         when(job.shouldCheckTiesDbAfterMediaInspection())
@@ -552,32 +641,11 @@ public class TestTiesDbBeforeJobCheckService {
         when(_mockJobConfigHasher.getJobConfigHash(List.of(media), pipelineElements, mockProps))
                 .thenReturn("JOB_HASH");
 
-        var tiesDbData = List.of(
-            Map.of(
-                "assertionId", "s10",
-                "dataObject", Map.of(
-                    "algorithm", "FACECV",
-                    "jobConfigHash", tiesDbHash,
-                    "outputUri", "file:///1.json",
-                    "jobStatus", "COMPLETE",
-                    "processDate", "2021-06-04T13:35:58.981Z"
-                )
-            )
-        );
-
-        var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
-        when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
-                .thenReturn(createHttpResponse(tiesDbData));
-
         _tiesDbBeforeJobCheckService.wfmProcess(exchange);
-
-        var request = requestCaptor.getValue();
-        assertEquals(
-                URI.create("http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH"),
-                request.getURI());
-
         return exchange;
     }
+
+
 
     @Test
     public void doesNotDoDuplicateTiesDbCheck() {

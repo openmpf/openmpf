@@ -129,7 +129,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         BatchJob job = inProgressBatchJobs.getJob(jobId);
         var outputObjectFromTiesDbUri = exchange.getIn().getHeader(
-                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, URI.class);
+                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, String.class);
         var skippedJobDueToTiesDbEntry = outputObjectFromTiesDbUri != null;
 
         if (!skippedJobDueToTiesDbEntry) {
@@ -146,7 +146,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var trackCounter = new TrackCounter();
         try {
             if (skippedJobDueToTiesDbEntry) {
-                outputObjectUri = outputObjectFromTiesDbUri;
+                outputObjectUri = URI.create(outputObjectFromTiesDbUri);
             }
             else {
                 outputObjectUri = createOutputObject(

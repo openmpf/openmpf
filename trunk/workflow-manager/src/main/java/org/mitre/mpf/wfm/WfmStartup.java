@@ -26,8 +26,14 @@
 
 package org.mitre.mpf.wfm;
 
-import org.apache.activemq.broker.jmx.BrokerViewMBean;
-import org.apache.activemq.broker.jmx.QueueViewMBean;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletContext;
+
 import org.mitre.mpf.wfm.businessrules.StreamingJobRequestService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
@@ -47,18 +53,6 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
-
-import javax.management.MBeanServerConnection;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import javax.servlet.ServletContext;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class WfmStartup implements ApplicationListener<ApplicationEvent> {
@@ -112,15 +106,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
                 jobRequestDao.cancelJobsInNonTerminalState();
 
                 streamingJobRequestDao.ifPresent(StreamingJobRequestDao::cancelJobsInNonTerminalState);
-
-                if (propertiesUtil.isAmqBrokerEnabled()) {
-                    try {
-                        log.info("Purging MPF-owned ActiveMQ queues...");
-                        purgeQueues();
-                    } catch (Exception exception) {
-                        throw new RuntimeException("Failed to purge the MPF ActiveMQ queues.", exception);
-                    }
-                }
 
                 purgeServerStartupSystemMessages();
                 startFileIndexing(appContext);
@@ -191,25 +176,6 @@ public class WfmStartup implements ApplicationListener<ApplicationEvent> {
             long id = m.getId();
             systemMessageService.deleteSystemMessage(id);
             log.info("removed System Message #" + id + ": '" + m.getMsg() + "'");
-        }
-    }
-
-    private void purgeQueues() throws Exception {
-        Map<String, Object> map = new HashMap<>();
-        map.put(JMXConnector.CREDENTIALS, new String[]{propertiesUtil.getAmqBrokerAdminUsername(), propertiesUtil.getAmqBrokerAdminPassword()});
-        JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
-        connector.connect();
-        MBeanServerConnection mBeanServerConnection = connector.getMBeanServerConnection();
-        ObjectName activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");
-        BrokerViewMBean mbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, activeMQ, BrokerViewMBean.class, true);
-        Set<String> whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
-        log.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
-        for (ObjectName name : mbean.getQueues()) {
-            QueueViewMBean queueMbean = MBeanServerInvocationHandler.newProxyInstance(mBeanServerConnection, name, QueueViewMBean.class, true);
-            if(!whitelist.contains(queueMbean.getName()) && queueMbean.getName().startsWith("MPF.")) {
-                log.info("Purging {}", queueMbean.getName());
-                queueMbean.purge();
-            }
         }
     }
 }

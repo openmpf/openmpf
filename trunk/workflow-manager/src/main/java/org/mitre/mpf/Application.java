@@ -27,6 +27,13 @@
 
 package org.mitre.mpf;
 
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+
+import org.apache.activemq.broker.jmx.BrokerViewMBean;
+import org.apache.activemq.broker.jmx.QueueViewMBean;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
@@ -34,6 +41,9 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -53,6 +63,8 @@ import org.springframework.context.annotation.Profile;
 })
 @Configuration
 public class Application extends SpringBootServletInitializer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
@@ -126,5 +138,38 @@ public class Application extends SpringBootServletInitializer {
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);
         return servlet;
+    }
+
+
+    @Bean
+    public boolean queuePurge(PropertiesUtil propertiesUtil) throws Exception {
+        if (!propertiesUtil.isAmqBrokerEnabled()) {
+            return true;
+        }
+        LOG.info("Purging MPF-owned ActiveMQ queues...");
+        var connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
+        connector.connect();
+        var mBeanServerConnection = connector.getMBeanServerConnection();
+        var activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");
+        var mbean = MBeanServerInvocationHandler.newProxyInstance(
+                mBeanServerConnection,
+                activeMQ,
+                BrokerViewMBean.class,
+                true);
+        var whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
+        LOG.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
+        for (ObjectName name : mbean.getQueues()) {
+            var queueMbean = MBeanServerInvocationHandler.newProxyInstance(
+                    mBeanServerConnection,
+                    name,
+                    QueueViewMBean.class,
+                    true);
+            if (!whitelist.contains(queueMbean.getName())
+                    && queueMbean.getName().startsWith("MPF.")) {
+                LOG.info("Purging {}", queueMbean.getName());
+                queueMbean.purge();
+            }
+        }
+        return true;
     }
 }

@@ -33,7 +33,7 @@
                            http://camel.apache.org/schema/spring
                            http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-    <camelContext id="camelContext" xmlns="http://camel.apache.org/schema/spring" >
+    <camelContext id="camelContext" depends-on="queuePurge" xmlns="http://camel.apache.org/schema/spring" >
         <contextScan/>
         <camel:template id="camelTemplate" />
     </camelContext>

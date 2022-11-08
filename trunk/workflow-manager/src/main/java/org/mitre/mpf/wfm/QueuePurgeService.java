@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnectorFactory;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service("QueuePurgeService")
+@Singleton
 public class QueuePurgeService {
 
     private static final Logger LOG = LoggerFactory.getLogger(QueuePurgeService.class);

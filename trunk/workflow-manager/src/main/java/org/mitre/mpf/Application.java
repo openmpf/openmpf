@@ -147,28 +147,33 @@ public class Application extends SpringBootServletInitializer {
             return true;
         }
         LOG.info("Purging MPF-owned ActiveMQ queues...");
-        var connector = JMXConnectorFactory.connect(new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
+        var connector = JMXConnectorFactory.connect(
+                new JMXServiceURL(propertiesUtil.getAmqBrokerJmxUri()));
         connector.connect();
-        var mBeanServerConnection = connector.getMBeanServerConnection();
-        var activeMQ = new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker");
-        var mbean = MBeanServerInvocationHandler.newProxyInstance(
-                mBeanServerConnection,
-                activeMQ,
-                BrokerViewMBean.class,
-                true);
-        var whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
-        LOG.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
-        for (ObjectName name : mbean.getQueues()) {
-            var queueMbean = MBeanServerInvocationHandler.newProxyInstance(
+        try {
+            var mBeanServerConnection = connector.getMBeanServerConnection();
+            var mbean = MBeanServerInvocationHandler.newProxyInstance(
                     mBeanServerConnection,
-                    name,
-                    QueueViewMBean.class,
+                    new ObjectName("org.apache.activemq:brokerName=localhost,type=Broker"),
+                    BrokerViewMBean.class,
                     true);
-            if (!whitelist.contains(queueMbean.getName())
-                    && queueMbean.getName().startsWith("MPF.")) {
-                LOG.info("Purging {}", queueMbean.getName());
-                queueMbean.purge();
+            var whitelist = propertiesUtil.getAmqBrokerPurgeWhiteList();
+            LOG.debug("Whitelist contains {} queues: {}", whitelist.size(), whitelist);
+            for (ObjectName name : mbean.getQueues()) {
+                var queueMbean = MBeanServerInvocationHandler.newProxyInstance(
+                        mBeanServerConnection,
+                        name,
+                        QueueViewMBean.class,
+                        true);
+                if (!whitelist.contains(queueMbean.getName())
+                        && queueMbean.getName().startsWith("MPF.")) {
+                    LOG.info("Purging {}", queueMbean.getName());
+                    queueMbean.purge();
+                }
             }
+        }
+        finally {
+            connector.close();
         }
         return true;
     }

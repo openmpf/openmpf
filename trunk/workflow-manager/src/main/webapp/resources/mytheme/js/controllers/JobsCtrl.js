@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
+const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
     $.fn.dataTable.ext.errMode = 'throw';
 
     $scope.selectedJob = {};
@@ -46,7 +46,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
 
     var couldNotGetJobTableMsgId = null;
 
-    var buildJobTable = function () {
+    const buildJobTable = function () {
         if (jobTable != null) {
             jobTable.clear();
             jobTable.draw();
@@ -57,13 +57,8 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 stateSave: false,
                 serverSide: true,
                 processing: false,//hide
-                ajax: {
-                    url: "jobs-paged",
-                    type: "POST",
-                    headers: csrfHeaders(),
-                    data: function (d) {//extra params
-                        d.search = d.search.value;
-                    }
+                ajax(request, dataReadyCallback) {
+                    getJobs(request, dataReadyCallback);
                 },
                 language: {
                     emptyTable: 'No jobs available'
@@ -73,6 +68,14 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 },
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: 25,
+                infoCallback(settings, start, end, total) {
+                    if (jobTable.data().length == 0) {
+                        return `Showing 0 of ${total} total entries`
+                    }
+                    else {
+                        return `Showing ${start} to ${end} of ${total} total entries`;
+                    }
+                },
                 ordering: true,
                 orderMulti: false,
                 order: [[0, 'desc']],
@@ -198,6 +201,51 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 scheduleNextPoll();
             });
         }
+    };
+
+    const getJobs = async (request, dataReadyCallback) => {
+        request.search = request.search.value;
+        const resp = await $.ajax({
+            url: 'jobs-paged',
+            type: 'POST',
+            headers: csrfHeaders(),
+            data: request,
+        });
+
+        if (jobTable.page() != 0 && resp.data.length == 0) {
+            // The user clicked on a page past the end of the filtered results.
+            moveToLastPage(request.search);
+            return;
+        }
+        if (resp.hasMorePages) {
+            // We don't know how many more pages there are, so just show the maximum number of
+            // pagination links. If user clicks past the end we will just move them to the actual
+            // last page.
+            resp.recordsFiltered = resp.recordsTotal;
+        }
+        else {
+            // Since this is the last page of results, we can determine the actual value
+            // recordsFiltered. This lets us disable the "Next" pagination button correctly.
+            const numInPrevPages = jobTable.page() * jobTable.page.len();
+            resp.recordsFiltered = numInPrevPages + resp.data.length;
+        }
+        dataReadyCallback(resp);
+    };
+
+    const moveToLastPage = async (search) => {
+        const filteredCount = await $.ajax({
+            url: 'count-jobs-filtered',
+            type: 'POST',
+            headers: csrfHeaders(),
+            data: { search },
+        });
+        if (filteredCount % jobTable.page.len() == 0) {
+            jobTable.page(Math.floor(filteredCount / jobTable.page.len()) - 1);
+        }
+        else {
+            jobTable.page(Math.floor(filteredCount / jobTable.page.len()));
+        }
+        jobTable.draw(false);
     };
 
     var getJobFromTableEle = function (ele) {

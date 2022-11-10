@@ -150,6 +150,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                 priority,
                 jobCreationRequest.getCallbackURL(),
                 jobCreationRequest.getCallbackMethod());
+        _jobRequestDao.newJobCreated();
 
         try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
             submit(jobRequestEntity);

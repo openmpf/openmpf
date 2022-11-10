@@ -227,16 +227,30 @@ public class JobController {
         String sortColumn = JOB_TABLE_COLUMN_NAMES.get(orderByColumn);
         String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
 
-        //handle paging
-        List<JobPageModel> jobPageModels = jobRequestDao
-                .findByPage(length, start, search, sortColumn, sortOrderDirection)
-                .stream()
+        // Get one extra result from the database to determine if the "Next" pagination button
+        // should be enabled.
+        var jobs = jobRequestDao.findByPage(
+                length + 1, start, search, sortColumn, sortOrderDirection);
+        boolean hasMorePages = jobs.size() > length;
+
+        var jobPageModels = jobs.stream()
+                .limit(length)
                 .map(this::convertToJobPageModel)
-                .collect(toList());
-        int recordsTotal = (int) jobRequestDao.countAll();
-        int recordsFiltered = search.equals("") ? recordsTotal :
-                (int)jobRequestDao.countFiltered(search);
-        return new JobPageListModel(draw, recordsTotal, recordsFiltered, null, jobPageModels);
+                .toList();
+
+        return new JobPageListModel(
+                draw, jobRequestDao.estimateNumberOfJobs(), jobPageModels, hasMorePages);
+    }
+
+
+    @PostMapping("/count-jobs-filtered")
+    @ResponseBody
+    public long getFilteredJobCount(@RequestParam(value = "search") String search) {
+        // Since we don't provide the number of filtered results in getJobStatusFiltered,
+        // it is possible for a user to click on a page past the end of the filtered results.
+        // When the user clicks on a page past the end of the results, the client uses this
+        // endpoint to determine what the last page of results is and take the user to that page.
+        return jobRequestDao.countFiltered(search);
     }
 
 

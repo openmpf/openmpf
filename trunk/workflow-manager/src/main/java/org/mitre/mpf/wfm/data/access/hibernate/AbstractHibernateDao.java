@@ -113,13 +113,18 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
 
     @Override
     public long countAll() {
+        return countAll(getCurrentSession());
+    }
+
+
+    protected long countAll(Session session) {
         Split split = SimonManager.getStopwatch(_profilerName+".countAll()").start();
         try {
-            var cb = getCriteriaBuilder();
+            var cb = session.getCriteriaBuilder();
             var query = cb.createQuery(Long.class);
             var root = query.from(_clazz);
             query.select(cb.count(root));
-            return buildQuery(query)
+            return session.createQuery(query)
                     .getSingleResult();
         } finally {
             split.stop();

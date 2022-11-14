@@ -82,6 +82,13 @@ $(function() {
 				.css('display','block')
 				.html(warningStr);
 	}
+	if (location.hash) {
+		// When a user tries to go to a specific page while not logged in, they should be
+		// redirected to the original page after logging in. The fragment part of the URL
+		// is not sent to the server, so in order to send the user to the correct page,
+		// we store the fragment locally and navigate to it after the user logs in.
+		sessionStorage.setItem('loginFragment', location.hash);
+	}
 });
 </script>
 

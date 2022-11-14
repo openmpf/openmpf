@@ -66,6 +66,22 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 	  // For any unmatched url, redirect to /jobs
 	  $urlRouterProvider.otherwise("/jobs");
 
+	  // Matches URLs with no fragment. After a user initally logs in, in the URL will not have a
+	  // fragment.
+	  $urlRouterProvider.when('', () => {
+		  // If a user tried to go to a specific page, but wasn't logged in, login_view.jsp will
+		  // store the URL fragment in sessionStorage.
+		  const loginFragment = sessionStorage.getItem('loginFragment');
+		  if (loginFragment) {
+			  sessionStorage.removeItem('loginFragment');
+			  return loginFragment.substring(1);
+		  }
+		  else {
+			  return '/jobs';
+		  }
+	  });
+
+
 	  var getTemplateUrl = function(name) {
 		  return 'resources/layouts/' + name + '.html';
 	  };
@@ -104,6 +120,10 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 		  templateUrl: getTemplateUrl('jobs'),
 		  controller: JobsCtrl
 	  });
+	  $stateProvider.state({
+		name: '/jobs.page',
+		url: '/{page}/{pageLen}/{orderDirection}/{orderCol}/{search}'
+	  })
 
 	  $stateProvider.state('/adminNodes', {
 		  url: '/adminNodes',

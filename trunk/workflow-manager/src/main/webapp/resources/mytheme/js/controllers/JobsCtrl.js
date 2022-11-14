@@ -29,7 +29,7 @@
  * JobsCtrl
  * @constructor
  */
-const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
+const JobsCtrl = function ($scope, $log, $timeout, $state, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
     $.fn.dataTable.ext.errMode = 'throw';
 
     $scope.selectedJob = {};
@@ -46,11 +46,21 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
 
     var couldNotGetJobTableMsgId = null;
 
+    const defaultTableState = {
+        page: 0,
+        pageLen: 25,
+        orderCol: 0,
+        orderDirection: 'desc',
+        search: ''
+    }
+
     const buildJobTable = function () {
         if (jobTable != null) {
             jobTable.clear();
             jobTable.draw();
         } else {
+            const initialTableState = mergeTableStateFromUrl(defaultTableState);
+
             jobTable = $('#jobTable').DataTable({
                 destroy: true,
                 data: [],
@@ -58,7 +68,11 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
                 serverSide: true,
                 processing: false,//hide
                 ajax(request, dataReadyCallback) {
-                    getJobs(request, dataReadyCallback);
+                    getJobs(request, dataReadyCallback)
+                        .catch(e => {
+                            const msg = e.message ?? e.responseJSON?.message ?? e.responseText;
+                            NotificationSvc.error('Failed to get job information due to: ' + msg);
+                        });
                 },
                 language: {
                     emptyTable: 'No jobs available'
@@ -66,8 +80,9 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
                 drawCallback: function (settings) {
                     bindButtons();
                 },
+                displayStart: initialTableState.page * initialTableState.pageLen,
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
-                pageLength: 25,
+                pageLength: initialTableState.pageLen,
                 infoCallback(settings, start, end, total) {
                     if (jobTable.data().length == 0) {
                         return `Showing 0 of ${total} total entries`
@@ -78,8 +93,12 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
                 },
                 ordering: true,
                 orderMulti: false,
-                order: [[0, 'desc']],
+                order: [[initialTableState.orderCol, initialTableState.orderDirection]],
+                search: {
+                    search: initialTableState.search
+                },
                 searchHighlight: true,
+                searchDelay: 800,
                 renderer: "bootstrap",
                 columns: [
                     {
@@ -200,8 +219,84 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
                 }
                 scheduleNextPoll();
             });
+
+            jobTable.on('draw.dt', updateUrl);
         }
     };
+
+    const updateUrl = () => {
+        const tableState = getCurrentTableStateParams();
+        if ($state.current.name == '/jobs'
+                && statesEqual(defaultTableState, tableState)) {
+            return;
+        }
+        $state.go('/jobs.page', tableState, {notify: false});
+    }
+
+    const statesEqual = (s1, s2) => {
+        return (s1.page == s2.page && s1.pageLen == s2.pageLen && s1.orderCol == s2.orderCol
+                && s1.orderDirection == s2.orderDirection && s1.search == s2.search);
+    }
+
+
+    const getCurrentTableStateParams = () => {
+        const [orderCol, orderDirection] = jobTable.order()[0];
+        return {
+            page: jobTable.page(),
+            pageLen: jobTable.page.len(),
+            orderCol,
+            orderDirection,
+            search: jobTable.search()
+        }
+    }
+
+
+    $scope.$on('$stateChangeSuccess', (evt, {name: toState}, toParams, {name: fromState}) => {
+        if (!fromState) {
+            // This is the initial page load so we don't need to modify the table.
+            return;
+        }
+
+        const newState = toState == '/jobs.page'
+            ? mergeTableStateFromUrl(getCurrentTableStateParams())
+            : defaultTableState;
+
+        $('#jobTable_filter input').val(newState.search);
+        jobTable
+            .page(newState.page)
+            .page.len(newState.pageLen)
+            .order([newState.orderCol, newState.orderDirection])
+            .search(newState.search)
+            .draw(false);
+    })
+
+
+    const mergeTableStateFromUrl = defaults => {
+        let { orderDirection } = $state.params
+        if (orderDirection != 'asc' && orderDirection != 'desc') {
+            orderDirection = defaults.orderDirection;
+        }
+        return {
+            page: parseIntOrDefault($state.params.page, defaults.page),
+            pageLen: parseIntOrDefault($state.params.pageLen, defaults.pageLen),
+            orderCol: parseIntOrDefault($state.params.orderCol, defaults.orderCol),
+            orderDirection,
+            search: $state.params.search ?? defaults.search
+        }
+    }
+
+    const parseIntOrDefault = (str, defaultVal) => {
+        if (str == null) {
+            return defaultVal;
+        }
+        const intVal = parseInt(str);
+        if (isNaN(intVal)) {
+            return defaultVal;
+        }
+        else {
+            return intVal;
+        }
+    }
 
     const getJobs = async (request, dataReadyCallback) => {
         request.search = request.search.value;
@@ -247,6 +342,7 @@ const JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, 
         }
         jobTable.draw(false);
     };
+
 
     var getJobFromTableEle = function (ele) {
         var idx = jobTable.row($(ele).closest('tr')[0]).index();

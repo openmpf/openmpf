@@ -137,7 +137,7 @@
 <!-- Pipeline pane -->
 <script type="text/ng-template" id="pipeline.pane.html">
     <div ng-if="currentPipeline.name!==undefined" class="col-lg-10 pp-pipeline pp-pipeline-bg">
-        <form name="pipelineForm" ng-submit="pipes2.savePipeline(currentPipeline)" class="form-horizontal">
+        <form name="pipelineForm" class="form-horizontal">
             <div class="row">
                 <div class="form-group">
                     <label class="control-label col-sm-1 pp-name" for="pipeline-name"><strong>Pipeline</strong>:</label>
@@ -146,7 +146,9 @@
                            ng-model-options="{ updateOn: 'blur' }"
                            tabindex="1" placeholder="Pipeline name (required)" required/>
                     &nbsp;
-                    <input ng-if="pipes2.inEditMode()" type="submit" value="Save" class="btn btn-default"
+                    <input ng-if="pipes2.inEditMode()"
+                           ng-click="pipes2.savePipeline(currentPipeline)"
+                           type="submit" value="Save" class="btn btn-default"
                            id="savePipelineButton" tabindex="3" />
 
                     <button ng-if="!pipes2.inEditMode()" ng-click="pipes2.deletePipeline(currentPipeline)"

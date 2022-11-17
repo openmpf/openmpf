@@ -71,7 +71,13 @@ const JobsCtrl = function ($scope, $log, $timeout, $state, ServerSidePush, JobsS
                     getJobs(request, dataReadyCallback)
                         .catch(e => {
                             const msg = e.message ?? e.responseJSON?.message ?? e.responseText;
-                            NotificationSvc.error('Failed to get job information due to: ' + msg);
+                            if (msg) {
+                                NotificationSvc.error(
+                                    `Failed to get job information due to: ${msg}`);
+                            }
+                            else {
+                                NotificationSvc.error('Failed to get job information.');
+                            }
                         });
                 },
                 language: {
@@ -84,8 +90,12 @@ const JobsCtrl = function ($scope, $log, $timeout, $state, ServerSidePush, JobsS
                 lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
                 pageLength: initialTableState.pageLen,
                 infoCallback(settings, start, end, total) {
-                    if (jobTable.data().length == 0) {
-                        return `Showing 0 of ${total} total entries`
+                    if (end == 0) {
+                        start = 0;
+                    }
+                    if (jobTable.search()) {
+                        return `Showing entries ${start} to ${end}`
+                           + ` (filtered from ${total} total entries)`;
                     }
                     else {
                         return `Showing ${start} to ${end} of ${total} total entries`;

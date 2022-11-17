@@ -66,7 +66,7 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 	  // For any unmatched url, redirect to /jobs
 	  $urlRouterProvider.otherwise("/jobs");
 
-	  // Matches URLs with no fragment. After a user initally logs in, in the URL will not have a
+	  // Matches URLs with no fragment. After a user initally logs in, the URL will not have a
 	  // fragment.
 	  $urlRouterProvider.when('', () => {
 		  // If a user tried to go to a specific page, but wasn't logged in, login_view.jsp will

@@ -51,13 +51,6 @@
         </dependency>
     </dependencies>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>mapr-releases</id>
-            <url>https://repository.mapr.com/nexus/content/groups/mapr-public/releases/</url>
-        </pluginRepository>
-    </pluginRepositories>
-
     <build>
         <resources>
         </resources>

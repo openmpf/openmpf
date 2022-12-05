@@ -78,6 +78,11 @@
             <name>nexus-vendor-releases</name>
             <url>https://maven-us.nuxeo.org/nexus/content/repositories/vendor-releases/</url>
         </repository>
+        <repository>
+            <id>mvnrepository.com-public-releases</id>
+            <name>mvnrepository-public-releases</name>
+            <url>https://repository.mapr.com/nexus/content/groups/mapr-public/releases/</url>
+        </repository>
     </repositories>
 
     <properties>

@@ -88,8 +88,8 @@
 
         <!-- Version numbers that are used more than once. -->
         <spring.framework.version>5.3.20</spring.framework.version>
-        <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
-        <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
+        <hibernate.framework.version>5.6.14.Final</hibernate.framework.version>
+        <hibernate.validator.version>5.4.3.Final</hibernate.validator.version>
         <camel.framework.version>2.24.0</camel.framework.version>
         <activemq.framework.version>5.15.9</activemq.framework.version>
         <javasimon.version>4.1.1</javasimon.version>
@@ -105,7 +105,7 @@
         <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
         <commons.lang3.version>3.10</commons.lang3.version>
         <tika.core.version>1.28.1</tika.core.version>
-        <mockito.core.version>2.26.0</mockito.core.version>
+        <mockito.core.version>4.9.0</mockito.core.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <google.protobuf.version>3.16.1</google.protobuf.version>
         <springfox.swagger.version>3.0.0</springfox.swagger.version>
@@ -117,6 +117,7 @@
         <hamcrest.version>1.3</hamcrest.version>
         <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
         <guava.version>27.0.1-jre</guava.version>
+        <byte.buddy.version>1.12.18</byte.buddy.version>
 
         <!-- The C++ SDK install location can be changed by setting the MPF_SDK_INSTALL_PATH environment variable.  -->
         <components.build.script>${project.basedir}/../../openmpf-build-tools/build-openmpf-components/build_components.py</components.build.script>

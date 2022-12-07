@@ -48,7 +48,7 @@ import javax.jms.*;
 import java.util.Queue;
 import java.util.*;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -91,6 +91,8 @@ public class TestDlqRouteBuilder {
 
     private static int runId = -1;
 
+    private AutoCloseable closeable;
+
     private CamelContext camelContext;
     private ConnectionFactory connectionFactory;
     private ActiveMQConnection connection;
@@ -101,7 +103,7 @@ public class TestDlqRouteBuilder {
 
     @Before
     public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
 
         SimpleRegistry simpleRegistry = new SimpleRegistry();
         simpleRegistry.put(DetectionDeadLetterProcessor.REF, mockDetectionDeadLetterProcessor);
@@ -147,6 +149,8 @@ public class TestDlqRouteBuilder {
             connection.stop();
             connection = null;
         }
+
+        closeable.close();
     }
 
     private void removeQueues() {

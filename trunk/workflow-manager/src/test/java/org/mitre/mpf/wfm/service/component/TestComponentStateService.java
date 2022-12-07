@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service.component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +53,8 @@ import static org.mockito.Mockito.*;
 
 public class TestComponentStateService {
 
+    private AutoCloseable _closeable;
+
     @InjectMocks
     private ComponentStateServiceImpl _componentStateService;
 
@@ -69,7 +72,7 @@ public class TestComponentStateService {
 
     @Before
     public void init() throws IOException {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         _testRegisterModel = new RegisterComponentModel();
         _testRegisterModel.setComponentName(_testComponentName);
@@ -89,6 +92,12 @@ public class TestComponentStateService {
 
         when(_mockProperties.getComponentInfoFile())
                 .thenReturn(mock(WritableResource.class));
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 

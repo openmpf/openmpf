@@ -28,6 +28,8 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,6 +67,8 @@ public class TestAddComponentService {
 
     private AddComponentServiceImpl _addComponentService;
 
+    private AutoCloseable _closeable;
+
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
 
@@ -99,12 +103,17 @@ public class TestAddComponentService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         _addComponentService = new AddComponentServiceImpl(
                 _mockPropertiesUtil, _mockPipelineService, Optional.of(_mockNodeManager),
                 Optional.of(_mockStreamingServiceManager), _mockDeploymentService, _mockStateService,
                 _mockDescriptorValidator, null, _mockRemoveComponentService, _mockObjectMapper);
+    }
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
     @Test
@@ -385,7 +394,7 @@ public class TestAddComponentService {
         boolean wasModified = _addComponentService.registerUnmanagedComponent(descriptor);
         assertTrue(wasModified);
 
-        verifyZeroInteractions(_mockRemoveComponentService, _mockNodeManager);
+        verifyNoInteractions(_mockRemoveComponentService, _mockNodeManager);
         verifySuccessfullyAddedUnmanagedComponent(descriptor);
     }
 
@@ -437,7 +446,7 @@ public class TestAddComponentService {
         boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
         assertTrue(wasModified);
 
-        verifyZeroInteractions(_mockNodeManager);
+        verifyNoInteractions(_mockNodeManager);
         verify(_mockRemoveComponentService)
                 .removeComponent(COMPONENT_NAME);
 
@@ -484,7 +493,7 @@ public class TestAddComponentService {
         assertFalse(wasModified);
 
 
-        verifyZeroInteractions(_mockRemoveComponentService, _mockDescriptorValidator,
+        verifyNoInteractions(_mockRemoveComponentService, _mockDescriptorValidator,
                                _mockPipelineService, _mockNodeManager);
 
         verify(_mockObjectMapper, never())
@@ -526,7 +535,7 @@ public class TestAddComponentService {
         catch (InvalidComponentDescriptorException ignored) {
         }
 
-        verifyZeroInteractions(_mockObjectMapper);
+        verifyNoInteractions(_mockObjectMapper);
         verify(_mockStateService, never())
                 .update(any());
     }

@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service.component;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.component.ComponentState;
@@ -53,6 +54,8 @@ import static org.mitre.mpf.test.TestUtil.collectionContaining;
 import static org.mockito.Mockito.*;
 
 public class TestComponentReRegisterService {
+
+    private AutoCloseable _closeable;
 
     @InjectMocks
     private ComponentReRegisterServiceImpl _reRegisterService;
@@ -90,7 +93,7 @@ public class TestComponentReRegisterService {
         when(_mockPropertiesUtil.getUploadedComponentsDirectory())
                 .thenReturn(_componentUploadDir.toFile());
 
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         _componentToReRegister = new RegisterComponentModel();
         _componentToReRegister.setFullUploadedFilePath(_packageToReRegisterPath.toString());
@@ -103,6 +106,12 @@ public class TestComponentReRegisterService {
 
         when(_mockAddComponentService.registerComponent(_packageToReRegister))
                 .thenReturn(_componentToReRegister);
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 

@@ -27,6 +27,8 @@
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
@@ -48,6 +50,8 @@ import static org.mockito.Mockito.*;
 
 public class TestMediaMetadataValidator {
 
+    private AutoCloseable _closeable;
+
     @InjectMocks
     private MediaMetadataValidator _mediaMetadataValidator;
 
@@ -57,7 +61,12 @@ public class TestMediaMetadataValidator {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
+    }
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
     @Test

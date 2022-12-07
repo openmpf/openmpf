@@ -173,6 +173,12 @@
             <version>${jackson.version}</version>
         </dependency>
         <!-- / added for Jackson -->
+
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${byte.buddy.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>

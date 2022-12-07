@@ -394,7 +394,7 @@ public class TestAddComponentService {
         boolean wasModified = _addComponentService.registerUnmanagedComponent(descriptor);
         assertTrue(wasModified);
 
-        verifyZeroInteractions(_mockRemoveComponentService, _mockNodeManager);
+        verifyNoInteractions(_mockRemoveComponentService, _mockNodeManager);
         verifySuccessfullyAddedUnmanagedComponent(descriptor);
     }
 
@@ -446,7 +446,7 @@ public class TestAddComponentService {
         boolean wasModified = _addComponentService.registerUnmanagedComponent(newDescriptor);
         assertTrue(wasModified);
 
-        verifyZeroInteractions(_mockNodeManager);
+        verifyNoInteractions(_mockNodeManager);
         verify(_mockRemoveComponentService)
                 .removeComponent(COMPONENT_NAME);
 
@@ -493,7 +493,7 @@ public class TestAddComponentService {
         assertFalse(wasModified);
 
 
-        verifyZeroInteractions(_mockRemoveComponentService, _mockDescriptorValidator,
+        verifyNoInteractions(_mockRemoveComponentService, _mockDescriptorValidator,
                                _mockPipelineService, _mockNodeManager);
 
         verify(_mockObjectMapper, never())
@@ -535,7 +535,7 @@ public class TestAddComponentService {
         catch (InvalidComponentDescriptorException ignored) {
         }
 
-        verifyZeroInteractions(_mockObjectMapper);
+        verifyNoInteractions(_mockObjectMapper);
         verify(_mockStateService, never())
                 .update(any());
     }

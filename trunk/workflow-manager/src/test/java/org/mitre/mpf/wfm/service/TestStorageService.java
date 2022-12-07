@@ -134,7 +134,7 @@ public class TestStorageService {
         URI result = _storageService.store(_mockOutputObject, new MutableObject<>());
         assertEquals(TEST_REMOTE_URI, result);
 
-        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
     }
 
@@ -241,7 +241,7 @@ public class TestStorageService {
         Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
-        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
     }
 
@@ -315,7 +315,7 @@ public class TestStorageService {
         Table<Integer, Integer, URI> result = _storageService.storeArtifacts(request);
         assertEquals(expectedResults, result);
 
-        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
     }
 
@@ -389,7 +389,7 @@ public class TestStorageService {
                 .store(markup);
 
         verifyNoMarkupError(markup);
-        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
     }
 
@@ -469,7 +469,7 @@ public class TestStorageService {
 
         verify(derivativeMedia).setStorageUri(TEST_REMOTE_URI.toString());
 
-        verifyZeroInteractions(_mockLocalBackend);
+        verifyNoInteractions(_mockLocalBackend);
         verifyNoInProgressJobWarnings();
     }
 

@@ -244,7 +244,7 @@ public class TestRemoveComponentService {
         verify(_mockPipelineService)
                 .deletePipeline("TEST PIPELINE");
 
-        verifyZeroInteractions(_mockNodeManager, _mockStreamingServiceManager, _mockDeploymentService);
+        verifyNoInteractions(_mockNodeManager, _mockStreamingServiceManager, _mockDeploymentService);
 
         assertTrue(Files.exists(otherPluginDir));
         assertFalse(Files.exists(testComponentDir));

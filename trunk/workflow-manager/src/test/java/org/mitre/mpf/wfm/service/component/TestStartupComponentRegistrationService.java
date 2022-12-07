@@ -55,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.collectionContaining;
 import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class TestStartupComponentRegistrationService {

@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonIssueDetails;
@@ -61,6 +62,8 @@ import static org.mockito.Mockito.*;
 
 public class TestStorageService {
 
+    private AutoCloseable _closeable;
+
     @InjectMocks
     private StorageService _storageService;
 
@@ -90,13 +93,17 @@ public class TestStorageService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getJobIdFromExportedId(TEST_EXPORTED_JOB_ID))
                 .thenReturn(TEST_INTERNAL_JOB_ID);
         when(_mockOutputObject.getJobId())
                 .thenReturn(TEST_EXPORTED_JOB_ID);
     }
 
+    @After
+    public void close() throws Exception {
+        _closeable.close();
+    }
 
     @Test
     public void S3BackendHasHigherPriorityThanNginx() throws IOException, StorageException {
@@ -114,7 +121,6 @@ public class TestStorageService {
         verify(_mockNginxBackend, never())
                 .store(any(JsonOutputObject.class), any());
     }
-
 
     @Test
     public void canStoreOutputObjectRemotely() throws IOException, StorageException {

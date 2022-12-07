@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.MessageModel;
@@ -44,6 +45,8 @@ import static org.mockito.Mockito.when;
 
 public class TestControllerExceptionHandler {
 
+    private AutoCloseable _closeable;
+
     private ControllerUncaughtExceptionHandler _handler;
 
     @Mock
@@ -55,13 +58,17 @@ public class TestControllerExceptionHandler {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         _handler = new ControllerUncaughtExceptionHandler();
 
         when(_mockRequest.getHeaders("Accept"))
                 .thenReturn(Collections.emptyEnumeration());
     }
 
+    @After
+    public void close() throws Exception {
+	_closeable.close();
+    }
 
 
     @Test

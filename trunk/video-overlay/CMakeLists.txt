@@ -28,6 +28,7 @@
 # openmpf-projects/openmpf/trunk/CMakeLists.txt.
 
 project(VideoOverlay)
+set(CMAKE_CXX_STANDARD 17)
 aux_source_directory(./src/main/cpp SRC)
 
 find_package(OpenCV 4.5.5 EXACT REQUIRED PATHS /opt/opencv-4.5.5 COMPONENTS opencv_core opencv_freetype)

@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,6 +61,7 @@ import static org.mockito.Mockito.*;
 
 public class TestStartupComponentRegistrationService {
 
+    private AutoCloseable _closeable;
 
     private StartupComponentRegistrationServiceImpl _startupRegisterSvc;
 
@@ -85,7 +87,7 @@ public class TestStartupComponentRegistrationService {
 
     @Before
     public void init() throws IOException, ComponentRegistrationException {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         _componentUploadDir.newFolder("test");
         _componentUploadDir.newFile("bad.bad");
@@ -113,6 +115,11 @@ public class TestStartupComponentRegistrationService {
                 });
     }
 
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
+    }
 
 
     @Test

@@ -28,7 +28,6 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultMessage;
@@ -38,7 +37,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 
 import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class MediaTestUtil {

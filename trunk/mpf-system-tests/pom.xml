@@ -100,10 +100,17 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-servlet-api</artifactId>
             <version>${tomcat.servlet.api.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${byte.buddy.version}</version>
         </dependency>
     </dependencies>
 

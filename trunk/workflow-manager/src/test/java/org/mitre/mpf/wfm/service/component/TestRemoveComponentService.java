@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.service.component;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,6 +62,8 @@ import static org.mockito.Mockito.*;
 
 public class TestRemoveComponentService {
 
+    private AutoCloseable _closeable;
+
     private RemoveComponentServiceImpl _removeComponentService;
 
     @Mock
@@ -86,11 +89,17 @@ public class TestRemoveComponentService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         _removeComponentService = new RemoveComponentServiceImpl(
                 Optional.of(_mockNodeManager), Optional.of(_mockStreamingServiceManager), _mockDeploymentService,
                 _mockStateService, _mockPipelineService, _mockPropertiesUtil);
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
     @Test

@@ -26,10 +26,31 @@
 
 package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
-import com.google.common.io.MoreFiles;
+import static java.util.stream.Collectors.toList;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.ex.ConversionException;
 import org.apache.commons.io.FilenameUtils;
@@ -44,7 +65,6 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.EnvVar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -54,50 +74,48 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.time.Instant;
-import java.util.*;
-
-import static java.util.stream.Collectors.*;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
+import com.google.common.io.MoreFiles;
 
 @Component("wfmPropertiesUtil")
 @Monitored
 public class PropertiesUtil {
 
-    private static final Logger log = LoggerFactory.getLogger(PropertiesUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PropertiesUtil.class);
 
-    @Autowired
-    private ApplicationContext appContext;
+    private final ApplicationContext _appContext;
 
-    @Autowired
-    private MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder;
+    private final MpfPropertiesConfigurationBuilder _mpfPropertiesConfigBuilder;
 
-    @Autowired
-    private Environment springEnvironment;
+    private final Environment _springEnvironment;
 
-    @javax.annotation.Resource(name="mediaTypesFile")
-    private FileSystemResource mediaTypesFile;
+    private final FileSystemResource _mediaTypesFile;
 
-    @javax.annotation.Resource(name="userFile")
-    private FileSystemResource userFile;
+    private final FileSystemResource _userFile;
 
-    private ImmutableConfiguration mpfPropertiesConfig;
+    private ImmutableConfiguration _mpfPropertiesConfig;
 
     // The set of core nodes will not change while the WFM is running.
-    private ImmutableSet<String> coreMpfNodes;
+    private final ImmutableSet<String> _coreMpfNodes;
 
+    @Inject
+    PropertiesUtil(
+            ApplicationContext appContext,
+            MpfPropertiesConfigurationBuilder mpfPropertiesConfigBuilder,
+            Environment springEnvironment,
+            @Named("mediaTypesFile") FileSystemResource mediaTypesFile,
+            @Named("userFile") FileSystemResource userFile
+    ) throws WfmProcessingException, IOException {
+        _appContext = appContext;
+        _mpfPropertiesConfigBuilder = mpfPropertiesConfigBuilder;
+        _springEnvironment = springEnvironment;
+        _mediaTypesFile = mediaTypesFile;
+        _userFile = userFile;
+        _coreMpfNodes = parseCoreMpfNodes();
 
-    @PostConstruct
-    private void init() throws IOException, WfmProcessingException {
-        parseCoreMpfNodes();
-
-        mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
+        _mpfPropertiesConfig = mpfPropertiesConfigBuilder.getCompleteConfiguration();
 
         if (!mediaTypesFile.exists()) {
             copyResource(mediaTypesFile, getMediaTypesTemplate());
@@ -144,24 +162,28 @@ public class PropertiesUtil {
         // create the default models directory, although the user may have set "detection.models.dir.path" to something else
         createOrFail(share, "models", permissions);
 
-        log.info("All file resources are stored within the shared directory '{}'.", share);
-        log.debug("Artifacts Directory = {}", artifactsDirectory);
-        log.debug("Markup Directory = {}", markupDirectory);
-        log.debug("Output Objects Directory = {}", outputObjectsDirectory);
-        log.debug("Remote Media Directory = {}", remoteMediaDirectory);
-        log.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
-        log.debug("Derivative Media Directory = {}", derivativeMediaDirectory);
-        log.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
+        LOG.info("All file resources are stored within the shared directory '{}'.", share);
+        LOG.debug("Artifacts Directory = {}", artifactsDirectory);
+        LOG.debug("Markup Directory = {}", markupDirectory);
+        LOG.debug("Output Objects Directory = {}", outputObjectsDirectory);
+        LOG.debug("Remote Media Directory = {}", remoteMediaDirectory);
+        LOG.debug("Temporary Media Directory = {}", temporaryMediaDirectory);
+        LOG.debug("Derivative Media Directory = {}", derivativeMediaDirectory);
+        LOG.debug("Uploaded Components Directory = {}", uploadedComponentsDirectory);
     }
 
-    private void parseCoreMpfNodes() {
+
+    private ImmutableSet<String> parseCoreMpfNodes() {
         String coreMpfNodesStr = System.getenv(EnvVar.CORE_MPF_NODES);
 
         if (coreMpfNodesStr == null || coreMpfNodesStr.isBlank()) {
-            coreMpfNodes = ImmutableSet.of(); // empty set
-        } else {
-            coreMpfNodes = Arrays.stream(coreMpfNodesStr.split(",")).map(String::trim)
-                    .filter(node -> !node.isEmpty()).collect(collectingAndThen(toSet(), ImmutableSet::copyOf));
+            return ImmutableSet.of();
+        }
+        else {
+            return Arrays.stream(coreMpfNodesStr.split(","))
+                    .map(String::trim)
+                    .filter(node -> !node.isEmpty())
+                    .collect(ImmutableSet.toImmutableSet());
         }
     }
 
@@ -191,11 +213,11 @@ public class PropertiesUtil {
     }
 
     public String lookup(String propertyName) {
-        return mpfPropertiesConfig.getString(propertyName);
+        return _mpfPropertiesConfig.getString(propertyName);
     }
 
     public void setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
-        mpfPropertiesConfig = mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
+        _mpfPropertiesConfig = _mpfPropertiesConfigBuilder.setAndSaveCustomProperties(propertyModels);
     }
 
     /**
@@ -204,7 +226,7 @@ public class PropertiesUtil {
      * @return Updated list of property models.
      */
     public List<PropertyModel> getCustomProperties() {
-        return mpfPropertiesConfigBuilder.getCustomProperties();
+        return _mpfPropertiesConfigBuilder.getCustomProperties();
     }
 
     /**
@@ -230,9 +252,9 @@ public class PropertiesUtil {
     }
 
     public SystemPropertiesSnapshot createSystemPropertiesSnapshot() {
-        Iterator<String> snapshotProps = Iterators.filter(mpfPropertiesConfig.getKeys(),
+        Iterator<String> snapshotProps = Iterators.filter(_mpfPropertiesConfig.getKeys(),
                                                           MpfPropertiesConfigurationBuilder::propertyRequiresSnapshot);
-        return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, mpfPropertiesConfig::getString));
+        return new SystemPropertiesSnapshot(Maps.toMap(snapshotProps, _mpfPropertiesConfig::getString));
     }
 
     //
@@ -240,23 +262,23 @@ public class PropertiesUtil {
     //
 
     public boolean isAmqBrokerEnabled() {
-        return mpfPropertiesConfig.getBoolean("jmx.amq.broker.enabled");
+        return _mpfPropertiesConfig.getBoolean("jmx.amq.broker.enabled");
     }
 
     public String getAmqBrokerJmxUri() {
-        return mpfPropertiesConfig.getString("jmx.amq.broker.uri");
+        return _mpfPropertiesConfig.getString("jmx.amq.broker.uri");
     }
 
     public String getAmqBrokerAdminUsername() {
-        return mpfPropertiesConfig.getString("jmx.amq.broker.admin.username");
+        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.username");
     }
 
     public String getAmqBrokerAdminPassword() {
-        return mpfPropertiesConfig.getString("jmx.amq.broker.admin.password");
+        return _mpfPropertiesConfig.getString("jmx.amq.broker.admin.password");
     }
 
     public Set<String> getAmqBrokerPurgeWhiteList() {
-        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "jmx.amq.broker.whiteList"));
+        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "jmx.amq.broker.whiteList"));
     }
 
     //
@@ -264,7 +286,7 @@ public class PropertiesUtil {
     //
 
     public String getSiteId() {
-        return mpfPropertiesConfig.getString("output.site.name");
+        return _mpfPropertiesConfig.getString("output.site.name");
     }
 
     public String getHostName() {
@@ -290,24 +312,24 @@ public class PropertiesUtil {
     }
 
     public boolean isStreamingOutputObjectsToDiskEnabled() {
-        return mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");
+        return _mpfPropertiesConfig.getBoolean("mpf.streaming.output.objects.to.disk.enabled");
     }
 
     public boolean isOutputObjectsArtifactsAndExemplarsOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
+        return _mpfPropertiesConfig.getBoolean("mpf.output.objects.artifacts.and.exemplars.only");
     }
 
     public boolean isOutputObjectsLastTaskOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
+        return _mpfPropertiesConfig.getBoolean("mpf.output.objects.last.task.only");
     }
 
     public Set<String> getCensoredOutputProperties() {
-        return new HashSet<>(mpfPropertiesConfig.getList(
+        return new HashSet<>(_mpfPropertiesConfig.getList(
                 String.class, "mpf.output.objects.censored.properties"));
     }
 
     public String getSharePath() {
-        return mpfPropertiesConfig.getString("mpf.share.path");
+        return _mpfPropertiesConfig.getString("mpf.share.path");
     }
 
     private File artifactsDirectory;
@@ -447,31 +469,31 @@ public class PropertiesUtil {
     //
 
     public ArtifactExtractionPolicy getArtifactExtractionPolicy() {
-        return mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
+        return _mpfPropertiesConfig.get(ArtifactExtractionPolicy.class, "detection.artifact.extraction.policy");
     }
 
     public Set<String> getArtifactExtractionNonVisualTypesList() {
-        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
+        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "detection.artifact.extraction.nonvisual.types"));
     }
 
     public Set<String> getIllFormedDetectionRemovalExemptionList() {
-        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.illformed.detection.removal.exempt.types"));
+        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "detection.illformed.detection.removal.exempt.types"));
     }
 
     public Set<String> getTrackMergingExemptionList() {
-        return new HashSet<>(mpfPropertiesConfig.getList(String.class, "detection.video.track.merging.exempt.types"));
+        return new HashSet<>(_mpfPropertiesConfig.getList(String.class, "detection.video.track.merging.exempt.types"));
     }
 
     public int getArtifactParallelUploadCount() {
-        return mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
+        return _mpfPropertiesConfig.getInt("detection.artifact.extraction.parallel.upload.count");
     }
 
     public int getDerivativeMediaParallelUploadCount() {
-        return mpfPropertiesConfig.getInt("detection.derivative.media.parallel.upload.count");
+        return _mpfPropertiesConfig.getInt("detection.derivative.media.parallel.upload.count");
     }
 
     public int getSamplingInterval() {
-        return mpfPropertiesConfig.getInt("detection.sampling.interval");
+        return _mpfPropertiesConfig.getInt("detection.sampling.interval");
     }
 
     //
@@ -479,7 +501,7 @@ public class PropertiesUtil {
     //
 
     public int getJmsPriority() {
-        return mpfPropertiesConfig.getInt("jms.priority");
+        return _mpfPropertiesConfig.getInt("jms.priority");
     }
 
     //
@@ -487,11 +509,11 @@ public class PropertiesUtil {
     //
 
     private FileSystemResource getAlgorithmsData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.algorithms.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.algorithms.file"));
     }
 
     private Resource getAlgorithmsTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.algorithms.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.algorithms.template"));
     }
 
     public WritableResource getAlgorithmDefinitions() {
@@ -499,11 +521,11 @@ public class PropertiesUtil {
     }
 
     private FileSystemResource getActionsData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.actions.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.actions.file"));
     }
 
     private Resource getActionsTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.actions.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.actions.template"));
     }
 
     public WritableResource getActionDefinitions() {
@@ -511,11 +533,11 @@ public class PropertiesUtil {
     }
 
     private FileSystemResource getTasksData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.tasks.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.tasks.file"));
     }
 
     private Resource getTasksTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.tasks.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.tasks.template"));
     }
 
     public WritableResource getTaskDefinitions() {
@@ -523,11 +545,11 @@ public class PropertiesUtil {
     }
 
     private FileSystemResource getPipelinesData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.pipelines.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.pipelines.file"));
     }
 
     private Resource getPipelinesTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.pipelines.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.pipelines.template"));
     }
 
     public WritableResource getPipelineDefinitions() {
@@ -535,11 +557,11 @@ public class PropertiesUtil {
     }
 
     private FileSystemResource getNodeManagerPaletteData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.nodemanagerpalette.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.nodemanagerpalette.file"));
     }
 
     private Resource getNodeManagerPaletteTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerpalette.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.nodemanagerpalette.template"));
     }
 
     public WritableResource getNodeManagerPalette() {
@@ -547,11 +569,11 @@ public class PropertiesUtil {
     }
 
     private FileSystemResource getNodeManagerConfigData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.nodemanagerconfig.file"));
     }
 
     private Resource getNodeManagerConfigTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.nodemanagerconfig.template"));
     }
 
     public WritableResource getNodeManagerConfigResource() {
@@ -560,11 +582,11 @@ public class PropertiesUtil {
 
 
     private FileSystemResource getStreamingServicesData() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.streamingprocesses.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.streamingprocesses.file"));
     }
 
     private Resource getStreamingServicesTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.streamingprocesses.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.streamingprocesses.template"));
     }
 
     public WritableResource getStreamingServices() {
@@ -577,11 +599,11 @@ public class PropertiesUtil {
     //
 
     private FileSystemResource getComponentInfo() {
-        return new FileSystemResource(mpfPropertiesConfig.getString("data.component.info.file"));
+        return new FileSystemResource(_mpfPropertiesConfig.getString("data.component.info.file"));
     }
 
     private Resource getComponentInfoTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("data.component.info.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("data.component.info.template"));
     }
 
     public WritableResource getComponentInfoFile() {
@@ -595,20 +617,20 @@ public class PropertiesUtil {
 
     // should not need these outside of this file
     private String getComponentUploadDirName() {
-        return mpfPropertiesConfig.getString("component.upload.dir.name");
+        return _mpfPropertiesConfig.getString("component.upload.dir.name");
     }
 
     public Path getPluginDeploymentPath() {
-        return Paths.get(mpfPropertiesConfig.getString("mpf.plugins.path"));
+        return Paths.get(_mpfPropertiesConfig.getString("mpf.plugins.path"));
     }
 
     public boolean isStartupAutoRegistrationSkipped() {
         String key = "startup.auto.registration.skip.spring";
         try {
-            return mpfPropertiesConfig.getBoolean(key, false);
+            return _mpfPropertiesConfig.getBoolean(key, false);
         } catch (ConversionException e) {
-            if (mpfPropertiesConfig.getString(key).startsWith("${")) {
-                log.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"false\".");
+            if (_mpfPropertiesConfig.getString(key).startsWith("${")) {
+                LOG.warn("Unable to determine value for \"" + key + "\". It may not have been set via Maven. Using default value of \"false\".");
                 return false;
             }
             throw e;
@@ -616,7 +638,7 @@ public class PropertiesUtil {
     }
 
     public Set<String> getCoreMpfNodes() {
-        return coreMpfNodes;
+        return _coreMpfNodes;
     }
 
     //
@@ -625,19 +647,19 @@ public class PropertiesUtil {
 
     // directory under which log directory is located: <log.parent.dir>/<hostname>/log
     public String getLogParentDir() {
-        return mpfPropertiesConfig.getString("log.parent.dir");
+        return _mpfPropertiesConfig.getString("log.parent.dir");
     }
 
     public String getServerMediaTreeRoot() {
-        return mpfPropertiesConfig.getString("web.server.media.tree.base");
+        return _mpfPropertiesConfig.getString("web.server.media.tree.base");
     }
 
     public int getWebMaxFileUploadCnt() {
-        return mpfPropertiesConfig.getInt("web.max.file.upload.cnt");
+        return _mpfPropertiesConfig.getInt("web.max.file.upload.cnt");
     }
 
     public boolean isBroadcastJobStatusEnabled() {
-        return mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
+        return _mpfPropertiesConfig.getBoolean("web.broadcast.job.status.enabled");
     }
 
     //
@@ -645,34 +667,34 @@ public class PropertiesUtil {
     //
 
     public String getSemanticVersion() {
-        return mpfPropertiesConfig.getString("mpf.version.semantic");
+        return _mpfPropertiesConfig.getString("mpf.version.semantic");
     }
 
     public String getOutputObjectVersion() {
-        return mpfPropertiesConfig.getString("mpf.version.json.output.object.schema");
+        return _mpfPropertiesConfig.getString("mpf.version.json.output.object.schema");
     }
 
 
     public FileSystemResource getMediaTypesFile() {
-        return mediaTypesFile;
+        return _mediaTypesFile;
     }
 
     private Resource getMediaTypesTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("config.mediaTypes.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("config.mediaTypes.template"));
     }
 
 
     public FileSystemResource getUserFile() {
-        return userFile;
+        return _userFile;
     }
 
     private Resource getUserTemplate() {
-        return appContext.getResource(mpfPropertiesConfig.getString("config.user.template"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("config.user.template"));
     }
 
 
     public String getAmqUri() {
-        return mpfPropertiesConfig.getString("amq.broker.uri");
+        return _mpfPropertiesConfig.getString("amq.broker.uri");
     }
 
     //
@@ -684,7 +706,7 @@ public class PropertiesUtil {
      * @return health report callback rate, in milliseconds
      */
     public long getStreamingJobHealthReportCallbackRate() {
-        return mpfPropertiesConfig.getLong("streaming.healthReport.callbackRate");
+        return _mpfPropertiesConfig.getLong("streaming.healthReport.callbackRate");
     }
 
     /**
@@ -692,7 +714,7 @@ public class PropertiesUtil {
      * @return streaming job stall alert threshold, in milliseconds
      */
     public long getStreamingJobStallAlertThreshold() {
-        return mpfPropertiesConfig.getLong("streaming.stallAlert.detectionThreshold");
+        return _mpfPropertiesConfig.getLong("streaming.stallAlert.detectionThreshold");
     }
 
     //
@@ -700,15 +722,15 @@ public class PropertiesUtil {
     //
 
     public String getAnsibleCompDeployPath() {
-        return mpfPropertiesConfig.getString("mpf.ansible.compdeploy.path");
+        return _mpfPropertiesConfig.getString("mpf.ansible.compdeploy.path");
     }
 
     public String getAnsibleCompRemovePath() {
-        return mpfPropertiesConfig.getString("mpf.ansible.compremove.path");
+        return _mpfPropertiesConfig.getString("mpf.ansible.compremove.path");
     }
 
     public boolean isAnsibleLocalOnly() {
-        return mpfPropertiesConfig.getBoolean("mpf.ansible.local-only", false);
+        return _mpfPropertiesConfig.getBoolean("mpf.ansible.local-only", false);
     }
 
     //
@@ -716,11 +738,11 @@ public class PropertiesUtil {
     //
 
     public int getRemoteMediaDownloadRetries() {
-        return mpfPropertiesConfig.getInt("remote.media.download.retries");
+        return _mpfPropertiesConfig.getInt("remote.media.download.retries");
     }
 
     public int getRemoteMediaDownloadSleep() {
-        return mpfPropertiesConfig.getInt("remote.media.download.sleep");
+        return _mpfPropertiesConfig.getInt("remote.media.download.sleep");
     }
 
     //
@@ -728,15 +750,15 @@ public class PropertiesUtil {
     //
 
     public boolean isNodeAutoConfigEnabled() {
-        return mpfPropertiesConfig.getBoolean("node.auto.config.enabled");
+        return _mpfPropertiesConfig.getBoolean("node.auto.config.enabled");
     }
 
     public boolean isNodeAutoUnconfigEnabled() {
-        return mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
+        return _mpfPropertiesConfig.getBoolean("node.auto.unconfig.enabled");
     }
 
     public int getNodeAutoConfigNumServices() {
-        return mpfPropertiesConfig.getInt("node.auto.config.num.services.per.component");
+        return _mpfPropertiesConfig.getInt("node.auto.config.num.services.per.component");
     }
 
     // Helper methods
@@ -747,7 +769,7 @@ public class PropertiesUtil {
         }
 
         try {
-            log.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
+            LOG.info("{} doesn't exist. Copying from {}", dataResource, templateResource);
             copyResource(dataResource, templateResource);
             return dataResource;
         } catch ( IOException e ) {
@@ -766,61 +788,61 @@ public class PropertiesUtil {
         Path resourcePath = Paths.get(resource.getURI());
         Path resourceDir = resourcePath.getParent();
         if ( Files.notExists(resourceDir) ) {
-            log.info("Directory {} doesn't exist. Creating it now.", resourceDir);
+            LOG.info("Directory {} doesn't exist. Creating it now.", resourceDir);
             Files.createDirectories(resourceDir);
         }
     }
 
     public int getNginxStorageUploadThreadCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
+        return _mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.thread.count");
     }
 
     public int getNginxStorageUploadSegmentSize() {
-        return mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.segment.size");
+        return _mpfPropertiesConfig.getInt("http.object.storage.nginx.upload.segment.size");
     }
 
     public int getHttpStorageUploadRetryCount() {
-        return mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
+        return _mpfPropertiesConfig.getInt("http.object.storage.upload.retry.count");
     }
 
     public Resource getWorkflowPropertiesFile() {
-        return appContext.getResource(mpfPropertiesConfig.getString("workflow.properties.file"));
+        return _appContext.getResource(_mpfPropertiesConfig.getString("workflow.properties.file"));
     }
 
     public boolean dockerProfileEnabled() {
-        return springEnvironment.acceptsProfiles(Profiles.of("docker"));
+        return _springEnvironment.acceptsProfiles(Profiles.of("docker"));
     }
 
     public int getHttpCallbackTimeoutMs() {
-        return mpfPropertiesConfig.getInt("http.callback.timeout.ms");
+        return _mpfPropertiesConfig.getInt("http.callback.timeout.ms");
     }
 
     public int getHttpCallbackRetryCount() {
-        return mpfPropertiesConfig.getInt("http.callback.retries");
+        return _mpfPropertiesConfig.getInt("http.callback.retries");
     }
 
     public int getHttpCallbackConcurrentConnections() {
-        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections");
+        return _mpfPropertiesConfig.getInt("http.callback.concurrent.connections");
     }
 
     public int getHttpCallbackConcurrentConnectionsPerRoute() {
-        return mpfPropertiesConfig.getInt("http.callback.concurrent.connections.per.route");
+        return _mpfPropertiesConfig.getInt("http.callback.concurrent.connections.per.route");
     }
 
     public int getHttpCallbackSocketTimeout() {
-        return mpfPropertiesConfig.getInt("http.callback.socket.timeout.ms");
+        return _mpfPropertiesConfig.getInt("http.callback.socket.timeout.ms");
     }
 
     public int getWarningFrameCountDiff() {
-        return mpfPropertiesConfig.getInt("warn.frame.count.diff");
+        return _mpfPropertiesConfig.getInt("warn.frame.count.diff");
     }
 
     public int getProtobufSizeLimit() {
-        return mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
+        return _mpfPropertiesConfig.getInt("mpf.protobuf.max.size");
     }
 
     public int getS3ClientCacheCount() {
-        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
+        return _mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
     }
 }
 

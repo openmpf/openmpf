@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.camelOps;
 
 import org.apache.camel.Exchange;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
@@ -53,6 +54,8 @@ import static org.mockito.Mockito.*;
 
 public class TestMarkupResponseProcessor {
 
+    private AutoCloseable _closeable;
+
     @InjectMocks
     private MarkupResponseProcessor _markupResponseProcessor;
 
@@ -69,8 +72,15 @@ public class TestMarkupResponseProcessor {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
     }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
+    }
+
 
     @Test
     public void testMarkupResponse() {

@@ -28,7 +28,6 @@ package org.mitre.mpf.wfm.camelOps;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -65,13 +64,15 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class TestRemoteMediaProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TestRemoteMediaProcessor.class);
     private static final int MINUTES = 1000*60; // 1000 milliseconds/second & 60 seconds/minute.
     private static final String EXT_IMG = "http://localhost:4587/test-image.jpg";
+
+    private AutoCloseable _closeable;
 
     private RemoteMediaProcessor _remoteMediaProcessor;
 
@@ -124,7 +125,7 @@ public class TestRemoteMediaProcessor {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getRemoteMediaDownloadRetries())
                 .thenReturn(3);
 
@@ -134,6 +135,12 @@ public class TestRemoteMediaProcessor {
         _remoteMediaProcessor = new RemoteMediaProcessor(
                 _mockInProgressJobs, null, _mockPropertiesUtil,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil, mock(WorkflowPropertyService.class)));
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 

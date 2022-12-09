@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +52,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class TestAdminComponentRegistrationController {
+
+    private AutoCloseable _closeable;
 
     @InjectMocks
     private AdminComponentRegistrationController _controller;
@@ -80,7 +83,7 @@ public class TestAdminComponentRegistrationController {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         _testModel = new RegisterComponentModel();
         _testModel.setPackageFileName(_testPackageName);
         _testModel.setComponentName(_testComponentName);
@@ -96,6 +99,11 @@ public class TestAdminComponentRegistrationController {
 
         when(_mockProperties.getUploadedComponentsDirectory())
                 .thenReturn(_tempFolder.getRoot());
+    }
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
     @Test
@@ -357,7 +365,7 @@ public class TestAdminComponentRegistrationController {
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         verify(mockFile)
-                .transferTo(notNull(File.class));
+                .transferTo((File)notNull());
 
     }
 

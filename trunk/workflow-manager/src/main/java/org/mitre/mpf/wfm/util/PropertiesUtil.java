@@ -628,10 +628,6 @@ public class PropertiesUtil {
         return mpfPropertiesConfig.getString("log.parent.dir");
     }
 
-    public int getWebSessionTimeout() {
-        return mpfPropertiesConfig.getInt("web.session.timeout");
-    }
-
     public String getServerMediaTreeRoot() {
         return mpfPropertiesConfig.getString("web.server.media.tree.base");
     }

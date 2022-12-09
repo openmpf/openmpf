@@ -35,11 +35,6 @@
 
     <title>Workflow Manager Web App</title>
 
-    <!-- generally useful styling -->
-    <link href="resources/css/app.css" rel="stylesheet"/>
-
-    <!-- for the progress bar -->
-    <link href="resources/css/jquery-ui.css" rel="stylesheet"/>
 
     <!-- bootstrap treeview -->
     <link href="resources/css/bootstrap-treeview_dist.min.css" rel="stylesheet"/>
@@ -52,28 +47,19 @@
     <link href="resources/ui-plugins/datatables-plugins/datatables-responsive/css/responsive.bootstrap-2-1-1.min.css" rel="stylesheet"/>
     <link href="resources/ui-plugins/datatables-plugins/select/select.dataTables.min.css" rel="stylesheet"/>
     <link href="resources/ui-plugins/datatables-plugins/buttons/buttons.dataTables.min.css" rel="stylesheet"/>
-    <link href="resources/ui-plugins/sb-admin-2/css/sb-admin-2.css" rel="stylesheet"/>
     <link href="resources/ui-plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet"/>
 
     <!-- Bootstrap core CSS - last! -->
     <link href="resources/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="resources/css/bootstrap-theme.min.css" rel="stylesheet"/>
-    <!-- TODO: would like to implement this bootstrap theme in the future - a couple custom mods need to be made -->
-    <!-- <link href="resources/css/bootstrap.paper.min.css" rel="stylesheet"></link> -->
 
     <!-- angular ui-select -->
     <link href="resources/css/select.min.css" rel="stylesheet"/>
     <!-- selectize -->
     <link href="resources/css/selectize.default.css" rel="stylesheet"/>
-    <!-- as-sortable (named ng-sortable in file system) -->
-    <link href="resources/css/ng-sortable.css" rel="stylesheet"/>
-    <!-- ui.grid
-    <link href="resources/css/ui-grid.css" rel="stylesheet"/>
-    -->
     <!-- local custom css -->
     <link href="resources/css/styles.css" rel="stylesheet"/>
-    <link href="resources/admin/css-generated/adminConsole.css" rel="stylesheet"/>
-    <link href="resources/js/directives/simplePipeline/pipeline2.css" rel="stylesheet"/>
+    <link href="resources/js/pipelines2/pipelines2.css" rel="stylesheet"/>
 
 </head>
 <body>
@@ -98,22 +84,16 @@
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
-<script src="resources/js/jquery-1.11.0.min.js"></script>
+<script src="resources/js/lib/jquery-1.11.0.min.js"></script>
 <!-- left to quickly jump from min if having issues -->
 <!--<script src="resources/js/jquery-1.11.1.js"></script>-->
 
 <script src="resources/js/lib/underscore-min.js"></script>
 
-<!-- browser compatibility -->
-<script src="resources/js/browser_compat.js"></script>
-
-<!-- Metis Menu Plugin JavaScript -->
-<script src='resources/ui-plugins/metisMenu/dist/metisMenu.min.js'></script>
 
 <!-- bootstrap LOAD LAST and before jquery ui -->
-<script src="resources/js/bootstrap.min.js"></script>
+<script src="resources/js/lib/bootstrap.min.js"></script>
 <!-- load after bootsrap js -->
-<script src="resources/js/jquery-ui.min.js"></script>
 
 <!-- bootstrap treeview -->
 <!-- needed to get the non minified version and modify the source to fix issues like the
@@ -137,14 +117,8 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <!-- dropzone -->
 <script src="resources/ui-plugins/dropzone/dropzone.min.js"></script>
 
-<!-- trying to move some of the js funtions to a new file if possible -->
-<script src="resources/js/utils.js"></script>
-<script src="resources/js/dialogs.js"></script>
-
 <!-- noty js -->
-<script src="resources/js/jquery.noty.packaged.mod_2_3_8.min.js"></script>
-<!-- blockUI -->
-<script src="resources/js/jquery.blockUI.js"></script>
+<script src="resources/js/lib/jquery.noty.packaged.mod_2_3_8.min.js"></script>
 
 <!-- for atmosphere support -->
 <script src="resources/js/lib/jquery.atmosphere.js"></script>
@@ -158,8 +132,6 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <script src="resources/js/lib/angular/angular-sanitize.js"></script>
 <script src="resources/js/lib/angular/angular-resource.js"></script>
 <script src="resources/js/lib/angular/angular-ui-router.min.js"></script>
-<script src="resources/js/ng-sortable.js"></script>
-<script src="resources/js/lib/ui-grid.js"></script>
 <script src="resources/js/lib/angular/ui-bootstrap-tpls-1.1.1.min.js"></script>
 
 <!-- angular ui-select -->
@@ -170,17 +142,18 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 <script src="resources/js/lib/angular-confirm.js"></script>
 
 <!-- angular app -->
-<script src="resources/js/angular_app/app.js"></script>
+<script src="resources/js/app.js"></script>
 
-<script src="resources/js/dropzone_custom.js"></script>
+<script src="resources/js/lib/dropzone_custom.js"></script>
 
 <!-- angular modules -->
-<script src="resources/js/angular_app/filters.js"></script>
-<script src="resources/js/angular_app/directives.js"></script>
-<script src="resources/js/angular_app/services.js"></script>
+<script src="resources/js/filters.js"></script>
+<script src="resources/js/directives.js"></script>
+<script src="resources/js/services.js"></script>
 <!-- angular controllers -->
 <script src="resources/js/controllers/AboutCtrl.js"></script>
 <script src="resources/js/controllers/JobsCtrl.js"></script>
+<script src="resources/js/controllers/MarkupCtrl.js"></script>
 <script src="resources/js/controllers/ServerMediaCtrl.js"></script>
 <!-- admin -->
 <script src="resources/js/controllers/admin/AdminComponentRegistrationCtrl.js"></script>
@@ -193,33 +166,11 @@ tree rendering for each click... this would nearly lock the browser up with ~100
 	<!-- Pipelines (original version before Pipelines2 -->
 	<script src="resources/js/controllers/PipelinesCtrl.js"></script>  <!-- todo: remove when pipelines2 is done -->
 <!--Pipelines2-->
-	<script src="resources/js/angular_app/pipelines2/AlgorithmService.js"></script>
-	<script src="resources/js/angular_app/pipelines2/ActionService.js"></script>
-	<script src="resources/js/angular_app/pipelines2/TaskService.js"></script>
-    <script src="resources/js/directives/simplePipeline/pipeline-directives.js"></script>
-    <script src="resources/js/angular_app/pipelines2/Pipelines2Ctrl.js"></script>
-    <script src="resources/js/angular_app/pipelines2/actionProperties.js"></script>
-
-
-<script type="text/ng-template" id="timeout_warning.html">
-    <div class="modal-header">
-        <h3 ng-if="timeoutInfo.secs>0" class="modal-title">Session timing out</h3>
-        <h3 ng-if="timeoutInfo.secs<=0" class="modal-title alert-danger">Your session has timed out</h3>
-    </div>
-    <div ng-if="timeoutInfo.secs>0" class="modal-body alert">
-        <p class="confirm-bodytext">Your session will time out in:</p>
-        <uib-progressbar max="timeoutInfo.max" value="timeoutInfo.secs" type="warning">
-            <span class="timeout-progressbar-text"><strong>{{timeoutInfo.secs}} seconds</strong></span>
-        </uib-progressbar>
-    </div>
-    <div ng-if="timeoutInfo.secs<=0" class="modal-body danger">
-        <p>Your session expired...</p>
-    </div>
-    <div class="modal-footer">
-        <button class="btn btn-warning" ng-click="ok()">Logout now</button>
-        <button class="btn btn-success" ng-click="cancel()">Extend session</button>
-    </div>
-</script>
-
+	<script src="resources/js/pipelines2/AlgorithmService.js"></script>
+	<script src="resources/js/pipelines2/ActionService.js"></script>
+	<script src="resources/js/pipelines2/TaskService.js"></script>
+    <script src="resources/js/pipelines2/pipeline-directives.js"></script>
+    <script src="resources/js/pipelines2/Pipelines2Ctrl.js"></script>
+    <script src="resources/js/pipelines2/actionProperties.js"></script>
 </body>
 </html>

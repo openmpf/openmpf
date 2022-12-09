@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.SystemMessageDao;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemMessage;
 import org.springframework.stereotype.Repository;
@@ -34,13 +35,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 @Repository(HibernateSystemMessageDaoImpl.REF)
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateSystemMessageDaoImpl extends AbstractHibernateDao<SystemMessage> implements SystemMessageDao {
     public static final String REF = "hibernateSystemMessageDaoImpl";
 
-    public HibernateSystemMessageDaoImpl() {
-        super(SystemMessage.class);
+    @Inject
+    public HibernateSystemMessageDaoImpl(SessionFactory sessionFactory) {
+        super(SystemMessage.class, sessionFactory);
     }
 
     public List<SystemMessage> findByType(final String type) {

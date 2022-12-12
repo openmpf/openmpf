@@ -66,7 +66,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
@@ -261,7 +261,7 @@ public class MarkupController {
             return;
         }
 
-        Function<String, String> combinedProperties = getProperties(job, media, markupResult);
+        var combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
@@ -295,7 +295,7 @@ public class MarkupController {
         }
     }
 
-    private Function<String, String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
+    private UnaryOperator<String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
         return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }

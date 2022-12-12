@@ -75,7 +75,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Semaphore;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 @Service
 public class S3StorageBackend implements StorageBackend {
@@ -134,7 +134,7 @@ public class S3StorageBackend implements StorageBackend {
     public boolean canStore(ArtifactExtractionRequest request) throws StorageException {
         BatchJob job = _inProgressJobs.getJob(request.getJobId());
         Media media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
         return requiresS3ResultUpload(combinedProperties);
     }
 
@@ -143,7 +143,7 @@ public class S3StorageBackend implements StorageBackend {
     public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
         BatchJob job = _inProgressJobs.getJob(request.getJobId());
         Media media = job.getMedia(request.getMediaId());
-        Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(job, media);
 
         Table<Integer, Integer, URI> localResults = _localStorageBackend.storeArtifacts(request);
         var futures = createArtifactUploadFutures(localResults, combinedProperties);
@@ -168,7 +168,7 @@ public class S3StorageBackend implements StorageBackend {
 
     private Table<Integer, Integer, CompletableFuture<URI>> createArtifactUploadFutures(
             Table<Integer, Integer, URI> localResults,
-            Function<String, String> combinedProperties) {
+            UnaryOperator<String> combinedProperties) {
 
         var futures = HashBasedTable.<Integer, Integer, CompletableFuture<URI>>create();
         var semaphore = new Semaphore(Math.max(1, _propertiesUtil.getArtifactParallelUploadCount()));
@@ -201,7 +201,7 @@ public class S3StorageBackend implements StorageBackend {
         Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
                                                             markupResult.getActionIndex());
         Media media = job.getMedia(markupResult.getMediaId());
-        Function<String, String> combinedProperties
+        var combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         return requiresS3ResultUpload(combinedProperties);
     }
@@ -213,7 +213,7 @@ public class S3StorageBackend implements StorageBackend {
         Media media = job.getMedia(markupResult.getMediaId());
         Action action = job.getPipelineElements().getAction(markupResult.getTaskIndex(),
                                                             markupResult.getActionIndex());
-        Function<String, String> combinedProperties
+        var combinedProperties
                 = _aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
         Path markupPath = Paths.get(URI.create(markupResult.getMarkupUri()));
 
@@ -226,15 +226,16 @@ public class S3StorageBackend implements StorageBackend {
 
     @Override
     public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) throws StorageException {
-        Function<String, String> combinedProperties =
+        var combinedProperties =
                 _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(parentMediaId));
         return requiresS3ResultUpload(combinedProperties);
     }
 
     @Override
     public void storeDerivativeMedia(BatchJob job, Media media) throws StorageException, IOException {
-        Function<String, String> combinedProperties =
-                _aggregateJobPropertiesUtil.getCombinedProperties(job, job.getMedia(media.getParentId()));
+        var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
+                job,
+                job.getMedia(media.getParentId()));
         URI uploadedUri = putInS3IfAbsent(media.getLocalPath(), combinedProperties);
         _inProgressJobs.addStorageUri(job.getId(), media.getId(), uploadedUri.toString());
     }
@@ -245,7 +246,7 @@ public class S3StorageBackend implements StorageBackend {
      * @param properties Properties to validate
      * @throws StorageException when an invalid combination of S3 properties are provided.
      */
-    public static void validateS3Properties(Function<String, String> properties) throws StorageException {
+    public static void validateS3Properties(UnaryOperator<String> properties) throws StorageException {
         // Both will throw if properties are invalid.
         requiresS3MediaDownload(properties);
         requiresS3ResultUpload(properties);
@@ -253,7 +254,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
 
-    public static boolean requiresS3MediaDownload(Function<String, String> properties) throws StorageException {
+    public static boolean requiresS3MediaDownload(UnaryOperator<String> properties) throws StorageException {
         boolean uploadOnly = Boolean.parseBoolean(properties.apply(MpfConstants.S3_UPLOAD_ONLY));
         if (uploadOnly) {
             return false;
@@ -284,7 +285,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
 
-    public static boolean requiresS3ResultUpload(Function<String, String> properties) throws StorageException {
+    public static boolean requiresS3ResultUpload(UnaryOperator<String> properties) throws StorageException {
         if (StringUtils.isBlank(properties.apply(MpfConstants.S3_RESULTS_BUCKET))) {
             return false;
         }
@@ -317,7 +318,7 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    public void downloadFromS3(Media media, Function<String, String> combinedProperties)
+    public void downloadFromS3(Media media, UnaryOperator<String> combinedProperties)
             throws StorageException {
         try {
             var s3UrlUtil = S3UrlUtil.get(combinedProperties);
@@ -338,7 +339,7 @@ public class S3StorageBackend implements StorageBackend {
 
 
     public ResponseInputStream<GetObjectResponse> getFromS3(
-            String uri, Function<String, String> properties) throws StorageException {
+            String uri, UnaryOperator<String> properties) throws StorageException {
         try {
             var s3UrlUtil = S3UrlUtil.get(properties);
             var s3Client = getS3DownloadClient(uri, s3UrlUtil, properties);
@@ -354,14 +355,14 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private URI putInS3IfAbsent(Path path, Function<String, String> properties)
+    private URI putInS3IfAbsent(Path path, UnaryOperator<String> properties)
             throws IOException, StorageException {
         return putInS3IfAbsent(path, hashExistingFile(path), properties);
     }
 
-    private URI putInS3IfAbsent(Path path, String hash, Function<String, String> properties)
+    private URI putInS3IfAbsent(Path path, String hash, UnaryOperator<String> properties)
             throws StorageException {
-        String objectName = getObjectName(hash);
+        String objectName = getObjectName(hash, properties);
         URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET));
         var s3UrlUtil = S3UrlUtil.get(properties);
         String resultsBucket = s3UrlUtil.getResultsBucketName(bucketUri);
@@ -406,17 +407,21 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private static String getObjectName(String hash) {
+    private static String getObjectName(String hash, UnaryOperator<String> properties) {
+        var prefix = properties.apply(MpfConstants.S3_UPLOAD_OBJECT_KEY_PREFIX);
+        if (prefix == null || prefix.isBlank()) {
+            prefix = "";
+        }
         String firstPair = hash.substring(0, 2);
         String secondPair = hash.substring(2, 4);
-        return firstPair + '/' + secondPair + '/' + hash;
+        return prefix + firstPair + '/' + secondPair + '/' + hash;
     }
 
 
     private S3Client getS3DownloadClient(
             String mediaUri,
             S3UrlUtil s3UrlUtil,
-            Function<String, String> properties) throws StorageException {
+            UnaryOperator<String> properties) throws StorageException {
         return _s3ClientCache.getUnchecked(new S3ClientConfig(
                 s3UrlUtil.getS3Endpoint(mediaUri),
                 _propertiesUtil.getRemoteMediaDownloadRetries(),
@@ -425,7 +430,7 @@ public class S3StorageBackend implements StorageBackend {
 
     private S3Client getS3UploadClient(
             S3UrlUtil s3UrlUtil,
-            Function<String, String> properties) throws StorageException {
+            UnaryOperator<String> properties) throws StorageException {
         var endpoint = s3UrlUtil.getS3Endpoint(
                 properties.apply(MpfConstants.S3_RESULTS_BUCKET));
         return _s3ClientCache.getUnchecked(new S3ClientConfig(
@@ -505,7 +510,7 @@ public class S3StorageBackend implements StorageBackend {
         final String sessionToken;
         final String region;
 
-        S3ClientConfig(URI endpoint, int retryCount, Function<String, String> properties) {
+        S3ClientConfig(URI endpoint, int retryCount, UnaryOperator<String> properties) {
             this.endpoint = endpoint;
             this.retryCount = retryCount;
             accessKey = properties.apply(MpfConstants.S3_ACCESS_KEY);

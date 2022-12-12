@@ -70,8 +70,8 @@
 
     <beans>
         <bean id="mpfPropertiesConfigBuilder" class="org.mitre.mpf.wfm.util.MpfPropertiesConfigurationBuilder">
-            <property name="customPropFile" ref="customPropFile" />
-            <property name="propFiles" ref="propFiles" />
+            <constructor-arg ref="customPropFile" />
+            <constructor-arg ref="propFiles" />
         </bean>
 
         <bean id="mpfPropertiesConfig" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">

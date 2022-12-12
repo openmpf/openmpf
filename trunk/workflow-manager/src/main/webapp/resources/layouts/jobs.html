@@ -27,29 +27,175 @@
     <div>
         <h3>Job Status</h3> <page-info>The jobs table will be periodically updated and an alert message will appear when new jobs are COMPLETE.</page-info>
     </div>
-    <div ng-if="updateInfoMsg">
-        <small class="text-muted"> {{updateInfoMsg}} </small>
+    <div ng-if="!poller.broadcastEnabled">
+        <small class="text-muted">
+            <span ng-if="poller.pollingInterval > 0">
+                Last checked at {{poller.lastUpdate.format('h:mm:ss a')}}
+            </span>
+            <span ng-if="poller.pollingInterval <= 0">
+                Automatic updates are disabled. Please refresh the page manually.
+            </span>
+        </small>
     </div>
 </div>
+
+<form class="form-inline">
+    <div class="row">
+        <div class="col-sm-6">
+            <label class="job-table-label">
+                Show
+                <select ng-model="state.pageLen" ng-change="pageSizeChanged()"
+                        ng-options="len for len in [5, 10, 25, 50, 100]"
+                        class="page-size-selector form-control input-sm">
+                </select>
+                Entries
+            </label>
+        </div>
+        <div class="col-sm-5">
+            <label class="job-table-label">
+                Search:
+                <input ng-model="state.search" ng-change="searchChanged()"
+                       ng-model-options="{updateOn: 'default blur', debounce: {default: 500, blur: 0}}"
+                       type="search" class="form-control input-sm" />
+            </label>
+        </div>
+        <div class="col-sm-1">
+            <div ng-if="isLoading()" class="job-table-loading-spinner">
+                <i class="fa fa-refresh fa-spin fa-2x"></i>
+            </div>
+        </div>
+    </div>
+</form>
+
+
 <div class="row">
     <div class="col-lg-12">
-        <table id="jobTable" class="table table-bordered table-striped dataTable" role="grid">
+        <table id="jobTable" class="table table-bordered table-striped" role="grid">
             <thead>
             <tr>
-                <th>Id</th>
-                <th>Pipeline</th>
-                <th><i class="fa fa-clock-o" title="Stop"></i> Start Date</th>
-                <th><i class="fa fa-clock-o" title="Stop"></i> End Date</th>
-                <th>Status <i class="fa fa-info-circle helper-icon" id="infoModalBtn"></i></th>
-                <th>TiesDb</th>
-                <th>Callback</th>
-                <th>Priority</th>
+                <th>
+                    <mpf-sort-control col="id"> Id </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="pipeline"> Pipeline </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="timeReceived">
+                        <i class="fa fa-clock-o" title="Stop"></i>
+                        Start Date
+                    </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="timeCompleted">
+                        <i class="fa fa-clock-o" title="Stop"></i>
+                        End Date
+                    </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="status">
+                        Status
+                    </mpf-sort-control>
+                    <i class="fa fa-info-circle helper-icon"
+                       data-target="#infoModal" data-toggle="modal"></i>
+                </th>
+                <th>
+                    <mpf-sort-control col="tiesDbStatus"> TiesDb </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="callbackStatus"> Callback </mpf-sort-control>
+                </th>
+                <th>
+                    <mpf-sort-control col="priority"> Priority </mpf-sort-control>
+                </th>
                 <th>Actions</th>
             </tr>
             </thead>
+            <tbody>
+                <tr ng-repeat="job in jobs">
+                    <td>{{job.jobId}}</td>
+                    <td>{{job.pipelineName}}</td>
+                    <td>{{job.startDate | formatDate}}</td>
+                    <td>{{job.endDate | formatDate}}</td>
+                    <td>
+                        <div class="job-status label" ng-class="getStatusLabel(job)">
+                            {{job.jobStatus}}
+                        </div>
+                        <div class="progress" ng-if="job.jobProgress < 100">
+                            <div class="progress-bar progress-bar-success" role="progressbar"
+                                 ng-style="{width: formatProgress(job)}">
+                                {{formatProgress(job)}}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <button ng-if="job.tiesDbStatus.startsWith('ERROR:')"
+                                ng-click="showTiesDbError(job)"
+                                class="btn btn-danger btn-block btn-xs">
+                            ERROR
+                        </button>
+                        <span ng-if="!job.tiesDbStatus.startsWith('ERROR:')">
+                            {{job.tiesDbStatus}}
+                            <i ng-if="job.tiesDbStatus == 'IN PROGRESS'"
+                               class="fa fa-spinner fa-spin"></i>
+                        </span>
+                    </td>
+
+                    <td>
+                        <button ng-if="job.callbackStatus.startsWith('ERROR:')"
+                                ng-click="showCallbackError(job)"
+                                class="btn btn-danger btn-block btn-xs">
+                            ERROR
+                        </button>
+                        <span ng-if="!job.callbackStatus.startsWith('ERROR:')">
+                            {{job.callbackStatus}}
+                            <i ng-if="job.callbackStatus == 'IN PROGRESS'"
+                               class="fa fa-spinner fa-spin"></i>
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        {{job.jobPriority}}
+                    </td>
+
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button ng-disabled="!canCancelJob(job)" ng-click="cancelJob(job)"
+                                    type="button" class="btn btn-default" title="Stop">
+                                <i class="fa fa-stop"></i>
+                            </button>
+
+                            <button ng-disabled="!canResubmit(job)"
+                                    ng-click="resubmitJob(job)"
+                                    type="button" class="btn btn-default" title="Resubmit">
+                                <i class="fa fa-refresh"></i>
+                            </button>
+
+                            <button ng-click="showMedia(job)" type="button"
+                                    class="btn btn-default" title="Media">
+                                <i class="fa fa-picture-o" title="Media"></i>
+                            </button>
+
+                            <a ng-disabled="!job.outputFileExists"
+                               ng-href="jobs/output-object?id={{job.jobId}}" type="button"
+                               class="btn btn-default" target="_blank" title="JSON Output">
+                                { }
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
         </table>
     </div>
 </div>
+<mpf-pagination current-page="state.page"
+                page-len="state.pageLen"
+                records-total="recordsTotal"
+                has-more-pages="hasMorePages"
+                is-filtered="state.search.length > 0",
+                num-shown="jobs.length"
+                go-to-page="gotoPageNum($page)">
+</mpf-pagination>
+
 
 <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel">
     <div class="modal-dialog" role="document">
@@ -124,68 +270,26 @@
     </div>
 </div>
 
-<div class="modal fade" id="mediaModal" tabindex="-1" role="dialog" aria-labelledby="mediaModalLabel">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="mediaModalLabel">Media<br/>
-                    Job {{selectedJob.jobId}}
-                    <small> {{selectedJob.pipelineName}}</small>
-                </h4>
-            </div>
-            <div class="modal-body ">
-                <table id="markupsTable" class="table table-bordered table-striped dataTable" role="grid" style="width: 100%;table-layout: auto;">
-                    <colgroup>
-                        <col style="width: 4%">
-                        <col style="width: 4%">
-                        <col style="width: 32%">
-                        <col style="width: 10%">
-                        <col style="width: 4%">
-                        <col style="width: 32%">
-                        <col style="width: 10%">
-                        <col style="width: 4%">
-                    </colgroup>
-                    <thead>
-                        <th>Parent Media Id</th>
-                        <th>Media Id</th>
-                        <th>Source Preview</th>
-                        <th>Source Path</th>
-                        <th>Source Actions</th>
-                        <th>Markup Preview</th>
-                        <th>Markup Path</th>
-                        <th>Markup Actions</th>
-                    </thead>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <div class="pull-right">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="modal fade" id="errorDetailsModal" tabindex="-1" role="dialog" aria-labelledby="errorDetailsModalLabel">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+<script type="text/ng-template" id="error-details-modal.html">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button ng-click="$close()" type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="errorDetailsModalLabel">
+                Job {{jobId}} {{errorType}} Error:
+            </h4>
+        </div>
+        <div class="modal-body smart-wrap" style="white-space: pre-line">
+            {{errorDetails}}
+        </div>
+        <div class="modal-footer">
+            <div class="pull-right">
+                <button ng-click="$close()" type="button" class="btn btn-default" data-dismiss="modal">
+                    Close
                 </button>
-                <h4 class="modal-title" id="errorDetailsModalLabel">
-                    Job {{selectedJob.jobId}} {{errorType}} Error:
-                </h4>
-            </div>
-            <div class="modal-body smart-wrap" style="white-space: pre-line">
-                {{errorDetails}}
-            </div>
-            <div class="modal-footer">
-                <div class="pull-right">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                </div>
             </div>
         </div>
     </div>
-</div>
+</script>

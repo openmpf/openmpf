@@ -1,0 +1,193 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2022 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2022 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div class="modal-content">
+    <div class="modal-header">
+        <button ng-click="$close()" type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <h4 class="modal-title" id="mediaModalLabel">Media<br/>
+            Job {{job.jobId}}
+            <small> {{job.pipelineName}}</small>
+        </h4>
+    </div>
+    <div class="modal-body">
+        <form class="form-inline">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label class="job-table-label">
+                        Show
+                        <select ng-model="pageLen" ng-change="pageSizeChanged()"
+                                ng-options="len for len in [5, 10, 25, 50, 100]"
+                                class="page-size-selector form-control input-sm">
+                        </select>
+                        Entries
+                    </label>
+                </div>
+                <div class="col-sm-5">
+                    <label class="job-table-label">
+                        Search:
+                        <input ng-model="search" ng-change="searchChanged()"
+                               ng-model-options="{updateOn: 'default blur', debounce: {default: 500, blur: 0}}"
+                               type="search" class="form-control input-sm" />
+                    </label>
+                </div>
+                <div class="col-sm-1">
+                    <div ng-if="isLoading()" class="job-table-loading-spinner">
+                        <i class="fa fa-refresh fa-spin fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <table id="markupsTable" class="table table-bordered table-striped" role="grid">
+            <colgroup>
+                <col style="width: 4%">
+                <col style="width: 4%">
+                <col style="width: 32%">
+                <col style="width: 10%">
+                <col style="width: 4%">
+                <col style="width: 32%">
+                <col style="width: 10%">
+                <col style="width: 4%">
+            </colgroup>
+            <thead>
+                <th>Parent Media Id</th>
+                <th>Media Id</th>
+                <th>Source Preview</th>
+                <th>Source Path</th>
+                <th>Source Actions</th>
+                <th>Markup Preview</th>
+                <th>Markup Path</th>
+                <th>Markup Actions</th>
+            </thead>
+            <tbody>
+                <tr ng-repeat="media in mediaList">
+                    <td class="smart-wrap">
+                        <span ng-if="media.parentMediaId == -1" class="text-muted">
+                            N/A
+                        </span>
+                        <span ng-if="media.parentMediaId != -1">
+                            {{media.parentMediaId}}
+                        </span>
+                    </td>
+                    <td class="smart-wrap">
+                        {{media.mediaId}}
+                    </td>
+                    <td>
+                        <span ng-if="!media.sourceFileAvailable" class="text-muted">
+                            Source file not available
+                        </span>
+                        <div ng-if="media.sourceFileAvailable" ng-switch on="media.sourceMediaType">
+                            <a ng-switch-when="IMAGE" ng-href="{{media.sourceDownloadUrl}}"
+                               target="_blank">
+                                <img ng-src="{{media.sourceDownloadUrl}}" class="full-width" />
+                            </a>
+
+                            <span ng-switch-when="AUDIO" class="glyphicon glyphicon-music"></span>
+
+                            <video ng-switch-when="VIDEO" controls preload="none"
+                                   ng-src="{{media.sourceDownloadUrl}}"
+                                   class="full-width">
+                                Your browser does not support the video tag.
+                            </video>
+
+                            <span ng-switch-default class="glyphicon glyphicon-file"></span>
+                        </div>
+                    </td>
+                    <td class="smart-wrap">
+                        {{media.sourceUri}}
+                    </td>
+                    <td>
+                        <a ng-if="media.sourceDownloadUrl" ng-href="{{media.sourceDownloadUrl}}"
+                           download="{{media.sourceUri}}" class="btn btn-default" role="button"
+                           title="Download">
+                            <i class="fa fa-download"></i>
+                        </a>
+                        <span ng-if="!media.sourceDownloadUrl" class="text-muted">
+                            Source file not available
+                        </span>
+                    </td>
+                    <td>
+                        <span ng-if="!media.markupFileAvailable" class="text-muted">
+                            No markup
+                        </span>
+                        <div ng-if="media.markupFileAvailable" ng-switch on="media.markupMediaType">
+                            <a ng-switch-when="IMAGE" ng-href="{{media.markupDownloadUrl}}"
+                                 target="_blank">
+                                  <img ng-src="{{media.markupDownloadUrl}}" class="full-width" />
+                            </a>
+
+                            <span ng-switch-when="AUDIO" class="glyphicon glyphicon-music"></span>
+
+                            <video ng-switch-when="VIDEO" controls preload="none"
+                                   ng-src="{{media.markupDownloadUrl}}" class="full-width">
+                                Your browser does not support the video tag.
+                            </video>
+
+                            <span ng-switch-default class="glyphicon glyphicon-file"></span>
+                        </div>
+                    </td>
+                    <td class="smart-wrap">
+                        <span ng-if="media.markupUri">
+                            {{media.markupUri}}
+                        </span>
+                        <span ng-if="!media.markupUri" class="text-muted">
+                            No markup
+                        </span>
+                    </td>
+                    <td>
+                        <a ng-if="media.markupDownloadUrl" ng-href="{{media.markupDownloadUrl}}"
+                           download="{{media.markupUri}}" class="btn btn-default" role="button"
+                           title="Download">
+                            <i class="fa fa-download"></i>
+                        </a>
+                        <span ng-if="!media.markupDownloadUrl" class="text-muted">
+                            No markup
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <mpf-pagination
+                current-page="currentPage"
+                page-len="pageLen"
+                records-total="recordsTotal"
+                has-more-pages="hasMorePages"
+                is-filtered="search.length > 0",
+                num-shown="mediaList.length"
+                go-to-page="goToPage($page)">
+        </mpf-pagination>
+
+
+    </div>
+    <div class="modal-footer">
+        <div class="pull-right">
+            <button ng-click="$close()" type="button" class="btn btn-default" data-dismiss="modal">
+                Close
+            </button>
+        </div>
+    </div>
+</div>

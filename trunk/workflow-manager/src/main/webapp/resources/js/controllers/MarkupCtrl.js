@@ -24,12 +24,56 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
-import java.util.List;
+"use strict";
 
+angular.module('mpf.wfm.controller.MarkupCtrl', [
+    'mpf.wfm.services',
+    'ui.bootstrap'
+])
+.controller('MarkupCtrl', [
+'job', '$scope', '$http',
+(job, $scope, $http) => {
 
-public record MarkupPageListModel(
-		List<MarkupResultConvertedModel> media,
-		long recordsFiltered,
-		long recordsTotal) {
+    Object.assign($scope, {
+        job,
+        mediaList: [],
+        currentPage: 1,
+        search: '',
+        pageLen: 25,
+        hasMorePages: false,
+        pageSizeChanged() {
+            $scope.goToPage(1);
+        },
+        searchChanged() {
+            $scope.goToPage(1);
+        },
+        goToPage(page) {
+            $scope.currentPage = page;
+            updateMarkup();
+        }
+    });
+
+    let lastRequestSent = 0;
+    let lastResponseReceived = 0;
+    const updateMarkup = () => {
+        lastRequestSent++;
+        const thisRequest = lastRequestSent;
+        const params = {
+            jobId: job.jobId,
+            page: $scope.currentPage,
+            pageLen: $scope.pageLen,
+            search: $scope.search
+        };
+        $http.get('markup/get-markup-results-filtered', {params}).then(({data: resp}) => {
+            if (thisRequest > lastResponseReceived) {
+                lastResponseReceived = thisRequest;
+                $scope.recordsTotal = resp.recordsTotal
+                $scope.mediaList = resp.media;
+                $scope.recordsFiltered = resp.recordsFiltered;
+                $scope.hasMorePages = $scope.recordsFiltered > $scope.currentPage * $scope.pageLen;
+            }
+        });
+    }
+    updateMarkup();
 }
+]);

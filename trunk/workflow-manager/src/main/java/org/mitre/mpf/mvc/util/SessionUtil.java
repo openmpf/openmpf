@@ -24,12 +24,53 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
-import java.util.List;
+package org.mitre.mpf.mvc.util;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
-public record MarkupPageListModel(
-		List<MarkupResultConvertedModel> media,
-		long recordsFiltered,
-		long recordsTotal) {
+import javax.servlet.http.HttpSession;
+
+public class SessionUtil {
+
+    private static final String SESSION_JOBS = "SESSION_JOBS";
+
+    private SessionUtil() {
+    }
+
+    public static void addJob(HttpSession session, long jobId) {
+        synchronized (session) {
+            var jobs = (Collection<Long>) session.getAttribute(SESSION_JOBS);
+            if (jobs == null) {
+                jobs = new HashSet<Long>();
+                session.setAttribute(SESSION_JOBS, jobs);
+            }
+            jobs.add(jobId);
+        }
+    }
+
+    public static boolean containsJob(HttpSession session, long jobId) {
+        synchronized (session) {
+            var jobs = (Collection<Long>) session.getAttribute(SESSION_JOBS);
+            if (jobs == null) {
+                return false;
+            }
+            else {
+                return jobs.contains(jobId);
+            }
+        }
+    }
+
+    public static Set<Long> getJobs(HttpSession session) {
+        synchronized (session) {
+            var jobs = (Collection<Long>) session.getAttribute(SESSION_JOBS);
+            if (jobs == null) {
+                return Set.of();
+            }
+            else {
+                return new HashSet<>(jobs);
+            }
+        }
+    }
 }

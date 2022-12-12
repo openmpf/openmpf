@@ -31,26 +31,15 @@ var AppServices = angular.module('mpf.wfm.services', ['ngResource']);
 
 
 AppServices.factory('MetadataService', [
-    '$http', 'ClientState',
-    function ($http, ClientState) {
-        var getMetadataNoCache = function () {
-            return $http.get('info')
-                .then(function (response) {
-                    ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
-                    return response.data;
-                })
-                .catch(function () {
-                    ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
-                });
-        };
+    '$http',
+    $http => {
+        const getMetadataNoCache = async () => (await $http.get('info')).data;
 
-        var cachedPromise = getMetadataNoCache();
+        const cachedPromise = getMetadataNoCache();
 
         return {
-            getMetadata: function () {
-                return cachedPromise;
-            },
-            getMetadataNoCache: getMetadataNoCache
+            getMetadata: () => cachedPromise,
+            getMetadataNoCache
         };
     }
 ]);
@@ -326,6 +315,60 @@ AppServices.service('JobsService', function ($http) {
     };
 });
 
+
+AppServices.service('JobStatusNotifier', [
+'$rootScope', 'NotificationSvc',
+($rootScope, NotificationSvc) => {
+
+    const handleJobStatusChange = (event, msg) => {
+        const {id, jobStatus, isSessionJob} = msg.content;
+        if (!isSessionJob || !isTerminalState(jobStatus)) {
+            return;
+        }
+
+        if (jobStatus == 'COMPLETE') {
+            NotificationSvc.success(`Job ${id} is now complete!`);
+        }
+        else if (jobStatus == 'COMPLETE_WITH_ERRORS') {
+            NotificationSvc.error(`Job ${id} is now complete (with errors).`);
+        }
+        else if (jobStatus == 'COMPLETE_WITH_WARNINGS') {
+            NotificationSvc.warning(`Job ${id} is now complete (with warnings).`);
+        }
+        else if (jobStatus == 'ERROR') {
+            NotificationSvc.error(`Job ${id} is in a critical error state. `
+                    + 'Check the Workflow Manager log for details.');
+        }
+        else if (jobStatus == 'UNKNOWN') {
+            NotificationSvc.info(`Job ${id} is in an unknown state. `
+                    + 'Check the Workflow Manager log for details.');
+        }
+        else if (jobStatus == 'CANCELLED') {
+            NotificationSvc.info(`Job cancellation of job ${id} is now complete.`);
+        }
+    }
+
+    const isTerminalState = jobStatus => {
+        switch (jobStatus) {
+            case 'COMPLETE':
+            case 'COMPLETE_WITH_ERRORS':
+            case 'COMPLETE_WITH_WARNINGS':
+            case 'ERROR':
+            case 'UNKNOWN':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    return {
+        beginWatching() {
+            $rootScope.$on('SSPC_JOBSTATUS', handleJobStatusChange)
+        }
+    }
+}
+]);
+
 AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
 
     //reload the data via ajax
@@ -466,277 +509,107 @@ AppServices.service('NodeService', function ($http, $timeout, $log,$filter) {
 
 });
 
-AppServices.factory('ServerSidePush',
-    ['$rootScope', '$log', 'Components', 'JobsService', 'NotificationSvc', 'TimeoutSvc', 'SystemNotices', 'SystemStatus', 'ClientState',
-        function ($rootScope, $log, Components, JobsService, NotificationSvc, TimeoutSvc, SystemNotices, SystemStatus, ClientState) {
-            var request;
-            var serviceInstance = null;
-            var lastSystemHealthTimestamp = null;	// timestamp from SSPC_HEARTBEAT/SSPC_ATMOSPHERE messages
 
-            var ServerSidePushService = {};
+AppServices.factory('ServerSidePush', [
+'$rootScope', '$log', 'MetadataService', 'SystemNotices', 'ClientState',
+($rootScope, $log, MetadataService, SystemNotices, ClientState) => {
 
-            // initializes service; should only be called once by the service upon first instantiation
-            ServerSidePushService.init = function () {
-                if (!serviceInstance) {
-                    serviceInstance = ServerSidePushService.connect();
-                }
-            };
+    let initialized = false;
 
-            ServerSidePushService.connect = function () {
-                var baseUrl = location.href;
-                baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('workflow-manager/'));
-
-                request = {
-                    url: baseUrl + 'workflow-manager/websocket',
-                    contentType: "application/json",
-                    logLevel: 'debug',
-                    transport: 'websocket',
-                    trackMessageLength: true,
-                    reconnectInterval: 1000, // retry a broken connection after n milliseconds
-                    maxRequest: 5,	// try reconnection after network/server outage n times
-                    // so recoonectInterval * maxRequest = max outage expectations
-                    // 1000 * 5 is estimate for intermittent LAN/wifi networks, but not good enough for mobile
-                    // for server outages, we want the client to stop trying after this estimate
-                    // if the server returns before the reconnect times out, the user will be
-                    //	be sent to login page
-                    fallbackTransport: 'long-polling'
-                };	// default; possible values are: polling, long-polling, streaming, jsonp, sse and websocket
-
-                request.onOpen = function (response) {
-                    ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
-                    lastSystemHealthTimestamp = moment();
-                    $log.info('Atmosphere connected using ' + response.transport + " @ " + lastSystemHealthTimestamp.format());
-                    var json = {};
-                    json.channel = 'SSPC_ATMOSPHERE';
-                    json.event = 'OnServerConnectionOpen'
-                    json.timestamp = lastSystemHealthTimestamp;
-                    json.content = response;
-                    $rootScope.$broadcast('SSPC_ATMOSPHERE', json);
-                };
-
-                request.onMessage = function (response) {
-                    var json;
-                    var message = response.responseBody;
-                    $rootScope.lastServerExchangeTimestamp = moment();
-                    if (message === "X") {	// heartbeat message
-                        // create a heartbeat json structure to fit with rest of messages
-                        json = {};
-                        json.channel = 'SSPC_HEARTBEAT';
-                        json.timestamp = new Date();
-                        json.content = {};
-                    }
-                    else	// normal wfm/Atmosphere message
-                    {
-                        try {
-                            json = jQuery.parseJSON(message);
-                            // this only parses the "header" portion of the message, the content is still a string
-                        } catch (e) {
-                            console.log('Atmosphere:  This doesn\'t look like JSON: ', message);
-                            return;
-                        }
-                    }
-                    if (json.event !== 'OnServerConnectionLost')	// don't update server-side-push activity if it is locally generated
-                    {
-                        lastSystemHealthTimestamp = moment(json.timestamp);
-                    }
-                    switch (json.channel) {
-                        case 'SSPC_ATMOSPHERE':
-                            $rootScope.$broadcast('SSPC_ATMOSPHERE', json);
-//    	    		console.log("SSPC_ATMOSPHERE message received: " + JSON.stringify(json,2,null));
-                            break;
-                        case 'SSPC_HEARTBEAT':
-                            $rootScope.$broadcast('SSPC_HEARTBEAT', json);
-                            break;
-                        case 'SSPC_JOBSTATUS':
-                            // still broadcast for cancellations
-                            $rootScope.$broadcast('SSPC_JOBSTATUS', json);
-
-                            if (json) {
-                                var msg = json.content;
-                                if (msg && msg.id != -1 && msg.progress != -1) {
-
-                                    // if in terminal state
-                                    if (msg.jobStatus == 'COMPLETE' ||
-                                        msg.jobStatus == 'COMPLETE_WITH_ERRORS' ||
-                                        msg.jobStatus == 'COMPLETE_WITH_WARNINGS' ||
-                                        msg.jobStatus == 'ERROR' ||
-                                        msg.jobStatus == 'UNKNOWN') {
-
-                                        // ensure job is part of session to avoid flooding the UI with notifications
-                                        JobsService.getJob(msg.id, true).then(function (job) {
-                                            if (job) {
-                                                if (msg.jobStatus == 'COMPLETE') {
-                                                    console.log('job complete for id: ' + msg.id);
-                                                    NotificationSvc.success('Job ' + msg.id + ' is now complete!');
-                                                } else if (msg.jobStatus == 'COMPLETE_WITH_ERRORS') {
-                                                    console.log('job complete (with errors) for id: ' + msg.id);
-                                                    NotificationSvc.error('Job ' + msg.id + ' is now complete (with errors).');
-                                                } else if (msg.jobStatus == 'COMPLETE_WITH_WARNINGS') {
-                                                    console.log('job complete (with warnings) for id: ' + msg.id);
-                                                    NotificationSvc.warning('Job ' + msg.id + ' is now complete (with warnings).');
-                                                } else if (msg.jobStatus == 'ERROR') {
-                                                    console.log('job ' + msg.id + ' is in a critical error state');
-                                                    NotificationSvc.error('Job ' + msg.id + ' is in a critical error state. Check the Workflow Manager log for details.');
-                                                } else if (msg.jobStatus == 'UNKNOWN') {
-                                                    console.log('job ' + msg.id + ' is in an unknown state');
-                                                    NotificationSvc.info('Job ' + msg.id + ' is in an unknown state. Check the Workflow Manager log for details.');
-                                                }
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-
-                            break;
-                        case 'SSPC_NODE':
-                            $rootScope.$broadcast('SSPC_NODE', json);
-                            //console.log("SSPC_NODE message received: " + JSON.stringify(json,2,null));
-                            break;
-                        case 'SSPC_SERVICE':
-                            $rootScope.$broadcast('SSPC_SERVICE', json);
-                            //console.log("SSPC_SERVICE message received: " + JSON.stringify(json,2,null));
-                            break;
-                        case 'SSPC_SESSION':
-                            $rootScope.$broadcast('SSPC_SESSION', json);
-                            //console.log("SSPC_SESSION message received: " + JSON.stringify(json,2,null));
-                            TimeoutSvc.warn(json);
-                            break;
-                        case 'SSPC_SYSTEMMESSAGE':
-                            $rootScope.$broadcast('SSPC_SYSTEMMESSAGE', json);
-                            //console.log("SSPC_SYSTEMMESSAGE message received: " + JSON.stringify(json,2,null));
-                            SystemStatus.showAllSystemMessages();
-                            break;
-                        case 'SSPC_PROPERTIES_CHANGED':
-                            $rootScope.$broadcast('SSPC_PROPERTIES_CHANGED');
-                            break;
-                        case 'SSPC_CALLBACK_STATUS':
-                            $rootScope.$broadcast('SSPC_CALLBACK_STATUS', json);
-                            break;
-                        default:
-                            console.log("Message received on unknonwn SSPC (Atmosphere server-side push) channel: " + JSON.stringify(json, 2, null));
-                            break;
-                    }
-                };
-
-                request.onClose = function (event) {
-                    if (ClientState.isConnectionActive()) {
-                        // create a onClose json structure to fit with rest of messages
-                        var json = {};
-                        json.channel = 'SSPC_ATMOSPHERE';
-                        json.event = 'OnServerConnectionLost';
-                        json.timestamp = new Date();
-                        json.content = event;
-                        $rootScope.$broadcast('SSPC_ATMOSPHERE', json);
-                        ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
-                        //    		$.atmosphere.unsubscribe(request);
-                    }
-                };
-
-                /** event handler for error conditions, which according to the documentation are the following 2 cases
-                 *    1.  reconnection retries reached max
-                 *  2.  unexpected error
-                 */
-                request.onError = function (event) {
-                    $log.error("ServerSidePush.onError:" + angular.toJson(event));
-                    SystemNotices.remove("SYSTEM_NOTIFY_RECONNECTING");	// no longer trying to reconnect
-                    ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
-                };
-
-                /*P038: todo: this is supposed to be called when a websocket reconnects, but I'm not able to test this since
-                 * using Chrome's network throttling does not really turn off the network (and thus, this function is not triggered)
-                 * and turning off CentOS's network does not affect localhost (and thus, this function is not triggered)
-                 * so currently, I'm implementing it by using the polling /info call that is used for session management,
-                 * which has the nice feature that we can tell a network problem (polling encounters errors) vs. a server
-                 * problem (atmosphere attempts to reconnect)
-                 */
-                request.onReopen = function (event) {
-                    console.log("ServerSidePush.onReopen:" + angular.toJson(event));
-                    ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
-                };
-
-                /** called (counter-intuitively) when atmosphere ATTEMPTS to reconnect, and is NOT called
-                 *  when the reconnect is successful. That event, is onReopen().
-                 */
-                request.onReconnect = function (event) {
-                    $log.debug("ServerSidePush.onReconnect:" + angular.toJson(event));
-                    ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_NETWORK);
-                    //SystemNotices.standardMessage("SYSTEM_NOTIFY_RECONNECTING");
-                };
-
-                var socket = $.atmosphere;
-                var subSocket = socket.subscribe(request);
-            };
-
-            // lazy initialize on first use
-            ServerSidePushService.getRequest = function () {
-                if (!serviceInstance) {
-                    console.log("initializing SSP, should not be doing this at this point, but for some reason the service didn't initialize");
-                    ServerSidePushService.init();
-                }
-                return request;
-            };
-
-            // gets formatted timestamp
-            ServerSidePushService.getLastSystemHealthTimestamp = function () {
-                if (lastSystemHealthTimestamp) {
-                    return lastSystemHealthTimestamp.format("hh:mm:ss a");
-                }
-                else {
-                    return "";
-                }
-            };
-
-            // initializes service; should only be called once by the service upon first instantiation
-            ServerSidePushService.init();
-
-            return ServerSidePushService;
-        }]);
-
-AppServices.factory('TimerService', ['$interval', function ($interval) {
-
-    var registrants = {},
-        internalInterval = 1000;
-
-    var start = function () {
-        $interval(service.tick, internalInterval);
-        service.tick();
-    };
-
-    var service = {
-        register: function (id, tickHandler, interval, delay) {
-            console.log("[TimerService] - register -" + id);
-            registrants[id] = {
-                tick: tickHandler,        // tick handler function.
-                interval: interval,       // configured interval.
-                delay: delay              // delay until first tick.
-            };
-        },
-
-        unregister: function (id) {
-            delete registrants[id];
-            //console.log("[TimerService] - unregister -"+id);
-        },
-
-        tick: function () {
-            angular.forEach(registrants, function (registrant) {
-                // update the delay.
-                registrant.delay -= internalInterval;
-
-                if (registrant.delay <= 0) {
-                    // time to tick!
-                    registrant.tick();
-                    //reset delay to configured interval
-                    registrant.delay = registrant.interval;
-                }
-            });
+    const init = () => {
+        if (initialized) {
+            return;
         }
-    };
+        initialized = true;
 
-    start();
+        let baseUrl = location.href;
+        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('workflow-manager/'));
 
-    return service;
-}]);
+        let unsubscribed = false;
 
+        $.atmosphere.subscribe({
+            url: baseUrl + 'workflow-manager/websocket',
+            contentType: "application/json",
+            logLevel: 'debug',
+            transport: 'websocket',
+            trackMessageLength: true,
+            reconnectInterval: 1000, // retry a broken connection after n milliseconds
+            maxRequest: 5,	// try reconnection after network/server outage n times
+            // so recoonectInterval * maxRequest = max outage expectations
+            // 1000 * 5 is estimate for intermittent LAN/wifi networks, but not good enough for mobile
+            // for server outages, we want the client to stop trying after this estimate
+            // if the server returns before the reconnect times out, the user will be
+            //	be sent to login page
+            fallbackTransport: 'long-polling',
+            onOpen(response) {
+                ClientState.setConnectionState(ClientState.ConnectionState.CONNECTED_SERVER);
+                ClientState.onServerActivity();
+                $log.info('Atmosphere connected using ' + response.transport + " @ "
+                        + moment().format());
+            },
+            onClose(event) {
+                if (!ClientState.isConnectionActive()) {
+                    return;
+                }
+                if (event.state == 'unsubscribe') {
+                    unsubscribed = true;
+                    return;
+                }
+                if (!unsubscribed) {
+                    // Use MetadataService to determine if close was due to logging out or
+                    // due to network issues.
+                    MetadataService.getMetadataNoCache();
+                }
+            },
+            // Called when reconnection retries reach max and other unexpected errors.
+            onError(event) {
+                $log.error("ServerSidePush.onError:" + angular.toJson(event));
+                $rootScope.$apply(() => {
+                    SystemNotices.remove("SYSTEM_NOTIFY_RECONNECTING");
+                    ClientState.setConnectionState(
+                        ClientState.ConnectionState.DISCONNECTED_SERVER);
+                });
+            },
+            onReopen(event) {
+                console.log("ServerSidePush.onReopen:" + angular.toJson(event));
+                $rootScope.$apply(() => {
+                    ClientState.setConnectionState(
+                        ClientState.ConnectionState.CONNECTED_SERVER);
+                });
+            },
+            // Called when Atmosphere begins a retry attempt. If the attempt is successful
+            // onReopen, will be called.
+            onReconnect(event) {
+                $log.debug("ServerSidePush.onReconnect:" + angular.toJson(event));
+                $rootScope.$apply(() => {
+                    ClientState.setConnectionState(
+                        ClientState.ConnectionState.DISCONNECTED_NETWORK);
+                });
+            },
+            onMessage({responseBody: message}) {
+                ClientState.onServerActivity();
+                if (message === 'X') {
+                    // heartbeat message
+                    return;
+                }
+
+                try {
+                    const json = jQuery.parseJSON(message);
+                    // this only parses the "header" portion of the message, the content is still a string
+                    $rootScope.$broadcast(json.channel, json);
+                }
+                catch (e) {
+                    console.log('Atmosphere:  This doesn\'t look like JSON: ', message);
+                }
+            }
+        });
+    }
+
+    return {
+        init
+    }
+}
+])
 
 
 AppServices.service('LogService', function ($http) {
@@ -769,8 +642,8 @@ AppServices.service('LogService', function ($http) {
 });
 
 AppServices.factory('httpInterceptor',
-['$q', 'NotificationSvc',
-function ($q, NotificationSvc) {
+['$q', 'NotificationSvc', 'ClientState',
+function ($q, NotificationSvc, ClientState) {
     return {
         requestError: function (response) {
             console.log("httpInterceptor requestError", response);
@@ -779,14 +652,12 @@ function ($q, NotificationSvc) {
         // optional method
         responseError: function (response) {
             console.log("httpInterceptor responseError", response);
-            // NOTE: FireFox version 42.0 (and possibly others) has a strange issue that results in processing the wrong
-            // status error code. This only happens when accessing a remote server. It does not happen when accessing
-            // localhost. Specifically, status 901 is processed as 65413, and status 902 is processed as 65414.
-            // Seems related to integer rollover.
-            if (response.status === 901 || response.status === 65413) {
-                window.top.location.href = 'logout?reason=timeout';
-            } else if (response.status === 902 || response.status === 65414) {
-                window.top.location.href = 'logout?reason=bootout';
+            if (response.status == -1) {
+                ClientState.setConnectionState(ClientState.ConnectionState.DISCONNECTED_SERVER);
+            }
+            if (ClientState.getConnectionState() != ClientState.ConnectionState.LOGGING_OUT
+                    && response.status == 401) {
+                window.top.location.href = 'login';
             }
 
             var respData = response.data;
@@ -794,6 +665,10 @@ function ($q, NotificationSvc) {
                 NotificationSvc.error(respData.message);
             }
             return $q.reject(response);
+        },
+        response: resp => {
+            ClientState.onServerActivity();
+            return resp;
         }
     };
 }]);
@@ -895,45 +770,10 @@ AppServices.factory('NotificationSvc', [
     }
 ]);
 
-AppServices.factory('TimeoutSvc', ['$confirm', '$rootScope', '$log', '$http',
-    function ($confirm, $rootScope, $log, $http) {
-        return {
-            warn: function (json) {
-                if (json.event === 'OnSessionAboutToTimeout') {
-                    var timeLeftInSecs = json.content.timeLeftInSecs;
-                    $rootScope.timeoutInfo = {
-                        secs: timeLeftInSecs - 2,	// subtract 2 more seconds because it seems to always be 2 seconds slower
-                        max: json.content.warningPeriod	// usually 60 seconds
-                    };
-                    //$log.info("showingTimeoutNotification=" + $rootScope.showingTimeoutNotification);
-                    if ($rootScope.showingTimeoutNotification === false || $rootScope.showingTimeoutNotification === undefined) {
-                        $rootScope.showingTimeoutNotification = true;
-                        //$log.info("showing confirm dialog box");
-                        $confirm(
-                            {},
-                            {
-                                templateUrl: 'timeout_warning.html',
-                                backdrop: 'static',
-                                keyboard: false
-                            })
-                            .then(function (retval) { // user selected to logout now
-                                    $http.get("timeout");
-                                    $rootScope.showingTimeoutNotification = false;
-                                },
-                                function (retval) {	// user selected cancel
-                                    $http.get("resetSession");
-                                    $rootScope.showingTimeoutNotification = false;
-                                });
-                    }
-                }
-            }
-        }
-    }
-]);
 
 /** Manages System level notices, such as disconnected from server, notices from the server about its state, etc.
- *  Note: do not confuse this SystemNotices service, (which lets you add/remove system messages from the $rootScope.systemNotices queue)
- *        with the systemNotices directive (which is the <system-notices> tag that displays the contents of the $rootScope.systemNotices queue)
+ *  Note: do not confuse this SystemNotices service, (which lets you add/remove system messages from the systemNotices array)
+ *        with the systemNotices directive (which is the <system-notices> tag that displays the contents of the systemNotices array)
  *    a System Notice object has the following properties:
  *        type is one of 'info' (default), 'warning' or 'warn', 'error'
  *        icon is one of the glyphicon classes, e.g., "glyphicon-remove-circle", or null for the default
@@ -954,263 +794,168 @@ AppServices.factory('TimeoutSvc', ['$confirm', '$rootScope', '$log', '$http',
  *
  *        SystemNotices.warn( "Simplest use case" );
  * */
-AppServices.factory('SystemNotices', ['$rootScope', '$log', 'ClientState',
-    function ($rootScope, $log, ClientState) {
+AppServices.factory('SystemNotices',
+['$rootScope', '$http', 'ClientState',
+($rootScope, $http, ClientState) => {
+    const systemNotices = [];
 
-        var _add = function (type, msg, queue, options) {
+    const _add = (type, msg, options) => {
+        const opt = options || {};
+        opt.msgID = opt.msgID ?? msg;
+        opt.type = type;
+        opt.message = msg;
 
-            var opt = options;
-            if (!opt) {
-                opt = {}
-            }
-
-            if (!queue) {
-                queue = "default";
-            }
-            opt.queue = queue;
-
-            if (opt.msgID === undefined) {
-                opt.msgID = msg;
-            }
-
-            opt.type = type;
-
-            if (!opt.icon) {
-                switch (opt.type) {
-                    case 'error':
-                        opt.icon = "glyphicon glyphicon-remove-sign";
-                        break;
-                    case 'warn':
-                    case 'warning':
-                        opt.icon = "glyphicon-exclamation-sign";
-                        break;
-                    case 'info':
-                    default:
-                        opt.icon = "glyphicon-info-sign";
-                        opt.type = 'info'; // force the type to be info
-                        break;
-                }
-            }
-            opt.message = msg;
-            if ($rootScope.systemNotices.length <= 0
-                || $rootScope.systemNotices.find(function (e) {
-                    return ( e.msgID === opt.msgID )
-                }) === undefined) {
-                $rootScope.systemNotices.push(opt);
-                if (!$rootScope.$$phase) {
-                    $rootScope.$apply();
-                }
-            }
-
-            //$log.debug("$rootScope.systemNotices="+angular.toJson($rootScope.systemNotices));
-        };
-
-        var _standardMessage = function (msgID) {
-            switch (msgID) {
-                case 'SYSTEM_NOTIFY_CONNECTION_LOST':
-                    _add('error', "Connection to the Workflow Manager was lost at "
-                        + $rootScope.lastServerExchangeTimestamp.format("M/D/YYYY hh:mm:ss a")
-                        + " due to network or server problems.",
-                        "network",
-                        {
-                            msgID: "SYSTEM_NOTIFY_CONNECTION_LOST",
-                            title: "Network Connection Lost"
-                        });
+        if (!opt.icon) {
+            switch (opt.type) {
+                case 'error':
+                    opt.icon = "glyphicon glyphicon-remove-sign";
                     break;
-                case 'SYSTEM_NOTIFY_RECONNECTING':
-                    _add('warning', "Attempting to reconnect to Workflow Manager...",
-                        "network",
-                        {
-                            msgID: "SYSTEM_NOTIFY_RECONNECTING",
-                        });
+                case 'warn':
+                case 'warning':
+                    opt.icon = "glyphicon-exclamation-sign";
                     break;
-            }
-        };
-
-        var _remove = function (msgID) {
-            if ($rootScope.systemNotices && $rootScope.systemNotices.length > 0) {
-                for (var i = 0; i < $rootScope.systemNotices.length; i++) {
-                    var obj = $rootScope.systemNotices[i];
-                    if (obj.msgID == msgID) {
-                        $rootScope.systemNotices.splice(i, 1);
-                        //$log.info("removed(" + msgID + ")");
-                        break;
-                    }
-                }
-            }
-        };
-
-        // ----- event handling -----
-
-        $rootScope.$on('CS_CONNECTION_STATE_CHANGED', function (event, args) {
-            switch (args.newState) {
-                case ClientState.ConnectionState.DISCONNECTED_SERVER:
-                    _standardMessage("SYSTEM_NOTIFY_CONNECTION_LOST");
-                    break;
-                case ClientState.ConnectionState.DISCONNECTED_NETWORK:
-                    _standardMessage("SYSTEM_NOTIFY_RECONNECTING");
-                    break;
-                case ClientState.ConnectionState.CONNECTED_SERVER:
+                case 'info':
                 default:
-                    _remove("SYSTEM_NOTIFY_CONNECTION_LOST");
-                    _remove("SYSTEM_NOTIFY_RECONNECTING");
+                    opt.icon = "glyphicon-info-sign";
+                    opt.type = 'info'; // force the type to be info
                     break;
-            }
-        });
-
-        return {
-            add: function (type, msg, queue, options) {
-                _add(type, msg, queue, options);
-            },
-            standardMessage: function (id) {
-                _standardMessage(id);
-            },
-            error: function (message, queue, opt) {
-                _add("error", message, queue, opt);
-            },
-            warn: function (message, queue, opt) {
-                _add("warning", message, queue, opt);
-            },
-            info: function (message, queue, opt) {
-                _add("info", message, queue, opt);
-            },
-            removeAll: function () {	//this function removes all messages, regardless of src
-                for (var i = $rootScope.systemNotices.length; i > 0; i--) {
-                    $rootScope.systemNotices.pop();
-                }
-            },
-            removeAllFromQueue: function (queue) {
-                if ($rootScope.systemNotices && $rootScope.systemNotices.length > 0) {
-                    for (var i = 0; i < $rootScope.systemNotices.length; i++) {
-                        var obj = $rootScope.systemNotices[i];
-                        if (obj.queue == queue) {
-                            $rootScope.systemNotices.splice(i, 1);
-                            $log.info("removed(" + obj.msgID + ") from queue");
-                            break;
-                        }
-                    }
-                }
-            },
-            remove: function (msgID) {
-                _remove(msgID);
-            }
-        };
-    }
-]);
-
-// this has a single method, calculateSystemNotices(), that can be called to generate system notices
-//	all actual work is done by the private methods
-AppServices.factory('SystemStatus', ['$log', '$rootScope', '$http', 'SystemNotices', 'ClientState',
-    function ($log, $rootScope, $http, SystemNotices, ClientState) {
-
-        /* the list of system messages last retrieved */
-        var _systemMessages;
-
-        /** http gets all the system messages
-         * @returns {*}
-         */
-        var _getAllSystemMessages = function () {
-            _systemMessages = $http.get("system-message").then(function (response) {
-                //$log.debug('getSystemMessages()');
-                //$log.debug('  returned data=', response.data);
-                return response.data;
-            });
-            // Return the promise to the controller
-            return _systemMessages;
-        };
-
-        /** displays all system messages using SystemNotice
-         * @returns {*}
-         */
-        var _showAllSystemMessages = function () {
-            _getAllSystemMessages().then(function (data) {
-                //$log.debug('showAllSystemMessages()');
-                //$log.debug('  returned data=', data);
-                SystemNotices.removeAll();
-                //SystemNotices.removeAllFromQueue( "serverSystemMessage" );
-                angular.forEach(data, function (value) {
-                    var opt = {
-                        'msgID': value.id
-                    };
-                    SystemNotices.add(value.severity, value.msg, "serverSystemMessage", opt);
-                });
-            });
-        };
-
-        // ----- event handling -----
-        // tap into the CS_CONNECTION_STATE_CHANGED so that it always gets the most current system messages
-        $rootScope.$on('CS_CONNECTION_STATE_CHANGED', function (event, args) {
-            if (ClientState.isConnectionActive()) {	// if I'm now connected
-                switch (args.previousState) {
-                    case ClientState.ConnectionState.UNINITIALIZED:
-                    case ClientState.ConnectionState.DISCONNECTED_SERVER:
-                    case ClientState.ConnectionState.DISCONNECTED_NETWORK:
-                        // if the server was previously disconnected, then retrieve all system messages
-                        // because we may have missed one when we were disconnected
-                        _showAllSystemMessages();
-                        break;
-                    default:
-                        // previous state was already connected, so don't need to do anything
-                        break;
-                }
-            }
-        });
-
-        return {
-            showAllSystemMessages: function () {
-                _showAllSystemMessages();
             }
         }
-    }
-]);
+        const msgAlreadyAdded = systemNotices.some(e => e.msgID == opt.msgID);
+        if (!msgAlreadyAdded) {
+            systemNotices.push(opt);
+        }
+    };
+
+    const _standardMessage = msgID => {
+        switch (msgID) {
+            case 'SYSTEM_NOTIFY_CONNECTION_LOST':
+                _add('error', "Connection to the Workflow Manager was lost at "
+                    + ClientState.getLastServerExchange().format("M/D/YYYY hh:mm:ss a")
+                    + " due to network or server problems.",
+                    {
+                        msgID: "SYSTEM_NOTIFY_CONNECTION_LOST",
+                        title: "Network Connection Lost"
+                    });
+                break;
+            case 'SYSTEM_NOTIFY_RECONNECTING':
+                _add('warning', "Attempting to reconnect to Workflow Manager...",
+                    {
+                        msgID: "SYSTEM_NOTIFY_RECONNECTING",
+                    });
+                break;
+        }
+    };
+
+    const _remove = msgID => {
+        for (let i = 0; i < systemNotices.length; i++) {
+            const obj = systemNotices[i];
+            if (obj.msgID == msgID) {
+                systemNotices.splice(i, 1);
+                break;
+            }
+        }
+    };
 
 
-AppServices.service('ClientState', ['$log', '$rootScope', '$timeout',
-    function ($log, $rootScope, $timeout) {
+    const showAllSystemMessages = () => {
+        $http.get('system-message').then(({data}) => {
+            systemNotices.splice(0);
+            for (let {id, severity, msg} of data) {
+                _add(severity, msg, { msgID: id });
+            }
+        });
+    };
 
-        /* constants for connection states */
-        this.ConnectionState = {
+    showAllSystemMessages();
+
+    // ----- event handling -----
+
+    $rootScope.$on('CS_CONNECTION_STATE_CHANGED', (event, args) => {
+        switch (args.newState) {
+            case ClientState.ConnectionState.DISCONNECTED_SERVER:
+                _standardMessage("SYSTEM_NOTIFY_CONNECTION_LOST");
+                break;
+            case ClientState.ConnectionState.DISCONNECTED_NETWORK:
+                _standardMessage("SYSTEM_NOTIFY_RECONNECTING");
+                break;
+            case ClientState.ConnectionState.CONNECTED_SERVER:
+            default:
+                _remove("SYSTEM_NOTIFY_CONNECTION_LOST");
+                _remove("SYSTEM_NOTIFY_RECONNECTING");
+                break;
+        }
+        if (!ClientState.isConnectionActive()) {
+            return;
+        }
+
+        switch (args.previousState) {
+            case ClientState.ConnectionState.UNINITIALIZED:
+            case ClientState.ConnectionState.DISCONNECTED_SERVER:
+            case ClientState.ConnectionState.DISCONNECTED_NETWORK:
+                // if the server was previously disconnected, then retrieve all system messages
+                // because we may have missed one when we were disconnected
+                showAllSystemMessages();
+        }
+    });
+
+    $rootScope.$on('SSPC_SYSTEMMESSAGE', showAllSystemMessages);
+
+    return {
+        add: function (type, msg, options) {
+            _add(type, msg, options);
+        },
+        standardMessage: function (id) {
+            _standardMessage(id);
+        },
+        error: function (message, opt) {
+            _add("error", message, opt);
+        },
+        warn: function (message, opt) {
+            _add("warning", message, opt);
+        },
+        info: function (message, opt) {
+            _add("info", message, opt);
+        },
+        remove: function (msgID) {
+            _remove(msgID);
+        },
+        get: () => systemNotices,
+        showAllSystemMessages
+    };
+}]);
+
+
+AppServices.factory('ClientState', [
+    '$rootScope',
+    $rootScope => {
+        const ConnectionState = {
             UNINITIALIZED: "Uninitialized",
             CONNECTED_SERVER: "Connected to server",
             DISCONNECTED_SERVER: "Disconnected from server",
-            DISCONNECTED_NETWORK: "Disconnected from network"
+            DISCONNECTED_NETWORK: "Disconnected from network",
+            LOGGING_OUT: "Logging out"
         };
 
-        /* state of current client connection to the server
-         * values is one of the ConnectionState values defined below
-         */
-        var _connectionState = this.ConnectionState.UNINITIALIZED;
+        let connectionState = ConnectionState.UNINITIALIZED;
 
-        /** gets current connection state
-         */
-        this.getConnectionState = function () {
-            return _connectionState;
-        };
-
-        /** sets connection state and if it is different than previous value, broadcasts a CS_CONNECTION_STATE_CHANGED event
-         * @param state the ConnectionState to set
-         */
-        this.setConnectionState = function (state) {
-            if (_connectionState != state) {
-                var delay = 0;	// by default we broadcast a connection state change immediately
-                if (state === this.ConnectionState.DISCONNECTED_SERVER) {
-                    // delay the showing of network out briefly so when user reloads a page, it does not show up and confuse the user
-                    delay = 250;
-                }
-                $timeout(function () {
-                    var prev = _connectionState;
-                    _connectionState = state;
-                    $rootScope.$broadcast('CS_CONNECTION_STATE_CHANGED', {
-                        previousState: prev,
-                        newState: _connectionState
-                    });
-                }, delay);
+        const setConnectionState = newState => {
+            if (connectionState != newState) {
+                const previousState = connectionState;
+                connectionState = newState;
+                $rootScope.$broadcast('CS_CONNECTION_STATE_CHANGED', { previousState, newState });
             }
-        };
+        }
 
-        /** helper function for all connected states */
-        this.isConnectionActive = function () {
-            return _connectionState === this.ConnectionState.CONNECTED_SERVER;
+        let lastServerExchange = moment();
+
+        return {
+            ConnectionState,
+            setConnectionState,
+            getConnectionState: () => connectionState,
+            isConnectionActive: () => connectionState === ConnectionState.CONNECTED_SERVER,
+            onServerActivity: () => lastServerExchange = moment(),
+            getLastServerExchange: () => lastServerExchange
         }
     }
 ]);

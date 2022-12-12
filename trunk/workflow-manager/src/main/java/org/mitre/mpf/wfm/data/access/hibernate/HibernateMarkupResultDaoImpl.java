@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.springframework.stereotype.Repository;
@@ -35,13 +36,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import javax.inject.Inject;
+
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateMarkupResultDaoImpl
         extends AbstractHibernateDao<MarkupResult> implements MarkupResultDao {
 
-    public HibernateMarkupResultDaoImpl() {
-        super(MarkupResult.class);
+    @Inject
+    public HibernateMarkupResultDaoImpl(SessionFactory sessionFactory) {
+        super(MarkupResult.class, sessionFactory);
     }
 
     @Override

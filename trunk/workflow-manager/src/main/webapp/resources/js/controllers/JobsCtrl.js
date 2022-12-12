@@ -24,621 +24,417 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-'use strict';
-/**
- * JobsCtrl
- * @constructor
- */
-var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, NotificationSvc, PropertiesSvc, SystemNotices, csrfHeaders) {
-    $.fn.dataTable.ext.errMode = 'throw';
+"use strict";
 
-    $scope.selectedJob = {};
-    var jobTable = null;
-    var markupTable = null;
-    var markupTableData = [];
-    var updateConfig = { broadcastEnabled: true, pollingInterval: -1, poller: null };
-    var tableLastUpdate = moment();
+angular.module('mpf.wfm.controller.JobsCtrl', [
+    'mpf.wfm.services',
+    'ui.bootstrap'
+])
+.controller('JobsCtrl', [
+'$scope', '$http', '$timeout', '$state', '$uibModal', 'JobsService', 'NotificationSvc', 'Poller',
+($scope, $http, $timeout, $state, $uibModal, JobsService, NotificationSvc, Poller) => {
 
-    var init = function () {
-        scheduleUpdates();
-        buildJobTable();
-    };
 
-    var couldNotGetJobTableMsgId = null;
+    $scope.$on('$stateChangeSuccess', () => {
+        $scope.state = parseStateParams();
+        updateJobs();
+    });
 
-    var buildJobTable = function () {
-        if (jobTable != null) {
-            jobTable.clear();
-            jobTable.draw();
-        } else {
-            jobTable = $('#jobTable').DataTable({
-                destroy: true,
-                data: [],
-                stateSave: false,
-                serverSide: true,
-                processing: false,//hide
-                ajax: {
-                    url: "jobs-paged",
-                    type: "POST",
-                    headers: csrfHeaders(),
-                    data: function (d) {//extra params
-                        d.search = d.search.value;
-                    }
-                },
-                language: {
-                    emptyTable: 'No jobs available'
-                },
-                drawCallback: function (settings) {
-                    bindButtons();
-                },
-                lengthMenu: [[5, 10, 25, 50, 100], [5, 10, 25, 50, 100]],
-                pageLength: 25,
-                ordering: true,
-                orderMulti: false,
-                order: [[0, 'desc']],
-                searchHighlight: true,
-                renderer: "bootstrap",
-                columns: [
-                    {
-                        data: "jobId"
-                    },
-                    {
-                        data: "pipelineName"
-                    },
-                    {
-                        data: "startDate",
-                        render: function (data, type, job) {
-                            return (moment(job.startDate).format("YYYY-MM-DD HH:mm:ss"));
-                        }
-                    },
-                    {
-                        data: "endDate",
-                        render: function (data, type, job) {
-                            if (job.endDate) {
-                                return moment(job.endDate).format("YYYY-MM-DD HH:mm:ss");
-                            }
-                            else {
-                                return "";
-                            }
-                        }
-                    },
-                    {
-                        data: "jobStatus",
-                        render: function (data, atype, job) {
-                            var type = "label-default";
-                            if (job.jobStatus.toLowerCase().indexOf("error") >= 0) {
-                                type = "label-danger";
-                            } else if (job.jobStatus.toLowerCase().indexOf("warning") >= 0) {
-                                type = "label-warning";
-                            } else if (job.jobStatus.toLowerCase().indexOf("unknown") >= 0) {
-                                type = "label-primary";
-                            }
+    let lastJobRequestDuration = 1_000;
+    let lastRequestSent = 0;
+    let lastResponseReceived = 0;
 
-                            var hideProgress = 'style="display:none;"';
-                            if (job.jobStatus.startsWith('IN_PROGRESS') && job.jobProgress < 100) hideProgress = "";
-                            var progress = job.jobProgress.toFixed();
-                            var progressDiv = '<div class="progress" ' + hideProgress + '><div class="progress-bar progress-bar-success" role="progressbar"  id="jobProgress' + job.jobId + '" aria-valuenow="0" aria-valuemin="' + progress + '" aria-valuemax="100" style="width:' + progress + '%">' + progress + '%</div></div>';
-                            return '<span class="job-status label ' + type + '" id="jobStatusCell' + job.jobId + '">' + job.jobStatus + '</span>' + progressDiv;
-                        }
-                    },
-                    {
-                        data: 'tiesDbStatus',
-                        render: function (data, type, job) {
-                            var statusCell = createCallbackStatusCell(job.tiesDbStatus, 'ties-db');
-                            return $('<span>')
-                                .addClass('ties-db-status-' + job.jobId)
-                                .html(statusCell)[0].outerHTML;
-                        }
-                    },
-                    {
-                        data: 'callbackStatus',
-                        render: function (data, type, job) {
-                            var statusCell = createCallbackStatusCell(
-                                job.callbackStatus, 'callback');
-                            return $('<span>')
-                                .addClass('callback-status-' + job.jobId)
-                                .html(statusCell)[0].outerHTML;
-                        }
-                    },
-                    {
-                        data: "jobPriority",
-                        render: function (data, type, job) {
-                            return '<div class="jobPriorityCell" id="jobPriorityCell' + job.jobId + '">' + job.jobPriority + '</div>';
-                        }
-                    },
-                    {//actions
-                        data: "null", "defaultContent": '', orderable: false,
-                        render: function (data, type, job) {
-                            var cancel_disabled = "";
-                            if (job.terminal || job.jobStatus === 'CANCELLING' ||
-                                    job.hasCallbacksInProgress) {
-                                cancel_disabled = "disabled=disabled";
-                            }
-                            var resubmit_disabled = "";
-                            if (!job.terminal || job.hasCallbacksInProgress) {
-                                resubmit_disabled = "disabled=disabled" ;
-                            }
-                            var hasOutput = "disabled=disabled";
-                            var output_link = "";
-                            if (job.outputFileExists) {
-                                hasOutput = "";
-                            }
-                            return '<div class="btn-group btn-group-sm" role="group" >' +
-                                '<button type="button" class="btn btn-default cancelBtn" id="cancelBtn' + job.jobId + '"' + cancel_disabled + ' title="Stop"><i class="fa fa-stop"></i></button>' +
-                                '<button type="button" class="btn btn-default resubmitBtn"  id="resubmitBtn' + job.jobId + '"' + resubmit_disabled + ' title="Resubmit"><i class="fa fa-refresh"></i></button>' +
-                                '<button type="button" class="btn btn-default markupBtn" id="markupBtn' + job.jobId + '" title="Media" ><i class="fa fa-picture-o" title="Media"></i></button>' +
-                                '<a type="button" href="jobs/output-object?id=' + job.jobId + '" class="btn btn-default jsonBtn" id="jsonBtn' + job.jobId + '" target="_blank"  ' + hasOutput + ' title="JSON Output">{ }</a></div>';
-                        }
-                    }
-                ],
-                initComplete: function (settings, json) {
-                    $log.debug('jobsTables has finished its initialization.');
+    const updateJobs = () => {
+        lastRequestSent++;
+        const thisRequest = lastRequestSent;
+        const requestBeginTime = Date.now();
+
+        return $http.get('jobs-paged', {params: $scope.state})
+            .then(({data: {jobs, recordsTotal, hasMorePages}}) => {
+                lastJobRequestDuration = Date.now() - requestBeginTime;
+                if (thisRequest > lastResponseReceived) {
+                    lastResponseReceived = thisRequest;
+                    Object.assign($scope, {jobs, recordsTotal, hasMorePages});
                 }
             });
-            jobTable.on('xhr.dt', function () {
-                tableLastUpdate = moment();
-                if (couldNotGetJobTableMsgId) {
-                    SystemNotices.remove(couldNotGetJobTableMsgId);
-                    couldNotGetJobTableMsgId = null;
-                }
-            });
-            jobTable.on('error.dt', function(){
-                tableLastUpdate = moment();
-                if (!updateConfig.broadcastEnabled && updateConfig.pollingInterval > 0) {
-                    updateLastCheckedMsg();
-                }
-                console.error(
-                    "The most recent attempt to update the jobs table failed: %o",
-                    arguments);
-                if (!couldNotGetJobTableMsgId) {
-                    couldNotGetJobTableMsgId =
-                        "The most recent attempt to update the jobs table failed.";
-                    SystemNotices.error(couldNotGetJobTableMsgId);
-                }
-                scheduleNextPoll();
-            });
-        }
-    };
+    }
 
-    var getJobFromTableEle = function (ele) {
-        var idx = jobTable.row($(ele).closest('tr')[0]).index();
-        return jobTable.rows(idx).data()[0];
-    };
-
-    var bindButtons = function () {
-        $(".markupBtn").click(function (event) {
-            $scope.$apply(function () {
-                showMarkup(getJobFromTableEle(event.target));
-            });
-        });
-        $(".cancelBtn").click(function (event) {
-            $scope.$apply(function () {
-                cancelJob(getJobFromTableEle(event.target));
-            });
-        });
-        $(".resubmitBtn").click(function (event) {
-            $scope.$apply(function () {
-                resubmitJob(getJobFromTableEle(event.target));
-            });
-        });
-        $("#infoModalBtn").click(function (event) {
-            $scope.$apply(function () {
-                // Prevent table from sorting by status when clicking info icon.
-                event.stopPropagation();
-                $("#infoModal").modal('show');
-            });
-        });
-
-        $('#jobTable').on('click', '.ties-db-error-details', function(event) {
-            $scope.$apply(function () {
-                $scope.selectedJob = getJobFromTableEle(event.target);
-                $scope.errorType = 'TiesDb';
-                $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
-                $("#errorDetailsModal").modal('show');
-            });
-        });
-
-        $('#jobTable').on('click', '.callback-error-details', function(event) {
-            $scope.$apply(function() {
-                $scope.selectedJob = getJobFromTableEle(event.target);
-                $scope.errorType = 'Callback';
-                $scope.errorDetails = $scope.selectedJob.callbackStatus;
-                $("#errorDetailsModal").modal('show');
-            });
-        });
-    };
-
-
-    var scheduleUpdates = function () {
-        getUpdateConfig().then(handleUpdateConfigChange);
-    };
-
-
-    var getUpdateConfig = function () {
-        return PropertiesSvc.get('web.broadcast.job.status.enabled')
-            .$promise
-            .then(function (broadcastProp) {
-                var broadcastEnabled = broadcastProp.value.toLowerCase() === 'true';
-                if (!broadcastEnabled) {
-                    return PropertiesSvc.get('web.job.polling.interval').$promise;
-                }
-            })
-            .then(function (pollingIntervalProp) {
-                if (!pollingIntervalProp) {
-                    return { broadcastEnabled: true,  pollingInterval: -1 };
-                }
-                var interval = +pollingIntervalProp.value;
-                if (isNaN(interval) || interval < 1) {
-                    return { broadcastEnabled: false,  pollingInterval: -1 };
-                }
-                return { broadcastEnabled: false,  pollingInterval: interval };
-            });
-    };
-
-    var handleUpdateConfigChange = function (newUpdateConfig) {
-        var pollingIntervalChanged = newUpdateConfig.pollingInterval !== updateConfig.pollingInterval;
-        updateConfig.broadcastEnabled = newUpdateConfig.broadcastEnabled;
-        updateConfig.pollingInterval = newUpdateConfig.pollingInterval;
-
-        if (updateConfig.broadcastEnabled) {
-            cancelPolling();
-            $scope.updateInfoMsg = null;
-            return;
-        }
-        if (updateConfig.pollingInterval < 1) {
-            cancelPolling();
-            $scope.updateInfoMsg = 'Automatic updates are disabled. Please refresh the page manually.';
-            return;
-        }
-
-        updateLastCheckedMsg();
-        if (pollingIntervalChanged) {
-            cancelPolling();
-            scheduleNextPoll();
-        }
-    };
-
-    var updateLastCheckedMsg = function () {
-        $scope.updateInfoMsg = 'Last checked at ' + tableLastUpdate.format('h:mm:ss a');
-    };
-
-    var pollingUpdate = function () {
-        updateConfig.poller = null;
-        if (!jobTable) {
-            scheduleNextPoll();
-            return;
-        }
-        try {
-            jobTable.ajax.reload(function () {
-                $scope.$apply(function () {
-                    tableLastUpdate = moment();
-                    updateLastCheckedMsg();
-                    scheduleNextPoll();
-                });
-            }, false);
-        }
-        catch (e) {
-            console.log('caught error: %o', e);
-            scheduleNextPoll();
-        }
-    };
-
-    var scheduleNextPoll = function () {
-        if (updateConfig.poller) {
-            // There is already a pending poll.
-            return;
-        }
-        if (!updateConfig.broadcastEnabled && updateConfig.pollingInterval > 0) {
-            updateConfig.poller = $timeout(pollingUpdate, updateConfig.pollingInterval);
-        }
-    };
-
-    var cancelPolling = function () {
-        if (updateConfig.poller) {
-            $timeout.cancel(updateConfig.poller);
-            updateConfig.poller = null;
-        }
-    };
-
-    $scope.$on('$destroy', cancelPolling);
-
-    $scope.$on('SSPC_PROPERTIES_CHANGED', scheduleUpdates);
-
-
-    //listen for updates from the server
-    $scope.$on('SSPC_JOBSTATUS', function (event, msg) {
-        $log.debug("SSPC_JOBSTATUS: " + JSON.stringify(msg));
-        if (!updateConfig.broadcastEnabled) {
-            // Received job broadcast even though job broadcast's were disabled when properties were last checked,
-            // so we need to re-check the state of the properties.
-            scheduleUpdates();
-        }
-
-        var job = msg.content;
-
-        //send -1 and -1 on connect
-        if (job.id != -1 && job.progress != -1) {
-            var progress = Math.floor(job.progress);
-            if ($("#jobStatusCell" + job.id).length === 0 || progress === 0) {//missing the new job
-                jobTable.ajax.reload(null, false);
-            }
-            $("#jobStatusCell" + job.id).html(job.jobStatus);
-
-            //keep the job progress val at 99% until it is complete or cancelled
-            if (job.jobStatus.startsWith('COMPLETE') || job.jobStatus.startsWith('CANCELLED')
-            || job.jobStatus.startsWith('ERROR') || job.jobStatus.startsWith('UNKNOWN')) {
-                jobTable.ajax.reload(null, false);
-            } else if (progress > 99) {
-                progress = 99;
-            }
-
-            if (progress < 100) {
-                var statusCell = $('#jobStatusCell' + job.id);
-                statusCell.removeClass('label-default label-danger label-warning label-primary');
-                if (job.jobStatus === 'IN_PROGRESS_WARNINGS') {
-                    statusCell.addClass('label-warning');
-                }
-                else if (job.jobStatus === 'IN_PROGRESS_ERRORS') {
-                    statusCell.addClass('label-danger');
+    Object.assign($scope, {
+        jobs: [],
+        recordsTotal: -1,
+        hasMorePages: false,
+        poller: Poller.create(updateJobs),
+        isLoading() {
+            return lastRequestSent != lastResponseReceived;
+        },
+        sortColumnClicked(orderCol) {
+            if ($scope.state.orderCol == orderCol) {
+                if ($scope.state.orderDirection == 'desc') {
+                    $scope.state.orderDirection = 'asc';
                 }
                 else {
-                    statusCell.addClass('label-default');
+                    $scope.state.orderDirection = 'desc';
                 }
-
-                $("#jobProgress" + job.id).parent().show();
-                $("#jobProgress" + job.id).html(progress + "%");
-                $("#jobProgress" + job.id).css("width", progress + "%");
-                //disable buttons if necessary
-                if (job.jobStatus.startsWith('CANCELLING')) {
-                    $("#cancelBtn" + job.id).attr("disabled", "disabled");
-                } else {
-                    $("#cancelBtn" + job.id).removeAttr("disabled");
+            }
+            else {
+                $scope.state.orderDirection = 'asc';
+            }
+            $scope.state.orderCol = orderCol;
+            $scope.gotoPageNum(1);
+        },
+        pageSizeChanged() {
+            $scope.gotoPageNum(1)
+        },
+        searchChanged() {
+            $scope.gotoPageNum(1)
+        },
+        gotoPageNum(pageNum) {
+            $scope.state.page = pageNum;
+            $state.go('jobs.page', $scope.state);
+        },
+        getSortGlyph(orderCol) {
+            if (orderCol != $scope.state.orderCol) {
+                return 'glyphicon-sort';
+            }
+            else if ($scope.state.orderDirection == 'asc') {
+                return 'glyphicon-arrow-up';
+            }
+            else {
+                return 'glyphicon-arrow-down';
+            }
+        },
+        getStatusLabel({jobStatus}) {
+            if (jobStatus.includes('ERROR')) {
+                return 'label-danger';
+            }
+            else if (jobStatus.includes('WARNING')) {
+                return 'label-warning';
+            }
+            else if (jobStatus.includes("UNKNOWN")) {
+                return "label-primary";
+            }
+            else {
+                return 'label-default';
+            }
+        },
+        formatProgress({jobProgress}) {
+            return jobProgress.toFixed() + '%'
+        },
+        showTiesDbError(job) {
+            openCallbackErrorModal(job.jobId, 'TiesDb', job.tiesDbStatus)
+        },
+        showCallbackError(job) {
+            openCallbackErrorModal(job.jobId, 'Callback', job.callbackStatus)
+        },
+        getCallbackDisplayType:(callbackStatus) => {
+            if (callbackStatus.startsWith('ERROR:')) {
+                return 'ERROR';
+            }
+            else {
+                return callbackStatus;
+            }
+        },
+        canCancelJob(job) {
+            return !job.terminal && job.jobStatus != 'CANCELLING' && !job.hasCallbacksInProgress;
+        },
+        cancelJob(job) {
+            const initialStatus = job.jobStatus;
+            job.jobStatus = 'CANCELLING'
+            JobsService.cancelJob(job.jobId).then(resp => {
+                if (resp.responseCode == 0) {
+                    NotificationSvc.success(
+                        `A job cancellation request for job ${job.jobId} has been sent.`);
                 }
-                $("#resubmitBtn" + job.id).attr("disabled", "disabled");
-                $("#jsonBtn" + job.id).attr("disabled", "disabled");
-            }
-
-            if (job.jobStatus == 'CANCELLED') {
-                console.log('job cancellation complete for id: ' + job.id);
-                NotificationSvc.info('Job cancellation of job ' + job.id + ' is now complete.');
-            }
+                else {
+                    NotificationSvc.error(
+                        `Error with cancellation request with message: ${resp.message}`);
+                    job.jobStatus = initialStatus;
+                }
+            }).catch(() => {
+                NotificationSvc.error('Failed to send a cancellation request');
+                job.jobStatus = initialStatus;
+            });
+        },
+        canResubmit(job) {
+            return job.terminal && !job.hasCallbacksInProgress && job.jobStatus != 'RESUBMITTING';
+        },
+        resubmitJob(job) {
+            const initialStatus = job.jobStatus;
+            job.jobStatus = 'RESUBMITTING';
+            JobsService.resubmitJob(job.jobId, job.jobPriority).then(resp => {
+                if (resp.mpfResponse.responseCode == 0) {
+                    NotificationSvc.success(`Job ${job.jobId} has been resubmitted!`);
+                }
+                else {
+                    NotificationSvc.error(resp.mpfResponse.message);
+                    job.jobStatus = initialStatus;
+                }
+            }).catch(() => {
+                NotificationSvc.error('Failed to send a resubmit request');
+                job.jobStatus = initialStatus;
+            });
+        },
+        showMedia(job) {
+            $uibModal.open({
+                templateUrl: 'resources/layouts/markup.html',
+                size: 'lg',
+                controller: 'MarkupCtrl',
+                resolve: { job }
+            });
         }
     });
 
 
-    var createCallbackStatusCell = function (status, type) {
-        if (!status) {
-            return "";
+    const orderColumns = new Set([
+        'id', 'pipeline', 'timeReceived', 'timeCompleted', 'status', 'tiesDbStatus',
+        'callbackStatus', 'priority'
+    ]);
+
+    const parseStateParams = () => {
+        let { orderDirection } = $state.params
+        if (orderDirection != 'asc' && orderDirection != 'desc') {
+            orderDirection = 'desc';
         }
-        else if (status.startsWith('ERROR:')) {
-            return $('<button>')
-                .addClass(type + '-error-details')
-                .addClass('btn btn-danger btn-block btn-xs')
-                .text('ERROR');
+        return {
+            page: parseIntOrDefault($state.params.page, 1),
+            pageLen: parseIntOrDefault($state.params.pageLen, 25),
+            orderCol: orderColumns.has($state.params.orderCol) ? $state.params.orderCol : 'id',
+            orderDirection,
+            search: $state.params.search ?? ''
         }
-        else if (status === 'IN PROGRESS') {
-            return status + ' <i class="fa fa-spinner fa-spin"></i>';
+    }
+
+
+
+    const parseIntOrDefault = (str, defaultVal) => {
+        if (str == null) {
+            return defaultVal;
+        }
+        const intVal = parseInt(str);
+        if (isNaN(intVal)) {
+            return defaultVal;
         }
         else {
-            return status;
+            return intVal;
         }
-    };
+    }
 
-    $scope.$on('SSPC_CALLBACK_STATUS', function (event, msg) {
-        var jobId = msg.content.jobId;
-        var status = msg.content.status;
-        var job = _.findWhere(jobTable.data(), {jobId: jobId});
-        if (msg.event === "tiesDb") {
-            job.tiesDbStatus = status;
-            $('.ties-db-status-' + jobId).html(
-                createCallbackStatusCell(status, 'ties-db'));
+    const openCallbackErrorModal = (jobId, errorType, errorDetails) => {
+        $uibModal.open({
+            templateUrl: 'error-details-modal.html',
+            controller: ($scope) => {
+                Object.assign($scope, {jobId, errorType, errorDetails});
+            }
+        });
+    }
+
+    $scope.$on('SSPC_JOBSTATUS', (event, {content: {id, jobStatus, progress, endDate}}) => {
+        const job = $scope.jobs.find(j => j.jobId == id);
+        if (job) {
+            $scope.$apply(() => {
+                Object.assign(job, {
+                    jobProgress: progress,
+                    jobStatus,
+                    endDate,
+                    outputFileExists: jobStatus.startsWith('COMPLETE'),
+                    terminal: progress == 100
+                });
+            });
         }
-        if (msg.event === "callBack") {
+        else if (progress == 0) {
+            throttledUpdateJobs();
+        }
+        // The job is missing because it isn't on the page of results the user is currently
+        // looking at, so no action is necessary.
+    });
+
+
+    $scope.$on('SSPC_CALLBACK_STATUS', (evt, {event: type, content: {jobId, status}}) => {
+        const job = $scope.jobs.find(j => j.jobId == jobId);
+        if (!job) {
+            return;
+        }
+        if (type == 'tiesDb') {
+            job.tiesDbStatus = status;
+        }
+        else {
             job.callbackStatus = status;
-            $('.callback-status-' + jobId).html(
-                createCallbackStatusCell(status, 'callback'));
         }
     });
 
-    var resubmitJob = function (job) {
-        $log.debug("resubmitJob:", job);
-        var statusCell = $("#jobStatusCell" + job.jobId);
-        var prevClasses = statusCell.attr('class');
-        var prevHtml = statusCell.html();
-        statusCell.html("RESUBMITTING");
-        statusCell.removeClass('label-danger label-warning label-primary');
-        statusCell.addClass('label-default');
+    const throttledUpdateJobs = (() => {
+        let isCoolingOff = false;
+        let requestWasThrottled = false;
 
-        $("#resubmitBtn" + job.jobId).attr("disabled", "disabled");
-        JobsService.resubmitJob(job.jobId, job.jobPriority).then(function (resp) {
-            if (resp && resp.hasOwnProperty("mpfResponse") &&
-                resp.hasOwnProperty("jobId")) {
-                if (resp.mpfResponse.responseCode != 0) {
-                    NotificationSvc.error(resp.mpfResponse.message);
-                    statusCell.attr('class', prevClasses);
-                    statusCell.html(prevHtml);
-                    $("#resubmitBtn" + job.jobId).removeAttr("disabled");
-                } else {
-                    NotificationSvc.success('Job ' + job.jobId + ' has been resubmitted!');
-                }
-            } else {
-                NotificationSvc.error('Failed to send a resubmit request');
+        const exposedFn = () => {
+            if (isCoolingOff) {
+                requestWasThrottled = true;
             }
-        });
-    };
-
-    var cancelJob = function (job) {
-        $("#jobStatusCell" + job.jobId).html("CANCELLING");
-        JobsService.cancelJob(job.jobId).then(function (resp) {
-            if (resp && resp.hasOwnProperty("responseCode") &&
-                resp.hasOwnProperty("message")) {
-                if (resp.responseCode != 0) {
-                    NotificationSvc.error('Error with cancellation request with message: ' + mpfResponse.message);
-                } else {
-                    NotificationSvc.success('A job cancellation request for job ' + job.jobId + ' has been sent.');
-                }
-            } else {
-                NotificationSvc.error('Failed to send a cancellation request');
+            else {
+                isCoolingOff = true;
+                updateJobs().then(beginTimeout);
             }
-        });
-    };
+        }
 
-    var showMarkup = function (job) {
-        $scope.selectedJob = job;
-        renderMarkupTable();
-        $("#mediaModal").modal('show');
-    };
-
-    //markupTable - paged for efficiency
-    var renderMarkupTable = function () {
-        markupTable = $('#markupsTable').DataTable({
-            destroy: true,
-            data: markupTableData,
-            stateSave: false,
-            serverSide: true,
-            processing: true,
-            scrollCollapse: false,
-            lengthMenu: [[5, 10, 25, 50, 100, 250], [5, 10, 25, 50, 100, 250]],
-            pageLength: 25,
-            ordering: false,
-            searchHighlight: true,
-            ajax: {
-                url: "markup/get-markup-results-filtered",
-                type: "POST",
-                headers: csrfHeaders(),
-                data: function (d) {//extra params
-                    d.search = d.search.value;//pull out because spring is a pain to pass params
-                    d.jobId = $scope.selectedJob.jobId;
-                },
-                error: function (xhr, error, code) {
-                    alert("Error while retrieving data: " + xhr.status);
+        let timeoutPromise;
+        const beginTimeout = () => {
+            const throttleTime = Math.max(2 * lastJobRequestDuration, 2_000);
+            timeoutPromise = $timeout(() => {
+                timeoutPromise = null;
+                if (requestWasThrottled) {
+                    requestWasThrottled = false;
+                    updateJobs().then(beginTimeout);
                 }
-            },
-            renderer: "bootstrap",
-            columns: [
-                {
-                    data: "parentMediaId",
-                    className: "smart-wrap",
-                    render: function (data, type, obj) {
-                        if (obj.parentMediaId == -1) {
-                            return '<p class="text-muted">N/A</p>'
-                        }
-                        return '<p>' + obj.parentMediaId + '</p>'
-                    }
-                },
-                {
-                    data: "mediaId",
-                    className: "smart-wrap"
-                },
-                {
-                    data: "sourceImgUrl",
-                    render: function (data, type, obj) {
-                        if (obj.sourceUri && obj.sourceUri.length > 0 && obj.sourceFileAvailable) {
-                            if (obj.sourceMediaType == 'IMAGE') {
-                                return $('<img>')
-                                    .attr('src', obj.sourceDownloadUrl)
-                                    .addClass('img-btn')
-                                    .css('width', '100%')
-                                    .css('height', 'auto')[0].outerHTML;
-                            }
-                            else if (obj.sourceMediaType == 'AUDIO') {
-                                return '<span class="glyphicon glyphicon-music"></span>';
-                            }
-                            else if (obj.sourceMediaType == 'VIDEO') {
-                                var sourceEl = $('<source>')
-                                    .attr('src', obj.sourceDownloadUrl)
-                                    .text('Your browser does not support the video tag.');
-
-                                return $('<video>')
-                                    .prop('controls', true)
-                                    .attr('preload', 'none')
-                                    .css('width', '100%')
-                                    .append(sourceEl)[0].outerHTML;
-                            }
-                            else {
-                                return '<span class="glyphicon glyphicon-file"></span>';
-                            }
-                        }
-                        return '<p class="text-muted">Source file not available</p>';
-                    }
-                },
-                {
-                    data: "sourceUri",
-                    className: "smart-wrap"
-                },
-                {
-                    data: "sourceDownloadUrl",
-                    render: function (data, type, obj) {
-                        if (obj.sourceDownloadUrl) {
-                            return '<a href="' + obj.sourceDownloadUrl + '" download="' + obj.sourceUri + '" class="btn btn-default" role="button" title="Download"><i class="fa fa-download"></i></a>';
-                        } else {
-                            return '<p class="text-muted">Source file not available</p>';
-                        }
-                    }
-                },
-                {
-                    data: "markupImgUrl",
-                    render: function (data, type, obj) {
-                        if (obj.markupUri && obj.markupUri.length > 0 && obj.markupFileAvailable) {
-                            if (obj.markupMediaType == 'IMAGE') {
-                                return $('<img>')
-                                    .attr('src', obj.markupDownloadUrl)
-                                    .addClass('img-btn')
-                                    .css('width', '100%')
-                                    .css('height', 'auto')[0].outerHTML;
-                            }
-                            else if (obj.markupMediaType == 'AUDIO') {
-                                return '<span class="glyphicon glyphicon-music"></span>';
-                            }
-                            else if (obj.markupMediaType == 'VIDEO') {
-                                var sourceEl = $('<source>')
-                                    .attr('src', obj.markupDownloadUrl)
-                                    .text('Your browser does not support the video tag.');
-
-                                return $('<video>')
-                                    .prop('controls', true)
-                                    .attr('preload', 'none')
-                                    .css('width', '100%')
-                                    .append(sourceEl)[0].outerHTML;
-                            } else {
-                                return '<span class="glyphicon glyphicon-file"></span>';
-                            }
-                        }
-                        return '<p class="text-muted">No markup</p>';
-                    }
-                },
-                {
-                    data: "markupUri",
-                    className: "smart-wrap",
-                    render: function (data, type, obj) {
-                        if (obj.markupUri) {
-                            return obj.markupUri;
-                        } else {
-                            return '<p class="text-muted">No markup</p>';
-                        }
-                    }
-                },
-                {
-                    data: "markupDownloadUrl",
-                    render: function (data, type, obj) {
-                        if (obj.markupDownloadUrl) {
-                            return '<a href="' + obj.markupDownloadUrl + '" download="' + obj.markupUri + '" class="btn btn-default" role="button"><i class="fa fa-download" title="Download"></i></a>';
-                        } else {
-                            return '<p class="text-muted">No markup</p>';
-                        }
-                    }
+                else {
+                    isCoolingOff = false;
                 }
-            ],
-            initComplete: function (settings, json) {
-                $log.debug("MediaTable complete");
-            },
-            drawCallback: function (settings) {
-                $('.img-btn').on('click', function () {
-                    window.open($(this).prop('src'), '_blank').focus();
+            }, throttleTime);
+        };
+
+        $scope.$on('$destroy', () => {
+            if (timeoutPromise) {
+                $timeout.cancel(timeoutPromise);
+            }
+        })
+
+        return exposedFn;
+    })();
+
+    $scope.$on('$destroy', () => $scope.poller.cancel());
+}
+]
+).directive('mpfSortControl', [
+() => {
+    return {
+        restrict: 'E',
+        transclude: true,
+        template: `
+            <a ng-click="sortColumnClicked(col)" href class="sort-control">
+                <ng-transclude></ng-transclude>
+                <span class="glyphicon" ng-class="getSortGlyph(col)"></span>
+            </a>
+        `,
+        scope: true,
+        link: ($scope, $el, $attrs) => {
+            $scope.col = $attrs.col;
+        }
+    };
+}
+]
+).factory('Poller', [
+'$rootScope', '$timeout', 'PropertiesSvc',
+($rootScope, $timeout, PropertiesSvc) => {
+
+    class Poller {
+        lastUpdate = moment();
+        broadcastEnabled = true;
+        pollingInterval = -1;
+        #promiseSupplier;
+        #activeTimeout = null;
+        #stopListeningPropsChanged
+        #stopListeningJobStatus
+
+        constructor(promiseSupplier) {
+            this.#promiseSupplier = promiseSupplier;
+            this.#updateConfig();
+            this.#stopListeningPropsChanged = $rootScope.$on('SSPC_PROPERTIES_CHANGED', () => {
+                this.#updateConfig();
+            });
+            this.#stopListeningJobStatus = $rootScope.$on('SSPC_JOBSTATUS', () => {
+                if (!this.broadcastEnabled) {
+                    // Received job broadcast even though job broadcast's were disabled when
+                    // properties were last checked, so we need to re-check the state of the
+                    // properties.
+                    this.#updateConfig();
+                }
+            })
+        }
+
+        cancel() {
+            this.#stopListeningPropsChanged();
+            this.#stopListeningJobStatus();
+            this.#cancelTimeout();
+        }
+
+        #updateConfig() {
+            PropertiesSvc.get('web.broadcast.job.status.enabled')
+                .$promise
+                .then(({value}) => {
+                    if (value.toLowerCase() === 'true') {
+                        this.#handlePollingConfigChange(true, -1);
+                    }
+                    else {
+                        this.#updatePollingInterval();
+                    }
                 });
-            }
-        });
-    };
+        }
 
-    init();
-};
+        #handlePollingConfigChange(broadcastEnabled, pollingInterval) {
+            const pollingIntervalChanged = pollingInterval !== this.pollingInterval;
+            this.broadcastEnabled = broadcastEnabled;
+            this.pollingInterval = pollingInterval;
+
+            if (this.broadcastEnabled || this.pollingInterval < 1) {
+                this.#cancelTimeout();
+                return;
+            }
+
+            if (pollingIntervalChanged) {
+                this.#cancelTimeout();
+                this.#scheduleNextPoll();
+            }
+        }
+
+        #updatePollingInterval() {
+            PropertiesSvc.get('web.job.polling.interval')
+                .$promise
+                .then(({value}) => {
+                    const interval = +value;
+                    if (isNaN(interval) || interval < 1) {
+                        this.#handlePollingConfigChange(false, -1);
+                    }
+                    else {
+                        this.#handlePollingConfigChange(false, interval);
+                    }
+                });
+        }
+
+        #scheduleNextPoll() {
+            if (this.#activeTimeout) {
+                // There is already a pending poll.
+                return;
+            }
+            if (!this.broadcastEnabled && this.pollingInterval > 0) {
+                this.#activeTimeout = $timeout(() => this.#pollingUpdate(), this.pollingInterval);
+            }
+        }
+
+        #pollingUpdate() {
+            this.#activeTimeout = null;
+            try {
+                this.#promiseSupplier()
+                    .then(() => {
+                        this.lastUpdate = moment();
+                    })
+                    .finally(() => this.#scheduleNextPoll());
+            }
+            catch (e) {
+                console.log('caught error: %o', e);
+                this.#scheduleNextPoll();
+            }
+        }
+
+        #cancelTimeout() {
+            if (this.#activeTimeout) {
+                $timeout.cancel(this.#activeTimeout);
+                this.#activeTimeout = null;
+            }
+        }
+    }
+
+    return {
+        create: promiseSupplier => new Poller(promiseSupplier)
+    }
+}
+])
+

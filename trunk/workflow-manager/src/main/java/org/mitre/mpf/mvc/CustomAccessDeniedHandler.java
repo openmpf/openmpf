@@ -24,12 +24,44 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.rest.api;
-import java.util.List;
+package org.mitre.mpf.mvc;
 
 
-public record MarkupPageListModel(
-		List<MarkupResultConvertedModel> media,
-		long recordsFiltered,
-		long recordsTotal) {
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
+import org.springframework.stereotype.Service;
+
+@Service("CustomAccessDeniedHandler")
+public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+
+    @Override
+    public void handle(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+
+        if (!(accessDeniedException instanceof InvalidCsrfTokenException)) {
+            super.handle(request, response, accessDeniedException);
+        }
+        else if (isAjax(request)) {
+            response.sendError(403, "INVALID_CSRF_TOKEN");
+        }
+        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
+            response.sendRedirect("/workflow-manager/");
+        }
+        else {
+            super.handle(request, response, accessDeniedException);
+        }
+    }
+
+    private static boolean isAjax(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+    }
 }

@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.UserDao;
 import org.mitre.mpf.wfm.data.entities.persistent.User;
 import org.springframework.stereotype.Repository;
@@ -34,12 +35,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import javax.inject.Inject;
+
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
 
-    public HibernateUserDaoImpl() {
-        super(User.class);
+    @Inject
+    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
+        super(User.class, sessionFactory);
     }
 
     @Override

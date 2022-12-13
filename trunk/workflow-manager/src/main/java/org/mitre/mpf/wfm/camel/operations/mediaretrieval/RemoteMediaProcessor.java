@@ -47,7 +47,6 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.function.Function;
 
 /** This processor downloads a file from a remote URI to the local filesystem. */
 @Component(RemoteMediaProcessor.REF)
@@ -93,7 +92,7 @@ public class RemoteMediaProcessor extends WfmProcessor {
             case HTTP:
             case HTTPS:
                 try {
-                    Function<String, String> combinedProperties = _aggregateJobPropertiesUtil
+                    var combinedProperties = _aggregateJobPropertiesUtil
                             .getCombinedProperties(job, media);
                     if (S3StorageBackend.requiresS3MediaDownload(combinedProperties)) {
                         _s3Service.downloadFromS3(media, combinedProperties);

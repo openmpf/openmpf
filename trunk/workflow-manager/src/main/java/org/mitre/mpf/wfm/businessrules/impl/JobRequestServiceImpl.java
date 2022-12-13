@@ -58,7 +58,6 @@ import org.springframework.util.FileSystemUtils;
 import javax.inject.Inject;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.joining;
@@ -347,7 +346,7 @@ public class JobRequestServiceImpl implements JobRequestService {
         try {
             for (Action action : pipeline.getActions()) {
                 for (Media media : jobMedia) {
-                    Function<String, String> combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
+                    var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                             action,
                             pipeline,
                             media,

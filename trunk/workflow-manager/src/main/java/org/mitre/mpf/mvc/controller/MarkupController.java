@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
@@ -257,7 +257,7 @@ public class MarkupController {
             return;
         }
 
-        Function<String, String> combinedProperties = getProperties(job, media, markupResult);
+        var combinedProperties = getProperties(job, media, markupResult);
 
         if (S3StorageBackend.requiresS3ResultUpload(combinedProperties)) {
             try {
@@ -291,7 +291,7 @@ public class MarkupController {
         }
     }
 
-    private Function<String, String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
+    private UnaryOperator<String> getProperties(BatchJob job, Media media, MarkupResult markupResult) {
         var action = job.getPipelineElements().getAction(markupResult.getTaskIndex(), markupResult.getActionIndex());
         return aggregateJobPropertiesUtil.getCombinedProperties(job, media, action);
     }

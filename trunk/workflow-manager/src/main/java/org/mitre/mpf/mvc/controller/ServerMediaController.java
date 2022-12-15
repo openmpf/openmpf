@@ -66,7 +66,6 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 
 @Api(value = "Server Media",description = "Server media retrieval")
 @Controller
@@ -225,7 +224,7 @@ public class ServerMediaController {
         // to the log and a status code of 500. An image preview in the UI will appear as a broken image link.
 
         var job = jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
-        Function<String, String> combinedProperties
+        var combinedProperties
                 = aggregateJobPropertiesUtil.getCombinedProperties(job, sourceUri);
         var uriScheme = UriScheme.parse(sourceUri.getScheme());
         if ((uriScheme.equals(UriScheme.HTTP) || uriScheme.equals(UriScheme.HTTPS)) &&

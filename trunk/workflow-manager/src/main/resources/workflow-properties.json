@@ -378,6 +378,13 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "S3_UPLOAD_OBJECT_KEY_PREFIX",
+        "description": "Specifies a prefix to prepend to object keys when uploading to S3.",
+        "type": "STRING",
+        "propertiesKey": "s3.upload.object.key.prefix",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "SOURCE_MEDIA_ONLY",
         "description": "When set to true, the action will only be executed on the source media, not derivative media.",
         "type": "BOOLEAN",

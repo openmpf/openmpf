@@ -378,7 +378,7 @@ public class TestJobRequestService {
         assertFalse(Files.exists(outputObjectsDir.toPath()));
         assertFalse(Files.exists(markupDir.toPath()));
 
-        verifyZeroInteractions(_mockTiesDbBeforeJobCheckService);
+        verifyNoInteractions(_mockTiesDbBeforeJobCheckService);
     }
 
 

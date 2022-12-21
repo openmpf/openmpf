@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
@@ -59,6 +60,8 @@ import static org.mockito.Mockito.when;
 
 public class TestStreamingJobMessageSender {
 
+    private AutoCloseable _closeable;
+
     private StreamingJobMessageSenderImpl _messageSender;
 
     @Mock
@@ -76,11 +79,17 @@ public class TestStreamingJobMessageSender {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         AggregateJobPropertiesUtil aggregateJobPropertiesUtil
                 = new AggregateJobPropertiesUtil(_mockProperties, _mockWorkflowPropertyService);
         _messageSender = new StreamingJobMessageSenderImpl(_mockProperties, aggregateJobPropertiesUtil,
                                                            _mockMasterNode, _mockServiceManager);
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 

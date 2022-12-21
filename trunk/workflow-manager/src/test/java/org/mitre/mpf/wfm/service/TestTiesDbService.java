@@ -32,6 +32,7 @@ import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,6 +71,8 @@ public class TestTiesDbService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestTiesDbService.class);
 
+    private AutoCloseable _closeable;
+
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
 
@@ -99,7 +102,7 @@ public class TestTiesDbService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         _tiesDbService = new TiesDbService(
                 _mockPropertiesUtil,
                 _mockAggregateJobPropertiesUtil,
@@ -125,6 +128,10 @@ public class TestTiesDbService {
                 .thenReturn("localhost-123");
     }
 
+    @After
+    public void close() throws Exception {
+        _closeable.close();
+    }
 
     @Test
     public void testAddAssertions() {

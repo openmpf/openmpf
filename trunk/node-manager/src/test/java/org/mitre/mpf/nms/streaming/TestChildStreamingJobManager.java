@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.nms.streaming;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
@@ -40,10 +41,12 @@ import org.mockito.MockitoAnnotations;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class TestChildStreamingJobManager {
+
+	private AutoCloseable _closeable;
 
 	@InjectMocks
 	private ChildStreamingJobManager _childStreamingJobManager;
@@ -57,7 +60,13 @@ public class TestChildStreamingJobManager {
 
 	@Before
 	public void init() {
-		MockitoAnnotations.initMocks(this);
+		_closeable = MockitoAnnotations.openMocks(this);
+	}
+
+
+	@After
+	public void close() throws Exception {
+		_closeable.close();
 	}
 
 

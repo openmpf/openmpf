@@ -9,17 +9,17 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Optional;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHttpResponse;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +52,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TestJobCompleteProcessorImpl {
+
+    private AutoCloseable _closeable;
 
     @Mock
     private JobRequestDao _mockJobRequestDao;
@@ -101,7 +103,7 @@ public class TestJobCompleteProcessorImpl {
 
     @Before
     public void init() throws IOException {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getJobMarkupDirectory(anyLong()))
             .thenReturn(_tempDir.newFolder("markup"));
 
@@ -116,6 +118,11 @@ public class TestJobCompleteProcessorImpl {
 
         when(_mockPropertiesUtil.getExportedJobId(anyLong()))
             .thenAnswer(inv -> "test-" + inv.getArgument(0));
+    }
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 
@@ -201,7 +208,7 @@ public class TestJobCompleteProcessorImpl {
         verify(_mockJobProgressStore)
             .removeJob(jobId);
 
-        verifyZeroInteractions(
+        verifyNoInteractions(
                 _mockMarkupResultDao,
                 _mockStorageService,
                 _mockCensorPropertiesService,

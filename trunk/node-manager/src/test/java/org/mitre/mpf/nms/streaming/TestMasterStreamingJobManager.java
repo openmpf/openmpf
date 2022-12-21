@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.nms.streaming;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.ChannelNode;
@@ -48,6 +49,8 @@ import static org.mockito.Mockito.*;
 
 public class TestMasterStreamingJobManager {
 
+	private AutoCloseable _closeable;
+
 	@InjectMocks
 	private MasterStreamingJobManager _streamingJobManager;
 
@@ -58,9 +61,13 @@ public class TestMasterStreamingJobManager {
 
 	@Before
 	public void init() {
-		MockitoAnnotations.initMocks(this);
+		_closeable = MockitoAnnotations.openMocks(this);
 	}
 
+	@After
+	public void close() throws Exception {
+		_closeable.close();
+	}
 
 	@Test
 	public void jobsStartOnNodeWithMinJobs() {

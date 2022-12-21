@@ -37,7 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -662,7 +662,7 @@ public class TestTiesDbBeforeJobCheckService {
         _tiesDbBeforeJobCheckService.wfmProcess(exchange);
 
         assertTrue(exchange.getOut().getHeaders().isEmpty());
-        verifyZeroInteractions(
+        verifyNoInteractions(
                 _mockPropertiesUtil,
                 _mockAggJobProps,
                 _mockJobConfigHasher,

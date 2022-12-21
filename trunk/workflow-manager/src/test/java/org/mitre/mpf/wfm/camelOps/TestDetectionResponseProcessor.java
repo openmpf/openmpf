@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camelOps;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,6 +61,8 @@ import static org.mockito.Mockito.*;
 
 
 public class TestDetectionResponseProcessor {
+
+    private AutoCloseable _closeable;
 
     @Mock
     private PipelineService mockPipelineService;
@@ -99,7 +102,7 @@ public class TestDetectionResponseProcessor {
     @Before
     public void init() {
 
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
 
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
@@ -163,7 +166,11 @@ public class TestDetectionResponseProcessor {
 
         when(mockAggregateJobPropertiesUtil.getValue(MpfConstants.CONFIDENCE_THRESHOLD_PROPERTY, job, media, action))
                 .thenReturn(String.valueOf(0.1));
+    }
 
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
     @Test

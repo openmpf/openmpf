@@ -83,9 +83,7 @@ public class TestS3StorageBackend {
 
     private static final String EXPECTED_HASH = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
 
-    private static final String EXPECTED_OBJECT_KEY = "5e/ac/" + EXPECTED_HASH;
-
-    private static final URI EXPECTED_URI = URI.create(S3_HOST + RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
+    private static volatile String EXPECTED_OBJECT_KEY;
 
     private static final String BUCKET_WITH_EXISTING_OBJECT = "EXISTING_OBJECT_BUCKET";
 
@@ -96,6 +94,9 @@ public class TestS3StorageBackend {
     private static final AtomicInteger REQUESTED_GET_FAILURES = new AtomicInteger(0);
 
     private static final AtomicInteger REQUESTED_PUT_FAILURES = new AtomicInteger(0);
+
+    private URI _expectedUri;
+
 
     @BeforeClass
     public static void initClass() {
@@ -109,6 +110,9 @@ public class TestS3StorageBackend {
 
     @Before
     public void init() {
+        EXPECTED_OBJECT_KEY = "5e/ac/" + EXPECTED_HASH;
+        _expectedUri = URI.create(S3_HOST + RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY);
+
         OBJECTS_POSTED.clear();
         GET_COUNT.set(0);
         REQUESTED_GET_FAILURES.set(0);
@@ -350,7 +354,7 @@ public class TestS3StorageBackend {
         assertTrue(_s3StorageBackend.canStore(request));
         Table<Integer, Integer, URI> results = _s3StorageBackend.storeArtifacts(request);
         Table<Integer, Integer, URI> expectedResults = new ImmutableTable.Builder<Integer, Integer, URI>()
-                                                       .put(0, 2, EXPECTED_URI)
+                                                       .put(0, 2, _expectedUri)
                                                        .put(1, 3, filePath1.toUri())
                                                        .build();
 
@@ -464,7 +468,7 @@ public class TestS3StorageBackend {
         _s3StorageBackend.store(markupResult);
 
         verify(markupResult)
-                .setMarkupUri(EXPECTED_URI.toString());
+                .setMarkupUri(_expectedUri.toString());
 
         assertFalse(Files.exists(filePath));
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
@@ -480,7 +484,27 @@ public class TestS3StorageBackend {
                 .thenReturn(filePath.toUri());
 
         URI remoteUri = _s3StorageBackend.store(outputObject, new MutableObject<>());
-        assertEquals(EXPECTED_URI, remoteUri);
+        assertEquals(_expectedUri, remoteUri);
+        assertFalse(Files.exists(filePath));
+        assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
+    }
+
+
+    @Test
+    public void canSetKeyPrefix() throws IOException, StorageException {
+        Path filePath = getTestFileCopy();
+
+        var properties = getS3Properties();
+        properties.put(MpfConstants.S3_UPLOAD_OBJECT_KEY_PREFIX, "prefix/");
+
+        JsonOutputObject outputObject = setJobProperties(properties);
+        when(_mockLocalStorageBackend.store(same(outputObject), any()))
+                .thenReturn(filePath.toUri());
+
+        EXPECTED_OBJECT_KEY = "prefix/" + EXPECTED_OBJECT_KEY;
+
+        URI remoteUri = _s3StorageBackend.store(outputObject, new MutableObject<>());
+        assertEquals(URI.create(S3_HOST + RESULTS_BUCKET + "/" + EXPECTED_OBJECT_KEY), remoteUri);
         assertFalse(Files.exists(filePath));
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
@@ -567,7 +591,7 @@ public class TestS3StorageBackend {
                 .thenReturn(filePath.toUri());
 
         URI remoteUri = _s3StorageBackend.store(outputObject, new MutableObject<>());
-        assertEquals(EXPECTED_URI, remoteUri);
+        assertEquals(_expectedUri, remoteUri);
         assertFalse(Files.exists(filePath));
 
         // two failures one success
@@ -587,7 +611,7 @@ public class TestS3StorageBackend {
 
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(EXPECTED_URI.toString());
+                .thenReturn(_expectedUri.toString());
         when(media.getLocalPath())
                 .thenReturn(localPath);
 
@@ -638,7 +662,7 @@ public class TestS3StorageBackend {
         Path localPath = _tempFolder.newFolder().toPath().resolve("temp_downloaded_media");
         Media media = mock(Media.class);
         when(media.getUri())
-                .thenReturn(EXPECTED_URI.toString());
+                .thenReturn(_expectedUri.toString());
         when(media.getLocalPath())
                 .thenReturn(localPath);
 
@@ -720,7 +744,7 @@ public class TestS3StorageBackend {
         _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
 
         verify(_mockInProgressJobs)
-                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
+                .addStorageUri(jobId, derivativeMediaId, _expectedUri.toString());
 
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }
@@ -768,7 +792,7 @@ public class TestS3StorageBackend {
         _s3StorageBackend.storeDerivativeMedia(job, derivativeMedia);
 
         verify(_mockInProgressJobs)
-                .addStorageUri(jobId, derivativeMediaId, EXPECTED_URI.toString());
+                .addStorageUri(jobId, derivativeMediaId, _expectedUri.toString());
 
         assertEquals(List.of(RESULTS_BUCKET + '/' + EXPECTED_OBJECT_KEY), OBJECTS_POSTED);
     }

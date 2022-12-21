@@ -40,8 +40,12 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -302,7 +306,7 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    public Function<String, String> getCombinedProperties(
+    public UnaryOperator<String> getCombinedProperties(
             Action action,
             JobPipelineElements pipeline,
             Media media,
@@ -322,14 +326,14 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    public Function<String, String> getCombinedProperties(BatchJob job, Media media,
+    public UnaryOperator<String> getCombinedProperties(BatchJob job, Media media,
                                                           Action action) {
         return propName -> getValue(propName, job, media, action);
     }
 
 
 
-    public Function<String, String> getCombinedProperties(BatchJob job, Media media) {
+    public UnaryOperator<String> getCombinedProperties(BatchJob job, Media media) {
         return propName -> getPropertyInfo(
                 propName,
                 media.getMediaSpecificProperties(),
@@ -342,7 +346,7 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
-    public Function<String, String> getCombinedProperties(BatchJob job) {
+    public UnaryOperator<String> getCombinedProperties(BatchJob job) {
         return propName -> getPropertyInfo(
                 propName,
                 Map.of(),
@@ -356,7 +360,7 @@ public class AggregateJobPropertiesUtil {
     }
 
 
-    public Function<String, String> getCombinedProperties(BatchJob job, URI mediaUri) {
+    public UnaryOperator<String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var matchingMedia = Optional.<Media>empty();
         for (var media : job.getMedia()) {
             try {

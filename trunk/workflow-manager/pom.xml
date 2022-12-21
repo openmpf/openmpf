@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>7.0</version>
+        <version>7.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -54,7 +54,7 @@
                 <!-- Import dependency management from Spring Boot -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>2.7.4</version>
+                <version>2.7.6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -413,7 +413,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.3.2</version>
+            <version>42.4.1</version>
         </dependency>
 
         <dependency>
@@ -471,7 +471,6 @@
             <version>${jackson.version}</version>
         </dependency>
         <!-- / added for Jackson -->
-
 
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
@@ -585,6 +584,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${byte.buddy.version}</version>
         </dependency>
     </dependencies>
 

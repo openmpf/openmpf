@@ -30,7 +30,7 @@
     <groupId>org.mitre.mpf</groupId>
     <artifactId>mpf-project</artifactId>
     <packaging>pom</packaging>
-    <version>7.0</version>
+    <version>7.1</version>
     <name>Media Processing Framework</name>
 
     <!-- poms in the following subdirectories -->
@@ -88,8 +88,8 @@
 
         <!-- Version numbers that are used more than once. -->
         <spring.framework.version>5.3.20</spring.framework.version>
-        <hibernate.framework.version>5.4.24.Final</hibernate.framework.version>
-        <hibernate.validator.version>5.4.2.Final</hibernate.validator.version>
+        <hibernate.framework.version>5.6.14.Final</hibernate.framework.version>
+        <hibernate.validator.version>5.4.3.Final</hibernate.validator.version>
         <camel.framework.version>2.24.0</camel.framework.version>
         <activemq.framework.version>5.15.9</activemq.framework.version>
         <javasimon.version>4.1.1</javasimon.version>
@@ -97,17 +97,17 @@
         <slf4j.version>1.7.25</slf4j.version>
         <log4j.version>2.17.1</log4j.version>
         <exec.maven.plugin.version>1.4.0</exec.maven.plugin.version>
-        <jackson.version>2.13.2</jackson.version>
-        <jackson.databind.version>2.13.2.1</jackson.databind.version>
+        <jackson.version>2.14.1</jackson.version>
+        <jackson.databind.version>2.14.1</jackson.databind.version>
         <spring.security.version>5.6.4</spring.security.version>
         <commons.configuration2.version>2.8.0</commons.configuration2.version>
         <javax.jms-api.version>2.0.1</javax.jms-api.version>
         <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
         <commons.lang3.version>3.10</commons.lang3.version>
         <tika.core.version>1.28.1</tika.core.version>
-        <mockito.core.version>2.26.0</mockito.core.version>
+        <mockito.core.version>4.9.0</mockito.core.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
-        <google.protobuf.version>3.16.1</google.protobuf.version>
+        <google.protobuf.version>3.16.3</google.protobuf.version>
         <springfox.swagger.version>3.0.0</springfox.swagger.version>
         <!-- The failsafe package is released under the surefire project. The surefire and failsafe versions should be the same in
         order to maintain cross-compatibility. -->
@@ -117,6 +117,7 @@
         <hamcrest.version>1.3</hamcrest.version>
         <tomcat.servlet.api.version>7.0.72</tomcat.servlet.api.version>
         <guava.version>27.0.1-jre</guava.version>
+        <byte.buddy.version>1.12.18</byte.buddy.version>
 
         <!-- The C++ SDK install location can be changed by setting the MPF_SDK_INSTALL_PATH environment variable.  -->
         <components.build.script>${project.basedir}/../../openmpf-build-tools/build-openmpf-components/build_components.py</components.build.script>

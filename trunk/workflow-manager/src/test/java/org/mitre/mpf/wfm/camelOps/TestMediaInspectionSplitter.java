@@ -30,6 +30,7 @@ import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
@@ -54,6 +55,8 @@ import static org.mockito.Mockito.when;
 
 public class TestMediaInspectionSplitter {
 
+    private AutoCloseable closeable;
+
     @InjectMocks
     private MediaInspectionSplitter mediaInspectionSplitter;
 
@@ -62,7 +65,13 @@ public class TestMediaInspectionSplitter {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
+    }
+
+
+    @After
+    public void close() throws Exception {
+        closeable.close();
     }
 
 

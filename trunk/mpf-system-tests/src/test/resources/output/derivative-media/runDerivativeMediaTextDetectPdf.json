@@ -273,6 +273,7 @@
               "confidence": -1.0,
               "trackProperties": {
                 "ISO_LANGUAGE": "ENG",
+                "LANGUAGE_CONFIDENCE": "0.99999666",
                 "PAGE_NUM": "1",
                 "SECTION_NUM": "1",
                 "TAGS": "personal",
@@ -291,6 +292,7 @@
               "confidence": -1.0,
               "detectionProperties": {
                     "ISO_LANGUAGE": "ENG",
+                    "LANGUAGE_CONFIDENCE": "0.99999666",
                     "PAGE_NUM": "1",
                     "SECTION_NUM": "1",
                     "TAGS": "personal",
@@ -313,6 +315,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "ISO_LANGUAGE": "ENG",
+                      "LANGUAGE_CONFIDENCE": "0.99999666",
                       "PAGE_NUM": "1",
                       "SECTION_NUM": "1",
                       "TAGS": "personal",
@@ -337,6 +340,7 @@
                 "confidence": -1.0,
                 "trackProperties": {
                   "ISO_LANGUAGE": "ENG",
+                  "LANGUAGE_CONFIDENCE": "0.9999973",
                   "PAGE_NUM": "1",
                   "SECTION_NUM": "2",
                   "TAGS": "personal",
@@ -355,6 +359,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {
                     "ISO_LANGUAGE": "ENG",
+                    "LANGUAGE_CONFIDENCE": "0.9999973",
                     "PAGE_NUM": "1",
                     "SECTION_NUM": "2",
                     "TAGS": "personal",
@@ -377,6 +382,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "ISO_LANGUAGE": "ENG",
+                      "LANGUAGE_CONFIDENCE": "0.9999973",
                       "PAGE_NUM": "1",
                       "SECTION_NUM": "2",
                       "TAGS": "personal",
@@ -401,6 +407,7 @@
                 "confidence": -1.0,
                 "trackProperties": {
                   "ISO_LANGUAGE": "ENG",
+                  "LANGUAGE_CONFIDENCE": "0.99999666",
                   "PAGE_NUM": "2",
                   "SECTION_NUM": "1",
                   "TAGS": "personal",
@@ -419,6 +426,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {
                     "ISO_LANGUAGE": "ENG",
+                    "LANGUAGE_CONFIDENCE": "0.99999666",
                     "PAGE_NUM": "2",
                     "SECTION_NUM": "1",
                     "TAGS": "personal",
@@ -441,6 +449,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "ISO_LANGUAGE": "ENG",
+                      "LANGUAGE_CONFIDENCE": "0.99999666",
                       "PAGE_NUM": "2",
                       "SECTION_NUM": "1",
                       "TAGS": "personal",
@@ -465,6 +474,7 @@
                 "confidence": -1.0,
                 "trackProperties": {
                   "ISO_LANGUAGE": "ENG",
+                  "LANGUAGE_CONFIDENCE": "0.99999666",
                   "PAGE_NUM": "3",
                   "SECTION_NUM": "1",
                   "TAGS": "personal",
@@ -483,6 +493,7 @@
                   "confidence": -1.0,
                   "detectionProperties": {
                     "ISO_LANGUAGE": "ENG",
+                    "LANGUAGE_CONFIDENCE": "0.99999666",
                     "PAGE_NUM": "3",
                     "SECTION_NUM": "1",
                     "TAGS": "personal",
@@ -505,6 +516,7 @@
                     "confidence": -1.0,
                     "detectionProperties": {
                       "ISO_LANGUAGE": "ENG",
+                      "LANGUAGE_CONFIDENCE": "0.99999666",
                       "PAGE_NUM": "3",
                       "SECTION_NUM": "1",
                       "TAGS": "personal",

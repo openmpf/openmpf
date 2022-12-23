@@ -1,7 +1,7 @@
 {
   "componentName": "CplusplusHelloCustomPipelinesComponent",
-  "componentVersion": "7.0",
-  "middlewareVersion": "7.0",
+  "componentVersion": "7.1",
+  "middlewareVersion": "7.1",
   "sourceLanguage": "c++",
   "batchLibrary": "${MPF_HOME}/plugins/CplusplusHelloCustomPipelinesComponent/lib/libmpfHelloWorldTest.so",
   "environmentVariables": [

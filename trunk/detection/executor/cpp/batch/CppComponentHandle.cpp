@@ -31,7 +31,7 @@
 #include "ComponentLoadError.h"
 
 
-namespace MPF { namespace COMPONENT {
+namespace MPF::COMPONENT {
 
 
     CppComponentHandle::CppComponentHandle(const std::string &lib_path)
@@ -105,4 +105,8 @@ namespace MPF { namespace COMPONENT {
     void CppLogger::Fatal(const std::string& message) {
         LOG4CXX_FATAL(logger_, message);
     }
-}}
+
+    log4cxx::MDC CppLogger::GetJobContext(const std::string& job_name) {
+        return {"job", '[' + job_name + ']'};
+    }
+}

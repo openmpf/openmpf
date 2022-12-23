@@ -368,7 +368,8 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                     detection_buf.GetGenericRequest(generic_request);
                 }
 
-                logger.Info('[', job_name, "] Processing message on ", service_name, '.');
+                auto ctx = logger.GetJobContext(job_name);
+                logger.Info("Processing message on ", service_name, '.');
 
                 string detection_type = detection_engine.GetDetectionType();
 
@@ -382,8 +383,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         if (video_request.has_feed_forward_track) {
                             // Invoke the detection component with
                             // a feed-forward track
-                            logger.Info('[', job_name, "] Processing feed-forward track on ",
-                                        service_name, '.');
+                            logger.Info("Processing feed-forward track on ", service_name, '.');
                             MPFVideoJob video_job(job_name,
                                                   data_uri,
                                                   video_request.start_frame,
@@ -417,9 +417,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            logger.Error('[', job_name,
-                                         "] Video detection method returned an error for ",
-                                         data_uri);
+                            logger.Error("Video detection method returned an error for ", data_uri);
                         }
 
                         // Pack video response
@@ -433,8 +431,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         if (audio_request.has_feed_forward_track) {
                             // Invoke the detection component with
                             // a feed-forward track
-                            logger.Info('[', job_name, "] Processing feed-forward track on ",
-                                        service_name, '.');
+                            logger.Info("Processing feed-forward track on ", service_name, '.');
 
                             MPFAudioJob audio_job(job_name,
                                                   data_uri,
@@ -470,9 +467,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            logger.Error('[', job_name,
-                                         "] Audio detection method returned an error for ",
-                                         data_uri);
+                            logger.Error("Audio detection method returned an error for ", data_uri);
                         }
 
                         // Pack audio response
@@ -486,8 +481,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         if (image_request.has_feed_forward_location) {
                             // Invoke the detection component with
                             // a feed-forward location
-                            logger.Info('[', job_name, "] Processing feed-forward location on ",
-                                        service_name, '.');
+                            logger.Info("Processing feed-forward location on ", service_name, '.');
 
                             MPFImageJob image_job(job_name,
                                                   data_uri,
@@ -519,9 +513,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            logger.Error('[', job_name,
-                                         "] Image detection method returned an error for ",
-                                         data_uri);
+                            logger.Error("Image detection method returned an error for ", data_uri);
                         }
 
                         // Pack image response
@@ -533,8 +525,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         if (generic_request.has_feed_forward_track) {
                             // Invoke the detection component
                             // with a feed-forward track
-                            logger.Info('[', job_name, "] Processing feed-forward track on ",
-                                        service_name, '.');
+                            logger.Info("Processing feed-forward track on ", service_name, '.');
 
                             MPFGenericJob generic_job(job_name,
                                                       data_uri,
@@ -566,8 +557,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                         }
 
                         if (rc != MPF_DETECTION_SUCCESS) {
-                            logger.Error('[', job_name,
-                                         "] Generic detection method returned an error for ",
+                            logger.Error("Generic detection method returned an error for ",
                                          data_uri);
                         }
 
@@ -596,7 +586,7 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                     }
                     std::string error_message = "The detection component does not support detection data type of "
                                                 + data_type_str;
-                    logger.Warn('[', job_name, "] ", error_message);
+                    logger.Warn(error_message);
 
                     // Pack error response
                     detection_response_body = detection_buf.PackErrorResponse(
@@ -607,13 +597,12 @@ int run_jobs(Logger &logger, const std::string &broker_uri, const std::string &r
                 // Sanity check
                 if (!detection_response_body.empty()) {
                     // Send response
-                    logger.Debug('[', job_name, "] Sending response message on ", service_name,
-                                 '.');
+                    logger.Debug("Sending response message on ", service_name, '.');
 
                     messenger.SendMessage(detection_response_body, msg_metadata, job_name);
 
                 } else {
-                    logger.Error('[', job_name, "] Failed to generate a detection response.");
+                    logger.Error("Failed to generate a detection response.");
                 }
             }
         } // end while

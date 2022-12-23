@@ -288,6 +288,7 @@ public class TestMovingTrackLabelProcessor {
                 "VIDEO", //type
                 -1, //confidence
                 detections, //detections
-                Map.of()); //trackProperties
+                Map.of(), //trackProperties
+                "");
     }
 }

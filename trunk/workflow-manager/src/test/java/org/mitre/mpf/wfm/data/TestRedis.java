@@ -88,7 +88,8 @@ public class TestRedis {
                 "type1",
                 0.5f,
                 createDetections(),
-                ImmutableSortedMap.of("a", "b", "c", "d"));
+                ImmutableSortedMap.of("a", "b", "c", "d"),
+                "");
         var t2 = new Track(
                 TEST_JOB_ID,
                 TEST_MEDIA_ID,
@@ -101,7 +102,8 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Map.of());
+                Map.of(),
+                "");
         _currentTracks = ImmutableSortedSet.of(t1, t2);
 
         _differentTaskTrack = new Track(
@@ -116,7 +118,8 @@ public class TestRedis {
                 "type3",
                 0.6f,
                 createDetections(),
-                ImmutableSortedMap.of("e", "f"));
+                ImmutableSortedMap.of("e", "f"),
+                "");
 
         _differentJobTrack = new Track(
                 TEST_JOB_ID + 1,
@@ -130,7 +133,8 @@ public class TestRedis {
                 "type2",
                 0.6f,
                 createDetections(),
-                Map.of());
+                Map.of(),
+                "");
     }
 
 
@@ -188,7 +192,8 @@ public class TestRedis {
                 "replacement",
                 0.6f,
                 createDetections(),
-                ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"));
+                ImmutableSortedMap.of("a", "b", "c", "d", "e", "f"),
+                "");
         _redis.setTracks(TEST_JOB_ID, TEST_MEDIA_ID, 0, 0,
                          Collections.singletonList(replacementTrack));
 

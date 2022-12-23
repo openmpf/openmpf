@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 
 public class BoundingBoxWriter {
@@ -118,20 +119,28 @@ public class BoundingBoxWriter {
         File sourceFile = new File(sourceMedium.getPath()).getAbsoluteFile();
         File destinationFile = new File(destinationMedium.getPath()).getAbsoluteFile();
 
+        int maxLabelLength = boundingBoxMap.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .mapToInt(b -> b.getLabel().orElse("").length())
+                .max()
+                .orElse(0);
         try {
             if (medium == Medium.IMAGE) {
                 log.debug("markupImage: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupImageNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath(),
-                                  requestProperties);
+                markupImageNative(sourceFile.getAbsolutePath(), mediaMetadata,
+                                  destinationFile.getAbsolutePath(), requestProperties,
+                                  maxLabelLength);
             }
             else {
                 log.debug("markupVideo: source = '{}' (exists = {}), destination = '{}' (exists = {})",
                           sourceFile.getPath(), sourceFile.exists(),
                           destinationFile.getPath(), destinationFile.exists());
-                markupVideoNative(sourceFile.getAbsolutePath(), mediaMetadata, destinationFile.getAbsolutePath(),
-                                  requestProperties);
+                markupVideoNative(sourceFile.getAbsolutePath(), mediaMetadata,
+                                  destinationFile.getAbsolutePath(), requestProperties,
+                                  maxLabelLength);
             }
         }
         catch (Exception e) {
@@ -140,9 +149,13 @@ public class BoundingBoxWriter {
     }
 
     private native void markupVideoNative(String sourceVideo, Map<String, String> mediaMetadata,
-                                          String destinationVideo, Map<String, String> requestProperties);
+                                          String destinationVideo,
+                                          Map<String, String> requestProperties,
+                                          int maxLabelLength);
 
 	private native void markupImageNative(String sourceImage, Map<String, String> mediaMetadata,
-                                          String destinationImage, Map<String, String> requestProperties);
+                                          String destinationImage,
+                                          Map<String, String> requestProperties,
+                                          int maxLabelLength);
 
 }

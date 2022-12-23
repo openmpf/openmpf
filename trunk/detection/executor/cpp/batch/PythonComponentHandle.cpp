@@ -502,11 +502,18 @@ namespace MPF::COMPONENT {
         // This replaces "(unknown file)" with the logger name.
         class LogRecordFactory {
         public:
+            explicit LogRecordFactory(std::shared_ptr<std::string> job_name_log_prefix_ptr)
+                : job_name_log_prefix_ptr_(std::move(job_name_log_prefix_ptr)) {
+            }
+
             py::object operator()(const py::args &args, const py::kwargs &kwargs) {
                 py::object record = log_record_cls_(*args, **kwargs);
                 py::str file_name = record.attr("filename");
                 if (file_name.equal(unknown_file_str_)) {
                     record.attr("filename") = record.attr("name");
+                }
+                if (!job_name_log_prefix_ptr_->empty()) {
+                    record.attr("msg") = py::str(*job_name_log_prefix_ptr_) + record.attr("msg");
                 }
                 return record;
             }
@@ -514,6 +521,7 @@ namespace MPF::COMPONENT {
         private:
             py::object log_record_cls_ = py::module::import("logging").attr("LogRecord");
             py::str unknown_file_str_ = "(unknown file)";
+            std::shared_ptr<std::string> job_name_log_prefix_ptr_;
         };
     } // end anonymous namespace
 
@@ -713,10 +721,6 @@ namespace MPF::COMPONENT {
     // Can't be defaulted in header because in the header PythonComponentHandle::impl is still an incomplete type.
     PythonComponentHandle::~PythonComponentHandle() = default;
 
-    PythonComponentHandle::PythonComponentHandle(PythonComponentHandle &&other) noexcept = default;
-
-    PythonComponentHandle& PythonComponentHandle::operator=(PythonComponentHandle &&other) noexcept = default;
-
 
     void PythonComponentHandle::SetRunDirectory(const std::string &run_dir) {
         // This is unnecessary for Python components because they can just use __file__
@@ -762,6 +766,15 @@ namespace MPF::COMPONENT {
     }
 
 
+    PythonLoggerJobContext::PythonLoggerJobContext(std::shared_ptr<std::string> job_name_log_prefix_ptr)
+        : job_name_log_prefix_ptr_(std::move(job_name_log_prefix_ptr)) {
+    }
+
+    PythonLoggerJobContext::~PythonLoggerJobContext() {
+        job_name_log_prefix_ptr_->clear();
+    }
+
+
 
     class PythonLogger::logger_impl {
     public:
@@ -772,15 +785,14 @@ namespace MPF::COMPONENT {
 
     PythonLogger::PythonLogger(const std::string &log_level, const std::string &component_name) {
         initialize_python();
-        ConfigureLogging(log_level, component_name);
+        ConfigureLogging(log_level, component_name, job_name_log_prefix_ptr_);
         impl_ = std::make_unique<logger_impl>();
     }
 
     PythonLogger::PythonLogger(const PythonLogger& other)
-        : impl_(new logger_impl(*other.impl_)) {
+        : job_name_log_prefix_ptr_(other.job_name_log_prefix_ptr_)
+        , impl_(new logger_impl(*other.impl_)) {
     }
-
-    PythonLogger::PythonLogger(PythonLogger &&other) noexcept = default;
 
     PythonLogger::~PythonLogger() = default;
 
@@ -805,9 +817,16 @@ namespace MPF::COMPONENT {
         impl_->loggerAttrs.fatal(message);
     }
 
+    PythonLoggerJobContext PythonLogger::GetJobContext(const std::string& job_name) {
+        *job_name_log_prefix_ptr_ = '[';
+        job_name_log_prefix_ptr_->append(job_name);
+        job_name_log_prefix_ptr_->append("] ");
+        return PythonLoggerJobContext {job_name_log_prefix_ptr_};
+    }
 
     void PythonLogger::ConfigureLogging(const std::string &log_level_name,
-                                        const std::string &component_name) {
+                                        const std::string &component_name,
+                                        std::shared_ptr<std::string> job_name_log_prefix_ptr) {
         static bool initialized = false;
         if (initialized) {
             return;
@@ -854,7 +873,8 @@ namespace MPF::COMPONENT {
                     "sent to standard error.");
         }
 
-        logging_module.attr("setLogRecordFactory")(py::cpp_function(LogRecordFactory()));
+        logging_module.attr("setLogRecordFactory")(py::cpp_function(
+                LogRecordFactory(std::move(job_name_log_prefix_ptr))));
     }
 
 

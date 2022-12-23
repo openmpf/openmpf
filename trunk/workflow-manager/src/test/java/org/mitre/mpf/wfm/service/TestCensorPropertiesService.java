@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -45,6 +46,8 @@ import static org.mockito.Mockito.when;
 
 public class TestCensorPropertiesService {
 
+    private AutoCloseable _closeable;
+
     @InjectMocks
     private CensorPropertiesService _censorPropertiesService;
 
@@ -53,7 +56,13 @@ public class TestCensorPropertiesService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        _closeable = MockitoAnnotations.openMocks(this);
+    }
+
+
+    @After
+    public void close() throws Exception {
+        _closeable.close();
     }
 
 

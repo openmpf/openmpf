@@ -25,57 +25,58 @@
  ******************************************************************************/
 
 
-package org.mitre.mpf.wfm.camelOps;
+package org.mitre.mpf.wfm.util;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.data.entities.transients.Detection;
 
-import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import java.util.Comparator;
+import java.util.SortedSet;
 
-public class MediaTestUtil {
+public class ExemplarPolicyUtil {
 
+    public static final String PROPERTY = "EXEMPLAR_POLICY";
 
-    public static Exchange setupExchange(long jobId, MediaImpl media,
-                                         InProgressBatchJobsService mockInProgressJobs) {
-        var job = mock(BatchJob.class);
-        when(job.getMedia(media.getId()))
-                .thenReturn(media);
-        when(job.getJobProperties())
-                .thenReturn(ImmutableMap.of());
-        when(mockInProgressJobs.getJob(jobId))
-                .thenReturn(job);
-
-        var context = new DefaultCamelContext();
-        var inMessage = new DefaultMessage(context);
-        inMessage.setHeader(MpfHeaders.JOB_ID, jobId);
-        inMessage.setHeader(MpfHeaders.MEDIA_ID, media.getId());
-
-        var outMessage = new DefaultMessage(context);
-
-        var exchange = mock(Exchange.class);
-        when(exchange.getIn())
-                .thenReturn(inMessage);
-        when(exchange.getOut())
-                .thenReturn(outMessage);
-
-        doAnswer(invocation -> {
-            media.setFailed(true);
-            return null;
-        }).when(mockInProgressJobs)
-                .addError(eq(jobId), eq(media.getId()), any(), nonBlank());
-
-        return exchange;
+    private ExemplarPolicyUtil() {
     }
 
+    public static Detection getExemplar(String policy, int begin, int end,
+                                        SortedSet<Detection> detections) {
+        if (detections.isEmpty()) {
+            return null;
+        }
+        else if (detections.size() == 1 || "FIRST".equalsIgnoreCase(policy)) {
+            return detections.first();
+        }
+        else if ("LAST".equalsIgnoreCase(policy)) {
+            return detections.last();
+        }
+        else if ("MIDDLE".equalsIgnoreCase(policy)) {
+            return findMiddle(begin, end, detections);
+        }
+        else {
+            return detections.stream()
+                    .max(Comparator.comparingDouble(Detection::getConfidence))
+                    .orElse(null);
+        }
+    }
 
-    private MediaTestUtil() {
+    private static Detection findMiddle(int begin, int end, SortedSet<Detection> detections) {
+        int middleFrame = (begin + end) / 2;
+        var iter = detections.iterator();
+        var minDet = iter.next();
+        int minDist = Math.abs(minDet.getMediaOffsetFrame() - middleFrame);
+
+        while (iter.hasNext()) {
+            var current = iter.next();
+            int currentDist = Math.abs(current.getMediaOffsetFrame() - middleFrame);
+            if (currentDist < minDist) {
+                minDet = current;
+                minDist = currentDist;
+            }
+            else {
+                break;
+            }
+        }
+        return minDet;
     }
 }

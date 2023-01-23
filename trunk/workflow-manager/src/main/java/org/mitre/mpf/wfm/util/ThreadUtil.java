@@ -32,6 +32,7 @@ import org.slf4j.MDC;
 
 import java.util.Collection;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 public class ThreadUtil {
@@ -68,6 +69,20 @@ public class ThreadUtil {
                 throw new CompletionException(e);
             }
         }, delayedExecutor(delay, unit));
+    }
+
+    public static <T, R> Function<T, R> adaptThrowingFn(ThrowingFunction<T, R> fn) {
+        return x -> {
+            try {
+                return fn.apply(x);
+            }
+            catch (RuntimeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        };
     }
 
 
@@ -120,22 +135,12 @@ public class ThreadUtil {
     }
 
 
-
-    private static <T> CustomCompletableFuture<T> adapt(CompletionStage<T> future) {
-        if (future instanceof CustomCompletableFuture) {
-            return (CustomCompletableFuture<T>) future;
+    public static <T> CustomCompletableFuture<T> adapt(CompletableFuture<T> future) {
+        if (future instanceof CustomCompletableFuture<T> casted) {
+            return casted;
         }
-
-        var adaptedFuture = ThreadUtil.<T>newFuture();
-        future.whenComplete((result, err) -> {
-            if (err == null) {
-                adaptedFuture.complete(result);
-            }
-            else {
-                adaptedFuture.completeExceptionally(err);
-            }
-        });
-        return adaptedFuture;
+        return (CustomCompletableFuture<T>) completedFuture(null)
+            .thenCompose(x -> future);
     }
 
 
@@ -149,6 +154,11 @@ public class ThreadUtil {
                 return null;
             };
         }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R> {
+        R apply(T t) throws Exception;
     }
 
 
@@ -191,8 +201,12 @@ public class ThreadUtil {
                     complete(result);
                     return result;
                 }
-                catch (Throwable e) {
+                catch (CompletionException e) {
                     completeExceptionally(e);
+                    throw e;
+                }
+                catch (Throwable e) {
+                    completeExceptionally(new CompletionException(e));
                     throw e;
                 }
             });
@@ -235,7 +249,7 @@ public class ThreadUtil {
         MdcAwareCachedThreadPool() {
             // Uses same arguments as Executors.newCachedThreadPool()
             super(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-                  new SynchronousQueue<>());
+                  new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread);
         }
 
         @Override
@@ -243,6 +257,12 @@ public class ThreadUtil {
             // Capture context on submitting thread.
             var submitterMdcCtx = MDC.getCopyOfContextMap();
             super.execute(() -> MdcUtil.all(submitterMdcCtx, runnable));
+        }
+
+
+        private static final AtomicLong _threadCount = new AtomicLong(0);
+        private static Thread createThread(Runnable target) {
+            return new Thread(target, "mpf-pool-thread-" + _threadCount.incrementAndGet());
         }
     }
 }

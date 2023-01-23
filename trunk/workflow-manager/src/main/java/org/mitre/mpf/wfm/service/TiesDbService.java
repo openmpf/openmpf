@@ -92,6 +92,9 @@ public class TiesDbService {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final JobConfigHasher _jobConfigHasher;
+
+
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
@@ -99,7 +102,8 @@ public class TiesDbService {
                   JsonUtils jsonUtils,
                   HttpClientUtils httpClientUtils,
                   JobRequestDao jobRequestDao,
-                  InProgressBatchJobsService inProgressJobs) {
+                  InProgressBatchJobsService inProgressJobs,
+                  JobConfigHasher jobConfigHasher) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
@@ -107,6 +111,7 @@ public class TiesDbService {
         _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
         _inProgressJobs = inProgressJobs;
+        _jobConfigHasher = jobConfigHasher;
     }
 
 
@@ -175,6 +180,9 @@ public class TiesDbService {
                     TrackTypeCount::merge);
         }
 
+        var jobConfigHash = parentWithDerivativeCounts.isEmpty()
+                ? null
+                : getJobConfigHash(job);
         for (var entry : parentWithDerivativeCounts.entrySet()) {
             var parentMediaAlgoUrl = entry.getKey();
             var assertion = createActionAssertion(
@@ -185,7 +193,8 @@ public class TiesDbService {
                     outputObjectSha,
                     parentMediaAlgoUrl.algorithmName(),
                     entry.getValue().trackType(),
-                    entry.getValue().count());
+                    entry.getValue().count(),
+                    jobConfigHash);
             var tiesDbInfo = new TiesDbInfo(parentMediaAlgoUrl.tiesDbUrl(), assertion);
             _inProgressJobs.addTiesDbInfo(
                     job.getId(), parentMediaAlgoUrl.parentMediaId(), tiesDbInfo);
@@ -277,7 +286,8 @@ public class TiesDbService {
             String outputObjectSha,
             String algorithm,
             String trackType,
-            int trackCount) {
+            int trackCount,
+            String jobConfigHash) {
 
         var dataObject = new TiesDbInfo.DataObject(
                 job.getPipelineElements().getName(),
@@ -290,7 +300,8 @@ public class TiesDbService {
                 jobStatus,
                 _propertiesUtil.getSemanticVersion(),
                 _propertiesUtil.getHostName(),
-                trackCount);
+                trackCount,
+                jobConfigHash);
 
         var assertionId = getAssertionId(
                 _propertiesUtil.getExportedJobId(job.getId()),
@@ -301,6 +312,17 @@ public class TiesDbService {
         return new TiesDbInfo.Assertion(assertionId, trackType, dataObject);
     }
 
+
+    private String getJobConfigHash(BatchJob job) {
+        var props = _aggregateJobPropertiesUtil.getMediaActionProps(
+                job.getJobProperties(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getSystemPropertiesSnapshot(),
+                job.getPipelineElements());
+
+        return _jobConfigHasher.getJobConfigHash(
+                job.getMedia(), job.getPipelineElements(), props);
+    }
 
     private Triple<String, String, String> getAlgoAndTypeAndTiesDbUrlToUse(
             JobPart jobPart,

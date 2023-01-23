@@ -26,18 +26,24 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
@@ -51,6 +57,12 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonMarkupOutputObject;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.interop.util.TimeUtils;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
@@ -58,6 +70,7 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -76,6 +89,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Streams;
 
@@ -100,6 +114,8 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final S3StorageBackend _s3StorageBackend;
+
     @Inject
     public TiesDbBeforeJobCheckServiceImpl(
             PropertiesUtil propertiesUtil,
@@ -107,13 +123,15 @@ public class TiesDbBeforeJobCheckServiceImpl
             JobConfigHasher jobConfigHasher,
             HttpClientUtils httpClientUtils,
             ObjectMapper objectMapper,
-            InProgressBatchJobsService inProgressJobs) {
+            InProgressBatchJobsService inProgressJobs,
+            S3StorageBackend s3StorageBackend) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _jobConfigHasher = jobConfigHasher;
         _httpClientUtils = httpClientUtils;
         _objectMapper = objectMapper;
         _inProgressJobs = inProgressJobs;
+        _s3StorageBackend = s3StorageBackend;
     }
 
 
@@ -158,7 +176,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
             exchange.getOut().setHeader(
                     MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
-                    ci.outputObjectUri());
+                    ci.outputObjectUri().toString());
         });
     }
 
@@ -400,5 +418,207 @@ public class TiesDbBeforeJobCheckServiceImpl
                 outputUri,
                 status,
                 processDate));
+    }
+
+
+    public URI getUpdatedOutputObjectUri(BatchJob job, URI outputObjectUriFromPrevJob) {
+        try {
+            var jobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
+            if (Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_DISABLED))
+                    || !S3StorageBackend.requiresS3ResultUpload(jobProps)) {
+                return outputObjectUriFromPrevJob;
+            }
+
+            var s3CopyConfig = new S3CopyConfig(jobProps);
+            var oldOutputObject = _s3StorageBackend.getOldJobOutputObject(
+                    outputObjectUriFromPrevJob, s3CopyConfig);
+            var urisToCopy = getUrisToCopy(oldOutputObject);
+            var oldUrisToNew = _s3StorageBackend.copyResults(urisToCopy, s3CopyConfig);
+
+            var newOutputObject = createOutputObjectWithUpdatedUris(
+                    job, oldOutputObject, oldUrisToNew);
+            return _s3StorageBackend.store(newOutputObject, new MutableObject<>());
+        }
+        catch (StorageException | IOException e) {
+            var msg = "A matching job was found in TiesDb," +
+                " but copying results from the old job failed due to: " + e;
+            LOG.error(msg, e);
+            _inProgressJobs.addJobError(
+                    job.getId(),
+                    IssueCodes.REMOTE_STORAGE_UPLOAD,
+                    msg);
+            return outputObjectUriFromPrevJob;
+        }
+    }
+
+
+    private static Set<URI> getUrisToCopy(JsonOutputObject outputObject) throws StorageException {
+        var uris = new HashSet<URI>();
+
+        for (var media : outputObject.getMedia()) {
+            try {
+                if (media.getMarkupResult() != null) {
+                    uris.add(new URI(media.getMarkupResult().getPath()));
+                }
+            }
+            catch (URISyntaxException e) {
+                throw new StorageException(
+                        "Could not copy markup to new bucket because \"%s\" is not a valid URI."
+                                .formatted(media.getPath()),
+                        e);
+            }
+        }
+
+        var artifactPaths = outputObject.getMedia()
+                .stream()
+                .flatMap(m -> m.getDetectionTypes().values().stream())
+                .flatMap(Collection::stream)
+                .flatMap(a -> a.getTracks().stream())
+                .flatMap(t -> t.getDetections().stream())
+                .filter(d -> "COMPLETED".equals(d.getArtifactExtractionStatus()))
+                .map(JsonDetectionOutputObject::getArtifactPath)
+                .iterator();
+
+        while (artifactPaths.hasNext()) {
+            var path = artifactPaths.next();
+            try {
+                uris.add(new URI(path));
+            }
+            catch (URISyntaxException e) {
+                throw new StorageException(
+                        "Could not copy artifact to new bucket because \"%s\" is not a valid URI."
+                                .formatted(path),
+                        e);
+            }
+        }
+        return uris;
+    }
+
+
+    private JsonOutputObject createOutputObjectWithUpdatedUris(
+            BatchJob newJob, JsonOutputObject oldOutputObject, Map<URI, URI> updatedUris) {
+
+        var mediaHashToNewUri = newJob.getMedia()
+                .stream()
+                .collect(toMap(m -> m.getHash().orElseThrow(), Media::getUri));
+
+        var newMediaList = new ArrayList<JsonMediaOutputObject>();
+        for (var oldMedia : oldOutputObject.getMedia()) {
+            var newDetectionTypeMap = new TreeMap<String, SortedSet<JsonActionOutputObject>>();
+            for (var oldDetectionTypeEntry : oldMedia.getDetectionTypes().entrySet()) {
+                newDetectionTypeMap.put(
+                        oldDetectionTypeEntry.getKey(),
+                        updateActions(oldDetectionTypeEntry.getValue(), updatedUris));
+            }
+
+            var oldMarkup = oldMedia.getMarkupResult();
+            JsonMarkupOutputObject newMarkup;
+            if (oldMarkup == null) {
+                newMarkup = null;
+            }
+            else {
+                var newMarkupPath = updatedUris.get(URI.create(oldMarkup.getPath())).toString();
+                newMarkup = new JsonMarkupOutputObject(
+                        oldMarkup.getId(),
+                        newMarkupPath,
+                        oldMarkup.getStatus(),
+                        oldMarkup.getMessage());
+            }
+
+            var newMediaUri = mediaHashToNewUri.get(oldMedia.getSha256());
+            var newMedia = JsonMediaOutputObject.factory(
+                    oldMedia.getMediaId(),
+                    oldMedia.getParentMediaId(),
+                    newMediaUri,
+                    oldMedia.getType(),
+                    oldMedia.getMimeType(),
+                    oldMedia.getLength(),
+                    oldMedia.getFrameRanges(),
+                    oldMedia.getTimeRanges(),
+                    oldMedia.getSha256(),
+                    oldMedia.getStatus(),
+                    oldMedia.getMediaMetadata(),
+                    oldMedia.getMediaProperties(),
+                    newMarkup,
+                    newDetectionTypeMap,
+                    oldMedia.getDetectionProcessingErrors());
+            newMediaList.add(newMedia);
+        }
+        return JsonOutputObject.factory(
+                _propertiesUtil.getExportedJobId(newJob.getId()),
+                oldOutputObject.getJobId(),
+                oldOutputObject.getObjectId(),
+                oldOutputObject.getPipeline(),
+                oldOutputObject.getPriority(),
+                oldOutputObject.getSiteId(),
+                oldOutputObject.getOpenmpfVersion(),
+                oldOutputObject.getExternalJobId(),
+                oldOutputObject.getTimeStart(),
+                oldOutputObject.getTimeStop(),
+                oldOutputObject.getStatus(),
+                oldOutputObject.getAlgorithmProperties(),
+                oldOutputObject.getJobProperties(),
+                oldOutputObject.getEnvironmentVariableProperties(),
+                newMediaList,
+                oldOutputObject.getErrors(),
+                oldOutputObject.getWarnings());
+    }
+
+    private static SortedSet<JsonActionOutputObject> updateActions(
+            Collection<JsonActionOutputObject> oldActions, Map<URI, URI> updatedUris) {
+        var newActions = new TreeSet<JsonActionOutputObject>();
+        for (var oldAction : oldActions) {
+            var newTracks = oldAction.getTracks()
+                    .stream()
+                    .map(t -> updateTrack(t, updatedUris))
+                    .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+            var newAction = JsonActionOutputObject.factory(
+                oldAction.getSource(),
+                oldAction.getAlgorithm(),
+                newTracks);
+            newActions.add(newAction);
+        }
+        return newActions;
+    }
+
+
+    private static JsonTrackOutputObject updateTrack(
+            JsonTrackOutputObject oldTrack, Map<URI, URI> updatedUris) {
+        var newDetections = oldTrack.getDetections().stream()
+            .map(d -> updateDetection(d, updatedUris))
+            .toList();
+
+        return new JsonTrackOutputObject(
+                oldTrack.getIndex(),
+                oldTrack.getId(),
+                oldTrack.getStartOffsetFrame(),
+                oldTrack.getStopOffsetFrame(),
+                oldTrack.getStartOffsetTime(),
+                oldTrack.getStopOffsetTime(),
+                oldTrack.getType(),
+                oldTrack.getSource(),
+                oldTrack.getConfidence(),
+                oldTrack.getTrackProperties(),
+                updateDetection(oldTrack.getExemplar(), updatedUris),
+                newDetections);
+    }
+
+    private static JsonDetectionOutputObject updateDetection(
+            JsonDetectionOutputObject oldDetection, Map<URI, URI> updatedUris) {
+        if (!"COMPLETED".equals(oldDetection.getArtifactExtractionStatus())) {
+            return oldDetection;
+        }
+        var newPath = updatedUris.get(URI.create(oldDetection.getArtifactPath())).toString();
+        return new JsonDetectionOutputObject(
+                oldDetection.getX(),
+                oldDetection.getY(),
+                oldDetection.getWidth(),
+                oldDetection.getHeight(),
+                oldDetection.getConfidence(),
+                oldDetection.getDetectionProperties(),
+                oldDetection.getOffsetFrame(),
+                oldDetection.getOffsetTime(),
+                oldDetection.getArtifactExtractionStatus(),
+                newPath);
     }
 }

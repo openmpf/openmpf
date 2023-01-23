@@ -26,10 +26,12 @@
 
 package org.mitre.mpf.wfm.service;
 
+import java.net.URI;
 import java.util.Collection;
 
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -41,4 +43,6 @@ public interface TiesDbBeforeJobCheckService extends WfmProcessorInterface {
             SystemPropertiesSnapshot systemPropertiesSnapshot,
             Collection<Media> media,
             JobPipelineElements jobPipelineElements);
+
+    public URI getUpdatedOutputObjectUri(BatchJob job, URI outputObjectUriFromPrevJob);
 }

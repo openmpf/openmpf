@@ -92,6 +92,9 @@ public class TestTiesDbService {
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
+    @Mock
+    private JobConfigHasher _mockJobConfigHasher;
+
     private TiesDbService _tiesDbService;
 
 
@@ -110,7 +113,8 @@ public class TestTiesDbService {
                 _jsonUtils,
                 _mockHttpClientUtils,
                 _mockJobRequestDao,
-                _mockInProgressJobs);
+                _mockInProgressJobs,
+                _mockJobConfigHasher);
 
         when(_mockPropertiesUtil.getSemanticVersion())
                 .thenReturn("1.5");
@@ -126,6 +130,9 @@ public class TestTiesDbService {
 
         when(_mockPropertiesUtil.getExportedJobId(anyLong()))
                 .thenReturn("localhost-123");
+
+        when(_mockJobConfigHasher.getJobConfigHash(any(), any(), any()))
+                .thenReturn("JOB_HASH");
     }
 
     @After
@@ -626,6 +633,7 @@ public class TestTiesDbService {
         assertEquals("1.5", dataObject.systemVersion());
         assertFalse(dataObject.systemHostname().isBlank());
         assertEquals("PIPELINE", dataObject.pipeline());
+        assertEquals("JOB_HASH", dataObject.jobConfigHash());
 
         // Assertions specific to given arguments
         if (!tiesDbBaseUrl.equals(actualTiesDbInfo.tiesDbUrl())) {
@@ -1400,7 +1408,8 @@ public class TestTiesDbService {
                                 BatchJobStatusType.COMPLETE,
                                 "1.5",
                                 "hostname",
-                                101)));
+                                101,
+                                "JOB_HASH")));
         when(media2.getTiesDbInfo())
                 .thenReturn(List.of(tiesDbInfo3));
 
@@ -1489,7 +1498,8 @@ public class TestTiesDbService {
                                 BatchJobStatusType.COMPLETE,
                                 "1.5",
                                 "hostname",
-                                20)));
+                                20,
+                                "JOB_HASH")));
 
         when(media1.getTiesDbInfo())
                 .thenReturn(List.of(validTiesDbInfo, invalidTiesDbInfo));
@@ -1681,7 +1691,8 @@ public class TestTiesDbService {
                                 BatchJobStatusType.COMPLETE,
                                 "1.5",
                                 "hostname",
-                                20)));
+                                20,
+                                "JOB_HASH")));
     }
 
 
@@ -1702,7 +1713,8 @@ public class TestTiesDbService {
                                 BatchJobStatusType.COMPLETE,
                                 "1.5",
                                 "hostname",
-                                100)));
+                                100,
+                                "JOB_HASH")));
     }
 
 

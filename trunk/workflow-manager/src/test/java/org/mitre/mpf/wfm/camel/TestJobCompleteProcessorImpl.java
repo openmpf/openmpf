@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Optional;
 
 import org.apache.http.HttpResponse;
@@ -38,6 +39,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CallbackStatus;
@@ -94,8 +96,12 @@ public class TestJobCompleteProcessorImpl {
     @Mock
     private TiesDbService _mockTiesDbService;
 
+    @Mock
+    private TiesDbBeforeJobCheckService _mockTiesDbBeforeJobCheckService;
+
     @InjectMocks
     private JobCompleteProcessorImpl _jobCompleteProcessorImpl;
+
 
     @Rule
     public TemporaryFolder _tempDir = new TemporaryFolder();
@@ -157,6 +163,10 @@ public class TestJobCompleteProcessorImpl {
         when(_mockJsonUtils.serialize(job))
             .thenReturn(serializedJob);
 
+        var newOutputUri = new URI("http://example.com/bucket/key");
+        when(_mockTiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(job, new URI(outputUri)))
+            .thenReturn(newOutputUri);
+
         var callbackRequestCaptor = ArgumentCaptor.forClass(HttpGet.class);
         var httpResponseFuture = ThreadUtil.<HttpResponse>newFuture();
         when(_mockHttpClientUtils.executeRequest(callbackRequestCaptor.capture(), eq(3)))
@@ -172,7 +182,7 @@ public class TestJobCompleteProcessorImpl {
         _jobCompleteProcessorImpl.wfmProcess(exchange);
 
         assertNotNull(jobRequestEntity.getTimeCompleted());
-        assertEquals(outputUri, jobRequestEntity.getOutputObjectPath());
+        assertEquals(newOutputUri.toString(), jobRequestEntity.getOutputObjectPath());
         assertEquals(BatchJobStatusType.COMPLETE, jobRequestEntity.getStatus());
         assertEquals(serializedJob, jobRequestEntity.getJob());
 

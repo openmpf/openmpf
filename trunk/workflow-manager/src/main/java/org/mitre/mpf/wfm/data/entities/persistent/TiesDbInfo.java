@@ -60,5 +60,6 @@ public record TiesDbInfo(String tiesDbUrl, Assertion assertion) {
             BatchJobStatusType jobStatus,
             String systemVersion,
             String systemHostname,
-            int trackCount) {}
+            int trackCount,
+            String jobConfigHash) {}
 }

@@ -56,6 +56,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -113,13 +114,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @Autowired
-    private HttpClientUtils _httpClientUtils;
+    private HttpClientUtils httpClientUtils;
 
     @Autowired
     private JmsUtils jmsUtils;
 
     @Autowired
     private TiesDbService tiesDbService;
+
+    @Autowired
+    private TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -146,7 +150,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var trackCounter = new TrackCounter();
         try {
             if (skippedJobDueToTiesDbEntry) {
-                outputObjectUri = URI.create(outputObjectFromTiesDbUri);
+                outputObjectUri = tiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(
+                        job, URI.create(outputObjectFromTiesDbUri));
             }
             else {
                 outputObjectUri = createOutputObject(
@@ -280,7 +285,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         try {
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
-            return _httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
+            return httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
                     .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }

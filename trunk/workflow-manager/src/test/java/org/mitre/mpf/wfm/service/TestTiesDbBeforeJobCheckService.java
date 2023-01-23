@@ -29,11 +29,14 @@ package org.mitre.mpf.wfm.service;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,7 +53,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.apache.camel.Exchange;
 import org.apache.http.HttpResponse;
@@ -60,6 +65,17 @@ import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonDetectionProcessingError;
+import org.mitre.mpf.interop.JsonIssueDetails;
+import org.mitre.mpf.interop.JsonMarkupOutputObject;
+import org.mitre.mpf.interop.JsonMediaIssue;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.JsonMediaRange;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
@@ -86,6 +102,8 @@ import org.mockito.MockitoAnnotations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 
 public class TestTiesDbBeforeJobCheckService {
 
@@ -106,6 +124,9 @@ public class TestTiesDbBeforeJobCheckService {
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
+    @Mock
+    private S3StorageBackend _mockS3StorageBackend;
+
     private TiesDbBeforeJobCheckServiceImpl _tiesDbBeforeJobCheckService;
 
 
@@ -122,7 +143,8 @@ public class TestTiesDbBeforeJobCheckService {
                 _mockJobConfigHasher,
                 _mockHttpClientUtils,
                 _objectMapper,
-                _mockInProgressJobs);
+                _mockInProgressJobs,
+                _mockS3StorageBackend);
     }
 
 
@@ -557,8 +579,8 @@ public class TestTiesDbBeforeJobCheckService {
         var exchange = runSuccessfulAfterMediaInspectionTest("JOB_HASH");
         assertEquals(true, exchange.getOut().getHeader(MpfHeaders.JOB_COMPLETE));
         assertEquals(
-            URI.create("file:///1.json"),
-            exchange.getOut().getHeader(MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB));
+                "file:///1.json",
+                exchange.getOut().getHeader(MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB));
     }
 
 
@@ -667,6 +689,300 @@ public class TestTiesDbBeforeJobCheckService {
                 _mockAggJobProps,
                 _mockJobConfigHasher,
                 _mockHttpClientUtils);
+    }
+
+
+    @Test
+    public void testCopyingResultsToNewBucket() throws StorageException, IOException {
+
+        var job = mock(BatchJob.class);
+        when(job.getId())
+            .thenReturn(36L);
+
+        var jobMedia1 = mock(Media.class);
+        when(jobMedia1.getHash())
+            .thenReturn(Optional.of("SHA1"));
+        when(jobMedia1.getUri())
+            .thenReturn("http://localhost/dest-bucket/media1");
+
+        var jobMedia2 = mock(Media.class);
+        when(jobMedia2.getHash())
+            .thenReturn(Optional.of("SHA2"));
+        when(jobMedia2.getUri())
+            .thenReturn("http://localhost/dest-bucket/media2");
+
+        when(job.getMedia())
+            .thenReturn(List.of(jobMedia1, jobMedia2));
+
+        var detection1 = new JsonDetectionOutputObject(
+                1, 2, 3, 4, 0.5f,
+                ImmutableSortedMap.of("prop1", "value1"),
+                5, 6, "COMPLETED", "http://localhost/bucket/artifact1");
+
+        var detection2 = new JsonDetectionOutputObject(
+                13, 14, 15, 16, 0.2f,
+                ImmutableSortedMap.of("prop2", "value2"),
+                17, 18, "FAILED", null);
+
+        var detection3 = new JsonDetectionOutputObject(
+                7, 8, 9, 10, 1,
+                ImmutableSortedMap.of("prop2", "value2"),
+                11, 12, "COMPLETED", "http://localhost/bucket/artifact2");
+
+
+        var track1 = new JsonTrackOutputObject(
+                19, "19", 20, 21, 22, 23, "type1", "source1", 0.5f,
+                Map.of("prop3", "prop4"), detection1, List.of(detection1, detection2));
+
+        var track2 = new JsonTrackOutputObject(
+                24, "24", 25, 26, 27, 28, "type2", "source1", 1,
+                Map.of("prop3", "prop4"), detection3, List.of(detection3));
+
+        var action1 = JsonActionOutputObject.factory(
+                "source1", "algo1", ImmutableSortedSet.of(track1));
+
+        var action2 = JsonActionOutputObject.factory(
+                "source2", "algo2", ImmutableSortedSet.of(track2));
+
+        var detectionTypeMap = ImmutableSortedMap.<String, SortedSet<JsonActionOutputObject>>of(
+                "type1", ImmutableSortedSet.of(action1),
+                "type2", ImmutableSortedSet.of(action2));
+
+        var detectionError = new JsonDetectionProcessingError(
+                35, 36, 37, 38, "ISSUE_CODE", "ISSUE_MESSAGE");
+
+        var mediaError = new JsonMediaIssue(39, List.of(
+                new JsonIssueDetails("source1", "code1", "error msg")));
+
+        var mediaWarning = new JsonMediaIssue(40, List.of(
+                new JsonIssueDetails("source2", "code2", "warning msg")));
+
+        var media1 = JsonMediaOutputObject.factory(
+                29L, -1L, "http://localhost/bucket/media1", "VIDEO", "video/mp4", 30,
+                ImmutableSortedSet.of(new JsonMediaRange(31, 32)),
+                ImmutableSortedSet.of(new JsonMediaRange(33, 34)), "SHA1", null,
+                ImmutableSortedMap.of("META1", "META1VALUE"),
+                ImmutableSortedMap.of("MEDIA_PROP1", "MEDIA_PROP1_VALUE"),
+                new JsonMarkupOutputObject(35, "http://localhost/bucket/markup", "complete", null),
+                detectionTypeMap,
+                ImmutableSortedMap.of("ALGO", ImmutableSortedSet.of(detectionError)));
+
+
+        var media2 = JsonMediaOutputObject.factory(
+                290L, -1L, "http://localhost/bucket/media2", "IMAGE", "image/png", 300,
+                ImmutableSortedSet.of(),
+                ImmutableSortedSet.of(), "SHA2", null,
+                ImmutableSortedMap.of("META2", "META2VALUE"),
+                ImmutableSortedMap.of("MEDIA_PROP2", "MEDIA_PROP2_VALUE"),
+                null,
+                ImmutableSortedMap.of(),
+                ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));
+
+        var startTime = Instant.now();
+        var endTime = startTime.plusSeconds(1000);
+        var outputObject = JsonOutputObject.factory(
+                "localhost-36", null, "id",
+                new JsonPipeline("PIPELINE_NAME", "pipeline description"),
+                9, "site", "version", "external id",
+                startTime, endTime,
+                "status", Map.of("ALGO", Map.of("ALGO_KEY", "ALGO_VALUE")),
+                Map.of("JOB_PROP", "JOB_VALUE"),
+                Map.of("ENV_VAR1", "ENV_VALUE"),
+                List.of(media1, media2),
+                List.of(mediaError),
+                List.of(mediaWarning));
+
+        when(_mockAggJobProps.getCombinedProperties(job))
+            .thenReturn(s -> s);
+
+        when(_mockS3StorageBackend.getOldJobOutputObject(
+                eq(URI.create("http://localhost/bucket/output-object")), isNotNull()))
+            .thenReturn(outputObject);
+
+        var uriMappings = Map.of(
+                URI.create("http://localhost/bucket/artifact1"),
+                URI.create("http://localhost/dest-bucket/artifact1"),
+
+                URI.create("http://localhost/bucket/artifact2"),
+                URI.create("http://localhost/dest-bucket/artifact2"),
+
+                URI.create("http://localhost/bucket/markup"),
+                URI.create("http://localhost/dest-bucket/markup"));
+
+        when(_mockS3StorageBackend.copyResults(eq(uriMappings.keySet()), isNotNull()))
+                .thenReturn(uriMappings);
+
+        when(_mockPropertiesUtil.getExportedJobId(36))
+                .thenReturn("localhost-36");
+
+        var newOutputObjectCaptor = ArgumentCaptor.forClass(JsonOutputObject.class);
+        when(_mockS3StorageBackend.store(newOutputObjectCaptor.capture(), isNotNull()))
+                .thenReturn(URI.create("http://localhost/dest-bucket/output-object"));
+
+
+        var newOutputObjectUri = _tiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(
+                job, URI.create("http://localhost/bucket/output-object"));
+
+        assertEquals(
+                URI.create("http://localhost/dest-bucket/output-object"), newOutputObjectUri);
+
+        var newOutputObject = newOutputObjectCaptor.getValue();
+        var outputObjectChecker = new FieldChecker<>(outputObject, newOutputObject);
+        outputObjectChecker.eq(j -> j.getJobId());
+        assertEquals(outputObject.getJobId(), newOutputObject.getTiesDbSourceJobId());
+        outputObjectChecker.eq(j -> j.getObjectId());
+        outputObjectChecker.eq(j -> j.getPipeline().getName());
+        outputObjectChecker.eq(j -> j.getPipeline().getDescription());
+        outputObjectChecker.eq(j -> j.getPipeline().getTasks());
+        outputObjectChecker.eq(j -> j.getPriority());
+        outputObjectChecker.eq(j -> j.getSiteId());
+        outputObjectChecker.eq(j -> j.getOpenmpfVersion());
+        outputObjectChecker.eq(j -> j.getExternalJobId());
+        outputObjectChecker.eq(j -> j.getTimeStart().toEpochMilli());
+        outputObjectChecker.eq(j -> j.getTimeStop().toEpochMilli());
+        outputObjectChecker.eq(j -> j.getStatus());
+        outputObjectChecker.eq(j -> j.getAlgorithmProperties());
+        outputObjectChecker.eq(j -> j.getEnvironmentVariableProperties());
+        outputObjectChecker.eq(j -> j.getJobProperties());
+        outputObjectChecker.neq(j -> j.getMedia());
+        outputObjectChecker.eq(j -> j.getErrors());
+        outputObjectChecker.eq(j -> j.getWarnings());
+
+        outputObjectChecker.eq(j -> j.getMedia().size());
+        var newMedia1 = newOutputObject.getMedia().first();
+        compareMedia(media1, newMedia1, "http://localhost/dest-bucket/media1");
+
+        var newMedia2 = newOutputObject.getMedia().last();
+        compareMedia(media2, newMedia2, "http://localhost/dest-bucket/media2");
+
+        var newMarkup = newMedia1.getMarkupResult();
+        var markupChecker = new FieldChecker<>(media1.getMarkupResult(), newMarkup);
+        markupChecker.eq(m -> m.getId());
+        assertEquals("http://localhost/dest-bucket/markup", newMarkup.getPath());
+        markupChecker.eq(m -> m.getStatus());
+        markupChecker.eq(m -> m.getMessage());
+
+        var newAction1 = newMedia1.getDetectionTypes().get("type1").first();
+        var action1Checker = new FieldChecker<>(action1, newAction1);
+        action1Checker.eq(a -> a.getSource());
+        action1Checker.eq(a -> a.getAlgorithm());
+        action1Checker.eq(a -> a.getTracks().size());
+
+        var newTrack1 = newAction1.getTracks().first();
+        assertTracksEqualExceptDetections(track1, newTrack1);
+        var newTrack1Exemplar = newTrack1.getExemplar();
+        assertDetectionsEqualExceptArtifactPath(detection1, newTrack1Exemplar);
+        assertEquals(
+                "http://localhost/dest-bucket/artifact1",
+                newTrack1Exemplar.getArtifactPath());
+
+        var newDetection1 = newTrack1.getDetections().first();
+        assertDetectionsEqualExceptArtifactPath(detection1, newDetection1);
+        assertEquals(
+                "http://localhost/dest-bucket/artifact1",
+                newDetection1.getArtifactPath());
+
+        var newDetection2 = newTrack1.getDetections().last();
+        assertDetectionsEqualExceptArtifactPath(detection2, newDetection2);
+        assertNull(newDetection2.getArtifactPath());
+
+
+        var newAction2 = newMedia1.getDetectionTypes().get("type2").first();
+        var action2Checker = new FieldChecker<>(action2, newAction2);
+        action2Checker.eq(a -> a.getSource());
+        action2Checker.eq(a -> a.getAlgorithm());
+        action2Checker.eq(a -> a.getTracks().size());
+
+        var newTrack2 = newAction2.getTracks().first();
+        assertTracksEqualExceptDetections(track2, newTrack2);
+        var newTrack2Exemplar = newTrack2.getExemplar();
+        assertDetectionsEqualExceptArtifactPath(detection3, newTrack2Exemplar);
+        assertEquals(
+                "http://localhost/dest-bucket/artifact2",
+                newTrack2Exemplar.getArtifactPath());
+
+        var newDetection3 = newTrack2.getDetections().first();
+        assertDetectionsEqualExceptArtifactPath(detection3, newDetection3);
+        assertEquals(
+                "http://localhost/dest-bucket/artifact2",
+                newDetection3.getArtifactPath());
+    }
+
+    private static void compareMedia(
+            JsonMediaOutputObject oldMedia, JsonMediaOutputObject newMedia, String newMediaPath) {
+
+        var mediaChecker = new FieldChecker<>(oldMedia, newMedia);
+        mediaChecker.eq(m -> m.getMediaId());
+        mediaChecker.eq(m -> m.getParentMediaId());
+        assertEquals(newMediaPath, newMedia.getPath());
+        mediaChecker.eq(m -> m.getType());
+        mediaChecker.eq(m -> m.getMimeType());
+        mediaChecker.eq(m -> m.getLength());
+        mediaChecker.eq(m -> m.getFrameRanges());
+        mediaChecker.eq(m -> m.getTimeRanges());
+        mediaChecker.eq(m -> m.getSha256());
+        mediaChecker.eq(m -> m.getStatus());
+        mediaChecker.eq(m -> m.getMediaMetadata());
+        mediaChecker.eq(m -> m.getMediaProperties());
+        if (oldMedia.getMarkupResult() == null) {
+            mediaChecker.eq(m -> m.getMarkupResult());
+        }
+        else {
+            mediaChecker.neq(m -> m.getMarkupResult());
+        }
+
+        mediaChecker.eq(m -> m.getDetectionTypes().keySet());
+        for (var key : oldMedia.getDetectionTypes().keySet()) {
+            mediaChecker.eq(m -> m.getDetectionTypes().get(key).size());
+        }
+        mediaChecker.eq(m -> m.getDetectionProcessingErrors());
+    }
+
+    private static void assertTracksEqualExceptDetections(
+            JsonTrackOutputObject expectedTrack, JsonTrackOutputObject actualTrack) {
+        var checker = new FieldChecker<>(expectedTrack, actualTrack);
+        checker.eq(t -> t.getIndex());
+        checker.eq(t -> t.getId());
+        checker.eq(t -> t.getStartOffsetFrame());
+        checker.eq(t -> t.getStopOffsetFrame());
+        checker.eq(t -> t.getStartOffsetTime());
+        checker.eq(t -> t.getStopOffsetTime());
+        checker.eq(t -> t.getType());
+        checker.eq(t -> t.getSource());
+        assertEquals(expectedTrack.getConfidence(), actualTrack.getConfidence(), 0.01);
+        checker.eq(t -> t.getTrackProperties());
+    }
+
+    private static void assertDetectionsEqualExceptArtifactPath(
+            JsonDetectionOutputObject expectedDetection,
+            JsonDetectionOutputObject actualDetection) {
+
+        var checker = new FieldChecker<>(expectedDetection, actualDetection);
+        checker.eq(d -> d.getX());
+        checker.eq(d -> d.getY());
+        checker.eq(d -> d.getWidth());
+        checker.eq(d -> d.getHeight());
+        assertEquals(expectedDetection.getConfidence(), actualDetection.getConfidence(), 0.01);
+        checker.eq(d -> d.getDetectionProperties());
+        checker.eq(d -> d.getOffsetFrame());
+        checker.eq(d -> d.getOffsetTime());
+        checker.eq(d -> d.getArtifactExtractionStatus());
+    }
+
+
+    // When the output object is updated a lot of parameters need to be passed to JsonOutputObject
+    // and its sub-objects making it easy to accidentally pass in arguments in the wrong order.
+    // Using a regular call to assertEquals in the tests makes it possible to accidentally
+    // have different fields for the two arguments to assertEquals.
+    // Using this class ensures that same field is used for both arguments to assertEquals.
+    private static record FieldChecker<T>(T expected, T actual) {
+        public void eq(Function<T, Object> propGetter) {
+            assertEquals(propGetter.apply(expected), propGetter.apply(actual));
+        }
+
+        public void neq(Function<T, Object> propGetter) {
+            assertNotEquals(propGetter.apply(expected), propGetter.apply(actual));
+        }
     }
 
 

@@ -40,6 +40,11 @@ public class JsonOutputObject {
     private String jobId;
     public String getJobId() { return jobId; }
 
+    @JsonPropertyDescription("If the job didn't run because it was possible to get the results"
+        + "from TiesDb, this will be set to the job id of the job that generated those results.")
+    private String tiesDbSourceJobId;
+    public String getTiesDbSourceJobId() { return tiesDbSourceJobId;  }
+
     @JsonProperty("priority")
     @JsonPropertyDescription("The relative priority of this job given as a value between 1 and 9 (inclusive).")
     private int priority;
@@ -143,6 +148,7 @@ public class JsonOutputObject {
     @JsonCreator
     public static JsonOutputObject factory(
             @JsonProperty("jobId") String jobId,
+            @JsonProperty("tiesDbSourceJobId") String tiesDbSourceJobId,
             @JsonProperty("objectId") String objectId,
             @JsonProperty("pipeline") JsonPipeline pipeline,
             @JsonProperty("priority") int priority,
@@ -161,6 +167,7 @@ public class JsonOutputObject {
 
         JsonOutputObject outputObject = new JsonOutputObject(jobId, objectId, pipeline, priority, siteId,
                                                              openmpfVersion, externalJobId, timeStart, timeStop, status);
+        outputObject.tiesDbSourceJobId = tiesDbSourceJobId;
         if(media != null) {
             outputObject.media.addAll(media);
         }

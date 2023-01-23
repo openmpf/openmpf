@@ -840,7 +840,7 @@ public class PropertiesUtil {
     }
 
     public int getS3ClientCacheCount() {
-        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
+        return mpfPropertiesConfig.getInt("static.s3.client.cache.count", 40);
     }
 }
 

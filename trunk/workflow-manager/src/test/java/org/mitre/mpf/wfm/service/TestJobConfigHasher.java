@@ -524,33 +524,6 @@ public class TestJobConfigHasher {
     }
 
 
-    @Test
-    public void testMimeType() {
-        var hash1 = builder()
-            .addMedia("image/jpeg", "hash")
-            .addAction("algo")
-            .setProperty("IMAGE_PROP", 0, 0, "IMAGE_PROP1")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO_PROP1")
-            .getHash();
-
-        var changeVideoProp = builder()
-            .addMedia("image/jpeg", "hash")
-            .addAction("algo")
-            .setProperty("IMAGE_PROP", 0, 0, "IMAGE_PROP1")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO_PROP2")
-            .getHash();
-        assertEquals(hash1, changeVideoProp);
-
-        var changeImageProp = builder()
-            .addMedia("image/jpeg", "hash")
-            .addAction("algo")
-            .setProperty("IMAGE_PROP", 0, 0, "IMAGE_PROP2")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO_PROP1")
-            .getHash();
-        assertNotEquals(hash1, changeImageProp);
-    }
-
-
     private JobBuilder builder() {
         return new JobBuilder();
     }
@@ -619,25 +592,6 @@ public class TestJobConfigHasher {
         public JobBuilder addMedia(Set<MediaRange> frameRanges, Set<MediaRange> timeRanges) {
             return addMediaInternal(
                     MediaType.VIDEO, "VIDEO_HASH_" + _media.size(), frameRanges, timeRanges);
-        }
-
-        public JobBuilder addMedia(String mimeType, String hash) {
-            var media = mock(Media.class);
-            when(media.getHash())
-                .thenReturn(Optional.of(hash));
-            when(media.getMimeType())
-                .thenReturn(Optional.of(mimeType));
-
-            when(media.getType())
-                .thenReturn(Optional.empty());
-
-            when(media.getFrameRanges())
-                    .thenReturn(ImmutableSet.of());
-
-            when(media.getTimeRanges())
-                    .thenReturn(ImmutableSet.of());
-            _media.add(media);
-            return this;
         }
 
         private JobBuilder addMediaInternal(

@@ -1,0 +1,26 @@
+[
+    {
+        "name": "NOT_IMPORTANT"
+    },
+    {
+        "name": "FACECV_PROP",
+        "ignorableByAlgorithms": ["FAcECV"]
+    },
+    {
+        "name": "MOG_PROP",
+        "ignorableByAlgorithms": ["MOG"]
+    },
+    {
+        "name": "VIDEO_PROP",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "IMAGE_PROP",
+        "requiredByMediaTypes": ["IMAGe"]
+    },
+    {
+        "name": "FACECV_IMAGE_PROP",
+        "requiredByMediaTypes": ["IMAGE"],
+        "ignorableByAlgorithms": ["FACECV"]
+    }
+]

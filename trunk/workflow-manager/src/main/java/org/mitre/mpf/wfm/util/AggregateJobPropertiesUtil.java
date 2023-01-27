@@ -397,16 +397,16 @@ public class AggregateJobPropertiesUtil {
             Map<String, String> jobProperties,
             Map<String, ? extends Map<String, String>> algorithmProperties,
             SystemPropertiesSnapshot systemPropertiesSnapshot,
-            JobPipelineElements pipelineElements) {
-        return (propName, media, action) -> getPropertyInfo(
-                propName,
+            JobPipelineElements pipelineElements)  {
+
+        return new MediaActionProps((media, action) -> getPropertyMap(
+                action,
                 media.getMediaSpecificProperties(),
                 media.getType(),
-                action,
-                pipelineElements,
                 algorithmProperties,
                 jobProperties,
-                systemPropertiesSnapshot).getValue();
+                pipelineElements,
+                systemPropertiesSnapshot));
     }
 
 

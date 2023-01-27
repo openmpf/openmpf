@@ -192,7 +192,7 @@ public class TestTiesDbBeforeJobCheckService {
                 .thenReturn(Optional.empty());
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn((p, m, a) -> null);
+            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
@@ -225,7 +225,7 @@ public class TestTiesDbBeforeJobCheckService {
                 .thenReturn(Optional.empty());
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn((p, m, a) -> null);
+            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
@@ -253,7 +253,7 @@ public class TestTiesDbBeforeJobCheckService {
 
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn((p, m, a) -> null);
+            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(

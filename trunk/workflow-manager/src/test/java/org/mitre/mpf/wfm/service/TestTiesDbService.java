@@ -131,7 +131,10 @@ public class TestTiesDbService {
         when(_mockPropertiesUtil.getExportedJobId(anyLong()))
                 .thenReturn("localhost-123");
 
-        when(_mockJobConfigHasher.getJobConfigHash(any(), any(), any()))
+        when(_mockAggregateJobPropertiesUtil.getMediaActionProps(any(), any(), any(), any()))
+                .thenReturn(new MediaActionProps((m, a) -> Map.of()));
+
+        when(_mockJobConfigHasher.getJobConfigHash(any(), any(), any(MediaActionProps.class)))
                 .thenReturn("JOB_HASH");
     }
 

@@ -535,18 +535,20 @@ public class PropertiesUtil {
     }
 
 
-    private FileSystemResource getImportantPropertiesData() {
+    private FileSystemResource getTiesDbCheckIgnorablePropertiesData() {
         return new FileSystemResource(mpfPropertiesConfig.getString(
-                "data.important.properties.file"));
+                "data.ties.db.check.ignorable.properties.file"));
     }
 
-    private Resource getImportantPropertiesTemplate() {
+    private Resource getTiesDbCheckIgnorablePropertiesTemplate() {
         return appContext.getResource(mpfPropertiesConfig.getString(
-                "data.important.properties.template"));
+                "data.ties.db.check.ignorable.properties.template"));
     }
 
-    public Resource getImportantPropertiesResource() {
-        return getDataResource(getImportantPropertiesData(), getImportantPropertiesTemplate());
+    public Resource getTiesDbCheckIgnorablePropertiesResource() {
+        return getDataResource(
+                getTiesDbCheckIgnorablePropertiesData(),
+                getTiesDbCheckIgnorablePropertiesTemplate());
     }
 
 

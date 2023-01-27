@@ -24,12 +24,40 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
 package org.mitre.mpf.wfm.util;
+
+import java.util.Map;
+import java.util.function.BiFunction;
 
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
-public interface MediaActionProps {
-    String get(String propName, Media media, Action action);
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
+
+public class MediaActionProps {
+
+    private final BiFunction<Media, Action, Map<String, String>> _propMapGetter;
+
+    private final Table<Media, Action, Map<String, String>> _propMapCache = HashBasedTable.create();
+
+
+    public MediaActionProps(BiFunction<Media, Action, Map<String, String>> propMapGetter) {
+        _propMapGetter = propMapGetter;
+    }
+
+    public Map<String, String> get(Media media, Action action) {
+        var cached = _propMapCache.get(media, action);
+        if (cached != null) {
+            return cached;
+        }
+        var props = _propMapGetter.apply(media, action);
+        _propMapCache.put(media, action, props);
+        return props;
+    }
+
+    public String get(String propName, Media media, Action action) {
+        return get(media, action).get(propName);
+    }
 }

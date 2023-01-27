@@ -32,16 +32,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -53,27 +54,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
 
 @Service
 public class JobConfigHasher {
 
     private static final Logger LOG = LoggerFactory.getLogger(JobConfigHasher.class);
 
-    private final ImportantProperties _importantProperties;
+    private final IgnorableProperties _ignorableProperties;
 
     @Inject
     public JobConfigHasher(
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil) throws IOException {
 
-        var importantPropsResource = propertiesUtil.getImportantPropertiesResource();
-        try (var inStream = importantPropsResource.getInputStream()) {
-            _importantProperties = objectMapper.readValue(inStream, ImportantProperties.class);
+        var ignorablePropsResource = propertiesUtil.getTiesDbCheckIgnorablePropertiesResource();
+        try (var inStream = ignorablePropsResource.getInputStream()) {
+            var ignorablePropertyList = objectMapper.readValue(
+                    inStream, new TypeReference<List<IgnorableProperty>>() { });
+            _ignorableProperties = new IgnorableProperties(ignorablePropertyList);
         }
     }
 
@@ -81,7 +83,7 @@ public class JobConfigHasher {
     public String getJobConfigHash(
             Collection<Media> media,
             JobPipelineElements pipelineElements,
-            MediaActionProps props) {
+            MediaActionProps mediaActionProps) {
 
         var sortedMedia = media.stream()
                 .sorted(Comparator.comparing(m -> m.getHash().orElseThrow()))
@@ -92,6 +94,7 @@ public class JobConfigHasher {
             hasher.add(medium.getHash().orElseThrow());
             hashMediaRanges(medium.getFrameRanges(), hasher);
             hashMediaRanges(medium.getTimeRanges(), hasher);
+            var mediaType = medium.getType().orElseThrow();
 
             for (var task : pipelineElements.getTasksInOrder()) {
                 for (var action : pipelineElements.getActionsInOrder(task)) {
@@ -102,15 +105,12 @@ public class JobConfigHasher {
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));
 
-                    var importantProperties = _importantProperties.get(
-                            getMediaType(medium), algorithm.getName());
-                    for (var propName : importantProperties) {
-                        hasher.add(propName);
-                        var propVal = props.get(propName, medium, action);
-                        if (propVal != null) {
-                            hasher.add(propVal);
-                        }
-                    }
+                    mediaActionProps.get(medium, action)
+                        .entrySet()
+                        .stream()
+                        .filter(e -> _ignorableProperties.isRequired(e.getKey(), mediaType, action))
+                        .sorted(Map.Entry.comparingByKey())
+                        .forEach(hasher::add);
                 }
                 // Add separator so actions in the same task get a different value from actions in
                 // different tasks.
@@ -122,16 +122,6 @@ public class JobConfigHasher {
         return hash;
     }
 
-    private static MediaType getMediaType(Media media) {
-        var optType = media.getType();
-        if (optType.isPresent()) {
-            return optType.get();
-        }
-        // The job config hash may be requested before media inspection.
-        // In that case, media.getType() will not be present.
-        var mimeType = media.getMimeType().orElseThrow();
-        return MediaTypeUtils.parse(mimeType);
-    }
 
     private static void hashMediaRanges(Collection<MediaRange> mediaRanges, Hasher hasher) {
         if (mediaRanges.isEmpty()) {
@@ -154,47 +144,65 @@ public class JobConfigHasher {
             _digest.update(SEPARATOR);
         }
 
+        public void add(Map.Entry<String, String> mapEntry) {
+            add(mapEntry.getKey());
+            if (mapEntry.getValue() != null) {
+                add(mapEntry.getValue());
+            }
+        }
+
         public String getHash() {
             return Hex.encodeHexString(_digest.digest());
         }
     }
 
 
-    public static class ImportantProperties {
-        private final ImmutableSet<String> _all;
-        private final ImmutableMultimap<String, String> _mediaType;
-        private final ImmutableMultimap<String, String> _algorithm;
+    public static class IgnorableProperties {
 
+        private final ImmutableMap<String, IgnorableProperty> _properties;
 
-        public ImportantProperties(
-                @JsonProperty("all") List<String> all,
-                @JsonProperty("mediaType") Map<String, Set<String>> mediaType,
-                @JsonProperty("algorithm") Map<String, Set<String>> algorithm) {
-            _all = toUpperSet(all);
-            _mediaType = toUpperMultimap(mediaType);
-            _algorithm = toUpperMultimap(algorithm);
+        public IgnorableProperties(List<IgnorableProperty> ignorableProperties) {
+            _properties = ignorableProperties.stream()
+                .collect(ImmutableMap.toImmutableMap(
+                            IgnorableProperty::name,
+                            Function.identity()));
         }
 
-
-        public SortedSet<String> get(MediaType mediaType, String algorithmName) {
-            var props = new TreeSet<>(_all);
-            props.addAll(_mediaType.get(mediaType.toString()));
-            props.addAll(_algorithm.get(algorithmName.toUpperCase()));
-            return props;
+        public boolean isRequired(String propertyName, MediaType mediaType, Action action) {
+            var property = _properties.get(propertyName.toUpperCase());
+            if (property == null) {
+                return true;
+            }
+            if (property.requiredByMediaTypes.contains(mediaType)) {
+                return true;
+            }
+            if (property.ignorableByAlgorithms.isEmpty()) {
+                return false;
+            }
+            return !property.ignorableByAlgorithms.contains(action.getAlgorithm());
         }
+    }
 
-        private static ImmutableMultimap<String, String> toUpperMultimap(
-                Map<String, Set<String>> map) {
-            return map.entrySet().stream()
-                    .collect(ImmutableSetMultimap.flatteningToImmutableSetMultimap(
-                            e -> e.getKey().toUpperCase(),
-                            e -> e.getValue().stream().map(String::toUpperCase)));
-        }
+    private record IgnorableProperty(
+            String name, Set<MediaType> requiredByMediaTypes, Set<String> ignorableByAlgorithms) {
 
-        private static ImmutableSet<String> toUpperSet(Collection<String> set) {
-            return set.stream()
+        IgnorableProperty {
+            name = name.toUpperCase();
+            if (requiredByMediaTypes == null) {
+                requiredByMediaTypes = EnumSet.noneOf(MediaType.class);
+            }
+            else {
+                requiredByMediaTypes = EnumSet.copyOf(requiredByMediaTypes);
+            }
+
+            if (ignorableByAlgorithms == null) {
+                ignorableByAlgorithms = ImmutableSet.of();
+            }
+            else {
+                ignorableByAlgorithms = ignorableByAlgorithms.stream()
                     .map(String::toUpperCase)
                     .collect(ImmutableSet.toImmutableSet());
+            }
         }
     }
 }

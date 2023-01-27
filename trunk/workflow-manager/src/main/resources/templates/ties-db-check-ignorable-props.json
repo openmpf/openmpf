@@ -1,0 +1,210 @@
+[
+    {
+        "name": "ROTATION_THRESHOLD"
+    },
+    {
+        "name": "ROTATION_FILL_COLOR"
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_MAX_ATTEMPTS"
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS"
+    },
+    {
+        "name": "COMPONENT_HTTP_RETRY_MAX_DELAY_MS"
+    },
+    {
+        "name": "TIES_DB_URL"
+    },
+    {
+        "name": "SKIP_TIES_DB_CHECK"
+    },
+    {
+        "name": "S3_ACCESS_KEY"
+    },
+    {
+        "name": "S3_SECRET_KEY"
+    },
+    {
+        "name": "S3_SESSION_TOKEN"
+    },
+    {
+        "name": "S3_RESULTS_BUCKET"
+    },
+    {
+        "name": "S3_UPLOAD_ONLY"
+    },
+    {
+        "name": "S3_REGION"
+    },
+    {
+        "name": "S3_USE_VIRTUAL_HOST"
+    },
+    {
+        "name": "S3_HOST"
+    },
+    {
+        "name": "S3_UPLOAD_OBJECT_KEY_PREFIX"
+    },
+    {
+        "name": "TIES_DB_S3_COPY_DISABLED"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_ACCESS_KEY"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_SECRET_KEY"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_SESSION_TOKEN"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_REGION"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_HOST"
+    },
+    {
+        "name": "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX"
+    },
+    {
+        "name": "MIN_GAP_BETWEEN_SEGMENTS",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "TARGET_SEGMENT_LENGTH",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "VFR_TARGET_SEGMENT_LENGTH",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_SEGMENT_LENGTH",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "VFR_MIN_SEGMENT_LENGTH",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "USE_KEY_FRAMES",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "FRAME_INTERVAL",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "FRAME_RATE_CAP",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MERGE_TRACKS",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_GAP_BETWEEN_TRACKS",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_TRACK_LENGTH",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MIN_OVERLAP",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACK_LABELS_ENABLED",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACKS_ONLY",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACK_MAX_IOU",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "MOVING_TRACK_MIN_DETECTIONS",
+        "requiredByMediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_CROPPING",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_ENABLE_DETECTION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_TOP_LEFT_X_DETECTION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "ROTATION",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "HORIZONTAL_FLIP",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "AUTO_ROTATE",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "AUTO_FLIP",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_X",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    },
+    {
+        "name": "DETECTION_PADDING_Y",
+        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+    }
+]

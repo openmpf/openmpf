@@ -153,6 +153,22 @@ public class TestJobConfigHasher {
         assertNotEquals(hash1, hash2);
     }
 
+    @Test
+    public void testNullAndEmptyStringDifferent() {
+        var hash1 = builder()
+            .addMedia(MediaType.IMAGE)
+            .addAction("algo")
+            .setProperty("PROP", 0, 0, "")
+            .getHash();
+
+        var hash2 = builder()
+            .addMedia(MediaType.IMAGE)
+            .addAction("algo")
+            .setProperty("PROP", 0, 0, null)
+            .getHash();
+
+        assertNotEquals(hash1, hash2);
+    }
 
     @Test
     public void removingImportantPropertyChangesHash() {

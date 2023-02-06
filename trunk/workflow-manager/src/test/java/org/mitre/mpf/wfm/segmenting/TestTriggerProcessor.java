@@ -1,0 +1,416 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2022 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+package org.mitre.mpf.wfm.segmenting;
+
+import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+
+import org.junit.Test;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Multimap;
+
+public class TestTriggerProcessor extends MockitoTest.Strict {
+
+    private static final long JOB_ID = 11;
+
+    private static final long MEDIA_ID = 12;
+
+
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggPropUtil;
+
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
+
+    @InjectMocks
+    private TriggerProcessor _triggerProcessor;
+
+
+    @Test
+    public void testTriggerValidation() {
+        TriggerProcessor.validateTrigger(getTriggerProperties(null));
+        TriggerProcessor.validateTrigger(getTriggerProperties(""));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a=a"));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a="));
+        TriggerProcessor.validateTrigger(getTriggerProperties("a=b="));
+
+        assertTriggerInvalid("asdf");
+        assertTriggerInvalid("=");
+        assertTriggerInvalid("=a");
+    }
+
+
+    private static UnaryOperator<String> getTriggerProperties(String trigger)  {
+        return propName -> {
+            if (propName.equals("TRIGGER")) {
+                return trigger;
+            }
+            throw new IllegalArgumentException();
+        };
+    }
+
+    private static void assertTriggerInvalid(String trigger) {
+        var props = getTriggerProperties(trigger);
+        TestUtil.assertThrows(
+                WfmProcessingException.class,
+                () -> TriggerProcessor.validateTrigger(props));
+    }
+
+
+    @Test
+    public void doesNotFilterOnFirstTask() {
+        var tracks = builder()
+            .setCurrentTask(0)
+            .setLangTrigger("EN", 0)
+            .getTriggeredTracks();
+        assertTrue(tracks.isEmpty());
+    }
+
+
+    @Test
+    public void onlyReturnsProvidedTracksWhenNoTriggersInJob() {
+        var tracks = builder()
+            .setCurrentTask(3)
+            .addTrack(3, "EN", 2)
+            .addTrack(4, "EN", 2)
+            .getTriggeredTracks();
+
+        verify(_mockInProgressJobs, never())
+                .getTracks(anyLong(), anyLong(), anyInt(), anyInt());
+
+        assertContainsTracks(tracks, 3, 4);
+    }
+
+
+    @Test
+    public void returnsAllUnTriggeredTracksWhenNoTriggerOnCurrentAction() {
+        // 0: speech detection
+        // 1: Spanish
+        // 2: Russian
+        // 3: English
+        // 4. other
+        var tracks = builder()
+                .addTrack("ES", 0)
+                .addTrack("ES", 0)
+                .addTrack("RU", 0)
+                .addTrack("EN", 0)
+                .addTrack("EN", 0)
+                .addTrack(5, "EO", 0)
+                .addTrack(6, "EO", 0)
+                .addTrack(7, "ZH", 0)
+
+                .setLangTrigger("ES", 1)
+                .addTrack("ES", 1)
+                .addTrack("ES", 1)
+
+                .setLangTrigger("RU", 2)
+                .addTrack("RU", 2)
+
+                .setLangTrigger("EN", 3)
+                .addTrack("EN", 3)
+                .addTrack("EN", 3)
+
+                .setCurrentTask(4)
+                .getTriggeredTracks();
+        assertContainsTracks(tracks, 5, 6, 7);
+    }
+
+
+    @Test
+    public void returnsPreviousUnTriggeredTracksThatMatchCurrentTrigger() {
+        var tracks = builder()
+                .addTrack("ES", 0)
+                .addTrack("ES", 0)
+                .addTrack("RU", 0)
+                .addTrack(8, "EN", 0)
+                .addTrack(9, "EN", 0)
+                .addTrack("EO", 0)
+                .addTrack("EO", 0)
+                .addTrack("ZH", 0)
+
+                .setLangTrigger("ES", 1)
+                .addTrack("ES", 1)
+                .addTrack("ES", 1)
+
+                .setLangTrigger("RU", 2)
+                .addTrack("RU", 2)
+
+                .setLangTrigger("EN", 3)
+                .setCurrentTask(3)
+                .getTriggeredTracks();
+
+        assertContainsTracks(tracks, 8, 9);
+    }
+
+
+    @Test
+    public void stopsCheckingPrevTasksWhenNoTriggerInMiddle() {
+        var tracks = builder()
+            .setCurrentTask(4)
+            .setLangTrigger("EN", 4)
+
+            .setLangTrigger("ES", 3)
+            .addTrack(10, "EN", 3)
+            .addTrack("ES", 3)
+
+            .setTrigger("", 2)
+            .addTrack(11, "EN", 2)
+            .addTrack("ES", 2)
+
+            .getTriggeredTracks();
+
+        verify(_mockInProgressJobs, never())
+            .getTracks(anyLong(), anyLong(), eq(1), anyInt());
+
+        assertContainsTracks(tracks, 10, 11);
+    }
+
+
+    @Test
+
+    public void doesNotPassForwardPreviouslyTriggeredTracks() {
+        var tracks = initDoesNotPassForwardPreviouslyTriggeredTracks()
+            .setCurrentTask(4)
+            .getTriggeredTracks();
+
+        assertContainsTracks(tracks, 13, 14);
+    }
+
+    @Test
+    public void doesNotPassForwardPreviouslyTriggeredTracksWhenNoTrigger() {
+        when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 3, 0))
+            .thenReturn(ImmutableSortedSet.of());
+
+        var tracks = initDoesNotPassForwardPreviouslyTriggeredTracks()
+            .setCurrentTask(5)
+            .getTriggeredTracks();
+
+        assertContainsTracks(tracks, 14, 16, 17);
+    }
+
+
+    private Builder initDoesNotPassForwardPreviouslyTriggeredTracks() {
+        return builder()
+            .setLangTrigger("EN", 4)
+
+            .setTrigger("OTHER_TRIGGER=ON", 3)
+
+            .addTrack(12, Map.of("LANG", "EN", "OTHER_TRIGGER", "ON"), 2)
+            .addTrack(13, Map.of("LANG", "EN", "OTHER_TRIGGER", "OFF"), 2)
+            .addTrack(14, "EN", 2)
+            .addTrack(15, Map.of("LANG", "ES", "OTHER_TRIGGER", "ON"), 2)
+            .addTrack(16, Map.of("LANG", "ES", "OTHER_TRIGGER", "OFF"), 2)
+            .addTrack(17, Map.of("OTHER_TRIGGER", "OFF"), 2)
+            .addTrack(18, Map.of("OTHER_TRIGGER", "ON"), 2);
+    }
+
+
+    @Test
+    public void setsProcessedActionWhenNoTracksTriggered() {
+        var tracks = builder()
+            .setCurrentTask(3)
+            .setLangTrigger("EN", 3)
+            .addTrack("ES", 2)
+            .addTrack("RU", 2)
+            .getTriggeredTracks();
+        assertTrue(tracks.isEmpty());
+        verify(_mockInProgressJobs)
+            .setProcessedAction(JOB_ID, MEDIA_ID, 3, 0);
+
+    }
+
+
+    private static void assertContainsTracks(Collection<Track> tracks, int... ids) {
+        var actualIds = tracks.stream()
+            .map(Track::getStartOffsetFrameInclusive)
+            .collect(toSet());
+
+        for (int id : ids) {
+            assertTrue(
+                    "Expected there to be a track with a start frame of " + id,
+                    actualIds.contains(id));
+        }
+    }
+
+
+    private Builder builder() {
+        return new Builder();
+    }
+
+    private class Builder {
+        // Used to prevent tracks from being equal. Negative numbers are being used in Track
+        // fields that are not relevent to this test.
+        private static int _trackId = -1;
+
+        private Multimap<Integer, Track> _tracks = HashMultimap.create();
+
+        private int _currentTask = -1;
+
+        private Map<Integer, String> _triggers = new HashMap<>();
+
+
+        public Builder setCurrentTask(int taskIdx) {
+            _currentTask = taskIdx;
+            return this;
+        }
+
+        public Builder setTrigger(String trigger, int taskIdx) {
+            _triggers.put(taskIdx, trigger);
+            return this;
+        }
+
+
+        public Builder setLangTrigger(String language, int taskIdx) {
+            return setTrigger("LANG=" + language, taskIdx);
+        }
+
+
+        public Builder addTrack(String language, int taskIdx) {
+            return addTrack(-20, language, taskIdx);
+        }
+
+        public Builder addTrack(int startFrame, String language, int taskIdx) {
+            return addTrack(startFrame, Map.of("LANG", language), taskIdx);
+        }
+
+        public Builder addTrack(int startFrame, Map<String, String> trackProps, int taskIdx) {
+            var track = new Track(
+                JOB_ID,
+                MEDIA_ID,
+                -1,
+                -1,
+                startFrame,
+                startFrame + 10,
+                _trackId--,
+                -1,
+                "type",
+                -1,
+                List.of(),
+                trackProps,
+                null);
+
+            _tracks.put(taskIdx, track);
+            return this;
+        }
+
+        public Collection<Track> getTriggeredTracks() {
+            var media = mock(Media.class);
+            if (_currentTask > 0) {
+                lenient().when(media.getId())
+                    .thenReturn(MEDIA_ID);
+
+                var job = mock(BatchJob.class);
+                lenient().when(job.getId())
+                    .thenReturn(JOB_ID);
+                when(_mockInProgressJobs.getJob(JOB_ID))
+                    .thenReturn(job);
+
+                var pipelineElements = mock(JobPipelineElements.class);
+                when(job.getPipelineElements())
+                    .thenReturn(pipelineElements);
+
+                for (var triggerEntry : _triggers.entrySet()) {
+                    if (triggerEntry.getKey() == _currentTask) {
+                        continue;
+                    }
+                    var action = mock(Action.class);
+                    when(pipelineElements.getAction(triggerEntry.getKey(), 0))
+                            .thenReturn(action);
+                    when(_mockAggPropUtil.getValue(MpfConstants.TRIGGER, job, media, action))
+                            .thenReturn(triggerEntry.getValue());
+                }
+                for (var trackEntry : _tracks.asMap().entrySet()) {
+                    int taskIdx = trackEntry.getKey();
+                    if (taskIdx != _currentTask - 1) {
+                        when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, taskIdx, 0))
+                            .thenReturn(ImmutableSortedSet.copyOf(trackEntry.getValue()));
+                    }
+                }
+            }
+
+            var detectionContext = new DetectionContext(
+                JOB_ID,
+                _currentTask,
+                "task name",
+                0,
+                "action name",
+                _currentTask == 0,
+                createAlgorithmProps(_triggers.get(_currentTask)),
+                Set.copyOf(_tracks.get(_currentTask - 1)),
+                null);
+            return _triggerProcessor.getTriggeredTracks(media, detectionContext);
+        }
+    }
+
+    private static List<AlgorithmPropertyProtocolBuffer.AlgorithmProperty>
+            createAlgorithmProps(String trigger) {
+
+        var prop1 = AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
+                .setPropertyName("OTHER_PROP")
+                .setPropertyValue("OTHER_PROP_VALUE")
+                .build();
+        var prop2 = AlgorithmPropertyProtocolBuffer.AlgorithmProperty.newBuilder()
+                .setPropertyName("TRIGGER")
+                .setPropertyValue(Objects.requireNonNullElse(trigger, ""))
+                .build();
+
+        return List.of(prop1, prop2);
+    }
+}

@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
@@ -39,6 +40,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mockito.Mock;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -48,8 +50,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public class TestAudioMediaSegmenter {
+public class TestAudioMediaSegmenter extends MockitoTest.Strict {
+
+    @Mock
+    private TriggerProcessor _mockTriggerProcessor;
 
 	@Test
 	public void canCreateFirstStageMessages() {
@@ -99,6 +105,9 @@ public class TestAudioMediaSegmenter {
 		DetectionContext context = createTestDetectionContext(
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks);
+
 		List<DetectionRequest> detectionRequests = runAudioSegmenter(media, context);
 
 		assertEquals(2, detectionRequests.size());
@@ -125,8 +134,9 @@ public class TestAudioMediaSegmenter {
 	}
 
 
-	private static List<DetectionRequest> runAudioSegmenter(Media media, DetectionContext context) {
-		MediaSegmenter segmenter = new AudioMediaSegmenter(mock(CamelContext.class));
+	private List<DetectionRequest> runAudioSegmenter(Media media, DetectionContext context) {
+		MediaSegmenter segmenter = new AudioMediaSegmenter(
+                mock(CamelContext.class), _mockTriggerProcessor);
 		List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
 		return unwrapMessages(messages);
 	}

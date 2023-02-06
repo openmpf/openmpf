@@ -53,9 +53,12 @@ public class AudioMediaSegmenter implements MediaSegmenter {
 
     private final CamelContext _camelContext;
 
+    private final TriggerProcessor _triggerProcessor;
+
     @Inject
-    AudioMediaSegmenter(CamelContext camelContext) {
+    AudioMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
         _camelContext = camelContext;
+        _triggerProcessor = triggerProcessor;
     }
 
     @Override
@@ -86,8 +89,9 @@ public class AudioMediaSegmenter implements MediaSegmenter {
     }
 
     private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-        List<Message> messages = new ArrayList<>();
-        for (Track track : context.getPreviousTracks()) {
+        var prevTracks = _triggerProcessor.getTriggeredTracks(media, context);
+        List<Message> messages = new ArrayList<>(prevTracks.size());
+        for (Track track : prevTracks) {
 
             AudioRequest.Builder audioRequest = AudioRequest.newBuilder()
                     .setStartTime(track.getStartOffsetTimeInclusive())

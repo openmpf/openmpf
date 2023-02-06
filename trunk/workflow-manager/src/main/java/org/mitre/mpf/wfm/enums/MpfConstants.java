@@ -86,7 +86,8 @@ public class MpfConstants {
             IS_DERIVATIVE_MEDIA = "IS_DERIVATIVE_MEDIA",
             TIES_DB_URL = "TIES_DB_URL",
             MARKUP_ANIMATION_ENABLED = "MARKUP_ANIMATION_ENABLED",
-            MARKUP_TEXT_LABEL_MAX_LENGTH = "MARKUP_TEXT_LABEL_MAX_LENGTH";
+            MARKUP_TEXT_LABEL_MAX_LENGTH = "MARKUP_TEXT_LABEL_MAX_LENGTH",
+            TRIGGER = "TRIGGER";
 
     private MpfConstants() {
     }

@@ -56,9 +56,12 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
 
     private final CamelContext _camelContext;
 
+    private final TriggerProcessor _triggerProcessor;
+
     @Inject
-    DefaultMediaSegmenter(CamelContext camelContext) {
+    DefaultMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
         _camelContext = camelContext;
+        _triggerProcessor = triggerProcessor;
     }
 
     @Override
@@ -89,8 +92,9 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
     }
 
     private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-        List<Message> messages = new ArrayList<>();
-        for (Track track : context.getPreviousTracks()) {
+        var prevTracks = _triggerProcessor.getTriggeredTracks(media, context);
+        List<Message> messages = new ArrayList<>(prevTracks.size());
+        for (Track track : prevTracks) {
 
             DetectionProtobuf.DetectionRequest.GenericRequest.Builder genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
 

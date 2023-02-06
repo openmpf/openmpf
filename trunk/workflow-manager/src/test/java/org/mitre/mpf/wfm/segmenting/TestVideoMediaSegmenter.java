@@ -26,11 +26,30 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsAlgoProperty;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.assertContainsExpectedMediaMetadata;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.confidenceIsEqualToDimensions;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createDetection;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTestDetectionContext;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.createTrack;
+import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.unwrapMessages;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
@@ -41,17 +60,16 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfoBuilder;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mockito.Mock;
 
-import java.net.URI;
-import java.nio.file.Paths;
-import java.util.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mitre.mpf.wfm.segmenting.TestMediaSegmenter.*;
-import static org.mockito.Mockito.mock;
 
-public class TestVideoMediaSegmenter {
+public class TestVideoMediaSegmenter extends MockitoTest.Strict {
+
+    @Mock
+    private TriggerProcessor _mockTriggerProcessor;
 
     @Test
     public void canCreateFirstStageMessages() {
@@ -195,6 +213,8 @@ public class TestVideoMediaSegmenter {
         DetectionContext context = createTestDetectionContext(
                 1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks);
         List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
         assertEquals(2, detectionRequests.size());
@@ -244,6 +264,8 @@ public class TestVideoMediaSegmenter {
                 ImmutableMap.of("FEED_FORWARD_TYPE", "FRAME", "FEED_FORWARD_TOP_CONFIDENCE_COUNT", "2"),
                 tracks);
 
+        when(_mockTriggerProcessor.getTriggeredTracks(media, context))
+                .thenReturn(tracks);
         List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
         assertEquals(2, detectionRequests.size());
@@ -318,8 +340,9 @@ public class TestVideoMediaSegmenter {
 
 
 
-    private static List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
-        MediaSegmenter segmenter = new VideoMediaSegmenter(mock(CamelContext.class));
+    private List<DetectionRequest> runSegmenter(Media media, DetectionContext context) {
+        MediaSegmenter segmenter = new VideoMediaSegmenter(
+                mock(CamelContext.class), _mockTriggerProcessor);
         List<Message> messages = segmenter.createDetectionRequestMessages(media, context);
         return unwrapMessages(messages);
     }

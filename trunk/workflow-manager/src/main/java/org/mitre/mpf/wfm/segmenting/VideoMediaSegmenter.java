@@ -53,9 +53,12 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private final CamelContext _camelContext;
 
+    private final TriggerProcessor _triggerProcessor;
+
     @Inject
-    VideoMediaSegmenter(CamelContext camelContext) {
+    VideoMediaSegmenter(CamelContext camelContext, TriggerProcessor triggerProcessor) {
         _camelContext = camelContext;
+        _triggerProcessor = triggerProcessor;
     }
 
     @Override
@@ -129,7 +132,8 @@ public class VideoMediaSegmenter implements MediaSegmenter {
         int topConfidenceCount = getTopConfidenceCount(context);
 
         List<Message> messages = new ArrayList<>();
-        for (Track track : context.getPreviousTracks()) {
+        var previousTracks = _triggerProcessor.getTriggeredTracks(media, context);
+        for (Track track : previousTracks) {
             if (track.getDetections().isEmpty()) {
                 log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
                 continue;

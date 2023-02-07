@@ -27,12 +27,10 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -49,6 +47,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class TriggerProcessor {
 
+    private static final Predicate<Track> ALL_MATCH = t -> true;
+
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     private final InProgressBatchJobsService _inProgressJobs;
@@ -63,21 +63,7 @@ public class TriggerProcessor {
 
 
     public static void validateTrigger(UnaryOperator<String> properties) {
-        var trigger = properties.apply(MpfConstants.TRIGGER);
-        if (trigger == null || trigger.isBlank()) {
-            return;
-        }
-
-        var triggerParts = trigger.split("=", 2);
-        if (triggerParts.length != 2) {
-            throw new WfmProcessingException(
-                "The \"TRIGGER\" property did not contain \"=\".");
-        }
-        if (triggerParts[0].equals("")) {
-            throw new WfmProcessingException(
-                "The \"TRIGGER\" property did not contain any text to the "
-                            + "left of the \"=\" character.");
-        }
+        createTriggerFilter(properties.apply(MpfConstants.TRIGGER));
     }
 
 
@@ -95,16 +81,13 @@ public class TriggerProcessor {
             .orElse(null);
 
         var job = _inProgressJobs.getJob(context.getJobId());
-        if (trigger == null) {
-            return handleNoCurrentTrigger(job, media, context);
-        }
-
         var triggerFilter = createTriggerFilter(trigger);
-        var results = findPreviousUnTriggered(job, media, context, triggerFilter);
-        context.getPreviousTracks()
+        var ctxTracks = context.getPreviousTracks()
             .stream()
-            .filter(triggerFilter)
-            .forEach(results::add);
+            .filter(triggerFilter);
+        var prevTaskTracks = findPreviousUnTriggered(job, media, context, triggerFilter);
+        var results = Stream.concat(ctxTracks, prevTaskTracks).toList();
+
         if (results.isEmpty()) {
             _inProgressJobs.setProcessedAction(
                 context.getJobId(),
@@ -116,54 +99,52 @@ public class TriggerProcessor {
     }
 
 
-    private Collection<Track> handleNoCurrentTrigger(
-            BatchJob job, Media media, DetectionContext context) {
-        var prevUnTriggered = findPreviousUnTriggered(job, media, context, t -> true);
-        if (prevUnTriggered.isEmpty()) {
-            return context.getPreviousTracks();
-        }
-        else {
-            var result = prevUnTriggered;
-            result.addAll(context.getPreviousTracks());
-            return result;
-        }
-    }
-
-    private List<Track> findPreviousUnTriggered(
+    private Stream<Track> findPreviousUnTriggered(
             BatchJob job, Media media, DetectionContext context,
             Predicate<Track> currentFilter) {
-        var prevUnTriggered = new ArrayList<Track>();
+        var prevUnTriggered = Stream.<Track>builder();
         for (var prevTaskIdx = context.getTaskIndex() - 1; prevTaskIdx > 0; prevTaskIdx--) {
-            var prevTrigger = getTrigger(job, media, prevTaskIdx);
-            if (prevTrigger.isEmpty()) {
+            var prevTrigger = createTriggerFilter(job, media, prevTaskIdx);
+            if (prevTrigger == ALL_MATCH) {
                 // Since the previous action didn't use a trigger, it would have processed all
                 // un-triggered tracks from earlier in the pipeline.
-                return prevUnTriggered;
+                return prevUnTriggered.build();
             }
             var prevTracks = _inProgressJobs.getTracks(
                     job.getId(), media.getId(), prevTaskIdx - 1, 0);
 
             prevTracks.stream()
-                .filter(createTriggerFilter(prevTrigger.get()).negate())
+                .filter(prevTrigger.negate())
                 .filter(currentFilter)
-                .forEach(prevUnTriggered::add);
+                .forEach(prevUnTriggered);
         }
-        return prevUnTriggered;
+        return prevUnTriggered.build();
     }
 
 
-    private Optional<String> getTrigger(BatchJob job, Media media, int taskIdx) {
+    private Predicate<Track> createTriggerFilter(BatchJob job, Media media, int taskIdx) {
         var action = job.getPipelineElements().getAction(taskIdx, 0);
         var trigger = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.TRIGGER, job, media, action);
-        return Optional.ofNullable(trigger)
-            .filter(t -> !t.isBlank());
+        return createTriggerFilter(trigger);
     }
 
 
     private static Predicate<Track> createTriggerFilter(String triggerProperty) {
+        if (triggerProperty == null || triggerProperty.isBlank()) {
+            return ALL_MATCH;
+        }
         var triggerParts = triggerProperty.split("=", 2);
+        if (triggerParts.length != 2) {
+            throw new WfmProcessingException(
+                "The \"TRIGGER\" property did not contain \"=\".");
+        }
         var triggerKey = triggerParts[0];
+        if (triggerKey.isBlank()) {
+            throw new WfmProcessingException(
+                "The \"TRIGGER\" property did not contain any text to the "
+                            + "left of the \"=\" character.");
+        }
         var triggerValue = triggerParts[1];
         return t -> triggerValue.equals(t.getTrackProperties().get(triggerKey));
     }

@@ -26,7 +26,26 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,26 +53,24 @@ import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.rest.api.ResponseMessage;
 import org.mitre.mpf.rest.api.component.ComponentState;
 import org.mitre.mpf.rest.api.component.RegisterComponentModel;
-import org.mitre.mpf.wfm.service.component.*;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.service.component.AddComponentService;
+import org.mitre.mpf.wfm.service.component.ComponentReRegisterService;
+import org.mitre.mpf.wfm.service.component.ComponentRegistrationException;
+import org.mitre.mpf.wfm.service.component.ComponentRegistrationStatusException;
+import org.mitre.mpf.wfm.service.component.ComponentStateService;
+import org.mitre.mpf.wfm.service.component.DuplicateComponentException;
+import org.mitre.mpf.wfm.service.component.JsonComponentDescriptor;
+import org.mitre.mpf.wfm.service.component.ManagedComponentsUnsupportedException;
+import org.mitre.mpf.wfm.service.component.RemoveComponentService;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.*;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-public class TestAdminComponentRegistrationController {
-
-    private AutoCloseable _closeable;
+public class TestAdminComponentRegistrationController extends MockitoTest.Lenient {
 
     @InjectMocks
     private AdminComponentRegistrationController _controller;
@@ -83,7 +100,6 @@ public class TestAdminComponentRegistrationController {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         _testModel = new RegisterComponentModel();
         _testModel.setPackageFileName(_testPackageName);
         _testModel.setComponentName(_testComponentName);
@@ -101,10 +117,6 @@ public class TestAdminComponentRegistrationController {
                 .thenReturn(_tempFolder.getRoot());
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void canGetComponentList() {

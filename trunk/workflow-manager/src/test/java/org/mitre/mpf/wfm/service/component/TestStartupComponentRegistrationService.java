@@ -26,42 +26,50 @@
 
 package org.mitre.mpf.wfm.service.component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.rest.api.component.ComponentState;
-import org.mitre.mpf.rest.api.component.RegisterComponentModel;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.zip.GZIPOutputStream;
-
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mitre.mpf.test.TestUtil.collectionContaining;
 import static org.mitre.mpf.test.TestUtil.nonEmptyCollection;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class TestStartupComponentRegistrationService {
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.zip.GZIPOutputStream;
 
-    private AutoCloseable _closeable;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.rest.api.component.ComponentState;
+import org.mitre.mpf.rest.api.component.RegisterComponentModel;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class TestStartupComponentRegistrationService extends MockitoTest.Strict {
 
     private StartupComponentRegistrationServiceImpl _startupRegisterSvc;
 
@@ -87,8 +95,6 @@ public class TestStartupComponentRegistrationService {
 
     @Before
     public void init() throws IOException, ComponentRegistrationException {
-        _closeable = MockitoAnnotations.openMocks(this);
-
         _componentUploadDir.newFolder("test");
         _componentUploadDir.newFile("bad.bad");
 
@@ -103,7 +109,7 @@ public class TestStartupComponentRegistrationService {
                 _mockPropertiesUtil, _mockComponentStateSvc, _mockAddComponentSvc, Optional.of(_mockServiceStarter),
                 _objectMapper);
 
-        when(_mockAddComponentSvc.registerComponent(notNull()))
+        lenient().when(_mockAddComponentSvc.registerComponent(notNull()))
                 .thenAnswer(invocation -> {
                     String arg = invocation.getArgument(0);
                     String componentName = componentPackageToName(arg);
@@ -113,12 +119,6 @@ public class TestStartupComponentRegistrationService {
                     result.setComponentName(componentName);
                     return result;
                 });
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
 

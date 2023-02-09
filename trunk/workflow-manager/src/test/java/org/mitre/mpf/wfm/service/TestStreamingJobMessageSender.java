@@ -26,16 +26,29 @@
 package org.mitre.mpf.wfm.service;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.nms.MasterNode;
 import org.mitre.mpf.nms.streaming.messages.LaunchStreamingJobMessage;
 import org.mitre.mpf.nms.streaming.messages.StopStreamingJobMessage;
 import org.mitre.mpf.rest.api.node.EnvironmentVariableModel;
-import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.ValueType;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaStreamInfo;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobImpl;
@@ -46,20 +59,12 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 
-public class TestStreamingJobMessageSender {
-
-    private AutoCloseable _closeable;
+public class TestStreamingJobMessageSender extends MockitoTest.Lenient {
 
     private StreamingJobMessageSenderImpl _messageSender;
 
@@ -78,17 +83,10 @@ public class TestStreamingJobMessageSender {
 
     @Before
     public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
         AggregateJobPropertiesUtil aggregateJobPropertiesUtil
                 = new AggregateJobPropertiesUtil(_mockProperties, _mockWorkflowPropertyService);
         _messageSender = new StreamingJobMessageSenderImpl(_mockProperties, aggregateJobPropertiesUtil,
                                                            _mockMasterNode, _mockServiceManager);
-    }
-
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
 

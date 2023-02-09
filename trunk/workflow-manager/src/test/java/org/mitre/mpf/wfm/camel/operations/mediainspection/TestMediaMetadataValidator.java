@@ -26,11 +26,24 @@
 
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
-import com.google.common.collect.ImmutableMap;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.junit.After;
-import org.junit.Before;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -40,17 +53,10 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.util.Map;
-import java.util.Set;
+import com.google.common.collect.ImmutableMap;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-public class TestMediaMetadataValidator {
-
-    private AutoCloseable _closeable;
+public class TestMediaMetadataValidator extends MockitoTest.Strict {
 
     @InjectMocks
     private MediaMetadataValidator _mediaMetadataValidator;
@@ -58,16 +64,6 @@ public class TestMediaMetadataValidator {
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
-
-    @Before
-    public void init() {
-        _closeable = MockitoAnnotations.openMocks(this);
-    }
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void testSkipAudioInspection() {

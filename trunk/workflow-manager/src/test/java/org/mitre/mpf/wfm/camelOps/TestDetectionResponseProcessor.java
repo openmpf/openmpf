@@ -26,28 +26,12 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.DefaultExchange;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mitre.mpf.rest.api.pipelines.*;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.BatchJobStatusType;
-import org.mitre.mpf.wfm.enums.MpfConstants;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.enums.UriScheme;
-import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.*;
-import org.mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -56,12 +40,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.*;
+import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.DefaultExchange;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.test.MockitoTest;
+import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
+import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
+import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJobImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.service.pipeline.PipelineService;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
 
 
-public class TestDetectionResponseProcessor {
-
-    private AutoCloseable _closeable;
+public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
 
     @Mock
     private PipelineService mockPipelineService;
@@ -100,9 +117,6 @@ public class TestDetectionResponseProcessor {
 
     @Before
     public void init() {
-
-        _closeable = MockitoAnnotations.openMocks(this);
-
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
@@ -165,10 +179,6 @@ public class TestDetectionResponseProcessor {
                 .thenReturn(String.valueOf(0.1));
     }
 
-    @After
-    public void close() throws Exception {
-        _closeable.close();
-    }
 
     @Test
     public void testHappyPath() {

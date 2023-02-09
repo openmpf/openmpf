@@ -26,13 +26,20 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultMessage;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -42,37 +49,15 @@ import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.net.URI;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
 
 
-public class TestMediaInspectionSplitter {
-
-    private AutoCloseable closeable;
+public class TestMediaInspectionSplitter extends MockitoTest.Strict {
 
     @InjectMocks
     private MediaInspectionSplitter mediaInspectionSplitter;
 
     @Mock
     private InProgressBatchJobsService mockInProgressJobs;
-
-    @Before
-    public void init() {
-        closeable = MockitoAnnotations.openMocks(this);
-    }
-
-
-    @After
-    public void close() throws Exception {
-        closeable.close();
-    }
 
 
     @Test

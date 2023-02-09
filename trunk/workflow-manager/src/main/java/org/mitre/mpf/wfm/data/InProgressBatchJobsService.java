@@ -343,12 +343,6 @@ public class InProgressBatchJobsService {
     }
 
 
-    public synchronized void setProcessedAction(long jobId, long mediaId, int taskIndex, int actionIndex) {
-        var job = getJobImpl(jobId);
-        job.getMedia(mediaId).setProcessedAction(taskIndex, actionIndex);
-    }
-
-
 
     private static final Set<UriScheme> SUPPORTED_URI_SCHEMES = EnumSet.of(UriScheme.FILE, UriScheme.HTTP,
                                                                            UriScheme.HTTPS);

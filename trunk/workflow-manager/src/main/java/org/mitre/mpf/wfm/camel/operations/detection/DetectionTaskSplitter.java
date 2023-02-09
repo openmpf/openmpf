@@ -92,7 +92,8 @@ public class DetectionTaskSplitter {
                     continue;
                 }
 
-                boolean isFirstDetectionTaskForMedia = isFirstDetectionTask(job, media);
+                int lastProcessedTaskForMedia = getLastProcessedTaskIndex(job, media);
+                boolean isFirstDetectionTaskForMedia = lastProcessedTaskForMedia == -1;
 
                 // If this is the first detection task in the pipeline, we should segment the entire media for detection.
                 // If this is not the first detection task, we should build segments based off of the previous tasks's
@@ -104,7 +105,8 @@ public class DetectionTaskSplitter {
                 } else {
                     // Get the tracks for the last task that was processed for this media.
                     previousTracks = _inProgressBatchJobs.getTracks(
-                            job.getId(), media.getId(), media.getLastProcessedTaskIndex(), 0);
+                            job.getId(), media.getId(),
+                            lastProcessedTaskForMedia, 0);
                 }
 
                 // Iterate through each of the actions and segment the media using the properties provided in that action.
@@ -287,20 +289,14 @@ public class DetectionTaskSplitter {
         }
     }
 
-    /**
-     * Returns {@literal true} iff the current task of this job is the first detection task in the job for the media.
-     */
-    private static boolean isFirstDetectionTask(BatchJob job, Media media) {
-        for (int taskIndex = 0; taskIndex < job.getCurrentTaskIndex(); taskIndex++) {
-            // Only need to check the first action. We would not be here in the splitter after a parallel action,
-            // which can only be the last action in a pipeline.
-            int actionIndex = 0;
-            boolean wasProcessed = media.wasActionProcessed(taskIndex, actionIndex);
-            ActionType actionType = job.getPipelineElements().getAlgorithm(taskIndex, actionIndex).getActionType();
-            if (wasProcessed && actionType == ActionType.DETECTION) {
-                return false;
+    public int getLastProcessedTaskIndex(BatchJob job, Media media) {
+        for (int taskIdx = job.getCurrentTaskIndex() - 1;
+                    taskIdx > media.getCreationTask(); taskIdx--) {
+            var action = job.getPipelineElements().getAction(taskIdx, 0);
+            if (_aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
+                return taskIdx;
             }
         }
-        return true;
+        return -1;
     }
 }

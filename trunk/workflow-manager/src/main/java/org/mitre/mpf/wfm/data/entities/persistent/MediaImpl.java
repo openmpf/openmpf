@@ -62,23 +62,6 @@ public class MediaImpl implements Media {
     public int getCreationTask() { return _creationTaskIndex; }
 
 
-    private final Multimap<Integer, Integer> _actionsIndexedByTask = HashMultimap.create();
-    @Override
-    public boolean wasActionProcessed(int taskIndex, int actionIndex) {
-        return _actionsIndexedByTask.containsEntry(taskIndex, actionIndex);
-    }
-    public void setProcessedAction(int taskIndex, int actionIndex) {
-        _actionsIndexedByTask.put(taskIndex, actionIndex);
-    }
-    @Override
-    @JsonIgnore
-    public int getLastProcessedTaskIndex() {
-        var tasks = _actionsIndexedByTask.keySet();
-        return tasks.isEmpty() ? -1 : Collections.max(tasks);
-    }
-
-
-
     @Override
     @JsonIgnore
     public boolean isDerivative() { return Boolean.parseBoolean(_metadata.get(MpfConstants.IS_DERIVATIVE_MEDIA)); }

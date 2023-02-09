@@ -129,9 +129,6 @@ public class DetectionResponseProcessor
             checkErrors(jobId, mediaLabel, detectionResponse, 0, 0, 0, 0);
         }
 
-        _inProgressJobs.setProcessedAction(jobId, detectionResponse.getMediaId(), detectionResponse.getTaskIndex(),
-                detectionResponse.getActionIndex());
-
         return _jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
     }
 

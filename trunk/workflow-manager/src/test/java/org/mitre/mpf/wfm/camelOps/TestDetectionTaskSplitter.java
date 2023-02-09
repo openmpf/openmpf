@@ -957,5 +957,29 @@ public class TestDetectionTaskSplitter {
 
         responseList = detectionSplitter.performSplit(job, task4);
         Assert.assertEquals(3, responseList.size()); // parent and children
+
+
+        // parent only
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // parent only
+        job.setCurrentTaskIndex(1);
+        Assert.assertEquals(0, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // child only
+        job.setCurrentTaskIndex(2);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(-1, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
+
+        // parent and child
+        job.setCurrentTaskIndex(3);
+        Assert.assertEquals(1, detectionSplitter.getLastProcessedTaskIndex(job, parentMedia));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia1));
+        Assert.assertEquals(2, detectionSplitter.getLastProcessedTaskIndex(job, childMedia2));
     }
 }

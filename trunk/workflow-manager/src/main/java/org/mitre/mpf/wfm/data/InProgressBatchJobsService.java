@@ -56,6 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
@@ -215,8 +216,14 @@ public class InProgressBatchJobsService {
         return job.isCancelled();
     }
 
-    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
+    public synchronized SortedSet<Track> getTracks(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
         return _redis.getTracks(jobId, mediaId, taskIndex, actionIndex);
+    }
+
+    public synchronized Stream<Track> getTracksStream(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return _redis.getTracksStream(jobId, mediaId, taskIndex, actionIndex);
     }
 
 

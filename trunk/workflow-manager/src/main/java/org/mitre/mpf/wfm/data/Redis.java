@@ -32,6 +32,7 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 
 import java.util.Collection;
 import java.util.SortedSet;
+import java.util.stream.Stream;
 
 @Monitored
 public interface Redis {
@@ -41,6 +42,8 @@ public interface Redis {
     void clearTracks(BatchJob job);
 
     SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
+
+    Stream<Track> getTracksStream(long jobId, long mediaId, int taskIndex, int actionIndex);
 
     void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 }

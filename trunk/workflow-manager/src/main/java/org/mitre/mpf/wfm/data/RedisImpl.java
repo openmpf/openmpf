@@ -26,9 +26,19 @@
 
 package org.mitre.mpf.wfm.data;
 
+import static java.util.stream.Collectors.toCollection;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Stream;
+
+import javax.annotation.PostConstruct;
+
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +47,6 @@ import org.springframework.data.redis.core.BoundListOperations;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import static java.util.stream.Collectors.toCollection;
 
 
 @Component
@@ -88,13 +90,20 @@ public class RedisImpl implements Redis {
 
 
     @Override
-    public synchronized SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex) {
+    public synchronized SortedSet<Track> getTracks(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
+        return getTracksStream(jobId, mediaId, taskIndex, actionIndex)
+                .collect(toCollection(TreeSet::new));
+    }
+
+
+    public synchronized Stream<Track> getTracksStream(
+            long jobId, long mediaId, int taskIndex, int actionIndex) {
         return redisTemplate
                 .boundListOps(createTrackKey(jobId, mediaId, taskIndex, actionIndex))
                 .range(0, -1)
                 .stream()
-                .map(o -> jsonUtils.deserialize((byte[]) o, Track.class))
-                .collect(toCollection(TreeSet::new));
+                .map(o -> jsonUtils.deserialize((byte[]) o, Track.class));
     }
 
 

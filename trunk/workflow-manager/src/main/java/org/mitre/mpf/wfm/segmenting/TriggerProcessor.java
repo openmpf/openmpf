@@ -27,7 +27,6 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
-import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -67,11 +66,7 @@ public class TriggerProcessor {
     }
 
 
-    public Collection<Track> getTriggeredTracks(Media media, DetectionContext context) {
-        if (context.getTaskIndex() == 0) {
-            return context.getPreviousTracks();
-        }
-
+    public Stream<Track> getTriggeredTracks(Media media, DetectionContext context) {
         var trigger = context.getAlgorithmProperties()
             .stream()
             .filter(ap -> ap.getPropertyName().equals(MpfConstants.TRIGGER))
@@ -80,45 +75,35 @@ public class TriggerProcessor {
             .findAny()
             .orElse(null);
 
-        var job = _inProgressJobs.getJob(context.getJobId());
-        var triggerFilter = createTriggerFilter(trigger);
-        var ctxTracks = context.getPreviousTracks()
-            .stream()
-            .filter(triggerFilter);
-        var prevTaskTracks = findPreviousUnTriggered(job, media, context, triggerFilter);
-        var results = Stream.concat(ctxTracks, prevTaskTracks).toList();
-
-        if (results.isEmpty()) {
-            _inProgressJobs.setProcessedAction(
-                context.getJobId(),
-                media.getId(),
-                context.getTaskIndex(),
-                context.getActionIndex());
-        }
-        return results;
+        return Stream.concat(
+                    context.getPreviousTracks().stream(),
+                    findPreviousUnTriggered(media, context))
+            .filter(createTriggerFilter(trigger));
     }
 
 
     private Stream<Track> findPreviousUnTriggered(
-            BatchJob job, Media media, DetectionContext context,
-            Predicate<Track> currentFilter) {
-        var prevUnTriggered = Stream.<Track>builder();
+            Media media, DetectionContext context) {
+
+        record TriggerEntry(int task, Predicate<Track> trigger) { }
+
+        var job = _inProgressJobs.getJob(context.getJobId());
+        var triggerEntries = Stream.<TriggerEntry>builder();
+        var allPrevTriggers = ALL_MATCH;
+
         for (var prevTaskIdx = context.getTaskIndex() - 1; prevTaskIdx > 0; prevTaskIdx--) {
             var prevTrigger = createTriggerFilter(job, media, prevTaskIdx);
             if (prevTrigger == ALL_MATCH) {
                 // Since the previous action didn't use a trigger, it would have processed all
                 // un-triggered tracks from earlier in the pipeline.
-                return prevUnTriggered.build();
+                break;
             }
-            var prevTracks = _inProgressJobs.getTracks(
-                    job.getId(), media.getId(), prevTaskIdx - 1, 0);
-
-            prevTracks.stream()
-                .filter(prevTrigger.negate())
-                .filter(currentFilter)
-                .forEach(prevUnTriggered);
+            allPrevTriggers = prevTrigger.negate().and(allPrevTriggers);
+            triggerEntries.add(new TriggerEntry(prevTaskIdx - 1, allPrevTriggers));
         }
-        return prevUnTriggered.build();
+
+        return triggerEntries.build()
+                .flatMap(te -> getTracks(te.task, media, context).filter(te.trigger));
     }
 
 
@@ -147,5 +132,10 @@ public class TriggerProcessor {
         }
         var triggerValue = triggerParts[1];
         return t -> triggerValue.equals(t.getTrackProperties().get(triggerKey));
+    }
+
+
+    private Stream<Track> getTracks(int taskIdx, Media media, DetectionContext context) {
+        return _inProgressJobs.getTracksStream(context.getJobId(), media.getId(), taskIdx, 0);
     }
 }

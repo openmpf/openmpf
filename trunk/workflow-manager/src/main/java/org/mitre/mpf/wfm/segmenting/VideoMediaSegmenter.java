@@ -130,20 +130,18 @@ public class VideoMediaSegmenter implements MediaSegmenter {
 
     private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
         int topConfidenceCount = getTopConfidenceCount(context);
-
-        List<Message> messages = new ArrayList<>();
-        var previousTracks = _triggerProcessor.getTriggeredTracks(media, context);
-        for (Track track : previousTracks) {
-            if (track.getDetections().isEmpty()) {
-                log.warn("Found track with no detections. No feed forward request will be created for: {}", track);
-                continue;
-            }
-
-            VideoRequest videoRequest = createFeedForwardVideoRequest(track, topConfidenceCount);
-            messages.add(createProtobufMessage(media, context, videoRequest));
-        }
-
-        return messages;
+        return _triggerProcessor.getTriggeredTracks(media, context)
+                .filter(t -> {
+                    if (t.getDetections().isEmpty()) {
+                        log.warn("Found track with no detections. "
+                                    + "No feed forward request will be created for: {}", t);
+                        return false;
+                    }
+                    return true;
+                })
+                .map(t -> createFeedForwardVideoRequest(t, topConfidenceCount))
+                .map(vr -> createProtobufMessage(media, context, vr))
+                .toList();
     }
 
 

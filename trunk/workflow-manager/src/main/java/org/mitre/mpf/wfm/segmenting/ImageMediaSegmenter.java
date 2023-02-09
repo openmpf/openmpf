@@ -62,7 +62,9 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
 		}
 		else if (MediaSegmenter.feedForwardIsEnabled(context)) {
-			return createFeedForwardMessages(media, context);
+            return _triggerProcessor.getTriggeredTracks(media, context)
+                    .map(t -> createFeedForwardMessage(t, media, context))
+                    .toList();
 		}
 		else if (!context.getPreviousTracks().isEmpty()) {
 			return Collections.singletonList(createProtobufMessage(media, context, ImageRequest.getDefaultInstance()));
@@ -86,18 +88,12 @@ public class ImageMediaSegmenter implements MediaSegmenter {
 	}
 
 
-	private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-        var prevTracks = _triggerProcessor.getTriggeredTracks(media, context);
-		List<Message> messages = new ArrayList<>(prevTracks.size());
-		for (Track track : prevTracks) {
-			DetectionProtobuf.ImageLocation imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
-			ImageRequest imageRequest = ImageRequest.newBuilder()
-					.setFeedForwardLocation(imageLocation)
-					.build();
-
-			messages.add(createProtobufMessage(media, context, imageRequest));
-		}
-		return messages;
-	}
+    private Message createFeedForwardMessage(Track track, Media media, DetectionContext ctx) {
+        var imageLocation = MediaSegmenter.createImageLocation(track.getExemplar());
+        ImageRequest imageRequest = ImageRequest.newBuilder()
+                .setFeedForwardLocation(imageLocation)
+                .build();
+        return createProtobufMessage(media, ctx, imageRequest);
+    }
 }
 

@@ -106,7 +106,7 @@ public class TestAudioMediaSegmenter extends MockitoTest.Strict {
 				1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
-                .thenReturn(tracks);
+                .thenReturn(tracks.stream());
 
 		List<DetectionRequest> detectionRequests = runAudioSegmenter(media, context);
 

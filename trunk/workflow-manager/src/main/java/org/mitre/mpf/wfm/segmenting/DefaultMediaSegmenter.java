@@ -71,7 +71,9 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
                  media.getMimeType());
 
         if (!context.isFirstDetectionTask() && MediaSegmenter.feedForwardIsEnabled(context)) {
-            return createFeedForwardMessages(media, context);
+            return _triggerProcessor.getTriggeredTracks(media, context)
+                    .map(t -> createFeedForwardMessage(t, media, context))
+                    .toList();
         }
 
         return Collections.singletonList(
@@ -91,26 +93,20 @@ public class DefaultMediaSegmenter implements MediaSegmenter {
         return message;
     }
 
-    private List<Message> createFeedForwardMessages(Media media, DetectionContext context) {
-        var prevTracks = _triggerProcessor.getTriggeredTracks(media, context);
-        List<Message> messages = new ArrayList<>(prevTracks.size());
-        for (Track track : prevTracks) {
 
-            DetectionProtobuf.DetectionRequest.GenericRequest.Builder genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
+    private Message createFeedForwardMessage(Track track, Media media, DetectionContext ctx) {
+        var genericRequest = DetectionProtobuf.DetectionRequest.GenericRequest.newBuilder();
 
-            Detection exemplar = track.getExemplar();
+        Detection exemplar = track.getExemplar();
 
-            DetectionProtobuf.GenericTrack.Builder genericTrackBuilder = genericRequest.getFeedForwardTrackBuilder()
-                    .setConfidence(exemplar.getConfidence());
+        var genericTrackBuilder = genericRequest.getFeedForwardTrackBuilder()
+                .setConfidence(exemplar.getConfidence());
 
-            for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
-                genericTrackBuilder.addDetectionPropertiesBuilder()
-                        .setKey(entry.getKey())
-                        .setValue(entry.getValue());
-            }
-
-            messages.add(createProtobufMessage(media, context, genericRequest.build()));
+        for (Map.Entry<String, String> entry : exemplar.getDetectionProperties().entrySet()) {
+            genericTrackBuilder.addDetectionPropertiesBuilder()
+                    .setKey(entry.getKey())
+                    .setValue(entry.getValue());
         }
-        return messages;
+        return createProtobufMessage(media, ctx, genericRequest.build());
     }
 }

@@ -214,7 +214,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 1, Collections.singletonMap("FEED_FORWARD_TYPE", "FRAME"), tracks);
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
-                .thenReturn(tracks);
+                .thenReturn(tracks.stream());
         List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
         assertEquals(2, detectionRequests.size());
@@ -265,7 +265,7 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 tracks);
 
         when(_mockTriggerProcessor.getTriggeredTracks(media, context))
-                .thenReturn(tracks);
+                .thenReturn(tracks.stream());
         List<DetectionRequest> detectionRequests = runSegmenter(media, context);
 
         assertEquals(2, detectionRequests.size());

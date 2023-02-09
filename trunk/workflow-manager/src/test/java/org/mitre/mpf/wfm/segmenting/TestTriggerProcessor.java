@@ -27,6 +27,7 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -44,7 +45,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
@@ -63,7 +66,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multimap;
 
 public class TestTriggerProcessor extends MockitoTest.Strict {
@@ -133,7 +135,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
             .getTriggeredTracks();
 
         verify(_mockInProgressJobs, never())
-                .getTracks(anyLong(), anyLong(), anyInt(), anyInt());
+                .getTracksStream(anyLong(), anyLong(), anyInt(), anyInt());
 
         assertContainsTracks(tracks, 3, 4);
     }
@@ -157,19 +159,19 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 .addTrack(7, "ZH", 0)
 
                 .setLangTrigger("ES", 1)
-                .addTrack("ES", 1)
-                .addTrack("ES", 1)
+                .addTrack(8, "ES", 1)
+                .addTrack(12, "ES", 1)
 
                 .setLangTrigger("RU", 2)
-                .addTrack("RU", 2)
+                .addTrack(9, "RU", 2)
 
                 .setLangTrigger("EN", 3)
-                .addTrack("EN", 3)
-                .addTrack("EN", 3)
+                .addTrack(10, "EN", 3)
+                .addTrack(11, "EN", 3)
 
                 .setCurrentTask(4)
                 .getTriggeredTracks();
-        assertContainsTracks(tracks, 5, 6, 7);
+        assertContainsTracks(tracks, 5, 6, 7, 8, 9, 10, 11, 12);
     }
 
 
@@ -217,7 +219,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
             .getTriggeredTracks();
 
         verify(_mockInProgressJobs, never())
-            .getTracks(anyLong(), anyLong(), eq(1), anyInt());
+            .getTracksStream(anyLong(), anyLong(), eq(1), anyInt());
 
         assertContainsTracks(tracks, 10, 11);
     }
@@ -235,18 +237,18 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
     @Test
     public void doesNotPassForwardPreviouslyTriggeredTracksWhenNoTrigger() {
-        when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, 3, 0))
-            .thenReturn(ImmutableSortedSet.of());
+        when(_mockInProgressJobs.getTracksStream(JOB_ID, MEDIA_ID, 3, 0))
+            .thenReturn(Stream.of());
 
         var tracks = initDoesNotPassForwardPreviouslyTriggeredTracks()
             .setCurrentTask(5)
             .getTriggeredTracks();
 
-        assertContainsTracks(tracks, 14, 16, 17);
+        assertContainsTracks(tracks, 16, 17);
     }
 
 
-    private Builder initDoesNotPassForwardPreviouslyTriggeredTracks() {
+    private TestCaseBuilder initDoesNotPassForwardPreviouslyTriggeredTracks() {
         return builder()
             .setLangTrigger("EN", 4)
 
@@ -262,22 +264,9 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
     }
 
 
-    @Test
-    public void setsProcessedActionWhenNoTracksTriggered() {
-        var tracks = builder()
-            .setCurrentTask(3)
-            .setLangTrigger("EN", 3)
-            .addTrack("ES", 2)
-            .addTrack("RU", 2)
-            .getTriggeredTracks();
-        assertTrue(tracks.isEmpty());
-        verify(_mockInProgressJobs)
-            .setProcessedAction(JOB_ID, MEDIA_ID, 3, 0);
-
-    }
-
 
     private static void assertContainsTracks(Collection<Track> tracks, int... ids) {
+        assertThat(tracks, Matchers.hasSize(ids.length));
         var actualIds = tracks.stream()
             .map(Track::getStartOffsetFrameInclusive)
             .collect(toSet());
@@ -290,11 +279,11 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
     }
 
 
-    private Builder builder() {
-        return new Builder();
+    private TestCaseBuilder builder() {
+        return new TestCaseBuilder();
     }
 
-    private class Builder {
+    private class TestCaseBuilder {
         // Used to prevent tracks from being equal. Negative numbers are being used in Track
         // fields that are not relevent to this test.
         private static int _trackId = -1;
@@ -306,31 +295,31 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
         private Map<Integer, String> _triggers = new HashMap<>();
 
 
-        public Builder setCurrentTask(int taskIdx) {
+        public TestCaseBuilder setCurrentTask(int taskIdx) {
             _currentTask = taskIdx;
             return this;
         }
 
-        public Builder setTrigger(String trigger, int taskIdx) {
+        public TestCaseBuilder setTrigger(String trigger, int taskIdx) {
             _triggers.put(taskIdx, trigger);
             return this;
         }
 
 
-        public Builder setLangTrigger(String language, int taskIdx) {
+        public TestCaseBuilder setLangTrigger(String language, int taskIdx) {
             return setTrigger("LANG=" + language, taskIdx);
         }
 
 
-        public Builder addTrack(String language, int taskIdx) {
+        public TestCaseBuilder addTrack(String language, int taskIdx) {
             return addTrack(-20, language, taskIdx);
         }
 
-        public Builder addTrack(int startFrame, String language, int taskIdx) {
+        public TestCaseBuilder addTrack(int startFrame, String language, int taskIdx) {
             return addTrack(startFrame, Map.of("LANG", language), taskIdx);
         }
 
-        public Builder addTrack(int startFrame, Map<String, String> trackProps, int taskIdx) {
+        public TestCaseBuilder addTrack(int startFrame, Map<String, String> trackProps, int taskIdx) {
             var track = new Track(
                 JOB_ID,
                 MEDIA_ID,
@@ -379,8 +368,8 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 for (var trackEntry : _tracks.asMap().entrySet()) {
                     int taskIdx = trackEntry.getKey();
                     if (taskIdx != _currentTask - 1) {
-                        when(_mockInProgressJobs.getTracks(JOB_ID, MEDIA_ID, taskIdx, 0))
-                            .thenReturn(ImmutableSortedSet.copyOf(trackEntry.getValue()));
+                        when(_mockInProgressJobs.getTracksStream(JOB_ID, MEDIA_ID, taskIdx, 0))
+                            .thenReturn(trackEntry.getValue().stream());
                     }
                 }
             }
@@ -395,7 +384,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 createAlgorithmProps(_triggers.get(_currentTask)),
                 Set.copyOf(_tracks.get(_currentTask - 1)),
                 null);
-            return _triggerProcessor.getTriggeredTracks(media, detectionContext);
+            return _triggerProcessor.getTriggeredTracks(media, detectionContext).toList();
         }
     }
 

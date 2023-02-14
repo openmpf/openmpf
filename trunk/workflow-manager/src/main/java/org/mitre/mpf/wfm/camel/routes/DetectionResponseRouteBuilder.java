@@ -29,9 +29,7 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
-import org.mitre.mpf.wfm.camel.WfmAggregator;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
@@ -44,7 +42,6 @@ import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** Builds the route that handles detection responses. */
@@ -63,8 +60,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID = "Detection Response Route";
 
 	@Autowired
-	@Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
-	private WfmAggregator aggregator;
+	private BroadcastEnabledAggregator aggregator;
 
 	@Autowired
 	private ProtobufDataFormatFactory protobufDataFormatFactory;
@@ -100,8 +96,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
 					.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
-					.completionPredicate(new SplitCompletedPredicate(true)) // We need to forward the body of the last message on to the next processor.
-					.removeHeader(MpfHeaders.SPLIT_COMPLETED)
+                        .completionSize(header(MpfHeaders.SPLIT_SIZE))
 					.process(TrackMergingProcessor.REF) // Track merging is trivial. If it becomes a heavy lift, put in a splitter/aggregator to divide the work.
 					.process(MovingTrackLabelProcessor.REF) // Detect and flag moving tracks. Remove stationary tracks if requested by job.
 					.process(DetectionTransformationProcessor.REF)

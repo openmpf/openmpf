@@ -26,56 +26,70 @@
 
 package org.mitre.mpf.wfm.camel;
 
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component(BroadcastEnabledCountBasedWfmAggregator.REF)
-public class BroadcastEnabledCountBasedWfmAggregator extends CountBasedWfmAggregator {
-    private static final Logger log = LoggerFactory.getLogger(BroadcastEnabledCountBasedWfmAggregator.class);
-    public static final String REF = "broadcastEnabledCountBasedWfmAggregator";
+@Component
+public class BroadcastEnabledAggregator implements WfmAggregator {
 
-    @Autowired
-    private InProgressBatchJobsService inProgressBatchJobs;
+    private static final Logger LOG = LoggerFactory.getLogger(BroadcastEnabledAggregator.class);
 
-    @Autowired
-    private JobProgress jobProgressStore;
+    private final InProgressBatchJobsService _inProgressBatchJobs;
 
-    @Autowired
-    private JobStatusBroadcaster jobStatusBroadcaster;
+    private final JobStatusBroadcaster _jobStatusBroadcaster;
+
+    private final JobProgress _jobProgressStore;
+
+    @Inject
+    BroadcastEnabledAggregator(
+            InProgressBatchJobsService inProgressBatchJobs,
+            JobStatusBroadcaster jobStatusBroadcaster,
+            JobProgress jobProgressStore) {
+
+        _inProgressBatchJobs = inProgressBatchJobs;
+        _jobStatusBroadcaster = jobStatusBroadcaster;
+        _jobProgressStore = jobProgressStore;
+    }
 
     @Override
-    public void onResponse(Exchange newExchange) {
-        Object suppressBroadcast = newExchange.getIn().getHeader(MpfHeaders.SUPPRESS_BROADCAST);
+    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+        var newMsg = newExchange.getIn();
+        Object suppressBroadcast = newMsg.getHeader(MpfHeaders.SUPPRESS_BROADCAST);
         if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
-            return;
+            return newExchange;
         }
 
         try {
-            int aggregateCount = newExchange.getOut().getHeader(MpfHeaders.AGGREGATED_COUNT, Integer.class);
-            int splitSize = newExchange.getOut().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
-            long jobId = newExchange.getOut().getHeader(MpfHeaders.JOB_ID, Long.class);
+            int numPartsReceived = 1;
+            if (oldExchange != null) {
+                numPartsReceived += oldExchange.getProperty("CamelAggregatedSize", int.class);
+            }
+            int splitSize = newMsg.getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
+            long jobId = newMsg.getHeader(MpfHeaders.JOB_ID, Long.class);
 
-            BatchJob job = inProgressBatchJobs.getJob(jobId);
+            var job = _inProgressBatchJobs.getJob(jobId);
             int tasksCompleted = job.getCurrentTaskIndex();
             int totalTasks = job.getPipelineElements().getTaskCount();
-            float progressInCurrentTask = (float) aggregateCount / splitSize;
+            float progressInCurrentTask = (float) numPartsReceived / splitSize;
             // Make sure job progress never gets to 100% before the job is actually complete.
             float jobProgress = Math.min(
                     99,
                     (tasksCompleted + progressInCurrentTask) / totalTasks * 100);
 
-            jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
-            jobProgressStore.setJobProgress(jobId, jobProgress);
-        } catch (Exception e) {
-            log.error("Error getting necessary information to create a job progress update.");
+            _jobStatusBroadcaster.broadcast(jobId, jobProgress, job.getStatus());
+            _jobProgressStore.setJobProgress(jobId, jobProgress);
         }
+        catch (Exception e) {
+            LOG.error("Error getting necessary information to create a job progress update.");
+        }
+        return newExchange;
     }
 }

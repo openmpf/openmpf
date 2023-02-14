@@ -28,12 +28,8 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.EndOfTaskProcessor;
-import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,10 +38,6 @@ public class TaskResponseAggregationRoute extends RouteBuilder {
     public static final String ENTRY_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
     public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
     public static final String ROUTE_ID = "Stage Response Aggregation Route";
-
-    @Autowired
-    @Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
-    private WfmAggregator aggregator;
 
     private final String entryPoint, exitPoint, routeId;
 

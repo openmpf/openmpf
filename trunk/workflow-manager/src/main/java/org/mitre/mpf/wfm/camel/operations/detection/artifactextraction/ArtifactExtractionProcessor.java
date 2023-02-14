@@ -26,7 +26,14 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
-import com.google.common.collect.Table;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
@@ -38,17 +45,11 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.StorageService;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
-import java.util.SortedSet;
-import java.util.stream.Stream;
+import com.google.common.collect.Table;
 
 /**
  * Extracts artifacts from a media file based on the contents of the
@@ -61,26 +62,21 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionProcessor.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final StorageService _storageService;
 
     @Inject
     ArtifactExtractionProcessor(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             StorageService storageService) {
-        _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _storageService = storageService;
     }
 
     @Override
     public void wfmProcess(Exchange exchange) {
-        ArtifactExtractionRequest request = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
-                ArtifactExtractionRequest.class);
+        var request = exchange.getIn().getBody(ArtifactExtractionRequest.class);
         switch (request.getMediaType()) {
             case IMAGE:
             case VIDEO:

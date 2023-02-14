@@ -28,19 +28,13 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.CountBasedWfmAggregator;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
-import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
@@ -64,11 +58,6 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 	/** The default identifier for this route. */
 	public static final String ROUTE_ID = "Media Inspection Route";
 
-	/** The aggregator to use for collecting inspection results. */
-	@Autowired
-	@Qualifier(CountBasedWfmAggregator.REF)
-	private WfmAggregator aggregator;
-
 	private final String entryPoint, exitPoint, routeId;
 
 	/** Create a new instance of this class using the default entry and exit points (this is the constructor called by Spring). */
@@ -89,27 +78,14 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 	@Override
 	public void configure() {
 		log.debug("Configuring route '{}'.", routeId);
-
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
 			.split().method(MediaInspectionSplitter.REF, "split")
 				.parallelProcessing() // Perform this operation in parallel.
 				.streaming() // The aggregation order of messages is not important.
-			.choice()
-				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.to(exitPoint)
-				.otherwise()
-					.to(MpfEndpoints.MEDIA_INSPECTION_WORK_QUEUE)
-			.end();
-
-		from(MpfEndpoints.MEDIA_INSPECTION_WORK_QUEUE)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.process(MediaInspectionProcessor.REF)
-			.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
-			.completionPredicate(new SplitCompletedPredicate())
-			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.to(exitPoint);
+                .process(MediaInspectionProcessor.REF)
+            .end()
+            .to(exitPoint);
 	}
 }

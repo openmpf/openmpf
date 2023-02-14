@@ -24,66 +24,55 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
-import java.util.ArrayList;
+package org.mitre.mpf.wfm.camel;
+
 import java.util.List;
-
-import javax.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
+import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component(MediaInspectionSplitter.REF)
-public class MediaInspectionSplitter extends WfmLocalSplitter {
-    private static final Logger log = LoggerFactory.getLogger(MediaInspectionSplitter.class);
-    public static final String REF = "mediaInspectionSplitter";
+public abstract class WfmLocalSplitter implements MonitoredWfmSplitter  {
+
+    private static final Logger LOG = LoggerFactory.getLogger(WfmLocalSplitter.class);
 
     private final InProgressBatchJobsService _inProgressJobs;
 
-    @Inject
-    MediaInspectionSplitter(InProgressBatchJobsService inProgressJobs) {
-        super(inProgressJobs);
+    protected WfmLocalSplitter(InProgressBatchJobsService inProgressJobs) {
         _inProgressJobs = inProgressJobs;
     }
 
-    @Override
-    public String getSplitterName() { return REF; }
+    protected abstract List<Message> wfmSplit(Exchange exchange);
 
+    protected abstract String getSplitterName();
 
     @Override
-    public List<Message> wfmSplit(Exchange exchange) {
+    public List<Message> split(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        BatchJob job = _inProgressJobs.getJob(jobId);
-        List<Message> messages = new ArrayList<>();
-
-        if(!job.isCancelled()) {
-            // If the job has not been cancelled, perform the split.
-            for (Media media : job.getMedia()) {
-                if (!media.isFailed()) {
-                    Message message = new DefaultMessage(exchange.getContext());
-                    message.setHeader(MpfHeaders.JOB_ID, jobId);
-                    message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
-                    messages.add(message);
-                } else {
-                    log.warn("Skipping '{}' ({}). It is in an error state.",
-                             media.getUri(), media.getId());
-                }
+        try (var mdc = CloseableMdc.job(jobId)) {
+            var messages = wfmSplit(exchange);
+            int priority = exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY, 4, Integer.class);
+            for (var message : messages) {
+                message.setHeader(MpfHeaders.JMS_PRIORITY, priority);
+                message.setHeader(MpfHeaders.JOB_ID, jobId);
             }
-        } else {
-            log.warn("Media inspection will not be performed because this job has been cancelled.");
+            LOG.info("{} produced {} work units.", getSplitterName(), messages.size());
+            return messages;
         }
-
-        return messages;
+        catch (Exception e) {
+            var errorMsg =String.format(
+                "Failed to complete the split operation for Job %s due to : %s",
+                jobId, e);
+            LOG.error(errorMsg, e);
+            _inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
+            exchange.setProperty(MpfHeaders.SPLITTING_ERROR, true);
+            return List.of();
+        }
     }
 }

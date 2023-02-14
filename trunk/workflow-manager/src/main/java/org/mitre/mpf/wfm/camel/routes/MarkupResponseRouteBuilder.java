@@ -26,9 +26,13 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
+
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
+import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -36,6 +40,7 @@ import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,6 +53,10 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 
 	@Autowired
 	private ProtobufDataFormatFactory protobufDataFormatFactory;
+
+    @Autowired
+	@Qualifier(BroadcastEnabledCountBasedWfmAggregator.REF)
+	private WfmAggregator aggregator;
 
 	private final String entryPoint, exitPoint, routeId;
 
@@ -74,6 +83,9 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
+                    .aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
+                    .completionPredicate(new SplitCompletedPredicate(true))
+                    .removeHeader(MpfHeaders.SPLIT_COMPLETED)
 					.to(exitPoint)
 			.endChoice();
 	}

@@ -30,10 +30,8 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledCountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.EndOfTaskProcessor;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
-import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -66,9 +64,6 @@ public class TaskResponseAggregationRoute extends RouteBuilder {
         from(entryPoint)
             .routeId(routeId)
             .setExchangePattern(ExchangePattern.InOnly)
-            .aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
-            .completionPredicate(new SplitCompletedPredicate())
-            .removeHeader(MpfHeaders.SPLIT_COMPLETED)
             .process(EndOfTaskProcessor.REF)
             .to(exitPoint);
     }

@@ -162,8 +162,8 @@ public class DetectionTaskSplitter {
                             .getAlgorithm(action.getAlgorithm())
                             .getActionType();
                     for (Message message : detectionRequestMessages) {
-                        message.setHeader(MpfHeaders.RECIPIENT_QUEUE,
-                                String.format("jms:MPF.%s_%s_REQUEST",
+                        message.setHeader(MpfHeaders.JMS_DESTINATION,
+                                String.format("MPF.%s_%s_REQUEST",
                                         actionType,
                                         action.getAlgorithm()));
                         message.setHeader(MpfHeaders.JMS_REPLY_TO,

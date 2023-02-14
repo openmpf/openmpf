@@ -108,20 +108,9 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 					.split().method(ArtifactExtractionSplitterImpl.REF, "split")
 						.parallelProcessing() // Create work units and process them in any order.
 						.streaming() // Aggregate responses in any order.
-						.choice()
-							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(exitPoint)
-							.otherwise()
-								.to(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-						.endChoice()
+                        .process(ArtifactExtractionProcessor.REF)
 					.end()
+                    .to(exitPoint)
 			.end();
-
-		from(MpfEndpoints.ARTIFACT_EXTRACTION_WORK_QUEUE)
-			.process(ArtifactExtractionProcessor.REF)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.setHeader(MpfHeaders.SUPPRESS_BROADCAST, constant(Boolean.TRUE))
-			.to(exitPoint);
 	}
 }

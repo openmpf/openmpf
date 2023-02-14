@@ -78,7 +78,9 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 								.to(MpfEndpoints.TASK_RESULTS_AGGREGATOR)
 							.otherwise()
 								.marshal().protobuf()
-								.recipientList(header(MpfHeaders.RECIPIENT_QUEUE))
+                                // Splitter will set the "CamelJmsDestinationName" header to
+                                // specify the destination.
+								.to("jms:queue:dummy")
 				.endChoice()
 					.endChoice() // For unknown reasons, the split() DSL is ended by 'endChoice'.
 				.end()

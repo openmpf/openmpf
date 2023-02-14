@@ -167,8 +167,8 @@ public class MarkupSplitter {
             var algorithm = job.getPipelineElements().getAlgorithm(markupAction.getAlgorithm());
             var message = new DefaultMessage(_camelContext);
             message.setHeader(
-                    MpfHeaders.RECIPIENT_QUEUE,
-                    String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(),
+                    MpfHeaders.JMS_DESTINATION,
+                    String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(),
                                   markupAction.getAlgorithm()));
             message.setHeader(MpfHeaders.JMS_REPLY_TO,
                               MpfEndpoints.COMPLETED_MARKUP.replace("jms:", ""));

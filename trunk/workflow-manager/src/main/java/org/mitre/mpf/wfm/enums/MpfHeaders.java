@@ -42,7 +42,7 @@ public class MpfHeaders {
 		MEDIA_ID = "MediaId",
 		MEDIA_TYPE = "MediaType",
 
-		RECIPIENT_QUEUE = "QueueName",
+        JMS_DESTINATION = "CamelJmsDestinationName",
 
 		SPLIT_COMPLETED = "SplitCompleted",
 		SPLIT_SIZE = "SplitSize",

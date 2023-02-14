@@ -26,13 +26,28 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
-import org.mitre.mpf.wfm.camel.WfmSplitter;
+import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -50,13 +65,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 @Component(ArtifactExtractionSplitterImpl.REF)
-public class ArtifactExtractionSplitterImpl extends WfmSplitter {
+public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
     public static final String REF = "detectionExtractionSplitter";
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
@@ -72,6 +82,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
             JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
+        super(inProgressBatchJobs);
         _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
@@ -166,7 +177,7 @@ public class ArtifactExtractionSplitterImpl extends WfmSplitter {
                 processTracks(request, tracks, job, media, action, actionIndex, extractionPolicy);
 
                 Message message = new DefaultMessage(exchange.getContext());
-                message.setBody(_jsonUtils.serialize(request));
+                message.setBody(request);
                 messages.add(message);
             }
         }

@@ -37,8 +37,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component(BroadcastEnabledAggregator.REF)
 public class BroadcastEnabledAggregator implements WfmAggregator {
+
+    public static final String REF = "broadcastEnabledAggregator";
 
     private static final Logger LOG = LoggerFactory.getLogger(BroadcastEnabledAggregator.class);
 

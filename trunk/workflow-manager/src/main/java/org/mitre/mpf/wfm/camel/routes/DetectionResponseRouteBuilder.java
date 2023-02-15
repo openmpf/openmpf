@@ -30,6 +30,7 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
@@ -42,6 +43,7 @@ import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** Builds the route that handles detection responses. */
@@ -60,7 +62,8 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 	public static final String ROUTE_ID = "Detection Response Route";
 
 	@Autowired
-	private BroadcastEnabledAggregator aggregator;
+    @Qualifier(BroadcastEnabledAggregator.REF)
+	private WfmAggregator aggregator;
 
 	@Autowired
 	private ProtobufDataFormatFactory protobufDataFormatFactory;

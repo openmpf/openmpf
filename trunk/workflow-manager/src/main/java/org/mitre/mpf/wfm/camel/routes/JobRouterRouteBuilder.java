@@ -66,24 +66,20 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
             .process(BeginTaskProcessor.REF)
-			.choice()
-				.when(header(MpfHeaders.JOB_COMPLETE).isEqualTo(true))
-                    .process(JobCompleteProcessorImpl.REF)
-				.otherwise()
-					.split().method(DefaultTaskSplitter.REF, "split")
-						.parallelProcessing() // Create work units and process them in any order.
-						.streaming() // Aggregate responses in any order.
-						.choice()
-							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(entryPoint)
-							.otherwise()
-								.marshal().protobuf()
-                                // Splitter will set the "CamelJmsDestinationName" header to
-                                // specify the destination.
-								.to("jms:queue:dummy")
-                        .endChoice()
-					.end()
-            .endChoice();
+            .filter(header(MpfHeaders.JOB_COMPLETE).isEqualTo(true))
+                .process(JobCompleteProcessorImpl.REF)
+                .stop()
+            .end()
+            .split(method(DefaultTaskSplitter.REF, "split"))
+                .parallelProcessing()
+                .streaming()
+                .marshal().protobuf()
+                // Splitter will set the "CamelJmsDestinationName" header to
+                // specify the destination.
+                .to("jms:queue:dummy")
+            .end()
+            .filter(exchangeProperty(MpfHeaders.EMPTY_SPLIT))
+                .to(entryPoint)
+            .end();
 	}
 }

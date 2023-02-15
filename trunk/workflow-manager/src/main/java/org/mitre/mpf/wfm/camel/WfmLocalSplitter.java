@@ -31,14 +31,16 @@ import java.util.List;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.mitre.mpf.mvc.util.CloseableMdc;
+import org.javasimon.aop.Monitored;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class WfmLocalSplitter implements MonitoredWfmSplitter  {
+@Monitored
+public abstract class WfmLocalSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(WfmLocalSplitter.class);
 
@@ -52,10 +54,14 @@ public abstract class WfmLocalSplitter implements MonitoredWfmSplitter  {
 
     protected abstract String getSplitterName();
 
-    @Override
+
     public List<Message> split(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        try (var mdc = CloseableMdc.job(jobId)) {
+        return MdcUtil.job(jobId, () -> doSplit(jobId, exchange));
+    }
+
+    private List<Message> doSplit(long jobId, Exchange exchange) {
+        try {
             var messages = wfmSplit(exchange);
             int priority = exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY, 4, Integer.class);
             for (var message : messages) {
@@ -66,7 +72,7 @@ public abstract class WfmLocalSplitter implements MonitoredWfmSplitter  {
             return messages;
         }
         catch (Exception e) {
-            var errorMsg =String.format(
+            var errorMsg = String.format(
                 "Failed to complete the split operation for Job %s due to : %s",
                 jobId, e);
             LOG.error(errorMsg, e);

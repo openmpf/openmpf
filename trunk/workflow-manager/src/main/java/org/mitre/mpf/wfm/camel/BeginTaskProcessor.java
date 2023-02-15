@@ -68,7 +68,7 @@ public class BeginTaskProcessor extends WfmProcessor {
             jobProgressStore.setJobProgress(jobId, 99.0f);
             jobStatusBroadcaster.broadcast(jobId, job.getStatus());
             log.debug("All tasks have completed. Setting the {} flag.", MpfHeaders.JOB_COMPLETE);
-            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
+            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
         }
 
         exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());

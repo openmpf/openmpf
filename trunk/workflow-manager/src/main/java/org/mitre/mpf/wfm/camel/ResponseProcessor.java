@@ -86,8 +86,8 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 			// No such job. Repackage the response and send it to the unsolicited responses queue for future analysis.
 			log.warn("A job with this ID is not known to the system. " +
 					         "This message will be ignored.");
-			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
-			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
+			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, true);
+			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, true);
 			exchange.getOut().setBody(((T)(exchange.getIn().getBody())).toByteArray());
 		}
 	}

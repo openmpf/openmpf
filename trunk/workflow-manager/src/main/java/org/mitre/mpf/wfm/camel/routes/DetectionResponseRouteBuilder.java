@@ -97,7 +97,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 			.unmarshal(protobufDataFormatFactory.create(DetectionProtobuf.DetectionResponse::newBuilder)) // Unpack the protobuf response.
 			.process(DetectionResponseProcessor.REF) // Run the response through the response processor.
 			.choice()
-				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
+				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
 					.aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)

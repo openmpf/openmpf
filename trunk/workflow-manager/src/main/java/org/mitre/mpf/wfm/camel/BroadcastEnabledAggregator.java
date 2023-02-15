@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camel;
 import javax.inject.Inject;
 
 import org.apache.camel.Exchange;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobProgress;
@@ -63,19 +64,19 @@ public class BroadcastEnabledAggregator implements WfmAggregator {
 
     @Override
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-        var newMsg = newExchange.getIn();
-        Object suppressBroadcast = newMsg.getHeader(MpfHeaders.SUPPRESS_BROADCAST);
-        if (suppressBroadcast instanceof Boolean && (boolean) suppressBroadcast) {
-            return newExchange;
-        }
+        long jobId = newExchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        return MdcUtil.job(jobId, () -> doAggregation(jobId, oldExchange, newExchange));
+    }
 
+
+    private Exchange doAggregation(long jobId, Exchange oldExchange, Exchange newExchange) {
         try {
             int numPartsReceived = 1;
             if (oldExchange != null) {
-                numPartsReceived += oldExchange.getProperty("CamelAggregatedSize", int.class);
+                numPartsReceived += oldExchange.getProperty(
+                        "CamelAggregatedSize", 0, Integer.class);
             }
-            int splitSize = newMsg.getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
-            long jobId = newMsg.getHeader(MpfHeaders.JOB_ID, Long.class);
+            int splitSize = newExchange.getIn().getHeader(MpfHeaders.SPLIT_SIZE, Integer.class);
 
             var job = _inProgressBatchJobs.getJob(jobId);
             int tasksCompleted = job.getCurrentTaskIndex();

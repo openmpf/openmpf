@@ -80,7 +80,7 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse::newBuilder))
 			.process(MarkupResponseProcessor.REF)
 			.choice()
-				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
+				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
                     .aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)

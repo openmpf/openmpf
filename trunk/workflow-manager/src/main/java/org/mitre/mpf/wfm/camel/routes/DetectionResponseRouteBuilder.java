@@ -52,11 +52,13 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 
 	private static final Logger log = LoggerFactory.getLogger(DetectionResponseRouteBuilder.class);
 
+	public static final String JMS_DESTINATION = "MPF.COMPLETED_DETECTIONS";
+
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
+	public static final String ENTRY_POINT = "jms:" + JMS_DESTINATION;
 
 	/** The default exit point for this route. */
-	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
+	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
 
 	/** The default id route. */
 	public static final String ROUTE_ID = "Detection Response Route";

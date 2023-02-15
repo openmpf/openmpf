@@ -40,6 +40,7 @@ import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
+import org.mitre.mpf.wfm.camel.routes.DetectionResponseRouteBuilder;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -235,7 +236,12 @@ public class TestWfmEndToEnd {
 		long jobId = -testCtr;
 		DetectionProtobuf.DetectionResponse targetResponse = createUnsolicitedResponse(jobId);
 
-		camelContext.createProducerTemplate().sendBodyAndHeader(MpfEndpoints.COMPLETED_DETECTIONS, ExchangePattern.InOnly, targetResponse.toByteArray(), MpfHeaders.JOB_ID, jobId);
+		camelContext.createProducerTemplate().sendBodyAndHeader(
+                DetectionResponseRouteBuilder.ENTRY_POINT,
+                ExchangePattern.InOnly,
+                targetResponse.toByteArray(),
+                MpfHeaders.JOB_ID,
+                jobId);
 		Exchange exchange = camelContext.createConsumerTemplate().receive(MpfEndpoints.UNSOLICITED_MESSAGES + "?selector=" + MpfHeaders.JOB_ID + "%3D" + jobId, 10000);
 		Assert.assertNotNull("The unsolicited response was not properly detected.", exchange);
 		DetectionProtobuf.DetectionResponse receivedResponse = DetectionProtobuf.DetectionResponse.parseFrom(exchange.getIn().getBody(byte[].class));

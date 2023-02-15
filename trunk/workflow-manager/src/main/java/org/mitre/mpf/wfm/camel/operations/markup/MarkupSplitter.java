@@ -37,6 +37,7 @@ import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.routes.MarkupResponseRouteBuilder;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
@@ -170,8 +171,9 @@ public class MarkupSplitter {
                     MpfHeaders.JMS_DESTINATION,
                     String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(),
                                   markupAction.getAlgorithm()));
-            message.setHeader(MpfHeaders.JMS_REPLY_TO,
-                              MpfEndpoints.COMPLETED_MARKUP.replace("jms:", ""));
+            message.setHeader(
+                    MpfHeaders.JMS_REPLY_TO,
+                    MarkupResponseRouteBuilder.JMS_DESTINATION);
             message.setBody(requestBuilder.build());
             messages.add(message);
         }

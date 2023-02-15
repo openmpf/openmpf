@@ -213,7 +213,7 @@ public class TestJobRequestService {
 
         assertEquals(123, job.getId());
         assertEquals(jobCreationRequest.getExternalId(), job.getExternalId().get());
-        assertEquals(0, job.getCurrentTaskIndex());
+        assertEquals(-1, job.getCurrentTaskIndex());
         assertSame(systemPropsSnapshot, job.getSystemPropertiesSnapshot());
         assertSame(pipelineElements, job.getPipelineElements());
         assertEquals(defaultPriority, job.getPriority());
@@ -338,7 +338,7 @@ public class TestJobRequestService {
         assertNotSame(newJob.getPipelineElements(), originalJob.getPipelineElements());
         assertEquals(newJob.getPipelineElements().getName(), originalJob.getPipelineElements().getName());
         assertEquals("10", newJob.getSystemPropertiesSnapshot().lookup("my.property"));
-        assertEquals(0, newJob.getCurrentTaskIndex());
+        assertEquals(-1, newJob.getCurrentTaskIndex());
         assertEquals(newJob.getExternalId().get(), originalJob.getExternalId().get());
         assertEquals(newJob.getPriority(), originalJob.getPriority());
         assertEquals(newJob.getOverriddenAlgorithmProperties(), originalJob.getOverriddenAlgorithmProperties());

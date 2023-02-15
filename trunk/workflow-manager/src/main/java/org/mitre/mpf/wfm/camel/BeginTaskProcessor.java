@@ -38,10 +38,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component(EndOfTaskProcessor.REF)
-public class EndOfTaskProcessor extends WfmProcessor {
-    public static final String REF = "endOfTaskProcessor";
-    private static final Logger log = LoggerFactory.getLogger(EndOfTaskProcessor.class);
+@Component(BeginTaskProcessor.REF)
+public class BeginTaskProcessor extends WfmProcessor {
+    public static final String REF = "beginTaskProcessor";
+    private static final Logger log = LoggerFactory.getLogger(BeginTaskProcessor.class);
 
     @Autowired
     private InProgressBatchJobsService inProgressBatchJobs;
@@ -58,8 +58,10 @@ public class EndOfTaskProcessor extends WfmProcessor {
         inProgressBatchJobs.incrementTask(jobId);
         BatchJob job = inProgressBatchJobs.getJob(jobId);
 
-        log.info("Task Complete! Progress is now {}/{}.",
-                 job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
+        if (job.getCurrentTaskIndex() > 0) {
+            log.info("Task Complete! Progress is now {}/{}.",
+                    job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
+        }
 
 
         if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {

@@ -31,7 +31,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionSplitter;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.util.JniLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ public class MediaInspectionRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MediaInspectionRouteBuilder.class);
 
 	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = MpfEndpoints.MEDIA_INSPECTION_ENTRY_POINT;
+	public static final String ENTRY_POINT = "jms:MPF.MEDIA_INSPECTION";
 
 	/** The default exit point for this route. */
 	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;

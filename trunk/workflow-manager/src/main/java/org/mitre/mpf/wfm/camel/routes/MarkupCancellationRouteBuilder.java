@@ -28,9 +28,7 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.buffers.Markup;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupCancellationProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -39,8 +37,8 @@ import org.springframework.stereotype.Component;
 public class MarkupCancellationRouteBuilder extends RouteBuilder {
     private static final Logger log = LoggerFactory.getLogger(MarkupCancellationRouteBuilder.class);
 
-    public static final String ENTRY_POINT = MpfEndpoints.CANCELLED_MARKUPS;
-    public static final String EXIT_POINT = MpfEndpoints.COMPLETED_MARKUP;
+    public static final String ENTRY_POINT = "jms:MPF.CANCELLED_MARKUPS";
+    public static final String EXIT_POINT = MarkupResponseRouteBuilder.ENTRY_POINT;
     public static final String ROUTE_ID = "Markup Cancellation Route";
 
     private final String entryPoint, exitPoint, routeId;

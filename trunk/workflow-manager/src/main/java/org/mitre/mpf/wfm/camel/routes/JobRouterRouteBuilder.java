@@ -29,8 +29,8 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.DefaultTaskSplitter;
+import org.mitre.mpf.wfm.camel.BeginTaskProcessor;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +65,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 		from(entryPoint)
 			.routeId(routeId)
 			.setExchangePattern(ExchangePattern.InOnly)
+            .process(BeginTaskProcessor.REF)
 			.choice()
 				.when(header(MpfHeaders.JOB_COMPLETE).isEqualTo(true))
                     .process(JobCompleteProcessorImpl.REF)
@@ -75,7 +76,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
 						.choice()
 							.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
 								.removeHeader(MpfHeaders.EMPTY_SPLIT)
-								.to(MpfEndpoints.TASK_RESULTS_AGGREGATOR)
+								.to(entryPoint)
 							.otherwise()
 								.marshal().protobuf()
                                 // Splitter will set the "CamelJmsDestinationName" header to

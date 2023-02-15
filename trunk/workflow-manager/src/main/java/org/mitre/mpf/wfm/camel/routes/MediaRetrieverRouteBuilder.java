@@ -31,13 +31,12 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MediaRetrieverRouteBuilder extends RouteBuilder {
-	public static final String ENTRY_POINT = MpfEndpoints.MEDIA_RETRIEVAL_ENTRY_POINT;
+	public static final String ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL";
 	public static final String EXIT_POINT = MediaInspectionRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Media Retriever Route";
 

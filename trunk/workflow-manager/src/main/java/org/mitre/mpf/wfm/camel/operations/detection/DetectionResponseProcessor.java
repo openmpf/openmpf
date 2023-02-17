@@ -32,7 +32,6 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -131,8 +130,7 @@ public class DetectionResponseProcessor
 
         _inProgressJobs.setProcessedAction(jobId, detectionResponse.getMediaId(), detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex());
-
-        return _jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
+        return null;
     }
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {

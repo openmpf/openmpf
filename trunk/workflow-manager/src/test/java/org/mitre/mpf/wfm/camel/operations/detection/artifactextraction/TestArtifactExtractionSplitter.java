@@ -37,8 +37,8 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -49,8 +49,6 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -60,14 +58,12 @@ import static org.mockito.Mockito.*;
 
 public class TestArtifactExtractionSplitter {
 
-    private final JsonUtils _jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
     private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
     private final AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil = mock(AggregateJobPropertiesUtil.class);
 
 
     private final ArtifactExtractionSplitterImpl _artifactExtractionSplitter = new ArtifactExtractionSplitterImpl(
-            _jsonUtils,
             _mockInProgressJobs,
             _mockAggregateJobPropertiesUtil);
 
@@ -627,8 +623,8 @@ public class TestArtifactExtractionSplitter {
 
 
         Exchange exchange = TestUtil.createTestExchange();
-        TrackMergingContext trackMergingContext = new TrackMergingContext(jobId, 0);
-        exchange.getIn().setBody(_jsonUtils.serialize(trackMergingContext));
+        var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
+        exchange.getIn().setBody(trackCache);
 
 
         List<Message> resultMessages = _artifactExtractionSplitter.wfmSplit(exchange);

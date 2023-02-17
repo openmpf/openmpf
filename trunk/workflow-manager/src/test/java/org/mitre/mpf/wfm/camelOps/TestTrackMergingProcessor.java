@@ -37,9 +37,9 @@ import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.camel.WfmProcessorInterface;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
@@ -48,9 +48,9 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -83,9 +83,6 @@ public class TestTrackMergingProcessor {
 
     @Autowired
     private IoUtils ioUtils;
-
-    @Autowired
-    private JsonUtils jsonUtils;
 
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
@@ -170,8 +167,8 @@ public class TestTrackMergingProcessor {
         final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
-        exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
+        exchange.getIn().setHeader(MpfHeaders.JOB_ID, TEST_JOB_ID);
+        exchange.getIn().setHeader(MpfHeaders.TASK_INDEX, taskIndex);
 
         Map<String, String> mergeProp = new HashMap<>();
         if (samplingInterval != null) {
@@ -252,13 +249,12 @@ public class TestTrackMergingProcessor {
 
         trackMergingProcessor.wfmProcess(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
-        TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
-        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
-        Assert.assertEquals(expectedTracks, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        var responseBody = exchange.getOut().getBody(TrackCache.class);
+        Assert.assertEquals(TEST_JOB_ID, responseBody.getJobId());
+        Assert.assertEquals(taskIndex, responseBody.getTaskIndex());
+
+        var actualTracks = responseBody.getTracks(mediaId, 0);
+        Assert.assertEquals(expectedTracks, actualTracks.size());
         inProgressJobs.clearJob(TEST_JOB_ID);
     }
 
@@ -268,8 +264,8 @@ public class TestTrackMergingProcessor {
         final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
-        TrackMergingContext mergeContext = new TrackMergingContext(TEST_JOB_ID, taskIndex);
-        exchange.getIn().setBody(jsonUtils.serialize(mergeContext));
+        exchange.getIn().setHeader(MpfHeaders.JOB_ID, TEST_JOB_ID);
+        exchange.getIn().setHeader(MpfHeaders.TASK_INDEX, taskIndex);
 
         Map<String, String> mergeProp = new HashMap<>();
         mergeProp.put(MpfConstants.MEDIA_SAMPLING_INTERVAL_PROPERTY, "1");
@@ -301,13 +297,12 @@ public class TestTrackMergingProcessor {
 
         trackMergingProcessor.wfmProcess(exchange);
 
-        Object responseBody = exchange.getOut().getBody();
-        Assert.assertTrue("A response body must be set.", responseBody != null);
-        Assert.assertTrue(String.format("Response body must be a byte[]. Actual: %s.", responseBody.getClass()),  responseBody instanceof byte[]);
-        TrackMergingContext contextResponse = jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-        Assert.assertTrue(contextResponse.getTaskIndex() == taskIndex);
-        Assert.assertTrue(contextResponse.getJobId() == TEST_JOB_ID);
-        Assert.assertEquals(0, inProgressJobs.getTracks(TEST_JOB_ID, mediaId, 0, 0).size());
+        var responseBody = exchange.getOut().getBody(TrackCache.class);
+        Assert.assertEquals(TEST_JOB_ID, responseBody.getJobId());
+        Assert.assertEquals(taskIndex, responseBody.getTaskIndex());
+
+        var actualTracks = responseBody.getTracks(mediaId, 0);
+        Assert.assertEquals(0, actualTracks.size());
         inProgressJobs.clearJob(TEST_JOB_ID);
     }
 

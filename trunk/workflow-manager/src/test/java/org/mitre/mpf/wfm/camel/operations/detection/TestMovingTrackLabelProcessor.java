@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
@@ -39,8 +39,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
-import org.mockito.ArgumentCaptor;
 
 import java.util.*;
 
@@ -173,13 +171,12 @@ public class TestMovingTrackLabelProcessor {
             boolean movingTracksOnly, double maxIou,
             int minDetections, Collection<Track> inputTracks) {
 
-        var jsonUtils = new JsonUtils(null);
         var mockInProgressJobs = mock(InProgressBatchJobsService.class);
 
         var exchange = TestUtil.createTestExchange();
         long jobId = 43232;
-        var trackMergingContext = new TrackMergingContext(jobId, 0);
-        exchange.getIn().setBody(jsonUtils.serialize(trackMergingContext));
+        var trackCache = new TrackCache(jobId, 0, mockInProgressJobs);
+        exchange.getIn().setBody(trackCache);
 
         var mockJob = mock(BatchJob.class, RETURNS_DEEP_STUBS);
         when(mockInProgressJobs.getJob(jobId))
@@ -215,17 +212,11 @@ public class TestMovingTrackLabelProcessor {
         when(mockInProgressJobs.getTracks(jobId, mediaId, 0, 0))
                 .thenReturn(new TreeSet<>(inputTracks));
 
-        new MovingTrackLabelProcessor(jsonUtils, mockInProgressJobs, mockAggregateJobPropertiesUtil)
+        new MovingTrackLabelProcessor(mockInProgressJobs, mockAggregateJobPropertiesUtil)
                 .wfmProcess(exchange);
         assertSame(exchange.getIn().getBody(), exchange.getOut().getBody());
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
-
-        verify(mockInProgressJobs)
-                .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
-
-        return List.copyOf(captor.getValue());
+        return List.copyOf(trackCache.getTracks(mediaId, 0));
     }
 
 

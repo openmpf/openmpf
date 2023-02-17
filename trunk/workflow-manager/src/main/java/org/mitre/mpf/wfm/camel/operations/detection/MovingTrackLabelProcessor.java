@@ -32,14 +32,13 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Maps;
 import org.apache.camel.Exchange;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -47,8 +46,10 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.awt.geom.Rectangle2D;
 import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toCollection;
 
 @Component(MovingTrackLabelProcessor.REF)
 public class MovingTrackLabelProcessor extends WfmProcessor {
@@ -56,18 +57,14 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
     private static final Logger _log = LoggerFactory.getLogger(MovingTrackLabelProcessor.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
     MovingTrackLabelProcessor(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
-        _jsonUtils = jsonUtils;
         _inProgressJobs = inProgressJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
@@ -75,14 +72,13 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
 
     @Override
     public void wfmProcess(Exchange exchange) {
-        var trackMergingContext = _jsonUtils.deserialize(
-                exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
-        var job = _inProgressJobs.getJob(trackMergingContext.getJobId());
-        var task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
+        var trackCache = exchange.getIn().getBody(TrackCache.class);
+        var job = _inProgressJobs.getJob(trackCache.getJobId());
+        var task = job.getPipelineElements().getTask(trackCache.getTaskIndex());
 
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
            var action = job.getPipelineElements().getAction(
-                   trackMergingContext.getTaskIndex(), actionIndex);
+                    trackCache.getTaskIndex(), actionIndex);
 
            for (var media : job.getMedia())  {
                if (media.isFailed() || !media.matchesType(MediaType.VIDEO)) {
@@ -106,8 +102,7 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                        combinedProperties.apply(MpfConstants.MOVING_TRACK_MIN_DETECTIONS));
 
 
-               var originalTracks = _inProgressJobs.getTracks(
-                       job.getId(), media.getId(), trackMergingContext.getTaskIndex(), actionIndex);
+                var originalTracks = trackCache.getTracks(media.getId(), actionIndex);
 
                var labeledTracks = updateMovingTracks(movingTracksOnly, maxIou,
                                                       minMovingDetections, originalTracks);
@@ -116,31 +111,29 @@ public class MovingTrackLabelProcessor extends WfmProcessor {
                if (numDropped != 0) {
                    _log.warn("Job {}, task {}, action {} originally had {} tracks. {} was " +
                                  "true so {} tracks were dropped because they were not in motion.",
-                             job.getId(), trackMergingContext.getTaskIndex(), actionIndex,
+                             job.getId(), trackCache.getTaskIndex(), actionIndex,
                              originalTracks.size(), MpfConstants.MOVING_TRACKS_ONLY, numDropped);
                }
-               _inProgressJobs.setTracks(job.getId(), media.getId(),
-                                         trackMergingContext.getTaskIndex(), actionIndex,
-                                         labeledTracks);
+                trackCache.updateTracks(media.getId(), actionIndex, labeledTracks);
            }
         }
         exchange.getOut().setBody(exchange.getIn().getBody());
     }
 
 
-    private static Collection<Track> updateMovingTracks(
+    private static SortedSet<Track> updateMovingTracks(
             boolean movingTracksOnly, double maxIou, int minMovingDetections,
             Collection<Track> originalTracks) {
         if (movingTracksOnly) {
             return originalTracks.stream()
                     .map(t -> processTrack(maxIou, minMovingDetections, t))
                     .filter(t -> Boolean.parseBoolean(t.getTrackProperties().get("MOVING")))
-                    .collect(toList());
+                    .collect(toCollection(TreeSet::new));
         }
         else {
             return originalTracks.stream()
                     .map(t -> processTrack(maxIou, minMovingDetections, t))
-                    .collect(toList());
+                    .collect(toCollection(TreeSet::new));
         }
     }
 

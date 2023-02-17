@@ -27,7 +27,6 @@
 package org.mitre.mpf.wfm.camel.operations.detection.artifactextraction;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -48,8 +47,8 @@ import org.mitre.mpf.interop.JsonDetectionOutputObject;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -60,7 +59,6 @@ import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -71,19 +69,15 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactExtractionSplitterImpl.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
     ArtifactExtractionSplitterImpl(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         super(inProgressBatchJobs);
-        _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
@@ -95,16 +89,15 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
 
     @Override
     public List<Message> wfmSplit(Exchange exchange) {
-        TrackMergingContext trackMergingContext = _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class),
-                TrackMergingContext.class);
-        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        var trackCache = exchange.getIn().getBody(TrackCache.class);
+        BatchJob job = _inProgressBatchJobs.getJob(trackCache.getJobId());
 
         if (job.isCancelled()) {
             LOG.warn("Artifact extraction will not be performed because this job has been cancelled.");
             return Collections.emptyList();
         }
 
-        int taskIndex = trackMergingContext.getTaskIndex();
+        int taskIndex = trackCache.getTaskIndex();
         JobPipelineElements pipelineElements = job.getPipelineElements();
         int numPipelineTasks = pipelineElements.getTaskCount();
         int lastTaskIndex = numPipelineTasks - 1;
@@ -168,13 +161,15 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
                         taskIndex,
                         actionIndex,
                         cropping,
-                        isRotationFillBlack);
+                        isRotationFillBlack,
+                        trackCache);
 
-                Collection<Track> tracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
-                        request.getTaskIndex(), request.getActionIndex());
+                var tracks = trackCache.getTracks(media.getId(), actionIndex);
 
                 LOG.debug("Action {} has {} tracks", actionIndex, tracks.size());
-                processTracks(request, tracks, job, media, action, actionIndex, extractionPolicy);
+                var updatedTracks = processTracks(
+                        request, tracks, job, media, action, actionIndex, extractionPolicy);
+                trackCache.updateTracks(media.getId(), actionIndex, updatedTracks);
 
                 Message message = new DefaultMessage(exchange.getContext());
                 message.setBody(request);
@@ -193,7 +188,8 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
         }
     }
 
-    private void processTracks(ArtifactExtractionRequest request, Collection<Track> tracks, BatchJob job, Media media,
+    private SortedSet<Track> processTracks(
+            ArtifactExtractionRequest request, SortedSet<Track> tracks, BatchJob job, Media media,
             Action action, int actionIndex, ArtifactExtractionPolicy policy) {
 
         Integer trackIndex = 0;
@@ -230,8 +226,7 @@ public class ArtifactExtractionSplitterImpl extends WfmLocalSplitter {
             // a don't care. This simplifies the process of setting the artifact extraction status later.
             if (request.getCroppingFlag()) trackIndex++;
         }
-        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(), request.getTaskIndex(), request.getActionIndex(), tracks);
-
+        return tracks;
     }
 
     private SortedSet<JsonDetectionOutputObject> processExtractionsInTrack(BatchJob job, Track track, Media media,

@@ -44,6 +44,7 @@ import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -304,7 +305,8 @@ public class TestCustomNginxStorageBackend {
                 0,
                 0,
                 true,
-                true);
+                true,
+                new TrackCache(TEST_INTERNAL_JOB_ID, 0, _mockInProgressJobs));
         request.getExtractionsMap().putAll(extractionsMap);
         Table<Integer, Integer, URI> results = _nginxStorageService.storeArtifacts(request);
         assertEquals(expectedResults, results);

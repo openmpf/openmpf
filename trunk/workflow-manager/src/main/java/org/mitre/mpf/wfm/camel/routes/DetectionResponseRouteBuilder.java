@@ -31,6 +31,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
 import org.mitre.mpf.wfm.camel.WfmAggregator;
+import org.mitre.mpf.wfm.camel.operations.CommitUpdatedTracksProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.MovingTrackLabelProcessor;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionProcessor;
@@ -110,6 +111,7 @@ public class DetectionResponseRouteBuilder extends RouteBuilder {
 						.streaming() // Aggregate responses in any order.
                         .process(ArtifactExtractionProcessor.REF)
 					.end()
+                    .process(CommitUpdatedTracksProcessor.REF)
                     .to(exitPoint)
 			.end();
 	}

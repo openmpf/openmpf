@@ -24,31 +24,20 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.enums;
+package org.mitre.mpf.wfm.camel.operations;
 
-public class MpfHeaders {
-	public static final String
-		CORRELATION_ID = "CorrelationId",
+import org.apache.camel.Exchange;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.WfmProcessor;
+import org.mitre.mpf.wfm.data.TrackCache;
+import org.springframework.stereotype.Component;
 
-		EMPTY_SPLIT = "EmptySplit",
+@Component(CommitUpdatedTracksProcessor.REF)
+public class CommitUpdatedTracksProcessor extends WfmProcessor {
+    public static final String REF = "commitUpdatedTracksProcessor";
 
-		JMS_PRIORITY = "JMSPriority",
-		JMS_REPLY_TO = "JMSReplyTo",
-		JOB_COMPLETE = "JobComplete",
-		JOB_ID = "JobId",
-        TASK_INDEX = "TaskIndex",
-
-		MEDIA_ID = "MediaId",
-		MEDIA_TYPE = "MediaType",
-
-        JMS_DESTINATION = "CamelJmsDestinationName",
-
-		SPLIT_SIZE = "SplitSize",
-		SPLITTING_ERROR = "JobSplitError",
-
-		UNSOLICITED = "Unsolicited";
-
-
-	private MpfHeaders() {
-	}
+    @Override
+    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+        exchange.getIn().getBody(TrackCache.class).commit();
+    }
 }

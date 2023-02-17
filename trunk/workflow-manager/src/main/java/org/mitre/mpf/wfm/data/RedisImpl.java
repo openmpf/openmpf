@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.data;
 
+import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
@@ -47,6 +48,7 @@ import java.util.TreeSet;
 import static java.util.stream.Collectors.toCollection;
 
 
+@Monitored
 @Component
 public class RedisImpl implements Redis {
 

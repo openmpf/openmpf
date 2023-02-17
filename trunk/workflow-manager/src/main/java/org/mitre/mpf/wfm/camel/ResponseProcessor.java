@@ -74,6 +74,8 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 		var jobExists = _inProgressJobs.containsJob(jobId);
 		if (jobExists) {
 			var job = _inProgressJobs.getJob(jobId);
+            exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
+            exchange.getOut().setHeader(MpfHeaders.TASK_INDEX, job.getCurrentTaskIndex());
 			exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
 			Object newBody = processResponse(jobId, exchange.getIn().getBody(clazz), exchange.getIn().getHeaders());
 			if (newBody != null) {

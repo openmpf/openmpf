@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
@@ -42,8 +43,8 @@ import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -81,18 +82,14 @@ public class TrackMergingProcessor extends WfmProcessor {
     public static final String REF = "trackMergingProcessor";
     private static final Logger log = LoggerFactory.getLogger(TrackMergingProcessor.class);
 
-    private final JsonUtils _jsonUtils;
-
     private final InProgressBatchJobsService _inProgressBatchJobs;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
     @Inject
     public TrackMergingProcessor(
-            JsonUtils jsonUtils,
             InProgressBatchJobsService inProgressBatchJobs,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
-        _jsonUtils = jsonUtils;
         _inProgressBatchJobs = inProgressBatchJobs;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
@@ -100,15 +97,18 @@ public class TrackMergingProcessor extends WfmProcessor {
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
-        TrackMergingContext trackMergingContext =
-                _jsonUtils.deserialize(exchange.getIn().getBody(byte[].class), TrackMergingContext.class);
+        var jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        var taskIndex = exchange.getIn().getHeader(MpfHeaders.TASK_INDEX, Integer.class);
 
-        BatchJob job = _inProgressBatchJobs.getJob(trackMergingContext.getJobId());
+        var trackCache = new TrackCache(jobId, taskIndex, _inProgressBatchJobs);
+        exchange.getOut().setBody(trackCache);
 
-        Task task = job.getPipelineElements().getTask(trackMergingContext.getTaskIndex());
+        BatchJob job = _inProgressBatchJobs.getJob(jobId);
+
+        Task task = job.getPipelineElements().getTask(taskIndex);
         for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
             Action action = job.getPipelineElements()
-                    .getAction(trackMergingContext.getTaskIndex(), actionIndex);
+                    .getAction(taskIndex, actionIndex);
 
             for (Media media : job.getMedia()) {
 
@@ -126,9 +126,7 @@ public class TrackMergingProcessor extends WfmProcessor {
                     continue; // nothing to do
                 }
 
-                SortedSet<Track> tracks = _inProgressBatchJobs.getTracks(
-                        trackMergingContext.getJobId(), media.getId(), trackMergingContext.getTaskIndex(),
-                        actionIndex);
+                SortedSet<Track> tracks = trackCache.getTracks(media.getId(), actionIndex);
 
                 if (tracks.isEmpty() || !isEligibleForFixup(tracks)) {
                     continue;
@@ -153,12 +151,9 @@ public class TrackMergingProcessor extends WfmProcessor {
                               initialSize, tracks.size(), minTrackLength, media.getId());
                 }
 
-                _inProgressBatchJobs.setTracks(trackMergingContext.getJobId(), media.getId(),
-                                         trackMergingContext.getTaskIndex(), actionIndex, tracks);
+                trackCache.updateTracks(media.getId(), actionIndex, tracks);
             }
         }
-
-        exchange.getOut().setBody(_jsonUtils.serialize(trackMergingContext));
     }
 
     private TrackMergingPlan createTrackMergingPlan(BatchJob job, Media media,

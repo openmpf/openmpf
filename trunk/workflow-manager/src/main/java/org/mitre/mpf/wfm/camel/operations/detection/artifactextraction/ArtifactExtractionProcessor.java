@@ -113,8 +113,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             handleException(request, e);
             return;
         }
-        SortedSet<Track> jobTracks = _inProgressBatchJobs.getTracks(request.getJobId(), request.getMediaId(),
-                request.getTaskIndex(), request.getActionIndex());
+        SortedSet<Track> jobTracks = request.getTracks();
         // Set the status for the requested detections. If any were requested, but were not included in the extraction output,
         // they will be reported as missing frames.
         trackAndFrameToUri.cellSet().stream()
@@ -139,8 +138,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
             }
         }
 
-        _inProgressBatchJobs.setTracks(request.getJobId(), request.getMediaId(),
-                                       request.getTaskIndex(), request.getActionIndex(), jobTracks);
+        request.updateTracks(jobTracks);
 
         Optional<String> missingFramesString = createMissingFramesString(jobTracks, request);
         missingFramesString.ifPresent(s -> _inProgressBatchJobs.addError(
@@ -175,11 +173,7 @@ public class ArtifactExtractionProcessor extends WfmProcessor {
                         + "exception. All detections (including exemplars) produced in this task "
                         + "for this medium will NOT have an associated artifact.",
                 request.getMediaId(), e);
-        var tracks = _inProgressBatchJobs.getTracks(
-                request.getJobId(),
-                request.getMediaId(),
-                request.getTaskIndex(),
-                request.getActionIndex());
+        var tracks = request.getTracks();
 
         var missingFrameString = createMissingFramesString(tracks, request)
                 .map(err -> "Error extracting artifact(s). " + err)

@@ -273,6 +273,19 @@ public class FfprobeMetadataExtractor {
 
 
     private static double getRotation(JsonNode videoStream) {
+        var sideDataList = videoStream.get("side_data_list");
+        if (sideDataList != null) {
+            for (var sideData : sideDataList) {
+                var sideDataType = sideData.get("side_data_type");
+                if (sideDataType != null && "Display Matrix".equals(sideDataType.asText())) {
+                    var rotation = toDouble(sideData.get("rotation"));
+                    if (rotation.isPresent()) {
+                        return normalizeRotation(360 - rotation.getAsDouble());
+                    }
+                }
+            }
+        }
+
         return Optional.ofNullable(videoStream.get("tags"))
             .map(t -> t.get("rotate"))
             .map(r -> toDouble(r).orElse(0))
@@ -297,7 +310,7 @@ public class FfprobeMetadataExtractor {
         if (node == null || node.isMissingNode()) {
             return OptionalDouble.empty();
         }
-        if (node.isDouble()) {
+        if (node.isNumber()) {
             return OptionalDouble.of(node.asDouble());
         }
         if (!node.isTextual()) {

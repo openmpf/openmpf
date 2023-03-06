@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,10 +38,12 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.core.io.FileSystemResource;
 
 import java.util.Map;
 import java.util.Set;
@@ -52,16 +55,22 @@ public class TestMediaMetadataValidator {
 
     private AutoCloseable _closeable;
 
-    @InjectMocks
-    private MediaMetadataValidator _mediaMetadataValidator;
-
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
+    private MediaMetadataValidator _mediaMetadataValidator;
 
     @Before
-    public void init() {
+    public void init() throws ConfigurationException {
         _closeable = MockitoAnnotations.openMocks(this);
+
+        var mediaTypePropertiesPath = TestUtil.findFilePath("/properties/mediaType.properties");
+        var mockPropertiesUtil = mock(PropertiesUtil.class);
+        when(mockPropertiesUtil.getMediaTypesFile())
+                .thenReturn(new FileSystemResource(mediaTypePropertiesPath.toFile()));
+        var mediaTypeUtils = new MediaTypeUtils(mockPropertiesUtil);
+
+        _mediaMetadataValidator = new MediaMetadataValidator(_mockInProgressJobs, mediaTypeUtils);
     }
 
     @After

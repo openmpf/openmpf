@@ -427,7 +427,7 @@ public class TestMediaInspectionProcessor {
 
         var expectedMetadata = Map.of(
             "MIME_TYPE", "audio/x-hx-aac-adts",
-            "DURATION", "88752"
+            "DURATION", "2304"
         );
         assertEquals(expectedMetadata, _metadataCaptor.getValue());
 

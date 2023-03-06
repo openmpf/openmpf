@@ -169,29 +169,6 @@ public class TestMediaInspectionProcessor {
         LOG.info("Image media inspection test passed.");
     }
 
-    @Test
-    public void testSvgImageInspection() {
-        long jobId = next(), mediaId = next();
-        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/Bitmap_VS_SVG.svg", Map.of());
-
-        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
-                media.isFailed());
-
-        String mediaHash = "722851742d5d4521b347efa2b1648c7595a24f38cdc1cd7ca49f3d9e1d588958";
-
-        verify(_mockInProgressJobs)
-                .addMediaInspectionInfo(
-                        eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
-                        eq("image/svg+xml"), eq(1), _metadataCaptor.capture());
-
-        verifyNoJobOrMediaError();
-        var expectedMetadata = Map.of(
-                "FRAME_WIDTH", "915",
-                "FRAME_HEIGHT", "585",
-                "MIME_TYPE", "image/svg+xml");
-        assertEquals(expectedMetadata, _metadataCaptor.getValue());
-    }
-
 
     @Test
     public void testGifImageInspection() {

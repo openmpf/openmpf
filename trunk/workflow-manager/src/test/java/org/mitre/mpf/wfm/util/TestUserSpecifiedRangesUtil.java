@@ -27,6 +27,7 @@ package org.mitre.mpf.wfm.util;
 
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 
 import java.util.OptionalInt;
@@ -37,7 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TestUserSpecifiedRangesUtil {
-
 
     @Test
     public void returnsFullVideoWhenNoSpecifiedSegments() {
@@ -158,7 +158,8 @@ public class TestUserSpecifiedRangesUtil {
                 366, // 10
         };
 
-        var timeInfo = FrameTimeInfo.forVariableFrameRate(29.97, frameTimes, false);
+        var timeInfo = FrameTimeInfo.forVariableFrameRate(
+                new Fraction(30_000, 1_001), frameTimes, false);
 
         var media = mock(Media.class);
         when(media.getLength())

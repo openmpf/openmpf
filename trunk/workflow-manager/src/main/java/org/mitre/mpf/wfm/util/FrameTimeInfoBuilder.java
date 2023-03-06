@@ -27,6 +27,9 @@
 
 package org.mitre.mpf.wfm.util;
 
+import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,13 +54,18 @@ public class FrameTimeInfoBuilder {
     }
 
 
-    public static FrameTimeInfo getFrameTimeInfo(Path mediaPath, double fps) {
-        var mediaInfoIsCfrResult = mediaInfoReportsConstantFrameRate(mediaPath);
-        if (mediaInfoIsCfrResult.orElse(false)) {
+    public static FrameTimeInfo getFrameTimeInfo(
+                Path mediaPath, FfprobeMetadata.Video ffprobeMetadata, String mimeType) {
+
+        if (ffprobeMetadata.frameCount().isPresent()
+                && mediaInfoReportsConstantFrameRate(mediaPath, mimeType)) {
             LOG.info("Determined that {} has a constant frame rate.", mediaPath);
             var optStartTimes = getStartTimeMs(mediaPath);
-            return FrameTimeInfo.forConstantFrameRate(fps, optStartTimes.orElse(0),
-                                                      optStartTimes.isEmpty());
+            return FrameTimeInfo.forConstantFrameRate(
+                    ffprobeMetadata.fps(),
+                    optStartTimes.orElse(0),
+                    optStartTimes.isEmpty(),
+                    (int) ffprobeMetadata.frameCount().getAsLong());
         }
 
         String[] command = {
@@ -82,8 +90,14 @@ public class FrameTimeInfoBuilder {
                     ptsValuesBuilder.accept(line);
                 }
             }
+            if (process.waitFor() != 0) {
+                throw new MediaInspectionException(
+                    "Failed to get timestamps for \"%s\" because ffprobe exited with status %s"
+                    .formatted(mediaPath, process.exitValue()));
+            }
 
-            var timeInfo = ptsValuesBuilder.build(mediaPath, fps);
+            var timeInfo = ptsValuesBuilder.build(
+                    mediaPath, ffprobeMetadata.fps(), ffprobeMetadata.timeBase());
             if (timeInfo.hasConstantFrameRate()) {
                 LOG.info("Determined that {} has a constant frame rate.", mediaPath);
             }
@@ -92,16 +106,27 @@ public class FrameTimeInfoBuilder {
             }
             return timeInfo;
         }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
         catch (IOException e) {
-            LOG.error(String.format(
-                    "An error occurred while trying to get timestamps for %s: %s",
-                    mediaPath, e.getMessage()), e);
-            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps);
+            throw new MediaInspectionException(
+                    "An error occurred while trying to get timestamps for %s: %s"
+                    .formatted(mediaPath, e.getMessage()),
+                    e);
         }
     }
 
+    private static boolean mediaInfoReportsConstantFrameRate(
+                Path mediaPath, String mimeType) {
 
-    private static Optional<Boolean> mediaInfoReportsConstantFrameRate(Path mediaPath) {
+        if (mimeType.contains("matroska") || mimeType.contains("webm")) {
+            // mediainfo says matroska and webm files have a constant frame rate even when they
+            // don't.
+            return false;
+        }
+
         String[] command = {
                 "mediainfo", "--Output=Video;%FrameRate_Mode%", mediaPath.toString() };
 
@@ -122,26 +147,27 @@ public class FrameTimeInfoBuilder {
 
             switch (line) {
                 case "CFR":
-                    return Optional.of(true);
+                    return true;
                 case "VFR":
-                    return Optional.of(false);
+                    return false;
                 default:
                     LOG.warn(
                             "mediainfo was unable to determine if \"{}\" has a constant frame rate.",
                             mediaPath);
-                    return Optional.empty();
+                    return false;
             }
         }
         catch (IOException e) {
             LOG.error(String.format(
                     "An error occurred while trying to determine if %s has a variable frame rate " +
                             "using mediainfo: %s", mediaPath, e.getMessage()), e);
-            return Optional.empty();
+            return false;
         }
     }
 
 
     private static class PtsBuilder {
+        private long _firstPts = 0;
         private long _prevPts = -1;
         private long _delta = -1;
         private boolean _isInitialized;
@@ -168,6 +194,7 @@ public class FrameTimeInfoBuilder {
         }
 
         private void initPrev(long pts) {
+            _firstPts = pts;
             _state = this::initDelta;
         }
 
@@ -188,41 +215,27 @@ public class FrameTimeInfoBuilder {
         private void processRemaining(long pts) {
         }
 
+        public FrameTimeInfo build(Path mediaPath, Fraction fps, Fraction timeBase) {
+            var timeBaseMs = timeBase.mul(1000);
 
-        public FrameTimeInfo build(Path mediaPath, double fps) {
             if (_isInitialized && !_foundVariableDelta) {
-                var optStartTimes = getStartTimeMs(mediaPath);
-                return FrameTimeInfo.forConstantFrameRate(fps, optStartTimes.orElse(0),
-                                                          optStartTimes.isEmpty());
+                int startTime = (int) timeBaseMs.mul(_firstPts).toDouble();
+                int frameCount = (int) _streamBuilder.build().count();
+                return FrameTimeInfo.forConstantFrameRate(
+                        fps, startTime, false, frameCount);
             }
-
-            int[] timeBaseFraction;
-            try {
-                timeBaseFraction = getTimeBase(mediaPath);
-            }
-            catch (IOException | NumberFormatException | IllegalStateException e) {
-                LOG.error(String.format(
-                        "An error occurred while trying to get time base for %s: %s",
-                        mediaPath, e.getMessage()), e);
-                return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps);
-            }
-
-            int numerator = timeBaseFraction[0];
-            // Time base is in seconds, but the output object uses milliseconds.
-            int numeratorForMs = numerator * 1000;
-            int denominator = timeBaseFraction[1];
 
             int[] frameTimes = _streamBuilder
                     .build()
-                    .mapToInt(p -> (int) (p * numeratorForMs / denominator))
+                    .mapToInt(p -> (int) (timeBaseMs.mul(p).toDouble()))
                     .toArray();
             boolean requiresEstimation = estimateMissingTimes(frameTimes, fps);
-
             return FrameTimeInfo.forVariableFrameRate(fps, frameTimes, requiresEstimation);
         }
     }
 
-    private static boolean estimateMissingTimes(int[] frameTimes, double fps) {
+
+    private static boolean estimateMissingTimes(int[] frameTimes, Fraction fps) {
         if (frameTimes.length == 0) {
             return true;
         }
@@ -246,7 +259,7 @@ public class FrameTimeInfoBuilder {
                 estimateWithAverage(frameTimes, 1);
             }
             else {
-                int msPerFrame = (int) (1000 / fps);
+                int msPerFrame = (int) (1000 * fps.denominator() / fps.numerator());
                 frameTimes[1] = frameTimes[0] + msPerFrame;
             }
         }
@@ -275,6 +288,7 @@ public class FrameTimeInfoBuilder {
         return requiredEstimation;
     }
 
+
     private static void estimateWithAverage(int[] frameTimes, int idx) {
         frameTimes[idx] = (frameTimes[idx - 1] + frameTimes[idx + 1]) / 2;
     }
@@ -284,42 +298,6 @@ public class FrameTimeInfoBuilder {
         frameTimes[idx] = frameTimes[idx - 1] + prevDelta;
     }
 
-
-    private static int[] getTimeBase(Path mediaPath) throws IOException {
-        String[] command = {
-                "ffprobe", "-hide_banner", "-select_streams", "v",
-                "-show_entries", "stream=time_base",
-                "-print_format", "default=noprint_wrappers=1:nokey=1", mediaPath.toString()
-        };
-        LOG.info("Getting time base using ffprobe with the following command: {}",
-                 Arrays.toString(command));
-
-        var process = new ProcessBuilder(command)
-                .redirectError(ProcessBuilder.Redirect.INHERIT)
-                .start();
-        process.getOutputStream().close();
-
-        try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            // Expected line format: 1001/30000
-            var line = reader.readLine();
-            if (line == null) {
-                throw new IllegalStateException(String.format(
-                        "Failed to get time base for %s because ffprobe produced no output.",
-                        mediaPath));
-            }
-            var slashPos = line.indexOf('/');
-            if (slashPos < 0) {
-                throw new IllegalStateException(String.format(
-                        "Failed to get time base for %s because ffprobe did not output " +
-                                "a fraction as expected.",
-                        mediaPath));
-
-            }
-            var numerator = Integer.parseInt(line, 0, slashPos, 10);
-            var denominator = Integer.parseInt(line, slashPos + 1, line.length(), 10);
-            return new int[] { numerator, denominator };
-        }
-    }
 
 
     private static OptionalInt getStartTimeMs(Path mediaPath) {

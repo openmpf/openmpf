@@ -26,6 +26,10 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
@@ -35,52 +39,27 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.net.URL;
-
-@Component(MediaTypeUtils.REF)
+@Component
 public class MediaTypeUtils {
 
-    private static final Logger log = LoggerFactory.getLogger(MediaTypeUtils.class);
-    public static final String REF = "mediaTypeUtils";
+    private static final Logger LOG = LoggerFactory.getLogger(MediaTypeUtils.class);
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private final PropertiesConfiguration _whiteListPropertiesConfig;
 
-    private static FileSystemResource mediaTypesFile;
+    @Inject
+    public MediaTypeUtils(PropertiesUtil propertiesUtil) throws ConfigurationException {
+        var mediaTypesFile = propertiesUtil.getMediaTypesFile();
+        var configBuilderParameters = new Parameters()
+                .fileBased()
+                .setPath(mediaTypesFile.getPath())
+                .setListDelimiterHandler(new DefaultListDelimiterHandler(','));
 
-    private static PropertiesConfiguration propertiesConfig;
-
-    @PostConstruct
-    private void init() {
-        // Get the media types properties file from the PropertiesUtil.
-        // The PropertiesUtil will ensure that it is copied from the template, if necessary.
-        mediaTypesFile = propertiesUtil.getMediaTypesFile();
-
-        URL url;
-        try {
-            url = mediaTypesFile.getURL();
-        } catch (IOException e) {
-            throw new IllegalStateException("Cannot get URL from " + mediaTypesFile + ".", e);
-        }
-
-        FileBasedConfigurationBuilder<PropertiesConfiguration> fileBasedConfigBuilder =
-                new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
-
-        Parameters configBuilderParameters = new Parameters();
-        fileBasedConfigBuilder.configure(configBuilderParameters.fileBased().setURL(url)
-                .setListDelimiterHandler(new DefaultListDelimiterHandler(',')));
-
-        try {
-            propertiesConfig = fileBasedConfigBuilder.getConfiguration();
-        } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot create configuration from " + mediaTypesFile + ".", e);
-        }
+        var builder = new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class);
+        _whiteListPropertiesConfig = builder
+                .configure(configBuilderParameters)
+                .getConfiguration();
     }
 
     /**
@@ -90,30 +69,24 @@ public class MediaTypeUtils {
      * @param mimeType  The mime-type of the media.
      * @return          The MediaType to treat the media as.
      */
-    public static MediaType parse(String mimeType) {
-        String trimmedMimeType = TextUtils.trim(mimeType);
-
-        if (propertiesConfig == null) {
-            log.warn("Media type properties could not be loaded from " + mediaTypesFile + ".");
-        } else {
-            String typeFromWhitelist = propertiesConfig.getString("whitelist." + mimeType);
-            if (typeFromWhitelist != null) {
-                log.debug("Media type found in whitelist: " + mimeType + " is " + typeFromWhitelist);
-                MediaType type = MediaType.valueOf(typeFromWhitelist);
-                if (type != null) {
-                    return type;
-                }
+    public MediaType parse(String mimeType) {
+        var whiteListKey = "whitelist." + mimeType;
+        var typeFromWhitelist = _whiteListPropertiesConfig.getString(whiteListKey);
+        if (typeFromWhitelist != null && !typeFromWhitelist.isBlank()) {
+            var trimmedUpper = typeFromWhitelist.strip().toUpperCase();
+            try {
+                return MediaType.valueOf(trimmedUpper);
+            }
+            catch (IllegalArgumentException e) {
+                LOG.error(
+                        "The \"{}\" properties from the media type white list file contained the invalid value of \"{}\".",
+                        whiteListKey, typeFromWhitelist);
             }
         }
 
-        if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "AUDIO")) {
-            return MediaType.AUDIO;
-        } else if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "IMAGE")) {
-            return MediaType.IMAGE;
-        } else if(StringUtils.startsWithIgnoreCase(trimmedMimeType, "VIDEO")) {
-            return MediaType.VIDEO;
-        } else {
-            return MediaType.UNKNOWN;
-        }
+        return Stream.of(MediaType.values())
+            .filter(mt -> StringUtils.startsWithIgnoreCase(mimeType, mt.toString()))
+            .findAny()
+            .orElse(MediaType.UNKNOWN);
     }
 }

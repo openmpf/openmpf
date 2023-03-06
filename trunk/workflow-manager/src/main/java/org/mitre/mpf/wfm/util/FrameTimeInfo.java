@@ -28,6 +28,9 @@
 package org.mitre.mpf.wfm.util;
 
 import java.util.Arrays;
+import java.util.OptionalInt;
+
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 
 public interface FrameTimeInfo {
     public boolean hasConstantFrameRate();
@@ -38,18 +41,33 @@ public interface FrameTimeInfo {
 
     public int getFrameFromTimeMs(int timeMs);
 
+    public OptionalInt getExactFrameCount();
 
-    public static FrameTimeInfo forConstantFrameRate(double fps, int startTime,
-                                                     boolean requiresTimeEstimation) {
-        return fpsFrameTimeInfo(fps, startTime, true, requiresTimeEstimation);
+    public OptionalInt getEstimatedDuration();
+
+
+    public static FrameTimeInfo forConstantFrameRate(
+            Fraction fps, int startTime, boolean requiresTimeEstimation, int frameCount) {
+        return fpsFrameTimeInfo(
+                fps, startTime, true, requiresTimeEstimation, OptionalInt.of(frameCount));
     }
 
-    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps) {
-        return fpsFrameTimeInfo(fps, 0, false, true);
+    public static FrameTimeInfo forConstantFrameRate(
+            double fps, int startTime, boolean requiresTimeEstimation, int frameCount) {
+        return fpsFrameTimeInfo(fps, startTime, true, requiresTimeEstimation, OptionalInt.of(frameCount));
     }
 
 
-    public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
+    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(Fraction fps) {
+        return fpsFrameTimeInfo(fps, 0, false, true, OptionalInt.empty());
+    }
+
+    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps, int frameCount) {
+        return fpsFrameTimeInfo(fps, 0, false, true, OptionalInt.of(frameCount));
+    }
+
+
+    public static FrameTimeInfo forVariableFrameRate(Fraction fps, int[] timeStamps,
                                                      boolean requiresTimeEstimation) {
         return new FrameTimeInfo() {
 
@@ -67,7 +85,8 @@ public interface FrameTimeInfo {
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
                     int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
-                    return getTimeUsingFps(frameIndex, fps, startTime);
+                    var msPerFrame = fps.invert().mul(1000);
+                    return startTime + (int) msPerFrame.mul(frameIndex).toDouble();
                 }
             }
 
@@ -81,13 +100,35 @@ public interface FrameTimeInfo {
                     return Math.max(firstGreaterIdx - 1, 0);
                 }
             }
+
+            public OptionalInt getExactFrameCount() {
+                return OptionalInt.of(timeStamps.length);
+            }
+
+            public OptionalInt getEstimatedDuration() {
+                if (timeStamps.length == 0) {
+                    return OptionalInt.of(0);
+                }
+                if (timeStamps.length == 1) {
+                    return OptionalInt.of((int) fps.invert().mul(1000).roundUp());
+                }
+                int lastFrameTime = timeStamps[timeStamps.length - 1];
+                int secondLastFrameTime = timeStamps[timeStamps.length - 2];
+                int prevTimeDiff = lastFrameTime - secondLastFrameTime;
+                int endTime = lastFrameTime + prevTimeDiff;
+                return OptionalInt.of(endTime - timeStamps[0]);
+            }
         };
     }
 
+
     private static FrameTimeInfo fpsFrameTimeInfo(
-            double fps, int startTime, boolean hasConstantFrameRate,
-            boolean requiresTimeEstimation) {
-        double framesPerMs = fps / 1000;
+            Fraction fps, int startTime, boolean hasConstantFrameRate,
+            boolean requiresTimeEstimation,
+            OptionalInt exactFrameCount) {
+        var framesPerMs = fps.mul(new Fraction(1, 1000));
+        var msPerFrame =  framesPerMs.invert();
+
         return new FrameTimeInfo() {
 
             public boolean hasConstantFrameRate() {
@@ -99,22 +140,72 @@ public interface FrameTimeInfo {
             }
 
             public int getTimeMsFromFrame(int frameIndex) {
-                return getTimeUsingFps(frameIndex, fps, startTime);
+                return startTime + (int) msPerFrame.mul(frameIndex).toDouble();
             }
 
             public int getFrameFromTimeMs(int timeMs) {
                 if (timeMs > startTime) {
-                    return (int) (framesPerMs * (timeMs - startTime));
+                    int msSinceStart = timeMs - startTime;
+                    return (int) framesPerMs.mul(msSinceStart).toDouble();
                 }
                 else {
                     return 0;
                 }
             }
+
+            public OptionalInt getExactFrameCount() {
+                return exactFrameCount;
+            }
+
+            public OptionalInt getEstimatedDuration() {
+                return exactFrameCount.stream()
+                    .map(fc -> (int) msPerFrame.mul(fc).roundUp())
+                    .findAny();
+            }
         };
     }
 
 
-    private static int getTimeUsingFps(int frameIndex, double fps, int startTime) {
-        return startTime + (int) (frameIndex * 1000 / fps);
+    private static FrameTimeInfo fpsFrameTimeInfo(
+            double fps, int startTime, boolean hasConstantFrameRate,
+            boolean requiresTimeEstimation,
+            OptionalInt exactFrameCount) {
+        var framesPerMs = fps / 1000;
+        var msPerFrame =  1000 / fps;
+
+        return new FrameTimeInfo() {
+
+            public boolean hasConstantFrameRate() {
+                return hasConstantFrameRate;
+            }
+
+            public boolean requiresTimeEstimation() {
+                return requiresTimeEstimation;
+            }
+
+            public int getTimeMsFromFrame(int frameIndex) {
+                return startTime + (int) (msPerFrame * frameIndex);
+            }
+
+            public int getFrameFromTimeMs(int timeMs) {
+                if (timeMs > startTime) {
+                    int msSinceStart = timeMs - startTime;
+                    return (int) (framesPerMs * msSinceStart);
+                }
+                else {
+                    return 0;
+                }
+            }
+
+            public OptionalInt getExactFrameCount() {
+                return exactFrameCount;
+            }
+
+            public OptionalInt getEstimatedDuration() {
+                return exactFrameCount.stream()
+                    .map(fc -> (int) Math.ceil(msPerFrame * fc))
+                    .findAny();
+            }
+        };
     }
 }

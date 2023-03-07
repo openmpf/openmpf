@@ -150,6 +150,9 @@ public class FfprobeMetadataExtractor {
     }
 
 
+    // In most media files, times are not represented using seconds. In order to convert those
+    // times to seconds, you must multiply the times by the file's time base.
+    // If, for example, a file used milliseconds for its times, the time base would be 1/1000.
     private Fraction getTimeBase(Path mediaPath, Optional<JsonNode> optStream) {
         try {
             return optStream.map(s -> s.get("time_base").asText())
@@ -177,7 +180,7 @@ public class FfprobeMetadataExtractor {
         if (optVideoDurationTs.isEmpty() || optAudioDurationTs.isEmpty()) {
             return getEstimatedDurationSec(ffprobeOutput)
                 .stream()
-                .mapToLong(sec -> (long) (sec * 1000))
+                .mapToLong(sec -> (long) Math.ceil(sec * 1000))
                 .findAny();
         }
 
@@ -254,10 +257,7 @@ public class FfprobeMetadataExtractor {
         if (optDurationTs.isPresent()) {
             var framesPerPts = fps.mul(timeBase);
             var frameCount = framesPerPts.mul(optDurationTs.getAsLong());
-            if (frameCount.denominator() != 1) {
-                throw new IllegalStateException("Frame count was not exact.");
-            }
-            return OptionalLong.of(frameCount.numerator());
+            return OptionalLong.of(frameCount.roundUp());
         }
 
         var optTotalDurationSec = getEstimatedDurationSec(ffprobeOutput);

@@ -46,6 +46,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -322,10 +323,18 @@ public class TiesDbBeforeJobCheckServiceImpl
     }
 
 
-    private static final Comparator<TiesDbCheckResult.CheckInfo> COMPLETE_THEN_DATE = Comparator
-        .comparing(
-            (TiesDbCheckResult.CheckInfo ci) -> ci.jobStatus() == BatchJobStatusType.COMPLETE)
-        .thenComparing(TiesDbCheckResult.CheckInfo::processDate);
+    private static final Comparator<TiesDbCheckResult.CheckInfo> COMPLETE_THEN_DATE
+            = createComparator();
+
+    private static Comparator<TiesDbCheckResult.CheckInfo> createComparator() {
+        ToIntFunction<TiesDbCheckResult.CheckInfo> statusToInt = ci -> switch (ci.jobStatus()) {
+            case COMPLETE -> 2;
+            case COMPLETE_WITH_WARNINGS -> 1;
+            default -> 0;
+        };
+        return Comparator.comparingInt(statusToInt)
+                .thenComparing(TiesDbCheckResult.CheckInfo::processDate);
+    }
 
 
 

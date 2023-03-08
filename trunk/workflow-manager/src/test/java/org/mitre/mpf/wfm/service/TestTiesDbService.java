@@ -198,7 +198,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -212,7 +212,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(media1.getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url1,
@@ -227,7 +227,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(media1.getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url2,
@@ -242,7 +242,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(media2.getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url1,
@@ -302,7 +302,7 @@ public class TestTiesDbService {
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -313,7 +313,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(job.getMedia().iterator().next().getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -365,7 +365,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE,
                 timeCompleted,
@@ -377,7 +377,7 @@ public class TestTiesDbService {
             verify(_mockInProgressJobs).addTiesDbInfo(
                     eq(job.getId()),
                     eq(job.getMedia().iterator().next().getId()),
-                    argThat(assertion -> assertionMatcher(
+                    argThat(assertion -> assertionMatches(
                             _mockPropertiesUtil.getExportedJobId(job.getId()),
                             BatchJobStatusType.COMPLETE,
                             url,
@@ -393,7 +393,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(job.getMedia().iterator().next().getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE,
                         url,
@@ -446,7 +446,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE,
                 timeCompleted,
@@ -459,7 +459,7 @@ public class TestTiesDbService {
             verify(_mockInProgressJobs).addTiesDbInfo(
                     eq(job.getId()),
                     eq(job.getMedia().iterator().next().getId()),
-                    argThat(assertion -> assertionMatcher(
+                    argThat(assertion -> assertionMatches(
                             _mockPropertiesUtil.getExportedJobId(job.getId()),
                             BatchJobStatusType.COMPLETE,
                             url,
@@ -475,7 +475,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(job.getMedia().iterator().next().getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE,
                         url,
@@ -526,7 +526,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE,
                 timeCompleted,
@@ -537,7 +537,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(job.getMedia().iterator().next().getId()),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE,
                         url,
@@ -608,7 +608,7 @@ public class TestTiesDbService {
     }
 
 
-    private static boolean assertionMatcher(
+    private static boolean assertionMatches(
             String jobId,
             BatchJobStatusType jobStatus,
             String tiesDbBaseUrl,
@@ -760,7 +760,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -772,7 +772,7 @@ public class TestTiesDbService {
             verify(_mockInProgressJobs).addTiesDbInfo(
                     eq(job.getId()),
                     eq(700L),
-                    argThat(assertion -> assertionMatcher(
+                    argThat(assertion -> assertionMatches(
                             _mockPropertiesUtil.getExportedJobId(job.getId()),
                             BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                             url,
@@ -859,7 +859,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -870,7 +870,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(700L), // parent
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -885,7 +885,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(700L), // parent
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -922,7 +922,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -933,7 +933,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(700L),
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -1010,7 +1010,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -1021,7 +1021,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(700L), // parent
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -1036,7 +1036,7 @@ public class TestTiesDbService {
         verify(_mockInProgressJobs).addTiesDbInfo(
                 eq(job.getId()),
                 eq(700L), // parent
-                argThat(assertion -> assertionMatcher(
+                argThat(assertion -> assertionMatches(
                         _mockPropertiesUtil.getExportedJobId(job.getId()),
                         BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                         url,
@@ -1274,7 +1274,7 @@ public class TestTiesDbService {
         var outputObjectLocation = URI.create("http://localhost:321/asdf");
         var outputSha = "ed2e2a154b4bf6802c3f418a64488b7bf3f734fa9ebfd568cf302ae4e8f4c3bb";
 
-        _tiesDbService.storeAssertions(
+        _tiesDbService.prepareAssertions(
                 job,
                 BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                 timeCompleted,
@@ -1286,7 +1286,7 @@ public class TestTiesDbService {
             verify(_mockInProgressJobs).addTiesDbInfo(
                     eq(job.getId()),
                     eq(700L), // parent
-                    argThat(assertion -> assertionMatcher(
+                    argThat(assertion -> assertionMatches(
                             _mockPropertiesUtil.getExportedJobId(job.getId()),
                             BatchJobStatusType.COMPLETE_WITH_WARNINGS,
                             assertionEntry.getTiesDbUrl(),
@@ -1528,9 +1528,9 @@ public class TestTiesDbService {
                 "http://localhost:82/api/db/supplementals?sha256Hash=MEDIA_1_SHA");
         assertEquals(httpRequest.getURI(), expectedUri);
 
-        var postedAssertion = _objectMapper.readValue(httpRequest.getEntity().getContent(),
-                                                      TiesDbInfo.Assertion.class);
-        assertEquals(postedAssertion, validTiesDbInfo.assertion());
+        var assertion = _objectMapper.readValue(
+                httpRequest.getEntity().getContent(), TiesDbInfo.Assertion.class);
+        assertEquals(assertion, validTiesDbInfo.assertion());
     }
 
 

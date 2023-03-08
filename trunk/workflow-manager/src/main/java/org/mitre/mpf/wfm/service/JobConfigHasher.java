@@ -48,7 +48,6 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +85,7 @@ public class JobConfigHasher {
             MediaActionProps mediaActionProps) {
 
         var sortedMedia = media.stream()
+                .filter(m -> !m.isDerivative())
                 .sorted(Comparator.comparing(m -> m.getHash().orElseThrow()))
                 .toList();
 

@@ -171,12 +171,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         }
         completionStatus = job.getStatus().onComplete();
         if (!skippedJobDueToTiesDbEntry) {
-            tiesDbService.storeAssertions(job,
-                                          completionStatus,
-                                          jobRequest.getTimeCompleted(),
-                                          outputObjectUri,
-                                          outputSha.getValue(),
-                                          trackCounter);
+            tiesDbService.prepareAssertions(
+                    job,
+                    completionStatus,
+                    jobRequest.getTimeCompleted(),
+                    outputObjectUri,
+                    outputSha.getValue(),
+                    trackCounter);
         }
 
         jobProgressStore.setJobProgress(jobId, 100);

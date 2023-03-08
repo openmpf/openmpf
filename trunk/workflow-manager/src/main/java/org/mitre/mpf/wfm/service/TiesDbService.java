@@ -115,7 +115,7 @@ public class TiesDbService {
     }
 
 
-    public void storeAssertions(BatchJob job,
+    public void prepareAssertions(BatchJob job,
                                 BatchJobStatusType jobStatus,
                                 Instant timeCompleted,
                                 URI outputObjectLocation,

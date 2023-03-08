@@ -1,5 +1,8 @@
 [
     {
+        "name": "VERBOSE"
+    },
+    {
         "name": "ROTATION_THRESHOLD"
     },
     {

@@ -71,20 +71,6 @@ public class ThreadUtil {
         }, delayedExecutor(delay, unit));
     }
 
-    public static <T, R> Function<T, R> adaptThrowingFn(ThrowingFunction<T, R> fn) {
-        return x -> {
-            try {
-                return fn.apply(x);
-            }
-            catch (RuntimeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new CompletionException(e);
-            }
-        };
-    }
-
 
     public static synchronized Executor delayedExecutor(long delay, TimeUnit unit) {
         // Capture context on submitting thread.
@@ -154,11 +140,6 @@ public class ThreadUtil {
                 return null;
             };
         }
-    }
-
-    @FunctionalInterface
-    public interface ThrowingFunction<T, R> {
-        R apply(T t) throws Exception;
     }
 
 

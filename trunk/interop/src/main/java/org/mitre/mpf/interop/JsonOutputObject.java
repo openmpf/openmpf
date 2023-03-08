@@ -32,7 +32,7 @@ import java.time.Instant;
 import java.util.*;
 
 @JsonTypeName("OutputObject")
-@JsonPropertyOrder({"openmpfVersion", "jobId", "errors", "warnings"})
+@JsonPropertyOrder({"openmpfVersion", "jobId", "tiesDbSourceJobId", "errors", "warnings"})
 public class JsonOutputObject {
 
     @JsonProperty("jobId")
@@ -41,7 +41,7 @@ public class JsonOutputObject {
     public String getJobId() { return jobId; }
 
     @JsonPropertyDescription("If the job didn't run because it was possible to get the results"
-        + "from TiesDb, this will be set to the job id of the job that generated those results.")
+        + " from TiesDb, this will be set to the job id of the job that generated those results.")
     private String tiesDbSourceJobId;
     public String getTiesDbSourceJobId() { return tiesDbSourceJobId;  }
 
@@ -216,4 +216,3 @@ public class JsonOutputObject {
         existingIssueGroups.add(new JsonMediaIssue(mediaId, details));
     }
 }
-

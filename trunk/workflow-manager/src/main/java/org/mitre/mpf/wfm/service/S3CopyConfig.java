@@ -137,7 +137,7 @@ public class S3CopyConfig {
 
 
     private static String getSrcProp(UnaryOperator<String> props, String propName) {
-        return Optional.ofNullable(props.apply("TIES_DB_COPY_SRC_" + propName))
+        return Optional.ofNullable(props.apply(MpfConstants.TIES_DB_COPY_SRC_ + propName))
             .filter(s -> !s.isBlank())
             .orElseGet(() -> props.apply(propName));
     }

@@ -27,17 +27,19 @@
 package org.mitre.mpf.wfm.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,14 +48,18 @@ import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.enums.MpfConstants;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.Mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -63,7 +69,7 @@ import spark.Route;
 import spark.Service;
 import spark.Spark;
 
-public class TestS3Copy {
+public class TestS3Copy extends MockitoTest.Strict {
     private static Service _sparkSource;
 
     private static Service _sparkDestination;
@@ -72,18 +78,24 @@ public class TestS3Copy {
 
     private static final String DESTINATION_ACCESS_KEY = "DESTINATION_ACCESS_KEY";
 
-    private final PropertiesUtil _mockPropertiesUtil = mock(PropertiesUtil.class);
+    @Mock
+    private PropertiesUtil _mockPropertiesUtil;
 
-    private final LocalStorageBackend _mockLocalStorageBackend = mock(LocalStorageBackend.class);
+    @Mock
+    private LocalStorageBackend _mockLocalStorageBackend;
 
-    private final InProgressBatchJobsService _mockInProgressJobs = mock(InProgressBatchJobsService.class);
+    @Mock
+    private InProgressBatchJobsService _mockInProgressJobs;
 
-    private final AggregateJobPropertiesUtil _mockAggJobProps = mock(AggregateJobPropertiesUtil.class);
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggJobProps;
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
     private S3StorageBackend _s3StorageBackend;
 
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
 
     @BeforeClass
     public static void initClass() {
@@ -331,6 +343,42 @@ public class TestS3Copy {
         assertEquals("SOURCE_BUCKET/key", copySourceHeader.get());
         assertEquals(0, bodyLength.get());
         assertEquals(2, numPutRequests.get());
+    }
+
+
+    @Test
+    public void testLocalCopy() throws IOException, StorageException {
+        var sentGetRequestToSource = new AtomicBoolean(false);
+        setSourceGetRoute((req, resp) -> {
+            sentGetRequestToSource.set(true);
+            Spark.halt(500);
+            return "";
+        });
+
+        var destinationPath = new AtomicReference<String>();
+        var dataReceived = new AtomicReference<String>();
+        setDestinationPutRoute((req, resp) -> {
+            dataReceived.set(unChunkBody(req));
+            destinationPath.set(req.uri());
+            return "";
+        });
+
+        var tempPath = _tempFolder.newFile().toPath();
+        var testData = "hello";
+        Files.writeString(tempPath, testData);
+
+        var copyConfig = new S3CopyConfig(getS3Properties()::get);
+        var sourceUri = tempPath.toUri();
+        var results = _s3StorageBackend.copyResults(List.of(sourceUri), copyConfig);
+
+        var expectedKey = "2c/f2/2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+        assertEquals(
+            URI.create("http://localhost:5001/RESULTS_BUCKET/" + expectedKey),
+            results.get(sourceUri));
+        assertEquals(testData, dataReceived.get());
+        assertEquals("/RESULTS_BUCKET/" + expectedKey, destinationPath.get());
+        assertFalse(sentGetRequestToSource.get());
+
     }
 
     @Test

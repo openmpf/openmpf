@@ -79,6 +79,7 @@ import org.mitre.mpf.interop.JsonTrackOutputObject;
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -98,14 +99,13 @@ import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 
-public class TestTiesDbBeforeJobCheckService {
+public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
     @Mock
     private PropertiesUtil _mockPropertiesUtil;
@@ -132,8 +132,6 @@ public class TestTiesDbBeforeJobCheckService {
 
     @Before
     public void init() {
-        MockitoAnnotations.initMocks(this);
-
         when(_mockPropertiesUtil.getHttpCallbackRetryCount())
             .thenReturn(3);
 

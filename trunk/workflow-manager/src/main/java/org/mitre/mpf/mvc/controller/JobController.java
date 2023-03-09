@@ -337,6 +337,7 @@ public class JobController {
                 var msg = String.format(
                         "An error occurred while trying to access the output object for job %s: %s",
                         jobId, e);
+                log.error(msg, e);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(msg);
             }

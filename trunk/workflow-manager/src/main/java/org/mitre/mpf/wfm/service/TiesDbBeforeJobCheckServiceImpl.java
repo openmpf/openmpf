@@ -28,6 +28,7 @@ package org.mitre.mpf.wfm.service;
 
 import static java.util.stream.Collectors.toMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -439,8 +440,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             }
 
             var s3CopyConfig = new S3CopyConfig(jobProps);
-            var oldOutputObject = _s3StorageBackend.getOldJobOutputObject(
-                    outputObjectUriFromPrevJob, s3CopyConfig);
+            var oldOutputObject = getOldJobOutputObject(outputObjectUriFromPrevJob, s3CopyConfig);
             var urisToCopy = getUrisToCopy(oldOutputObject);
             var oldUrisToNew = _s3StorageBackend.copyResults(urisToCopy, s3CopyConfig);
 
@@ -458,6 +458,16 @@ public class TiesDbBeforeJobCheckServiceImpl
                     msg);
             return outputObjectUriFromPrevJob;
         }
+    }
+
+    private JsonOutputObject getOldJobOutputObject(
+            URI outputObjectUriFromPrevJob, S3CopyConfig copyConfig)
+            throws IOException, StorageException {
+        if ("file".equalsIgnoreCase(outputObjectUriFromPrevJob.getScheme())) {
+            return _objectMapper.readValue(
+                    new File(outputObjectUriFromPrevJob), JsonOutputObject.class);
+        }
+        return _s3StorageBackend.getOldJobOutputObject(outputObjectUriFromPrevJob, copyConfig);
     }
 
 

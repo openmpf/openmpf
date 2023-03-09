@@ -27,6 +27,8 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static java.util.stream.Collectors.partitioningBy;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -82,7 +84,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.AwsRequestOverrideConfiguration;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.interceptor.ExecutionAttribute;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.core.retry.RetryPolicyContext;
@@ -97,6 +99,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+
 
 @Service
 public class S3StorageBackend implements StorageBackend {
@@ -373,7 +376,7 @@ public class S3StorageBackend implements StorageBackend {
                     .build();
             return s3Client.getObject(getRequest, responseTransformer);
         }
-        catch (S3Exception | SdkClientException e) {
+        catch (SdkException e) {
             throw new StorageException(
                     String.format("Failed to download \"%s\" due to %s", uri, e),
                     e);
@@ -389,16 +392,32 @@ public class S3StorageBackend implements StorageBackend {
 
     private URI putInS3IfAbsent(Path path, String hash, UnaryOperator<String> properties)
             throws StorageException {
-        String objectName = getObjectName(hash, properties);
-        URI bucketUri = URI.create(properties.apply(MpfConstants.S3_RESULTS_BUCKET));
+        String objectName = getObjectName(
+                hash, properties.apply(MpfConstants.S3_UPLOAD_OBJECT_KEY_PREFIX));
         var s3UrlUtil = S3UrlUtil.get(properties);
-        String resultsBucket = s3UrlUtil.getResultsBucketName(bucketUri);
-        LOG.info("Storing \"{}\" in S3 bucket \"{}\" with object key \"{}\" ...", path, bucketUri, objectName);
+        return putInS3IfAbsent(
+                path,
+                properties.apply(MpfConstants.S3_RESULTS_BUCKET),
+                objectName,
+                getS3UploadClient(s3UrlUtil, properties),
+                s3UrlUtil,
+                getOverrideConfig(properties));
+    }
 
+
+    private URI putInS3IfAbsent(
+            Path path,
+            String bucketUri,
+            String objectName,
+            S3ClientWrapper s3Client,
+            S3UrlUtil urlUtil,
+            AwsRequestOverrideConfiguration overrideConfig) throws StorageException {
+
+        LOG.info("Storing \"{}\" in S3 bucket \"{}\" with object key \"{}\" ...",
+                path, bucketUri, objectName);
         try {
-            var overrideConfig = getOverrideConfig(properties);
-            var s3Client = getS3UploadClient(s3UrlUtil, properties);
-            if (s3Client.objectExists(resultsBucket, objectName, overrideConfig)) {
+            var bucketName = urlUtil.getResultsBucketName(bucketUri);
+            if (s3Client.objectExists(bucketName, objectName, overrideConfig)) {
                 LOG.info(
                         "Did not upload \"{}\" to S3 bucket \"{}\" and object key \"{}\" "
                                 + "because a file with the same SHA-256 hash was already there.",
@@ -406,7 +425,7 @@ public class S3StorageBackend implements StorageBackend {
             }
             else {
                 var putRequest = PutObjectRequest.builder()
-                        .bucket(resultsBucket)
+                        .bucket(bucketName)
                         .key(objectName)
                         .overrideConfiguration(overrideConfig)
                         .build();
@@ -414,9 +433,9 @@ public class S3StorageBackend implements StorageBackend {
                 LOG.info("Successfully stored \"{}\" in S3 bucket \"{}\" with object key \"{}\".",
                         path, bucketUri, objectName);
             }
-            return s3UrlUtil.getFullUri(bucketUri, objectName);
+            return urlUtil.getFullUri(bucketUri, objectName);
         }
-        catch (S3Exception | SdkClientException e) {
+        catch (SdkException e) {
             LOG.error("Failed to upload {} due to S3 error: {}", path, e);
             // Don't include path so multiple failures appear as one issue in JSON output object.
             throw new StorageException("Failed to upload due to S3 error: " + e, e);
@@ -473,7 +492,12 @@ public class S3StorageBackend implements StorageBackend {
     public Map<URI, URI> copyResults(
             Collection<URI> urisToCopy, S3CopyConfig copyConfig)
             throws StorageException, IOException {
-        var groupedByEndpoint = groupByS3Endpoint(urisToCopy, copyConfig);
+
+        var partitionedUris = urisToCopy.stream()
+                .collect(partitioningBy(u -> "file".equalsIgnoreCase(u.getScheme())));
+        var remoteUris = partitionedUris.get(false);
+        var groupedByEndpoint = groupByS3Endpoint(remoteUris, copyConfig);
+
         var allUploadFutures = new HashMap<URI, CompletableFuture<URI>>();
         var semaphore = new Semaphore(Math.max(
                 1, _propertiesUtil.getArtifactParallelUploadCount()));
@@ -495,6 +519,11 @@ public class S3StorageBackend implements StorageBackend {
                         semaphore);
                 allUploadFutures.putAll(groupFutures);
             }
+        }
+
+        var localUris = partitionedUris.get(true);
+        if (!localUris.isEmpty()) {
+            allUploadFutures.putAll(copyLocalItems(localUris, copyConfig, semaphore));
         }
 
         var sourceToDestUris = new HashMap<URI, URI>();
@@ -524,7 +553,7 @@ public class S3StorageBackend implements StorageBackend {
             URI endpointUri,
             Collection<URI> itemUris,
             S3CopyConfig copyConfig,
-            Semaphore semaphore) throws StorageException {
+            Semaphore semaphore) {
 
         var clientConfig = new S3ClientConfig(
             endpointUri,
@@ -572,7 +601,7 @@ public class S3StorageBackend implements StorageBackend {
             LOG.info("Successfully copied {} to {}", itemUri, newUri);
             return newUri;
         }
-        catch (S3Exception | SdkClientException e) {
+        catch (SdkException e) {
             throw new StorageException(
                 "Failed to copy %s to %s due to: %s".formatted(itemUri, newUri, e), e);
         }
@@ -591,12 +620,7 @@ public class S3StorageBackend implements StorageBackend {
                 copyConfig.sourceRegion);
         var sourceClient = _s3ClientCache.getUnchecked(sourceClientConfig);
 
-        var destinationUrlUtil = copyConfig.destinationUrlUtil;
-        var destinationClientConfig = new S3ClientConfig(
-                destinationUrlUtil.getS3Endpoint(copyConfig.destinationBucketUri),
-                _propertiesUtil.getHttpStorageUploadRetryCount(),
-                copyConfig.destinationRegion);
-        var destinationClient = _s3ClientCache.getUnchecked(destinationClientConfig);
+        var destinationClient = getDestinationClient(copyConfig);
         var putOverrideConfig = copyConfig.destinationOverrideConfig.toBuilder()
                 .putExecutionAttribute(IS_COPY_DESTINATION, true)
                 .build();
@@ -662,10 +686,39 @@ public class S3StorageBackend implements StorageBackend {
             LOG.info("Successfully copied {} to {}", itemUri, newUri);
             return newUri;
         }
-        catch (S3Exception | SdkClientException | CopyInterruptedException e) {
+        catch (SdkException | CopyInterruptedException e) {
             throw new StorageException(
                 "Failed to copy %s to %s due to: %s".formatted(itemUri, newUri, e), e);
         }
+    }
+
+    private Map<URI, CompletableFuture<URI>> copyLocalItems(
+            Collection<URI> localUris, S3CopyConfig copyConfig, Semaphore semaphore)
+            throws StorageException {
+
+        var futures = new HashMap<URI, CompletableFuture<URI>>();
+        var s3Client = getDestinationClient(copyConfig);
+        for (var localUri : localUris) {
+            acquire(semaphore);
+            var future = ThreadUtil.callAsync(() -> copyLocalItem(localUri, copyConfig, s3Client));
+            future.whenComplete((x, err) -> semaphore.release());
+            futures.put(localUri, future);
+        }
+        return futures;
+    }
+
+    private URI copyLocalItem(URI localUri, S3CopyConfig copyConfig, S3ClientWrapper s3Client)
+            throws IOException, StorageException {
+        var path = Path.of(localUri);
+        var hash = hashExistingFile(path);
+        var objectName = getObjectName(hash, copyConfig.destinationPrefix);
+        return putInS3IfAbsent(
+                Path.of(localUri),
+                copyConfig.destinationBucketUri,
+                objectName,
+                s3Client,
+                copyConfig.destinationUrlUtil,
+                copyConfig.destinationOverrideConfig);
     }
 
 
@@ -676,14 +729,22 @@ public class S3StorageBackend implements StorageBackend {
     }
 
 
-    private static String getObjectName(String hash, UnaryOperator<String> properties) {
-        var prefix = properties.apply(MpfConstants.S3_UPLOAD_OBJECT_KEY_PREFIX);
+    private static String getObjectName(String hash, String prefix) {
         if (prefix == null || prefix.isBlank()) {
             prefix = "";
         }
         String firstPair = hash.substring(0, 2);
         String secondPair = hash.substring(2, 4);
         return prefix + firstPair + '/' + secondPair + '/' + hash;
+    }
+
+
+    private S3ClientWrapper getDestinationClient(S3CopyConfig copyConfig) throws StorageException {
+        var clientConfig = new S3ClientConfig(
+                copyConfig.destinationUrlUtil.getS3Endpoint(copyConfig.destinationBucketUri),
+                _propertiesUtil.getHttpStorageUploadRetryCount(),
+                copyConfig.destinationRegion);
+        return _s3ClientCache.getUnchecked(clientConfig);
     }
 
 

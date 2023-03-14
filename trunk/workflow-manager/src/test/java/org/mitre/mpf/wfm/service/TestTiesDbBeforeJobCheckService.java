@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -50,6 +51,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +65,7 @@ import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.interop.JsonActionOutputObject;
@@ -85,6 +88,7 @@ import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -818,11 +822,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 .thenReturn(URI.create("http://localhost/dest-bucket/output-object"));
 
 
-        var newOutputObjectUri = _tiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(
-                job, URI.create("http://localhost/bucket/output-object"));
+        var jobRequest = new JobRequest();
+        var newOutputObjectUri = _tiesDbBeforeJobCheckService.updateOutputObject(
+                job, URI.create("http://localhost/bucket/output-object"), jobRequest);
 
         assertEquals(
                 URI.create("http://localhost/dest-bucket/output-object"), newOutputObjectUri);
+        assertEquals("PAST JOB FOUND", jobRequest.getTiesDbStatus());
 
         var newOutputObject = newOutputObjectCaptor.getValue();
         var outputObjectChecker = new FieldChecker<>(outputObject, newOutputObject);
@@ -905,6 +911,66 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 "http://localhost/dest-bucket/artifact2",
                 newDetection3.getArtifactPath());
     }
+
+
+    @Test
+    public void testCopyFailure() throws StorageException, IOException {
+
+        var job = mock(BatchJob.class);
+        when(job.getId())
+            .thenReturn(38L);
+
+        var detection = new JsonDetectionOutputObject(
+                1, 1, 1, 1, 0.5f, Collections.emptySortedMap(), 0, 0, "COMPLETED",
+                "path");
+
+        var track = new JsonTrackOutputObject(
+                1, "id", 0, 0, 0, 0, "type", "source", 0.5f, Map.of(), detection,
+                List.of(detection));
+
+        var action = new JsonActionOutputObject("source", "algo");
+        action.getTracks().add(track);
+
+        var media = new JsonMediaOutputObject(39, -1, "path", "IMAGE", "image/png", 1, "SHA", "");
+        media.getDetectionTypes().put("FACE", ImmutableSortedSet.of(action));
+
+        var outputObject = new JsonOutputObject(
+                null, null, null, 4, null, null, null, null, null, null);
+        outputObject.getMedia().add(media);
+
+        doThrow(new StorageException("TEST_MSG"))
+                .when(_mockS3StorageBackend).copyResults(any(), any());
+
+        var jobProps = Map.of(
+                MpfConstants.S3_RESULTS_BUCKET, "http://localhost:2000/bucket",
+                MpfConstants.S3_ACCESS_KEY, "ACCESS_KEY",
+                MpfConstants.S3_SECRET_KEY, "SECRET_KEY");
+
+        when(_mockAggJobProps.getCombinedProperties(job))
+            .thenReturn(jobProps::get);
+
+        var oldOutputObjectUri = URI.create("http://localhost/bucket/output-object");
+
+        when(_mockS3StorageBackend.getOldJobOutputObject(
+                eq(oldOutputObjectUri), isNotNull()))
+            .thenReturn(outputObject);
+
+        var jobRequest = new JobRequest();
+
+        var newOutputObjectUri = _tiesDbBeforeJobCheckService.updateOutputObject(
+                job, oldOutputObjectUri, jobRequest);
+
+        assertThat(jobRequest.getTiesDbStatus(), Matchers.startsWith("COPY ERROR: "));
+        assertThat(jobRequest.getTiesDbStatus(), Matchers.containsString("TEST_MSG"));
+
+        verify(_mockInProgressJobs).addJobError(
+                eq(38L),
+                eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
+                contains("TEST_MSG"));
+
+        assertEquals(oldOutputObjectUri, newOutputObjectUri);
+    }
+
 
     private static void compareMedia(
             JsonMediaOutputObject oldMedia, JsonMediaOutputObject newMedia, String newMediaPath) {

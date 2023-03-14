@@ -40,6 +40,7 @@ public class JsonOutputObject {
     private String jobId;
     public String getJobId() { return jobId; }
 
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     @JsonPropertyDescription("If the job didn't run because it was possible to get the results"
         + " from TiesDb, this will be set to the job id of the job that generated those results.")
     private String tiesDbSourceJobId;

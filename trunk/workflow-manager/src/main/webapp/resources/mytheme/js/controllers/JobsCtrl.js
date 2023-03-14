@@ -236,6 +236,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 $scope.selectedJob = getJobFromTableEle(event.target);
                 $scope.errorType = 'TiesDb';
                 $scope.errorDetails = $scope.selectedJob.tiesDbStatus;
+                $scope.isRepostableError = !$scope.errorDetails.startsWith('COPY ERROR:');
                 $("#errorDetailsModal").modal('show');
             });
         });
@@ -245,6 +246,7 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
                 $scope.selectedJob = getJobFromTableEle(event.target);
                 $scope.errorType = 'Callback';
                 $scope.errorDetails = $scope.selectedJob.callbackStatus;
+                $scope.isRepostableError = false;
                 $("#errorDetailsModal").modal('show');
             });
         });
@@ -444,14 +446,18 @@ var JobsCtrl = function ($scope, $log, $timeout, ServerSidePush, JobsService, No
         if (!status) {
             return "";
         }
-        else if (status.startsWith('ERROR:')) {
+        const isError = status.startsWith('ERROR:');
+        if (isError || status.startsWith('COPY ERROR:')) {
             return $('<button>')
                 .addClass(type + '-error-details')
                 .addClass('btn btn-danger btn-block btn-xs')
-                .text('ERROR');
+                .text(isError ? 'ERROR' : 'COPY ERROR');
         }
         else if (status === 'IN PROGRESS') {
             return status + ' <i class="fa fa-spinner fa-spin"></i>';
+        }
+        else if (status === 'PAST JOB FOUND') {
+            return status + '\u{1f454}';
         }
         else {
             return status;

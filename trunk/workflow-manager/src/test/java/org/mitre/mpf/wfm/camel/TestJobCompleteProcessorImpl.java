@@ -190,7 +190,8 @@ public class TestJobCompleteProcessorImpl {
             .thenReturn(serializedJob);
 
         var newOutputUri = new URI("http://example.com/bucket/key");
-        when(_mockTiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(job, new URI(outputUri)))
+        when(_mockTiesDbBeforeJobCheckService.updateOutputObject(
+                job, new URI(outputUri), jobRequestEntity))
             .thenReturn(newOutputUri);
 
         var callbackRequestCaptor = ArgumentCaptor.forClass(HttpGet.class);

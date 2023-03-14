@@ -150,8 +150,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var trackCounter = new TrackCounter();
         try {
             if (skippedJobDueToTiesDbEntry) {
-                outputObjectUri = tiesDbBeforeJobCheckService.getUpdatedOutputObjectUri(
-                        job, URI.create(outputObjectFromTiesDbUri));
+                outputObjectUri = tiesDbBeforeJobCheckService.updateOutputObject(
+                        job, URI.create(outputObjectFromTiesDbUri), jobRequest);
             }
             else {
                 outputObjectUri = createOutputObject(
@@ -242,7 +242,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             inProgressBatchJobs.setCallbacksInProgress(job.getId());
             jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());
         }
-        else {
+        else if (jobRequest.getTiesDbStatus() == null
+                || !jobRequest.getTiesDbStatus().startsWith("ERROR")) {
             var newStatus = CallbackStatus.notRequested();
             jobRequest.setTiesDbStatus(newStatus);
             jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), newStatus);

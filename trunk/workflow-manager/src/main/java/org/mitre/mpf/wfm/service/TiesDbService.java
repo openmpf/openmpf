@@ -65,6 +65,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+import org.mitre.mpf.wfm.enums.IssueCodes;
+
 /**
  * Refer to https://github.com/Noblis/ties-lib for more information on the Triage Import Export
  * Schema (TIES). For each piece of media, we create one or more TIES
@@ -115,12 +117,17 @@ public class TiesDbService {
     }
 
 
-    public void prepareAssertions(BatchJob job,
-                                BatchJobStatusType jobStatus,
-                                Instant timeCompleted,
-                                URI outputObjectLocation,
-                                String outputObjectSha,
-                                TrackCounter trackCounter) {
+    public void prepareAssertions(
+            BatchJob job,
+            BatchJobStatusType jobStatus,
+            Instant timeCompleted,
+            URI outputObjectLocation,
+            String outputObjectSha,
+            TrackCounter trackCounter) {
+        if (anyMediaDownloadsFailed(job)) {
+            return;
+        }
+
         var parentWithDerivativeCounts = new HashMap<ParentMediaAlgoTiesDbUrl, TrackTypeCount>();
 
         for (var jobPart : JobPartsIter.of(job)) {
@@ -277,6 +284,19 @@ public class TiesDbService {
         throw new TiesDbException(combinedErrorMsgs);
     }
 
+
+    private boolean anyMediaDownloadsFailed(BatchJob job) {
+        var downloadFailedCode = IssueCodes.REMOTE_STORAGE_DOWNLOAD.toString();
+        boolean anyDownloadFailures = job.getErrors()
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .anyMatch(ji -> ji.getCode().equals(downloadFailedCode));
+        if (anyDownloadFailures) {
+            _jobRequestDao.setTiesDbError(job.getId(), "Media download failed.");
+        }
+        return anyDownloadFailures;
+    }
 
     private TiesDbInfo.Assertion createActionAssertion(
             BatchJob job,

@@ -74,6 +74,7 @@ import org.mitre.mpf.wfm.camel.WfmProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
@@ -431,11 +432,13 @@ public class TiesDbBeforeJobCheckServiceImpl
     }
 
 
-    public URI getUpdatedOutputObjectUri(BatchJob job, URI outputObjectUriFromPrevJob) {
+    public URI updateOutputObject(
+            BatchJob job, URI outputObjectUriFromPrevJob, JobRequest jobRequest) {
         try {
             var jobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
             if (Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_DISABLED))
                     || !S3StorageBackend.requiresS3ResultUpload(jobProps)) {
+                jobRequest.setTiesDbStatus("PAST JOB FOUND");
                 return outputObjectUriFromPrevJob;
             }
 
@@ -446,15 +449,19 @@ public class TiesDbBeforeJobCheckServiceImpl
 
             var newOutputObject = createOutputObjectWithUpdatedUris(
                     job, oldOutputObject, oldUrisToNew);
-            return _s3StorageBackend.store(newOutputObject, new MutableObject<>());
+            var newOutputObjectUri = _s3StorageBackend.store(
+                    newOutputObject, new MutableObject<>());
+            jobRequest.setTiesDbStatus("PAST JOB FOUND");
+            return newOutputObjectUri;
         }
         catch (StorageException | IOException e) {
             var msg = "A matching job was found in TiesDb," +
                 " but copying results from the old job failed due to: " + e;
             LOG.error(msg, e);
+            jobRequest.setTiesDbStatus("COPY ERROR: " + msg);
             _inProgressJobs.addJobError(
                     job.getId(),
-                    IssueCodes.REMOTE_STORAGE_UPLOAD,
+                    IssueCodes.TIES_DB_BEFORE_JOB_CHECK,
                     msg);
             return outputObjectUriFromPrevJob;
         }

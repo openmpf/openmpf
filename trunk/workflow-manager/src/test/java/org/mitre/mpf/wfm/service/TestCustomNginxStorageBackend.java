@@ -96,7 +96,7 @@ public class TestCustomNginxStorageBackend {
 
 
     private final StorageBackend _nginxStorageService
-            = new CustomNginxStorageBackend(_mockPropertiesUtil, _objectMapper, _mockInProgressJobs);
+            = new CustomNginxStorageBackendImpl(_mockPropertiesUtil, _objectMapper, _mockInProgressJobs);
 
     private static final AtomicInteger BAD_PATH_POST_COUNT = new AtomicInteger();
 

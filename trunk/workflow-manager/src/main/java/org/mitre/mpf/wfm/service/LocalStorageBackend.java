@@ -27,117 +27,40 @@
 
 package org.mitre.mpf.wfm.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.mitre.mpf.frameextractor.FrameExtractor;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.MarkupResult;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
 
-
-@Component
-public class LocalStorageBackend implements StorageBackend {
-
-    private final PropertiesUtil _propertiesUtil;
-
-    private final ObjectMapper _objectMapper;
-
-    private final InProgressBatchJobsService _inProgressJobs;
-
-
-    @Inject
-    LocalStorageBackend(PropertiesUtil propertiesUtil,
-                        ObjectMapper objectMapper,
-                        InProgressBatchJobsService inProgressBatchJobsService) {
-        _propertiesUtil = propertiesUtil;
-        _objectMapper = objectMapper;
-        _inProgressJobs = inProgressBatchJobsService;
-    }
-
+public interface LocalStorageBackend extends StorageBackend {
 
     @Override
-    public boolean canStore(JsonOutputObject outputObject) {
-        return true;
-    }
+    public boolean canStore(JsonOutputObject outputObject);
 
     @Override
-    public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws IOException {
-        long internalJobId = _propertiesUtil.getJobIdFromExportedId(outputObject.getJobId());
-        Path outputPath = _propertiesUtil.createDetectionOutputObjectFile(internalJobId);
-        if (outputSha.getValue() == null) {
-            MessageDigest digest = DigestUtils.getSha256Digest();
-            try (var outStream = new DigestOutputStream(Files.newOutputStream(outputPath), digest)) {
-                _objectMapper.writeValue(outStream, outputObject);
-            }
-            outputSha.setValue(Hex.encodeHexString(digest.digest()));
-        }
-        else {
-            _objectMapper.writeValue(outputPath.toFile(), outputObject);
-        }
-        return outputPath.toUri();
-    }
-
+    public URI store(JsonOutputObject outputObject, Mutable<String> outputSha) throws IOException;
 
     @Override
-    public boolean canStore(MarkupResult markupResult) {
-        return true;
-    }
+    public boolean canStore(MarkupResult markupResult);
 
     @Override
-    public void store(MarkupResult markupResult) {
-        // No-op: markup is stored locally by the markup component.
-    }
-
+    public void store(MarkupResult markupResult);
 
     @Override
-    public boolean canStore(ArtifactExtractionRequest request) {
-        return true;
-    }
-
+    public boolean canStore(ArtifactExtractionRequest request);
 
     @Override
-    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException {
-        URI artifactsDirectory = _propertiesUtil.createArtifactDirectory(
-                request.getJobId(), request.getMediaId(), request.getTaskIndex(),
-                request.getActionIndex()).toURI();
-
-        FrameExtractor frameExtractor = new FrameExtractor(
-                Paths.get(request.getMediaPath()).toUri(), request.getMediaMetadata(), artifactsDirectory,
-                request.getCroppingFlag(), request.getRotationFillIsBlack());
-        frameExtractor.getExtractionsMap().putAll(request.getExtractionsMap());
-
-        Table<Integer, Integer, String> extractionResults = frameExtractor.execute();
-        return Tables.transformValues(extractionResults, v -> Paths.get(v).toUri());
-    }
-
+    public Table<Integer, Integer, URI> storeArtifacts(ArtifactExtractionRequest request) throws IOException;
 
     @Override
-    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId) {
-        return true;
-    }
+    public boolean canStoreDerivativeMedia(BatchJob job, long parentMediaId);
 
     @Override
-    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException {
-        var storagePath = _propertiesUtil.createDerivativeMediaPath(job.getId(), media);
-        Files.move(media.getLocalPath(), storagePath);
-        _inProgressJobs.addStorageUri(job.getId(), media.getId(), storagePath.toUri().toString());
-    }
+    public void storeDerivativeMedia(BatchJob job, Media media) throws IOException;
 }

@@ -183,7 +183,7 @@
             </div>
             <div class="modal-footer">
                 <div class="pull-right">
-                    <button ng-if="errorType == 'TiesDb'"
+                    <button ng-if="isRepostableError"
                             ng-click="tiesDbRepost()"
                             ng-disabled="isReposting() || repostWasSuccessful()"
                             ng-class="{'btn-success': repostWasSuccessful(), 'btn-warning': isReposting()}"

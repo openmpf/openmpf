@@ -26,6 +26,7 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -58,11 +59,14 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.apache.camel.Exchange;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.hamcrest.Matchers;
@@ -108,6 +112,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Streams;
+
 
 public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
@@ -352,12 +358,26 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
     private void testGetResultsButNoMatch(Object tiesDbData) throws IOException {
-        var checkResult = setupSingleTiesDbUriTest(tiesDbData);
+        var checkResult = setupSingleUriSingleRequestTiesDbTest(tiesDbData);
         assertEquals(TiesDbCheckStatus.NO_MATCH, checkResult.status());
         assertTrue(checkResult.checkInfo().isEmpty());
     }
 
-    private TiesDbCheckResult setupSingleTiesDbUriTest(Object tiesDbData) throws IOException {
+
+    private TiesDbCheckResult setupSingleUriSingleRequestTiesDbTest(Object tiesDbData) throws IOException {
+        var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
+        when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
+            .thenReturn(createHttpResponse(tiesDbData));
+
+        var result = setupSingleTiesDbUriTest();
+        var request = requestCaptor.getValue();
+        assertThat(request, instanceOf(HttpGet.class));
+        assertUriIsFirstPageTiesDbUri(request.getURI());
+        return result;
+    }
+
+
+    private TiesDbCheckResult setupSingleTiesDbUriTest() throws IOException {
         var action = mock(Action.class);
         var elements = mock(JobPipelineElements.class);
         when(elements.getAllActions())
@@ -365,7 +385,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var media = mock(Media.class);
         when(media.getHash())
-                .thenReturn(Optional.of("HASH"));
+                .thenReturn(Optional.of("MEDIA_HASH"));
         when(media.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
 
@@ -379,22 +399,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockJobConfigHasher.getJobConfigHash(List.of(media), elements, mockMediaActionProps))
             .thenReturn("JOB_HASH");
 
-        var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
-        when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
-            .thenReturn(createHttpResponse(tiesDbData));
-
-        var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+        return _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
                 new JobCreationRequest(),
                 null,
                 List.of(media),
                 elements);
-
-        var request = requestCaptor.getValue();
-        assertThat(request, instanceOf(HttpGet.class));
-        assertEquals(URI.create("http://tiesdb:1234/api/db/supplementals?sha256Hash=HASH"),
-                request.getURI());
-
-        return result;
     }
 
 
@@ -435,7 +444,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             )
         );
 
-        var checkResult = setupSingleTiesDbUriTest(tiesDbData);
+        var checkResult = setupSingleUriSingleRequestTiesDbTest(tiesDbData);
         assertEquals(TiesDbCheckStatus.FOUND_MATCH, checkResult.status());
         assertTrue(checkResult.checkInfo().isPresent());
 
@@ -443,6 +452,120 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(URI.create("file:///1.json"), info.outputObjectUri());
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
+    }
+
+
+    @Test
+    public void testFindMatchingSupplementalOnMultiplePages() throws IOException {
+        var unrelatedResults = List.of(
+            Map.of(
+                "assertionId", "s12",
+                "dataObject", Map.of(
+                    "algorithm", "ALGO"
+                )
+            ),
+            Map.of(
+                "assertionId", "s12",
+                "dataObject", Map.of(
+                    "algorithm", "ALGO"
+                )
+            ),
+            Map.of(
+                "assertionId", "s13",
+                "dataObject", Map.of(
+                    "algorithm", "FACECV",
+                    "jobConfigHash", "JOB_HASH2",
+                    "outputUri", "file:///3.json",
+                    "jobStatus", "COMPLETE",
+                    "processDate", "2021-12-04T13:35:58.981Z"
+                )
+            )
+        );
+
+        var match1 = Map.of(
+            "assertionId", "s11",
+            "dataObject", Map.of(
+                "algorithm", "MOG",
+                "jobConfigHash", "JOB_HASH",
+                "outputUri", "file:///2.json",
+                "jobStatus", "COMPLETE_WITH_WARNINGS",
+                "processDate", "2021-06-04T14:35:58.981Z"
+            )
+        );
+
+        var match2 = Map.of(
+            "assertionId", "s10",
+            "dataObject", Map.of(
+                "algorithm", "FACECV",
+                "jobConfigHash", "JOB_HASH",
+                "outputUri", "file:///1.json",
+                "jobStatus", "COMPLETE",
+                "processDate", "2021-06-04T13:35:58.981Z"
+            )
+        );
+
+        var match3 = Map.of(
+            "assertionId", "s10",
+            "dataObject", Map.of(
+                "algorithm", "FACECV",
+                "jobConfigHash", "JOB_HASH",
+                "outputUri", "file:///5.json",
+                "jobStatus", "COMPLETE",
+                "processDate", "2021-01-01T13:35:58.981Z"
+            )
+        );
+
+        var page1 = Streams.concat(
+                repeat(unrelatedResults, 33),
+                Stream.of(match1),
+                repeat(unrelatedResults, 66))
+            .toList();
+
+        var page2 = Streams.concat(
+                Stream.of(match2),
+                repeat(unrelatedResults, 99))
+            .toList();
+
+        var page3 = Streams.concat(
+                repeat(unrelatedResults, 33),
+                Stream.of(match3),
+                repeat(unrelatedResults, 10))
+            .toList();
+
+
+        var requestCaptor = ArgumentCaptor.forClass(HttpGet.class);
+        when(_mockHttpClientUtils.executeRequest(requestCaptor.capture(), eq(3)))
+            .thenReturn(
+                createHttpResponse(page1),
+                createHttpResponse(page2),
+                createHttpResponse(page3));
+
+        var checkResult = setupSingleTiesDbUriTest();
+        assertEquals(TiesDbCheckStatus.FOUND_MATCH, checkResult.status());
+        assertTrue(checkResult.checkInfo().isPresent());
+
+        var info = checkResult.checkInfo().get();
+        assertEquals(URI.create("file:///1.json"), info.outputObjectUri());
+        assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
+        assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
+
+        var requests = requestCaptor.getAllValues();
+        assertEquals(3, requests.size());
+        assertUriIsFirstPageTiesDbUri(requests.get(0).getURI());
+
+        var page2Uri = URI.create(
+            "http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH&system=OpenMPF&offset=100&limit=100");
+        assertUrisMatch(page2Uri, requests.get(1).getURI());
+
+        var page3Uri = URI.create(
+            "http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH&system=OpenMPF&offset=200&limit=100");
+        assertUrisMatch(page3Uri, requests.get(2).getURI());
+    }
+
+    private static <T> Stream<T> repeat(List<T> items, int count) {
+        return Stream.generate(() -> items)
+            .flatMap(List::stream)
+            .limit(count);
     }
 
 
@@ -551,13 +674,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         doReturn(createHttpResponse(tiesDbData))
             .when(_mockHttpClientUtils)
             .executeRequest(
-                requestWithUri("http://tiesdb:1234/api/db/supplementals?sha256Hash=HASH"),
+                requestWithUri("http://tiesdb:1234/api/db/supplementals?sha256Hash=HASH&system=OpenMPF&offset=0&limit=100"),
                 eq(3));
 
         doReturn(createErrorResponse("test-error"))
             .when(_mockHttpClientUtils)
             .executeRequest(
-                requestWithUri("http://tiesdb-error:1234/api/db/supplementals?sha256Hash=HASH2"),
+                requestWithUri("http://tiesdb-error:1234/api/db/supplementals?sha256Hash=HASH2&system=OpenMPF&offset=0&limit=100"),
                 eq(3));
 
 
@@ -620,10 +743,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var exchange = runAfterMediaInspectionTest();
 
         var request = requestCaptor.getValue();
-        assertEquals(
-                URI.create("http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH"),
-                request.getURI());
-
+        assertUriIsFirstPageTiesDbUri(request.getURI());
        return exchange;
     }
 
@@ -1069,7 +1189,37 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         return ThreadUtil.completedFuture(response);
     }
 
-    private HttpGet requestWithUri(String uri) {
-        return ArgumentMatchers.argThat(h -> h.getURI().equals(URI.create(uri)));
+    private HttpGet requestWithUri(String expectedUri) {
+        return ArgumentMatchers.argThat(h -> {
+            try {
+                assertUrisMatch(URI.create(expectedUri), h.getURI());
+                return true;
+            }
+            catch (AssertionError e) {
+                return false;
+            }
+        });
+    }
+
+
+    private static void assertUriIsFirstPageTiesDbUri(URI actualUri) {
+        var firstPageUri = URI.create(
+            "http://tiesdb:1234/api/db/supplementals?sha256Hash=MEDIA_HASH&system=OpenMPF&offset=0&limit=100");
+        assertUrisMatch(firstPageUri, actualUri);
+    }
+
+    private static void assertUrisMatch(URI expectedUri, URI actualUri) {
+        assertEquals(expectedUri.getScheme(), actualUri.getScheme());
+        assertEquals(expectedUri.getHost(), actualUri.getHost());
+        assertEquals(expectedUri.getPort(), actualUri.getPort());
+        assertEquals(expectedUri.getPath(), actualUri.getPath());
+        assertEquals(getQueryMap(expectedUri), getQueryMap(actualUri));
+    }
+
+    private static Map<String, String> getQueryMap(URI uri) {
+        return new URIBuilder(uri)
+            .getQueryParams()
+            .stream()
+            .collect(toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 }

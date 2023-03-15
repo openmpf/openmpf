@@ -30,6 +30,7 @@ import static java.util.stream.Collectors.toMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -46,7 +47,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -54,7 +55,6 @@ import javax.inject.Inject;
 
 import org.apache.camel.Exchange;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -85,6 +85,7 @@ import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -226,21 +227,25 @@ public class TiesDbBeforeJobCheckServiceImpl
                 jobPipelineElements,
                 props);
 
-        var lastException = new MutableObject<Throwable>(null);
+        // There may be multiple matching supplementals in TiesDb, so we don't want to report
+        // an error if there was a problem getting one supplemental, but we were able to get a
+        // different matching supplemental. Use an AtomicReference because some errors can occur
+        // on threads belonging to the HTTP client.
+        var lastException = new AtomicReference<Throwable>(null);
         var optCheckInfo = getCheckInfo(mediaHashToBaseUris, jobHash, lastException);
         if (optCheckInfo.isPresent()) {
             return new TiesDbCheckResult(
                     TiesDbCheckStatus.FOUND_MATCH,
                     optCheckInfo);
         }
-        else if (lastException.getValue() == null) {
+        else if (lastException.get() == null) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_MATCH);
         }
-        else if (lastException.getValue() instanceof RuntimeException ex) {
+        else if (lastException.get() instanceof RuntimeException ex) {
             throw ex;
         }
         else {
-            throw new IllegalStateException(lastException.getValue());
+            throw new IllegalStateException(lastException.get());
         }
     }
 
@@ -279,29 +284,24 @@ public class TiesDbBeforeJobCheckServiceImpl
     private Optional<TiesDbCheckResult.CheckInfo> getCheckInfo(
             Multimap<String, String> mediaHashToBaseUris,
             String expectedJobHash,
-            MutableObject<Throwable> lastException) {
-        var supplementalUris = buildSupplementalUris(mediaHashToBaseUris, lastException);
-        var futures = Stream.<CompletableFuture<HttpResponse>>builder();
-        for (var supplementalUri : supplementalUris) {
-            var future = _httpClientUtils.executeRequest(
-                    new HttpGet(supplementalUri),
-                    _propertiesUtil.getHttpCallbackRetryCount())
-                .thenApply(this::checkResponse)
-                .exceptionally(err -> convertError(supplementalUri, err));
-            futures.add(future);
-        }
-
-        return futures.build()
-            .flatMap(f -> parseResponse(f, lastException))
-            .map(jn -> convertJsonToCheckInfo(jn, expectedJobHash, lastException))
-            .flatMap(Optional::stream)
-            .max(COMPLETE_THEN_DATE);
+            AtomicReference<Throwable> lastException) {
+        // Need a temporary list so that all of the futures are created before we start calling
+        // join on any of the futures.
+        var futures = buildSupplementalUris(mediaHashToBaseUris, lastException)
+            .stream()
+            .map(u -> getSupplementals(u, 0, expectedJobHash, Optional.empty(), lastException))
+            .toList();
+        return futures
+                .stream()
+                .map(CompletableFuture::join)
+                .flatMap(Optional::stream)
+                .max(BEST_STATUS_THEN_DATE);
     }
 
 
     private static Set<URI> buildSupplementalUris(
             Multimap<String, String> tiesDbBaseUris,
-            Mutable<Throwable> exception) {
+            AtomicReference<Throwable> exception) {
         var supplementalUris = new HashSet<URI>();
         for (var entry : tiesDbBaseUris.entries()) {
             var mediaHash = entry.getKey();
@@ -311,11 +311,12 @@ public class TiesDbBeforeJobCheckServiceImpl
                 var fullUri = new URIBuilder(baseUriStr)
                         .setPath(baseUri.getPath() + "/api/db/supplementals")
                         .setParameter("sha256Hash", mediaHash)
+                        .setParameter("system", "OpenMPF")
                         .build();
                 supplementalUris.add(fullUri);
             }
             catch (URISyntaxException e) {
-                exception.setValue(new WfmProcessingException(
+                exception.set(new WfmProcessingException(
                         "The \"%s\" property contained \"%s\" which isn't a valid URI."
                                 .formatted(MpfConstants.TIES_DB_URL, e.getInput()),
                         e));
@@ -325,13 +326,78 @@ public class TiesDbBeforeJobCheckServiceImpl
     }
 
 
-    private static final Comparator<TiesDbCheckResult.CheckInfo> COMPLETE_THEN_DATE
+    private CompletableFuture<Optional<TiesDbCheckResult.CheckInfo>> getSupplementals(
+            URI unpagedUri, int offset, String jobHash,
+            Optional<TiesDbCheckResult.CheckInfo> prevBest,
+            AtomicReference<Throwable> lastException) {
+        int limit = 100;
+        var uri = addPaginationParams(unpagedUri, offset, limit);
+        return _httpClientUtils.executeRequest(
+                new HttpGet(uri),
+                _propertiesUtil.getHttpCallbackRetryCount())
+            .thenApply(resp -> checkResponse(unpagedUri, resp))
+            .thenCompose(resp -> {
+                var responseJson = parseResponse(resp);
+                var bestMatch = getBestMatchSoFar(responseJson, jobHash, prevBest, lastException);
+                boolean isLastPage = responseJson.size() < limit;
+                if (isLastPage) {
+                    return ThreadUtil.completedFuture(bestMatch);
+                }
+                return getSupplementals(
+                            unpagedUri, offset + limit, jobHash, bestMatch, lastException);
+            }).exceptionally(e -> {
+                lastException.set(e.getCause());
+                return prevBest;
+            });
+    }
+
+
+    private static URI addPaginationParams(URI unpagedUri, int offset, int limit) {
+        try {
+            return new URIBuilder(unpagedUri)
+                .setParameter("offset", String.valueOf(offset))
+                .setParameter("limit", String.valueOf(limit))
+                .build();
+        }
+        catch (URISyntaxException e) {
+            // impossible
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private JsonNode parseResponse(HttpResponse response) {
+        try (var is = response.getEntity().getContent()) {
+            return _objectMapper.readTree(is);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+
+    private Optional<TiesDbCheckResult.CheckInfo> getBestMatchSoFar(
+            JsonNode json, String expectedJobHash, Optional<TiesDbCheckResult.CheckInfo> prevBest,
+            AtomicReference<Throwable> lastException) {
+
+        Stream<TiesDbCheckResult.CheckInfo> newResults = Streams.stream(json)
+                .map(j -> convertJsonToCheckInfo(j, expectedJobHash, lastException))
+                .flatMap(Optional::stream);
+
+        return Stream.concat(prevBest.stream(), newResults)
+                .max(BEST_STATUS_THEN_DATE);
+    }
+
+
+    // Since there could be multiple supplementals with the same job hash we need a way to pick
+    // the best one.
+    private static final Comparator<TiesDbCheckResult.CheckInfo> BEST_STATUS_THEN_DATE
             = createComparator();
 
     private static Comparator<TiesDbCheckResult.CheckInfo> createComparator() {
         ToIntFunction<TiesDbCheckResult.CheckInfo> statusToInt = ci -> switch (ci.jobStatus()) {
-            case COMPLETE -> 2;
-            case COMPLETE_WITH_WARNINGS -> 1;
+            case COMPLETE -> 3;
+            case COMPLETE_WITH_WARNINGS -> 2;
+            case COMPLETE_WITH_ERRORS -> 1;
             default -> 0;
         };
         return Comparator.comparingInt(statusToInt)
@@ -340,55 +406,28 @@ public class TiesDbBeforeJobCheckServiceImpl
 
 
 
-    private HttpResponse checkResponse(HttpResponse response) {
+    private HttpResponse checkResponse(URI requestUri, HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode >= 200 && statusCode <= 299) {
             return response;
         }
 
+        var errorPrefix = "Sending HTTP GET to TiesDb ("  + requestUri
+                + ") failed because TiesDb responded with a non-200 status code of " + statusCode;
         try {
             var body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-            throw new IllegalStateException(
-                "TiesDb responded with a non-200 status code of %s and body: %s"
-                    .formatted(statusCode, body));
+            throw new IllegalStateException(errorPrefix + " and body: " + body);
         }
         catch (IOException e) {
-            throw new IllegalStateException(
-                "TiesDb responded with a non-200 status code of %s.".formatted(statusCode), e);
+            throw new IllegalStateException(errorPrefix + '.', e);
         }
-    }
-
-
-    private static HttpResponse convertError(URI url, Throwable error) {
-        if (error instanceof CompletionException && error.getCause() != null) {
-            error = error.getCause();
-        }
-        var errorMessage
-                = "Sending HTTP GET to TiesDb (%s) failed due to: %s.".formatted(url, error);
-        LOG.error(errorMessage, error);
-        throw new IllegalStateException(errorMessage, error);
-    }
-
-    private Stream<JsonNode> parseResponse(
-            CompletableFuture<HttpResponse> responseFuture,
-            MutableObject<Throwable> exception) {
-        try (var is = responseFuture.join().getEntity().getContent()) {
-            return Streams.stream(_objectMapper.readTree(is));
-        }
-        catch (CompletionException e) {
-            exception.setValue(e.getCause());
-        }
-        catch (IOException e) {
-            exception.setValue(e);
-        }
-        return Stream.empty();
     }
 
 
     private Optional<TiesDbCheckResult.CheckInfo> convertJsonToCheckInfo(
             JsonNode jsonEntry,
             String expectedJobHash,
-            MutableObject<Throwable> exception) {
+            AtomicReference<Throwable> exception) {
         var jobHash = jsonEntry.findPath("dataObject")
                 .findPath("jobConfigHash").asText("");
         if (!expectedJobHash.equals(jobHash)) {
@@ -421,7 +460,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             status = BatchJobStatusType.valueOf(jsonEntry.findPath("jobStatus").asText(""));
         }
         catch (IllegalArgumentException e) {
-            exception.setValue(e);
+            exception.set(e);
             return Optional.empty();
         }
 

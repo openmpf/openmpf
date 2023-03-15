@@ -174,6 +174,9 @@ public class TestJobCompleteProcessorImpl {
         var job = mock(BatchJob.class);
         when(job.getId())
             .thenReturn(jobId);
+        // When a job is skipped because it is in TiesDb, we should use the status from TiesDb.
+        // Use IN_PROGRESS as the status in this test because when a job is not skipped
+        // the status will change to COMPLETE.
         when(job.getStatus())
             .thenReturn(BatchJobStatusType.IN_PROGRESS);
         var callbackUrl = "http://localhost:2000/callback";
@@ -210,14 +213,14 @@ public class TestJobCompleteProcessorImpl {
 
         assertNotNull(jobRequestEntity.getTimeCompleted());
         assertEquals(newOutputUri.toString(), jobRequestEntity.getOutputObjectPath());
-        assertEquals(BatchJobStatusType.COMPLETE, jobRequestEntity.getStatus());
+        assertEquals(BatchJobStatusType.IN_PROGRESS, jobRequestEntity.getStatus());
         assertEquals(serializedJob, jobRequestEntity.getJob());
 
         verify(_mockJobProgressStore)
             .setJobProgress(jobId, 100);
 
         verify(_mockInProgressBatchJobs)
-            .setJobStatus(jobId, BatchJobStatusType.COMPLETE);
+            .setJobStatus(jobId, BatchJobStatusType.IN_PROGRESS);
 
         verify(_mockInProgressBatchJobs)
             .setCallbacksInProgress(jobId);

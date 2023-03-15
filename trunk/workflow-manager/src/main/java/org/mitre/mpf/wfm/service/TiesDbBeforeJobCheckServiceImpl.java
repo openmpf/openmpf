@@ -491,6 +491,8 @@ public class TiesDbBeforeJobCheckServiceImpl
             var newOutputObjectUri = _s3StorageBackend.store(
                     newOutputObject, new MutableObject<>());
             jobRequest.setTiesDbStatus("PAST JOB FOUND");
+            _inProgressJobs.setJobStatus(
+                    job.getId(), BatchJobStatusType.parse(newOutputObject.getStatus()));
             return newOutputObjectUri;
         }
         catch (StorageException | IOException e) {

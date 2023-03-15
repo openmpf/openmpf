@@ -169,8 +169,12 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             log.error(message, exception);
             inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
         }
-        completionStatus = job.getStatus().onComplete();
-        if (!skippedJobDueToTiesDbEntry) {
+
+        if (skippedJobDueToTiesDbEntry) {
+            completionStatus = job.getStatus();
+        }
+        else {
+            completionStatus = job.getStatus().onComplete();
             tiesDbService.prepareAssertions(
                     job,
                     completionStatus,

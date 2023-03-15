@@ -65,10 +65,13 @@ public class JobConfigHasher {
 
     private final IgnorableProperties _ignorableProperties;
 
+    private final String _outputVersion;
+
     @Inject
     public JobConfigHasher(
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil) throws IOException {
+        _outputVersion = getMajorMinorVersion(propertiesUtil.getOutputObjectVersion());
 
         var ignorablePropsResource = propertiesUtil.getTiesDbCheckIgnorablePropertiesResource();
         try (var inStream = ignorablePropsResource.getInputStream()) {
@@ -90,6 +93,7 @@ public class JobConfigHasher {
                 .toList();
 
         var hasher = new Hasher();
+        hasher.add(_outputVersion);
         for (var medium : sortedMedia) {
             hasher.add(medium.getHash().orElseThrow());
             hashMediaRanges(medium.getFrameRanges(), hasher);
@@ -156,6 +160,15 @@ public class JobConfigHasher {
         }
     }
 
+
+    private static String getMajorMinorVersion(String version) {
+        var parts = version.split("\\.", 3);
+        var result = parts[0];
+        if (parts.length > 1) {
+            result += parts[1];
+        }
+        return result;
+    }
 
     public static class IgnorableProperties {
 

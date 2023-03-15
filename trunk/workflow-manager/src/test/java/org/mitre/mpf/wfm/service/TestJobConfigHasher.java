@@ -69,6 +69,8 @@ public class TestJobConfigHasher {
     public void init() throws IOException {
         var objectMapper = ObjectMapperFactory.customObjectMapper();
         var mockPropsUtil = mock(PropertiesUtil.class);
+        when(mockPropsUtil.getOutputObjectVersion())
+            .thenReturn("A.B.C");
         when(mockPropsUtil.getTiesDbCheckIgnorablePropertiesResource())
             .thenReturn(new ClassPathResource("/test-ignorable-properties.json"));
 

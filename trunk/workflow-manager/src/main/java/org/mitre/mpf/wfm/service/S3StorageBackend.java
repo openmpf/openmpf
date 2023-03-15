@@ -43,6 +43,8 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 
 public interface S3StorageBackend extends StorageBackend {
@@ -77,6 +79,12 @@ public interface S3StorageBackend extends StorageBackend {
     public ResponseInputStream<GetObjectResponse> getFromS3(
         String uri, UnaryOperator<String> properties) throws StorageException;
 
+    public JsonOutputObject getOldJobOutputObject(URI outputObjectUri, S3CopyConfig copyConfig)
+            throws StorageException;
+
+    public Map<URI, URI> copyResults(
+            Collection<URI> urisToCopy, S3CopyConfig copyConfig)
+            throws StorageException, IOException;
 
     /**
      * Ensures that the S3-related properties are valid.

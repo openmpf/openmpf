@@ -92,7 +92,7 @@ public class TestS3Copy extends MockitoTest.Strict {
 
     private final ObjectMapper _objectMapper = ObjectMapperFactory.customObjectMapper();
 
-    private S3StorageBackend _s3StorageBackend;
+    private S3StorageBackendImpl _s3StorageBackend;
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -120,7 +120,7 @@ public class TestS3Copy extends MockitoTest.Strict {
                 .thenReturn(20);
         when(_mockPropertiesUtil.getHttpStorageUploadRetryCount())
                 .thenReturn(2);
-        _s3StorageBackend = new S3StorageBackend(
+        _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil,
                 _mockLocalStorageBackend,
                 _mockInProgressJobs,

@@ -48,7 +48,6 @@ import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.http.ConnectionClosedException;
 import org.mitre.mpf.interop.JsonOutputObject;
@@ -389,6 +388,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         return sourceClient.getObject(getRequest);
     }
 
+    @Override
     public JsonOutputObject getOldJobOutputObject(URI outputObjectUri, S3CopyConfig copyConfig)
             throws StorageException {
         try {
@@ -415,6 +415,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
         }
     }
 
+    @Override
     public Map<URI, URI> copyResults(
             Collection<URI> urisToCopy, S3CopyConfig copyConfig)
             throws StorageException, IOException {
@@ -736,7 +737,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
     private static LoadingCache<S3ClientConfig, S3ClientWrapper> createClientCache(int cacheSize) {
         return CacheBuilder.newBuilder()
                 .maximumSize(cacheSize)
-                .build(CacheLoader.from(S3StorageBackend::buildClient));
+                .build(CacheLoader.from(S3StorageBackendImpl::buildClient));
     }
 
 
@@ -758,7 +759,7 @@ public class S3StorageBackendImpl implements S3StorageBackend {
                 .endpointOverride(clientConfig.endpoint)
                 .serviceConfiguration(s -> s.pathStyleAccessEnabled(true))
                 .overrideConfiguration(o -> o.retryPolicy(retry))
-                .credentialsProvider(S3StorageBackend::throwWhenNoCredentialsInRequest)
+                .credentialsProvider(S3StorageBackendImpl::throwWhenNoCredentialsInRequest)
                 .build();
         return new S3ClientWrapper(s3Client);
     }

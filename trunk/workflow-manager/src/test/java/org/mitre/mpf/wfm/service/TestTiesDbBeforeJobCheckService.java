@@ -200,7 +200,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 .thenReturn(Optional.empty());
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
+            .thenReturn(new MediaActionProps
+                ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
@@ -233,8 +234,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 .thenReturn(Optional.empty());
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
-            .thenReturn(new MediaActionProps((m, a) -> Map.of()));
-
+            .thenReturn(new MediaActionProps
+                ((m, a) -> Map.of(MpfConstants.TIES_DB_URL, "http://localhost")));
 
         var result = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
                 new JobCreationRequest(),

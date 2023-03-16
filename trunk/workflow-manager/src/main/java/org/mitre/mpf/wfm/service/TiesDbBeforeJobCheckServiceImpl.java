@@ -201,6 +201,9 @@ public class TiesDbBeforeJobCheckServiceImpl
         if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), props)) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED);
         }
+        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), props)) {
+            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
+        }
 
         var allMediaHaveHashes = media.stream()
                 .allMatch(m -> m.getHash().isPresent());
@@ -216,11 +219,6 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         var mediaHashToBaseUris = getBaseTiesDbUris(
                 media, jobPipelineElements.getAllActions(), props);
-
-        if (mediaHashToBaseUris.isEmpty()) {
-            return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
-        }
-
 
         var jobHash = _jobConfigHasher.getJobConfigHash(
                 media,
@@ -257,6 +255,19 @@ public class TiesDbBeforeJobCheckServiceImpl
             for (var action : actions) {
                 var skipProp = props.get(MpfConstants.SKIP_TIES_DB_CHECK, medium, action);
                 if (Boolean.parseBoolean(skipProp)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasTiesDbUrl(
+            Iterable<Media> media, Collection<Action> actions, MediaActionProps props) {
+        for (var medium : media) {
+            for (var action : actions) {
+                var urlProp = props.get(MpfConstants.TIES_DB_URL, medium, action);
+                if (urlProp != null && !urlProp.isBlank()) {
                     return true;
                 }
             }

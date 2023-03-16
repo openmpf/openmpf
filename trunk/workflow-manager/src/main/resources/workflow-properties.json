@@ -467,5 +467,12 @@
         "type": "STRING",
         "defaultValue": "CONFIDENCE",
         "mediaTypes": ["VIDEO"]
+    },
+    {
+        "name": "SKIP_MEDIA_INSPECTION",
+        "description": "When set to true, Workflow Manager will attempt to use the media metadata provided in the job request to avoid performing media inspection.",
+        "type": "BOOLEAN",
+        "defaultValue": "false",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     }
 ]

@@ -32,6 +32,8 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PngDefry;
@@ -73,10 +75,15 @@ public class MediaMetadataValidator {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
 
     @Inject
-    public MediaMetadataValidator(InProgressBatchJobsService inProgressJobs) {
+    public MediaMetadataValidator(
+            InProgressBatchJobsService inProgressJobs,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _inProgressJobs = inProgressJobs;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
     public boolean skipInspection(long jobId, Media media) {
@@ -84,14 +91,18 @@ public class MediaMetadataValidator {
             return false;
         }
 
-        var mediaMetadata = media.getProvidedMetadata();
-        if (mediaMetadata.isEmpty()) {
+        var job = _inProgressJobs.getJob(jobId);
+        var shouldSkipInspection = Boolean.parseBoolean(
+                _aggregateJobPropertiesUtil.getValue(
+                        MpfConstants.SKIP_MEDIA_INSPECTION, job, media));
+        if (!shouldSkipInspection) {
             return false;
         }
 
         long mediaId = media.getId();
 
         try {
+            var mediaMetadata = media.getProvidedMetadata();
             checkForMissingMetadata(mediaMetadata, Set.of("MIME_TYPE", "MEDIA_HASH"), null);
 
             String mimeType = TextUtils.trim(mediaMetadata.get("MIME_TYPE"));

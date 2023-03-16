@@ -489,6 +489,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             if (Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_DISABLED))
                     || !S3StorageBackend.requiresS3ResultUpload(jobProps)) {
                 jobRequest.setTiesDbStatus("PAST JOB FOUND");
+                _inProgressJobs.setJobStatus(job.getId(), job.getStatus().onComplete());
                 return outputObjectUriFromPrevJob;
             }
 
@@ -515,6 +516,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     job.getId(),
                     IssueCodes.TIES_DB_BEFORE_JOB_CHECK,
                     msg);
+            _inProgressJobs.setJobStatus(job.getId(), job.getStatus().onComplete());
             return outputObjectUriFromPrevJob;
         }
     }

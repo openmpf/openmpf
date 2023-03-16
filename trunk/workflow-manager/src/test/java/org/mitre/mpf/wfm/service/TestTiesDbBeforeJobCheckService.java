@@ -1043,6 +1043,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var job = mock(BatchJob.class);
         when(job.getId())
             .thenReturn(38L);
+        when(job.getStatus())
+            .thenReturn(BatchJobStatusType.IN_PROGRESS_ERRORS);
 
         var detection = new JsonDetectionOutputObject(
                 1, 1, 1, 1, 0.5f, Collections.emptySortedMap(), 0, 0, "COMPLETED",
@@ -1091,6 +1093,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 eq(38L),
                 eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
                 contains("TEST_MSG"));
+
+        verify(_mockInProgressJobs)
+            .setJobStatus(38L, BatchJobStatusType.COMPLETE_WITH_ERRORS);
 
         assertEquals(oldOutputObjectUri, newOutputObjectUri);
     }

@@ -27,22 +27,22 @@
 
 package org.mitre.mpf.wfm.service;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.inject.Inject;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -55,13 +55,15 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimap;
 
 @Service
 public class JobConfigHasher {
 
     private static final Logger LOG = LoggerFactory.getLogger(JobConfigHasher.class);
+
+    private final WorkflowPropertyService _workflowPropertyService;
 
     private final IgnorableProperties _ignorableProperties;
 
@@ -69,15 +71,17 @@ public class JobConfigHasher {
 
     @Inject
     public JobConfigHasher(
+            WorkflowPropertyService workflowPropertyService,
             ObjectMapper objectMapper,
             PropertiesUtil propertiesUtil) throws IOException {
+        _workflowPropertyService = workflowPropertyService;
         _outputVersion = getMajorMinorVersion(propertiesUtil.getOutputObjectVersion());
 
         var ignorablePropsResource = propertiesUtil.getTiesDbCheckIgnorablePropertiesResource();
         try (var inStream = ignorablePropsResource.getInputStream()) {
-            var ignorablePropertyList = objectMapper.readValue(
-                    inStream, new TypeReference<List<IgnorableProperty>>() { });
-            _ignorableProperties = new IgnorableProperties(ignorablePropertyList);
+            var ignorablePropertyGroups = objectMapper.readValue(
+                    inStream, new TypeReference<List<IgnorablePropertyGroup>>() { });
+            _ignorableProperties = new IgnorableProperties(ignorablePropertyGroups);
         }
     }
 
@@ -95,6 +99,10 @@ public class JobConfigHasher {
         var hasher = new Hasher();
         hasher.add(_outputVersion);
         for (var medium : sortedMedia) {
+            // When calculating the hash we include all of the media, so in order to find a
+            // matching job, the job will have to include all of the same media.
+            // Most users who use TiesDb submit jobs with one piece of media, so it isn't worth it
+            // to try to find jobs with some of the media in common.
             hasher.add(medium.getHash().orElseThrow());
             hashMediaRanges(medium.getFrameRanges(), hasher);
             hashMediaRanges(medium.getTimeRanges(), hasher);
@@ -112,7 +120,7 @@ public class JobConfigHasher {
                     mediaActionProps.get(medium, action)
                         .entrySet()
                         .stream()
-                        .filter(e -> _ignorableProperties.isRequired(e.getKey(), mediaType, action))
+                        .filter(createIsRequiredFilter(algorithm, mediaType))
                         .sorted(Map.Entry.comparingByKey())
                         .forEach(hasher::add);
                 }
@@ -124,6 +132,28 @@ public class JobConfigHasher {
         var hash = hasher.getHash();
         LOG.info("The job config hash is: {}", hash);
         return hash;
+    }
+
+
+    private Predicate<Map.Entry<String, String>> createIsRequiredFilter(
+            Algorithm algorithm, MediaType mediaType) {
+        var algoPropertySet = algorithm.getProvidesCollection()
+            .getProperties()
+            .stream()
+            .map(ap -> ap.getName())
+            .collect(toSet());
+
+        return entry -> {
+            var propName = entry.getKey();
+            if (_ignorableProperties.canIgnore(propName, mediaType)) {
+                return false;
+            }
+            var isWorkflowProp= null != _workflowPropertyService.getProperty(propName, mediaType);
+            if (isWorkflowProp) {
+                return true;
+            }
+            return algoPropertySet.contains(propName);
+        };
     }
 
 
@@ -170,52 +200,30 @@ public class JobConfigHasher {
         return result;
     }
 
+    private record IgnorablePropertyGroup(
+            List<MediaType> ignorableForMediaTypes, List<String> names) {
+    }
+
     public static class IgnorableProperties {
 
-        private final ImmutableMap<String, IgnorableProperty> _properties;
+        private Multimap<MediaType, String> _properties;
 
-        public IgnorableProperties(List<IgnorableProperty> ignorableProperties) {
-            _properties = ignorableProperties.stream()
-                .collect(ImmutableMap.toImmutableMap(
-                            IgnorableProperty::name,
-                            Function.identity()));
+        public IgnorableProperties(List<IgnorablePropertyGroup> groups) {
+            var builder = ImmutableSetMultimap.<MediaType, String>builder();
+            for (var group : groups) {
+                for (var name : group.names) {
+                    var nameUpper = name.strip().toUpperCase();
+                    for (var mediaType : group.ignorableForMediaTypes) {
+                        builder.put(mediaType, nameUpper);
+                    }
+                }
+            }
+            _properties = builder.build();
         }
 
-        public boolean isRequired(String propertyName, MediaType mediaType, Action action) {
-            var property = _properties.get(propertyName.toUpperCase());
-            if (property == null) {
-                return true;
-            }
-            if (property.requiredByMediaTypes.contains(mediaType)) {
-                return true;
-            }
-            if (property.ignorableByAlgorithms.isEmpty()) {
-                return false;
-            }
-            return !property.ignorableByAlgorithms.contains(action.getAlgorithm());
+        public boolean canIgnore(String property, MediaType mediaType) {
+            return _properties.containsEntry(mediaType, property.toUpperCase());
         }
     }
 
-    private record IgnorableProperty(
-            String name, Set<MediaType> requiredByMediaTypes, Set<String> ignorableByAlgorithms) {
-
-        IgnorableProperty {
-            name = name.toUpperCase();
-            if (requiredByMediaTypes == null) {
-                requiredByMediaTypes = EnumSet.noneOf(MediaType.class);
-            }
-            else {
-                requiredByMediaTypes = EnumSet.copyOf(requiredByMediaTypes);
-            }
-
-            if (ignorableByAlgorithms == null) {
-                ignorableByAlgorithms = ImmutableSet.of();
-            }
-            else {
-                ignorableByAlgorithms = ignorableByAlgorithms.stream()
-                    .map(String::toUpperCase)
-                    .collect(ImmutableSet.toImmutableSet());
-            }
-        }
-    }
 }

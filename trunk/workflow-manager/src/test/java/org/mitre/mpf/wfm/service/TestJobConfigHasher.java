@@ -47,7 +47,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.AlgorithmProperty;
 import org.mitre.mpf.rest.api.pipelines.Task;
+import org.mitre.mpf.rest.api.pipelines.ValueType;
 import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -55,26 +57,34 @@ import org.mitre.mpf.wfm.util.MediaActionProps;
 import org.mitre.mpf.wfm.util.MediaRange;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mockito.Mock;
 import org.springframework.core.io.ClassPathResource;
+import org.mitre.mpf.test.MockitoTest;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Table;
 
-public class TestJobConfigHasher {
+public class TestJobConfigHasher extends MockitoTest.Strict {
+
+    @Mock
+    private WorkflowPropertyService _mockWfPropSvc;
+
+    @Mock
+    private PropertiesUtil _mockPropsUtil;
 
     private JobConfigHasher _jobConfigHasher;
 
     @Before
     public void init() throws IOException {
         var objectMapper = ObjectMapperFactory.customObjectMapper();
-        var mockPropsUtil = mock(PropertiesUtil.class);
-        when(mockPropsUtil.getOutputObjectVersion())
+        when(_mockPropsUtil.getOutputObjectVersion())
             .thenReturn("A.B.C");
-        when(mockPropsUtil.getTiesDbCheckIgnorablePropertiesResource())
+        when(_mockPropsUtil.getTiesDbCheckIgnorablePropertiesResource())
             .thenReturn(new ClassPathResource("/test-ignorable-properties.json"));
 
-        _jobConfigHasher = new JobConfigHasher(objectMapper, mockPropsUtil);
+        _jobConfigHasher = new JobConfigHasher(_mockWfPropSvc, objectMapper, _mockPropsUtil);
     }
 
     @Test
@@ -212,6 +222,26 @@ public class TestJobConfigHasher {
             .getHash();
 
         assertEquals(hash1, hash2);
+    }
+
+
+    @Test
+    public void unionIsUsedForDuplicatedProperties() {
+        for (var mediaType : MediaType.values()) {
+            var hash1 = builder()
+                .addMedia(mediaType)
+                .addAction("algo")
+                .setProperty("TEST_UNION_IS_USED_FOR_DUPLICATES", 0, 0, "VAL1")
+                .getHash();
+
+            var hash2 = builder()
+                .addMedia(mediaType)
+                .addAction("algo")
+                .setProperty("TEST_UNION_IS_USED_FOR_DUPLICATES", 0, 0, "VAL2")
+                .getHash();
+            assertEquals(hash1, hash2);
+        }
+
     }
 
 
@@ -366,16 +396,14 @@ public class TestJobConfigHasher {
     public void testMediaTypeProperties() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV1")
+            .addAction("algo")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO1")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE1")
             .getHash();
 
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV2")
+            .addAction("algo")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE1")
             .getHash();
@@ -385,8 +413,7 @@ public class TestJobConfigHasher {
 
         var hash3 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV1")
+            .addAction("algo")
             .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
             .setProperty("IMAGE_PROP", 0, 0, "IMAGE2")
             .getHash();
@@ -397,108 +424,39 @@ public class TestJobConfigHasher {
 
 
     @Test
-    public void testAlgorithmSpecificProperties() {
+    public void changingPropNotUsedByAlgoDoesNotChangeHash() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV1")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO1")
-            .newTask()
-            .addAction("MOG")
-            .setProperty("FACECV_PROP", 0, 1, "FACE_PROP_IN_MOG")
+            .addAction("algo")
+            .setJobProperty("PROP", "VAL1")
             .getHash();
 
-        // Change property for different type of media and ignorable algorithm property.
         var hash2 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV2")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
-            .newTask()
-            .addAction("MOG")
-            .setProperty("FACECV_PROP", 0, 1, "FACE_PROP_IN_MOG")
+            .addAction("algo")
+            .setJobProperty("PROP", "VAL2")
             .getHash();
-
         assertEquals(hash1, hash2);
-
-        // Change algorithm specific property for non-ignorable algorithm.
-        var hash3 = builder()
-            .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_PROP", 0, 0, "FACECV2")
-            .setProperty("VIDEO_PROP", 0, 0, "VIDEO2")
-            .newTask()
-            .addAction("MOG")
-            .setProperty("FACECV_PROP", 0, 1, "FACE_PROP_IN_MOG2")
-            .getHash();
-
-        assertNotEquals(hash2, hash3);
     }
 
 
     @Test
-    public void testMediaAndAlgoProp() {
+    public void changingWorkflowPropNotUsedByAlgoChangesHash() {
+        when(_mockWfPropSvc.getProperty("PROP", MediaType.IMAGE))
+            .thenReturn(new WorkflowProperty(null, null, null, null, null, List.of()));
+
         var hash1 = builder()
-            .addMedia(MediaType.VIDEO)
-            .addAction("FACECV")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL1")
+            .addMedia(MediaType.IMAGE)
+            .addAction("algo")
+            .setJobProperty("PROP", "VAL1")
             .getHash();
 
         var hash2 = builder()
-            .addMedia(MediaType.VIDEO)
-            .addAction("FACECV")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL2")
-            .getHash();
-        assertEquals(
-            "Hash should be the same when media type isn't required and algorithm is ignorable.",
-            hash1, hash2);
-
-
-        var hash3 = builder()
             .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL1")
+            .addAction("algo")
+            .setJobProperty("PROP", "VAL2")
             .getHash();
-
-        var hash4 = builder()
-            .addMedia(MediaType.IMAGE)
-            .addAction("FACECV")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL2")
-            .getHash();
-        assertNotEquals(
-            "Hash should be different when media type is in required list and algorithm is ignorable.",
-            hash3, hash4);
-
-
-        var hash5 = builder()
-            .addMedia(MediaType.VIDEO)
-            .addAction("MOG")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL1")
-            .getHash();
-
-        var hash6 = builder()
-            .addMedia(MediaType.VIDEO)
-            .addAction("MOG")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL2")
-            .getHash();
-        assertNotEquals(
-            "Hash should be different when media type not required, but algorithm is.",
-            hash5, hash6);
-
-        var hash7 = builder()
-            .addMedia(MediaType.IMAGE)
-            .addAction("MOG")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL1")
-            .getHash();
-
-        var hash8 = builder()
-            .addMedia(MediaType.IMAGE)
-            .addAction("MOG")
-            .setProperty("FACECV_IMAGE_PROP", 0, 0, "VAL2")
-            .getHash();
-        assertNotEquals(
-            "Hash should be different when media type is required and algorithm isn't ignorable.",
-            hash7, hash8);
+        assertNotEquals(hash1, hash2);
     }
 
 
@@ -555,6 +513,8 @@ public class TestJobConfigHasher {
 
         private Table<Integer, Integer, Map<String, String>> _properties = HashBasedTable.create();
 
+        private Map<String, String> _jobProperties = new HashMap<>();
+
         @SuppressWarnings("unchecked")
         private BiFunction<Media, Action, Map<String, String>> _mockPropMapGetter
                 = mock(BiFunction.class);
@@ -564,6 +524,7 @@ public class TestJobConfigHasher {
 
             var tasks = new ArrayList<Task>();
             int actionIdx = -1;
+            var algoToPropNames = HashMultimap.<String, String>create();
             for (var actionList : _taskContents) {
                 var task = mock(Task.class);
                 when(pipelineElements.getActionsInOrder(task))
@@ -575,7 +536,11 @@ public class TestJobConfigHasher {
                     for (var mediaIdx = 0; mediaIdx < _media.size(); mediaIdx++) {
                         var map = _properties.get(mediaIdx, actionIdx);
                         if (map == null) {
-                            map = Map.of();
+                            map = _jobProperties;
+                        }
+                        else {
+                            map.putAll(_jobProperties);
+                            algoToPropNames.putAll(action.getAlgorithm(), map.keySet());
                         }
                         when(_mockPropMapGetter.apply(_media.get(mediaIdx), action))
                             .thenReturn(map);
@@ -591,6 +556,14 @@ public class TestJobConfigHasher {
                     .thenReturn(entry.getKey());
                 when(algo.getOutputVersion())
                     .thenReturn(entry.getValue());
+
+                var algoProps = algoToPropNames.get(entry.getKey())
+                        .stream()
+                        .map(pn -> new AlgorithmProperty(pn, "", ValueType.STRING, "", null))
+                        .toList();
+
+                when(algo.getProvidesCollection())
+                    .thenReturn(new Algorithm.Provides(List.of(), algoProps));
                 when(pipelineElements.getAlgorithm(entry.getKey()))
                     .thenReturn(algo);
             }
@@ -666,6 +639,11 @@ public class TestJobConfigHasher {
             }
             map.put(name, value);
 
+            return this;
+        }
+
+        public JobBuilder setJobProperty(String name, String value) {
+            _jobProperties.put(name, value);
             return this;
         }
 

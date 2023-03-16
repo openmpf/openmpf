@@ -1,26 +1,22 @@
 [
     {
-        "name": "NOT_IMPORTANT"
+        "ignorableForMediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "NOT_IMPORTANT"
+        ]
     },
     {
-        "name": "FACECV_PROP",
-        "ignorableByAlgorithms": ["FAcECV"]
+        "ignorableForMediaTypes": ["IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "VIDEO_PROP",
+            "TEST_UNION_IS_USED_FOR_DUPLICATES"
+        ]
     },
     {
-        "name": "MOG_PROP",
-        "ignorableByAlgorithms": ["MOG"]
-    },
-    {
-        "name": "VIDEO_PROP",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "IMAGE_PROP",
-        "requiredByMediaTypes": ["IMAGe"]
-    },
-    {
-        "name": "FACECV_IMAGE_PROP",
-        "requiredByMediaTypes": ["IMAGE"],
-        "ignorableByAlgorithms": ["FACECV"]
+        "ignorableForMediaTypes": ["VIDEO", "AUDIO", "UNKNOWN"],
+        "names": [
+            "IMAGE_PROP",
+            "TEST_UNION_IS_USED_FOR_DUPLICATES"
+        ]
     }
 ]

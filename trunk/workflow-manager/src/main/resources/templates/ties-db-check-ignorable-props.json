@@ -1,215 +1,76 @@
 [
     {
-        "name": "VERBOSE"
+        "ignorableForMediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "VERBOSE",
+            "COMPONENT_HTTP_RETRY_MAX_ATTEMPTS",
+            "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS",
+            "COMPONENT_HTTP_RETRY_MAX_DELAY_MS",
+            "TIES_DB_URL",
+            "SKIP_TIES_DB_CHECK",
+            "S3_ACCESS_KEY",
+            "S3_SECRET_KEY",
+            "S3_SESSION_TOKEN",
+            "S3_RESULTS_BUCKET",
+            "S3_UPLOAD_ONLY",
+            "S3_REGION",
+            "S3_USE_VIRTUAL_HOST",
+            "S3_HOST",
+            "S3_UPLOAD_OBJECT_KEY_PREFIX",
+            "TIES_DB_S3_COPY_DISABLED",
+            "TIES_DB_COPY_SRC_S3_ACCESS_KEY",
+            "TIES_DB_COPY_SRC_S3_SECRET_KEY",
+            "TIES_DB_COPY_SRC_S3_SESSION_TOKEN",
+            "TIES_DB_COPY_SRC_S3_REGION",
+            "TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST",
+            "TIES_DB_COPY_SRC_S3_HOST",
+            "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX"
+        ]
     },
     {
-        "name": "COMPONENT_HTTP_RETRY_MAX_ATTEMPTS"
+        "ignorableForMediaTypes": ["IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "MIN_GAP_BETWEEN_SEGMENTS",
+            "TARGET_SEGMENT_LENGTH",
+            "VFR_TARGET_SEGMENT_LENGTH",
+            "MIN_SEGMENT_LENGTH",
+            "VFR_MIN_SEGMENT_LENGTH",
+            "USE_KEY_FRAMES",
+            "FRAME_INTERVAL",
+            "FRAME_RATE_CAP",
+            "MERGE_TRACKS",
+            "MIN_GAP_BETWEEN_TRACKS",
+            "MIN_TRACK_LENGTH",
+            "MIN_OVERLAP",
+            "MOVING_TRACK_LABELS_ENABLED",
+            "MOVING_TRACKS_ONLY",
+            "MOVING_TRACK_MAX_IOU",
+            "MOVING_TRACK_MIN_DETECTIONS"
+        ]
     },
     {
-        "name": "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS"
-    },
-    {
-        "name": "COMPONENT_HTTP_RETRY_MAX_DELAY_MS"
-    },
-    {
-        "name": "TIES_DB_URL"
-    },
-    {
-        "name": "SKIP_TIES_DB_CHECK"
-    },
-    {
-        "name": "S3_ACCESS_KEY"
-    },
-    {
-        "name": "S3_SECRET_KEY"
-    },
-    {
-        "name": "S3_SESSION_TOKEN"
-    },
-    {
-        "name": "S3_RESULTS_BUCKET"
-    },
-    {
-        "name": "S3_UPLOAD_ONLY"
-    },
-    {
-        "name": "S3_REGION"
-    },
-    {
-        "name": "S3_USE_VIRTUAL_HOST"
-    },
-    {
-        "name": "S3_HOST"
-    },
-    {
-        "name": "S3_UPLOAD_OBJECT_KEY_PREFIX"
-    },
-    {
-        "name": "TIES_DB_S3_COPY_DISABLED"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_ACCESS_KEY"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_SECRET_KEY"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_SESSION_TOKEN"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_REGION"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_HOST"
-    },
-    {
-        "name": "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX"
-    },
-    {
-        "name": "MIN_GAP_BETWEEN_SEGMENTS",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "TARGET_SEGMENT_LENGTH",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "VFR_TARGET_SEGMENT_LENGTH",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MIN_SEGMENT_LENGTH",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "VFR_MIN_SEGMENT_LENGTH",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "USE_KEY_FRAMES",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "FRAME_INTERVAL",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "FRAME_RATE_CAP",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MERGE_TRACKS",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MIN_GAP_BETWEEN_TRACKS",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MIN_TRACK_LENGTH",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MIN_OVERLAP",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MOVING_TRACK_LABELS_ENABLED",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MOVING_TRACKS_ONLY",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MOVING_TRACK_MAX_IOU",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "MOVING_TRACK_MIN_DETECTIONS",
-        "requiredByMediaTypes": ["VIDEO"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_CROPPING",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "SEARCH_REGION_ENABLE_DETECTION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "SEARCH_REGION_TOP_LEFT_X_DETECTION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ROTATION",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ROTATION_THRESHOLD",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "ROTATION_FILL_COLOR",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "HORIZONTAL_FLIP",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "AUTO_ROTATE",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "AUTO_FLIP",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "DETECTION_PADDING_X",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
-    },
-    {
-        "name": "DETECTION_PADDING_Y",
-        "requiredByMediaTypes": ["VIDEO", "IMAGE"]
+        "ignorableForMediaTypes": ["AUDIO", "UNKNOWN"],
+        "names": [
+            "ARTIFACT_EXTRACTION_POLICY",
+            "ARTIFACT_EXTRACTION_POLICY_CROPPING",
+            "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
+            "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+            "SEARCH_REGION_ENABLE_DETECTION",
+            "SEARCH_REGION_TOP_LEFT_X_DETECTION",
+            "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
+            "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
+            "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
+            "ROTATION",
+            "ROTATION_THRESHOLD",
+            "ROTATION_FILL_COLOR",
+            "HORIZONTAL_FLIP",
+            "AUTO_ROTATE",
+            "AUTO_FLIP",
+            "DETECTION_PADDING_X",
+            "DETECTION_PADDING_Y"
+        ]
     }
 ]

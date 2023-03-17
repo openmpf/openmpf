@@ -33,6 +33,7 @@
 
 <head>
     <title>Login Page</title>
+    <link rel="icon" href="resources/img/favicon.ico"/>
 </head>
 
 <body onload='document.loginForm.username.focus();'>

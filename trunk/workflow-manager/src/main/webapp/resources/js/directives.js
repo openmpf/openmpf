@@ -373,7 +373,7 @@ AppDirectives.directive('mpfPagination', [
                         .addClass('disabled');
 
                     $el.find('.pagination-next > a')
-                        .text($scope.isFiltered ? 'More' : 'Next')
+                        .text($scope.isFiltered ? 'More...' : 'Next')
                 });
             }
 

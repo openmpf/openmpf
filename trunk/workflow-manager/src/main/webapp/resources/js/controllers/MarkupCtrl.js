@@ -41,6 +41,9 @@ angular.module('mpf.wfm.controller.MarkupCtrl', [
         search: '',
         pageLen: 25,
         hasMorePages: false,
+        isLoading() {
+            return lastRequestSent != lastResponseReceived;
+        },
         pageSizeChanged() {
             $scope.goToPage(1);
         },

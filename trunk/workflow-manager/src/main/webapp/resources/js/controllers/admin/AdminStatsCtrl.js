@@ -32,7 +32,7 @@
  */
 var AdminStatsCtrl = function ($scope, $http, JobsService) {
 
-    var simon_service_url = "javasimon-console/data/list.json?pattern=org.mitre.mpf.wfm.*&type=STOPWATCH";
+    var simon_service_url = "javasimon-console/data/table.json?pattern=org.mitre.mpf.wfm.*&type=STOPWATCH";
     $scope.jobs_recent_data = [];//most recent data from last pull to
     var astats_table = null;
     $scope.jobs_message = "Loading....";

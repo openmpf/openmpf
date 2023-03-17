@@ -254,12 +254,14 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
         if (!job) {
             return;
         }
-        if (type == 'tiesDb') {
-            job.tiesDbStatus = status;
-        }
-        else {
-            job.callbackStatus = status;
-        }
+        $scope.$apply(() => {
+            if (type == 'tiesDb') {
+                job.tiesDbStatus = status;
+            }
+            else {
+                job.callbackStatus = status;
+            }
+        });
     });
 
     const throttledUpdateJobs = (() => {
@@ -437,4 +439,3 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
     }
 }
 ])
-

@@ -311,7 +311,6 @@ AppDirectives.directive('mpfPagination', [
             goToPage: '&',
         },
         link($scope, $el) {
-
             $scope.$watchGroup([
                 () => $scope.currentPage,
                 () => $scope.pageLen,
@@ -323,7 +322,7 @@ AppDirectives.directive('mpfPagination', [
                 $scope.pageModel.page = newPage;
                 $scope.entryCountMsg = getEntryCountMsg();
                 $scope.totalItems = getTotalItemsForPagination();
-                disableEllipses();
+                updatePaginationDom();
             });
 
 
@@ -364,14 +363,17 @@ AppDirectives.directive('mpfPagination', [
                 }
             }
 
-            // uib-pagination does not disable links with ellipses.
-            const disableEllipses = () => {
+            const updatePaginationDom = () => {
                 $scope.$applyAsync(() => {
+                    // uib-pagination does not disable links with ellipses.
                     $el.find('.pagination-page')
                         .not('.pagination-prev, .pagination-next')
                         .removeClass('disabled')
                         .has('a:contains("...")')
                         .addClass('disabled');
+
+                    $el.find('.pagination-next > a')
+                        .text($scope.isFiltered ? 'More' : 'Next')
                 });
             }
 

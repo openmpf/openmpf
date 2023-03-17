@@ -28,10 +28,28 @@ package org.mitre.mpf.rest.api;
 
 import java.util.List;
 
+import io.swagger.annotations.ApiModelProperty;
+
 public record TiesDbRepostResponse(
+        @ApiModelProperty(
+            "A list containing the job ids that were successfully re-posted to TiesDb.")
         List<Long> success,
+
+        @ApiModelProperty(
+            value = "A list containing the job ids and descriptions of failed TiesDb re-posts.",
+            position = 1)
         List<Failure> failures) {
 
 
-    public record Failure(long jobId, String error){}
+    public record Failure(
+            @ApiModelProperty(
+                value = "An id of a job that was not successfully re-posted to TiesDb.",
+                example = "2")
+            long jobId,
+
+            @ApiModelProperty(
+                value = "A textual description explaining why the TiesDb re-post failed.",
+                example = "Failed due to ...")
+            String error) {
+    }
 }

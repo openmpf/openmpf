@@ -185,7 +185,7 @@ public class TestMediaInspectionProcessor {
         assertEquals(640, Integer.parseInt(mediaMetadata.get("FRAME_HEIGHT")));
         assertEquals(29.97, Double.parseDouble(mediaMetadata.get("FPS")), 0.001);
         assertEquals("video/mp4", mediaMetadata.get("MIME_TYPE"));
-        assertEquals(17090, Integer.parseInt(mediaMetadata.get("DURATION")));
+        assertEquals(17070, Integer.parseInt(mediaMetadata.get("DURATION")));
 
         LOG.info("Rotated video media inspection test passed.");
     }

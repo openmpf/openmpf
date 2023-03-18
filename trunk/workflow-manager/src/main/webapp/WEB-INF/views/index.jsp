@@ -34,6 +34,7 @@
     <meta id="_csrf_header" name="_csrf_header" content="${_csrf.headerName}"/>
 
     <title>Workflow Manager Web App</title>
+    <link rel="icon" href="resources/img/favicon.ico"/>
 
 
     <!-- bootstrap treeview -->

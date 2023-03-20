@@ -26,24 +26,23 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import org.atmosphere.config.service.Disconnect;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import org.atmosphere.config.service.ManagedService;
 import org.atmosphere.config.service.Message;
-import org.atmosphere.config.service.Ready;
 import org.atmosphere.cpr.AtmosphereResource;
-import org.atmosphere.cpr.AtmosphereResourceEvent;
 import org.atmosphere.cpr.Broadcaster;
 import org.atmosphere.cpr.BroadcasterFactory;
+import org.atmosphere.cpr.PerRequestBroadcastFilter;
 import org.mitre.mpf.mvc.JacksonEncoder;
 import org.mitre.mpf.mvc.model.AtmosphereChannel;
 import org.mitre.mpf.mvc.model.AtmosphereMessage;
+import org.mitre.mpf.mvc.model.JobStatusMessage;
+import org.mitre.mpf.mvc.util.SessionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *  Workflow manager uses Atmosphere (https://github.com/Atmosphere/atmosphere) for asynchronous communication
@@ -53,11 +52,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *  but will intelligently downgrade to comet and other mechanisms if the client does not support websockets.
  *
  *  This approach simplifies and unifies messaging from server to client, provides for a consistent messaging bundle
- *  among components, and significantly decreases the network traffic when using modern browsers. 
+ *  among components, and significantly decreases the network traffic when using modern browsers.
  *
- *  Workflow manager messages are divided into channels, as specified in 
+ *  Workflow manager messages are divided into channels, as specified in
  *  org.mitre.mpf.mvc.model.AtmosphereChannel.  Clients use $on(...) handlers to react to server notifications.
- *  
+ *
  *  An AtmosphereMessage looks like the following (in JSON)
  *		{
  *			"channel": "SSPC_ATMOSPHERE",
@@ -75,42 +74,19 @@ import java.util.concurrent.ConcurrentHashMap;
  *  The reason that we have channels and then events in the channels, instead of events directly
  *  is that this promotes events that have more consistent semantic meaning among its peers in the same channel.
  *  Also, it enables similar code to be contained within the same handler on the client side.
- *  
+ *
  *  However, not all channels have events (e.g., SSPC_HEARTBEAT) so you should check for null first when accessing events.
  *
  */
 @ManagedService(path = "/") //points to websocket/ seen in web.xml
 public class AtmosphereController {
-	private final Logger logger = LoggerFactory.getLogger(AtmosphereController.class);
-
-	private final ConcurrentHashMap<String, String> users = new ConcurrentHashMap<String, String>();
-
-//	@Inject
-//	private BroadcasterFactory factory;
+	private static final Logger logger = LoggerFactory.getLogger(AtmosphereController.class);
 
 	@Inject
 	private static BroadcasterFactory staticFactory;
 
-//	@Inject
-//	private AtmosphereResourceFactory resourceFactory;
+	private static boolean _filterAdded = false;
 
-//	@Inject
-//	private MetaBroadcaster metaBroadcaster;
-
-	/**
-	 * Invoked when the connection as been fully established and suspended, e.g ready for receiving messages.
-	 *
-	 */
-	@Ready(encoders = {JacksonEncoder.class}) 
-	//@DeliverTo(DeliverTo.DELIVER_TO.ALL)
-	public AtmosphereMessage onReady(AtmosphereResource r) {
-		logger.debug("Browser {} connected to websocket.", r.uuid());
-		HashMap<String, String> data = new HashMap<>();
-		data.put("uuid", r.uuid());
-		data.put("transport", r.transport().toString());
-		data.put("message", "server side push ready");
-		return new AtmosphereMessage( AtmosphereChannel.SSPC_ATMOSPHERE, "OnConnected", data );
-	}
 
 	/**
 	 * Broadcast the received message object to all suspended response. Do not write back the message to the calling connection.
@@ -118,25 +94,10 @@ public class AtmosphereController {
 	 */
 	@Message(encoders = {JacksonEncoder.class}/*, decoders = {JacksonEncoder.class}*/)
 	public AtmosphereMessage onMessage(AtmosphereMessage atmosphereMessage) {
-//		atmosphereMessage.setTimestamp(new Date());
 		logger.debug("sending {} ", atmosphereMessage.toString());
 		return atmosphereMessage;
-	} 
-
-	/**
-	 * Invoked when the client disconnect or when an unexpected closing of the underlying connection happens. 
-	 *
-	 */
-	@Disconnect
-    public void onDisconnect(AtmosphereResourceEvent event) {
-		if (event.isCancelled()) {
-			// We didn't get notified, so we remove the user.
-			users.values().remove(event.getResource().uuid());
-			logger.debug("Browser {} unexpectedly disconnected", event.getResource().uuid());
-		} else if (event.isClosedByClient()) {
-			logger.debug("Browser {} closed the connection", event.getResource().uuid());
-		}
 	}
+
 
 	/**
 	 * generic wrapper to Broadcaster.broadcast()
@@ -144,16 +105,15 @@ public class AtmosphereController {
 	 */
 	public static void broadcast(AtmosphereMessage msg) {
 		if(staticFactory != null) {
-			//Broadcaster b = staticFactory.lookup("/*");
-			Broadcaster b = staticFactory.lookup("/");
-			if(b == null) {
-				//b = staticFactory.get("/*");
-				b = staticFactory.get("/");
+			Broadcaster b = staticFactory.lookup("/", true);
+			if (!_filterAdded) {
+				b.getBroadcasterConfig().addFilter(new CheckSessionJobFilter());
+				_filterAdded = true;
 			}
 			b.broadcast(msg);
 		}
 	}
-	
+
 	/** very generic wrapper to Braodcaster.broadcast()
 	 *  	this method should be called when an event has happened that needs to be broadcasted to the clients */
 	public static void broadcast(AtmosphereChannel channel, String event, Map<String, Object> content) {
@@ -162,5 +122,32 @@ public class AtmosphereController {
 
 	public static void broadcast(AtmosphereChannel channel) {
 		broadcast(new AtmosphereMessage(channel, channel.name()));
+	}
+
+
+	private static class CheckSessionJobFilter implements PerRequestBroadcastFilter {
+
+		@Override
+		public BroadcastAction filter(
+				String broadcasterId, Object originalMessage, Object message) {
+			return new BroadcastAction(BroadcastAction.ACTION.CONTINUE, message);
+		}
+
+		@Override
+		public BroadcastAction filter(
+				String broadcasterId, AtmosphereResource resource,
+				Object originalMessage, Object message) {
+
+			if (message instanceof JobStatusMessage jobMsg) {
+				var session = resource.getRequest().getSession();
+				long jobId = (long) jobMsg.getContent().get("id");
+				var isSessionJob = SessionUtil.containsJob(session, jobId);
+				if (isSessionJob) {
+					return new BroadcastAction(
+							BroadcastAction.ACTION.CONTINUE, jobMsg.sessionJobCopy());
+				}
+			}
+			return new BroadcastAction(BroadcastAction.ACTION.CONTINUE, message);
+		}
 	}
 }

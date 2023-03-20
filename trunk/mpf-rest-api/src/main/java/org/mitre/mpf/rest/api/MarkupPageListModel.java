@@ -25,69 +25,11 @@
  ******************************************************************************/
 
 package org.mitre.mpf.rest.api;
-import java.util.ArrayList;
 import java.util.List;
 
 
-public class MarkupPageListModel {
-	private List<MarkupResultConvertedModel> data = new ArrayList<MarkupResultConvertedModel>();
-	private int draw;
-	private int recordsTotal = 0;
-	private int  recordsFiltered = 0;
-	private String error  = null;
-
-	public MarkupPageListModel() {}
-
-	public MarkupPageListModel(int draw, int recordsTotal, int  recordsFiltered, String error, List<MarkupResultConvertedModel> markups) {
-		this.draw = draw;
-		this.recordsTotal = recordsTotal;
-		this.recordsFiltered = recordsFiltered;
-		this.error = error;
-		this.data = markups;
-	}
-
-	public List<MarkupResultConvertedModel> getData() {
-		return data;
-	}
-
-	public void addData(MarkupResultConvertedModel markup) {
-		this.data.add(markup);
-	}
-
-	public void setData(List<MarkupResultConvertedModel> data) {
-		this.data = data;
-	}
-
-	public int getDraw() {
-		return draw;
-	}
-
-	public void setDraw(int draw) {
-		this.draw = draw;
-	}
-
-	public int getRecordsTotal() {
-		return recordsTotal;
-	}
-
-	public void setRecordsTotal(int recordsTotal) {
-		this.recordsTotal = recordsTotal;
-	}
-
-	public int getRecordsFiltered() {
-		return recordsFiltered;
-	}
-
-	public void setRecordsFiltered(int recordsFiltered) {
-		this.recordsFiltered = recordsFiltered;
-	}
-
-	public String getError() {
-		return error;
-	}
-
-	public void setError(String error) {
-		this.error = error;
-	}
-
+public record MarkupPageListModel(
+		List<MarkupResultConvertedModel> media,
+		long recordsFiltered,
+		long recordsTotal) {
 }

@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import javax.inject.Inject;
+
+import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -45,8 +48,9 @@ public class HibernateStreamingJobRequestDaoImpl
     private static final Logger log = LoggerFactory.getLogger(
             HibernateStreamingJobRequestDaoImpl.class);
 
-    public HibernateStreamingJobRequestDaoImpl() {
-        super(StreamingJobRequest.class);
+    @Inject
+    public HibernateStreamingJobRequestDaoImpl(SessionFactory sessionFactory) {
+        super(StreamingJobRequest.class, sessionFactory);
     }
 
     @Override

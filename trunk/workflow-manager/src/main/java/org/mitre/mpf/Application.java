@@ -121,7 +121,7 @@ public class Application extends SpringBootServletInitializer {
                 "org.atmosphere.interceptor.HeartbeatInterceptor");
 
         servlet.addInitParameter(
-            "org.atmosphere.interceptor.HeartbeatInterceptor.heartbeatFrequencyInSeconds", "10");
+            "org.atmosphere.interceptor.HeartbeatInterceptor.heartbeatFrequencyInSeconds", "60");
 
         servlet.setLoadOnStartup(0);
         servlet.setAsyncSupported(true);

@@ -39,9 +39,11 @@ public interface JobRequestDao extends JpaDao<JobRequest> {
     public List<JobRequest> findByPage(int pageSize, int offset, String searchTerm, String sortColumn,
                                        String sortOrderDirection);
 
-    public long countFiltered(String searchTerm);
-
     public long getNextId();
+
+    public void newJobCreated();
+
+    public long estimateNumberOfJobs();
 
     public void updateStatus(long jobId, BatchJobStatusType status);
 

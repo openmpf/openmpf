@@ -80,14 +80,6 @@ public enum AtmosphereChannel {
 	 */
 	SSPC_SERVICE,
 
-	/** SSPC_SESSION: session-related events
-	 *  Event(s):
-	 *  	OnSessionAboutToTimeout - when session is about to time out
-	 *  	OnSessionExtendedByUser - when session is extended by user
-	 *  	OnSessionExpired - when session has expired
-	 */
-	SSPC_SESSION,
-
 	/** SSPC_SYSTEMMESSAGE: SystemMessage notification events
 	 * 	Event(s):
 	 * 		OnSystemMessagesChanged - when SystemMessages are created/updated/deleted

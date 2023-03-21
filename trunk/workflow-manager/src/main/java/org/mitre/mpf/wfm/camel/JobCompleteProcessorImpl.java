@@ -189,12 +189,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
         checkCallbacks(job, jobRequest);
-        if (!skippedJobDueToTiesDbEntry) {
+        if (skippedJobDueToTiesDbEntry) {
+            jobStatusBroadcaster.tiesDbStatusChanged(jobId, jobRequest.getTiesDbStatus());
+        }
+        else {
             checkTiesDbRequired(job, jobRequest);
         }
 
         jobRequestDao.persist(jobRequest);
-        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
+        jobStatusBroadcaster.broadcast(
+            job.getId(), 100, job.getStatus(), jobRequest.getTimeCompleted());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());

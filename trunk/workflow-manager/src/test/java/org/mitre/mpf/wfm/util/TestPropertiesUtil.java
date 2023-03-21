@@ -26,6 +26,16 @@
 
 package org.mitre.mpf.wfm.util;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ImmutableConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -33,48 +43,80 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.rules.TemporaryFolder;
 import org.mitre.mpf.mvc.model.PropertyModel;
 import org.mitre.mpf.wfm.enums.ArtifactExtractionPolicy;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.WritableResource;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
-@WebAppConfiguration
-@ContextConfiguration(locations = {"classpath:applicationContext.xml"})
-@RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles("jenkins")
 public class TestPropertiesUtil {
 
     private static final String FRAME_INTERVAL_KEY = "detection.sampling.interval";
     private static final String MODELS_DIR_KEY = "detection.models.dir.path";
     private static final String SHARE_PATH_KEY = "mpf.share.path";
-    private static final String TIMEOUT_KEY = "web.session.timeout";
+    private static final String CACHE_COUNT_KEY = "static.s3.client.cache.count";
 
     private static final String MPF_HOME_ENV_VAR = "MPF_HOME";
 
-    @Autowired
-    MpfPropertiesConfigurationBuilder mpfPropertiesConfigurationBuilder;
+    private MpfPropertiesConfigurationBuilder _mpfPropertiesConfigurationBuilder;
 
-    @javax.annotation.Resource(name="customPropFile")
-    private FileSystemResource customPropFile;
+    private FileSystemResource _customPropFile;
 
-    @Autowired
-    private PropertiesUtil propertiesUtil;
+    private PropertiesUtil _propertiesUtil;
+
+    @Rule
+    public TemporaryFolder _tempFolder = new TemporaryFolder();
+
+    private String _sharePath;
+
+    @Before
+    public void init() throws IOException {
+        var shareFolder = _tempFolder.newFolder("share").toPath();
+        _sharePath = shareFolder.toString();
+
+        var unitTestProps = shareFolder.resolve("mpf-unit-test.properties");
+        Files.write(unitTestProps, List.of(
+            "mpf.share.path=%s\n".formatted(shareFolder.toAbsolutePath()),
+            "test.env=${env:MPF_HOME}"
+        ));
+
+        _customPropFile = new FileSystemResource(shareFolder.resolve("mpf-custom.properties"));
+
+        _mpfPropertiesConfigurationBuilder = new MpfPropertiesConfigurationBuilder(
+            _customPropFile,
+            List.of(
+                _customPropFile,
+                new FileSystemResource(unitTestProps),
+                new ClassPathResource("/properties/mpf-private.properties"),
+                new ClassPathResource("/properties/mpf-jenkins.properties"),
+                new ClassPathResource("/properties/mpf.properties")
+            ));
+
+        var appContext = mock(ApplicationContext.class);
+        var loader = new DefaultResourceLoader();
+
+        when(appContext.getResource(any()))
+            .then(inv -> loader.getResource(inv.getArgument(0, String.class)));
+
+        _propertiesUtil = new PropertiesUtil(
+            appContext,
+            _mpfPropertiesConfigurationBuilder,
+            null,
+            new FileSystemResource(shareFolder.resolve("config/mediaType.properties")),
+            new FileSystemResource(shareFolder.resolve("config/user.properties")));
+
+    }
 
     @Test
     public void testBuilderGetConfiguration() {
-        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
+        ImmutableConfiguration mpfPropertiesconfig = _mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
         Assert.assertEquals(1, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
 
@@ -82,7 +124,8 @@ public class TestPropertiesUtil {
         Assert.assertNotNull(mpfHome);
 
         // ensure "${mpf.share.path}" and $MPF_HOME are interpolated
-        Assert.assertEquals(mpfHome + "/share/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
+        Assert.assertEquals(_sharePath + "/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
+        Assert.assertEquals(mpfHome, mpfPropertiesconfig.getString("test.env"));
 
         // attempt to resolve every property value
         Iterator<String> keyIterator = mpfPropertiesconfig.getKeys();
@@ -101,23 +144,20 @@ public class TestPropertiesUtil {
 
     @Test
     public void testBuilderSave() throws ConfigurationException, IOException {
-        ImmutableConfiguration mpfPropertiesconfig = mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
+        ImmutableConfiguration mpfPropertiesconfig = _mpfPropertiesConfigurationBuilder.getCompleteConfiguration();
 
         List<PropertyModel> newCustomPropertyModels = new ArrayList<>();
         newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "4", false));
         newCustomPropertyModels.add(new PropertyModel(MODELS_DIR_KEY, "${" + SHARE_PATH_KEY +"}/new/dir/", false));
-        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "60", false));
+        newCustomPropertyModels.add(new PropertyModel(CACHE_COUNT_KEY, "60", false));
 
         ImmutableConfiguration newMpfPropertiesConfig =
-                mpfPropertiesConfigurationBuilder.setAndSaveCustomProperties(newCustomPropertyModels);
-
-        String mpfHome = System.getenv(MPF_HOME_ENV_VAR);
-        Assert.assertNotNull(mpfHome);
+                _mpfPropertiesConfigurationBuilder.setAndSaveCustomProperties(newCustomPropertyModels);
 
         // ensure that current config isn't modified
         Assert.assertEquals(1, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
-        Assert.assertEquals(mpfHome + "/share/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
-        Assert.assertEquals(30, mpfPropertiesconfig.getInt(TIMEOUT_KEY));
+        Assert.assertEquals(_sharePath + "/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
+        Assert.assertEquals(20, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
 
         // get updated config
         mpfPropertiesconfig = newMpfPropertiesConfig; // mpfPropertiesConfigurationBuilder.getConfiguration();
@@ -126,21 +166,21 @@ public class TestPropertiesUtil {
         Assert.assertEquals(4, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
 
         // ensure that interpolation is performed on recently-set values
-        Assert.assertEquals(mpfHome + "/share/new/dir/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
+        Assert.assertEquals(_sharePath + "/new/dir/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
 
         // ensure non-detection value doesn't stick
-        Assert.assertEquals(30, mpfPropertiesconfig.getInt(TIMEOUT_KEY));
+        Assert.assertEquals(20, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
 
         // ensure all values written to disk
         Configurations configs = new Configurations();
 
         FileBasedConfigurationBuilder<PropertiesConfiguration> mpfCustomPropertiesConfigBuilder =
-                configs.propertiesBuilder(customPropFile.getURL());
+                configs.propertiesBuilder(_customPropFile.getURL());
         Configuration mpfCustomPropertiesConfig = mpfCustomPropertiesConfigBuilder.getConfiguration();
 
         Assert.assertEquals(4, mpfCustomPropertiesConfig.getInt(FRAME_INTERVAL_KEY));
         Assert.assertEquals("${" + SHARE_PATH_KEY +"}/new/dir/", mpfCustomPropertiesConfig.getString(MODELS_DIR_KEY));
-        Assert.assertEquals(60, mpfCustomPropertiesConfig.getInt(TIMEOUT_KEY));
+        Assert.assertEquals(60, mpfCustomPropertiesConfig.getInt(CACHE_COUNT_KEY));
 
         // reset
         mpfCustomPropertiesConfig.clear();
@@ -149,52 +189,52 @@ public class TestPropertiesUtil {
 
     @Test
     public void testPropertiesUtilGetters() {
-        Assert.assertTrue(propertiesUtil.isAmqBrokerEnabled());
+        Assert.assertTrue(_propertiesUtil.isAmqBrokerEnabled());
 
-        Assert.assertEquals(2, propertiesUtil.getAmqBrokerPurgeWhiteList().size());
+        Assert.assertEquals(2, _propertiesUtil.getAmqBrokerPurgeWhiteList().size());
 
-        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_TYPES_ONLY, propertiesUtil.getArtifactExtractionPolicy());
+        Assert.assertEquals(ArtifactExtractionPolicy.VISUAL_TYPES_ONLY, _propertiesUtil.getArtifactExtractionPolicy());
 
-        Assert.assertTrue(WritableResource.class.isAssignableFrom(propertiesUtil.getAlgorithmDefinitions().getClass()));
-        Assert.assertTrue(propertiesUtil.getAlgorithmDefinitions().exists());
+        Assert.assertTrue(WritableResource.class.isAssignableFrom(_propertiesUtil.getAlgorithmDefinitions().getClass()));
+        Assert.assertTrue(_propertiesUtil.getAlgorithmDefinitions().exists());
     }
 
     @Test
     public void testPropertiesUtilSave() {
         List<PropertyModel> newCustomPropertyModels = new ArrayList<>();
         newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "4", false));
-        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "60", false));
+        newCustomPropertyModels.add(new PropertyModel(CACHE_COUNT_KEY, "60", false));
 
         // test current values
-        Assert.assertEquals(1, propertiesUtil.getSamplingInterval());
-        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
+        Assert.assertEquals(1, _propertiesUtil.getSamplingInterval());
+        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
 
-        propertiesUtil.getCustomProperties().forEach(m -> Assert.assertFalse(m.getKey() +
+        _propertiesUtil.getCustomProperties().forEach(m -> Assert.assertFalse(m.getKey() +
                 " should not need require a WFM restart", m.getNeedsRestart()));
 
-        propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
-        List<PropertyModel> properties = propertiesUtil.getCustomProperties();
+        _propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
+        List<PropertyModel> properties = _propertiesUtil.getCustomProperties();
 
         // ensure detection value sticks
-        Assert.assertEquals(4, propertiesUtil.getSamplingInterval());
+        Assert.assertEquals(4, _propertiesUtil.getSamplingInterval());
         properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
 
         // ensure non-detection value doesn't stick
-        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
-        properties.stream().filter(m -> m.getKey().equals(TIMEOUT_KEY)).forEach(m -> Assert.assertTrue(m.getNeedsRestart()));
+        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
+        properties.stream().filter(m -> m.getKey().equals(CACHE_COUNT_KEY)).forEach(m -> Assert.assertTrue(m.getNeedsRestart()));
 
         // reset
         newCustomPropertyModels.clear();
         newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "1", false));
-        newCustomPropertyModels.add(new PropertyModel(TIMEOUT_KEY, "30", false));
+        newCustomPropertyModels.add(new PropertyModel(CACHE_COUNT_KEY, "20", false));
 
-        propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
-        properties = propertiesUtil.getCustomProperties();
+        _propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
+        properties = _propertiesUtil.getCustomProperties();
 
-        Assert.assertEquals(1, propertiesUtil.getSamplingInterval());
+        Assert.assertEquals(1, _propertiesUtil.getSamplingInterval());
         properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
 
-        Assert.assertEquals(30, propertiesUtil.getWebSessionTimeout());
-        properties.stream().filter(m -> m.getKey().equals(TIMEOUT_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
+        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
+        properties.stream().filter(m -> m.getKey().equals(CACHE_COUNT_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
     }
 }

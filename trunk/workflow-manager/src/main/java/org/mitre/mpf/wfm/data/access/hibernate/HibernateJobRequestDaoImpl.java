@@ -26,7 +26,30 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.SessionFactory;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
 import org.mitre.mpf.rest.api.AggregatePipelineStatsModel;
@@ -36,39 +59,51 @@ import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.util.CallbackStatus;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.inject.Inject;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.*;
-
 @Repository
+@Singleton
 @Transactional(propagation = Propagation.REQUIRED)
 public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest> implements JobRequestDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateJobRequestDaoImpl.class);
 
     private final JobStatusBroadcaster _jobStatusBroadcaster;
 
+    private final AtomicLong _jobCount = new AtomicLong(0);
+
+    private final CompletableFuture<Void> _startupCountFuture;
+
     @Inject
-    public HibernateJobRequestDaoImpl(JobStatusBroadcaster jobStatusBroadcaster) {
-        super(JobRequest.class);
+    public HibernateJobRequestDaoImpl(
+            JobStatusBroadcaster jobStatusBroadcaster, SessionFactory sessionFactory) {
+        super(JobRequest.class, sessionFactory);
         _jobStatusBroadcaster = jobStatusBroadcaster;
+
+        _startupCountFuture = ThreadUtil.runAsync(() -> {
+            // Manually create new session to avoid
+            // "Could not obtain transaction-synchronized Session for current thread".
+            try (var session = getSessionFactory().openSession()) {
+                _jobCount.addAndGet(countAll(session));
+            }
+        });
+    }
+
+    @Override
+    public void newJobCreated() {
+        _jobCount.incrementAndGet();
+    }
+
+    @Override
+    public long estimateNumberOfJobs() {
+        // Getting the total number of jobs from postgres is a lot slower than the query to get
+        // a single page of results so we try to keep track of the number of jobs in the database.
+        _startupCountFuture.join();
+        return _jobCount.get();
     }
 
 
@@ -115,19 +150,6 @@ public class HibernateJobRequestDaoImpl extends AbstractHibernateDao<JobRequest>
                 .setFirstResult(offset)
                 .setMaxResults(pageSize)
                 .list();
-    }
-
-
-    @Override
-    public long countFiltered(String searchTerm) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(Long.class);
-        var root = query.from(JobRequest.class);
-
-        query.select(cb.count(root))
-                .where(createSearchFilter(searchTerm, cb, root));
-
-        return buildQuery(query).getSingleResult();
     }
 
 

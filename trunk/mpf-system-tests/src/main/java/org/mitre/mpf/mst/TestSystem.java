@@ -55,6 +55,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.MutablePropertyValues;
@@ -447,6 +448,7 @@ public abstract class TestSystem {
 
         @Override
         public final void initialize(GenericApplicationContext applicationContext) {
+            ThreadUtil.start();
             addWfmAppCtx(applicationContext);
             addPropertiesFile(applicationContext, _additionalPropertiesFile);
         }

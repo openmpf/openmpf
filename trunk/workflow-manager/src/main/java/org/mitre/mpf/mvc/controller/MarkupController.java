@@ -26,12 +26,27 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import io.swagger.annotations.Api;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.rest.api.MarkupPageListModel;
 import org.mitre.mpf.rest.api.MarkupResultConvertedModel;
 import org.mitre.mpf.rest.api.MarkupResultModel;
-import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
@@ -51,23 +66,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import io.swagger.annotations.Api;
 
 @Api(value = "Markup", description = "Access the information of marked up media")
 @Controller
@@ -99,21 +105,14 @@ public class MarkupController {
     @Autowired
     private InProgressBatchJobsService inProgressJobs;
 
-    //https://datatables.net/manual/server-side#Sent-parameters
-    //draw is the counter of how many times it has called back
-    //length is how many to return
-    //start is offset from 0
-    //search is string to filter
-    @RequestMapping(value = {"/markup/get-markup-results-filtered"}, method = RequestMethod.POST)
+
+    @GetMapping("/markup/get-markup-results-filtered")
     @ResponseBody
-    public ResponseEntity<?> getMarkupResultsFiltered(
-            @RequestParam(value = "jobId", required = true) String jobId,
-            @RequestParam(value = "draw", required = false) int draw,
-            @RequestParam(value = "start", required = false) int start,
-            @RequestParam(value = "length", required = false) int length,
-            @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "sort", required = false) String sort) throws WfmProcessingException {
-        log.debug("get-markup-results-filtered Params jobId: {}, draw:{}, start:{},length:{},search:{}, sort:{} ", jobId, draw, start, length, search, sort);
+    public ResponseEntity<Object> getMarkupResultsFiltered(
+            @RequestParam("jobId") String jobId,
+            @RequestParam("page") int page,
+            @RequestParam("pageLen") int pageLen,
+            @RequestParam("search") String search) {
 
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         JobRequest jobRequest = jobRequestDao.findById(internalJobId);
@@ -180,38 +179,35 @@ public class MarkupController {
             }
         }
 
-        //handle paging
+                //handle paging
         List<MarkupResultConvertedModel> markupResultModelsFinal = markupResultModelsFiltered
-                .stream()
-                .sorted((m1, m2) -> { // group by parent media id first, then by media id
-                    boolean isParent1 = m1.getParentMediaId() == -1;
-                    boolean isParent2 = m2.getParentMediaId() == -1;
-                    long m1Group = isParent1 ? m1.getMediaId() : m1.getParentMediaId();
-                    long m2Group = isParent2 ? m2.getMediaId() : m2.getParentMediaId();
-                    if (m1Group != m2Group) {
-                        return Long.compare(m1Group, m2Group);
-                    }
-                    if (isParent1) {
-                        return -1;
-                    }
-                    if (isParent2) {
-                        return 1;
-                    }
-                    return Long.compare(m1.getMediaId(), m2.getMediaId());
-                })
-                .skip(start)
-                .limit(length)
-                .collect(Collectors.toList());
+            .stream()
+            .sorted((m1, m2) -> { // group by parent media id first, then by media id
+                boolean isParent1 = m1.getParentMediaId() == -1;
+                boolean isParent2 = m2.getParentMediaId() == -1;
+                long m1Group = isParent1 ? m1.getMediaId() : m1.getParentMediaId();
+                long m2Group = isParent2 ? m2.getMediaId() : m2.getParentMediaId();
+                if (m1Group != m2Group) {
+                    return Long.compare(m1Group, m2Group);
+                }
+                if (isParent1) {
+                    return -1;
+                }
+                if (isParent2) {
+                    return 1;
+                }
+                return Long.compare(m1.getMediaId(), m2.getMediaId());
+            })
+            .skip((page - 1) * pageLen)
+            .limit(pageLen)
+            .collect(Collectors.toList());
 
-        MarkupPageListModel pageListModel = new MarkupPageListModel(
-                draw,
-                markupResultModels.size(),
+        return ResponseEntity.ok(new MarkupPageListModel(
+                markupResultModelsFinal,
                 markupResultModelsFiltered.size(),
-                null,
-                markupResultModelsFinal);
-
-        return ResponseEntity.ok(pageListModel);
+                markupResultModels.size()));
     }
+
 
     @RequestMapping(value = "/markup/download", method = RequestMethod.GET)
     public void getFile(@RequestParam("id") long id,

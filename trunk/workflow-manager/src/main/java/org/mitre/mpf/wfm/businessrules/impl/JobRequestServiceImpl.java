@@ -168,6 +168,7 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.getCallbackMethod(),
                 systemPropertiesSnapshot,
                 shouldCheckTiesDbAfterMediaInspection);
+        _jobRequestDao.newJobCreated();
 
         try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
             if (tiesDbCheckResult.checkInfo().isPresent()) {

@@ -46,11 +46,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHttpResponse;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -77,11 +77,8 @@ import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-public class TestJobCompleteProcessorImpl {
-
-    private AutoCloseable _closeable;
+public class TestJobCompleteProcessorImpl extends MockitoTest.Strict {
 
     @Mock
     private JobRequestDao _mockJobRequestDao;
@@ -135,7 +132,6 @@ public class TestJobCompleteProcessorImpl {
 
     @Before
     public void init() throws IOException {
-        _closeable = MockitoAnnotations.openMocks(this);
         when(_mockPropertiesUtil.getJobMarkupDirectory(anyLong()))
             .thenReturn(_tempDir.newFolder("markup"));
 
@@ -150,11 +146,6 @@ public class TestJobCompleteProcessorImpl {
 
         when(_mockPropertiesUtil.getExportedJobId(anyLong()))
             .thenAnswer(inv -> "test-" + inv.getArgument(0));
-    }
-
-    @After
-    public void close() throws Exception {
-        _closeable.close();
     }
 
 
@@ -231,7 +222,12 @@ public class TestJobCompleteProcessorImpl {
             .persist(jobRequestEntity);
 
         verify(_mockJobStatusBroadcaster)
-            .broadcast(eq(jobId), eq(100.0), any(BatchJobStatusType.class));
+            .broadcast(
+                eq(jobId), eq(100.0), any(BatchJobStatusType.class),
+                eq(jobRequestEntity.getTimeCompleted()));
+
+        verify(_mockJobStatusBroadcaster)
+            .tiesDbStatusChanged(jobId, jobRequestEntity.getTiesDbStatus());
 
         verify(_mockJmsUtils)
             .destroyCancellationRoutes(jobId);

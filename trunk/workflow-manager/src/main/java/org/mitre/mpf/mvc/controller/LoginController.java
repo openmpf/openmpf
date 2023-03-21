@@ -26,6 +26,11 @@
 
 package org.mitre.mpf.mvc.controller;
 
+import java.util.Collection;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.mitre.mpf.mvc.model.AuthenticationModel;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -43,10 +48,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import java.util.Collection;
 
 @Controller
 @Scope("request")
@@ -117,8 +118,14 @@ public class LoginController {
     }
 
     @RequestMapping(value = { "/login" }, method = RequestMethod.GET)
-    public ModelAndView getLogin(
-            @RequestParam(value = "reason", required = false) String reason) {
+    public Object getLogin(
+            @RequestParam(value = "reason", required = false) String reason,
+            Authentication authentication) {
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:/";
+        }
+
         ModelAndView model = new ModelAndView("login_view");
         model.addObject("version", propertiesUtil.getSemanticVersion());
         if (reason == null) {
@@ -129,18 +136,9 @@ public class LoginController {
                 log.debug("Invalid username and password");
                 model.addObject("error", "Invalid username and password!");
                 break;
-            case "bootout":
-                log.debug("User booted out");
-                model.addObject("error",
-                        "You've been logged out because the same user logged in from another location.");
-                break;
             case "disabled":
                 log.debug("User account disabled");
                 model.addObject("error", "Account is disabled!");
-                break;
-            case "timeout":
-                log.debug("Session timed out");
-                model.addObject("msg", "Session timed out or expired.");
                 break;
             case "user":
                 log.debug("User logged out");

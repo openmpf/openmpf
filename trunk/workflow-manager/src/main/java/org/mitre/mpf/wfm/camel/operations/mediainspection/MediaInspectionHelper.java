@@ -179,14 +179,12 @@ public class MediaInspectionHelper {
                         LOG.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
                         break;
                 }
-            } catch (Exception e) {
-                LOG.error("Failed to inspect {} due to an exception.", media.getUri(), e);
-                if (e instanceof TikaException) {
-                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                             "Tika media inspection error: " + e.getMessage());
-                } else {
-                    _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
-                }
+            }
+            catch (Exception e) {
+                var message = "Failed to inspect %s due to an exception: %s"
+                        .formatted(media.getUri(), e);
+                LOG.error(message, e);
+                _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, message);
             }
 
             _inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
@@ -281,6 +279,13 @@ public class MediaInspectionHelper {
             LOG.info("{} is HEIC image. It will be converted to PNG.", localPath);
             HeicConverter.convert(localPath, mediaPath);
             _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+        }
+        else if (mimeType.equalsIgnoreCase("image/webp")) {
+            mediaPath = WebpUtil.fixLengthIfNeeded(
+                    localPath, _propertiesUtil.getTemporaryMediaDirectory().toPath());
+            if (!mediaPath.equals(localPath)) {
+                _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+            }
         }
         else {
             mediaPath = localPath;

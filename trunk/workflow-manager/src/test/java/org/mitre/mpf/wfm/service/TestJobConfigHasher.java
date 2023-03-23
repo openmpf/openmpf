@@ -69,10 +69,11 @@ import com.google.common.collect.Table;
 public class TestJobConfigHasher extends MockitoTest.Strict {
 
     @Mock
-    private WorkflowPropertyService _mockWfPropSvc;
+    private PropertiesUtil _mockPropsUtil;
 
     @Mock
-    private PropertiesUtil _mockPropsUtil;
+    private WorkflowPropertyService _mockWfPropSvc;
+
 
     private JobConfigHasher _jobConfigHasher;
 
@@ -84,7 +85,10 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         when(_mockPropsUtil.getTiesDbCheckIgnorablePropertiesResource())
             .thenReturn(new ClassPathResource("/test-ignorable-properties.json"));
 
-        _jobConfigHasher = new JobConfigHasher(_mockWfPropSvc, objectMapper, _mockPropsUtil);
+        when(_mockPropsUtil.getOutputChangedCounter())
+            .thenReturn("1");
+
+        _jobConfigHasher = new JobConfigHasher(_mockPropsUtil, _mockWfPropSvc, objectMapper);
     }
 
     @Test
@@ -497,6 +501,23 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
         assertNotEquals(fullVideo, videoWithBothRanges);
         assertNotEquals(videoWithFrameRange, videoWithBothRanges);
         assertNotEquals(videoWithTimeRange, videoWithBothRanges);
+    }
+
+
+    @Test
+    public void testOutputChangedCounter() {
+        var hash1 = builder().addMedia(MediaType.IMAGE)
+            .addAction("algo")
+            .getHash();
+
+        when(_mockPropsUtil.getOutputChangedCounter())
+            .thenReturn("2");
+
+        var hash2 = builder().addMedia(MediaType.IMAGE)
+            .addAction("algo")
+            .getHash();
+
+        assertNotEquals(hash1, hash2);
     }
 
 

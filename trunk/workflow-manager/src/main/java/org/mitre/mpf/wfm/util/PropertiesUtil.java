@@ -862,4 +862,8 @@ public class PropertiesUtil {
     public int getS3ClientCacheCount() {
         return _mpfPropertiesConfig.getInt("static.s3.client.cache.count", 40);
     }
+
+    public String getOutputChangedCounter() {
+        return _mpfPropertiesConfig.getString("output.changed.counter");
+    }
 }

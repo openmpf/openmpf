@@ -63,6 +63,8 @@ public class JobConfigHasher {
 
     private static final Logger LOG = LoggerFactory.getLogger(JobConfigHasher.class);
 
+    private final PropertiesUtil _propertiesUtil;
+
     private final WorkflowPropertyService _workflowPropertyService;
 
     private final IgnorableProperties _ignorableProperties;
@@ -71,9 +73,10 @@ public class JobConfigHasher {
 
     @Inject
     public JobConfigHasher(
+            PropertiesUtil propertiesUtil,
             WorkflowPropertyService workflowPropertyService,
-            ObjectMapper objectMapper,
-            PropertiesUtil propertiesUtil) throws IOException {
+            ObjectMapper objectMapper) throws IOException {
+        _propertiesUtil = propertiesUtil;
         _workflowPropertyService = workflowPropertyService;
         _outputVersion = getMajorMinorVersion(propertiesUtil.getOutputObjectVersion());
 
@@ -98,6 +101,7 @@ public class JobConfigHasher {
 
         var hasher = new Hasher();
         hasher.add(_outputVersion);
+        hasher.add(_propertiesUtil.getOutputChangedCounter());
         for (var medium : sortedMedia) {
             // When calculating the hash we include all of the media, so in order to find a
             // matching job, the job will have to include all of the same media.

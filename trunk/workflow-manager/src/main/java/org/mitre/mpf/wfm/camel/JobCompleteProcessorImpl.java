@@ -262,6 +262,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
+            jobProgressStore.removeJob(job.getId());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -278,8 +279,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 log.warn(String.format("Completion consumer %s threw an exception.", consumer.getId()), exception);
             }
         }
-
-        jobProgressStore.removeJob(job.getId());
         log.info("Job complete with status: {}", job.getStatus());
     }
 

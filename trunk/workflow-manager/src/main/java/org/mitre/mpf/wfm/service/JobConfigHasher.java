@@ -116,7 +116,7 @@ public class JobConfigHasher {
                 for (var action : pipelineElements.getActionsInOrder(task)) {
                     var algorithm = pipelineElements.getAlgorithm(action.getAlgorithm());
                     hasher.add(algorithm.getName());
-                    algorithm.getOutputVersion()
+                    algorithm.getOutputChangedCounter()
                             .ifPresentOrElse(
                                     ov -> hasher.add(String.valueOf(ov)),
                                     () -> hasher.add("none"));

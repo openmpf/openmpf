@@ -338,7 +338,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
 
     @Test
-    public void testAlgorithmOutputNumber() {
+    public void testAlgorithmOutputChangedCounter() {
         var hash1 = builder()
             .addMedia(MediaType.IMAGE)
             .addAction("algo", OptionalInt.empty())
@@ -354,7 +354,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             .getHash();
 
         assertEquals(
-                "Both algorithms missing output version should be the same.",
+                "Both algorithms missing output changed counter should be the same.",
                 hash1, hash2);
 
         var hash3 = builder()
@@ -365,7 +365,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             .getHash();
 
         assertNotEquals(
-                "A present output version should not match missing output version.",
+                "A present output changed counter should not match missing output changed counter.",
                 hash2, hash3);
 
         var hash4 = builder()
@@ -374,7 +374,8 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             .newTask()
             .addAction("algo2", OptionalInt.of(2))
             .getHash();
-        assertNotEquals("Different output versions should not match.", hash3, hash4);
+        assertNotEquals(
+                "Different output changed counters should not match.", hash3, hash4);
     }
 
 
@@ -530,7 +531,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
 
         private List<List<Action>> _taskContents = new ArrayList<>();
 
-        private Map<String, OptionalInt> _algoNameToVersion = new HashMap<>();
+        private Map<String, OptionalInt> _algoNameToOutputCounter = new HashMap<>();
 
         private Table<Integer, Integer, Map<String, String>> _properties = HashBasedTable.create();
 
@@ -571,11 +572,11 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             when(pipelineElements.getTasksInOrder())
                 .thenReturn(tasks);
 
-            for (var entry : _algoNameToVersion.entrySet()) {
+            for (var entry : _algoNameToOutputCounter.entrySet()) {
                 var algo = mock(Algorithm.class);
                 when(algo.getName())
                     .thenReturn(entry.getKey());
-                when(algo.getOutputVersion())
+                when(algo.getOutputChangedCounter())
                     .thenReturn(entry.getValue());
 
                 var algoProps = algoToPropNames.get(entry.getKey())
@@ -631,13 +632,13 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
             return addAction(algorithm, OptionalInt.empty());
         }
 
-        public JobBuilder addAction(String algorithm, OptionalInt outputVersion) {
+        public JobBuilder addAction(String algorithm, OptionalInt outputChangedCounter) {
             if (_taskContents.isEmpty()) {
                 newTask();
             }
 
-            var prev = _algoNameToVersion.put(algorithm, outputVersion);
-            assertTrue(prev == null || prev.equals(outputVersion));
+            var prev = _algoNameToOutputCounter.put(algorithm, outputChangedCounter);
+            assertTrue(prev == null || prev.equals(outputChangedCounter));
 
             var action = mock(Action.class);
             when(action.getAlgorithm())

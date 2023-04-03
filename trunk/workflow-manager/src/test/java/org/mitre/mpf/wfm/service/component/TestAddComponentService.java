@@ -421,7 +421,7 @@ public class TestAddComponentService {
                 existingAlgo.getName(),
                 existingAlgo.getDescription(),
                 existingAlgo.getActionType(),
-                existingAlgo.getOutputVersion(),
+                existingAlgo.getOutputChangedCounter(),
                 // Just pick a random field to change
                 new Algorithm.Requires(Collections.singleton("asdf")),
                 existingAlgo.getProvidesCollection(),
@@ -642,4 +642,3 @@ public class TestAddComponentService {
                 .undeployComponent(any());
     }
 }
-

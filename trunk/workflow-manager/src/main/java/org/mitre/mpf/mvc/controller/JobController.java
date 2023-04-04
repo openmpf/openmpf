@@ -446,9 +446,16 @@ public class JobController {
     }
 
 
-    @RequestMapping(value = {"/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost"},
+    @RequestMapping(
+            value = { "/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost" },
             method = RequestMethod.POST)
-    @ApiOperation("Retry posting job results to TiesDB.")
+    @ApiOperation(
+            value = "Retry posting job results to TiesDB.",
+            notes = """
+                Provide a list of job ids as input. For example: `[1, 12, 35]`. The output will \
+                contain a list of failures along with a list of successes. Each failure will \
+                contain the job id and associated error message. The success list will only \
+                contain the job ids.""")
     public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
         var tiesDbResult = tiesDbService.repost(jobIds);
         if (tiesDbResult.failures().isEmpty()) {

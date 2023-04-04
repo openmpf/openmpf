@@ -45,6 +45,18 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
+        <!--
+            extraArgLine is required so that the JaCoCo code coverage plugin can be used.
+            To get the code coverage information for a unit test class the following command
+            can be used:
+            mvn org.jacoco:jacoco-maven-plugin:prepare-agent \
+                -Djacoco.propertyName=extraArgLine -Djacoco.append=false \
+                surefire:test -Dtest=TestCensorPropertiesService \
+                org.jacoco:jacoco-maven-plugin:report
+
+            The command will output the report as an html file located at
+            target/site/jacoco/index.html
+        -->
         <extraArgLine/>
     </properties>
 

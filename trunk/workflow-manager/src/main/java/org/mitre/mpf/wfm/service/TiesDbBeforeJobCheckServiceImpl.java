@@ -512,7 +512,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                 " but copying results from the old job failed due to: " + e;
             LOG.error(msg, e);
             jobRequest.setTiesDbStatus("COPY ERROR: " + msg);
-            _inProgressJobs.addJobError(
+            _inProgressJobs.addFatalError(
                     job.getId(),
                     IssueCodes.TIES_DB_BEFORE_JOB_CHECK,
                     msg);

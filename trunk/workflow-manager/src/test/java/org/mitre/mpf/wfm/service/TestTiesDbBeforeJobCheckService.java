@@ -1089,7 +1089,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertThat(jobRequest.getTiesDbStatus(), Matchers.startsWith("COPY ERROR: "));
         assertThat(jobRequest.getTiesDbStatus(), Matchers.containsString("TEST_MSG"));
 
-        verify(_mockInProgressJobs).addJobError(
+        verify(_mockInProgressJobs).addFatalError(
                 eq(38L),
                 eq(IssueCodes.TIES_DB_BEFORE_JOB_CHECK),
                 contains("TEST_MSG"));

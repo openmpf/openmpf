@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.camel.Exchange;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.tika.exception.TikaException;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -548,6 +549,52 @@ public class TestMediaInspectionProcessor {
         assertTrue(pngPath.getFileName().toString().endsWith(".png"));
         assertTrue(Files.exists(pngPath));
     }
+
+
+    @Test
+    public void testWebpExtraBytes() throws IOException {
+        when(_mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(_tempFolder.getRoot());
+
+        long jobId = next();
+        long mediaId = next();
+        var media = inspectMedia(
+            jobId, mediaId, "/samples/Johnrogershousemay2020-extra-bytes.webp", Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+
+        verifyNoJobOrMediaError();
+
+        var mediaHash = "b9ef08ce73c945d62a3bf48566377c0d9f99fe0b07810affe40c53f67d8afad2";
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
+                                        eq("image/webp"), eq(1),
+                                        metadataCaptor.capture());
+        var metadata = metadataCaptor.getValue();
+        assertEquals("1536", metadata.get("FRAME_WIDTH"));
+        assertEquals("1024", metadata.get("FRAME_HEIGHT"));
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(_mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+
+        var fixedPath = pathCaptor.getValue();
+        assertTrue(fixedPath.startsWith(_tempFolder.getRoot().toPath()));
+        assertTrue(fixedPath.getFileName().toString().endsWith(".webp"));
+        assertTrue(Files.exists(fixedPath));
+
+        try (var is = Files.newInputStream(fixedPath)) {
+            var actualFixedSha = DigestUtils.sha256Hex(is);
+            var expectedFixedSha = "4cf3e271105fc5ec4c57980a652125a9436479bc5021a05c72c80b0a477d749c";
+            assertEquals(expectedFixedSha, actualFixedSha);
+        }
+    }
+
 
     @Test(timeout = 5 * MINUTES)
     public void canHandleInvalidExifDimensions() {

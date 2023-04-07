@@ -191,24 +191,20 @@ public class MediaInspectionHelper {
                     mediaType = MediaType.UNKNOWN;
                     // fall through
 
-                default:
-                    LOG.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
-                    break;
+                    default:
+                        LOG.warn("Treating job {}'s media {} as UNKNOWN data type.", jobId, mediaId);
+                        break;
+                }
             }
-        } catch (Exception e) {
-            LOG.error("Failed to inspect {} due to an exception.", media.getUri(), e);
-            if (e instanceof TikaException) {
-                _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                            "Tika media inspection error: " + e.getMessage());
+            catch (Exception e) {
+                var message = "Failed to inspect %s due to an exception: %s"
+                        .formatted(media.getUri(), e);
+                LOG.error(message, e);
+                var issueCode = e instanceof MediaInspectionException mediaInspectionEx
+                        ? mediaInspectionEx.getIssueCode()
+                        : IssueCodes.MEDIA_INSPECTION;
+                _inProgressJobs.addError(jobId, mediaId, issueCode, message);
             }
-            else if (e instanceof MediaInspectionException mediaInspectionEx) {
-                _inProgressJobs.addError(
-                        jobId, mediaId, mediaInspectionEx.getIssueCode(), e.getMessage());
-            }
-            else {
-                _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION, e.getMessage());
-            }
-        }
 
         _inProgressJobs.addMediaInspectionInfo(jobId, mediaId, sha, mediaType, mimeType, length, mediaMetadata);
         LOG.info("Media with URI {} (id={}) has data type {} and mime type {}.",
@@ -316,6 +312,13 @@ public class MediaInspectionHelper {
                     localPath, _propertiesUtil.getTemporaryMediaDirectory().toPath());
             _inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
             mediaPath = defriedPath;
+        }
+        else if (mimeType.equalsIgnoreCase("image/webp")) {
+            mediaPath = WebpUtil.fixLengthIfNeeded(
+                    localPath, _propertiesUtil.getTemporaryMediaDirectory().toPath());
+            if (!mediaPath.equals(localPath)) {
+                _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+            }
         }
         else {
             mediaPath = localPath;

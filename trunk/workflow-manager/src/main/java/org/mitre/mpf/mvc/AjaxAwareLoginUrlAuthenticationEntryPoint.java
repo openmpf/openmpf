@@ -27,7 +27,6 @@
 
 package org.mitre.mpf.mvc;
 
-import org.mitre.mpf.mvc.controller.TimeoutController;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -49,7 +48,7 @@ public class AjaxAwareLoginUrlAuthenticationEntryPoint extends LoginUrlAuthentic
                          final AuthenticationException authException) throws IOException, ServletException {
 
         if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-            response.sendError(TimeoutController.CUSTOM_SESSION_TIMEOUT_ERROR_CODE);
+            response.sendError(401);
         } else {
             super.commence(request, response, authException);
         }

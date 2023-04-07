@@ -32,7 +32,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Output Object View</title>
-    <script src="../resources/js/jquery-1.11.0.min.js"></script>
+    <script src="../resources/js/lib/jquery-1.11.0.min.js"></script>
     <script>
         (function() {
             var jobId = '${jobId}';

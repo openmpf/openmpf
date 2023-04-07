@@ -121,7 +121,7 @@ public class TestS3StorageBackend {
         when(_mockPropertiesUtil.getS3ClientCacheCount())
                 .thenReturn(20);
 
-        _s3StorageBackend = new S3StorageBackend(
+        _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil,
                                                _mockWorkflowPropertyService));

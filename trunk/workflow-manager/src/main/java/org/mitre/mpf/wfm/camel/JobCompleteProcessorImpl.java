@@ -163,7 +163,8 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         checkCallbacks(job, jobRequest);
 
         jobRequestDao.persist(jobRequest);
-        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
+        jobStatusBroadcaster.broadcast(
+            job.getId(), 100, job.getStatus(), jobRequest.getTimeCompleted());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());

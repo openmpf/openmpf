@@ -55,6 +55,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import static org.mockito.Mockito.*;
 
@@ -142,7 +143,7 @@ public class TestDetectionResponseProcessor {
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
         media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(
-                FPS, 0, false, (int) (FPS * DURATION)));
+                FPS, OptionalInt.of(0), (int) (FPS * DURATION)));
 
         BatchJobImpl job = new BatchJobImpl(
             JOB_ID,

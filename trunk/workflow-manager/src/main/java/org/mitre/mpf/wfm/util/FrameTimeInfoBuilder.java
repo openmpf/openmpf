@@ -60,11 +60,10 @@ public class FrameTimeInfoBuilder {
         if (ffprobeMetadata.frameCount().isPresent()
                 && mediaInfoReportsConstantFrameRate(mediaPath, mimeType)) {
             LOG.info("Determined that {} has a constant frame rate.", mediaPath);
-            var optStartTimes = getStartTimeMs(mediaPath);
+            var optStartTimeMs = getStartTimeMs(mediaPath);
             return FrameTimeInfo.forConstantFrameRate(
                     ffprobeMetadata.fps(),
-                    optStartTimes.orElse(0),
-                    optStartTimes.isEmpty(),
+                    optStartTimeMs,
                     (int) ffprobeMetadata.frameCount().getAsLong());
         }
 
@@ -222,7 +221,7 @@ public class FrameTimeInfoBuilder {
                 int startTime = (int) timeBaseMs.mul(_firstPts).toDouble();
                 int frameCount = (int) _streamBuilder.build().count();
                 return FrameTimeInfo.forConstantFrameRate(
-                        fps, startTime, false, frameCount);
+                        fps, OptionalInt.of(startTime), frameCount);
             }
 
             int[] frameTimes = _streamBuilder

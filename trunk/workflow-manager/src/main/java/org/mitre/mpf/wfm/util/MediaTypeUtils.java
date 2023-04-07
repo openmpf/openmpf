@@ -79,7 +79,7 @@ public class MediaTypeUtils {
             }
             catch (IllegalArgumentException e) {
                 LOG.error(
-                        "The \"{}\" properties from the media type white list file contained the invalid value of \"{}\".",
+                        "The \"{}\" property from the media type white list file contained the invalid value of \"{}\".",
                         whiteListKey, typeFromWhitelist);
             }
         }

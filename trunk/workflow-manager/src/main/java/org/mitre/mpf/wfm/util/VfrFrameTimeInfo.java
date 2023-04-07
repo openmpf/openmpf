@@ -27,45 +27,77 @@
 
 package org.mitre.mpf.wfm.util;
 
+import java.util.Arrays;
 import java.util.OptionalInt;
 
 import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 
-public interface FrameTimeInfo {
-    public boolean hasConstantFrameRate();
+public class VfrFrameTimeInfo implements FrameTimeInfo {
 
-    public boolean requiresTimeEstimation();
+    private final Fraction _fps;
 
-    public int getTimeMsFromFrame(int frameIndex);
+    private final int[] _timeStamps;
 
-    public int getFrameFromTimeMs(int timeMs);
+    private final boolean _requiresTimeEstimation;
 
-    public OptionalInt getExactFrameCount();
-
-    public OptionalInt getEstimatedDuration();
-
-
-    public static FrameTimeInfo forConstantFrameRate(
-            Fraction fps, OptionalInt startTime, int frameCount) {
-        return new FpsFrameTimeInfo(fps, startTime, true, OptionalInt.of(frameCount));
-    }
-
-    public static FrameTimeInfo forConstantFrameRate(
-            double fps, OptionalInt startTime, int frameCount) {
-        return new FpsFrameTimeInfo(fps, startTime, true, OptionalInt.of(frameCount));
+    public VfrFrameTimeInfo(Fraction fps, int[] timeStamps, boolean requiresTimeEstimation) {
+        _fps = fps;
+        _timeStamps = timeStamps;
+        _requiresTimeEstimation = requiresTimeEstimation;
     }
 
 
-    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(Fraction fps) {
-        return new FpsFrameTimeInfo(fps, OptionalInt.empty(), false, OptionalInt.empty());
+    @Override
+    public boolean hasConstantFrameRate() {
+        return false;
     }
 
-    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps, int frameCount) {
-        return new FpsFrameTimeInfo(fps, OptionalInt.empty(), false, OptionalInt.of(frameCount));
+    @Override
+    public boolean requiresTimeEstimation() {
+        return _requiresTimeEstimation;
     }
 
-    public static FrameTimeInfo forVariableFrameRate(
-            Fraction fps, int[] timeStamps, boolean requiresTimeEstimation) {
-        return new VfrFrameTimeInfo(fps, timeStamps, requiresTimeEstimation);
+    @Override
+    public int getTimeMsFromFrame(int frameIndex) {
+        try {
+            return _timeStamps[frameIndex];
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            int startTime = _timeStamps.length > 0 ? _timeStamps[0] : 0;
+            var msPerFrame = _fps.invert().mul(1000);
+            return startTime + (int) msPerFrame.mul(frameIndex).toDouble();
+        }
+    }
+
+    @Override
+    public int getFrameFromTimeMs(int timeMs) {
+        int rv = Arrays.binarySearch(_timeStamps, timeMs);
+        if (rv >= 0) {
+            return rv;
+        }
+        else {
+            int firstGreaterIdx = -rv - 1;
+            return Math.max(firstGreaterIdx - 1, 0);
+        }
+    }
+
+    @Override
+    public OptionalInt getExactFrameCount() {
+        return OptionalInt.of(_timeStamps.length);
+    }
+
+    @Override
+    public OptionalInt getEstimatedDuration() {
+        if (_timeStamps.length == 0) {
+            return OptionalInt.of(0);
+        }
+        if (_timeStamps.length == 1) {
+            return OptionalInt.of((int) _fps.invert().mul(1000).roundUp());
+        }
+        int lastFrameTime = _timeStamps[_timeStamps.length - 1];
+        int secondLastFrameTime = _timeStamps[_timeStamps.length - 2];
+        int prevTimeDiff = lastFrameTime - secondLastFrameTime;
+        int endTime = lastFrameTime + prevTimeDiff;
+        return OptionalInt.of(endTime - _timeStamps[0]);
     }
 }

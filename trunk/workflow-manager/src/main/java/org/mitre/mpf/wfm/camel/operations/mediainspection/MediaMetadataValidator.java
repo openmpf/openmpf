@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -260,7 +261,7 @@ public class MediaMetadataValidator {
                 mediaMetadata.get("HAS_CONSTANT_FRAME_RATE"));
         double fps = Double.parseDouble(mediaMetadata.get("FPS"));
         if (hasConstantFrameRate) {
-            return FrameTimeInfo.forConstantFrameRate(fps, 0, false, frameCount);
+            return FrameTimeInfo.forConstantFrameRate(fps, OptionalInt.of(0), frameCount);
         }
         else {
             return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps, frameCount);

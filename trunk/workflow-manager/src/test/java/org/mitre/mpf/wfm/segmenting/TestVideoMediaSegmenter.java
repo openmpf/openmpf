@@ -35,6 +35,8 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -343,9 +345,14 @@ public class TestVideoMediaSegmenter {
                 1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
                 Map.of(), frameBoundaries, timeBoundaries, null);
         media.setLength(200);
-        media.addMetadata("FPS", "29.97");
+        var fps = new Fraction(30_000, 1_001);
+        media.addMetadata("FPS", Double.toString(fps.toDouble()));
+        var ffprobeMetadata = new FfprobeMetadata.Video(
+                -1, -1, fps, OptionalLong.of(200), OptionalLong.empty(), 0,
+                new Fraction(1, 30_000));
         media.setFrameTimeInfo(
-                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), 29.97));
+                FrameTimeInfoBuilder.getFrameTimeInfo(
+                    media.getLocalPath(), ffprobeMetadata, "video/mp4"));
         return media;
     }
 

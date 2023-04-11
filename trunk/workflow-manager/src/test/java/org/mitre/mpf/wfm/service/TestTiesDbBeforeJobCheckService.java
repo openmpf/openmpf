@@ -916,7 +916,14 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 List.of(mediaWarning));
 
         when(_mockAggJobProps.getCombinedProperties(job))
-            .thenReturn(s -> s);
+            .thenReturn(name -> {
+                if (name.equals(MpfConstants.TIES_DB_S3_COPY_ENABLED)) {
+                    return "true";
+                }
+                else {
+                    return name;
+                }
+            });
 
         when(_mockS3StorageBackend.getOldJobOutputObject(
                 eq(URI.create("http://localhost/bucket/output-object")), isNotNull()))
@@ -1070,7 +1077,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var jobProps = Map.of(
                 MpfConstants.S3_RESULTS_BUCKET, "http://localhost:2000/bucket",
                 MpfConstants.S3_ACCESS_KEY, "ACCESS_KEY",
-                MpfConstants.S3_SECRET_KEY, "SECRET_KEY");
+                MpfConstants.S3_SECRET_KEY, "SECRET_KEY",
+                MpfConstants.TIES_DB_S3_COPY_ENABLED, "TRUE");
 
         when(_mockAggJobProps.getCombinedProperties(job))
             .thenReturn(jobProps::get);

@@ -392,10 +392,10 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
-        "name": "TIES_DB_S3_COPY_DISABLED",
-        "description": "When true and a job is skipped because a compatible job is found in TiesDb, the results from the previous job will not be copied to a different S3 bucket.",
+        "name": "TIES_DB_S3_COPY_ENABLED",
+        "description": "When true and a job is skipped because a compatible job is found in TiesDb, the results from the previous job will be copied to a different S3 bucket.",
         "type": "BOOLEAN",
-        "propertiesKey": "ties.db.s3.copy.disabled",
+        "propertiesKey": "ties.db.s3.copy.enabled",
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {

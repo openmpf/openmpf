@@ -486,7 +486,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             BatchJob job, URI outputObjectUriFromPrevJob, JobRequest jobRequest) {
         try {
             var jobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
-            if (Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_DISABLED))
+            if (!Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_ENABLED))
                     || !S3StorageBackend.requiresS3ResultUpload(jobProps)) {
                 jobRequest.setTiesDbStatus("PAST JOB FOUND");
                 _inProgressJobs.setJobStatus(job.getId(), job.getStatus().onComplete());

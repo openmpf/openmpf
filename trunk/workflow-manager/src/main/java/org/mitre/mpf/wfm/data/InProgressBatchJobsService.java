@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -73,19 +74,25 @@ public class InProgressBatchJobsService {
 
     private final JobStatusBroadcaster _jobStatusBroadcaster;
 
+    private final MediaTypeUtils _mediaTypeUtils;
+
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
     private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
 
 
     @Inject
-    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis,
-                                      JobRequestDao jobRequestDao,
-                                      JobStatusBroadcaster jobStatusBroadcaster) {
+    public InProgressBatchJobsService(
+            PropertiesUtil propertiesUtil,
+            Redis redis,
+            JobRequestDao jobRequestDao,
+            JobStatusBroadcaster jobStatusBroadcaster,
+            MediaTypeUtils mediaTypeUtils) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
         _jobRequestDao = jobRequestDao;
         _jobStatusBroadcaster = jobStatusBroadcaster;
+        _mediaTypeUtils = mediaTypeUtils;
     }
 
 
@@ -385,7 +392,7 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            return new MediaImpl(
+            var media = new MediaImpl(
                     mediaId,
                     uriStr,
                     uriScheme,
@@ -395,6 +402,13 @@ public class InProgressBatchJobsService {
                     frameRanges,
                     timeRanges,
                     errorMessage);
+            var mimeType = providedMetadataProperties.get("MIME_TYPE");
+            if (mimeType != null && !mimeType.isBlank()) {
+                var mediaType = _mediaTypeUtils.parse(mimeType);
+                media.setMimeType(mimeType);
+                media.setType(mediaType);
+            }
+            return media;
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(

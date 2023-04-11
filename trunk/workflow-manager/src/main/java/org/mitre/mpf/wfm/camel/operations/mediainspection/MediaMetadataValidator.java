@@ -44,6 +44,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -75,14 +76,18 @@ public class MediaMetadataValidator {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final MediaTypeUtils _mediaTypeUtils;
+
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
 
     @Inject
     public MediaMetadataValidator(
             InProgressBatchJobsService inProgressJobs,
+            MediaTypeUtils mediaTypeUtils,
             AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _inProgressJobs = inProgressJobs;
+        _mediaTypeUtils = mediaTypeUtils;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
@@ -112,7 +117,7 @@ public class MediaMetadataValidator {
 
             int length = -1;
             String sha = mediaMetadata.get("MEDIA_HASH");
-            MediaType mediaType = MediaTypeUtils.parse(mimeType);
+            MediaType mediaType = _mediaTypeUtils.parse(mimeType);
 
             switch (mediaType) {
                 case IMAGE:
@@ -132,9 +137,9 @@ public class MediaMetadataValidator {
                     }
                     if (!missingVideoMetadata) {
                         checkMetadataTypes(mediaMetadata, REQUIRED_VIDEO_METADATA, true);
-                        _inProgressJobs.addFrameTimeInfo(jobId, mediaId,
-                                                         getFrameTimeInfo(mediaMetadata));
                         length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
+                        _inProgressJobs.addFrameTimeInfo(
+                                jobId, mediaId, getFrameTimeInfo(mediaMetadata, length));
                         break;
                     }
                     // fall through
@@ -260,15 +265,16 @@ public class MediaMetadataValidator {
     }
 
 
-    private static FrameTimeInfo getFrameTimeInfo(Map<String, String> mediaMetadata) {
+    private static FrameTimeInfo getFrameTimeInfo(
+            Map<String, String> mediaMetadata, int frameCount) {
         boolean hasConstantFrameRate = Boolean.parseBoolean(
                 mediaMetadata.get("HAS_CONSTANT_FRAME_RATE"));
         double fps = Double.parseDouble(mediaMetadata.get("FPS"));
         if (hasConstantFrameRate) {
-            return FrameTimeInfo.forConstantFrameRate(fps, 0, false);
+            return FrameTimeInfo.forConstantFrameRate(fps, OptionalInt.of(0), frameCount);
         }
         else {
-            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps);
+            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps, frameCount);
         }
     }
 }

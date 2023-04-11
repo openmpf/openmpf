@@ -40,7 +40,6 @@ import org.mitre.mpf.wfm.enums.UriScheme;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.MediaRange;
-import org.mitre.mpf.wfm.util.MediaTypeUtils;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -154,8 +153,7 @@ public class MediaImpl implements Media {
     private MediaType _type;
     @Override
     public Optional<MediaType> getType() {
-        return Optional.ofNullable(_type)
-            .or(() -> getMimeType().map(MediaTypeUtils::parse));
+        return Optional.ofNullable(_type);
     }
     public void setType(MediaType type) { _type = type; }
 

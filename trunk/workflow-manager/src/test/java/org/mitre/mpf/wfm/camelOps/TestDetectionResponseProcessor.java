@@ -143,7 +143,8 @@ public class TestDetectionResponseProcessor {
                 Map.of(), Map.of(), List.of(), List.of(), null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
-        media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(FPS, 0, false));
+        media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(
+                FPS, OptionalInt.of(0), (int) (FPS * DURATION)));
 
         BatchJobImpl job = new BatchJobImpl(
             JOB_ID,

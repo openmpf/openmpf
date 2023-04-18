@@ -192,11 +192,11 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(mock(Action.class)));
 
         var media1 = mock(Media.class);
-        when(media1.getHash())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
 
         var media2 = mock(Media.class);
-        when(media2.getHash())
+        when(media2.getLinkedHash())
                 .thenReturn(Optional.empty());
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
@@ -222,13 +222,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(mock(Action.class)));
 
         var media1 = mock(Media.class);
-        when(media1.getHash())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
         when(media1.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
 
         var media2 = mock(Media.class);
-        when(media2.getHash())
+        when(media2.getLinkedHash())
                 .thenReturn(Optional.of("HASH2"));
         when(media2.getMimeType())
                 .thenReturn(Optional.empty());
@@ -255,7 +255,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(mock(Action.class)));
 
         var media = mock(Media.class);
-        when(media.getHash())
+        when(media.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
         when(media.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
@@ -284,7 +284,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(action));
 
         var media = mock(Media.class);
-        when(media.getHash())
+        when(media.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
         when(media.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
@@ -385,7 +385,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(action));
 
         var media = mock(Media.class);
-        when(media.getHash())
+        when(media.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_HASH"));
         when(media.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
@@ -648,12 +648,12 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(ImmutableList.of(action));
 
         var media1 = mock(Media.class);
-        when(media1.getHash())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("HASH"));
         when(media1.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
         var media2 = mock(Media.class);
-        when(media2.getHash())
+        when(media2.getLinkedHash())
                 .thenReturn(Optional.of("HASH2"));
         when(media2.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
@@ -745,7 +745,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         var request = requestCaptor.getValue();
         assertUriIsFirstPageTiesDbUri(request.getURI());
-       return exchange;
+        return exchange;
     }
 
 
@@ -767,7 +767,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 .thenReturn(pipelineElements);
 
         var media = mock(Media.class);
-        when(media.getHash())
+        when(media.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_HASH"));
         when(media.getMimeType())
                 .thenReturn(Optional.of("image/jpeg"));
@@ -823,13 +823,13 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .thenReturn(36L);
 
         var jobMedia1 = mock(Media.class);
-        when(jobMedia1.getHash())
+        when(jobMedia1.getLinkedHash())
             .thenReturn(Optional.of("SHA1"));
         when(jobMedia1.getUri())
             .thenReturn("http://localhost/dest-bucket/media1");
 
         var jobMedia2 = mock(Media.class);
-        when(jobMedia2.getHash())
+        when(jobMedia2.getLinkedHash())
             .thenReturn(Optional.of("SHA2"));
         when(jobMedia2.getUri())
             .thenReturn("http://localhost/dest-bucket/media2");

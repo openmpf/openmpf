@@ -206,7 +206,7 @@ public class TiesDbBeforeJobCheckServiceImpl
         }
 
         var allMediaHaveHashes = media.stream()
-                .allMatch(m -> m.getHash().isPresent());
+                .allMatch(m -> m.getLinkedHash().isPresent());
         if (!allMediaHaveHashes) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.MEDIA_HASHES_ABSENT);
         }
@@ -282,7 +282,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             MediaActionProps props) {
         var mediaHashToBaseUris = HashMultimap.<String, String>create();
         for (var medium : media) {
-            var hash = medium.getHash().orElseThrow();
+            var hash = medium.getLinkedHash().orElseThrow();
             actions.stream()
                     .map(a -> props.get(MpfConstants.TIES_DB_URL, medium, a))
                     .filter(u -> u != null && !u.isBlank())
@@ -580,7 +580,7 @@ public class TiesDbBeforeJobCheckServiceImpl
 
         var mediaHashToNewUri = newJob.getMedia()
                 .stream()
-                .collect(toMap(m -> m.getHash().orElseThrow(), Media::getUri));
+                .collect(toMap(m -> m.getLinkedHash().orElseThrow(), Media::getUri));
 
         var newMediaList = new ArrayList<JsonMediaOutputObject>();
         for (var oldMedia : oldOutputObject.getMedia()) {

@@ -117,5 +117,5 @@ public interface Media {
 
     public List<TiesDbInfo> getTiesDbInfo();
 
-    public Optional<String> getHash();
+    public Optional<String> getLinkedHash();
 }

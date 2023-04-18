@@ -1380,10 +1380,10 @@ public class TestTiesDbService {
         when(job.getId())
                 .thenReturn(10L);
         var media1 = mock(Media.class);
-        when(media1.getSha256())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_1_SHA"));
         var media2 = mock(Media.class);
-        when(media2.getSha256())
+        when(media2.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_2_SHA"));
 
         when(job.getMedia())
@@ -1480,7 +1480,7 @@ public class TestTiesDbService {
         var media1 = mock(Media.class);
         when(job.getMedia())
                 .thenReturn(List.of(media1));
-        when(media1.getSha256())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         var validTiesDbInfo = createValidTiesDbInfoFace();
@@ -1543,7 +1543,7 @@ public class TestTiesDbService {
         var media1 = mock(Media.class);
         when(job.getMedia())
                 .thenReturn(List.of(media1));
-        when(media1.getSha256())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())
@@ -1588,7 +1588,7 @@ public class TestTiesDbService {
         var media1 = mock(Media.class);
         when(job.getMedia())
                 .thenReturn(List.of(media1));
-        when(media1.getSha256())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())
@@ -1638,7 +1638,7 @@ public class TestTiesDbService {
         var media1 = mock(Media.class);
         when(job.getMedia())
                 .thenReturn(List.of(media1));
-        when(media1.getSha256())
+        when(media1.getLinkedHash())
                 .thenReturn(Optional.of("MEDIA_1_SHA"));
 
         when(media1.getTiesDbInfo())

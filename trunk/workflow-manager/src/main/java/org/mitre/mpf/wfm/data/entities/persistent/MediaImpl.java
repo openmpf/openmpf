@@ -152,7 +152,9 @@ public class MediaImpl implements Media {
     /** The data type of the medium. For example, VIDEO. */
     private MediaType _type;
     @Override
-    public Optional<MediaType> getType() { return Optional.ofNullable(_type); }
+    public Optional<MediaType> getType() {
+        return Optional.ofNullable(_type);
+    }
     public void setType(MediaType type) { _type = type; }
 
     @JsonIgnore
@@ -164,7 +166,13 @@ public class MediaImpl implements Media {
     /** The MIME type of the medium. */
     private String _mimeType;
     @Override
-    public Optional<String> getMimeType() { return Optional.ofNullable(_mimeType); }
+    public Optional<String> getMimeType() {
+        if (_mimeType != null) {
+            return Optional.of(_mimeType);
+        }
+        return Optional.ofNullable(getProvidedMetadata().get("MIME_TYPE"))
+                .filter(h -> !h.isBlank());
+    }
     public void setMimeType(String mimeType) { _mimeType = mimeType; }
 
 
@@ -221,6 +229,24 @@ public class MediaImpl implements Media {
     @Override
     public ImmutableSet<MediaRange> getTimeRanges() { return _timeRanges; }
 
+    private final List<TiesDbInfo> _tiesDbInfo = new ArrayList<>();
+    @Override
+    public List<TiesDbInfo> getTiesDbInfo() {
+        return Collections.unmodifiableList(_tiesDbInfo);
+    }
+    public void addTiesDbInfo(TiesDbInfo info) {
+        _tiesDbInfo.add(info);
+    }
+
+    @Override
+    @JsonIgnore
+    public Optional<String> getHash() {
+        if (_sha256 != null) {
+            return Optional.of(_sha256);
+        }
+        return Optional.ofNullable(getProvidedMetadata().get("MEDIA_HASH"))
+            .filter(h -> !h.isBlank());
+    }
 
     public MediaImpl(
             long id,
@@ -279,7 +305,8 @@ public class MediaImpl implements Media {
             @JsonProperty("errorMessage") String errorMessage,
             @JsonProperty("metadata") Map<String, String> metadata,
             @JsonProperty("frameRanges") Collection<MediaRange> frameRanges,
-            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges) {
+            @JsonProperty("timeRanges") Collection<MediaRange> timeRanges,
+            @JsonProperty("tiesDbInfo") Collection<TiesDbInfo> tiesDbInfo) {
         this(id,
              parentId,
              creationTaskIndex,
@@ -293,6 +320,9 @@ public class MediaImpl implements Media {
              errorMessage);
         if (metadata != null) {
             _metadata.putAll(metadata);
+        }
+        if (tiesDbInfo != null) {
+            _tiesDbInfo.addAll(tiesDbInfo);
         }
     }
 

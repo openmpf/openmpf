@@ -56,14 +56,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
 
 @Component
-public class CallbackUtils implements AutoCloseable {
+public class HttpClientUtils implements AutoCloseable {
 
-    private static final Logger log = LoggerFactory.getLogger(CallbackUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(HttpClientUtils.class);
 
     private final JsonUtils jsonUtils;
 
@@ -71,7 +72,7 @@ public class CallbackUtils implements AutoCloseable {
 
 
     @Inject
-    CallbackUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
+    public HttpClientUtils(PropertiesUtil propertiesUtil, JsonUtils jsonUtils) throws IOReactorException {
         this.jsonUtils = jsonUtils;
 
         IOReactorConfig ioConfig = IOReactorConfig.custom()
@@ -154,19 +155,29 @@ public class CallbackUtils implements AutoCloseable {
 
 
     public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries) {
-        return executeRequest(request, retries, 100);
+        return executeRequest(request, retries, 100, r -> true);
+    }
+
+
+    public CompletableFuture<HttpResponse> executeRequest(HttpUriRequest request, int retries,
+                                                          Predicate<HttpResponse> isRetryable) {
+        return executeRequest(request, retries, 100, isRetryable);
     }
 
 
     private CompletableFuture<HttpResponse> executeRequest(
-            HttpUriRequest request, int retries, long delayMs) {
+            HttpUriRequest request,
+            int retries,
+            long delayMs,
+            Predicate<HttpResponse> isRetryable) {
 
-        log.info("Starting {} callback to \"{}\".", request.getMethod(), request.getURI());
+        log.info("Starting {} request to \"{}\".", request.getMethod(), request.getURI());
         long nextDelay = Math.min(delayMs * 2, 30_000);
 
         return executeRequest(request).thenApply(resp -> {
             int statusCode = resp.getStatusLine().getStatusCode();
-            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0) {
+            if ((statusCode >= 200 && statusCode <= 299) || retries <= 0
+                    || !isRetryable.test(resp)) {
                 return ThreadUtil.completedFuture(resp);
             }
 
@@ -178,13 +189,13 @@ public class CallbackUtils implements AutoCloseable {
         .exceptionally(err -> {
             if (retries > 0) {
                 log.error(String.format(
-                        "Failed to issue %s callback to '%s'. There are %s attempts remaining " +
+                        "Failed to issue %s request to '%s'. There are %s attempts remaining " +
                                 "and the next attempt will begin in %s ms.",
                         request.getMethod(), request.getURI(), retries, nextDelay), err);
             }
             else {
                 log.error(String.format(
-                        "Failed to issue %s callback to '%s'. All retry attempts exhausted.",
+                        "Failed to issue %s request to '%s'. All retry attempts exhausted.",
                         request.getMethod(), request.getURI()), err);
             }
             return ThreadUtil.failedFuture(err);
@@ -193,7 +204,7 @@ public class CallbackUtils implements AutoCloseable {
             if (future.isCompletedExceptionally() && retries > 0) {
                 return ThreadUtil.delayAndUnwrap(
                         nextDelay, TimeUnit.MILLISECONDS,
-                        () -> executeRequest(request, retries - 1, nextDelay));
+                        () -> executeRequest(request, retries - 1, nextDelay, isRetryable));
             }
             return future;
         });

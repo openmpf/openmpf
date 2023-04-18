@@ -393,6 +393,21 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+    public MediaActionProps getMediaActionProps(
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements pipelineElements)  {
+
+        return new MediaActionProps((media, action) -> getPropertyMap(
+                action,
+                media.getMediaSpecificProperties(),
+                media.getType(),
+                algorithmProperties,
+                jobProperties,
+                pipelineElements,
+                systemPropertiesSnapshot));
+    }
 
 
     public String calculateFrameInterval(Action action, BatchJob job, Media media, int systemFrameInterval,

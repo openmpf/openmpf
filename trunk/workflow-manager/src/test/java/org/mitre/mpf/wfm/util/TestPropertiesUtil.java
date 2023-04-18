@@ -157,7 +157,7 @@ public class TestPropertiesUtil {
         // ensure that current config isn't modified
         Assert.assertEquals(1, mpfPropertiesconfig.getInt(FRAME_INTERVAL_KEY));
         Assert.assertEquals(_sharePath + "/models/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
-        Assert.assertEquals(20, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
+        Assert.assertEquals(40, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
 
         // get updated config
         mpfPropertiesconfig = newMpfPropertiesConfig; // mpfPropertiesConfigurationBuilder.getConfiguration();
@@ -169,7 +169,7 @@ public class TestPropertiesUtil {
         Assert.assertEquals(_sharePath + "/new/dir/", mpfPropertiesconfig.getString(MODELS_DIR_KEY));
 
         // ensure non-detection value doesn't stick
-        Assert.assertEquals(20, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
+        Assert.assertEquals(40, mpfPropertiesconfig.getInt(CACHE_COUNT_KEY));
 
         // ensure all values written to disk
         Configurations configs = new Configurations();
@@ -207,7 +207,7 @@ public class TestPropertiesUtil {
 
         // test current values
         Assert.assertEquals(1, _propertiesUtil.getSamplingInterval());
-        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
+        Assert.assertEquals(40, _propertiesUtil.getS3ClientCacheCount());
 
         _propertiesUtil.getCustomProperties().forEach(m -> Assert.assertFalse(m.getKey() +
                 " should not need require a WFM restart", m.getNeedsRestart()));
@@ -220,13 +220,13 @@ public class TestPropertiesUtil {
         properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
 
         // ensure non-detection value doesn't stick
-        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
+        Assert.assertEquals(40, _propertiesUtil.getS3ClientCacheCount());
         properties.stream().filter(m -> m.getKey().equals(CACHE_COUNT_KEY)).forEach(m -> Assert.assertTrue(m.getNeedsRestart()));
 
         // reset
         newCustomPropertyModels.clear();
         newCustomPropertyModels.add(new PropertyModel(FRAME_INTERVAL_KEY, "1", false));
-        newCustomPropertyModels.add(new PropertyModel(CACHE_COUNT_KEY, "20", false));
+        newCustomPropertyModels.add(new PropertyModel(CACHE_COUNT_KEY, "40", false));
 
         _propertiesUtil.setAndSaveCustomProperties(newCustomPropertyModels);
         properties = _propertiesUtil.getCustomProperties();
@@ -234,7 +234,7 @@ public class TestPropertiesUtil {
         Assert.assertEquals(1, _propertiesUtil.getSamplingInterval());
         properties.stream().filter(m -> m.getKey().equals(FRAME_INTERVAL_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
 
-        Assert.assertEquals(20, _propertiesUtil.getS3ClientCacheCount());
+        Assert.assertEquals(40, _propertiesUtil.getS3ClientCacheCount());
         properties.stream().filter(m -> m.getKey().equals(CACHE_COUNT_KEY)).forEach(m -> Assert.assertFalse(m.getNeedsRestart()));
     }
 }

@@ -34,11 +34,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.rest.api.JobCreationMediaRange;
 import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationException;
 import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
+import org.mitre.mpf.wfm.camel.routes.JobRouterRouteBuilder;
 import org.mitre.mpf.wfm.camel.routes.MediaRetrieverRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
@@ -48,6 +50,7 @@ import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -83,6 +86,8 @@ public class JobRequestServiceImpl implements JobRequestService {
 
     private final MarkupResultDao _markupResultDao;
 
+    private final TiesDbBeforeJobCheckService _tiesDbBeforeJobCheckService;
+
     private final ProducerTemplate _jobRequestProducerTemplate;
 
     @Inject
@@ -95,6 +100,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             InProgressBatchJobsService inProgressJobs,
             JobRequestDao jobRequestDao,
             MarkupResultDao markupResultDao,
+            TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService,
             ProducerTemplate jobRequestProducerTemplate) {
         _pipelineService = pipelineService;
         _propertiesUtil = propertiesUtil;
@@ -104,12 +110,14 @@ public class JobRequestServiceImpl implements JobRequestService {
         _inProgressJobs = inProgressJobs;
         _jobRequestDao = jobRequestDao;
         _markupResultDao = markupResultDao;
+        _tiesDbBeforeJobCheckService = tiesDbBeforeJobCheckService;
         _jobRequestProducerTemplate = jobRequestProducerTemplate;
     }
 
 
+
     @Override
-    public JobRequest run(JobCreationRequest jobCreationRequest) {
+    public CreationResult run(JobCreationRequest jobCreationRequest) {
         List<Media> media = jobCreationRequest.getMedia()
                 .stream()
                 .map(m -> _inProgressJobs.initMedia(
@@ -138,6 +146,15 @@ public class JobRequestServiceImpl implements JobRequestService {
                                                      "or \"pipelineDefinition\", but not both.");
         }
 
+        var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();
+        var tiesDbCheckResult = _tiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
+                jobCreationRequest,
+                systemPropertiesSnapshot,
+                media,
+                pipelineElements);
+        boolean shouldCheckTiesDbAfterMediaInspection
+                = tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_HASHES_ABSENT
+                        || tiesDbCheckResult.status() == TiesDbCheckStatus.MEDIA_MIME_TYPES_ABSENT;
 
         JobRequest jobRequestEntity = initialize(
                 new JobRequest(),
@@ -148,12 +165,30 @@ public class JobRequestServiceImpl implements JobRequestService {
                 jobCreationRequest.getExternalId(),
                 priority,
                 jobCreationRequest.getCallbackURL(),
-                jobCreationRequest.getCallbackMethod());
+                jobCreationRequest.getCallbackMethod(),
+                systemPropertiesSnapshot,
+                shouldCheckTiesDbAfterMediaInspection);
         _jobRequestDao.newJobCreated();
 
         try (var mdc = CloseableMdc.job(jobRequestEntity.getId())) {
-            submit(jobRequestEntity);
-            return jobRequestEntity;
+            if (tiesDbCheckResult.checkInfo().isPresent()) {
+                LOG.info("Skipping job processing because compatible job found in TiesDb.");
+                var headers = Map.<String, Object>of(
+                        MpfHeaders.JOB_ID, jobRequestEntity.getId(),
+                        MpfHeaders.JMS_PRIORITY, getPriority(jobRequestEntity),
+                        MpfHeaders.JOB_COMPLETE, true,
+                        MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB,
+                        tiesDbCheckResult.checkInfo().get().outputObjectUri().toString());
+                _jobRequestProducerTemplate.sendBodyAndHeaders(
+                        JobRouterRouteBuilder.ENTRY_POINT,
+                        ExchangePattern.InOnly,
+                        null,
+                        headers);
+            }
+            else {
+                submit(jobRequestEntity);
+            }
+            return new CreationResult(jobRequestEntity.getId(), tiesDbCheckResult);
         }
     }
 
@@ -192,7 +227,9 @@ public class JobRequestServiceImpl implements JobRequestService {
                     originalJob.getExternalId().orElse(null),
                     priority > 0 ? priority : originalJob.getPriority(),
                     originalJob.getCallbackUrl().orElse(null),
-                    originalJob.getCallbackMethod().orElse(null));
+                    originalJob.getCallbackMethod().orElse(null),
+                    _propertiesUtil.createSystemPropertiesSnapshot(),
+                    false);
 
         // Clean up old job
         _markupResultDao.deleteByJobId(jobId);
@@ -224,12 +261,9 @@ public class JobRequestServiceImpl implements JobRequestService {
             String externalId,
             int priority,
             String callbackUrl,
-            String callbackMethod) {
-
-        // Capture the current state of the detection system properties at the time when this job is created.
-        // Since the detection system properties may be changed by an administrator, we must ensure that the job
-        // uses a consistent set of detection system properties through all stages of the job's pipeline.
-        var systemPropertiesSnapshot = _propertiesUtil.createSystemPropertiesSnapshot();
+            String callbackMethod,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            boolean shouldCheckTiesDbAfterMediaInspection) {
 
         callbackUrl = StringUtils.trimToNull(callbackUrl);
         callbackMethod = TextUtils.trimToNullAndUpper(callbackMethod);
@@ -260,7 +294,8 @@ public class JobRequestServiceImpl implements JobRequestService {
                     callbackMethod,
                     media,
                     jobProperties,
-                    overriddenAlgoProps);
+                    overriddenAlgoProps,
+                    shouldCheckTiesDbAfterMediaInspection);
 
             try {
                 jobRequestEntity.setId(jobId);
@@ -292,7 +327,7 @@ public class JobRequestServiceImpl implements JobRequestService {
     private void submit(JobRequest jobRequestEntity) {
         var headers = Map.<String, Object>of(
                 MpfHeaders.JOB_ID, jobRequestEntity.getId(),
-                MpfHeaders.JMS_PRIORITY, Math.max(0, Math.min(9, jobRequestEntity.getPriority())));
+                MpfHeaders.JMS_PRIORITY, getPriority(jobRequestEntity));
 
         LOG.info("Job has started and is running at priority {}.",
                  headers.get(MpfHeaders.JMS_PRIORITY));
@@ -302,6 +337,10 @@ public class JobRequestServiceImpl implements JobRequestService {
                 ExchangePattern.InOnly,
                 null,
                 headers);
+    }
+
+    private static int getPriority(JobRequest jobRequestEntity) {
+        return Math.max(0, Math.min(9, jobRequestEntity.getPriority()));
     }
 
 
@@ -345,7 +384,7 @@ public class JobRequestServiceImpl implements JobRequestService {
             Map<String, ? extends Map<String, String>> overriddenAlgoProps,
             SystemPropertiesSnapshot systemPropertiesSnapshot) {
         try {
-            for (Action action : pipeline.getActions()) {
+            for (Action action : pipeline.getAllActions()) {
                 for (Media media : jobMedia) {
                     var combinedProperties = _aggregateJobPropertiesUtil.getCombinedProperties(
                             action,

@@ -70,4 +70,6 @@ public interface BatchJob {
     public Map<Long, Set<JsonIssueDetails>> getErrors();
 
     public List<DetectionProcessingError> getDetectionProcessingErrors();
+
+    public boolean shouldCheckTiesDbAfterMediaInspection();
 }

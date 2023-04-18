@@ -166,7 +166,7 @@ public class TestWfmEndToEnd {
 		jobRequest.setBuildOutput(buildOutput);
 		jobRequest.setPriority(priority);
 
-		long jobRequestId = jobRequestService.run(jobRequest).getId();
+		long jobRequestId = jobRequestService.run(jobRequest).jobId();
 		Assert.assertTrue(waitFor(jobRequestId));
 		return jobRequestId;
 	}

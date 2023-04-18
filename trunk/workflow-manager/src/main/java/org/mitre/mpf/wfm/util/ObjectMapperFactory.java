@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.mitre.mpf.interop.util.InstantJsonModule;
@@ -48,6 +49,7 @@ public class ObjectMapperFactory {
                          new Jdk8Module(),
                          new TrimKeysModule(),
                          new TrimValuesModule())
+                .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
                 .build();
     }
 }

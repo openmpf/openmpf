@@ -121,10 +121,25 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
             return jobProgress.toFixed() + '%'
         },
         showTiesDbError(job) {
-            openCallbackErrorModal(job.jobId, 'TiesDb', job.tiesDbStatus)
+            openTiesDbErrorModal(job);
+        },
+        getTiesDbErrorType(job) {
+            if (job.tiesDbStatus.startsWith('ERROR:')) {
+                return 'ERROR';
+            }
+            else if (job.tiesDbStatus.startsWith('COPY ERROR:')) {
+                return 'COPY ERROR'
+            }
+            else {
+                return null;
+            }
         },
         showCallbackError(job) {
-            openCallbackErrorModal(job.jobId, 'Callback', job.callbackStatus)
+            openCallbackErrorModal($scope => {
+                $scope.job = job;
+                $scope.errorType = 'Callback';
+                $scope.getErrorDetails = () => job.callbackStatus;
+            });
         },
         getCallbackDisplayType:(callbackStatus) => {
             if (callbackStatus.startsWith('ERROR:')) {
@@ -219,14 +234,38 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
         }
     }
 
-    const openCallbackErrorModal = (jobId, errorType, errorDetails) => {
+
+    const openCallbackErrorModal = controller => {
         $uibModal.open({
             templateUrl: 'error-details-modal.html',
-            controller: ($scope) => {
-                Object.assign($scope, {jobId, errorType, errorDetails});
+            controller: ['$scope', controller]
+        });
+    };
+
+    const openTiesDbErrorModal = job => {
+        openCallbackErrorModal($scope => {
+            $scope.job = job;
+            $scope.errorType = 'TiesDb';
+            $scope.getErrorDetails = () => job.tiesDbStatus;
+            if (!job.tiesDbStatus.startsWith('COPY ERROR:')) {
+                $scope.tiesDbRepost = () => tiesDbRepost(job);
+                $scope.repostWasSuccessful = () => job.tiesDbStatus == 'COMPLETE' &&
+                    !job.tiesDbRepostInProgress;
             }
         });
     }
+
+    const tiesDbRepost = job => {
+        job.tiesDbRepostInProgress = true;
+        JobsService.tiesDbRepost(job.jobId)
+            .then(() => 'COMPLETE')
+            .catch(err => 'ERROR: ' + err.data.failures[0].error)
+            .then(newStatus => {
+                job.tiesDbRepostInProgress = false;
+                job.tiesDbStatus = newStatus;
+            });
+    }
+
 
     $scope.$on('SSPC_JOBSTATUS', (event, {content: {id, jobStatus, progress, endDate}}) => {
         const job = $scope.jobs.find(j => j.jobId == id);

@@ -113,6 +113,7 @@ public class TestDetectionResponseProcessor {
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
@@ -155,7 +156,8 @@ public class TestDetectionResponseProcessor {
             null,
             List.of(media),
             Map.of(),
-            Map.of());
+            Map.of(),
+            false);
 
         when(mockInProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);

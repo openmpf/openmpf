@@ -43,7 +43,8 @@ public enum IssueCodes {
     MARKUP,
     PADDING,
     INVALID_DETECTION,
-    LOCAL_STORAGE;
+    LOCAL_STORAGE,
+    TIES_DB_BEFORE_JOB_CHECK;
 
     public static final IssueCodes DEFAULT = OTHER;
 

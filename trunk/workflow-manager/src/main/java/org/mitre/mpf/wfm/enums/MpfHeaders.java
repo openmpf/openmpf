@@ -49,7 +49,9 @@ public class MpfHeaders {
 		SPLITTING_ERROR = "JobSplitError",
 		SUPPRESS_BROADCAST = "SuppressBroadcast",
 
-		UNSOLICITED = "Unsolicited";
+		UNSOLICITED = "Unsolicited",
+
+		OUTPUT_OBJECT_URI_FROM_TIES_DB = "OUTPUT_OBJECT_URI_FROM_TIES_DB";
 
 
 	private MpfHeaders() {

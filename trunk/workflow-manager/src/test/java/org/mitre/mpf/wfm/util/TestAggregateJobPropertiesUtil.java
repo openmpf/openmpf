@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -145,7 +146,7 @@ public class TestAggregateJobPropertiesUtil {
 
 
         var algorithm = new Algorithm(
-                "ALGO", "descr", ActionType.DETECTION,
+                "ALGO", "descr", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), algoPropertyList),
                 true, true);
@@ -172,7 +173,8 @@ public class TestAggregateJobPropertiesUtil {
             var job = new BatchJobImpl(1, null, new SystemPropertiesSnapshot(snapshotContent),
                                        pipelineElements, 1, null,
                                        null, List.of(media), jobProperties,
-                                       Map.of(algorithm.getName(), overriddenAlgoProperties));
+                                       Map.of(algorithm.getName(), overriddenAlgoProperties),
+                                       false);
 
 
             var aggregateJobPropertiesUtil = getAggregateJobPropertiesUtil(workflowProperties, propertiesUtilContent);

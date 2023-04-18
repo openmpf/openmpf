@@ -35,6 +35,7 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaRange;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -113,4 +114,8 @@ public interface Media {
     public ImmutableSet<MediaRange> getFrameRanges();
 
     public ImmutableSet<MediaRange> getTimeRanges();
+
+    public List<TiesDbInfo> getTiesDbInfo();
+
+    public Optional<String> getHash();
 }

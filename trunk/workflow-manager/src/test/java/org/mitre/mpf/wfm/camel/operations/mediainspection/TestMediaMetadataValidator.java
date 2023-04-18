@@ -34,9 +34,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
@@ -58,7 +61,12 @@ public class TestMediaMetadataValidator {
     @Mock
     private InProgressBatchJobsService _mockInProgressJobs;
 
+    @Mock
     private MediaMetadataValidator _mediaMetadataValidator;
+
+    @Mock
+    private AggregateJobPropertiesUtil _mockAggregateJobPropertiesUtil;
+
 
     @Before
     public void init() throws ConfigurationException {
@@ -70,7 +78,8 @@ public class TestMediaMetadataValidator {
                 .thenReturn(new FileSystemResource(mediaTypePropertiesPath.toFile()));
         var mediaTypeUtils = new MediaTypeUtils(mockPropertiesUtil);
 
-        _mediaMetadataValidator = new MediaMetadataValidator(_mockInProgressJobs, mediaTypeUtils);
+        _mediaMetadataValidator = new MediaMetadataValidator(
+                _mockInProgressJobs, mediaTypeUtils, _mockAggregateJobPropertiesUtil);
     }
 
     @After
@@ -162,6 +171,7 @@ public class TestMediaMetadataValidator {
 
         var mockMedia = createMockMedia(
                 56, "/samples/pngdefry/lenna-crushed.png", providedMediaMetadata);
+        setSkipInspectionProp(78, mockMedia, true);
 
         assertFalse(_mediaMetadataValidator.skipInspection(78, mockMedia));
         verifyWarningAdded(78, 56, "Cannot skip media inspection");
@@ -177,6 +187,7 @@ public class TestMediaMetadataValidator {
 
         var mockMedia = createMockMedia(
                 34, "/samples/pngdefry/lenna-normal.png", providedMediaMetadata);
+        setSkipInspectionProp(12, mockMedia, true);
 
         assertTrue(_mediaMetadataValidator.skipInspection(12, mockMedia));
         verifyNoWarningAdded();
@@ -214,9 +225,42 @@ public class TestMediaMetadataValidator {
     }
 
 
+    @Test
+    public void testWarningAddedWhenSkipPropertyPresentAndNoMetadataProvided() {
+        var mockMedia = createMockMedia(100, Map.of());
+        setSkipInspectionProp(101, mockMedia, true);
+        assertFalse(_mediaMetadataValidator.skipInspection(101, mockMedia));
+        verifyWarningAdded(101, 100, "Cannot skip media inspection");
+        verifyInspectionInfoNotAdded();
+    }
+
+
+    @Test
+    public void testWarningNotAddedWhenSkipPropertyFalseAndSomeMetadataProvided() {
+        var mockMedia = createMockMedia(
+                102,
+                Map.of("MEDIA_HASH", "SOME_HASH", "MIME_TYPE", "video/mp4"));
+        setSkipInspectionProp(103, mockMedia, false);
+        assertFalse(_mediaMetadataValidator.skipInspection(103, mockMedia));
+        verifyNoWarningAdded();
+        verifyInspectionInfoNotAdded();
+    }
+
+
+    @Test
+    public void testWarningNotAddedWhenSkipPropertyFalseAndNoMetadataProvided() {
+        var mockMedia = createMockMedia(104, Map.of());
+        setSkipInspectionProp(105, mockMedia, false);
+        assertFalse(_mediaMetadataValidator.skipInspection(105, mockMedia));
+        verifyNoWarningAdded();
+        verifyInspectionInfoNotAdded();
+    }
+
+
     private void assertInspectionSkipped(Map<String, String> providedMetadata, MediaType mediaType, int length,
                                          Set<String> warnings) {
         var mockMedia = createMockMedia(321, providedMetadata);
+        setSkipInspectionProp(123, mockMedia, true);
         assertTrue(_mediaMetadataValidator.skipInspection(123, mockMedia));
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(123L), eq(321L), eq(providedMetadata.get("MEDIA_HASH")), eq(mediaType),
@@ -226,8 +270,10 @@ public class TestMediaMetadataValidator {
 
     private void assertInspectionNotSkipped(Map<String, String> providedMetadata) {
         var mockMedia = createMockMedia(321, providedMetadata);
+        setSkipInspectionProp(123, mockMedia, true);
         assertFalse(_mediaMetadataValidator.skipInspection(123, mockMedia));
         verifyWarningAdded(123, 321, "Cannot skip media inspection");
+        verifyInspectionInfoNotAdded();
     }
 
 
@@ -262,5 +308,20 @@ public class TestMediaMetadataValidator {
 
     private static Media createMockMedia(long mediaId, Map<String, String> providedMetadata) {
         return createMockMedia(mediaId, null, providedMetadata);
+    }
+
+
+    private void setSkipInspectionProp(long jobId, Media media, boolean propValue) {
+        var mockJob = mock(BatchJob.class);
+        when(_mockInProgressJobs.getJob(jobId))
+            .thenReturn(mockJob);
+        when(_mockAggregateJobPropertiesUtil.getValue(
+                MpfConstants.SKIP_MEDIA_INSPECTION, mockJob, media))
+            .thenReturn(String.valueOf(propValue));
+    }
+
+    private void verifyInspectionInfoNotAdded() {
+        verify(_mockInProgressJobs, never())
+            .addMediaInspectionInfo(anyLong(), anyLong(), any(), any(), any(), anyInt(), any());
     }
 }

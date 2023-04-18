@@ -1,0 +1,76 @@
+[
+    {
+        "ignorableForMediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "VERBOSE",
+            "COMPONENT_HTTP_RETRY_MAX_ATTEMPTS",
+            "COMPONENT_HTTP_RETRY_INITIAL_DELAY_MS",
+            "COMPONENT_HTTP_RETRY_MAX_DELAY_MS",
+            "TIES_DB_URL",
+            "SKIP_TIES_DB_CHECK",
+            "S3_ACCESS_KEY",
+            "S3_SECRET_KEY",
+            "S3_SESSION_TOKEN",
+            "S3_RESULTS_BUCKET",
+            "S3_UPLOAD_ONLY",
+            "S3_REGION",
+            "S3_USE_VIRTUAL_HOST",
+            "S3_HOST",
+            "S3_UPLOAD_OBJECT_KEY_PREFIX",
+            "TIES_DB_S3_COPY_ENABLED",
+            "TIES_DB_COPY_SRC_S3_ACCESS_KEY",
+            "TIES_DB_COPY_SRC_S3_SECRET_KEY",
+            "TIES_DB_COPY_SRC_S3_SESSION_TOKEN",
+            "TIES_DB_COPY_SRC_S3_REGION",
+            "TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST",
+            "TIES_DB_COPY_SRC_S3_HOST",
+            "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX"
+        ]
+    },
+    {
+        "ignorableForMediaTypes": ["IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "MIN_GAP_BETWEEN_SEGMENTS",
+            "TARGET_SEGMENT_LENGTH",
+            "VFR_TARGET_SEGMENT_LENGTH",
+            "MIN_SEGMENT_LENGTH",
+            "VFR_MIN_SEGMENT_LENGTH",
+            "USE_KEY_FRAMES",
+            "FRAME_INTERVAL",
+            "FRAME_RATE_CAP",
+            "MERGE_TRACKS",
+            "MIN_GAP_BETWEEN_TRACKS",
+            "MIN_TRACK_LENGTH",
+            "MIN_OVERLAP",
+            "MOVING_TRACK_LABELS_ENABLED",
+            "MOVING_TRACKS_ONLY",
+            "MOVING_TRACK_MAX_IOU",
+            "MOVING_TRACK_MIN_DETECTIONS"
+        ]
+    },
+    {
+        "ignorableForMediaTypes": ["AUDIO", "UNKNOWN"],
+        "names": [
+            "ARTIFACT_EXTRACTION_POLICY",
+            "ARTIFACT_EXTRACTION_POLICY_CROPPING",
+            "ARTIFACT_EXTRACTION_POLICY_EXEMPLAR_FRAME_PLUS",
+            "ARTIFACT_EXTRACTION_POLICY_FIRST_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_MIDDLE_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_LAST_FRAME",
+            "ARTIFACT_EXTRACTION_POLICY_TOP_CONFIDENCE_COUNT",
+            "SEARCH_REGION_ENABLE_DETECTION",
+            "SEARCH_REGION_TOP_LEFT_X_DETECTION",
+            "SEARCH_REGION_TOP_LEFT_Y_DETECTION",
+            "SEARCH_REGION_BOTTOM_RIGHT_X_DETECTION",
+            "SEARCH_REGION_BOTTOM_RIGHT_Y_DETECTION",
+            "ROTATION",
+            "ROTATION_THRESHOLD",
+            "ROTATION_FILL_COLOR",
+            "HORIZONTAL_FLIP",
+            "AUTO_ROTATE",
+            "AUTO_FLIP",
+            "DETECTION_PADDING_X",
+            "DETECTION_PADDING_Y"
+        ]
+    }
+]

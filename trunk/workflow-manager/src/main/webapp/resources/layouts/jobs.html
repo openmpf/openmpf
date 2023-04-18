@@ -128,12 +128,12 @@
                         </div>
                     </td>
                     <td>
-                        <button ng-if="job.tiesDbStatus.startsWith('ERROR:')"
+                        <button ng-if="getTiesDbErrorType(job)"
                                 ng-click="showTiesDbError(job)"
                                 class="btn btn-danger btn-block btn-xs">
-                            ERROR
+                            {{getTiesDbErrorType(job)}}
                         </button>
-                        <span ng-if="!job.tiesDbStatus.startsWith('ERROR:')">
+                        <span ng-if="!getTiesDbErrorType(job)">
                             {{job.tiesDbStatus}}
                             <i ng-if="job.tiesDbStatus == 'IN PROGRESS'"
                                class="fa fa-spinner fa-spin"></i>
@@ -278,14 +278,27 @@
                 <span aria-hidden="true">&times;</span>
             </button>
             <h4 class="modal-title" id="errorDetailsModalLabel">
-                Job {{jobId}} {{errorType}} Error:
+                Job {{job.jobId}} {{errorType}} Error:
             </h4>
         </div>
         <div class="modal-body smart-wrap" style="white-space: pre-line">
-            {{errorDetails}}
+            {{getErrorDetails()}}
         </div>
         <div class="modal-footer">
             <div class="pull-right">
+                <button ng-if="tiesDbRepost"
+                        ng-click="tiesDbRepost()"
+                        ng-disabled="job.tiesDbRepostInProgress || repostWasSuccessful()"
+                        ng-class="{'btn-success': repostWasSuccessful(), 'btn-warning': job.tiesDbRepostInProgress}"
+                        type="button"
+                        class="btn btn-default">
+
+                    <i ng-if="job.tiesDbRepostInProgress" class="fa fa-refresh fa-spin fa-fw"></i>
+
+                    <span ng-if="!job.tiesDbRepostInProgress"> Re-Post </span>
+
+                    <i ng-if="repostWasSuccessful()" class="fa fa-check fa-fw"></i>
+                </button>
                 <button ng-click="$close()" type="button" class="btn btn-default" data-dismiss="modal">
                     Close
                 </button>

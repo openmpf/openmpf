@@ -59,7 +59,7 @@ public class MpfPropertiesConfigurationBuilder {
             "web.job.polling.interval",
             "warn.",
             "markup.",
-            "ties.db.url",
+            "ties.db",
             "s3."
     );
 

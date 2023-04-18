@@ -356,7 +356,7 @@ public class TestSystemNightly extends TestSystemWithDefaultConfig {
                 jobRequest.setBuildOutput(false);
                 jobRequest.setPriority(priority);
 
-                jobRequestId = jobRequestService.run(jobRequest).getId();
+                jobRequestId = jobRequestService.run(jobRequest).jobId();
                 completed = waitFor(jobRequestId); // blocking
             } catch (Exception exception) {
                 log.error(String.format("Failed to run job %d due to an exception.", jobRequestId), exception);

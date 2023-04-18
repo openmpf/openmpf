@@ -253,6 +253,7 @@ public class PipelineController {
 
         return new Algorithm(
                 algorithm.getName(), algorithm.getDescription(), algorithm.getActionType(),
+                algorithm.getOutputChangedCounter(),
                 algorithm.getRequiresCollection(),
                 new Algorithm.Provides(algorithm.getProvidesCollection().getStates(), propsWithDefaultSet),
                 algorithm.getSupportsBatchProcessing(), algorithm.getSupportsStreamProcessing());

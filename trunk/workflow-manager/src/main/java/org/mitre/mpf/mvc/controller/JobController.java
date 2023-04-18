@@ -49,6 +49,8 @@ import org.mitre.mpf.rest.api.JobPageModel;
 import org.mitre.mpf.rest.api.MessageModel;
 import org.mitre.mpf.rest.api.MpfResponse;
 import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
+import org.mitre.mpf.rest.api.TiesDbRepostResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -59,6 +61,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.CallbackStatus;
 import org.mitre.mpf.wfm.util.InvalidJobIdException;
@@ -123,6 +126,9 @@ public class JobController {
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
+    @Autowired
+    private TiesDbService tiesDbService;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -343,6 +349,7 @@ public class JobController {
                 var msg = String.format(
                         "An error occurred while trying to access the output object for job %s: %s",
                         jobId, e);
+                log.error(msg, e);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(msg);
             }
@@ -438,19 +445,48 @@ public class JobController {
         return MdcUtil.job(internalJobId, () -> cancelJobInternal(internalJobId));
     }
 
+
+    @RequestMapping(
+            value = { "/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost" },
+            method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Retry posting job results to TiesDB.",
+            notes = """
+                Provide a list of job ids as input. For example: `[1, 12, 35]`. The output will \
+                contain a list of failures along with a list of successes. Each failure will \
+                contain the job id and associated error message. The success list will only \
+                contain the job ids.""")
+    public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
+        var tiesDbResult = tiesDbService.repost(jobIds);
+        if (tiesDbResult.failures().isEmpty()) {
+            return ResponseEntity.ok(tiesDbResult);
+        }
+        else {
+            return ResponseEntity.internalServerError().body(tiesDbResult);
+        }
+    }
+
+
     private JobCreationResponse createJobInternal(
-            JobCreationRequest jobCreationRequest,
-            boolean useSession,
-            HttpSession session) {
+            JobCreationRequest jobCreationRequest, boolean useSession, HttpSession session) {
         try {
-            long jobId = jobRequestService.run(jobCreationRequest).getId();
+            var jobCreationResult = jobRequestService.run(jobCreationRequest);
+            long jobId = jobCreationResult.jobId();
 
             if (useSession) {
                 SessionUtil.addJob(session, jobId);
             }
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
+            var tiesDbOutputObjectUri = jobCreationResult
+                    .tiesDbCheckResult()
+                    .checkInfo()
+                    .map(ci -> ci.outputObjectUri())
+                    .orElse(null);
             // the job request has been successfully parsed, construct the job creation response
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(
+                    exportedJobId,
+                    jobCreationResult.tiesDbCheckResult().status(),
+                    tiesDbOutputObjectUri);
         }
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
@@ -581,7 +617,7 @@ public class JobController {
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(exportedJobId, TiesDbCheckStatus.NOT_REQUESTED, null);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);

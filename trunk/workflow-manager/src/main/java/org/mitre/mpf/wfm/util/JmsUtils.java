@@ -61,7 +61,7 @@ public class JmsUtils {
             public void configure() {
                 BatchJob job = _inProgressBatchJobs.getJob(jobId);
 
-                for (Algorithm algorithm : job.getPipelineElements().getAlgorithms()) {
+                for (Algorithm algorithm : job.getPipelineElements().getAllAlgorithms()) {
                     String routeName = createCancellationRouteName(jobId, algorithm.getActionType().name(),
                                                                    algorithm.getName(), "REQUEST");
                     String routeUri = String.format("jms:MPF.%s_%s_REQUEST?selector=JobId%%3D%d",

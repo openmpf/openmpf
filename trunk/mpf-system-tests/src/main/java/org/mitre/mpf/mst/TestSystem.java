@@ -266,7 +266,7 @@ public abstract class TestSystem {
         jobRequest.setJobProperties(jobProperties);
         jobRequest.setPriority(priority);
 
-        long jobRequestId = jobRequestService.run(jobRequest).getId();
+        long jobRequestId = jobRequestService.run(jobRequest).jobId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }
@@ -284,7 +284,7 @@ public abstract class TestSystem {
         jobRequest.setJobProperties(jobProperties);
         jobRequest.setPriority(priority);
 
-        long jobRequestId = jobRequestService.run(jobRequest).getId();
+        long jobRequestId = jobRequestService.run(jobRequest).jobId();
         Assert.assertTrue(waitFor(jobRequestId));
         return jobRequestId;
     }

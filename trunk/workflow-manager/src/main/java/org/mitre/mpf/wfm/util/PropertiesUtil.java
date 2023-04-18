@@ -556,6 +556,24 @@ public class PropertiesUtil {
         return getDataResource(getPipelinesData(), getPipelinesTemplate());
     }
 
+
+    private FileSystemResource getTiesDbCheckIgnorablePropertiesData() {
+        return new FileSystemResource(_mpfPropertiesConfig.getString(
+                "data.ties.db.check.ignorable.properties.file"));
+    }
+
+    private Resource getTiesDbCheckIgnorablePropertiesTemplate() {
+        return _appContext.getResource(_mpfPropertiesConfig.getString(
+                "data.ties.db.check.ignorable.properties.template"));
+    }
+
+    public Resource getTiesDbCheckIgnorablePropertiesResource() {
+        return getDataResource(
+                getTiesDbCheckIgnorablePropertiesData(),
+                getTiesDbCheckIgnorablePropertiesTemplate());
+    }
+
+
     private FileSystemResource getNodeManagerPaletteData() {
         return new FileSystemResource(_mpfPropertiesConfig.getString("data.nodemanagerpalette.file"));
     }
@@ -842,7 +860,10 @@ public class PropertiesUtil {
     }
 
     public int getS3ClientCacheCount() {
-        return _mpfPropertiesConfig.getInt("static.s3.client.cache.count", 20);
+        return _mpfPropertiesConfig.getInt("static.s3.client.cache.count", 40);
+    }
+
+    public String getOutputChangedCounter() {
+        return _mpfPropertiesConfig.getString("output.changed.counter");
     }
 }
-

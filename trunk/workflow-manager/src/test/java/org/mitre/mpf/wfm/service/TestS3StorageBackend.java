@@ -81,7 +81,10 @@ public class TestS3StorageBackend {
 
     private static final String RESULTS_BUCKET = "RESULTS_BUCKET";
 
-    private static final String EXPECTED_HASH = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
+    private static final String ACCESS_KEY = "<MY_ACCESS_KEY>";
+
+    private static final String EXPECTED_HASH
+                    = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea";
 
     private static volatile String EXPECTED_OBJECT_KEY;
 
@@ -124,14 +127,14 @@ public class TestS3StorageBackend {
         _s3StorageBackend = new S3StorageBackendImpl(
                 _mockPropertiesUtil, _mockLocalStorageBackend, _mockInProgressJobs,
                 new AggregateJobPropertiesUtil(_mockPropertiesUtil,
-                                               _mockWorkflowPropertyService));
+                                               _mockWorkflowPropertyService), null);
     }
 
     private static Map<String, String> getS3Properties() {
         Map<String, String> properties = new HashMap<>();
         properties.put(MpfConstants.S3_RESULTS_BUCKET, S3_HOST + RESULTS_BUCKET);
         properties.put(MpfConstants.S3_SECRET_KEY, "<MY_SECRET_KEY>");
-        properties.put(MpfConstants.S3_ACCESS_KEY, "<MY_ACCESS_KEY>");
+        properties.put(MpfConstants.S3_ACCESS_KEY, ACCESS_KEY);
         properties.put(MpfConstants.S3_REGION, "us-east-1");
         return properties;
     }
@@ -378,7 +381,7 @@ public class TestS3StorageBackend {
                 .thenReturn(media);
         when(job.getJobProperties())
                 .thenReturn(ImmutableMap.of(
-                        MpfConstants.S3_ACCESS_KEY, "<ACCESS_KEY>",
+                        MpfConstants.S3_ACCESS_KEY, ACCESS_KEY,
                         MpfConstants.S3_SECRET_KEY, ""
                 ));
 
@@ -414,12 +417,13 @@ public class TestS3StorageBackend {
         var media = mock(Media.class);
 
         var algorithm = new Algorithm("TEST_ALGO", "description", ActionType.DETECTION,
+                                      OptionalInt.empty(),
                                       new Algorithm.Requires(List.of()),
                                       new Algorithm.Provides(List.of(), List.of()),
                                       true, true);
         var action = new Action(
                 "TEST_ACTION", "description", algorithm.getName(),
-                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY, "<ACCESS_KEY>")));
+                List.of(new ActionProperty(MpfConstants.S3_ACCESS_KEY, ACCESS_KEY)));
         var task = new Task("TEST_TASK", "description", List.of(action.getName()));
         var pipeline = new Pipeline("TEST_PIPELINE", "description",
                                     List.of(task.getName()));
@@ -800,6 +804,12 @@ public class TestS3StorageBackend {
     private static void startSpark() {
         Spark.port(5000);
         IntUnaryOperator decrementUntilZero = i -> Math.max(i - 1, 0);
+
+        Spark.before((req, resp) -> {
+            if (!req.headers("Authorization").contains(ACCESS_KEY)) {
+                Spark.halt(403, "Unauthorized");
+            }
+        });
 
         // S3 client uses the HTTP HEAD method to check if object exists.
         Spark.head("/:bucket/*", (req, resp) -> {

@@ -881,7 +881,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
                 new JsonIssueDetails("source2", "code2", "warning msg")));
 
         var media1 = JsonMediaOutputObject.factory(
-                29L, -1L, "http://localhost/bucket/media1", "VIDEO", "video/mp4", 30,
+                29L, -1L, "http://localhost/bucket/media1", null, "VIDEO", "video/mp4", 30,
                 ImmutableSortedSet.of(new JsonMediaRange(31, 32)),
                 ImmutableSortedSet.of(new JsonMediaRange(33, 34)), "SHA1", null,
                 ImmutableSortedMap.of("META1", "META1VALUE"),
@@ -892,7 +892,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
 
         var media2 = JsonMediaOutputObject.factory(
-                290L, -1L, "http://localhost/bucket/media2", "IMAGE", "image/png", 300,
+                290L, -1L, "http://localhost/bucket/media2", null, "IMAGE", "image/png", 300,
                 ImmutableSortedSet.of(),
                 ImmutableSortedSet.of(), "SHA2", null,
                 ImmutableSortedMap.of("META2", "META2VALUE"),
@@ -1064,7 +1064,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var action = new JsonActionOutputObject("source", "algo");
         action.getTracks().add(track);
 
-        var media = new JsonMediaOutputObject(39, -1, "path", "IMAGE", "image/png", 1, "SHA", "");
+        var media = new JsonMediaOutputObject(
+                39, -1, "path", null, "IMAGE", "image/png", 1, "SHA", "");
         media.getDetectionTypes().put("FACE", ImmutableSortedSet.of(action));
 
         var outputObject = new JsonOutputObject(
@@ -1116,6 +1117,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         mediaChecker.eq(m -> m.getMediaId());
         mediaChecker.eq(m -> m.getParentMediaId());
         assertEquals(newMediaPath, newMedia.getPath());
+        assertEquals(oldMedia.getPath(), newMedia.getTiesDbSourceMediaPath());
         mediaChecker.eq(m -> m.getType());
         mediaChecker.eq(m -> m.getMimeType());
         mediaChecker.eq(m -> m.getLength());

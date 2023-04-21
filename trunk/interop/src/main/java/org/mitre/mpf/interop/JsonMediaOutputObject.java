@@ -35,8 +35,9 @@ import static org.mitre.mpf.interop.util.CompareUtils.stringCompare;
 
 @JsonTypeName("MediaOutputObject")
 @JsonPropertyOrder({
-		"mediaId", "parentMediaId", "path", "sha256", "mimeType", "mediaType", "length", "frameRanges", "timeRanges",
-		"mediaMetadata", "mediaProperties", "status", "detectionProcessingErrors", "markupResult", "output"})
+		"mediaId", "parentMediaId", "path", "tiesDbSourceMediaPath", "sha256", "mimeType",
+		"mediaType", "length", "frameRanges", "timeRanges", "mediaMetadata", "mediaProperties",
+		"status", "detectionProcessingErrors", "markupResult", "output"})
 public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> {
 
 	@JsonProperty("mediaId")
@@ -53,6 +54,12 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	@JsonPropertyDescription("The URI to this media file.")
 	private String path;
 	public String getPath() { return path; }
+
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @JsonPropertyDescription("If the job didn't run because it was possible to get the results "
+        + "from TiesDb, this will be set to the path of the media used to generate those results.")
+	private String tiesDbSourceMediaPath;
+	public String getTiesDbSourceMediaPath() { return tiesDbSourceMediaPath; }
 
 	@JsonProperty("mediaType")
 	@JsonPropertyDescription("The type associated with this media file. For example, \"VIDEO\".")
@@ -118,11 +125,13 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 	private SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors;
 	public SortedMap<String, SortedSet<JsonDetectionProcessingError>> getDetectionProcessingErrors() { return detectionProcessingErrors; }
 
-	public JsonMediaOutputObject(long mediaId, long parentMediaId, String path, String mediaType, String mimeType,
-								 int length, String sha256, String status) {
+	public JsonMediaOutputObject(
+			long mediaId, long parentMediaId, String path, String tiesDbSourceMediaPath,
+			String mediaType, String mimeType, int length, String sha256, String status) {
 		this.mediaId = mediaId;
 		this.parentMediaId = parentMediaId;
 		this.path = path;
+		this.tiesDbSourceMediaPath = tiesDbSourceMediaPath;
 		this.type = mediaType;
 		this.mimeType = mimeType;
 		this.length = length;
@@ -143,6 +152,7 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			@JsonProperty("mediaId") long mediaId,
 			@JsonProperty("parentMediaId") long parentMediaId,
 			@JsonProperty("path") String path,
+			@JsonProperty("tiesDbSourceMediaPath") String tiesDbSourceMediaPath,
 			@JsonProperty("mediaType") String mediaType,
 			@JsonProperty("mimeType") String mimeType,
 			@JsonProperty("length") int length,
@@ -155,8 +165,9 @@ public class JsonMediaOutputObject implements Comparable<JsonMediaOutputObject> 
 			@JsonProperty("markupResult") JsonMarkupOutputObject markupResult,
 			@JsonProperty("output") SortedMap<String, SortedSet<JsonActionOutputObject>> detectionTypes,
 			@JsonProperty("detectionProcessingErrors") SortedMap<String, SortedSet<JsonDetectionProcessingError>> detectionProcessingErrors) {
-		JsonMediaOutputObject jsonMediaOutputObject =
-				new JsonMediaOutputObject(mediaId, parentMediaId, path, mediaType, mimeType, length, sha256, status);
+		JsonMediaOutputObject jsonMediaOutputObject = new JsonMediaOutputObject(
+				mediaId, parentMediaId, path, tiesDbSourceMediaPath, mediaType, mimeType, length,
+				sha256, status);
 		jsonMediaOutputObject.markupResult = markupResult;
 
 		if (frameRanges != null) {

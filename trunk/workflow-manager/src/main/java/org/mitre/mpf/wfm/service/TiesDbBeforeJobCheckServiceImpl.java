@@ -610,6 +610,7 @@ public class TiesDbBeforeJobCheckServiceImpl
                     oldMedia.getMediaId(),
                     oldMedia.getParentMediaId(),
                     newMediaUri,
+                    oldMedia.getPath(),
                     oldMedia.getType(),
                     oldMedia.getMimeType(),
                     oldMedia.getLength(),

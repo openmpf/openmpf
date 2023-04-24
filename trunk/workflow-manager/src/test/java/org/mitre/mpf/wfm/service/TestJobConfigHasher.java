@@ -613,7 +613,7 @@ public class TestJobConfigHasher extends MockitoTest.Strict {
                 Set<MediaRange> frameRanges,
                 Set<MediaRange> timeRanges) {
             var media = mock(Media.class);
-            when(media.getHash())
+            when(media.getLinkedHash())
                 .thenReturn(Optional.of(hash));
 
             when(media.getType())

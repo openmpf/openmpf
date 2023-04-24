@@ -96,7 +96,7 @@ public class JobConfigHasher {
 
         var sortedMedia = media.stream()
                 .filter(m -> !m.isDerivative())
-                .sorted(Comparator.comparing(m -> m.getHash().orElseThrow()))
+                .sorted(Comparator.comparing(m -> m.getLinkedHash().orElseThrow()))
                 .toList();
 
         var hasher = new Hasher();
@@ -107,7 +107,7 @@ public class JobConfigHasher {
             // matching job, the job will have to include all of the same media.
             // Most users who use TiesDb submit jobs with one piece of media, so it isn't worth it
             // to try to find jobs with some of the media in common.
-            hasher.add(medium.getHash().orElseThrow());
+            hasher.add(medium.getLinkedHash().orElseThrow());
             hashMediaRanges(medium.getFrameRanges(), hasher);
             hashMediaRanges(medium.getTimeRanges(), hasher);
             var mediaType = medium.getType().orElseThrow();

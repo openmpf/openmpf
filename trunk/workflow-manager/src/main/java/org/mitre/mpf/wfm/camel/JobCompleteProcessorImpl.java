@@ -425,6 +425,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getId(),
                     media.getParentId(),
                     media.getPersistentUri(),
+                    null,
                     media.getType().map(Enum::toString).orElse(null),
                     media.getMimeType().orElse(null),
                     media.getLength().orElse(0),

@@ -240,13 +240,19 @@ public class MediaImpl implements Media {
 
     @Override
     @JsonIgnore
-    public Optional<String> getHash() {
+    public Optional<String> getLinkedHash() {
+        var linkedHash = _mediaSpecificProperties.get("LINKED_MEDIA_HASH");
+        if (linkedHash != null && !linkedHash.isBlank()) {
+            return Optional.of(linkedHash);
+        }
+        // If LINKED_MEDIA_HASH is missing, then the media is linked to itself.
         if (_sha256 != null) {
             return Optional.of(_sha256);
         }
         return Optional.ofNullable(getProvidedMetadata().get("MEDIA_HASH"))
             .filter(h -> !h.isBlank());
     }
+
 
     public MediaImpl(
             long id,

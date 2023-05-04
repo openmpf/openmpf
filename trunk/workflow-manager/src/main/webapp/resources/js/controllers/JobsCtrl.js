@@ -124,7 +124,10 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
             openTiesDbErrorModal(job);
         },
         getTiesDbErrorType(job) {
-            if (job.tiesDbStatus.startsWith('ERROR:')) {
+            if (!job.tiesDbStatus) {
+                return null;
+            }
+            else if (job.tiesDbStatus.startsWith('ERROR:')) {
                 return 'ERROR';
             }
             else if (job.tiesDbStatus.startsWith('COPY ERROR:')) {
@@ -142,7 +145,7 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
             });
         },
         getCallbackDisplayType:(callbackStatus) => {
-            if (callbackStatus.startsWith('ERROR:')) {
+            if (callbackStatus && callbackStatus.startsWith('ERROR:')) {
                 return 'ERROR';
             }
             else {
@@ -247,7 +250,7 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
             $scope.job = job;
             $scope.errorType = 'TiesDb';
             $scope.getErrorDetails = () => job.tiesDbStatus;
-            if (!job.tiesDbStatus.startsWith('COPY ERROR:')) {
+            if (job.tiesDbStatus && !job.tiesDbStatus.startsWith('COPY ERROR:')) {
                 $scope.tiesDbRepost = () => tiesDbRepost(job);
                 $scope.repostWasSuccessful = () => job.tiesDbStatus == 'COMPLETE' &&
                     !job.tiesDbRepostInProgress;
@@ -280,7 +283,7 @@ angular.module('mpf.wfm.controller.JobsCtrl', [
                 });
             });
         }
-        else if (progress == 0) {
+        else if (progress == 0 || progress == 100) {
             throttledUpdateJobs();
         }
         // The job is missing because it isn't on the page of results the user is currently

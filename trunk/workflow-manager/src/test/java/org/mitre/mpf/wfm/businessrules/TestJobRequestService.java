@@ -455,7 +455,8 @@ public class TestJobRequestService {
                 Optional.of(new TiesDbCheckResult.CheckInfo(
                         URI.create("file:///opt/mpf/share/1.json"),
                         BatchJobStatusType.COMPLETE,
-                        Instant.ofEpochSecond(1667480850))));
+                        Instant.ofEpochSecond(1667480850),
+                        false)));
 
         when(_mockTiesDbBeforeJobCheckService.checkTiesDbBeforeJob(
                         eq(jobCreationRequest),

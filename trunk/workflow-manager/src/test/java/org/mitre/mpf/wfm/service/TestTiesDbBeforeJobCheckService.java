@@ -30,6 +30,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -296,6 +297,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
             .thenReturn(mockMediaActionProps);
 
+        setEmptyCombinedJobProps();
 
         var ex = TestUtil.assertThrows(
                 WfmProcessingException.class,
@@ -397,6 +399,16 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
             .thenReturn(mockMediaActionProps);
 
+        var combinedJobProps = Map.of(
+            MpfConstants.TIES_DB_S3_COPY_ENABLED, "true",
+            MpfConstants.S3_RESULTS_BUCKET, "results bucket",
+            MpfConstants.S3_ACCESS_KEY, "access key",
+            MpfConstants.S3_SECRET_KEY, "secret key"
+        );
+
+        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+            .thenReturn(combinedJobProps::get);
+
         when(_mockJobConfigHasher.getJobConfigHash(List.of(media), elements, mockMediaActionProps))
             .thenReturn("JOB_HASH");
 
@@ -453,6 +465,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(URI.create("file:///1.json"), info.outputObjectUri());
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
+        assertTrue(info.s3CopyEnabled());
     }
 
 
@@ -549,6 +562,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(URI.create("file:///1.json"), info.outputObjectUri());
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
+        assertTrue(info.s3CopyEnabled());
 
         var requests = requestCaptor.getAllValues();
         assertEquals(3, requests.size());
@@ -603,6 +617,7 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         assertEquals(URI.create("file:///1.json"), info.outputObjectUri());
         assertEquals(BatchJobStatusType.COMPLETE, info.jobStatus());
         assertEquals(Instant.parse("2021-06-04T13:35:58.981Z"), info.processDate());
+        assertFalse(info.s3CopyEnabled());
     }
 
 
@@ -667,6 +682,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
 
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(elements)))
             .thenReturn(mockMediaActionProps);
+
+        setEmptyCombinedJobProps();
 
         when(_mockJobConfigHasher.getJobConfigHash(
                     List.of(media1, media2), elements, mockMediaActionProps))
@@ -783,6 +800,8 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         when(_mockAggJobProps.getMediaActionProps(any(), any(), any(), eq(pipelineElements)))
                 .thenReturn(mockProps);
 
+        setEmptyCombinedJobProps();
+
         when(_mockJobConfigHasher.getJobConfigHash(List.of(media), pipelineElements, mockProps))
                 .thenReturn("JOB_HASH");
 
@@ -894,9 +913,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var media2 = JsonMediaOutputObject.factory(
                 290L, -1L, "http://localhost/bucket/media2", null, "IMAGE", "image/png", 300,
                 ImmutableSortedSet.of(),
-                ImmutableSortedSet.of(), "SHA2", null,
+                ImmutableSortedSet.of(), "WRONG_SHA", null,
                 ImmutableSortedMap.of("META2", "META2VALUE"),
-                ImmutableSortedMap.of("MEDIA_PROP2", "MEDIA_PROP2_VALUE"),
+                ImmutableSortedMap.of(MpfConstants.LINKED_MEDIA_HASH, "SHA2"),
                 null,
                 ImmutableSortedMap.of(),
                 ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));
@@ -1240,5 +1259,10 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
             .getQueryParams()
             .stream()
             .collect(toMap(NameValuePair::getName, NameValuePair::getValue));
+    }
+
+    private void setEmptyCombinedJobProps() {
+        when(_mockAggJobProps.getCombinedProperties(any(), any(), any(), any()))
+            .thenReturn(s -> null);
     }
 }

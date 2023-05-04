@@ -29,6 +29,7 @@ package org.mitre.mpf.rest.api;
 import java.net.URI;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JobCreationResponse {
@@ -85,6 +86,7 @@ public class JobCreationResponse {
 		return _tiesDbCheckStatus;
 	}
 
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 	public URI getOutputObjectUri() {
 		return _outputObjectUri;
 	}

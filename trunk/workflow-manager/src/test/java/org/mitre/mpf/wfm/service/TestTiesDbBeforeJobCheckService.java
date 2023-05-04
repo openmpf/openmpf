@@ -913,9 +913,9 @@ public class TestTiesDbBeforeJobCheckService extends MockitoTest.Lenient {
         var media2 = JsonMediaOutputObject.factory(
                 290L, -1L, "http://localhost/bucket/media2", null, "IMAGE", "image/png", 300,
                 ImmutableSortedSet.of(),
-                ImmutableSortedSet.of(), "SHA2", null,
+                ImmutableSortedSet.of(), "WRONG_SHA", null,
                 ImmutableSortedMap.of("META2", "META2VALUE"),
-                ImmutableSortedMap.of("MEDIA_PROP2", "MEDIA_PROP2_VALUE"),
+                ImmutableSortedMap.of(MpfConstants.LINKED_MEDIA_HASH, "SHA2"),
                 null,
                 ImmutableSortedMap.of(),
                 ImmutableSortedMap.of("ALGO2", ImmutableSortedSet.of()));

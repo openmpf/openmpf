@@ -241,7 +241,7 @@ public class MediaImpl implements Media {
     @Override
     @JsonIgnore
     public Optional<String> getLinkedHash() {
-        var linkedHash = _mediaSpecificProperties.get("LINKED_MEDIA_HASH");
+        var linkedHash = _mediaSpecificProperties.get(MpfConstants.LINKED_MEDIA_HASH);
         if (linkedHash != null && !linkedHash.isBlank()) {
             return Optional.of(linkedHash);
         }

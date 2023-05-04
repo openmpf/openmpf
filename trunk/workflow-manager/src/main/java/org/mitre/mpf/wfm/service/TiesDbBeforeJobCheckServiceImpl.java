@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -636,7 +637,11 @@ public class TiesDbBeforeJobCheckServiceImpl
                         oldMarkup.getMessage());
             }
 
-            var newMediaUri = mediaHashToNewUri.get(oldMedia.getSha256());
+            var oldMediaHash = Objects.requireNonNullElse(
+                    oldMedia.getMediaProperties().get(MpfConstants.LINKED_MEDIA_HASH),
+                    oldMedia.getSha256());
+            var newMediaUri = mediaHashToNewUri.get(oldMediaHash);
+
             var newMedia = JsonMediaOutputObject.factory(
                     oldMedia.getMediaId(),
                     oldMedia.getParentMediaId(),

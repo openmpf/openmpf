@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -49,6 +50,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -192,16 +194,16 @@ public class TiesDbBeforeJobCheckServiceImpl
             Collection<Media> media,
             JobPipelineElements jobPipelineElements) {
 
-        var props = _aggregateJobPropertiesUtil.getMediaActionProps(
+        var mediaActionProps = _aggregateJobPropertiesUtil.getMediaActionProps(
                 jobProperties,
                 algorithmProperties,
                 systemPropertiesSnapshot,
                 jobPipelineElements);
 
-        if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), props)) {
+        if (shouldSkipTiesDbCheck(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NOT_REQUESTED);
         }
-        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), props)) {
+        if (!hasTiesDbUrl(media, jobPipelineElements.getAllActions(), mediaActionProps)) {
             return TiesDbCheckResult.noResult(TiesDbCheckStatus.NO_TIES_DB_URL_IN_JOB);
         }
 
@@ -218,19 +220,34 @@ public class TiesDbBeforeJobCheckServiceImpl
         }
 
         var mediaHashToBaseUris = getBaseTiesDbUris(
-                media, jobPipelineElements.getAllActions(), props);
+                media, jobPipelineElements.getAllActions(), mediaActionProps);
 
         var jobHash = _jobConfigHasher.getJobConfigHash(
                 media,
                 jobPipelineElements,
-                props);
+                mediaActionProps);
+
+        var combinedJobProps = _aggregateJobPropertiesUtil.getCombinedProperties(
+                jobProperties,
+                algorithmProperties,
+                systemPropertiesSnapshot,
+                jobPipelineElements);
+
+        boolean s3CopyEnabled;
+        try {
+            s3CopyEnabled = s3CopyEnabled(combinedJobProps);
+        }
+        catch (StorageException e) {
+            throw new WfmProcessingException(e);
+        }
 
         // There may be multiple matching supplementals in TiesDb, so we don't want to report
         // an error if there was a problem getting one supplemental, but we were able to get a
         // different matching supplemental. Use an AtomicReference because some errors can occur
         // on threads belonging to the HTTP client.
         var lastException = new AtomicReference<Throwable>(null);
-        var optCheckInfo = getCheckInfo(mediaHashToBaseUris, jobHash, lastException);
+        var optCheckInfo = getCheckInfo(
+                mediaHashToBaseUris, jobHash, s3CopyEnabled, lastException);
         if (optCheckInfo.isPresent()) {
             return new TiesDbCheckResult(
                     TiesDbCheckStatus.FOUND_MATCH,
@@ -295,12 +312,15 @@ public class TiesDbBeforeJobCheckServiceImpl
     private Optional<TiesDbCheckResult.CheckInfo> getCheckInfo(
             Multimap<String, String> mediaHashToBaseUris,
             String expectedJobHash,
+            boolean s3CopyEnabled,
             AtomicReference<Throwable> lastException) {
         // Need a temporary list so that all of the futures are created before we start calling
         // join on any of the futures.
         var futures = buildSupplementalUris(mediaHashToBaseUris, lastException)
             .stream()
-            .map(u -> getSupplementals(u, 0, expectedJobHash, Optional.empty(), lastException))
+            .map(u -> getSupplementals(
+                        u, 0, expectedJobHash, Optional.empty(), s3CopyEnabled,
+                        lastException))
             .toList();
         return futures
                 .stream()
@@ -340,6 +360,7 @@ public class TiesDbBeforeJobCheckServiceImpl
     private CompletableFuture<Optional<TiesDbCheckResult.CheckInfo>> getSupplementals(
             URI unpagedUri, int offset, String jobHash,
             Optional<TiesDbCheckResult.CheckInfo> prevBest,
+            boolean s3CopyEnabled,
             AtomicReference<Throwable> lastException) {
         int limit = 100;
         var uri = addPaginationParams(unpagedUri, offset, limit);
@@ -349,13 +370,15 @@ public class TiesDbBeforeJobCheckServiceImpl
             .thenApply(resp -> checkResponse(unpagedUri, resp))
             .thenCompose(resp -> {
                 var responseJson = parseResponse(resp);
-                var bestMatch = getBestMatchSoFar(responseJson, jobHash, prevBest, lastException);
+                var bestMatch = getBestMatchSoFar(
+                        responseJson, jobHash, prevBest, s3CopyEnabled,  lastException);
                 boolean isLastPage = responseJson.size() < limit;
                 if (isLastPage) {
                     return ThreadUtil.completedFuture(bestMatch);
                 }
                 return getSupplementals(
-                            unpagedUri, offset + limit, jobHash, bestMatch, lastException);
+                            unpagedUri, offset + limit, jobHash, bestMatch, s3CopyEnabled,
+                            lastException);
             }).exceptionally(e -> {
                 lastException.set(e.getCause());
                 return prevBest;
@@ -388,10 +411,11 @@ public class TiesDbBeforeJobCheckServiceImpl
 
     private Optional<TiesDbCheckResult.CheckInfo> getBestMatchSoFar(
             JsonNode json, String expectedJobHash, Optional<TiesDbCheckResult.CheckInfo> prevBest,
+            boolean s3CopyEnabled,
             AtomicReference<Throwable> lastException) {
 
         Stream<TiesDbCheckResult.CheckInfo> newResults = Streams.stream(json)
-                .map(j -> convertJsonToCheckInfo(j, expectedJobHash, lastException))
+                .map(j -> convertJsonToCheckInfo(j, expectedJobHash, s3CopyEnabled, lastException))
                 .flatMap(Optional::stream);
 
         return Stream.concat(prevBest.stream(), newResults)
@@ -438,6 +462,7 @@ public class TiesDbBeforeJobCheckServiceImpl
     private Optional<TiesDbCheckResult.CheckInfo> convertJsonToCheckInfo(
             JsonNode jsonEntry,
             String expectedJobHash,
+            boolean s3CopyEnabled,
             AtomicReference<Throwable> exception) {
         var jobHash = jsonEntry.findPath("dataObject")
                 .findPath("jobConfigHash").asText("");
@@ -478,7 +503,8 @@ public class TiesDbBeforeJobCheckServiceImpl
         return Optional.of(new TiesDbCheckResult.CheckInfo(
                 outputUri,
                 status,
-                processDate));
+                processDate,
+                s3CopyEnabled));
     }
 
 
@@ -486,8 +512,7 @@ public class TiesDbBeforeJobCheckServiceImpl
             BatchJob job, URI outputObjectUriFromPrevJob, JobRequest jobRequest) {
         try {
             var jobProps = _aggregateJobPropertiesUtil.getCombinedProperties(job);
-            if (!Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_ENABLED))
-                    || !S3StorageBackend.requiresS3ResultUpload(jobProps)) {
+            if (!s3CopyEnabled(jobProps)) {
                 jobRequest.setTiesDbStatus("PAST JOB FOUND");
                 _inProgressJobs.setJobStatus(job.getId(), job.getStatus().onComplete());
                 return outputObjectUriFromPrevJob;
@@ -520,6 +545,13 @@ public class TiesDbBeforeJobCheckServiceImpl
             return outputObjectUriFromPrevJob;
         }
     }
+
+
+    private static boolean s3CopyEnabled(UnaryOperator<String> jobProps) throws StorageException {
+        return Boolean.parseBoolean(jobProps.apply(MpfConstants.TIES_DB_S3_COPY_ENABLED))
+                && S3StorageBackend.requiresS3ResultUpload(jobProps);
+    }
+
 
     private JsonOutputObject getOldJobOutputObject(
             URI outputObjectUriFromPrevJob, S3CopyConfig copyConfig)
@@ -605,7 +637,11 @@ public class TiesDbBeforeJobCheckServiceImpl
                         oldMarkup.getMessage());
             }
 
-            var newMediaUri = mediaHashToNewUri.get(oldMedia.getSha256());
+            var oldMediaHash = Objects.requireNonNullElse(
+                    oldMedia.getMediaProperties().get(MpfConstants.LINKED_MEDIA_HASH),
+                    oldMedia.getSha256());
+            var newMediaUri = mediaHashToNewUri.get(oldMediaHash);
+
             var newMedia = JsonMediaOutputObject.factory(
                     oldMedia.getMediaId(),
                     oldMedia.getParentMediaId(),

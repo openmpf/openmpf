@@ -480,6 +480,7 @@ public class JobController {
             var tiesDbOutputObjectUri = jobCreationResult
                     .tiesDbCheckResult()
                     .checkInfo()
+                    .filter(ci -> !ci.s3CopyEnabled())
                     .map(ci -> ci.outputObjectUri())
                     .orElse(null);
             // the job request has been successfully parsed, construct the job creation response

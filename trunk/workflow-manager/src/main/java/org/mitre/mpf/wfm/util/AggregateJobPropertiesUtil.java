@@ -359,6 +359,23 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
+    public UnaryOperator<String> getCombinedProperties(
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements jobPipelineElements) {
+        return propName -> getPropertyInfo(
+                propName,
+                Map.of(),
+                Optional.empty(),
+                null,
+                jobPipelineElements,
+                algorithmProperties,
+                jobProperties,
+                systemPropertiesSnapshot
+        ).getValue();
+    }
+
 
     public UnaryOperator<String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var matchingMedia = Optional.<Media>empty();

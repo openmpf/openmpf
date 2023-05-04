@@ -36,9 +36,12 @@ import java.util.Optional;
 
 public record TiesDbCheckResult(TiesDbCheckStatus status, Optional<CheckInfo> checkInfo) {
 
-    public record CheckInfo(URI outputObjectUri,
-                            BatchJobStatusType jobStatus,
-                            Instant processDate){}
+    public record CheckInfo(
+            URI outputObjectUri,
+            BatchJobStatusType jobStatus,
+            Instant processDate,
+            boolean s3CopyEnabled) {
+    }
 
     public static TiesDbCheckResult noResult(TiesDbCheckStatus status) {
         return new TiesDbCheckResult(status, Optional.empty());

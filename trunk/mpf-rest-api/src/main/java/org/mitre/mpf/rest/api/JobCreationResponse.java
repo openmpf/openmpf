@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,33 +26,68 @@
 
 package org.mitre.mpf.rest.api;
 
+import java.net.URI;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JobCreationResponse {
-	private String jobId;  // Will be null if there is an error creating the job
-	private MpfResponse mpfResponse = new MpfResponse();	
-	
-	/*
-	 * Constructors
-	 */
-	public JobCreationResponse() { }
-	
+	private final String _jobId;  // Will be null if there is an error creating the job
+	private final MpfResponse _mpfResponse;
+
+	private final TiesDbCheckStatus _tiesDbCheckStatus;
+
+	private final URI _outputObjectUri;
+
+
 	public JobCreationResponse(int errorCode, String errorMessage) {
-		this.mpfResponse.setMessage(errorCode, errorMessage);
-		this.jobId = null;
+		_mpfResponse = new MpfResponse();
+		_mpfResponse.setMessage(errorCode, errorMessage);
+		_jobId = null;
+		_tiesDbCheckStatus = null;
+		_outputObjectUri = null;
 	}
 
-	public JobCreationResponse(String jobId) {
-		this.mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
-		this.jobId = jobId;
+	public JobCreationResponse(String jobId,
+	                           TiesDbCheckStatus tiesDbCheckStatus,
+	                           URI outputObjectUri) {
+		_mpfResponse = new MpfResponse();
+		_mpfResponse.setResponseCode(MpfResponse.RESPONSE_CODE_SUCCESS);
+		_jobId = jobId;
+		_tiesDbCheckStatus = tiesDbCheckStatus;
+		_outputObjectUri = outputObjectUri;
 	}
-	
+
+	@JsonCreator
+	public JobCreationResponse(
+			@JsonProperty("jobId") String jobId,
+			@JsonProperty("mpfResponse") MpfResponse mpfResponse,
+			@JsonProperty("tiesDbCheckStatus") TiesDbCheckStatus tiesDbCheckStatus,
+			@JsonProperty("outputObjectUri") URI outputObjectUri) {
+		_jobId = jobId;
+		_mpfResponse = mpfResponse;
+		_tiesDbCheckStatus = tiesDbCheckStatus;
+		_outputObjectUri = outputObjectUri;
+	}
+
 	/*
 	 * Getters
 	 */
 	public String getJobId() {
-		return jobId;
+		return _jobId;
 	}
-	
+
 	public MpfResponse getMpfResponse() {
-		return mpfResponse;
+		return _mpfResponse;
+	}
+
+	public TiesDbCheckStatus getTiesDbCheckStatus() {
+		return _tiesDbCheckStatus;
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+	public URI getOutputObjectUri() {
+		return _outputObjectUri;
 	}
 }

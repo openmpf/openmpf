@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -359,6 +359,23 @@ public class AggregateJobPropertiesUtil {
         ).getValue();
     }
 
+    public UnaryOperator<String> getCombinedProperties(
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements jobPipelineElements) {
+        return propName -> getPropertyInfo(
+                propName,
+                Map.of(),
+                Optional.empty(),
+                null,
+                jobPipelineElements,
+                algorithmProperties,
+                jobProperties,
+                systemPropertiesSnapshot
+        ).getValue();
+    }
+
 
     public UnaryOperator<String> getCombinedProperties(BatchJob job, URI mediaUri) {
         var matchingMedia = Optional.<Media>empty();
@@ -393,6 +410,21 @@ public class AggregateJobPropertiesUtil {
     }
 
 
+    public MediaActionProps getMediaActionProps(
+            Map<String, String> jobProperties,
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            SystemPropertiesSnapshot systemPropertiesSnapshot,
+            JobPipelineElements pipelineElements)  {
+
+        return new MediaActionProps((media, action) -> getPropertyMap(
+                action,
+                media.getMediaSpecificProperties(),
+                media.getType(),
+                algorithmProperties,
+                jobProperties,
+                pipelineElements,
+                systemPropertiesSnapshot));
+    }
 
 
     public String calculateFrameInterval(Action action, BatchJob job, Media media, int systemFrameInterval,

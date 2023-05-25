@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -28,13 +28,15 @@ package org.mitre.mpf.wfm.businessrules;
 
 import org.mitre.mpf.rest.api.JobCreationRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.service.TiesDbCheckResult;
 
 public interface JobRequestService {
 
-    JobRequest run(JobCreationRequest jobCreationRequest);
+    CreationResult run(JobCreationRequest jobCreationRequest);
 
     JobRequest resubmit(long jobId, int priority);
 
     boolean cancel(long jobId);
 
+    record CreationResult(long jobId, TiesDbCheckResult tiesDbCheckResult) {}
 }

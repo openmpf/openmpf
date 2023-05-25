@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,7 +27,9 @@
 
 package org.mitre.mpf.wfm.util;
 
-import java.util.Arrays;
+import java.util.OptionalInt;
+
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 
 public interface FrameTimeInfo {
     public boolean hasConstantFrameRate();
@@ -38,83 +40,32 @@ public interface FrameTimeInfo {
 
     public int getFrameFromTimeMs(int timeMs);
 
+    public OptionalInt getExactFrameCount();
 
-    public static FrameTimeInfo forConstantFrameRate(double fps, int startTime,
-                                                     boolean requiresTimeEstimation) {
-        return fpsFrameTimeInfo(fps, startTime, true, requiresTimeEstimation);
+    public OptionalInt getEstimatedDuration();
+
+
+    public static FrameTimeInfo forConstantFrameRate(
+            Fraction fps, OptionalInt startTime, int frameCount) {
+        return new FpsFrameTimeInfo(fps, startTime, true, OptionalInt.of(frameCount));
     }
 
-    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps) {
-        return fpsFrameTimeInfo(fps, 0, false, true);
-    }
-
-
-    public static FrameTimeInfo forVariableFrameRate(double fps, int[] timeStamps,
-                                                     boolean requiresTimeEstimation) {
-        return new FrameTimeInfo() {
-
-            public boolean hasConstantFrameRate() {
-                return false;
-            }
-
-            public boolean requiresTimeEstimation() {
-                return requiresTimeEstimation;
-            }
-
-            public int getTimeMsFromFrame(int frameIndex) {
-                try {
-                    return timeStamps[frameIndex];
-                }
-                catch (ArrayIndexOutOfBoundsException e) {
-                    int startTime = timeStamps.length > 0 ? timeStamps[0] : 0;
-                    return getTimeUsingFps(frameIndex, fps, startTime);
-                }
-            }
-
-            public int getFrameFromTimeMs(int timeMs) {
-                int rv = Arrays.binarySearch(timeStamps, timeMs);
-                if (rv >= 0) {
-                    return rv;
-                }
-                else {
-                    int firstGreaterIdx = -rv - 1;
-                    return Math.max(firstGreaterIdx - 1, 0);
-                }
-            }
-        };
-    }
-
-    private static FrameTimeInfo fpsFrameTimeInfo(
-            double fps, int startTime, boolean hasConstantFrameRate,
-            boolean requiresTimeEstimation) {
-        double framesPerMs = fps / 1000;
-        return new FrameTimeInfo() {
-
-            public boolean hasConstantFrameRate() {
-                return hasConstantFrameRate;
-            }
-
-            public boolean requiresTimeEstimation() {
-                return requiresTimeEstimation;
-            }
-
-            public int getTimeMsFromFrame(int frameIndex) {
-                return getTimeUsingFps(frameIndex, fps, startTime);
-            }
-
-            public int getFrameFromTimeMs(int timeMs) {
-                if (timeMs > startTime) {
-                    return (int) (framesPerMs * (timeMs - startTime));
-                }
-                else {
-                    return 0;
-                }
-            }
-        };
+    public static FrameTimeInfo forConstantFrameRate(
+            double fps, OptionalInt startTime, int frameCount) {
+        return new FpsFrameTimeInfo(fps, startTime, true, OptionalInt.of(frameCount));
     }
 
 
-    private static int getTimeUsingFps(int frameIndex, double fps, int startTime) {
-        return startTime + (int) (frameIndex * 1000 / fps);
+    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(Fraction fps) {
+        return new FpsFrameTimeInfo(fps, OptionalInt.empty(), false, OptionalInt.empty());
+    }
+
+    public static FrameTimeInfo forVariableFrameRateWithEstimatedTimes(double fps, int frameCount) {
+        return new FpsFrameTimeInfo(fps, OptionalInt.empty(), false, OptionalInt.of(frameCount));
+    }
+
+    public static FrameTimeInfo forVariableFrameRate(
+            Fraction fps, int[] timeStamps, boolean requiresTimeEstimation) {
+        return new VfrFrameTimeInfo(fps, timeStamps, requiresTimeEstimation);
     }
 }

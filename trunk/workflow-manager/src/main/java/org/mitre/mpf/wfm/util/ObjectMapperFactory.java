@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.wfm.util;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.mitre.mpf.interop.util.InstantJsonModule;
@@ -48,6 +49,7 @@ public class ObjectMapperFactory {
                          new Jdk8Module(),
                          new TrimKeysModule(),
                          new TrimValuesModule())
+                .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
                 .build();
     }
 }

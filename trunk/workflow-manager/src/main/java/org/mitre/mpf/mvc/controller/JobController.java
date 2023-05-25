@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,13 +26,31 @@
 
 package org.mitre.mpf.mvc.controller;
 
-import com.google.common.collect.ImmutableMap;
-import io.swagger.annotations.*;
+import static java.util.stream.Collectors.toList;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.util.List;
+import java.util.function.Predicate;
+
+import javax.servlet.http.HttpSession;
+
 import org.mitre.mpf.interop.JsonOutputObject;
-import org.mitre.mpf.mvc.model.SessionModel;
 import org.mitre.mpf.mvc.util.CloseableMdc;
 import org.mitre.mpf.mvc.util.MdcUtil;
-import org.mitre.mpf.rest.api.*;
+import org.mitre.mpf.mvc.util.SessionUtil;
+import org.mitre.mpf.rest.api.JobCreationRequest;
+import org.mitre.mpf.rest.api.JobCreationResponse;
+import org.mitre.mpf.rest.api.JobPageListModel;
+import org.mitre.mpf.rest.api.JobPageModel;
+import org.mitre.mpf.rest.api.MessageModel;
+import org.mitre.mpf.rest.api.MpfResponse;
+import org.mitre.mpf.rest.api.SingleJobInfo;
+import org.mitre.mpf.rest.api.TiesDbCheckStatus;
+import org.mitre.mpf.rest.api.TiesDbRepostResponse;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.businessrules.JobRequestService;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -43,8 +61,13 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.service.S3StorageBackend;
 import org.mitre.mpf.wfm.service.StorageException;
+import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
-import org.mitre.mpf.wfm.util.*;
+import org.mitre.mpf.wfm.util.CallbackStatus;
+import org.mitre.mpf.wfm.util.InvalidJobIdException;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,19 +77,22 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import static java.util.stream.Collectors.toList;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 // swagger includes
 
@@ -87,9 +113,6 @@ public class JobController {
     private JobRequestDao jobRequestDao;
 
     @Autowired
-    private SessionModel sessionModel;
-
-    @Autowired
     private JobProgress jobProgress;
 
     @Autowired
@@ -103,6 +126,9 @@ public class JobController {
 
     @Autowired
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
+
+    @Autowired
+    private TiesDbService tiesDbService;
 
     @ExceptionHandler(InvalidJobIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -158,9 +184,11 @@ public class JobController {
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
     public ResponseEntity<JobCreationResponse> createJobRest(
             @ApiParam(required = true, value = "JobCreationRequest") @RequestBody
-                    JobCreationRequest jobCreationRequest) {
+                    JobCreationRequest jobCreationRequest,
+                    HttpSession session) {
 
-        JobCreationResponse createResponse = createJobInternal(jobCreationRequest, false);
+        JobCreationResponse createResponse = createJobInternal(
+                jobCreationRequest, false, session);
         if (createResponse.getMpfResponse().getResponseCode() == MpfResponse.RESPONSE_CODE_SUCCESS) {
             return new ResponseEntity<>(createResponse, HttpStatus.CREATED);
         } else {
@@ -173,8 +201,10 @@ public class JobController {
     @RequestMapping(value = {"/jobs"}, method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.CREATED) //return 201 for successful post
-    public JobCreationResponse createJob(@RequestBody JobCreationRequest jobCreationRequest) {
-        return createJobInternal(jobCreationRequest, true);
+    public JobCreationResponse createJob(
+            @RequestBody JobCreationRequest jobCreationRequest,
+            HttpSession session) {
+        return createJobInternal(jobCreationRequest, true, session);
     }
 
     /*
@@ -183,9 +213,11 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs", method = RequestMethod.GET)
     @ResponseBody
-    public List<SingleJobInfo> getJobStatus(@RequestParam(value = "useSession", required = false) boolean useSession) {
+    public List<SingleJobInfo> getJobStatus(
+                @RequestParam(value = "useSession", required = false) boolean useSession,
+                HttpSession session) {
         if (useSession) {
-            return sessionModel.getSessionJobs().stream()
+            return SessionUtil.getJobs(session).stream()
                     .map(id -> convertToSingleJobInfo(jobRequestDao.findById(id)))
                     .collect(toList());
         }
@@ -198,45 +230,26 @@ public class JobController {
     }
 
 
-    private static final Map<String, String> JOB_TABLE_COLUMN_NAMES
-            = ImmutableMap.<String, String>builder()
-            .put("0", "id")
-            .put("1", "pipeline")
-            .put("2", "timeReceived")
-            .put("3", "timeCompleted")
-            .put("4", "status")
-            .put("5", "tiesDbStatus")
-            .put("6", "callbackStatus")
-            .put("7", "priority")
-            .build();
-
-
-    // INTERNAL
-    // Parameters come from DataTables library: https://datatables.net/manual/server-side
-    @RequestMapping(value = {"/jobs-paged"}, method = RequestMethod.POST)
+    @GetMapping("/jobs-paged")
     @ResponseBody
     public JobPageListModel getJobStatusFiltered(
-            @RequestParam(value = "draw", required = false) Integer draw,
-            @RequestParam(value = "start", required = false) int start,
-            @RequestParam(value = "length", required = false) int length,
-            @RequestParam(value = "search", required = false) String search,
-            @RequestParam(value = "order[0][column]", defaultValue = "0") String orderByColumn,
-            @RequestParam(value = "order[0][dir]", defaultValue = "desc") String orderDirection) {
-        log.debug("Params draw:{} start:{},length:{},search:{}", draw, start, length, search);
+            @RequestParam("page") int page,
+            @RequestParam("pageLen") int pageLen,
+            @RequestParam("orderCol") String orderCol,
+            @RequestParam("orderDirection") String orderDirection,
+            @RequestParam("search") String search) {
 
-        String sortColumn = JOB_TABLE_COLUMN_NAMES.get(orderByColumn);
-        String sortOrderDirection = orderDirection.equals("desc") ? orderDirection : "asc";
+        int offset = (page - 1) * pageLen;
+        var jobs = jobRequestDao.findByPage(pageLen + 1, offset, search, orderCol, orderDirection);
+        boolean hasMorePages = jobs.size() > pageLen;
 
-        //handle paging
-        List<JobPageModel> jobPageModels = jobRequestDao
-                .findByPage(length, start, search, sortColumn, sortOrderDirection)
-                .stream()
+        var jobPageModels = jobs.stream()
+                .limit(pageLen)
                 .map(this::convertToJobPageModel)
-                .collect(toList());
-        int recordsTotal = (int) jobRequestDao.countAll();
-        int recordsFiltered = search.equals("") ? recordsTotal :
-                (int)jobRequestDao.countFiltered(search);
-        return new JobPageListModel(draw, recordsTotal, recordsFiltered, null, jobPageModels);
+                .toList();
+
+        return new JobPageListModel(
+            jobPageModels, jobRequestDao.estimateNumberOfJobs(), hasMorePages);
     }
 
 
@@ -267,12 +280,14 @@ public class JobController {
     //INTERNAL
     @RequestMapping(value = "/jobs/{id}", method = RequestMethod.GET)
     @ResponseBody
-    public SingleJobInfo getJobStatus(@PathVariable("id") String jobId,
-                                      @RequestParam(value = "useSession", required = false) boolean useSession) {
+    public SingleJobInfo getJobStatus(
+            @PathVariable("id") String jobId,
+            @RequestParam(value = "useSession", required = false) boolean useSession,
+            HttpSession session) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
 
         try (var mdc = CloseableMdc.job(internalJobId)) {
-            if (useSession && !sessionModel.getSessionJobs().contains(internalJobId)) {
+            if (useSession && !SessionUtil.containsJob(session, internalJobId)) {
                 return null;
             }
 
@@ -334,6 +349,7 @@ public class JobController {
                 var msg = String.format(
                         "An error occurred while trying to access the output object for job %s: %s",
                         jobId, e);
+                log.error(msg, e);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(msg);
             }
@@ -382,12 +398,14 @@ public class JobController {
     @RequestMapping(value = "/jobs/{id}/resubmit", method = RequestMethod.POST)
     @ResponseBody
     @ResponseStatus(value = HttpStatus.OK) //return 200 for post in this case
-    public JobCreationResponse resubmitJob(@PathVariable("id") String jobId,
-                                           @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam) {
+    public JobCreationResponse resubmitJob(
+            @PathVariable("id") String jobId,
+            @RequestParam(value = "jobPriority", required = false) Integer jobPriorityParam,
+            HttpSession session) {
         long internalJobId = propertiesUtil.getJobIdFromExportedId(jobId);
         try (var mdc = CloseableMdc.job(internalJobId)) {
             JobCreationResponse response = resubmitJobInternal(internalJobId, jobPriorityParam);
-            sessionModel.getSessionJobs().add(propertiesUtil.getJobIdFromExportedId(response.getJobId()));
+            SessionUtil.addJob(session, internalJobId);
             return response;
         }
     }
@@ -427,16 +445,49 @@ public class JobController {
         return MdcUtil.job(internalJobId, () -> cancelJobInternal(internalJobId));
     }
 
-    private JobCreationResponse createJobInternal(JobCreationRequest jobCreationRequest, boolean useSession) {
+
+    @RequestMapping(
+            value = { "/rest/jobs/tiesdbrepost", "jobs/tiesdbrepost" },
+            method = RequestMethod.POST)
+    @ApiOperation(
+            value = "Retry posting job results to TiesDB.",
+            notes = """
+                Provide a list of job ids as input. For example: `[1, 12, 35]`. The output will \
+                contain a list of failures along with a list of successes. Each failure will \
+                contain the job id and associated error message. The success list will only \
+                contain the job ids.""")
+    public ResponseEntity<TiesDbRepostResponse> tiesDbRepost(@RequestBody List<Long> jobIds) {
+        var tiesDbResult = tiesDbService.repost(jobIds);
+        if (tiesDbResult.failures().isEmpty()) {
+            return ResponseEntity.ok(tiesDbResult);
+        }
+        else {
+            return ResponseEntity.internalServerError().body(tiesDbResult);
+        }
+    }
+
+
+    private JobCreationResponse createJobInternal(
+            JobCreationRequest jobCreationRequest, boolean useSession, HttpSession session) {
         try {
-            long jobId = jobRequestService.run(jobCreationRequest).getId();
+            var jobCreationResult = jobRequestService.run(jobCreationRequest);
+            long jobId = jobCreationResult.jobId();
 
             if (useSession) {
-                sessionModel.getSessionJobs().add(jobId);
+                SessionUtil.addJob(session, jobId);
             }
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
+            var tiesDbOutputObjectUri = jobCreationResult
+                    .tiesDbCheckResult()
+                    .checkInfo()
+                    .filter(ci -> !ci.s3CopyEnabled())
+                    .map(ci -> ci.outputObjectUri())
+                    .orElse(null);
             // the job request has been successfully parsed, construct the job creation response
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(
+                    exportedJobId,
+                    jobCreationResult.tiesDbCheckResult().status(),
+                    tiesDbOutputObjectUri);
         }
         catch (Exception ex) {
             String err = createErrorString(jobCreationRequest, ex.getMessage());
@@ -514,9 +565,17 @@ public class JobController {
             float jobProgressVal = jobProgress.getJobProgress(job.getId())
                     .orElseGet(() -> job.getStatus().isTerminal() ? 100 : 0.0f);
 
-            List<String> mediaUris = getMediaUris(job);
+            boolean outputFileExists;
+            if (job.getOutputObjectPath() == null) {
+                outputFileExists = false;
+            }
+            else {
+                outputFileExists = IoUtils.toLocalPath(job.getOutputObjectPath())
+                        .map(Files::exists)
+                        .orElse(true);
+            }
 
-            JobPageModel jobModel = new JobPageModel(job.getId(),
+            return new JobPageModel(job.getId(),
                                     job.getPipeline(),
                                     job.getPriority(),
                                     job.getStatus().toString(),
@@ -527,15 +586,7 @@ public class JobController {
                                     job.getStatus().isTerminal(),
                                     getCallbackStatus(job, job.getTiesDbStatus()),
                                     getCallbackStatus(job, job.getCallbackStatus()),
-                                    mediaUris);
-
-            if(job.getOutputObjectPath() != null) {
-                jobModel.setOutputFileExists(
-                        IoUtils.toLocalPath(job.getOutputObjectPath())
-                                .map(Files::exists)
-                                .orElse(true));
-            }
-            return jobModel;
+                                    outputFileExists);
         }
     }
 
@@ -567,7 +618,7 @@ public class JobController {
             jobProgress.setJobProgress(jobId, 0);
             log.debug("Successful resubmission of Job Id: {}", jobId);
             String exportedJobId = propertiesUtil.getExportedJobId(jobId);
-            return new JobCreationResponse(exportedJobId);
+            return new JobCreationResponse(exportedJobId, TiesDbCheckStatus.NOT_REQUESTED, null);
         } catch (Exception wpe) {
             String errorStr = "Failed to resubmit the job with id '" + jobId + "'. " + wpe.getMessage();
             log.error(errorStr, wpe);

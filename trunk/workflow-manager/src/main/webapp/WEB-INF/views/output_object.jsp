@@ -8,11 +8,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2022 The MITRE Corporation. All Rights Reserved.
+    Copyright 2023 The MITRE Corporation. All Rights Reserved.
 --%>
 
 <%--
-    Copyright 2022 The MITRE Corporation
+    Copyright 2023 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Output Object View</title>
-    <script src="../resources/js/jquery-1.11.0.min.js"></script>
+    <script src="../resources/js/lib/jquery-1.11.0.min.js"></script>
     <script>
         (function() {
             var jobId = '${jobId}';

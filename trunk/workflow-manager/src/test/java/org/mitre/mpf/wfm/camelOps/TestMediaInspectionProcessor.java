@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,25 +26,22 @@
 
 package org.mitre.mpf.wfm.camelOps;
 
-import org.apache.camel.Exchange;
-import org.apache.tika.exception.TikaException;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
-import org.mitre.mpf.test.TestUtil;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
-import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
-import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
-import org.mitre.mpf.wfm.enums.*;
-import org.mitre.mpf.wfm.util.IoUtils;
-import org.mitre.mpf.wfm.util.JniLoader;
-import org.mitre.mpf.wfm.util.PropertiesUtil;
-import org.mitre.mpf.wfm.util.ThreadUtil;
-import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mitre.mpf.test.TestUtil.nonBlank;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URI;
@@ -56,10 +53,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
-import static org.mitre.mpf.test.TestUtil.nonBlank;
-import static org.mitre.mpf.test.TestUtil.nonEmptyMap;
-import static org.mockito.Mockito.*;
+import org.apache.camel.Exchange;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.tika.exception.TikaException;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mitre.mpf.test.TestUtil;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadataExtractor;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionProcessor;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaMetadataValidator;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.enums.UriScheme;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JniLoader;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
+import org.mitre.mpf.wfm.util.ObjectMapperFactory;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.ThreadUtil;
+import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
+import org.xml.sax.SAXException;
+
 
 public class TestMediaInspectionProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TestMediaInspectionProcessor.class);
@@ -76,6 +102,10 @@ public class TestMediaInspectionProcessor {
     private MediaInspectionHelper _mediaInspectionHelper;
 
     private MediaInspectionProcessor _mediaInspectionProcessor;
+
+    @SuppressWarnings("unchecked")
+    private ArgumentCaptor<Map<String, String>> _metadataCaptor
+            = ArgumentCaptor.forClass(Map.class);
 
     @Rule
     public TemporaryFolder _tempFolder = new TemporaryFolder();
@@ -94,10 +124,17 @@ public class TestMediaInspectionProcessor {
     }
 
     @Before
-    public void init() throws TikaException, IOException, SAXException {
+    public void init() throws TikaException, IOException, SAXException, ConfigurationException {
+        var mediaTypePropertiesPath = TestUtil.findFilePath("/properties/mediaType.properties");
+        when(_mockPropertiesUtil.getMediaTypesFile())
+            .thenReturn(new FileSystemResource(mediaTypePropertiesPath.toFile()));
+        var mediaTypeUtils = new MediaTypeUtils(_mockPropertiesUtil);
+
         _mediaInspectionHelper = new MediaInspectionHelper(
                 _mockPropertiesUtil, _mockInProgressJobs, new IoUtils(),
-                _mockMediaMetadataValidator);
+                mediaTypeUtils,
+                _mockMediaMetadataValidator,
+                new FfprobeMetadataExtractor(ObjectMapperFactory.customObjectMapper()));
 
         _mediaInspectionProcessor = new MediaInspectionProcessor(
                 _mockInProgressJobs, _mediaInspectionHelper);
@@ -121,10 +158,44 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE), eq("image/jpeg"),
-                                        eq(1), notNull());
+                                        eq(1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
 
+        var expectedMetadata = Map.of(
+                "FRAME_WIDTH", "480",
+                "FRAME_HEIGHT", "600",
+                "MIME_TYPE", "image/jpeg");
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
+
         LOG.info("Image media inspection test passed.");
+    }
+
+
+    @Test
+    public void testGifImageInspection() {
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/face-morphing.gif", Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "1d53c3a2344b01025baba6e11be06625cf606a4a1a22107735c2c945c04e4dfa";
+
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(
+                        eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
+                        eq("image/gif"), eq(29), _metadataCaptor.capture());
+
+        verifyNoJobOrMediaError();
+        var expectedMetadata = Map.of(
+                "FRAME_WIDTH", "308",
+                "FRAME_HEIGHT", "400",
+                "MIME_TYPE", "image/gif",
+                "ROTATION", "0.0",
+                "FRAME_COUNT", "29",
+                "DURATION", "3500");
+
+        assertVideoMetadataMatches(expectedMetadata, 53.0 / 6);
     }
 
 
@@ -141,15 +212,19 @@ public class TestMediaInspectionProcessor {
         String mediaHash = "5eacf0a11d51413300ee0f4719b7ac7b52b47310a49320703c1d2639ebbc9fea"; // `sha256sum video_01.mp4`
         int frameCount = 90; // `ffprobe -show_packets video_01.mp4 | grep video | wc -l`
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO), eq("video/mp4"),
-                        eq(frameCount), metadataCaptor.capture());
+                        eq(frameCount), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
 
-        var mediaMetadata = metadataCaptor.getValue();
-        assertTrue(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
+        var expectedMetadata = Map.of(
+            "FRAME_COUNT", "90",
+            "FRAME_WIDTH", "640",
+            "FRAME_HEIGHT", "480",
+            "MIME_TYPE", "video/mp4",
+            "DURATION", "3042",
+            "HAS_CONSTANT_FRAME_RATE", "true");
+        assertVideoMetadataMatches(expectedMetadata, 30000.0 / 1001);
 
         LOG.info("Video media inspection test passed.");
     }
@@ -169,25 +244,48 @@ public class TestMediaInspectionProcessor {
 
         String mediaHash = "c059a6fe6d6340bebc20eb8f2803317b6c9b57e7fcec60f4e352062a7b800be4";
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
                                         eq("video/mp4"), eq(511),
-                                        metadataCaptor.capture());
+                                        _metadataCaptor.capture());
         verifyNoJobOrMediaError();
 
-        var mediaMetadata = metadataCaptor.getValue();
-        assertTrue(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
-        assertEquals(90.0, Double.parseDouble(mediaMetadata.get("ROTATION")), 0.001);
-        assertEquals(511, Integer.parseInt(mediaMetadata.get("FRAME_COUNT")));
-        assertEquals(480, Integer.parseInt(mediaMetadata.get("FRAME_WIDTH")));
-        assertEquals(640, Integer.parseInt(mediaMetadata.get("FRAME_HEIGHT")));
-        assertEquals(29.97, Double.parseDouble(mediaMetadata.get("FPS")), 0.001);
-        assertEquals("video/mp4", mediaMetadata.get("MIME_TYPE"));
-        assertEquals(17090, Integer.parseInt(mediaMetadata.get("DURATION")));
+        var expectedMetadata = Map.of(
+            "FRAME_COUNT", "511",
+            "FRAME_WIDTH", "480",
+            "FRAME_HEIGHT", "640",
+            "MIME_TYPE", "video/mp4",
+            "DURATION", "17067",
+            "ROTATION", "90.0",
+            "HAS_CONSTANT_FRAME_RATE", "true");
+        assertVideoMetadataMatches(expectedMetadata, 30000.0 / 1001);
 
         LOG.info("Rotated video media inspection test passed.");
+    }
+
+
+    @Test
+    public void testVideoInspectionWithMissingTimes() {
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/text-test-video-detection.avi", Collections.emptyMap());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "df75164cccd48821d31527aa02c9ded530a8eb7f728d8c50731a9a5f3845d7a6";
+
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO), eq("video/x-msvideo"),
+                        eq(3), _metadataCaptor.capture());
+        verifyNoJobOrMediaError();
+
+        var expectedMetadata = Map.of(
+            "FRAME_COUNT", "3",
+            "FRAME_WIDTH", "852",
+            "FRAME_HEIGHT", "480",
+            "MIME_TYPE", "video/x-msvideo",
+            "DURATION", "2261");
+        assertVideoMetadataMatches(expectedMetadata, 223.0 / 12);
     }
 
 
@@ -205,11 +303,18 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO),
-                        eq("audio/vnd.wave"), eq(-1), nonEmptyMap());
+                        eq("audio/vnd.wave"), eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
+
+        var expectedMetadata = Map.of(
+            "MIME_TYPE", "audio/vnd.wave",
+            "DURATION", "2200"
+        );
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
 
         LOG.info("Audio media inspection test passed.");
     }
+
 
     @Test(timeout = 5 * MINUTES)
     public void testVideoToAudioFallback() {
@@ -228,8 +333,14 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO), eq("video/mp4"),
-                        eq(-1), nonEmptyMap());
+                        eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
+
+        var expectedMetadata = Map.of(
+            "MIME_TYPE", "video/mp4",
+            "DURATION", "17415"
+        );
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
 
         LOG.info("Media inspection test with video to audio fallback passed.");
     }
@@ -253,8 +364,10 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq("video/mp4"),
-                        eq(-1), nonEmptyMap());
+                        eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
+
+        assertEquals(Map.of("MIME_TYPE", "video/mp4"), _metadataCaptor.getValue());
 
         LOG.info("Media inspection test with video to unknown fallback passed..");
     }
@@ -287,8 +400,14 @@ public class TestMediaInspectionProcessor {
 
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.AUDIO),
-                        eq("audio/x-hx-aac-adts"), eq(-1), nonEmptyMap());
+                        eq("audio/x-hx-aac-adts"), eq(-1), _metadataCaptor.capture());
         verifyNoJobOrMediaError();
+
+        var expectedMetadata = Map.of(
+            "MIME_TYPE", "audio/x-hx-aac-adts",
+            "DURATION", "2304"
+        );
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
 
         LOG.info("adts file test passed.");
     }
@@ -305,22 +424,53 @@ public class TestMediaInspectionProcessor {
 
         String mediaHash = "06091f89bfa66d0f882f1a71f68858a8ec1ffaa96919b9f87b30a14795f0189f"; // `sha256sum bbb24p_00_short.ts`
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
-                        eq("video/vnd.dlna.mpeg-tts"), eq(10), metadataCaptor.capture());
-
-        verify(_mockInProgressJobs)
-                .addWarning(jobId, mediaId, IssueCodes.FRAME_COUNT,
-                            "OpenCV reported the frame count to be 27, but FFmpeg reported it to be 10. 10 will be used.");
+                        eq("video/vnd.dlna.mpeg-tts"), eq(10), _metadataCaptor.capture());
 
         verifyNoJobOrMediaError();
-        var mediaMetadata = metadataCaptor.getValue();
+        var mediaMetadata = _metadataCaptor.getValue();
         assertFalse(Boolean.parseBoolean(mediaMetadata.get("HAS_CONSTANT_FRAME_RATE")));
+
+        var expectedMetadata = Map.of(
+                "FRAME_COUNT", "10",
+                "FRAME_WIDTH", "1920",
+                "FRAME_HEIGHT", "1080",
+                "MIME_TYPE", "video/vnd.dlna.mpeg-tts",
+                "DURATION", "1130");
+        assertVideoMetadataMatches(expectedMetadata, 24);
 
         LOG.info("ts file test passed.");
     }
+
+
+    @Test
+    public void testVideoMissingDuration() {
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/test4.mkv", Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "43df750a2a01a37949791b717051b41522081a266b71d113be4b713063843699";
+
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(
+                        eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.VIDEO),
+                        eq("video/x-matroska"), eq(1642), _metadataCaptor.capture());
+
+        verifyNoJobOrMediaError();
+        var expectedMetadata = Map.of(
+                "FRAME_WIDTH", "1280",
+                "FRAME_HEIGHT", "720",
+                "MIME_TYPE", "video/x-matroska",
+                "ROTATION", "0.0",
+                "FRAME_COUNT", "1642",
+                "DURATION", "68417");
+
+        assertVideoMetadataMatches(expectedMetadata, 24 / 1);
+    }
+
 
     @Test(timeout = 5 * MINUTES)
     public void testCrushedPngInspection() {
@@ -340,14 +490,17 @@ public class TestMediaInspectionProcessor {
 
         // `sha256sum lenna-crushed.png`
         String mediaHash = "cfcf04d5abe24dd8747b2b859e567864cca883d7dc391171dd682d635509bc89";
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/png"), eq(1),
-                                        metadataCaptor.capture());
-        assertEquals("512", metadataCaptor.getValue().get("FRAME_WIDTH"));
-        assertEquals("512", metadataCaptor.getValue().get("FRAME_HEIGHT"));
+                                        _metadataCaptor.capture());
+
+        var expectedMetadata = Map.of(
+                "FRAME_WIDTH", "512",
+                "FRAME_HEIGHT", "512",
+                "MIME_TYPE", "image/png");
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(_mockInProgressJobs)
@@ -356,7 +509,6 @@ public class TestMediaInspectionProcessor {
         assertTrue(defriedPath.startsWith(_tempFolder.getRoot().toPath()));
         assertTrue(defriedPath.getFileName().toString().startsWith("lenna-crushed_defried"));
         assertTrue(defriedPath.getFileName().toString().endsWith(".png"));
-        assertTrue(Files.exists(defriedPath));
     }
 
     @Test(timeout = 5 * MINUTES)
@@ -377,25 +529,72 @@ public class TestMediaInspectionProcessor {
 
         // `sha256sum IMG_5355.HEIC`
         String mediaHash = "a671c241b4943919236865df4fa9997f99d80ce4dba276256436f6310914aff2";
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
                                         eq("image/heic"), eq(1),
-                                        metadataCaptor.capture());
-        var metadata = metadataCaptor.getValue();
-        assertEquals("4032", metadata.get("FRAME_WIDTH"));
-        assertEquals("3024", metadata.get("FRAME_HEIGHT"));
-        assertEquals("90", metadata.get("ROTATION"));
+                                        _metadataCaptor.capture());
+
+        var expectedMetadata = Map.of(
+                "FRAME_WIDTH", "3024",
+                "FRAME_HEIGHT", "4032",
+                "MIME_TYPE", "image/heic");
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
 
         var pathCaptor = ArgumentCaptor.forClass(Path.class);
         verify(_mockInProgressJobs)
                 .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
-        var heicPath = pathCaptor.getValue();
-        assertTrue(heicPath.startsWith(_tempFolder.getRoot().toPath()));
-        assertTrue(heicPath.getFileName().toString().endsWith(".png"));
-        assertTrue(Files.exists(heicPath));
+        var pngPath = pathCaptor.getValue();
+        assertTrue(pngPath.startsWith(_tempFolder.getRoot().toPath()));
+        assertTrue(pngPath.getFileName().toString().endsWith(".png"));
+        assertTrue(Files.exists(pngPath));
     }
+
+
+    @Test
+    public void testWebpExtraBytes() throws IOException {
+        when(_mockPropertiesUtil.getTemporaryMediaDirectory())
+                .thenReturn(_tempFolder.getRoot());
+
+        long jobId = next();
+        long mediaId = next();
+        var media = inspectMedia(
+            jobId, mediaId, "/samples/Johnrogershousemay2020-extra-bytes.webp", Map.of());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.",
+                                  media.getErrorMessage()),
+                    media.isFailed());
+
+        verifyNoJobOrMediaError();
+
+        var mediaHash = "b9ef08ce73c945d62a3bf48566377c0d9f99fe0b07810affe40c53f67d8afad2";
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.IMAGE),
+                                        eq("image/webp"), eq(1),
+                                        metadataCaptor.capture());
+        var metadata = metadataCaptor.getValue();
+        assertEquals("1536", metadata.get("FRAME_WIDTH"));
+        assertEquals("1024", metadata.get("FRAME_HEIGHT"));
+
+        var pathCaptor = ArgumentCaptor.forClass(Path.class);
+        verify(_mockInProgressJobs)
+                .addConvertedMediaPath(eq(jobId), eq(mediaId), pathCaptor.capture());
+
+        var fixedPath = pathCaptor.getValue();
+        assertTrue(fixedPath.startsWith(_tempFolder.getRoot().toPath()));
+        assertTrue(fixedPath.getFileName().toString().endsWith(".webp"));
+        assertTrue(Files.exists(fixedPath));
+
+        try (var is = Files.newInputStream(fixedPath)) {
+            var actualFixedSha = DigestUtils.sha256Hex(is);
+            var expectedFixedSha = "4cf3e271105fc5ec4c57980a652125a9436479bc5021a05c72c80b0a477d749c";
+            assertEquals(expectedFixedSha, actualFixedSha);
+        }
+    }
+
 
     @Test(timeout = 5 * MINUTES)
     public void canHandleInvalidExifDimensions() {
@@ -409,15 +608,19 @@ public class TestMediaInspectionProcessor {
                     media.isFailed());
         verifyNoJobOrMediaError();
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, String>> metadataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(_mockInProgressJobs)
                 .addMediaInspectionInfo(eq(jobId), eq(mediaId), notNull(), eq(MediaType.IMAGE),
                                         eq("image/jpeg"), eq(1),
-                                        metadataCaptor.capture());
-        assertEquals("809", metadataCaptor.getValue().get("FRAME_WIDTH"));
-        assertEquals("606", metadataCaptor.getValue().get("FRAME_HEIGHT"));
-        assertEquals("1", metadataCaptor.getValue().get("EXIF_ORIENTATION"));
+                                        _metadataCaptor.capture());
+
+        var expectedMetadata = Map.of(
+                "ROTATION", "0",
+                "EXIF_ORIENTATION", "1",
+                "FRAME_WIDTH", "809",
+                "FRAME_HEIGHT", "606",
+                "HORIZONTAL_FLIP", "FALSE",
+                "MIME_TYPE", "image/jpeg");
+        assertEquals(expectedMetadata, _metadataCaptor.getValue());
     }
 
     @Test
@@ -436,17 +639,6 @@ public class TestMediaInspectionProcessor {
                 .addMediaInspectionInfo(anyLong(), anyLong(), any(), any(), any(), anyInt(), anyMap());
         verifyNoJobOrMediaError();
     }
-
-    @Test
-    public void testCalculateDurationMilliseconds() {
-        Assert.assertEquals(7800, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.8"));
-        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.86"));
-        Assert.assertEquals(7860, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.860"));
-        Assert.assertEquals(7080, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.08"));
-        Assert.assertEquals(7086, MediaInspectionHelper.calculateDurationMilliseconds("00:00:07.086"));
-        Assert.assertEquals(45_296_789, MediaInspectionHelper.calculateDurationMilliseconds("12:34:56.789"));
-    }
-
 
     private void verifyNoJobOrMediaError() {
         verify(_mockInProgressJobs, never())
@@ -480,5 +672,17 @@ public class TestMediaInspectionProcessor {
         assertEquals("Job ID headers must be set.", jobId, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
 
         return media;
+    }
+
+    private void assertVideoMetadataMatches(
+            Map<String, String> expectedMetadata, double expectedFps) {
+
+        var actualMetadata = _metadataCaptor.getValue();
+        for (var expectedEntry : expectedMetadata.entrySet()) {
+            assertEquals(expectedEntry.getValue(), actualMetadata.get(expectedEntry.getKey()));
+        }
+
+        double actualFps = Double.parseDouble(actualMetadata.get("FPS"));
+        assertEquals(expectedFps, actualFps, 0.0001);
     }
 }

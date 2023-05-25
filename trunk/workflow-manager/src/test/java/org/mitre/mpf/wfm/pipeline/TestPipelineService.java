@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -44,6 +44,7 @@ import org.mitre.mpf.wfm.util.PropertiesUtil;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -91,13 +92,13 @@ public class TestPipelineService {
                 new AlgorithmProperty("PROP2", "PROP2 description", ValueType.STRING,
                                       null, "prop2.value"));
         _algo1 = new Algorithm(
-                "ALGO1", "algo1 description", ActionType.DETECTION,
+                "ALGO1", "algo1 description", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(List.of("STATE1", "STATE2")),
                 new Algorithm.Provides(List.of("STATE3", "STATE3"), algo1Properties),
                 true, true);
 
         _algo2 = new Algorithm(
-                "ALGO2", "algo2 description", ActionType.DETECTION,
+                "ALGO2", "algo2 description", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(List.of()),
                 new Algorithm.Provides(List.of(), List.of()),
                 true, false);
@@ -256,18 +257,18 @@ public class TestPipelineService {
         assertEquals(_pipelines.get(0), pipelineElements.getPipeline());
 
         assertEquals(2, pipelineElements.getTaskCount());
-        assertEquals(2, pipelineElements.getTasks().size());
+        assertEquals(2, pipelineElements.getAllTasks().size());
         assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
         assertEquals(_tasks.get(1), pipelineElements.getTask(_tasks.get(1).getName()));
 
-        assertEquals(2, pipelineElements.getActions().size());
+        assertEquals(2, pipelineElements.getAllActions().size());
         assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
         assertEquals(_actions.get(1), pipelineElements.getAction(_actions.get(1).getName()));
         assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
         assertEquals(_actions.get(1), pipelineElements.getAction(1, 0));
 
 
-        assertEquals(2, pipelineElements.getAlgorithms().size());
+        assertEquals(2, pipelineElements.getAllAlgorithms().size());
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
         assertEquals(_algorithms.get(1), pipelineElements.getAlgorithm(_algorithms.get(1).getName()));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
@@ -292,16 +293,16 @@ public class TestPipelineService {
         assertEquals(pipeline, pipelineElements.getPipeline());
 
         assertEquals(2, pipelineElements.getTaskCount());
-        assertEquals(1, pipelineElements.getTasks().size());
+        assertEquals(1, pipelineElements.getAllTasks().size());
         assertEquals(_tasks.get(0), pipelineElements.getTask(_tasks.get(0).getName()));
 
-        assertEquals(1, pipelineElements.getActions().size());
+        assertEquals(1, pipelineElements.getAllActions().size());
         assertEquals(_actions.get(0), pipelineElements.getAction(_actions.get(0).getName()));
         assertEquals(_actions.get(0), pipelineElements.getAction(0, 0));
         assertEquals(_actions.get(0), pipelineElements.getAction(1, 0));
 
 
-        assertEquals(1, pipelineElements.getAlgorithms().size());
+        assertEquals(1, pipelineElements.getAllAlgorithms().size());
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(_algorithms.get(0).getName()));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(0, 0));
         assertEquals(_algorithms.get(0), pipelineElements.getAlgorithm(1, 0));

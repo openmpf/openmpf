@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,6 +32,8 @@ import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.mitre.mpf.wfm.util.PngDefry;
@@ -42,6 +44,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,10 +76,19 @@ public class MediaMetadataValidator {
 
     private final InProgressBatchJobsService _inProgressJobs;
 
+    private final MediaTypeUtils _mediaTypeUtils;
+
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
 
     @Inject
-    public MediaMetadataValidator(InProgressBatchJobsService inProgressJobs) {
+    public MediaMetadataValidator(
+            InProgressBatchJobsService inProgressJobs,
+            MediaTypeUtils mediaTypeUtils,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _inProgressJobs = inProgressJobs;
+        _mediaTypeUtils = mediaTypeUtils;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
     public boolean skipInspection(long jobId, Media media) {
@@ -84,14 +96,18 @@ public class MediaMetadataValidator {
             return false;
         }
 
-        var mediaMetadata = media.getProvidedMetadata();
-        if (mediaMetadata.isEmpty()) {
+        var job = _inProgressJobs.getJob(jobId);
+        var shouldSkipInspection = Boolean.parseBoolean(
+                _aggregateJobPropertiesUtil.getValue(
+                        MpfConstants.SKIP_MEDIA_INSPECTION, job, media));
+        if (!shouldSkipInspection) {
             return false;
         }
 
         long mediaId = media.getId();
 
         try {
+            var mediaMetadata = media.getProvidedMetadata();
             checkForMissingMetadata(mediaMetadata, Set.of("MIME_TYPE", "MEDIA_HASH"), null);
 
             String mimeType = TextUtils.trim(mediaMetadata.get("MIME_TYPE"));
@@ -101,7 +117,7 @@ public class MediaMetadataValidator {
 
             int length = -1;
             String sha = mediaMetadata.get("MEDIA_HASH");
-            MediaType mediaType = MediaTypeUtils.parse(mimeType);
+            MediaType mediaType = _mediaTypeUtils.parse(mimeType);
 
             switch (mediaType) {
                 case IMAGE:
@@ -121,9 +137,9 @@ public class MediaMetadataValidator {
                     }
                     if (!missingVideoMetadata) {
                         checkMetadataTypes(mediaMetadata, REQUIRED_VIDEO_METADATA, true);
-                        _inProgressJobs.addFrameTimeInfo(jobId, mediaId,
-                                                         getFrameTimeInfo(mediaMetadata));
                         length = Integer.parseInt(mediaMetadata.get("FRAME_COUNT"));
+                        _inProgressJobs.addFrameTimeInfo(
+                                jobId, mediaId, getFrameTimeInfo(mediaMetadata, length));
                         break;
                     }
                     // fall through
@@ -249,15 +265,16 @@ public class MediaMetadataValidator {
     }
 
 
-    private static FrameTimeInfo getFrameTimeInfo(Map<String, String> mediaMetadata) {
+    private static FrameTimeInfo getFrameTimeInfo(
+            Map<String, String> mediaMetadata, int frameCount) {
         boolean hasConstantFrameRate = Boolean.parseBoolean(
                 mediaMetadata.get("HAS_CONSTANT_FRAME_RATE"));
         double fps = Double.parseDouble(mediaMetadata.get("FPS"));
         if (hasConstantFrameRate) {
-            return FrameTimeInfo.forConstantFrameRate(fps, 0, false);
+            return FrameTimeInfo.forConstantFrameRate(fps, OptionalInt.of(0), frameCount);
         }
         else {
-            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps);
+            return FrameTimeInfo.forVariableFrameRateWithEstimatedTimes(fps, frameCount);
         }
     }
 }

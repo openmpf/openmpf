@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.1",
+  "openmpfVersion": "7.2",
   "jobId": 16,
   "errors": [],
   "warnings": [],
@@ -47,7 +47,8 @@
         "FRAME_HEIGHT": "1080",
         "FRAME_WIDTH": "1920",
         "HAS_CONSTANT_FRAME_RATE": "true",
-        "MIME_TYPE": "video/quicktime"
+        "MIME_TYPE": "video/quicktime",
+        "ROTATION": "0.0"
       },
       "mediaProperties": {},
       "status": "COMPLETE",

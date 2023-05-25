@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -46,7 +46,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StreamingJobMessageSender;
 import org.mitre.mpf.wfm.service.pipeline.PipelineService;
-import org.mitre.mpf.wfm.util.CallbackUtils;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -120,7 +120,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
     private StreamingJobMessageSender streamingJobMessageSender;
 
     @Autowired
-    private CallbackUtils callbackUtils;
+    private HttpClientUtils _httpClientUtils;
 
     @Autowired
     private JobStatusBroadcaster jobStatusBroadcaster;
@@ -156,7 +156,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
             jobRequestEntity = streamingJobRequestDao.persist(jobRequestEntity);
 
             job.getHealthReportCallbackURI()
-                    .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
+                    .ifPresent(uri -> _httpClientUtils.sendHealthReportCallback(uri, List.of(job)));
 
             streamingJobMessageSender.launchJob(job);
 
@@ -407,7 +407,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
         StreamingJob job = inProgressJobs.getJob(jobId);
 
         job.getHealthReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
+                .ifPresent(uri -> _httpClientUtils.sendHealthReportCallback(uri, List.of(job)));
 
 
         StreamingJobRequest streamingJobRequest = streamingJobRequestDao.findById(jobId);
@@ -458,7 +458,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
         inProgressJobs.setLastJobActivity(jobId, frameId, Instant.ofEpochMilli(timestamp));
         StreamingJob job = inProgressJobs.getJob(jobId);
         job.getHealthReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendHealthReportCallback(uri, List.of(job)));
+                .ifPresent(uri -> _httpClientUtils.sendHealthReportCallback(uri, List.of(job)));
     }
 
     @Override
@@ -469,7 +469,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
                 .ifPresent(summaryReport::setExternalId);
 
         job.getSummaryReportCallbackURI()
-                .ifPresent(uri -> callbackUtils.sendSummaryReportCallback(summaryReport, uri));
+                .ifPresent(uri -> _httpClientUtils.sendSummaryReportCallback(summaryReport, uri));
 
         if (job.isOutputEnabled()) {
             try {
@@ -497,7 +497,7 @@ public class StreamingJobRequestServiceImpl implements StreamingJobRequestServic
     @Override
     public void sendHealthReports() {
         inProgressJobs.getJobsGroupedByHealthReportUri()
-                .forEach(callbackUtils::sendHealthReportCallback);
+                .forEach(_httpClientUtils::sendHealthReportCallback);
     }
 
     @Override

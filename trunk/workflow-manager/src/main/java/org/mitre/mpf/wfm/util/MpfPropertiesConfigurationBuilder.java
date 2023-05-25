@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -41,6 +41,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 @Component
 public class MpfPropertiesConfigurationBuilder {
 
@@ -56,7 +59,7 @@ public class MpfPropertiesConfigurationBuilder {
             "web.job.polling.interval",
             "warn.",
             "markup.",
-            "ties.db.url",
+            "ties.db",
             "s3."
     );
 
@@ -68,33 +71,35 @@ public class MpfPropertiesConfigurationBuilder {
             "mpf.output.objects.last.task.only",
             "s3.");
 
-    @javax.annotation.Resource(name="customPropFile")
-    private FileSystemResource customPropFile;
-    public void setCustomPropFile(FileSystemResource customPropFile) {
-        this.customPropFile = customPropFile;
-    }
 
-    @javax.annotation.Resource(name="propFiles")
-    private List<Resource> propFiles;
-    public void setPropFiles(List<Resource> propFiles) {
-        this.propFiles = propFiles;
-    }
+    private final FileSystemResource _customPropFile;
 
-    private CompositeConfiguration mpfCompositeConfig;
+    private final List<Resource> _propFiles;
+
+
+    private CompositeConfiguration _mpfCompositeConfig;
 
     // return a snapshot to users of this class to prevent the case where a property is being set / updated at the same
     // time that properties are being read out of the config
     // this is volatile to ensure the most updated version is used across threads
-    private volatile PropertiesConfiguration mpfConfigSnapshot;
+    private volatile PropertiesConfiguration _mpfConfigSnapshot;
 
-    private PropertiesConfiguration mpfCustomPropertiesConfig;
+    private PropertiesConfiguration _mpfCustomPropertiesConfig;
+
+    @Inject
+    public MpfPropertiesConfigurationBuilder(
+            @Named("customPropFile") FileSystemResource customPropFile,
+            @Named("propFiles") List<Resource> propFiles) {
+        _customPropFile = customPropFile;
+        _propFiles = propFiles;
+    }
 
     public ImmutableConfiguration getCompleteConfiguration() {
-        if (mpfConfigSnapshot == null) {
-            mpfCompositeConfig = createCompositeConfiguration();
+        if (_mpfConfigSnapshot == null) {
+            _mpfCompositeConfig = createCompositeConfiguration();
             updateConfigurationSnapshot();
         }
-        return mpfConfigSnapshot;
+        return _mpfConfigSnapshot;
     }
 
     public synchronized ImmutableConfiguration setAndSaveCustomProperties(List<PropertyModel> propertyModels) {
@@ -102,13 +107,13 @@ public class MpfPropertiesConfigurationBuilder {
         // create a new builder and configuration to write the properties to disk
         // without affecting the values of the composite config
         FileBasedConfigurationBuilder<PropertiesConfiguration> tmpMpfCustomPropertiesConfigBuilder =
-                createFileBasedConfigurationBuilder(customPropFile);
+                createFileBasedConfigurationBuilder(_customPropFile);
 
         Configuration tmpMpfCustomPropertiesConfig;
         try {
             tmpMpfCustomPropertiesConfig = tmpMpfCustomPropertiesConfigBuilder.getConfiguration();
         } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot create configuration from " + customPropFile + ".", e);
+            throw new IllegalStateException("Cannot create configuration from " + _customPropFile + ".", e);
         }
 
         for (PropertyModel propModel : propertyModels) {
@@ -120,42 +125,42 @@ public class MpfPropertiesConfigurationBuilder {
 
             // update only the mutable properties in the composite config used by the WFM
             if (isMutableProperty(key)) {
-                mpfCustomPropertiesConfig.setProperty(key, value);
+                _mpfCustomPropertiesConfig.setProperty(key, value);
             }
         }
 
         try {
             tmpMpfCustomPropertiesConfigBuilder.save();
         } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot save configuration to " + customPropFile + ".", e);
+            throw new IllegalStateException("Cannot save configuration to " + _customPropFile + ".", e);
         }
 
         updateConfigurationSnapshot();
 
-        return mpfConfigSnapshot;
+        return _mpfConfigSnapshot;
     }
 
     public synchronized List<PropertyModel> getCustomProperties() {
 
         // create a new builder and configuration to read the properties on disk
         FileBasedConfigurationBuilder<PropertiesConfiguration> tmpMpfCustomPropertiesConfigBuilder =
-                createFileBasedConfigurationBuilder(customPropFile);
+                createFileBasedConfigurationBuilder(_customPropFile);
 
         Configuration tmpMpfCustomPropertiesConfig;
         try {
             tmpMpfCustomPropertiesConfig = tmpMpfCustomPropertiesConfigBuilder.getConfiguration();
         } catch (ConfigurationException e) {
-            throw new IllegalStateException("Cannot create configuration from " + customPropFile + ".", e);
+            throw new IllegalStateException("Cannot create configuration from " + _customPropFile + ".", e);
         }
 
         // generate a complete list of property models and determine if a WFM restart is needed for each
         List <PropertyModel> propertyModels = new ArrayList<>();
-        Iterator<String> propertyKeyIter = mpfCompositeConfig.getKeys();
+        Iterator<String> propertyKeyIter = _mpfCompositeConfig.getKeys();
         while (propertyKeyIter.hasNext()) {
             String key = propertyKeyIter.next();
 
             // use uninterpolated values
-            String currentValue = getRawValue(mpfCompositeConfig, key);
+            String currentValue = getRawValue(_mpfCompositeConfig, key);
 
             if (tmpMpfCustomPropertiesConfig.containsKey(key)) {
                 String customValue = getRawValue(tmpMpfCustomPropertiesConfig, key);
@@ -180,12 +185,12 @@ public class MpfPropertiesConfigurationBuilder {
 
     private CompositeConfiguration createCompositeConfiguration() {
 
-        if (!customPropFile.exists()) {
+        if (!_customPropFile.exists()) {
             try {
-                PropertiesUtil.createParentDir(customPropFile);
-                customPropFile.getFile().createNewFile();
+                PropertiesUtil.createParentDir(_customPropFile);
+                _customPropFile.getFile().createNewFile();
             } catch (IOException e) {
-                throw new IllegalStateException("Cannot create " + customPropFile + ".", e);
+                throw new IllegalStateException("Cannot create " + _customPropFile + ".", e);
             }
         }
 
@@ -193,11 +198,11 @@ public class MpfPropertiesConfigurationBuilder {
 
         // add resources in the order they are specified in the application context XML;
         // the first configs that are added to the composite override property values in configs that are added later
-        for (Resource resource : propFiles) {
+        for (Resource resource : _propFiles) {
             try {
-                if (resource.equals(customPropFile)) {
-                    mpfCustomPropertiesConfig = createFileBasedConfigurationBuilder(customPropFile).getConfiguration();
-                    compositeConfig.addConfiguration(mpfCustomPropertiesConfig);
+                if (resource.equals(_customPropFile)) {
+                    _mpfCustomPropertiesConfig = createFileBasedConfigurationBuilder(_customPropFile).getConfiguration();
+                    compositeConfig.addConfiguration(_mpfCustomPropertiesConfig);
                 } else if (resource.exists()){
                     compositeConfig.addConfiguration(createFileBasedConfigurationBuilder(resource).getConfiguration());
                 }
@@ -206,9 +211,9 @@ public class MpfPropertiesConfigurationBuilder {
             }
         }
 
-        if (mpfCustomPropertiesConfig == null) {
+        if (_mpfCustomPropertiesConfig == null) {
             throw new IllegalStateException("List of configuration properties files did not contain the " +
-                    "custom configuration property file: " + propFiles);
+                    "custom configuration property file: " + _propFiles);
         }
 
         return compositeConfig;
@@ -238,9 +243,9 @@ public class MpfPropertiesConfigurationBuilder {
 
         // this will copy over each property one at a time,
         // essentially generating a "flat" config from the composite config
-        ConfigurationUtils.copy(mpfCompositeConfig, tmpConfig);
+        ConfigurationUtils.copy(_mpfCompositeConfig, tmpConfig);
 
-        mpfConfigSnapshot = tmpConfig;
+        _mpfConfigSnapshot = tmpConfig;
     }
 
     public static boolean propertyRequiresSnapshot(String key) {

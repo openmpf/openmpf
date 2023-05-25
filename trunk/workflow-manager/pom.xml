@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2022 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2023 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2022 The MITRE Corporation                                      ~
+  ~ Copyright 2023 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.mitre.mpf</groupId>
         <artifactId>mpf-project</artifactId>
-        <version>7.1</version>
+        <version>7.2</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -45,6 +45,19 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wfm.port>8080</wfm.port>
+        <!--
+            extraArgLine is required so that the JaCoCo code coverage plugin can be used.
+            To get the code coverage information for a unit test class the following command
+            can be used:
+            mvn org.jacoco:jacoco-maven-plugin:prepare-agent \
+                -Djacoco.propertyName=extraArgLine -Djacoco.append=false \
+                surefire:test -Dtest=TestCensorPropertiesService \
+                org.jacoco:jacoco-maven-plugin:report
+
+            The command will output the report as an html file located at
+            target/site/jacoco/index.html
+        -->
+        <extraArgLine/>
     </properties>
 
     <dependencyManagement>
@@ -510,7 +523,7 @@
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
-            <version>2.3</version>
+            <version>2.9.4</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -530,7 +543,7 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
-            <version>2.17.127</version>
+            <version>2.19.17</version>
         </dependency>
 
         <dependency>
@@ -683,7 +696,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
-                    <argLine>-Djava.library.path=${env.MPF_HOME}/lib</argLine>
+                    <argLine>@{extraArgLine} -Djava.library.path=${env.MPF_HOME}/lib</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -898,6 +911,10 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <arguments>
+                                <!-- The default value for the wait argument is 500ms. Setting
+                                     maxAttempts to 360 results in a total maximum wait time of
+                                     3 minutes. -->
+                                <maxAttempts>360</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>
                                 <argument>--spring.profiles.active=jenkins</argument>
                             </arguments>

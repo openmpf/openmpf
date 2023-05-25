@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 
 import org.apache.camel.CamelContext;
@@ -54,6 +55,8 @@ import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf.DetectionRequest;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.FfprobeMetadata;
+import org.mitre.mpf.wfm.camel.operations.mediainspection.Fraction;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.MediaImpl;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -366,9 +369,14 @@ public class TestVideoMediaSegmenter extends MockitoTest.Strict {
                 1, mediaUri.toString(), UriScheme.get(mediaUri), Paths.get(mediaUri), Map.of(),
                 Map.of(), frameBoundaries, timeBoundaries, null);
         media.setLength(200);
-        media.addMetadata("FPS", "29.97");
+        var fps = new Fraction(30_000, 1_001);
+        media.addMetadata("FPS", Double.toString(fps.toDouble()));
+        var ffprobeMetadata = new FfprobeMetadata.Video(
+                -1, -1, fps, OptionalLong.of(200), OptionalLong.empty(), 0,
+                new Fraction(1, 30_000));
         media.setFrameTimeInfo(
-                FrameTimeInfoBuilder.getFrameTimeInfo(media.getLocalPath(), 29.97));
+                FrameTimeInfoBuilder.getFrameTimeInfo(
+                    media.getLocalPath(), ffprobeMetadata, "video/mp4"));
         return media;
     }
 

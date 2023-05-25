@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -79,14 +79,6 @@ public enum AtmosphereChannel {
 	 * 		OnServiceReadyToRemove - when a service is ready to be removed from the NodeManager (i.e., when it is removed from the node configuration)
 	 */
 	SSPC_SERVICE,
-
-	/** SSPC_SESSION: session-related events
-	 *  Event(s):
-	 *  	OnSessionAboutToTimeout - when session is about to time out
-	 *  	OnSessionExtendedByUser - when session is extended by user
-	 *  	OnSessionExpired - when session has expired
-	 */
-	SSPC_SESSION,
 
 	/** SSPC_SYSTEMMESSAGE: SystemMessage notification events
 	 * 	Event(s):

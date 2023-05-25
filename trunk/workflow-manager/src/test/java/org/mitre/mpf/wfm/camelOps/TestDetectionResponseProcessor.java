@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -74,7 +74,8 @@ import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.JsonUtils;
 import org.mitre.mpf.wfm.util.ObjectMapperFactory;
 import org.mockito.ArgumentMatcher;
-import org.mockito.ArgumentMatchers;
+import org.mockito.ArgumentMatchers;import java.util.OptionalInt;
+
 import org.mockito.Mock;
 
 
@@ -126,6 +127,7 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
+                OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);
@@ -155,7 +157,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
                 Map.of(), Map.of(), List.of(), List.of(), null);
         media.addMetadata("FPS", String.valueOf(FPS));
         media.addMetadata("DURATION", String.valueOf(DURATION));
-        media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(FPS, 0, false));
+        media.setFrameTimeInfo(FrameTimeInfo.forConstantFrameRate(
+                FPS, OptionalInt.of(0), (int) (FPS * DURATION)));
 
         BatchJobImpl job = new BatchJobImpl(
             JOB_ID,
@@ -167,7 +170,8 @@ public class TestDetectionResponseProcessor extends MockitoTest.Lenient {
             null,
             List.of(media),
             Map.of(),
-            Map.of());
+            Map.of(),
+            false);
 
         when(mockInProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);

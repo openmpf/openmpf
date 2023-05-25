@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -56,6 +56,7 @@ import org.mitre.mpf.wfm.event.NotificationConsumer;
 import org.mitre.mpf.wfm.service.CensorPropertiesService;
 import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
+import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
 import org.mitre.mpf.wfm.util.*;
 import org.slf4j.Logger;
@@ -113,13 +114,16 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private AggregateJobPropertiesUtil aggregateJobPropertiesUtil;
 
     @Autowired
-    private CallbackUtils callbackUtils;
+    private HttpClientUtils httpClientUtils;
 
     @Autowired
     private JmsUtils jmsUtils;
 
     @Autowired
     private TiesDbService tiesDbService;
+
+    @Autowired
+    private TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -128,8 +132,13 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 MpfHeaders.JOB_ID, exchange.getIn().getHeader(MpfHeaders.JOB_ID));
 
         BatchJob job = inProgressBatchJobs.getJob(jobId);
+        var outputObjectFromTiesDbUri = exchange.getIn().getHeader(
+                MpfHeaders.OUTPUT_OBJECT_URI_FROM_TIES_DB, String.class);
+        var skippedJobDueToTiesDbEntry = outputObjectFromTiesDbUri != null;
 
-        storageService.storeDerivativeMedia(job);
+        if (!skippedJobDueToTiesDbEntry) {
+            storageService.storeDerivativeMedia(job);
+        }
 
         JobRequest jobRequest = jobRequestDao.findById(jobId);
         jobRequest.setTimeCompleted(Instant.now());
@@ -140,30 +149,56 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         var outputSha = new MutableObject<String>();
         var trackCounter = new TrackCounter();
         try {
-            outputObjectUri = createOutputObject(
-                    job,
-                    jobRequest.getTimeReceived(),
-                    jobRequest.getTimeCompleted(),
-                    completionStatus,
-                    outputSha,
-                    trackCounter); // this may update the job status
+            if (skippedJobDueToTiesDbEntry) {
+                outputObjectUri = tiesDbBeforeJobCheckService.updateOutputObject(
+                        job, URI.create(outputObjectFromTiesDbUri), jobRequest);
+            }
+            else {
+                outputObjectUri = createOutputObject(
+                        job,
+                        jobRequest.getTimeReceived(),
+                        jobRequest.getTimeCompleted(),
+                        completionStatus,
+                        outputSha,
+                        trackCounter); // this may update the job status
+            }
             jobRequest.setOutputObjectPath(outputObjectUri.toString());
             jobRequest.setOutputObjectVersion(propertiesUtil.getOutputObjectVersion());
         } catch (Exception exception) {
             var message = "Failed to create the output object due to: " + exception;
-                     log.error(message, exception);
+            log.error(message, exception);
             inProgressBatchJobs.addFatalError(jobId, IssueCodes.OTHER, message);
-                                            }
-        completionStatus = job.getStatus().onComplete();
+        }
+
+        if (skippedJobDueToTiesDbEntry) {
+            completionStatus = job.getStatus();
+        }
+        else {
+            completionStatus = job.getStatus().onComplete();
+            tiesDbService.prepareAssertions(
+                    job,
+                    completionStatus,
+                    jobRequest.getTimeCompleted(),
+                    outputObjectUri,
+                    outputSha.getValue(),
+                    trackCounter);
+        }
 
         jobProgressStore.setJobProgress(jobId, 100);
-            inProgressBatchJobs.setJobStatus(jobId, completionStatus);
+        inProgressBatchJobs.setJobStatus(jobId, completionStatus);
         jobRequest.setStatus(completionStatus);
         jobRequest.setJob(jsonUtils.serialize(job));
         checkCallbacks(job, jobRequest);
+        if (skippedJobDueToTiesDbEntry) {
+            jobStatusBroadcaster.tiesDbStatusChanged(jobId, jobRequest.getTiesDbStatus());
+        }
+        else {
+            checkTiesDbRequired(job, jobRequest);
+        }
 
         jobRequestDao.persist(jobRequest);
-        jobStatusBroadcaster.broadcast(job.getId(), 100, job.getStatus());
+        jobStatusBroadcaster.broadcast(
+            job.getId(), 100, job.getStatus(), jobRequest.getTimeCompleted());
 
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobMarkupDirectory(jobId).toPath());
         IoUtils.deleteEmptyDirectoriesRecursively(propertiesUtil.getJobArtifactsDirectory(jobId).toPath());
@@ -177,19 +212,15 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                             " If this job is resubmitted, it will likely not complete again!", jobId), exception);
         }
 
-        var tiesDbFuture = tiesDbService.addAssertions(
-                job,
-                completionStatus,
-                jobRequest.getTimeCompleted(),
-                outputObjectUri,
-                outputSha.getValue(),
-                trackCounter);
+        var tiesDbFuture = skippedJobDueToTiesDbEntry
+                ? ThreadUtil.completedFuture(null)
+                : tiesDbService.postAssertions(job);
 
         if (job.getCallbackUrl().isPresent()) {
             final var finalOutputUri = outputObjectUri;
             tiesDbFuture
-                    .whenCompleteAsync(
-                            (x, err) -> sendCallbackAsync(job, finalOutputUri).join())
+                    .exceptionally(x -> null)
+                    .thenCompose(x -> sendCallbackAsync(job, finalOutputUri))
                     .whenCompleteAsync((x, err) -> completeJob(job));
         }
         else {
@@ -208,15 +239,19 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
             jobRequest.setCallbackStatus(newStatus);
             jobStatusBroadcaster.callbackStatusChanged(job.getId(), newStatus);
         }
+    }
 
-        boolean requiresTiesDb = JobPartsIter.stream(job)
-                .map(jp -> aggregateJobPropertiesUtil.getValue(MpfConstants.TIES_DB_URL, jp))
-                .anyMatch(url -> url != null && !url.isBlank());
+    private void checkTiesDbRequired(BatchJob job, JobRequest jobRequest) {
+        boolean requiresTiesDb = job.getMedia()
+                .stream()
+                .anyMatch(m -> !m.getTiesDbInfo().isEmpty());
+
         if (requiresTiesDb) {
             inProgressBatchJobs.setCallbacksInProgress(job.getId());
             jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), CallbackStatus.inProgress());
         }
-        else {
+        else if (jobRequest.getTiesDbStatus() == null
+                || !jobRequest.getTiesDbStatus().startsWith("ERROR")) {
             var newStatus = CallbackStatus.notRequested();
             jobRequest.setTiesDbStatus(newStatus);
             jobStatusBroadcaster.tiesDbStatusChanged(job.getId(), newStatus);
@@ -227,6 +262,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private void completeJob(BatchJob job) {
         try {
             inProgressBatchJobs.clearJob(job.getId());
+            jobProgressStore.removeJob(job.getId());
         } catch (Exception exception) {
             log.warn(String.format(
                     "Failed to clean up job %d due to an exception. Data for this job will remain in the transient " +
@@ -243,8 +279,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                 log.warn(String.format("Completion consumer %s threw an exception.", consumer.getId()), exception);
             }
         }
-
-        jobProgressStore.removeJob(job.getId());
         log.info("Job complete with status: {}", job.getStatus());
     }
 
@@ -260,7 +294,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
         try {
             HttpUriRequest request = createCallbackRequest(callbackMethod, callbackUrl,
                                                            job, outputObjectUri);
-            return callbackUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
+            return httpClientUtils.executeRequest(request, propertiesUtil.getHttpCallbackRetryCount())
                     .thenAccept(resp -> checkResponse(job.getId(), resp))
                     .exceptionally(err -> handleFailedCallback(job, err));
         }
@@ -391,6 +425,7 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                     media.getId(),
                     media.getParentId(),
                     media.getPersistentUri(),
+                    null,
                     media.getType().map(Enum::toString).orElse(null),
                     media.getMimeType().orElse(null),
                     media.getLength().orElse(0),

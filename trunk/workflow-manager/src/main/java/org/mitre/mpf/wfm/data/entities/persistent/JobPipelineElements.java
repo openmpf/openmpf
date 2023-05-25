@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -35,6 +35,7 @@ import org.mitre.mpf.rest.api.pipelines.*;
 
 import java.util.Collection;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Holds a reference to the complete pipeline that a job is currently processing. This is so that if a pipeline
@@ -49,17 +50,20 @@ public class JobPipelineElements {
     }
 
     private final ImmutableMap<String, Task> _tasks;
-    public ImmutableCollection<Task> getTasks() {
+    @JsonProperty("tasks")
+    public ImmutableCollection<Task> getAllTasks() {
         return _tasks.values();
     }
 
     private final ImmutableMap<String, Action> _actions;
-    public ImmutableCollection<Action> getActions() {
+    @JsonProperty("actions")
+    public ImmutableCollection<Action> getAllActions() {
         return _actions.values();
     }
 
     private final ImmutableMap<String, Algorithm> _algorithms;
-    public ImmutableCollection<Algorithm> getAlgorithms() {
+    @JsonProperty("algorithms")
+    public ImmutableCollection<Algorithm> getAllAlgorithms() {
         return _algorithms.values();
     }
 
@@ -101,6 +105,29 @@ public class JobPipelineElements {
     public Algorithm getAlgorithm(int taskIndex, int actionIndex) {
         Action action = getAction(taskIndex, actionIndex);
         return _algorithms.get(action.getAlgorithm());
+    }
+
+
+    @JsonIgnore
+    public Iterable<Task> getTasksInOrder() {
+        return getTaskStreamInOrder()::iterator;
+    }
+
+    @JsonIgnore
+    public Stream<Task> getTaskStreamInOrder() {
+        return _pipeline.getTasks()
+                .stream()
+                .map(this::getTask);
+    }
+
+    public Iterable<Action> getActionsInOrder(Task task) {
+        return getActionStreamInOrder(task)::iterator;
+    }
+
+    public Stream<Action> getActionStreamInOrder(Task task) {
+        return task.getActions()
+                .stream()
+                .map(this::getAction);
     }
 
 

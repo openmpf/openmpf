@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.1",
+  "openmpfVersion": "7.2",
   "jobId": 1,
   "errors": [],
   "warnings": [
@@ -65,13 +65,13 @@
       "mediaType": "VIDEO",
       "length": 138,
       "mediaMetadata": {
-        "DURATION": "5130",
-        "FPS": "29.97",
+        "DURATION": "5129",
+        "FPS": "29.97002997002997",
         "FRAME_COUNT": "138",
         "FRAME_HEIGHT": "540",
         "FRAME_WIDTH": "960",
-        "HAS_CONSTANT_FRAME_RATE": "true",
-        "MIME_TYPE": "video/x-matroska"
+        "MIME_TYPE": "video/x-matroska",
+        "ROTATION": "0.0"
       },
       "mediaProperties": {},
       "status": "COMPLETE",
@@ -192,13 +192,14 @@
       "mediaType": "VIDEO",
       "length": 521,
       "mediaMetadata": {
-        "DURATION": "17410",
-        "FPS": "29.97",
+        "DURATION": "17415",
+        "FPS": "29.97002997002997",
         "FRAME_COUNT": "521",
         "FRAME_HEIGHT": "480",
         "FRAME_WIDTH": "640",
         "HAS_CONSTANT_FRAME_RATE": "true",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "ROTATION": "0.0"
       },
       "mediaProperties": {},
       "status": "COMPLETE",
@@ -2026,12 +2027,13 @@
       "mediaType": "VIDEO",
       "length": 510,
       "mediaMetadata": {
-        "DURATION": "17070",
-        "FPS": "29.97",
+        "DURATION": "17067",
+        "FPS": "29.97002997002997",
         "FRAME_COUNT": "510",
         "FRAME_HEIGHT": "480",
         "FRAME_WIDTH": "640",
-        "MIME_TYPE": "video/x-msvideo"
+        "MIME_TYPE": "video/x-msvideo",
+        "ROTATION": "0.0"
       },
       "mediaProperties": {},
       "status": "COMPLETE",

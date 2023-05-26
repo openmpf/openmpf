@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -204,7 +204,8 @@ public class TestTrackMergingProcessor {
                 null,
                 List.of(media),
                 Map.of(),
-                Map.of());
+                Map.of(),
+                false);
 
         inProgressJobs.addMediaInspectionInfo(TEST_JOB_ID, mediaId, "fake_sha", mediaType, mimeType, 1,
                                               Collections.emptyMap());
@@ -289,7 +290,8 @@ public class TestTrackMergingProcessor {
                 null,
                 Collections.singletonList(media),
                 Collections.emptyMap(),
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                false);
 
         SortedSet<Track> tracks = new TreeSet<>();
 
@@ -333,7 +335,7 @@ public class TestTrackMergingProcessor {
 
     private static JobPipelineElements createTestPipeline(Map<String, String> actionPropsMap) {
         Algorithm algorithm = new Algorithm(
-                "detectionAlgo", "description", ActionType.DETECTION,
+                "detectionAlgo", "description", ActionType.DETECTION, OptionalInt.empty(),
                 new Algorithm.Requires(Collections.emptyList()),
                 new Algorithm.Provides(Collections.emptyList(), Collections.emptyList()),
                 true, true);

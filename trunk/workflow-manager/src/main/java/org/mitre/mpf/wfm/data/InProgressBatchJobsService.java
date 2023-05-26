@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -42,6 +42,7 @@ import org.mitre.mpf.wfm.util.FrameTimeInfo;
 import org.mitre.mpf.wfm.util.IoUtils;
 import org.mitre.mpf.wfm.util.PropertiesUtil;
 import org.mitre.mpf.wfm.util.MediaRange;
+import org.mitre.mpf.wfm.util.MediaTypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -73,19 +74,25 @@ public class InProgressBatchJobsService {
 
     private final JobStatusBroadcaster _jobStatusBroadcaster;
 
+    private final MediaTypeUtils _mediaTypeUtils;
+
     private final Map<Long, BatchJobImpl> _jobs = new HashMap<>();
 
     private final Collection<Long> _jobsWithCallbacksInProgress = new HashSet<>();
 
 
     @Inject
-    public InProgressBatchJobsService(PropertiesUtil propertiesUtil, Redis redis,
-                                      JobRequestDao jobRequestDao,
-                                      JobStatusBroadcaster jobStatusBroadcaster) {
+    public InProgressBatchJobsService(
+            PropertiesUtil propertiesUtil,
+            Redis redis,
+            JobRequestDao jobRequestDao,
+            JobStatusBroadcaster jobStatusBroadcaster,
+            MediaTypeUtils mediaTypeUtils) {
         _propertiesUtil = propertiesUtil;
         _redis = redis;
         _jobRequestDao = jobRequestDao;
         _jobStatusBroadcaster = jobStatusBroadcaster;
+        _mediaTypeUtils = mediaTypeUtils;
     }
 
 
@@ -99,7 +106,8 @@ public class InProgressBatchJobsService {
             String callbackMethod,
             Collection<Media> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> algorithmProperties) {
+            Map<String, ? extends Map<String, String>> algorithmProperties,
+            boolean shouldCheckTiesDbAfterMediaInspection) {
 
         if (_jobs.containsKey(jobId)) {
             throw new IllegalArgumentException(String.format("Job with id %s already exists.", jobId));
@@ -125,7 +133,8 @@ public class InProgressBatchJobsService {
                 callbackMethod,
                 mediaImpls,
                 jobProperties,
-                algorithmProperties);
+                algorithmProperties,
+                shouldCheckTiesDbAfterMediaInspection);
         _jobs.put(jobId, job);
 
         media.stream()
@@ -383,7 +392,7 @@ public class InProgressBatchJobsService {
                         .toAbsolutePath();
             }
 
-            return new MediaImpl(
+            var media = new MediaImpl(
                     mediaId,
                     uriStr,
                     uriScheme,
@@ -393,6 +402,13 @@ public class InProgressBatchJobsService {
                     frameRanges,
                     timeRanges,
                     errorMessage);
+            var mimeType = providedMetadataProperties.get("MIME_TYPE");
+            if (mimeType != null && !mimeType.isBlank()) {
+                var mediaType = _mediaTypeUtils.parse(mimeType);
+                media.setMimeType(mimeType);
+                media.setType(mediaType);
+            }
+            return media;
         }
         catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
             return new MediaImpl(
@@ -487,6 +503,13 @@ public class InProgressBatchJobsService {
         LOG.info("Adding frame time info to job {}'s media {}.", jobId, mediaId);
         getMediaImpl(jobId, mediaId).setFrameTimeInfo(frameTimeInfo);
     }
+
+
+    public synchronized void addTiesDbInfo(long jobId, long mediaId, TiesDbInfo tiesDbInfo) {
+        getMediaImpl(jobId, mediaId)
+                .addTiesDbInfo(tiesDbInfo);
+    }
+
 
     public synchronized Optional<MediaType> getMediaType(long jobId, long mediaId) {
         return Optional.ofNullable(_jobs.get(jobId))

@@ -1,0 +1,244 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2023 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2023 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div>
+    <div class="page-header text-center">
+        <h3>Pipelines</h3>
+        <page-info>
+            <p>This page enables users to create custom pipelines.  A pipeline is a collection of tasks executed in sequence on input media.
+                A task is an action or group of actions executed in parallel.  An
+                action is a distinct algorithm and property configuration specifying how to process input media.
+            </p>
+            <p>To create a new custom pipeline, click on the "New" button.</p>
+        </page-info>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+                <uib-tabset active="0">
+
+                    <!-- ----- Pipelines Tab ----- -->
+                    <uib-tab id="pipeline-tab" index="0" heading="Pipelines">
+                        <div id="pp_pipeline-pane">
+                            <div class="col-lg-2">
+                                <div class="selector-container">
+                                    <ui-select ui-select-opened close-on-select="false"
+                                               ng-model="currentPipeline.selected" ng-cloak
+                                               on-select="selectPipeline($item, $model)"
+                                               id="pipeline-selector" theme="selectize">
+                                        <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
+                                        <ui-select-choices repeat="pipeline.name as pipeline in pipelines | filter: $select.search">
+                                        <div ng-bind-html="pipeline.name | highlight: $select.search"
+                                             uib-popover="{{pipeline.description}}" popover-placement="right"
+                                             popover-append-to-body="true" popover-trigger="mouseenter"
+                                             ng-class="{active: currentPipeline.name == pipeline.name}">
+                                        </div>
+                                        </ui-select-choices>
+                                    </ui-select>
+                                </div>
+                                <div class="row">
+                                    <button class="btn btn-default col-sm-6" id="newPipelineButton"
+                                            ng-click="pipes2.newPipeline()">New</button>
+                                    <!--<button class="btn btn-default col-sm-6 pull-right" -->
+                                            <!--disabled="disabled">Copy</button>-->
+                                </div>
+                           </div>
+
+                            <div ng-include="'pipeline.pane.html'"></div>
+                        </div>
+                    </uib-tab>
+
+                    <!-- ----- Action Tab -->
+                    <uib-tab index="1" id="action-tab" class="pipeline-page-tab-content" heading="Actions">
+                        <div class="col-lg-2">
+                            <div class="selector-container">
+                                <ui-select ui-select-opened close-on-select="false"
+                                           ng-model="currentAction.selected" ng-cloak
+                                           on-select="selectAction($item, $model)"
+                                           id="action-selector" theme="selectize">
+                                    <ui-select-match placeholder="Type here to search">{{$select.selected.name}}</ui-select-match>
+                                    <ui-select-choices
+                                            group-by="'algorithm'"
+                                            repeat="action.name as action in actions | orderBy: ['algorithm', 'name'] | filter: $select.search">
+                                        <div ng-bind-html="action.name | highlight: $select.search"
+                                             uib-popover="[{{action.algorithm}}]  {{action.description}}" popover-placement="right"
+                                             popover-append-to-body="true" popover-trigger="mouseenter"
+                                             ng-class="{active: currentAction.name == action.name}">
+                                        </div>
+                                        <!--<div>-->
+                                            <!--<span ng-bind-html="''+action.algorithmRef | highlight: $select.search"></span>-->
+                                            <!--<span ng-bind-html="''+action.description | highlight: $select.search"></span>-->
+                                        <!--</div>-->
+                                        <!--<span ng-bind-html="action.name | highlight: $select.search"-->
+                                              <!--uib-popover="{{action.description}}" popover-placement="right"-->
+                                              <!--popover-append-to-body="true" popover-trigger="mouseenter">-->
+                                        <!--</span>-->
+                                    </ui-select-choices>
+                                </ui-select>
+                            </div>
+                            <div class="row">
+                                <button class="btn btn-default col-sm-6" id="newActionButton"
+                                        ng-click="newAction()">New</button>
+                                <!--<button class="btn btn-default col-sm-6 pull-right" id="editActionButton"-->
+                                        <!--disabled="disabled">Copy</button>-->
+                            </div>
+                        </div>
+                        <div ng-include="'action.pane.html'"></div>
+                    </uib-tab>
+
+                </uib-tabset>
+            <!--<pre>$scope.currentPipeline: {{currentPipeline | json}}</pre>-->
+            <!--<pre>$scope.currentAction: {{currentAction | json}}</pre>-->
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Pipeline pane -->
+<script type="text/ng-template" id="pipeline.pane.html">
+    <div ng-if="currentPipeline.name!==undefined" class="col-lg-10 pp-pipeline pp-pipeline-bg">
+        <form name="pipelineForm" class="form-horizontal">
+            <div class="row">
+                <div class="form-group">
+                    <label class="control-label col-sm-1 pp-name" for="pipeline-name"><strong>Pipeline</strong>:</label>
+                    <input class="col-sm-9 pp-pipeline pp-name" type="text" id="pipeline-name"
+                           ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.name"
+                           ng-model-options="{ updateOn: 'blur' }"
+                           tabindex="1" placeholder="Pipeline name (required)" required/>
+                    &nbsp;
+                    <input ng-if="pipes2.inEditMode()"
+                           ng-click="pipes2.savePipeline(currentPipeline)"
+                           type="submit" value="Save" class="btn btn-default"
+                           id="savePipelineButton" tabindex="3" />
+
+                    <button ng-if="!pipes2.inEditMode()" ng-click="pipes2.deletePipeline(currentPipeline)"
+                            type="button" class="btn btn-default" title="Delete Pipeline">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+                <div class="form-group pp-description-group">
+                    <label class="control-label col-sm-1" for="pipeline-description"></label>
+                    <textarea class="col-sm-9 pp-pipeline pp-description" id="pipeline-description"
+                              ng-readonly="!pipes2.inEditMode()" ng-model="currentPipeline.description"
+                              tabindex="2"
+                              placeholder="Pipeline description (required)" required></textarea>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <task-sequence tasks="currentPipeline.vmTasks" op-obj="pipes2"></task-sequence>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
+<!-- Actions pane -->
+<script type="text/ng-template" id="action.pane.html">
+    <div ng-if="actions2.inEditMode()||currentAction.properties!==undefined" class="col-lg-10 pp-action pp-action-bg">
+        <form name="actionForm" ng-submit="saveActionAndTask(currentAction)" class="form-horizontal">
+            <div class="row">
+                <div class="form-group">
+                    <label class="control-label col-sm-2 pp-name" for="action-name"><strong>Action</strong>:</label>
+                    <input class="col-sm-8 pp-action pp-name"
+                           type="text" id="action-name"
+                           ng-readonly="!actions2.inEditMode()" ng-model="currentAction.name"
+                           tabindex="1"
+                           placeholder="Action name (required)"
+                           required
+                            />
+                    &nbsp;
+                    <input ng-if="actions2.inEditMode()" type="submit" value="Save" class="btn btn-default"
+                           id="saveActionButton" tabindex="4" />
+
+                    <button ng-if="!actions2.inEditMode()" ng-click="deleteAction()"
+                            type="button" class="btn btn-default" title="Delete Action">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+                <div class="form-group pp-description-group">
+                    <label class="control-label col-sm-2" for="action-description"></label>
+                    <textarea class="col-sm-8 pp-action pp-description" id="action-description"
+                              ng-readonly="!actions2.inEditMode()" ng-model="currentAction.description"
+                              tabindex="2" placeholder="Action description (required)" required></textarea>
+                </div>
+                <div class="row" ng-class="{'text-danger': currentAction.algorithm.missing}">
+                    <div class="col-sm-2 text-right pp-name">
+                        Algorithm:
+                    </div>
+                    <div class="col-sm-10" style="padding-left: 0">
+                        <span class="pp-name" ng-if="!actions2.inEditMode()">
+                            {{currentAction.algorithm.name}}
+                        </span>
+
+                        <select ng-if="actions2.inEditMode()" ng-model="selectedAlgo"
+                                ng-options="algorithm.name for algorithm in algorithms | orderBy: 'name'"
+                                ng-change="setAlgorithmRef(selectedAlgo.name)"
+                                required>
+                            <option value="" disabled>Select an algorithm base...</option>
+                        </select>
+
+                        <span ng-if="currentAction.algorithm.description">
+                            ({{currentAction.algorithm.description}})
+                        </span>
+
+                        <span ng-if="currentAction.algorithm.missing" class="label label-danger">
+                            Algorithm Missing!
+                        </span>
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <!--placeholder-->
+                </div>
+                <div class="col-lg-10">
+                    <div class="pp-content">
+                        <div class="row">
+                            <div class="col-lg-10 col-sm-10">
+                                <fieldset class="action-overridden-properties">
+                                    <div ng-if="currentAction.viewProperties.length>0" class="action-all-properties pp-algorithm">
+                                        <span ng-if="!actions2.inEditMode()" class="pp-algorithm">
+                                            <strong>{{currentAction.properties.length}}</strong> parameters overriding
+                                            <strong>{{currentAction.viewProperties.length}}</strong> default parameters
+                                        </span>
+                                        <div class="pp-algorithm-panel">
+                                            <div ng-repeat="prop in currentAction.viewProperties | orderBy: 'name'">
+                                                <action-property prop="prop" edit-mode="actions2.inEditMode()"></action-property>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>  <!-- row -->
+        </form>
+    </div>
+</script>
+
+
+

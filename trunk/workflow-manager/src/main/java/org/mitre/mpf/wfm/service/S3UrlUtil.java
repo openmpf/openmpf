@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,29 +33,65 @@ import org.mitre.mpf.wfm.enums.MpfConstants;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public interface S3UrlUtil {
-    public static S3UrlUtil get(Function<String, String> properties) throws StorageException {
+    public static S3UrlUtil get(UnaryOperator<String> properties) throws StorageException {
         if (Boolean.parseBoolean(properties.apply(MpfConstants.S3_USE_VIRTUAL_HOST))) {
             var s3Host = properties.apply(MpfConstants.S3_HOST);
-            if (s3Host == null || s3Host.isBlank()) {
-                throw new StorageException(String.format(
-                        "When %s is provided, %s must be provided.",
-                        MpfConstants.S3_USE_VIRTUAL_HOST, MpfConstants.S3_HOST));
-            }
-            return new VirtualHostStyle(s3Host);
+            return getVirtualHostStyle(s3Host);
         }
         else {
             return PATH_STYLE;
         }
     }
 
-    public URI getS3Endpoint(String uri) throws StorageException;
+    public static S3UrlUtil getVirtualHostStyle(String s3Host) throws StorageException {
+        if (s3Host == null || s3Host.isBlank()) {
+            throw new StorageException(String.format(
+                    "When %s is provided, %s must be provided.",
+                    MpfConstants.S3_USE_VIRTUAL_HOST, MpfConstants.S3_HOST));
+        }
+        return new VirtualHostStyle(s3Host);
+    }
+
+    public URI getS3Endpoint(URI uri) throws StorageException;
+
+    public default URI getS3Endpoint(String uri) throws StorageException {
+        try {
+            return getS3Endpoint(new URI(uri));
+        }
+        catch (URISyntaxException e) {
+            throw new StorageException(
+                    "An error occurred while trying to determine the S3 endpoint: "
+                            + e.getMessage(), e);
+        }
+    }
 
     public String getResultsBucketName(URI bucketUri) throws StorageException;
 
+    public default String getResultsBucketName(String bucketUriStr) throws StorageException {
+        try {
+            return getResultsBucketName(new URI(bucketUriStr));
+        }
+        catch (URISyntaxException e) {
+            throw new StorageException(
+                    "An error occurred while trying to determine the S3 results bucket: "
+                            + e.getMessage(), e);
+        }
+    }
+
     public URI getFullUri(URI bucketUri, String objectKey) throws StorageException;
+
+    public default URI getFullUri(String bucketUriStr, String objectKey) throws StorageException {
+        try {
+            return getFullUri(new URI(bucketUriStr), objectKey);
+        }
+        catch (URISyntaxException e) {
+            throw new StorageException("The provided bucket URI is not a valid URI: " + e, e);
+        }
+    }
+
 
     public String[] splitBucketAndObjectKey(String uriStr) throws StorageException;
 
@@ -76,7 +112,7 @@ public interface S3UrlUtil {
         }
 
         @Override
-        public URI getS3Endpoint(String uri) throws StorageException {
+        public URI getS3Endpoint(URI uri) throws StorageException {
             try {
                 URI serviceUri = new URIBuilder(uri)
                         .setPath("")
@@ -139,7 +175,7 @@ public interface S3UrlUtil {
         }
 
         @Override
-        public URI getS3Endpoint(String uri) throws StorageException {
+        public URI getS3Endpoint(URI uri) throws StorageException {
             try {
                 return new URIBuilder(uri)
                         .setPath("")

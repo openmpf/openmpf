@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,6 +26,14 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import java.util.Collection;
+import java.util.List;
+
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+
 import org.apache.commons.lang3.Validate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -33,17 +41,9 @@ import org.hibernate.query.Query;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.mitre.mpf.wfm.data.access.JpaDao;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import java.util.Collection;
-import java.util.List;
 
 @Repository
 @Transactional(propagation = Propagation.REQUIRED)
@@ -56,13 +56,13 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
     private final String _profilerName;
 
     /** <p>The factory which creates connections to the underlying database.</p> */
-    @Autowired
-    private SessionFactory sessionFactory;
+    private SessionFactory _sessionFactory;
 
-    protected AbstractHibernateDao(Class<T> clazz) {
+    protected AbstractHibernateDao(Class<T> clazz, SessionFactory sessionFactory) {
         Validate.notNull(clazz);
         _clazz = clazz;
         _profilerName = String.format("%s-%s", getClass().getName(), clazz.getSimpleName());
+        _sessionFactory = sessionFactory;
     }
 
     @Override
@@ -113,13 +113,18 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
 
     @Override
     public long countAll() {
+        return countAll(getCurrentSession());
+    }
+
+
+    protected long countAll(Session session) {
         Split split = SimonManager.getStopwatch(_profilerName+".countAll()").start();
         try {
-            var cb = getCriteriaBuilder();
+            var cb = session.getCriteriaBuilder();
             var query = cb.createQuery(Long.class);
             var root = query.from(_clazz);
             query.select(cb.count(root));
-            return buildQuery(query)
+            return session.createQuery(query)
                     .getSingleResult();
         } finally {
             split.stop();
@@ -203,7 +208,7 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
     public final Session getCurrentSession() {
         Split split = SimonManager.getStopwatch(_profilerName+".getCurrentSession()").start();
         try {
-            return sessionFactory.getCurrentSession();
+            return _sessionFactory.getCurrentSession();
         } finally {
             split.stop();
         }
@@ -212,14 +217,14 @@ public abstract class AbstractHibernateDao<T> implements JpaDao<T> {
     public SessionFactory getSessionFactory() {
         Split split = SimonManager.getStopwatch(_profilerName+".getSessionFactory()").start();
         try {
-            return sessionFactory;
+            return _sessionFactory;
         } finally {
             split.stop();
         }
     }
 
     public void setSessionFactory(SessionFactory sessionFactory) {
-        this.sessionFactory = sessionFactory;
+        this._sessionFactory = sessionFactory;
     }
 
 

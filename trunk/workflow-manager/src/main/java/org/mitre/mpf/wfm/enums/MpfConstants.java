@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -70,6 +70,16 @@ public class MpfConstants {
             S3_USE_VIRTUAL_HOST = "S3_USE_VIRTUAL_HOST",
             S3_HOST = "S3_HOST",
             S3_UPLOAD_OBJECT_KEY_PREFIX = "S3_UPLOAD_OBJECT_KEY_PREFIX",
+            TIES_DB_S3_COPY_ENABLED = "TIES_DB_S3_COPY_ENABLED",
+            TIES_DB_COPY_SRC_ = "TIES_DB_COPY_SRC_",
+            TIES_DB_COPY_SRC_S3_ACCESS_KEY = "TIES_DB_COPY_SRC_S3_ACCESS_KEY",
+            TIES_DB_COPY_SRC_S3_ACCESS_KEY2 = TIES_DB_COPY_SRC_ + S3_ACCESS_KEY,
+            TIES_DB_COPY_SRC_S3_SECRET_KEY = TIES_DB_COPY_SRC_ + S3_SECRET_KEY,
+            TIES_DB_COPY_SRC_S3_SESSION_TOKEN = TIES_DB_COPY_SRC_ + S3_SESSION_TOKEN,
+            TIES_DB_COPY_SRC_S3_REGION = TIES_DB_COPY_SRC_ + S3_REGION,
+            TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST = TIES_DB_COPY_SRC_ + S3_USE_VIRTUAL_HOST,
+            TIES_DB_COPY_SRC_S3_HOST = TIES_DB_COPY_SRC_ + S3_HOST,
+            TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX = TIES_DB_COPY_SRC_ + S3_UPLOAD_OBJECT_KEY_PREFIX,
             DETECTION_PADDING_X = "DETECTION_PADDING_X",
             DETECTION_PADDING_Y = "DETECTION_PADDING_Y",
             MOVING_TRACK_LABELS_ENABLED = "MOVING_TRACK_LABELS_ENABLED",
@@ -85,8 +95,11 @@ public class MpfConstants {
             DERIVATIVE_MEDIA_ID = "DERIVATIVE_MEDIA_ID",
             IS_DERIVATIVE_MEDIA = "IS_DERIVATIVE_MEDIA",
             TIES_DB_URL = "TIES_DB_URL",
+            SKIP_TIES_DB_CHECK = "SKIP_TIES_DB_CHECK",
             MARKUP_ANIMATION_ENABLED = "MARKUP_ANIMATION_ENABLED",
-            MARKUP_TEXT_LABEL_MAX_LENGTH = "MARKUP_TEXT_LABEL_MAX_LENGTH";
+            MARKUP_TEXT_LABEL_MAX_LENGTH = "MARKUP_TEXT_LABEL_MAX_LENGTH",
+            SKIP_MEDIA_INSPECTION = "SKIP_MEDIA_INSPECTION",
+            LINKED_MEDIA_HASH = "LINKED_MEDIA_HASH";
 
     private MpfConstants() {
     }

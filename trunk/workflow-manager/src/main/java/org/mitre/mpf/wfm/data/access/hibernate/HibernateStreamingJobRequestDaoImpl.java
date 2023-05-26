@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -26,6 +26,9 @@
 
 package org.mitre.mpf.wfm.data.access.hibernate;
 
+import javax.inject.Inject;
+
+import org.hibernate.SessionFactory;
 import org.mitre.mpf.wfm.data.access.StreamingJobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.StreamingJobRequest;
 import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
@@ -45,8 +48,9 @@ public class HibernateStreamingJobRequestDaoImpl
     private static final Logger log = LoggerFactory.getLogger(
             HibernateStreamingJobRequestDaoImpl.class);
 
-    public HibernateStreamingJobRequestDaoImpl() {
-        super(StreamingJobRequest.class);
+    @Inject
+    public HibernateStreamingJobRequestDaoImpl(SessionFactory sessionFactory) {
+        super(StreamingJobRequest.class, sessionFactory);
     }
 
     @Override

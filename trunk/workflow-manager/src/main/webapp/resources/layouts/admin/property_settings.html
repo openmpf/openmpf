@@ -1,0 +1,170 @@
+<!--
+    NOTICE
+
+    This software (or technical data) was produced for the U.S. Government
+    under contract, and is subject to the Rights in Data-General Clause
+    52.227-14, Alt. IV (DEC 2007).
+
+    Copyright 2023 The MITRE Corporation. All Rights Reserved.
+-->
+
+<!--
+    Copyright 2023 The MITRE Corporation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<div class="page-header text-center">
+    <h3>OpenMPF Properties</h3>
+    <page-info ng-if="isAdmin">
+        This view allows an admin user to modify OpenMPF properties. Updating the Static System Properties
+        requires an administrator to restart the server for the changes to take effect. Updating the Dynamic System
+        Properties does not. The new Dynamic System Properties values will be used for all new jobs, however new
+        Actions / Pipelines may need to be created if property override is of concern. Currently running jobs will
+        not be affected. Use the buttons at the bottom of the page to save and reset all properties.
+    </page-info>
+    <page-info ng-if="!isAdmin">This view shows the values of OpenMPF properties.</page-info>
+    <div class="text-left">
+        <p>In the table below, the properties can take on several states:
+        <ul>
+            <li>
+                Properties in black are values currently running on OpenMPF.
+            </li>
+            <li ng-show="isAdmin">
+                <span class="formlabelChanged">Any property in orange</span> marked with <span class="glyphicon glyphicon-edit valueChangedIcon"></span>
+                have been modified but have not been saved to the server. Each "Reset" button
+                and the "Reset All Properties" button will only reset these properties to the last saved value on the server.
+            </li>
+            <li>
+                <span class="labelNeedsServerRestart">General System Properties in blue</span> and/or marked with <span class="glyphicon-retweet serverNeedsRestartIcon"></span>
+                have been saved to the server, but will only take effect after the server is restarted.
+            </li>
+        </ul>
+    </div>
+</div>
+<div class="row">
+    <div id="adminPropertiesMainCol" class="col-md-12" ng-cloak>
+        <div style="overflow: auto; padding-top: 10px;">
+
+            <!-- mutable system properties are loaded once using the GET /properties endpoint when mutableProperties is referenced in the statement below -->
+            <h4>Dynamic System Properties</h4>
+            <table id="mpfMutablePropertiesTable" class="table-hover admin-properties-table">
+                <col class="labelCol">
+                <col class="valueCol">
+                <col class="resetCol" ng-show="isAdmin">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th ng-show="isAdmin">Reset</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                <tr ng-repeat="prop in mutableProperties | orderBy:'key'">
+                    <!-- each prop in properties is of type org.mitre.mpf.mvc.model.PropertyModel -->
+                  <td id="mPropertiesCellName_{{prop.key}}" class="formlabel smart-wrap">
+                        <!-- if the value was changed, then display the property name with the "value changed" color. -->
+												<span ng-class="{formlabelChanged: prop.valueChanged()}">
+													{{prop.key}}
+												</span>
+                    <!-- if this property was changed and has not yet been saved to the property file, then show the edit glyph alongside the system property -->
+                    <span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && prop.valueChanged()"></span>
+                  </td>
+                  <!-- display the property value -->
+                  <td>
+                    <input ng-model="prop.value" type="text" width="100%"
+                           id="mPropertiesCellValue_{{prop.key}}"
+                           value="{{prop.value}}"
+                           ng-readonly="!isAdmin" ng-disabled="!isAdmin"
+                           class="forminput"
+                           ng-class="{valuechanged: prop.valueChanged()}">
+                  </td>
+                  <!-- if the property value has been changed, then display a reset property button -->
+                  <td>
+                    <button id="mBtnResetProperty_{{prop.key}}" class="btn btn-block btn-xs btn-warning actionbutton"
+                            ng-show="isAdmin && prop.valueChanged()" ng-click="prop.resetProperty()" ng-disabled="!(isAdmin)">
+                      <span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset
+                    </button>
+                  </td>
+                </tr>
+
+                </tbody>
+            </table>
+
+          <!-- add some spacing between the tables -->
+          <br/>
+
+          <!-- immutable system properties are loaded once using the GET /properties endpoint when imutableProperties is referenced in the statement below -->
+          <h4>Static System Properties</h4>
+          <table id="mpfImmutablePropertiesTable" class="table-hover admin-properties-table">
+            <col class="labelCol">
+            <col class="valueCol">
+            <col class="resetCol" ng-show="isAdmin">
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Value</th>
+              <th ng-show="isAdmin">Reset</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr ng-repeat="prop in immutableProperties | orderBy:'key'">
+              <!-- each prop in properties is of type org.mitre.mpf.mvc.model.PropertyModel -->
+              <!-- if the property has already been modified (exists in modifiedPropertiesMap) then change the style dependent upon whether or not OpenMPF needs to be restarted to apply the change -->
+              <td id="imPropertiesCellName_{{prop.key}}" class="formlabel smart-wrap">
+                <!-- if the value was changed, then display the property name with the "needs restart" color. -->
+                <span ng-class="{labelNeedsServerRestart: prop.changeRequiresRestart(), formlabelChanged: prop.valueChanged()}">
+													{{prop.key}}
+												</span>
+                <!-- if this property was changed, and a restart is required to apply the change, then show to server restart glyph alongside the system property -->
+                <span class="glyphicon glyphicon-retweet serverNeedsRestartIcon" ng-show="prop.changeRequiresRestart()"></span>
+                <!-- if this property was changed and has not yet been saved to the property file, then show the edit glyph alongside the system property -->
+                <span class="glyphicon-edit valueChangedIcon" ng-show="isAdmin && prop.valueChanged()"></span>
+              </td>
+              <!-- display the property value -->
+              <td>
+                <input ng-model="prop.value" type="text" width="100%"
+                       id="imPropertiesCellValue_{{prop.key}}"
+                       value="{{prop.value}}"
+                       ng-readonly="!isAdmin" ng-disabled="!isAdmin"
+                       class="forminput"
+                       ng-class="{valueNeedsServerRestart: prop.valueChanged() && prop.changeRequiresRestart(), valuechanged: prop.valueChanged()}">
+              </td>
+              <!-- if the property value has been changed, then display a reset property button -->
+              <td>
+                <button id="imBtnResetProperty_{{prop.key}}" class="btn btn-block btn-xs btn-warning actionbutton"
+                        ng-show="isAdmin && prop.valueChanged()" ng-click="prop.resetProperty()" ng-disabled="!(isAdmin)">
+                  <span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset
+                </button>
+              </td>
+            </tr>
+
+            </tbody>
+          </table>
+
+
+        </div>
+        <br/>
+        <div ng-show="isAdmin" class="btn-group pull-right" role="group" style="padding:10px;">
+            <button id="btnResetMpfProperties" type="button" class="btn btn-warning" ng-click="resetAllProperties()" ng-disabled="!hasUnsavedProperties()">
+                <span class="glyphicon glyphicon-repeat"></span>&nbsp; Reset All Properties ({{unsavedPropertiesCount()}})</button>
+            <button id="btnSaveMpfProperties" type="button" class="btn btn-success" ng-click="saveProperties()" ng-disabled="!hasUnsavedProperties()">
+                <span class="glyphicon glyphicon-send"></span>&nbsp; Save Properties ({{unsavedPropertiesCount()}})</button>
+        </div>
+    </div>
+</div>
+

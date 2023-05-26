@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -33,8 +33,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -42,9 +40,13 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.mitre.mpf.rest.api.TiesDbRepostResponse;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.data.entities.persistent.TiesDbInfo;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
 import org.mitre.mpf.wfm.enums.BatchJobStatusType;
 import org.mitre.mpf.wfm.enums.MpfConstants;
@@ -62,6 +64,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+
+import org.mitre.mpf.wfm.enums.IssueCodes;
 
 /**
  * Refer to https://github.com/Noblis/ties-lib for more information on the Triage Import Export
@@ -82,30 +86,48 @@ public class TiesDbService {
 
     private final ObjectMapper _objectMapper;
 
-    private final CallbackUtils _callbackUtils;
+    private final JsonUtils _jsonUtils;
+
+    private final HttpClientUtils _httpClientUtils;
 
     private final JobRequestDao _jobRequestDao;
+
+    private final InProgressBatchJobsService _inProgressJobs;
+
+    private final JobConfigHasher _jobConfigHasher;
+
 
     @Inject
     TiesDbService(PropertiesUtil propertiesUtil,
                   AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                   ObjectMapper objectMapper,
-                  CallbackUtils callbackUtils,
-                  JobRequestDao jobRequestDao) {
+                  JsonUtils jsonUtils,
+                  HttpClientUtils httpClientUtils,
+                  JobRequestDao jobRequestDao,
+                  InProgressBatchJobsService inProgressJobs,
+                  JobConfigHasher jobConfigHasher) {
         _propertiesUtil = propertiesUtil;
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _objectMapper = objectMapper;
-        _callbackUtils = callbackUtils;
+        _httpClientUtils = httpClientUtils;
+        _jsonUtils = jsonUtils;
         _jobRequestDao = jobRequestDao;
+        _inProgressJobs = inProgressJobs;
+        _jobConfigHasher = jobConfigHasher;
     }
 
 
-    public CompletableFuture<Void> addAssertions(BatchJob job,
-                                                 BatchJobStatusType jobStatus,
-                                                 Instant timeCompleted,
-                                                 URI outputObjectLocation,
-                                                 String outputObjectSha,
-                                                 TrackCounter trackCounter) {
+    public void prepareAssertions(
+            BatchJob job,
+            BatchJobStatusType jobStatus,
+            Instant timeCompleted,
+            URI outputObjectLocation,
+            String outputObjectSha,
+            TrackCounter trackCounter) {
+        if (anyMediaDownloadsFailed(job)) {
+            return;
+        }
+
         var parentWithDerivativeCounts = new HashMap<ParentMediaAlgoTiesDbUrl, TrackTypeCount>();
 
         for (var jobPart : JobPartsIter.of(job)) {
@@ -113,8 +135,8 @@ public class TiesDbService {
 
             boolean outputLastTaskOnly
                     = _aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job);
-            if (outputLastTaskOnly && jobPart.getTaskIndex()
-                    != job.getPipelineElements().getTaskCount() - 1) {
+            if (outputLastTaskOnly
+                    && jobPart.getTaskIndex() != job.getPipelineElements().getTaskCount() - 1) {
                 // suppressed
                 continue;
             }
@@ -165,20 +187,36 @@ public class TiesDbService {
                     TrackTypeCount::merge);
         }
 
-        var futures = new ArrayList<CompletableFuture<Void>>();
+        var jobConfigHash = parentWithDerivativeCounts.isEmpty()
+                ? null
+                : getJobConfigHash(job);
         for (var entry : parentWithDerivativeCounts.entrySet()) {
-            futures.add(addActionAssertion(
+            var parentMediaAlgoUrl = entry.getKey();
+            var assertion = createActionAssertion(
                     job,
                     jobStatus,
                     timeCompleted,
                     outputObjectLocation,
                     outputObjectSha,
-                    job.getMedia(entry.getKey().getParentMediaId()),
-                    entry.getKey().getTiesDbUrl(),
-                    entry.getKey().getAlgorithmName(),
-                    entry.getValue().getTrackType(),
-                    entry.getValue().getCount()));
+                    parentMediaAlgoUrl.algorithmName(),
+                    entry.getValue().trackType(),
+                    entry.getValue().count(),
+                    jobConfigHash);
+            var tiesDbInfo = new TiesDbInfo(parentMediaAlgoUrl.tiesDbUrl(), assertion);
+            _inProgressJobs.addTiesDbInfo(
+                    job.getId(), parentMediaAlgoUrl.parentMediaId(), tiesDbInfo);
         }
+    }
+
+
+    public CompletableFuture<Void> postAssertions(BatchJob job) {
+        var futures = new ArrayList<CompletableFuture<Void>>();
+        for (var media : job.getMedia()) {
+            for (var tiesDbInfo : media.getTiesDbInfo()) {
+                futures.add(postAssertion(tiesDbInfo, media.getLinkedHash().orElseThrow()));
+            }
+        }
+
         if (futures.isEmpty()) {
             return ThreadUtil.completedFuture(null);
         }
@@ -186,6 +224,48 @@ public class TiesDbService {
         return ThreadUtil.allOf(futures)
                 .thenRun(() -> _jobRequestDao.setTiesDbSuccessful(job.getId()))
                 .exceptionally(e -> reportExceptions(job.getId(), futures));
+    }
+
+
+    public TiesDbRepostResponse repost(Collection<Long> jobIds) {
+        var failures = new ArrayList<TiesDbRepostResponse.Failure>();
+        var futures = new HashMap<Long, CompletableFuture<Void>>(jobIds.size());
+        for (long jobId : jobIds) {
+            var jobRequest = _jobRequestDao.findById(jobId);
+            if (jobRequest == null) {
+                failures.add(new TiesDbRepostResponse.Failure(
+                        jobId, String.format("Could not find job with id %s.", jobId)));
+            }
+            else if (_inProgressJobs.containsJob(jobId)) {
+                failures.add(new TiesDbRepostResponse.Failure(
+                        jobId, "Job is still running."));
+            }
+            else {
+                try {
+                    var job = _jsonUtils.deserialize(jobRequest.getJob(), BatchJob.class);
+                    futures.put(jobId, postAssertions(job));
+                }
+                catch (WfmProcessingException e) {
+                    failures.add(new TiesDbRepostResponse.Failure(
+                            jobId, e.getMessage()));
+                }
+            }
+        }
+
+        var success = new ArrayList<Long>();
+        for (var entry : futures.entrySet()) {
+            try {
+                entry.getValue().join();
+                success.add(entry.getKey());
+            }
+            catch (CompletionException e) {
+                var errorMsg = e.getCause().getMessage();
+                failures.add(new TiesDbRepostResponse.Failure(entry.getKey(), errorMsg));
+            }
+        }
+        success.sort(Comparator.naturalOrder());
+        failures.sort(Comparator.comparingLong(TiesDbRepostResponse.Failure::jobId));
+        return new TiesDbRepostResponse(success, failures);
     }
 
 
@@ -199,10 +279,70 @@ public class TiesDbService {
                 joiner.add(e.getCause().getMessage());
             }
         }
-        _jobRequestDao.setTiesDbError(jobId, joiner.toString());
-        return null;
+        var combinedErrorMsgs = joiner.toString();
+        _jobRequestDao.setTiesDbError(jobId, combinedErrorMsgs);
+        throw new TiesDbException(combinedErrorMsgs);
     }
 
+
+    private boolean anyMediaDownloadsFailed(BatchJob job) {
+        var downloadFailedCode = IssueCodes.REMOTE_STORAGE_DOWNLOAD.toString();
+        boolean anyDownloadFailures = job.getErrors()
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .anyMatch(ji -> ji.getCode().equals(downloadFailedCode));
+        if (anyDownloadFailures) {
+            _jobRequestDao.setTiesDbError(job.getId(), "Media download failed.");
+        }
+        return anyDownloadFailures;
+    }
+
+    private TiesDbInfo.Assertion createActionAssertion(
+            BatchJob job,
+            BatchJobStatusType jobStatus,
+            Instant timeCompleted,
+            URI outputObjectLocation,
+            String outputObjectSha,
+            String algorithm,
+            String trackType,
+            int trackCount,
+            String jobConfigHash) {
+
+        var dataObject = new TiesDbInfo.DataObject(
+                job.getPipelineElements().getName(),
+                algorithm,
+                trackType,
+                _propertiesUtil.getExportedJobId(job.getId()),
+                outputObjectLocation.toString(),
+                outputObjectSha,
+                timeCompleted,
+                jobStatus,
+                _propertiesUtil.getSemanticVersion(),
+                _propertiesUtil.getHostName(),
+                trackCount,
+                jobConfigHash);
+
+        var assertionId = getAssertionId(
+                _propertiesUtil.getExportedJobId(job.getId()),
+                trackType,
+                algorithm,
+                timeCompleted);
+
+        return new TiesDbInfo.Assertion(assertionId, trackType, dataObject);
+    }
+
+
+    private String getJobConfigHash(BatchJob job) {
+        var props = _aggregateJobPropertiesUtil.getMediaActionProps(
+                job.getJobProperties(),
+                job.getOverriddenAlgorithmProperties(),
+                job.getSystemPropertiesSnapshot(),
+                job.getPipelineElements());
+
+        return _jobConfigHasher.getJobConfigHash(
+                job.getMedia(), job.getPipelineElements(), props);
+    }
 
     private Triple<String, String, String> getAlgoAndTypeAndTiesDbUrlToUse(
             JobPart jobPart,
@@ -241,59 +381,6 @@ public class TiesDbService {
         }
     }
 
-
-    private CompletableFuture<Void> addActionAssertion(
-            BatchJob job,
-            BatchJobStatusType jobStatus,
-            Instant timeCompleted,
-            URI outputObjectLocation,
-            String outputObjectSha,
-            Media media,
-            String tiesDbUrl,
-            String algorithm,
-            String trackType,
-            int trackCount) {
-
-        var dataObject = Map.ofEntries(
-                Map.entry("pipeline", job.getPipelineElements().getName()),
-                Map.entry("algorithm", algorithm),
-                Map.entry("outputType", trackType),
-                Map.entry("jobId", _propertiesUtil.getExportedJobId(job.getId())),
-                Map.entry("outputUri", outputObjectLocation.toString()),
-                Map.entry("sha256OutputHash", outputObjectSha),
-                Map.entry("processDate", timeCompleted),
-                Map.entry("jobStatus", jobStatus),
-                Map.entry("systemVersion", _propertiesUtil.getSemanticVersion()),
-                Map.entry("systemHostname", _propertiesUtil.getHostName()),
-                Map.entry("trackCount", trackCount)
-        );
-
-        var assertionId = getAssertionId(
-                _propertiesUtil.getExportedJobId(job.getId()),
-                trackType,
-                algorithm,
-                timeCompleted);
-
-        var assertion = Map.of(
-                "assertionId", assertionId,
-                "informationType", "OpenMPF " + trackType,
-                "securityTag", "UNCLASSIFIED",
-                "system", "OpenMPF",
-                "dataObject", dataObject);
-
-        LOG.info("Posting assertion to TiesDb for the {} algorithm. Track type = {}. Track count = {}",
-                algorithm,
-                trackType,
-                trackCount);
-
-        return postAssertion(
-                algorithm,
-                tiesDbUrl,
-                media.getSha256().orElseThrow(),
-                assertion);
-    }
-
-
     private static String getAssertionId(String jobId, String detectionType, String algorithm,
                                          Instant endTime) {
         var digest = DigestUtils.getSha256Digest();
@@ -305,24 +392,30 @@ public class TiesDbService {
     }
 
 
-    private CompletableFuture<Void> postAssertion(String algorithm,
-                                                  String tiesDbUrl,
-                                                  String mediaSha,
-                                                  Map<String, Object> assertions) {
+    private CompletableFuture<Void> postAssertion(TiesDbInfo tiesDbInfo, String mediaSha) {
         URI fullUrl;
         try {
-            var baseUrl = new URI(tiesDbUrl);
-            fullUrl = new URIBuilder(tiesDbUrl)
+            var baseUrl = new URI(tiesDbInfo.tiesDbUrl());
+            fullUrl = new URIBuilder(baseUrl)
                     .setPath(baseUrl.getPath() + "/api/db/supplementals")
                     .setParameter("sha256Hash", mediaSha)
                     .build();
         }
         catch (URISyntaxException e) {
-            return ThreadUtil.failedFuture(convertError(tiesDbUrl, algorithm, e));
+            return convertError(
+                    tiesDbInfo.tiesDbUrl(),
+                    tiesDbInfo.assertion().dataObject().algorithm(),
+                    e);
         }
 
+        var assertion = tiesDbInfo.assertion();
+        LOG.info("Posting assertion to TiesDb for the {} algorithm. Track type = {}. Track count = {}",
+                 assertion.dataObject().algorithm(),
+                 assertion.dataObject().outputType(),
+                 assertion.dataObject().trackCount());
+
         try {
-            var jsonString = _objectMapper.writeValueAsString(assertions);
+            var jsonString = _objectMapper.writeValueAsString(assertion);
 
             var postRequest = new HttpPost(fullUrl);
             postRequest.addHeader("Content-Type", "application/json");
@@ -333,42 +426,25 @@ public class TiesDbService {
             postRequest.setConfig(requestConfig);
             postRequest.setEntity(new StringEntity(jsonString, ContentType.APPLICATION_JSON));
 
-            return _callbackUtils.executeRequest(postRequest,
-                                                 _propertiesUtil.getHttpCallbackRetryCount())
-                    .thenAccept(TiesDbService::checkResponse)
-                    .handle((x, err) -> {
-                        if (err != null) {
-                            throw convertError(fullUrl.toString(), algorithm, err);
-                        }
-                        return null;
-                    });
+            var responseChecker = new ResponseChecker();
+            return _httpClientUtils.executeRequest(
+                        postRequest,
+                        _propertiesUtil.getHttpCallbackRetryCount(),
+                        responseChecker::shouldRetry)
+                    .thenAccept(responseChecker::checkResponse)
+                    .exceptionallyCompose(err -> convertError(
+                            fullUrl.toString(),
+                            assertion.dataObject().algorithm(),
+                            err));
         }
         catch (JsonProcessingException e) {
-            return ThreadUtil.failedFuture(convertError(fullUrl.toString(), algorithm, e));
+            return convertError(fullUrl.toString(), assertion.dataObject().algorithm(), e);
         }
     }
 
 
-    private static void checkResponse(HttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode >= 200 && statusCode <= 299) {
-            return;
-        }
-        try {
-            var responseContent = IOUtils.toString(response.getEntity().getContent(),
-                                                   StandardCharsets.UTF_8);
-            throw new IllegalStateException(String.format(
-                    "TiesDb responded with a non-200 status code of %s and body: %s",
-                    statusCode, responseContent));
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(
-                    "TiesDb responded with a non-200 status code of " + statusCode, e);
-        }
-    }
-
-
-    private static TiesDbException convertError(String url, String algorithm, Throwable error) {
+    private static CompletableFuture<Void> convertError(String url, String algorithm,
+                                                        Throwable error) {
         if (error instanceof CompletionException && error.getCause() != null) {
             error = error.getCause();
         }
@@ -376,43 +452,77 @@ public class TiesDbService {
                 "Sending HTTP POST to TiesDb (%s) for %s failed due to: %s.",
                 url, algorithm, error);
         LOG.error(errorMessage, error);
-        return new TiesDbException(errorMessage, error);
+        return ThreadUtil.failedFuture(new TiesDbException(errorMessage, error));
     }
 
-    private static class ParentMediaAlgoTiesDbUrl extends MutableTriple<Long, String, String> {
-        public ParentMediaAlgoTiesDbUrl(Long parent, String algo, String url) {
-            super(parent, algo, url);
-        }
 
-        public long getParentMediaId()  { return getLeft(); }
-        public String getAlgorithmName() { return getMiddle(); }
-        public String getTiesDbUrl() { return getRight(); }
-    }
+    private record ParentMediaAlgoTiesDbUrl(
+            long parentMediaId, String algorithmName, String tiesDbUrl) {}
 
-    private static class TrackTypeCount extends MutablePair<String, Integer> {
-        public TrackTypeCount(String trackType, Integer trackCount) {
-            super(trackType, trackCount);
-        }
 
-        public String getTrackType() { return getLeft(); }
-        public int getCount() { return getRight(); }
-
+    private record TrackTypeCount(String trackType, int count) {
         public TrackTypeCount merge(TrackTypeCount other) {
-            if (getCount() == 0) {
+            if (count == 0) {
                 return other;
             }
-            else if (other.getCount() == 0) {
+            else if (other.count() == 0) {
                 return this;
             }
             else {
-                return new TrackTypeCount(getTrackType(), getCount() + other.getCount());
+                return new TrackTypeCount(trackType, count + other.count());
             }
         }
     }
+
 
     private static class TiesDbException extends RuntimeException {
         public TiesDbException(String message, Throwable cause) {
             super(message, cause);
+        }
+
+        public TiesDbException(String message) {
+            super(message);
+        }
+    }
+
+
+    // The response content stream can only be read from once, but we need to read it twice. Once
+    // to check for MISSING_MEDIA_MSG and another time to report the final error. This class
+    // will hold on to the most recently tested response.
+    private static class ResponseChecker {
+        private static final String MISSING_MEDIA_MSG = "could not identify referenced item";
+        private String _responseContent;
+        private IOException _exception;
+
+        public boolean shouldRetry(HttpResponse resp) {
+            try {
+                _responseContent = IOUtils.toString(resp.getEntity().getContent(),
+                                                    StandardCharsets.UTF_8);
+                _exception = null;
+                return !_responseContent.contains(MISSING_MEDIA_MSG);
+            }
+            catch (IOException e) {
+                _responseContent = null;
+                _exception = e;
+                return true;
+            }
+        }
+
+        public void checkResponse(HttpResponse response) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode >= 200 && statusCode <= 299) {
+                return;
+            }
+            if (_exception != null) {
+                throw new IllegalStateException(
+                        "TiesDb responded with a non-200 status code of " + statusCode,
+                        _exception);
+            }
+            else {
+                throw new IllegalStateException(String.format(
+                        "TiesDb responded with a non-200 status code of %s and body: %s",
+                        statusCode, _responseContent));
+            }
         }
     }
 }

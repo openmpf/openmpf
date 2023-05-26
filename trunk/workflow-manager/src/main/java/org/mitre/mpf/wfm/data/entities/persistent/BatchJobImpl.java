@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -167,6 +167,12 @@ public class BatchJobImpl implements BatchJob {
     }
 
 
+    private final boolean _shouldCheckTiesDbAfterMediaInspection;
+    @Override
+    public boolean shouldCheckTiesDbAfterMediaInspection() {
+        return _shouldCheckTiesDbAfterMediaInspection;
+    }
+
     public BatchJobImpl(
             long id,
             String externalId,
@@ -177,10 +183,11 @@ public class BatchJobImpl implements BatchJob {
             String callbackMethod,
             Collection<MediaImpl> media,
             Map<String, String> jobProperties,
-            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties) {
+            Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
+            boolean shouldCheckTiesDbAfterMediaInspection) {
         this(id, externalId, systemPropertiesSnapshot, pipelineElements, priority, callbackUrl,
              callbackMethod, media, jobProperties, overriddenAlgorithmProperties,
-             List.of(), Map.of(), Map.of());
+             List.of(), Map.of(), Map.of(), shouldCheckTiesDbAfterMediaInspection);
     }
 
 
@@ -199,7 +206,9 @@ public class BatchJobImpl implements BatchJob {
                     Map<String, ? extends Map<String, String>> overriddenAlgorithmProperties,
             @JsonProperty("detectionProcessingErrors") Collection<DetectionProcessingError> detectionProcessingErrors,
             @JsonProperty("errors") Map<Long, Set<JsonIssueDetails>> errors,
-            @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings) {
+            @JsonProperty("warnings") Map<Long, Set<JsonIssueDetails>> warnings,
+            @JsonProperty("shouldCheckTiesDbAfterMediaInspection")
+                    boolean shouldCheckTiesDbAfterMediaInspection) {
         _id = id;
         _externalId = externalId;
         _systemPropertiesSnapshot = systemPropertiesSnapshot;
@@ -230,5 +239,7 @@ public class BatchJobImpl implements BatchJob {
         _warnings = new HashMap<>();
         // Can't just pass warnings to HashMap constructor because we also want to copy the sets.
         warnings.forEach((k, v) -> _warnings.put(k, new HashSet<>(v)));
+
+        _shouldCheckTiesDbAfterMediaInspection = shouldCheckTiesDbAfterMediaInspection;
     }
 }

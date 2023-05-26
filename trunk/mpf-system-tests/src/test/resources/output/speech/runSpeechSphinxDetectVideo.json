@@ -1,5 +1,5 @@
 {
-  "openmpfVersion": "7.1",
+  "openmpfVersion": "7.2",
   "jobId": 45,
   "errors": [],
   "warnings": [],
@@ -41,13 +41,14 @@
       "mediaType": "VIDEO",
       "length": 183,
       "mediaMetadata": {
-        "DURATION": "7860",
+        "DURATION": "7832",
         "FPS": "24.0",
         "FRAME_COUNT": "183",
         "FRAME_HEIGHT": "1080",
         "FRAME_WIDTH": "1920",
         "HAS_CONSTANT_FRAME_RATE": "true",
-        "MIME_TYPE": "video/mp4"
+        "MIME_TYPE": "video/mp4",
+        "ROTATION": "0.0"
       },
       "mediaProperties": {},
       "status": "COMPLETE",

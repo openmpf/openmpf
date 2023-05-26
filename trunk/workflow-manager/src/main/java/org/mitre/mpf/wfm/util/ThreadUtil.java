@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -32,6 +32,7 @@ import org.slf4j.MDC;
 
 import java.util.Collection;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 public class ThreadUtil {
@@ -120,22 +121,12 @@ public class ThreadUtil {
     }
 
 
-
-    private static <T> CustomCompletableFuture<T> adapt(CompletionStage<T> future) {
-        if (future instanceof CustomCompletableFuture) {
-            return (CustomCompletableFuture<T>) future;
+    public static <T> CustomCompletableFuture<T> adapt(CompletableFuture<T> future) {
+        if (future instanceof CustomCompletableFuture<T> casted) {
+            return casted;
         }
-
-        var adaptedFuture = ThreadUtil.<T>newFuture();
-        future.whenComplete((result, err) -> {
-            if (err == null) {
-                adaptedFuture.complete(result);
-            }
-            else {
-                adaptedFuture.completeExceptionally(err);
-            }
-        });
-        return adaptedFuture;
+        return (CustomCompletableFuture<T>) completedFuture(null)
+            .thenCompose(x -> future);
     }
 
 
@@ -191,8 +182,12 @@ public class ThreadUtil {
                     complete(result);
                     return result;
                 }
-                catch (Throwable e) {
+                catch (CompletionException e) {
                     completeExceptionally(e);
+                    throw e;
+                }
+                catch (Throwable e) {
+                    completeExceptionally(new CompletionException(e));
                     throw e;
                 }
             });
@@ -235,7 +230,7 @@ public class ThreadUtil {
         MdcAwareCachedThreadPool() {
             // Uses same arguments as Executors.newCachedThreadPool()
             super(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
-                  new SynchronousQueue<>());
+                  new SynchronousQueue<>(), MdcAwareCachedThreadPool::createThread);
         }
 
         @Override
@@ -243,6 +238,12 @@ public class ThreadUtil {
             // Capture context on submitting thread.
             var submitterMdcCtx = MDC.getCopyOfContextMap();
             super.execute(() -> MdcUtil.all(submitterMdcCtx, runnable));
+        }
+
+
+        private static final AtomicLong _threadCount = new AtomicLong(0);
+        private static Thread createThread(Runnable target) {
+            return new Thread(target, "mpf-pool-thread-" + _threadCount.incrementAndGet());
         }
     }
 }

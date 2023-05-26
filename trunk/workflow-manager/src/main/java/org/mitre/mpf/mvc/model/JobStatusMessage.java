@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -30,6 +30,7 @@ import org.mitre.mpf.wfm.enums.StreamingJobStatusType;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Map;
 
 public class JobStatusMessage extends AtmosphereMessage {
 
@@ -39,6 +40,7 @@ public class JobStatusMessage extends AtmosphereMessage {
         datamap.put("progress", progress);
         datamap.put("jobStatus", updatedJobStatus);
         datamap.put("endDate", endDate);
+        datamap.put("isSessionJob", false);
         this.setContent(datamap);
     }
 
@@ -54,6 +56,17 @@ public class JobStatusMessage extends AtmosphereMessage {
         // If there are job progress updates and the status is null it will be updated to IN_PROGRESS
         StreamingJobStatusType updatedJobStatus = (streamingJobStatus != null) ? streamingJobStatus : StreamingJobStatusType.IN_PROGRESS;
         setContent(id, progress, updatedJobStatus.name(), endDate);
+    }
+
+    private JobStatusMessage(Map<String, Object> dataMap) {
+        super(AtmosphereChannel.SSPC_JOBSTATUS, "OnStatusChanged" );
+        setContent(dataMap);
+    }
+
+    public JobStatusMessage sessionJobCopy() {
+        var dataMap = new HashMap<>(getContent());
+        dataMap.put("isSessionJob", true);
+        return new JobStatusMessage(dataMap);
     }
 
 }

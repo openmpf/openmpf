@@ -10,11 +10,11 @@
     under contract, and is subject to the Rights in Data-General Clause
     52.227-14, Alt. IV (DEC 2007).
 
-    Copyright 2022 The MITRE Corporation. All Rights Reserved.
+    Copyright 2023 The MITRE Corporation. All Rights Reserved.
 --%>
 
 <%--
-    Copyright 2022 The MITRE Corporation
+    Copyright 2023 The MITRE Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 
 <head>
     <title>Login Page</title>
+    <link rel="icon" href="resources/img/favicon.ico"/>
 </head>
 
 <body onload='document.loginForm.username.focus();'>
@@ -69,8 +70,8 @@
 	</div>
 </div>
 
-<script src="resources/js/jquery-1.11.0.min.js"></script>
-<script src="resources/js/bowser.js"></script>
+<script src="resources/js/lib/jquery-1.11.0.min.js"></script>
+<script src="resources/js/lib/bowser.js"></script>
 <script>
 $(function() {
 	if ( !( bowser.chrome || bowser.firefox ) ) {
@@ -81,6 +82,13 @@ $(function() {
 				.addClass("error")
 				.css('display','block')
 				.html(warningStr);
+	}
+	if (location.hash) {
+		// When a user tries to go to a specific page while not logged in, they should be
+		// redirected to the original page after logging in. The fragment part of the URL
+		// is not sent to the server, so in order to send the user to the correct page,
+		// we store the fragment locally and navigate to it after the user logs in.
+		sessionStorage.setItem('loginFragment', location.hash);
 	}
 });
 </script>

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.service;
 
 import com.google.common.collect.Table;
 import org.apache.commons.lang3.mutable.Mutable;
+import org.javasimon.aop.Monitored;
 import org.mitre.mpf.interop.JsonOutputObject;
 import org.mitre.mpf.wfm.camel.operations.detection.artifactextraction.ArtifactExtractionRequest;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
@@ -38,6 +39,7 @@ import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import java.io.IOException;
 import java.net.URI;
 
+@Monitored
 public interface StorageBackend {
 
     public boolean canStore(JsonOutputObject outputObject) throws StorageException;

@@ -1,0 +1,22 @@
+[
+    {
+        "ignorableForMediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "NOT_IMPORTANT"
+        ]
+    },
+    {
+        "ignorableForMediaTypes": ["IMAGE", "AUDIO", "UNKNOWN"],
+        "names": [
+            "VIDEO_PROP",
+            "TEST_UNION_IS_USED_FOR_DUPLICATES"
+        ]
+    },
+    {
+        "ignorableForMediaTypes": ["VIDEO", "AUDIO", "UNKNOWN"],
+        "names": [
+            "IMAGE_PROP",
+            "TEST_UNION_IS_USED_FOR_DUPLICATES"
+        ]
+    }
+]

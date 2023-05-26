@@ -6,11 +6,11 @@
   ~ under contract, and is subject to the Rights in Data-General Clause       ~
   ~ 52.227-14, Alt. IV (DEC 2007).                                            ~
   ~                                                                           ~
-  ~ Copyright 2022 The MITRE Corporation. All Rights Reserved.                ~
+  ~ Copyright 2023 The MITRE Corporation. All Rights Reserved.                ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright 2022 The MITRE Corporation                                      ~
+  ~ Copyright 2023 The MITRE Corporation                                      ~
   ~                                                                           ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");           ~
   ~ you may not use this file except in compliance with the License.          ~
@@ -48,8 +48,6 @@
 		<security:intercept-url pattern="/login/**" access="permitAll" />
 		<security:intercept-url pattern="/logout/**" access="permitAll" />
 		<security:intercept-url pattern="/resources/**" access="permitAll" />
-		<security:intercept-url pattern="/timeout" access="permitAll" />
-		<security:intercept-url pattern="/bootout" access="permitAll" />
 		<security:intercept-url pattern="/**" access="isAuthenticated()" />
 
 		<security:form-login login-page="/login" authentication-failure-url="/login?reason=error"
@@ -57,9 +55,7 @@
 			username-parameter="username" password-parameter="password"
 			authentication-failure-handler-ref="authenticationFailureHandler" />
 
-		<security:session-management>
-			<security:concurrency-control max-sessions="1" expired-url="/bootout" />
-		</security:session-management>
+		<security:access-denied-handler ref="CustomAccessDeniedHandler" />
 	</security:http>
 
 	<security:authentication-manager>

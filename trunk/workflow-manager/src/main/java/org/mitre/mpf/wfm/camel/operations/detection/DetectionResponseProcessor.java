@@ -62,20 +62,19 @@ public class DetectionResponseProcessor
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
     private final InProgressBatchJobsService _inProgressJobs;
+
     private final MediaInspectionHelper _mediaInspectionHelper;
-    private final JsonUtils _jsonUtils;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper,
-                                      JsonUtils jsonUtils) {
+                                      MediaInspectionHelper mediaInspectionHelper) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _jsonUtils = jsonUtils;
     }
 
     @Override

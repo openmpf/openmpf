@@ -75,8 +75,6 @@ public class TestDetectionResponseProcessor {
     @Mock
     private MediaInspectionHelper mockMediaInspectionHelper;
 
-    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
-
     private DetectionResponseProcessor detectionResponseProcessor;
 
     private final IoUtils ioUtils = new IoUtils();
@@ -106,9 +104,7 @@ public class TestDetectionResponseProcessor {
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
-                mockMediaInspectionHelper,
-                jsonUtils
-        );
+                mockMediaInspectionHelper);
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,

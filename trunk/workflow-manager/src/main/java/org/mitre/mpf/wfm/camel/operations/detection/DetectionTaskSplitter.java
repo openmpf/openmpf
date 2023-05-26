@@ -97,7 +97,7 @@ public class DetectionTaskSplitter {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
-                    log.warn("Skipping Media #{} - it is in an error state.", media.getId());
+                    log.warn("Skipping media {}. It is in an error state.", media.getId());
                     continue;
                 }
 
@@ -125,7 +125,8 @@ public class DetectionTaskSplitter {
                     var combinedProperties = new HashMap<>(
                             _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    if (!_aggregateJobPropertiesUtil.actionAppliesToMedia(media, combinedProperties)) {
+                    if (!AggregateJobPropertiesUtil.actionAppliesToMedia(
+                            media, combinedProperties)) {
                         continue;
                     }
 

@@ -145,9 +145,9 @@ public class TestTrackMergingProcessor {
     }
 
     private void generateAndRunMerge(String samplingInterval, String mergeTracks, String minGap, String minTrackSize,
-                                     int expectedTracks) {
+                                     int numExpectedTracks) {
         generateAndRunMerge("/samples/video_01.mp4", MediaType.VIDEO, "video/mp4", samplingInterval, mergeTracks, minGap, minTrackSize,
-                expectedTracks);
+                numExpectedTracks);
     }
 
     /**
@@ -163,7 +163,7 @@ public class TestTrackMergingProcessor {
      * Track 5 should never merge.  The other tracks may merge or be dropped based on properties.
      */
     private void generateAndRunMerge(String filePath, MediaType mediaType, String mimeType, String samplingInterval,
-                                     String mergeTracks, String minGap, String minTrackSize, int expectedTracks) {
+                                     String mergeTracks, String minGap, String minTrackSize, int numExpectedTracks) {
         final int taskIndex = 0;
         final int priority = 5;
         Exchange exchange = new DefaultExchange(camelContext);
@@ -255,7 +255,7 @@ public class TestTrackMergingProcessor {
         Assert.assertEquals(taskIndex, responseBody.getTaskIndex());
 
         var actualTracks = responseBody.getTracks(mediaId, 0);
-        Assert.assertEquals(expectedTracks, actualTracks.size());
+        Assert.assertEquals(numExpectedTracks, actualTracks.size());
         inProgressJobs.clearJob(TEST_JOB_ID);
     }
 

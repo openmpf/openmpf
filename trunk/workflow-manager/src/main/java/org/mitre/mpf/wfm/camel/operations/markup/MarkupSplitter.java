@@ -103,8 +103,7 @@ public class MarkupSplitter {
         for (var media : job.getMedia()) {
             mediaIndex++;
             if (media.isFailed()) {
-                log.warn("Skipping '{}: {}' - it is in an error state.",
-                         media.getId(), media.getLocalPath());
+                log.warn("Skipping media {}. It is in an error state.", media.getId());
                 continue;
             }
             if (!media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {

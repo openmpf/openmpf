@@ -34,6 +34,10 @@ import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.atmosphere.cpr.AtmosphereServlet;
 import org.javasimon.console.SimonConsoleServlet;
+import org.mitre.mpf.mvc.AjaxAwareLoginUrlAuthenticationEntryPoint;
+import org.mitre.mpf.mvc.AuthenticationFailureHandler;
+import org.mitre.mpf.mvc.CustomAccessDeniedHandler;
+import org.mitre.mpf.mvc.RestBasicAuthEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -45,6 +49,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
 @SpringBootApplication
 @ImportResource({
@@ -61,6 +69,45 @@ public class Application extends SpringBootServletInitializer {
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
         return builder.sources(Application.class);
+    }
+
+
+    @Bean
+    @Order(1)
+    public SecurityFilterChain restSecurityFilterChain(
+            HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {
+        return http.antMatcher("/rest/**")
+            .authorizeRequests(x -> x.anyRequest().authenticated())
+            .httpBasic(x -> x.authenticationEntryPoint(restBasicAuthEntryPoint))
+            .build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain formSecurityFilterChain(
+            HttpSecurity http,
+            AuthenticationFailureHandler authenticationFailureHandler,
+            CustomAccessDeniedHandler customAccessDeniedHandler,
+            AjaxAwareLoginUrlAuthenticationEntryPoint ajaxAwareLoginUrlAuthenticationEntryPoint)
+            throws Exception {
+        return http.authorizeRequests(x ->
+                x.antMatchers("/login/**", "/logout/**", "/resources/**")
+                .permitAll())
+            .authorizeRequests(x -> x.anyRequest().authenticated())
+            .formLogin(x ->
+                x.loginPage("/login")
+                .defaultSuccessUrl("/", true)
+                .failureUrl("/login?reason=error")
+                .failureHandler(authenticationFailureHandler))
+            .exceptionHandling(x ->
+                x.accessDeniedHandler(customAccessDeniedHandler)
+                .authenticationEntryPoint(ajaxAwareLoginUrlAuthenticationEntryPoint))
+            .build();
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
     }
 
 

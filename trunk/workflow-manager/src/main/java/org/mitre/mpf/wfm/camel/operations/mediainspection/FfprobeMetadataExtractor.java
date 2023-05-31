@@ -27,17 +27,21 @@
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,19 +58,28 @@ public class FfprobeMetadataExtractor {
 
     private final ObjectMapper _objectMapper;
 
+    private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
     @Inject
-    public FfprobeMetadataExtractor(ObjectMapper objectMapper) {
+    public FfprobeMetadataExtractor(
+            ObjectMapper objectMapper,
+            AggregateJobPropertiesUtil aggregateJobPropertiesUtil) {
         _objectMapper = objectMapper;
+        _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
     }
 
 
-    public FfprobeMetadata getAudioVideoMetadata(Path mediaPath) {
+    public FfprobeMetadata getAudioVideoMetadata(BatchJob job, Media media) {
         JsonNode ffprobeJson;
+        var mediaPath = media.getProcessingPath();
         try {
-            ffprobeJson = runFfprobeOnAudioOrVideo(mediaPath);
+            ffprobeJson = runFfprobeOnAudioOrVideo(job, media);
         }
         catch (MediaInspectionException e) {
-            return new FfprobeMetadata(Optional.empty(), Optional.empty());
+            if (shouldIgnoreStdErr(job, media)) {
+                return new FfprobeMetadata(Optional.empty(), Optional.empty());
+            }
+            throw e;
         }
 
         var optVideoStream = getStreamType(ffprobeJson, "video");
@@ -120,8 +133,9 @@ public class FfprobeMetadataExtractor {
     }
 
 
-    public FfprobeMetadata.Image getImageMetadata(Path mediaPath) {
-        var ffProbeOutput = runFfprobeOnImage(mediaPath);
+    public FfprobeMetadata.Image getImageMetadata(BatchJob job, Media media) {
+        var mediaPath = media.getProcessingPath();
+        var ffProbeOutput = runFfprobeOnImage(job, media);
         var frames = ffProbeOutput.get("frames");
         if (frames == null || frames.isEmpty()) {
             throw new MediaInspectionException(
@@ -364,23 +378,24 @@ public class FfprobeMetadataExtractor {
     }
 
 
-    private JsonNode runFfprobeOnImage(Path mediaPath) {
+    private JsonNode runFfprobeOnImage(BatchJob job, Media media) {
         var command = new String[] {
-            "ffprobe", "-hide_banner", "-show_frames", "-print_format", "json",
-            mediaPath.toString() };
-        return runFfprobe(command, mediaPath);
+            "ffprobe", "-hide_banner", "-loglevel", "error",
+            "-show_frames", "-print_format", "json", media.getProcessingPath().toString() };
+        return runFfprobe(command, job, media);
     }
 
 
-    private JsonNode runFfprobeOnAudioOrVideo(Path mediaPath) {
+    private JsonNode runFfprobeOnAudioOrVideo(BatchJob job, Media media) {
         var command = new String[] {
-            "ffprobe", "-hide_banner", "-show_streams", "-show_format", "-print_format", "json",
-            mediaPath.toString() };
-        return runFfprobe(command, mediaPath);
+            "ffprobe", "-hide_banner", "-loglevel", "error",
+            "-show_streams", "-show_format", "-print_format", "json",
+            media.getProcessingPath().toString() };
+        return runFfprobe(command, job, media);
     }
 
 
-    private JsonNode runFfprobe(String[] command, Path mediaPath) {
+    private JsonNode runFfprobe(String[] command, BatchJob job, Media media) {
         if (LOG.isInfoEnabled()) {
             LOG.info("Getting ffmpeg metadata with the following command: {}",
                     String.join(" ", command));
@@ -390,48 +405,76 @@ public class FfprobeMetadataExtractor {
         CompletableFuture<String> stdErrorFuture;
         try {
             ffprobeProcess = new ProcessBuilder(command).start();
-            stdErrorFuture = ThreadUtil.callAsync(() -> collectStdError(ffprobeProcess));
+            stdErrorFuture = ThreadUtil.callAsync(
+                    () -> collectStdError(ffprobeProcess, getNumStdErrLines(job, media)));
             ffprobeProcess.getOutputStream().close();
         }
         catch (IOException e) {
             throw new MediaInspectionException("Failed to start ffprobe due to: " + e, e);
         }
 
+        JsonNode output;
         try (var stdout = ffprobeProcess.getInputStream()) {
-            var output = _objectMapper.readTree(stdout);
-            int exitCode = ffprobeProcess.waitFor();
-            if (exitCode != 0) {
-                var message = "ffprobe returned exit code %s on \"%s\"".formatted(exitCode, mediaPath);
-                logFfprobeStdError(message, stdErrorFuture);
-                throw new MediaInspectionException(message);
-            }
-            return output;
+            output = _objectMapper.readTree(stdout);
         }
         catch (IOException e) {
             var message = "Running ffprobe on \"%s\" failed due to: " + e;
-            logFfprobeStdError(message, stdErrorFuture);
             throw new MediaInspectionException(message, e);
+        }
+
+        int exitCode;
+        try {
+            exitCode = ffprobeProcess.waitFor();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
+
+        var stdErrContent = stdErrorFuture.join();
+        if (exitCode != 0) {
+            var message = "ffprobe returned exit code %s on \"%s\""
+                    .formatted(exitCode, media.getProcessingPath());
+            if (!stdErrContent.isEmpty()) {
+                message += " and output the following content on stderr: " + stdErrContent;
+            }
+            throw new MediaInspectionException(message);
+        }
+        if (!stdErrContent.isEmpty() && !shouldIgnoreStdErr(job, media)) {
+            throw new MediaInspectionException(
+                    "ffprobe produced the following error message: " + stdErrContent);
+        }
+        return output;
     }
 
-    private String collectStdError(Process process) {
-        return process.errorReader()
-            .lines()
-            .collect(Collectors.joining("\n"));
+    private String collectStdError(Process process, int numLines) {
+        try (var reader = process.errorReader()) {
+            var stderrContent = reader
+                .lines()
+                .limit(numLines)
+                .collect(Collectors.joining("\n"));
+            reader.transferTo(Writer.nullWriter());
+            return stderrContent;
+        }
+        catch (IOException ignored) {
+            // If reading from stderr produces an IOException, then so will reading stdout.
+            // The exception produced by reading stdout will be reported rather than this one.
+            return "";
+        }
     }
 
-    private static void logFfprobeStdError(String message, CompletableFuture<String> stdErrorFuture) {
+    private int getNumStdErrLines(BatchJob job, Media media) {
         try {
-            var stdError = stdErrorFuture.join();
-            LOG.error("{} and the following was outputted on stderr: {}", message, stdError);
+            return Integer.parseInt(_aggregateJobPropertiesUtil.getValue(
+                MpfConstants.FFPROBE_STDERR_NUM_LINES, job, media));
         }
-        catch (CompletionException ignored) {
-            // We only look at ffprobe's stderr when we already failed, so we should throw the
-            // original exception instead of the CompletionException here.
+        catch (NumberFormatException e) {
+            return 5;
         }
+    }
+
+    private boolean shouldIgnoreStdErr(BatchJob job, Media media) {
+        return Boolean.parseBoolean(_aggregateJobPropertiesUtil.getValue(
+                MpfConstants.FFPROBE_IGNORE_STDERR, job, media));
     }
 }

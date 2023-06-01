@@ -440,9 +440,15 @@ public class FfprobeMetadataExtractor {
             }
             throw new MediaInspectionException(message);
         }
-        if (!stdErrContent.isEmpty() && !shouldIgnoreStdErr(job, media)) {
-            throw new MediaInspectionException(
-                    "ffprobe produced the following error message: " + stdErrContent);
+
+        if (!stdErrContent.isEmpty()) {
+            var errorMsg = "ffprobe produced the following error message: " + stdErrContent;
+            if (shouldIgnoreStdErr(job, media)) {
+                LOG.warn(errorMsg);
+            }
+            else {
+                throw new MediaInspectionException(errorMsg);
+            }
         }
         return output;
     }
@@ -465,8 +471,9 @@ public class FfprobeMetadataExtractor {
 
     private int getNumStdErrLines(BatchJob job, Media media) {
         try {
-            return Integer.parseInt(_aggregateJobPropertiesUtil.getValue(
+            int numLines = Integer.parseInt(_aggregateJobPropertiesUtil.getValue(
                 MpfConstants.FFPROBE_STDERR_NUM_LINES, job, media));
+            return numLines > 0 ? numLines : 5;
         }
         catch (NumberFormatException e) {
             return 5;

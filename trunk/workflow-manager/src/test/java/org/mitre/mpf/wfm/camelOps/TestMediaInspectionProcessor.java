@@ -366,27 +366,12 @@ public class TestMediaInspectionProcessor {
             .thenReturn("true");
 
         long jobId = next(), mediaId = next();
-        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/video_01_invalid.mp4", Collections.emptyMap());
-
-        verify(_mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
-        verify(_mockInProgressJobs, atLeastOnce())
-                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_AUDIO_STREAM), nonBlank());
-
-        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
-                media.isFailed());
-
-        String mediaHash = "239dbbbe6faf66af7eb471ad54b993526221043ced333723a4fd450d107f272c"; // `sha256sum video_01_invalid.mp4`
-
-        verify(_mockInProgressJobs)
-                .addMediaInspectionInfo(eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN), eq("video/mp4"),
-                        eq(-1), _metadataCaptor.capture());
-        verifyNoJobOrMediaError();
-
-        assertEquals(Map.of("MIME_TYPE", "video/mp4"), _metadataCaptor.getValue());
-
-        LOG.info("Media inspection test with video to unknown fallback passed..");
+        MediaImpl media = inspectMedia(
+                jobId, mediaId, "/samples/video_01_invalid.mp4", Map.of());
+        verifyMediaError(jobId, mediaId);
+        assertTrue(media.isFailed());
     }
+
 
     @Test(timeout = 5 * MINUTES)
     public void testInaccessibleFileInspection()  {

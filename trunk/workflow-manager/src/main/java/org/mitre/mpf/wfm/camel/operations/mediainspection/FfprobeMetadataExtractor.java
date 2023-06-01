@@ -70,25 +70,14 @@ public class FfprobeMetadataExtractor {
 
 
     public FfprobeMetadata getAudioVideoMetadata(BatchJob job, Media media) {
-        JsonNode ffprobeJson;
-        var mediaPath = media.getProcessingPath();
-        try {
-            ffprobeJson = runFfprobeOnAudioOrVideo(job, media);
-        }
-        catch (MediaInspectionException e) {
-            if (shouldIgnoreStdErr(job, media)) {
-                return new FfprobeMetadata(Optional.empty(), Optional.empty());
-            }
-            throw e;
-        }
-
+        var ffprobeJson = runFfprobeOnAudioOrVideo(job, media);
         var optVideoStream = getStreamType(ffprobeJson, "video");
         var optAudioStream = getStreamType(ffprobeJson, "audio");
         if (optVideoStream.isEmpty() && optAudioStream.isEmpty()) {
             return new FfprobeMetadata(Optional.empty(), Optional.empty());
         }
 
-
+        var mediaPath = media.getProcessingPath();
         var videoTimeBase = getTimeBase(mediaPath, optVideoStream);
         var audioTimeBase = getTimeBase(mediaPath, optAudioStream);
 

@@ -359,8 +359,8 @@ public class TestMediaInspectionProcessor {
     }
 
     @Test(timeout = 5 * MINUTES)
-    public void testVideoToUnknownFallback() {
-        LOG.info("Starting media inspection test with video to unknown fallback.");
+    public void testInvalidVideo() {
+        LOG.info("Starting media inspection test with invalid video.");
 
         when(_mockAggJobPropUtil.getValue(eq(MpfConstants.FFPROBE_IGNORE_STDERR), any(), any()))
             .thenReturn("true");
@@ -370,6 +370,35 @@ public class TestMediaInspectionProcessor {
                 jobId, mediaId, "/samples/video_01_invalid.mp4", Map.of());
         verifyMediaError(jobId, mediaId);
         assertTrue(media.isFailed());
+    }
+
+
+    @Test(timeout = 5 * MINUTES)
+    public void testVideoToUnknownFallback() {
+        LOG.info("Starting media inspection test with video to unknown fallback.");
+
+        long jobId = next(), mediaId = next();
+        MediaImpl media = inspectMedia(jobId, mediaId, "/samples/test5-noaudio-novideo.mkv", Collections.emptyMap());
+
+        verify(_mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_VIDEO_STREAM), nonBlank());
+        verify(_mockInProgressJobs, atLeastOnce())
+                .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.MISSING_AUDIO_STREAM), nonBlank());
+
+        assertFalse(String.format("The response entity must not fail. Message: %s.", media.getErrorMessage()),
+                media.isFailed());
+
+        String mediaHash = "11263500fdffbcc06e599d4a498ba08d41c049f5513da18b81253b25b18b098a";
+
+        verify(_mockInProgressJobs)
+                .addMediaInspectionInfo(
+                        eq(jobId), eq(mediaId), eq(mediaHash), eq(MediaType.UNKNOWN),
+                        eq("video/x-matroska"), eq(-1), _metadataCaptor.capture());
+        verifyNoJobOrMediaError();
+
+        assertEquals(Map.of("MIME_TYPE", "video/x-matroska"), _metadataCaptor.getValue());
+
+        LOG.info("Media inspection test with video to unknown fallback passed..");
     }
 
 

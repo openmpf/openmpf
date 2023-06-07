@@ -76,6 +76,7 @@ public class JobRouterRouteBuilder extends RouteBuilder {
                 .marshal().protobuf()
                 // Splitter will set the "CamelJmsDestinationName" header to
                 // specify the destination.
+                // Adapted from: https://camel.apache.org/components/3.20.x/jms-component.html#_reuse_endpoint_and_send_to_different_destinations_computed_at_runtime
                 .to("jms:queue:dummy")
             .end()
             .filter(exchangeProperty(MpfHeaders.EMPTY_SPLIT))

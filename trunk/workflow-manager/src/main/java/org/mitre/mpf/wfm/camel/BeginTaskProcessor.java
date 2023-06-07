@@ -59,6 +59,7 @@ public class BeginTaskProcessor extends WfmProcessor {
         BatchJob job = inProgressBatchJobs.getJob(jobId);
 
         if (job.getCurrentTaskIndex() > 0) {
+            // If this is not the first task, log that the previous task completed.
             log.info("Task Complete! Progress is now {}/{}.",
                     job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
         }

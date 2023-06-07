@@ -75,8 +75,7 @@ public class MediaInspectionSplitter extends WfmLocalSplitter {
                     message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
                     messages.add(message);
                 } else {
-                    log.warn("Skipping '{}' ({}). It is in an error state.",
-                             media.getUri(), media.getId());
+                    log.warn("Skipping media {}. It is in an error state.", media.getId());
                 }
             }
         } else {

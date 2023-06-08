@@ -24,19 +24,20 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.camel;
+package org.mitre.mpf.wfm.camel.operations;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
-import org.javasimon.aop.Monitored;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.camel.WfmProcessor;
+import org.mitre.mpf.wfm.data.TrackCache;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
+@Component(CommitUpdatedTracksProcessor.REF)
+public class CommitUpdatedTracksProcessor extends WfmProcessor {
+    public static final String REF = "commitUpdatedTracksProcessor";
 
-@Monitored
-/**
- * This interface is necessary because {@link Monitored} doesn't work properly with classes that have final methods
- * and {@link WfmSplitter#split(Exchange)} is final.
- */
-public interface MonitoredWfmSplitter {
-    List<Message> split(Exchange exchange);
+    @Override
+    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+        exchange.getIn().getBody(TrackCache.class).commit();
+    }
 }

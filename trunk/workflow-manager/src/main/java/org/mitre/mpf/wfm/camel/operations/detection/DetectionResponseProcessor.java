@@ -32,7 +32,6 @@ import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.ResponseProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -63,20 +62,19 @@ public class DetectionResponseProcessor
     private static final Logger log = LoggerFactory.getLogger(DetectionResponseProcessor.class);
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
+
     private final InProgressBatchJobsService _inProgressJobs;
+
     private final MediaInspectionHelper _mediaInspectionHelper;
-    private final JsonUtils _jsonUtils;
 
     @Inject
     public DetectionResponseProcessor(AggregateJobPropertiesUtil aggregateJobPropertiesUtil,
                                       InProgressBatchJobsService inProgressJobs,
-                                      MediaInspectionHelper mediaInspectionHelper,
-                                      JsonUtils jsonUtils) {
+                                      MediaInspectionHelper mediaInspectionHelper) {
         super(inProgressJobs, DetectionProtobuf.DetectionResponse.class);
         _aggregateJobPropertiesUtil = aggregateJobPropertiesUtil;
         _inProgressJobs = inProgressJobs;
         _mediaInspectionHelper = mediaInspectionHelper;
-        _jsonUtils = jsonUtils;
     }
 
     @Override
@@ -131,8 +129,7 @@ public class DetectionResponseProcessor
 
         _inProgressJobs.setProcessedAction(jobId, detectionResponse.getMediaId(), detectionResponse.getTaskIndex(),
                 detectionResponse.getActionIndex());
-
-        return _jsonUtils.serialize(new TrackMergingContext(jobId, detectionResponse.getTaskIndex()));
+        return null;
     }
 
     private double calculateConfidenceThreshold(Action action, BatchJob job, Media media) {

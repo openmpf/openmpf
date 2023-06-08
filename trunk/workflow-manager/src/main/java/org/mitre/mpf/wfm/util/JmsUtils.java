@@ -33,9 +33,10 @@ import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.wfm.camel.routes.DetectionCancellationRouteBuilder;
+import org.mitre.mpf.wfm.camel.routes.MarkupCancellationRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,9 +103,9 @@ public class JmsUtils {
     private static String cancellationEndpointForActionType(ActionType actionType) {
         switch (actionType) {
             case DETECTION:
-                return MpfEndpoints.CANCELLED_DETECTIONS;
+                return DetectionCancellationRouteBuilder.ENTRY_POINT;
             case MARKUP:
-                return MpfEndpoints.CANCELLED_MARKUPS;
+                return MarkupCancellationRouteBuilder.ENTRY_POINT;
             default:
                 return null;
         }

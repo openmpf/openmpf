@@ -26,29 +26,35 @@
 
 package org.mitre.mpf.wfm.camel.operations.mediainspection;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
-import org.mitre.mpf.wfm.camel.WfmSplitter;
+import org.mitre.mpf.wfm.camel.WfmLocalSplitter;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Component(MediaInspectionSplitter.REF)
-public class MediaInspectionSplitter extends WfmSplitter {
+public class MediaInspectionSplitter extends WfmLocalSplitter {
     private static final Logger log = LoggerFactory.getLogger(MediaInspectionSplitter.class);
     public static final String REF = "mediaInspectionSplitter";
 
-    @Autowired
-    private InProgressBatchJobsService inProgressJobs;
+    private final InProgressBatchJobsService _inProgressJobs;
+
+    @Inject
+    MediaInspectionSplitter(InProgressBatchJobsService inProgressJobs) {
+        super(inProgressJobs);
+        _inProgressJobs = inProgressJobs;
+    }
 
     @Override
     public String getSplitterName() { return REF; }
@@ -57,7 +63,7 @@ public class MediaInspectionSplitter extends WfmSplitter {
     @Override
     public List<Message> wfmSplit(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        BatchJob job = inProgressJobs.getJob(jobId);
+        BatchJob job = _inProgressJobs.getJob(jobId);
         List<Message> messages = new ArrayList<>();
 
         if(!job.isCancelled()) {
@@ -69,8 +75,7 @@ public class MediaInspectionSplitter extends WfmSplitter {
                     message.setHeader(MpfHeaders.MEDIA_ID, media.getId());
                     messages.add(message);
                 } else {
-                    log.warn("Skipping '{}' ({}). It is in an error state.",
-                             media.getUri(), media.getId());
+                    log.warn("Skipping media {}. It is in an error state.", media.getId());
                 }
             }
         } else {

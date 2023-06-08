@@ -26,9 +26,12 @@
 
 package org.mitre.mpf.wfm.camel.routes;
 
+
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.BroadcastEnabledAggregator;
+import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.markup.MarkupResponseProcessor;
 import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
@@ -36,18 +39,24 @@ import org.mitre.mpf.wfm.util.ProtobufDataFormatFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MarkupResponseRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(MarkupResponseRouteBuilder.class);
 
-	public static final String ENTRY_POINT = MpfEndpoints.COMPLETED_MARKUP;
-	public static final String EXIT_POINT = MpfEndpoints.TASK_RESULTS_AGGREGATOR;
+    public static final String JMS_DESTINATION = "MPF.COMPLETED_MARKUP";
+	public static final String ENTRY_POINT = "jms:" + JMS_DESTINATION;
+	public static final String EXIT_POINT = JobRouterRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Markup Response Route";
 
 	@Autowired
 	private ProtobufDataFormatFactory protobufDataFormatFactory;
+
+    @Autowired
+    @Qualifier(BroadcastEnabledAggregator.REF)
+	private WfmAggregator aggregator;
 
 	private final String entryPoint, exitPoint, routeId;
 
@@ -71,9 +80,11 @@ public class MarkupResponseRouteBuilder extends RouteBuilder {
 			.unmarshal(protobufDataFormatFactory.create(Markup.MarkupResponse::newBuilder))
 			.process(MarkupResponseProcessor.REF)
 			.choice()
-				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(Boolean.TRUE.toString()))
+				.when(header(MpfHeaders.UNSOLICITED).isEqualTo(true))
 					.to(MpfEndpoints.UNSOLICITED_MESSAGES)
 				.otherwise()
+                    .aggregate(header(MpfHeaders.CORRELATION_ID), aggregator)
+                    .completionSize(header(MpfHeaders.SPLIT_SIZE))
 					.to(exitPoint)
 			.endChoice();
 	}

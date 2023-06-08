@@ -26,29 +26,38 @@
 
 package org.mitre.mpf.wfm.camel.operations.detection;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+
+import javax.inject.Inject;
+
 import org.apache.camel.Message;
-import org.apache.commons.lang3.StringUtils;
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.buffers.AlgorithmPropertyProtocolBuffer;
+import org.mitre.mpf.wfm.camel.routes.DetectionResponseRouteBuilder;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.persistent.SystemPropertiesSnapshot;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MediaType;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.segmenting.MediaSegmenter;
 import org.mitre.mpf.wfm.segmenting.SegmentingPlan;
 import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
-import java.util.*;
 
 // DetectionSplitter will take in Job and Task, breaking them into manageable work units for the Components
 
@@ -88,7 +97,7 @@ public class DetectionTaskSplitter {
             try {
                 if (media.isFailed()) {
                     // If a media is in a failed state (it couldn't be retrieved, it couldn't be inspected, etc.), do nothing with it.
-                    log.warn("Skipping Media #{} - it is in an error state.", media.getId());
+                    log.warn("Skipping media {}. It is in an error state.", media.getId());
                     continue;
                 }
 
@@ -116,7 +125,8 @@ public class DetectionTaskSplitter {
                     var combinedProperties = new HashMap<>(
                             _aggregateJobPropertiesUtil.getPropertyMap(job, media, action));
 
-                    if (!_aggregateJobPropertiesUtil.actionAppliesToMedia(media, combinedProperties)) {
+                    if (!AggregateJobPropertiesUtil.actionAppliesToMedia(
+                            media, combinedProperties)) {
                         continue;
                     }
 
@@ -162,12 +172,14 @@ public class DetectionTaskSplitter {
                             .getAlgorithm(action.getAlgorithm())
                             .getActionType();
                     for (Message message : detectionRequestMessages) {
-                        message.setHeader(MpfHeaders.RECIPIENT_QUEUE,
-                                String.format("jms:MPF.%s_%s_REQUEST",
+                        message.setHeader(MpfHeaders.JMS_DESTINATION,
+                                String.format("MPF.%s_%s_REQUEST",
                                         actionType,
                                         action.getAlgorithm()));
-                        message.setHeader(MpfHeaders.JMS_REPLY_TO,
-                                StringUtils.replace(MpfEndpoints.COMPLETED_DETECTIONS, "jms:", ""));
+                        message.setHeader(
+                            MpfHeaders.JMS_REPLY_TO,
+                            DetectionResponseRouteBuilder.JMS_DESTINATION);
+
                         media.getType().ifPresent(
                                 mt -> message.setHeader(MpfHeaders.MEDIA_TYPE, mt.toString()));
                     }

@@ -37,6 +37,7 @@ import org.mitre.mpf.videooverlay.BoundingBox;
 import org.mitre.mpf.videooverlay.BoundingBoxMap;
 import org.mitre.mpf.videooverlay.BoundingBoxSource;
 import org.mitre.mpf.wfm.buffers.Markup;
+import org.mitre.mpf.wfm.camel.routes.MarkupResponseRouteBuilder;
 import org.mitre.mpf.wfm.data.IdGenerator;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
@@ -102,8 +103,7 @@ public class MarkupSplitter {
         for (var media : job.getMedia()) {
             mediaIndex++;
             if (media.isFailed()) {
-                log.warn("Skipping '{}: {}' - it is in an error state.",
-                         media.getId(), media.getLocalPath());
+                log.warn("Skipping media {}. It is in an error state.", media.getId());
                 continue;
             }
             if (!media.matchesType(MediaType.IMAGE, MediaType.VIDEO)) {
@@ -167,11 +167,12 @@ public class MarkupSplitter {
             var algorithm = job.getPipelineElements().getAlgorithm(markupAction.getAlgorithm());
             var message = new DefaultMessage(_camelContext);
             message.setHeader(
-                    MpfHeaders.RECIPIENT_QUEUE,
-                    String.format("jms:MPF.%s_%s_REQUEST", algorithm.getActionType(),
+                    MpfHeaders.JMS_DESTINATION,
+                    String.format("MPF.%s_%s_REQUEST", algorithm.getActionType(),
                                   markupAction.getAlgorithm()));
-            message.setHeader(MpfHeaders.JMS_REPLY_TO,
-                              MpfEndpoints.COMPLETED_MARKUP.replace("jms:", ""));
+            message.setHeader(
+                    MpfHeaders.JMS_REPLY_TO,
+                    MarkupResponseRouteBuilder.JMS_DESTINATION);
             message.setBody(requestBuilder.build());
             messages.add(message);
         }

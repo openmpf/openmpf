@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.*;
 import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionResponseProcessor;
-import org.mitre.mpf.wfm.camel.operations.detection.trackmerging.TrackMergingContext;
 import org.mitre.mpf.wfm.camel.operations.mediainspection.MediaInspectionHelper;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.entities.persistent.*;
@@ -76,8 +75,6 @@ public class TestDetectionResponseProcessor {
     @Mock
     private MediaInspectionHelper mockMediaInspectionHelper;
 
-    private final JsonUtils jsonUtils = new JsonUtils(ObjectMapperFactory.customObjectMapper());
-
     private DetectionResponseProcessor detectionResponseProcessor;
 
     private final IoUtils ioUtils = new IoUtils();
@@ -107,9 +104,7 @@ public class TestDetectionResponseProcessor {
         detectionResponseProcessor = new DetectionResponseProcessor(
                 mockAggregateJobPropertiesUtil,
                 mockInProgressJobs,
-                mockMediaInspectionHelper,
-                jsonUtils
-        );
+                mockMediaInspectionHelper);
 
         Algorithm algorithm = new Algorithm(
                 DETECTION_RESPONSE_ALG_NAME, "algorithm description", ActionType.DETECTION,
@@ -158,6 +153,7 @@ public class TestDetectionResponseProcessor {
             Map.of(),
             Map.of(),
             false);
+        job.setCurrentTaskIndex(1);
 
         when(mockInProgressJobs.containsJob(JOB_ID))
                 .thenReturn(true);
@@ -214,12 +210,8 @@ public class TestDetectionResponseProcessor {
         exchange.getIn().setBody(detectionResponse);
 
         detectionResponseProcessor.wfmProcess(exchange);
-        Object responseBody = exchange.getOut().getBody();
-        TrackMergingContext processorResponse =
-                jsonUtils.deserialize((byte[])responseBody, TrackMergingContext.class);
-
-        Assert.assertEquals(JOB_ID, processorResponse.getJobId());
-        Assert.assertEquals(1, processorResponse.getTaskIndex());
+        Assert.assertEquals(JOB_ID, exchange.getOut().getHeader(MpfHeaders.JOB_ID));
+        Assert.assertEquals(1, exchange.getOut().getHeader(MpfHeaders.TASK_INDEX));
 
         verify(mockInProgressJobs, never())
                 .setJobStatus(eq(JOB_ID), any(BatchJobStatusType.class)); // job is already IN_PROGRESS at this point

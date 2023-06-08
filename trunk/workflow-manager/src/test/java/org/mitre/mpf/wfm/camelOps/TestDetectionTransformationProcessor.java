@@ -29,6 +29,7 @@ package org.mitre.mpf.wfm.camelOps;
 import org.junit.Test;
 import org.mitre.mpf.wfm.camel.operations.detection.transformation.DetectionTransformationProcessor;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.TrackCache;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.enums.IssueCodes;
@@ -680,16 +681,18 @@ public class TestDetectionTransformationProcessor {
         long jobId = 123;
         long mediaId = 5321;
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Collection<Track>> captor = ArgumentCaptor.forClass(Collection.class);
+        var trackCache = new TrackCache(jobId, 0, _mockInProgressJobs);
 
-        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(jobId, mediaId,
-                0, 0, frameWidth, frameHeight, tracks);
+        Collection<Track> new_tracks = _detectionTransformationProcessor.removeIllFormedDetections(
+                trackCache, mediaId, 0, frameWidth, frameHeight, tracks);
+
         if (!hasWidthHeightWarning && !hasOutsideFrameWarning) {
             verify(_mockInProgressJobs, times(0))
                     .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION), anyString());
-            verify(_mockInProgressJobs, times(0))
-                    .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
+            trackCache.commit();
+            verify(_mockInProgressJobs, never())
+                    .setTracks(anyLong(), anyLong(), anyInt(), anyInt(), any());
+            assertEquals(0, trackCache.getTracks(mediaId, 0).size());
         } else {
             if (hasWidthHeightWarning) {
                 verify(_mockInProgressJobs, times(1))
@@ -701,6 +704,9 @@ public class TestDetectionTransformationProcessor {
                         .addWarning(eq(jobId), eq(mediaId), eq(IssueCodes.INVALID_DETECTION),
                                 contains("completely outside frame"));
             }
+
+            trackCache.commit();
+            var captor = ArgumentCaptor.forClass(SortedSet.class);
             verify(_mockInProgressJobs)
                     .setTracks(eq(jobId), eq(mediaId), eq(0), eq(0), captor.capture());
             assertTrue(isEqualCollection(new_tracks, captor.getValue()));

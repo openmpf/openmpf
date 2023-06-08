@@ -28,8 +28,6 @@ package org.mitre.mpf.wfm.enums;
 
 public class MpfHeaders {
 	public static final String
-		AGGREGATED_COUNT = "AggregatedCount",
-
 		CORRELATION_ID = "CorrelationId",
 
 		EMPTY_SPLIT = "EmptySplit",
@@ -38,16 +36,15 @@ public class MpfHeaders {
 		JMS_REPLY_TO = "JMSReplyTo",
 		JOB_COMPLETE = "JobComplete",
 		JOB_ID = "JobId",
+        TASK_INDEX = "TaskIndex",
 
 		MEDIA_ID = "MediaId",
 		MEDIA_TYPE = "MediaType",
 
-		RECIPIENT_QUEUE = "QueueName",
+        JMS_DESTINATION = "CamelJmsDestinationName",
 
-		SPLIT_COMPLETED = "SplitCompleted",
 		SPLIT_SIZE = "SplitSize",
 		SPLITTING_ERROR = "JobSplitError",
-		SUPPRESS_BROADCAST = "SuppressBroadcast",
 
 		UNSOLICITED = "Unsolicited",
 

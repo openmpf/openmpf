@@ -74,6 +74,8 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 		var jobExists = _inProgressJobs.containsJob(jobId);
 		if (jobExists) {
 			var job = _inProgressJobs.getJob(jobId);
+            exchange.getOut().setHeader(MpfHeaders.JOB_ID, jobId);
+            exchange.getOut().setHeader(MpfHeaders.TASK_INDEX, job.getCurrentTaskIndex());
 			exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
 			Object newBody = processResponse(jobId, exchange.getIn().getBody(clazz), exchange.getIn().getHeaders());
 			if (newBody != null) {
@@ -86,8 +88,8 @@ public abstract class ResponseProcessor<T extends MessageLite> extends WfmProces
 			// No such job. Repackage the response and send it to the unsolicited responses queue for future analysis.
 			log.warn("A job with this ID is not known to the system. " +
 					         "This message will be ignored.");
-			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
-			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, Boolean.TRUE.toString());
+			exchange.getIn().setHeader(MpfHeaders.UNSOLICITED, true);
+			exchange.getOut().setHeader(MpfHeaders.UNSOLICITED, true);
 			exchange.getOut().setBody(((T)(exchange.getIn().getBody())).toByteArray());
 		}
 	}

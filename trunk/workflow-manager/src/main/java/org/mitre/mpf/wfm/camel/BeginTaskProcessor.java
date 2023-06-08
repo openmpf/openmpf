@@ -24,58 +24,54 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.mock;
+package org.mitre.mpf.wfm.camel;
 
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.dataformat.protobuf.ProtobufDataFormat;
-import org.mitre.mpf.wfm.buffers.DetectionProtobuf;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
+import org.apache.camel.Exchange;
+import org.mitre.mpf.wfm.WfmProcessingException;
+import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
+import org.mitre.mpf.wfm.event.JobProgress;
+import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/** Builds the route that handles detection responses. */
-@Component
-public class MockDetectionComponentRouteBuilder extends RouteBuilder {
+@Component(BeginTaskProcessor.REF)
+public class BeginTaskProcessor extends WfmProcessor {
+    public static final String REF = "beginTaskProcessor";
+    private static final Logger log = LoggerFactory.getLogger(BeginTaskProcessor.class);
 
-	private static final Logger log = LoggerFactory.getLogger(MockDetectionComponentRouteBuilder.class);
+    @Autowired
+    private InProgressBatchJobsService inProgressBatchJobs;
 
-	/** The default entry point for this route. */
-	public static final String ENTRY_POINT = MpfMockEndpoints.MOCK_DETECTION_REQUEST;
+    @Autowired
+    private JobProgress jobProgressStore;
 
-	/** The default exit point for this route. */
-	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
+    @Autowired
+    private JobStatusBroadcaster jobStatusBroadcaster;
 
-	/** The default id route. */
-	public static final String ROUTE_ID = "Mock Detection Component Route";
+    @Override
+    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+        long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
+        inProgressBatchJobs.incrementTask(jobId);
+        BatchJob job = inProgressBatchJobs.getJob(jobId);
 
-	private final String entryPoint, exitPoint, routeId;
+        if (job.getCurrentTaskIndex() > 0) {
+            // If this is not the first task, log that the previous task completed.
+            log.info("Task Complete! Progress is now {}/{}.",
+                    job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
+        }
 
-	/** Create a new instance of this class using the default entry and exit points (this is the constructor called by Spring). */
-	public MockDetectionComponentRouteBuilder() {
-		this(ENTRY_POINT, EXIT_POINT, ROUTE_ID);
-	}
 
-	/**
-	 * Create a new instance of this class using the specified entry point, exit point, and route name. This constructor
-	 * is exposed to facilitate testing.
-	 */
-	public MockDetectionComponentRouteBuilder(String entryPoint, String exitPoint, String routeId) {
-		this.entryPoint = entryPoint;
-		this.exitPoint = exitPoint;
-		this.routeId = routeId;
-	}
+        if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
+            jobProgressStore.setJobProgress(jobId, 99.0f);
+            jobStatusBroadcaster.broadcast(jobId, job.getStatus());
+            log.debug("All tasks have completed. Setting the {} flag.", MpfHeaders.JOB_COMPLETE);
+            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, true);
+        }
 
-	@Override
-	public void configure() throws Exception {
-		log.debug("Configuring route '{}'.", routeId);
-
-		from(entryPoint)
-			.routeId(routeId)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.unmarshal(new ProtobufDataFormat(DetectionProtobuf.DetectionRequest.getDefaultInstance())) // Unpack the protobuf response.
-			.process(MockDetectionComponent.REF) // Run the response through the response processor.
-			.to(exitPoint);
-	}
+        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+    }
 }

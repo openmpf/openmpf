@@ -61,7 +61,7 @@ public class BatchJobImpl implements BatchJob {
     public JobPipelineElements getPipelineElements() { return _pipelineElements; }
 
 
-    private int _currentTaskIndex = 0;
+    private int _currentTaskIndex = -1;
     @Override
     public int getCurrentTaskIndex() { return _currentTaskIndex; }
     public void setCurrentTaskIndex(int currentTaskIndex) { _currentTaskIndex = currentTaskIndex; }

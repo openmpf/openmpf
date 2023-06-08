@@ -51,6 +51,7 @@ import org.apache.tika.parser.Parser;
 import org.mitre.mpf.heic.HeicConverter;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MediaType;
@@ -121,7 +122,7 @@ public class MediaInspectionHelper {
 
     public void inspectMedia(Media media, long jobId) throws WfmProcessingException {
         if (media.isFailed()) {
-            LOG.error("Skipping inspection of Media #{} as it is in an error state.", media.getId());
+            LOG.error("Skipping media {}. It is in an error state.", media.getId());
             return;
         }
         if (_mediaMetadataValidator.skipInspection(jobId, media)) {
@@ -158,13 +159,14 @@ public class MediaInspectionHelper {
             mediaType = _mediaTypeUtils.parse(mimeType);
             FfprobeMetadata ffprobeMetadata = null;
 
+            var job = _inProgressJobs.getJob(jobId);
             switch (mediaType) {
                 case IMAGE:
-                    length = inspectImage(localPath, jobId, mediaId, mediaMetadata);
+                    length = inspectImage(job, media, mediaMetadata);
                     break;
 
                 case VIDEO:
-                    ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(localPath);
+                    ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(job, media);
                     if (ffprobeMetadata.video().isPresent()) {
                         length = inspectVideo(
                                 localPath, jobId, mediaId, mimeType, mediaMetadata,
@@ -179,7 +181,7 @@ public class MediaInspectionHelper {
 
                 case AUDIO:
                     if (ffprobeMetadata == null) {
-                        ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(localPath);
+                        ffprobeMetadata = _ffprobeMetadataExtactor.getAudioVideoMetadata(job, media);
                     }
                     if (ffprobeMetadata.audio().isPresent()) {
                         length = inspectAudio(
@@ -291,7 +293,7 @@ public class MediaInspectionHelper {
         return frameCount;
     }
 
-    private int inspectImage(Path localPath, long jobId, long mediaId, Map<String, String> mediaMetadata)
+    private int inspectImage(BatchJob job, Media media, Map<String, String> mediaMetadata)
             throws IOException, TikaException, SAXException {
         String mimeType = mediaMetadata.get("MIME_TYPE");
 
@@ -299,32 +301,32 @@ public class MediaInspectionHelper {
         if (mimeType.equalsIgnoreCase("image/heic")) {
             var tempDir = _propertiesUtil.getTemporaryMediaDirectory().toPath();
             mediaPath = tempDir.resolve(UUID.randomUUID() + ".png");
-            LOG.info("{} is HEIC image. It will be converted to PNG.", localPath);
-            HeicConverter.convert(localPath, mediaPath);
-            _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+            LOG.info("{} is HEIC image. It will be converted to PNG.", media.getLocalPath());
+            HeicConverter.convert(media.getLocalPath(), mediaPath);
+            _inProgressJobs.addConvertedMediaPath(job.getId(), media.getId(), mediaPath);
         }
         else if (mimeType.equalsIgnoreCase("image/png")
-                && PngDefry.isCrushed(localPath)) {
+                && PngDefry.isCrushed(media.getLocalPath())) {
             LOG.info(
                 "Detected that \"{}\" is an Apple-optimized PNG. It will be converted to a " +
-                "regular PNG.", localPath);
+                "regular PNG.", media.getLocalPath());
             var defriedPath = PngDefry.defry(
-                    localPath, _propertiesUtil.getTemporaryMediaDirectory().toPath());
-            _inProgressJobs.addConvertedMediaPath(jobId, mediaId, defriedPath);
+                    media.getLocalPath(), _propertiesUtil.getTemporaryMediaDirectory().toPath());
+            _inProgressJobs.addConvertedMediaPath(job.getId(), media.getId(), defriedPath);
             mediaPath = defriedPath;
         }
         else if (mimeType.equalsIgnoreCase("image/webp")) {
             mediaPath = WebpUtil.fixLengthIfNeeded(
-                    localPath, _propertiesUtil.getTemporaryMediaDirectory().toPath());
-            if (!mediaPath.equals(localPath)) {
-                _inProgressJobs.addConvertedMediaPath(jobId, mediaId, mediaPath);
+                    media.getLocalPath(), _propertiesUtil.getTemporaryMediaDirectory().toPath());
+            if (!mediaPath.equals(media.getLocalPath())) {
+                _inProgressJobs.addConvertedMediaPath(job.getId(), media.getId(), mediaPath);
             }
         }
         else {
-            mediaPath = localPath;
+            mediaPath = media.getLocalPath();
         }
 
-        var ffprobeMetadata = _ffprobeMetadataExtactor.getImageMetadata(mediaPath);
+        var ffprobeMetadata = _ffprobeMetadataExtactor.getImageMetadata(job, media);
         if (ffprobeMetadata.width().isPresent()
                 && ffprobeMetadata.height().isPresent()
                 && ffprobeMetadata.exifOrientation().isPresent()) {
@@ -366,8 +368,9 @@ public class MediaInspectionHelper {
             // As a last resort, load the whole image into memory.
             BufferedImage bimg = ImageIO.read(mediaPath.toFile());
             if (bimg == null) {
-                _inProgressJobs.addError(jobId, mediaId, IssueCodes.MEDIA_INSPECTION,
-                                         "Cannot detect image file frame size. Cannot read image file.");
+                _inProgressJobs.addError(
+                        job.getId(), media.getId(), IssueCodes.MEDIA_INSPECTION,
+                        "Cannot detect image file frame size. Cannot read image file.");
                 return -1;
             }
             widthStr = Integer.toString(bimg.getWidth());

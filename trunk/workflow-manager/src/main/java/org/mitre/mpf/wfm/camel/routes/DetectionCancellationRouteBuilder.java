@@ -29,7 +29,6 @@ package org.mitre.mpf.wfm.camel.routes;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionCancellationProcessor;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -38,8 +37,8 @@ import org.springframework.stereotype.Component;
 public class DetectionCancellationRouteBuilder extends RouteBuilder {
 	private static final Logger log = LoggerFactory.getLogger(DetectionCancellationRouteBuilder.class);
 
-	public static final String ENTRY_POINT = MpfEndpoints.CANCELLED_DETECTIONS;
-	public static final String EXIT_POINT = MpfEndpoints.COMPLETED_DETECTIONS;
+	public static final String ENTRY_POINT = "jms:MPF.CANCELLED_DETECTIONS";
+	public static final String EXIT_POINT = DetectionResponseRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Detection Cancellation Route";
 
 	private final String entryPoint, exitPoint, routeId;

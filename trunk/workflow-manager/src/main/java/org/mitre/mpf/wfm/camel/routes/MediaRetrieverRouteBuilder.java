@@ -28,27 +28,17 @@ package org.mitre.mpf.wfm.camel.routes;
 
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.builder.RouteBuilder;
-import org.mitre.mpf.wfm.camel.CountBasedWfmAggregator;
 import org.mitre.mpf.wfm.camel.JobCompleteProcessorImpl;
-import org.mitre.mpf.wfm.camel.SplitCompletedPredicate;
-import org.mitre.mpf.wfm.camel.WfmAggregator;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaProcessor;
 import org.mitre.mpf.wfm.camel.operations.mediaretrieval.RemoteMediaSplitter;
-import org.mitre.mpf.wfm.enums.MpfEndpoints;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MediaRetrieverRouteBuilder extends RouteBuilder {
-	public static final String ENTRY_POINT = MpfEndpoints.MEDIA_RETRIEVAL_ENTRY_POINT;
+	public static final String ENTRY_POINT = "jms:MPF.MEDIA_RETRIEVAL";
 	public static final String EXIT_POINT = MediaInspectionRouteBuilder.ENTRY_POINT;
 	public static final String ROUTE_ID = "Media Retriever Route";
-
-	@Autowired
-	@Qualifier(CountBasedWfmAggregator.REF)
-	private WfmAggregator stringCountBasedAggregator;
 
 	private final String entryPoint, exitPoint;
 
@@ -66,29 +56,19 @@ public class MediaRetrieverRouteBuilder extends RouteBuilder {
 
 	@Override
 	public void configure() {
-		from(entryPoint)
-			.routeId(ROUTE_ID)
-				.setExchangePattern(ExchangePattern.InOnly)
-			.split().method(RemoteMediaSplitter.REF, "split")
-				.parallelProcessing() // Create work units in any order.
-				.streaming() // Aggregate them in any order.
-			.choice()
-				.when(header(MpfHeaders.SPLITTING_ERROR).isEqualTo(Boolean.TRUE))
-					.removeHeader(MpfHeaders.SPLITTING_ERROR)
+        from(entryPoint)
+            .routeId(ROUTE_ID)
+            .setExchangePattern(ExchangePattern.InOnly)
+            .split().method(RemoteMediaSplitter.REF, "split")
+                .parallelProcessing()
+                .streaming()
+                .process(RemoteMediaProcessor.REF)
+            .end()
+            .choice()
+                .when(exchangeProperty(MpfHeaders.SPLITTING_ERROR))
                     .process(JobCompleteProcessorImpl.REF)
-				.when(header(MpfHeaders.EMPTY_SPLIT).isEqualTo(Boolean.TRUE))
-					.removeHeader(MpfHeaders.EMPTY_SPLIT)
-					.to(exitPoint)
-				.otherwise()
-					.to(MpfEndpoints.MEDIA_RETRIEVAL_WORK_QUEUE)
-			.end();
-
-		from(MpfEndpoints.MEDIA_RETRIEVAL_WORK_QUEUE)
-			.setExchangePattern(ExchangePattern.InOnly)
-			.process(RemoteMediaProcessor.REF)
-			.aggregate(header(MpfHeaders.CORRELATION_ID), stringCountBasedAggregator)
-			.completionPredicate(new SplitCompletedPredicate())
-			.removeHeader(MpfHeaders.SPLIT_COMPLETED)
-			.to(exitPoint);
+                .otherwise()
+                    .to(exitPoint)
+            .endChoice();
 	}
 }

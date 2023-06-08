@@ -24,7 +24,8 @@
             "TIES_DB_COPY_SRC_S3_REGION",
             "TIES_DB_COPY_SRC_S3_USE_VIRTUAL_HOST",
             "TIES_DB_COPY_SRC_S3_HOST",
-            "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX"
+            "TIES_DB_COPY_SRC_S3_UPLOAD_OBJECT_KEY_PREFIX",
+            "FFPROBE_STDERR_NUM_LINES"
         ]
     },
     {

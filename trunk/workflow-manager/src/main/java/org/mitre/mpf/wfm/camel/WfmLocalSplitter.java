@@ -24,51 +24,61 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+
 package org.mitre.mpf.wfm.camel;
 
+import java.util.List;
+
 import org.apache.camel.Exchange;
-import org.mitre.mpf.wfm.WfmProcessingException;
+import org.apache.camel.Message;
+import org.javasimon.aop.Monitored;
+import org.mitre.mpf.mvc.util.MdcUtil;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
-import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.enums.IssueCodes;
 import org.mitre.mpf.wfm.enums.MpfHeaders;
-import org.mitre.mpf.wfm.event.JobProgress;
-import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component(EndOfTaskProcessor.REF)
-public class EndOfTaskProcessor extends WfmProcessor {
-    public static final String REF = "endOfTaskProcessor";
-    private static final Logger log = LoggerFactory.getLogger(EndOfTaskProcessor.class);
+@Monitored
+public abstract class WfmLocalSplitter {
 
-    @Autowired
-    private InProgressBatchJobsService inProgressBatchJobs;
+    private static final Logger LOG = LoggerFactory.getLogger(WfmLocalSplitter.class);
 
-    @Autowired
-    private JobProgress jobProgressStore;
+    private final InProgressBatchJobsService _inProgressJobs;
 
-    @Autowired
-    private JobStatusBroadcaster jobStatusBroadcaster;
+    protected WfmLocalSplitter(InProgressBatchJobsService inProgressJobs) {
+        _inProgressJobs = inProgressJobs;
+    }
 
-    @Override
-    public void wfmProcess(Exchange exchange) throws WfmProcessingException {
+    protected abstract List<Message> wfmSplit(Exchange exchange);
+
+    protected abstract String getSplitterName();
+
+
+    public List<Message> split(Exchange exchange) {
         long jobId = exchange.getIn().getHeader(MpfHeaders.JOB_ID, Long.class);
-        inProgressBatchJobs.incrementTask(jobId);
-        BatchJob job = inProgressBatchJobs.getJob(jobId);
+        return MdcUtil.job(jobId, () -> doSplit(jobId, exchange));
+    }
 
-        log.info("Task Complete! Progress is now {}/{}.",
-                 job.getCurrentTaskIndex(), job.getPipelineElements().getTaskCount());
-
-
-        if (job.getCurrentTaskIndex() >= job.getPipelineElements().getTaskCount()) {
-            jobProgressStore.setJobProgress(jobId, 99.0f);
-            jobStatusBroadcaster.broadcast(jobId, job.getStatus());
-            log.debug("All tasks have completed. Setting the {} flag.", MpfHeaders.JOB_COMPLETE);
-            exchange.getOut().setHeader(MpfHeaders.JOB_COMPLETE, Boolean.TRUE);
+    private List<Message> doSplit(long jobId, Exchange exchange) {
+        try {
+            var messages = wfmSplit(exchange);
+            int priority = exchange.getIn().getHeader(MpfHeaders.JMS_PRIORITY, 4, Integer.class);
+            for (var message : messages) {
+                message.setHeader(MpfHeaders.JMS_PRIORITY, priority);
+                message.setHeader(MpfHeaders.JOB_ID, jobId);
+            }
+            LOG.info("{} produced {} work units.", getSplitterName(), messages.size());
+            return messages;
         }
-
-        exchange.getOut().setHeader(MpfHeaders.JMS_PRIORITY, job.getPriority());
+        catch (Exception e) {
+            var errorMsg = String.format(
+                "Failed to complete the split operation for Job %s due to : %s",
+                jobId, e);
+            LOG.error(errorMsg, e);
+            _inProgressJobs.addFatalError(jobId, IssueCodes.OTHER, errorMsg);
+            exchange.setProperty(MpfHeaders.SPLITTING_ERROR, true);
+            return List.of();
+        }
     }
 }

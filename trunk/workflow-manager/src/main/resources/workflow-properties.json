@@ -476,6 +476,20 @@
         "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
     },
     {
+        "name": "FFPROBE_IGNORE_STDERR",
+        "description": "When set to false and ffprobe produces error logging during media inspection, an error will be added to the media that was being inspected. When set to true, ffprobe's stderr is ignored.",
+        "type": "BOOLEAN",
+        "propertiesKey": "ffprobe.ignore.stderr",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
+        "name": "FFPROBE_STDERR_NUM_LINES",
+        "description": "If \"FFPROBE_IGNORE_STDERR\" is false and ffprobe produces error logging, this value is the maximum number of lines of ffprobe's error logging that will be added to the media error.",
+        "type": "INT",
+        "propertiesKey": "ffprobe.stderr.num.lines",
+        "mediaTypes": ["VIDEO", "IMAGE", "AUDIO", "UNKNOWN"]
+    },
+    {
         "name": "TRIGGER",
         "description": "Trigger condition for an action when feed forward is used. An action with a trigger of `TRACK_PROPERTY=VALUE` will only process feed forward tracks that have a track property named \"TRACK_PROPERTY\" set to \"VALUE\".",
         "type": "STRING",

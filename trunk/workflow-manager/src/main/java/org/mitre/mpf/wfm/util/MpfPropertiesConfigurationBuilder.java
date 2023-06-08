@@ -60,7 +60,8 @@ public class MpfPropertiesConfigurationBuilder {
             "warn.",
             "markup.",
             "ties.db",
-            "s3."
+            "s3.",
+            "ffprobe."
     );
 
     private static final Collection<String> SNAPSHOT_PREFIXES = ImmutableList.of(

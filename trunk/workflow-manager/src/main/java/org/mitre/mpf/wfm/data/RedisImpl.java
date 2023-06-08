@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
@@ -48,7 +49,7 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-
+@Monitored
 @Component
 public class RedisImpl implements Redis {
 

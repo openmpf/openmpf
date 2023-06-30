@@ -24,41 +24,59 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
+package org.mitre.mpf.mvc.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.Optional;
-
-import javax.inject.Inject;
-
+@Configuration
 @Profile("!oidc")
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
+public class LocalSecurityConfig {
 
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
+    @Bean
+    @Order(1)
+    public SecurityFilterChain restSecurityFilterChain(
+            HttpSecurity http, RestBasicAuthEntryPoint restBasicAuthEntryPoint) throws Exception {
+
+        return http.antMatcher("/rest/**")
+            .authorizeHttpRequests(x -> x.anyRequest().authenticated())
+            .httpBasic(x -> x.authenticationEntryPoint(restBasicAuthEntryPoint))
+            .build();
     }
 
-    @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
 
-        query.where(cb.equal(root.get("userName"), userName));
+    @Bean
+    @Order(2)
+    public SecurityFilterChain formSecurityFilterChain(
+            HttpSecurity http,
+            CustomAccessDeniedHandler customAccessDeniedHandler,
+            AjaxAuthenticationEntrypoint ajaxAuthenticationEntrypoint) throws Exception {
 
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
+        return http.authorizeHttpRequests(x ->
+                x.antMatchers("/login/**", "/resources/**").permitAll()
+                .anyRequest().authenticated())
+            .formLogin(x ->
+                x.loginPage("/login")
+                .defaultSuccessUrl("/", true)
+                .failureUrl("/login?reason=error"))
+            .exceptionHandling(x ->
+                x.accessDeniedHandler(customAccessDeniedHandler)
+                .defaultAuthenticationEntryPointFor(
+                        ajaxAuthenticationEntrypoint, ajaxAuthenticationEntrypoint)
+                )
+            .build();
     }
+
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
 }

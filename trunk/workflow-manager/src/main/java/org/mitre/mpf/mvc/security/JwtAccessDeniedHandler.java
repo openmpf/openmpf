@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,58 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.mvc.security;
 
+import java.io.IOException;
+import java.util.Map;
+
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-public class AjaxAwareLoginUrlAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
-    public AjaxAwareLoginUrlAuthenticationEntryPoint() {
-        super("/login");
+    private final BearerTokenAccessDeniedHandler _bearerTokenAccessDeniedHandler
+            = new BearerTokenAccessDeniedHandler();
+
+    private final ObjectMapper _objectMapper;
+
+    @Inject
+    JwtAccessDeniedHandler(ObjectMapper objectMapper) {
+        _objectMapper = objectMapper;
     }
 
     @Override
-    public void commence(final HttpServletRequest request, final HttpServletResponse response,
-                         final AuthenticationException authException) throws IOException, ServletException {
-
-        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-            response.sendError(401);
-        } else {
-            super.commence(request, response, authException);
+    public void handle(
+            HttpServletRequest request, HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
+        _bearerTokenAccessDeniedHandler.handle(request, response, accessDeniedException);
+        if (accessDeniedException instanceof AccessDeniedWithUserMessageException) {
+            var messageObj = Map.of("message", accessDeniedException.getMessage());
+            _objectMapper.writeValue(response.getWriter(), messageObj);
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

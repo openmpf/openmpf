@@ -24,41 +24,45 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
+package org.mitre.mpf.mvc.security;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.io.IOException;
 
-import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-@Profile("!oidc")
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.stereotype.Service;
 
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
-    }
+@Service("CustomAccessDeniedHandler")
+public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
 
     @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
+    public void handle(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
-        query.where(cb.equal(root.get("userName"), userName));
+        if (!(accessDeniedException instanceof CsrfException)) {
+            super.handle(request, response, accessDeniedException);
+        }
+        else if (isAjax(request)) {
+            response.sendError(403, "INVALID_CSRF_TOKEN");
+        }
+        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
+            response.sendRedirect("/workflow-manager/");
+        }
+        else {
+            super.handle(request, response, accessDeniedException);
+        }
+    }
 
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
+
+    private static boolean isAjax(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 }

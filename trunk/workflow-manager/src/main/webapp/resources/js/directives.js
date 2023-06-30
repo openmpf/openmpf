@@ -32,13 +32,16 @@ var AppDirectives = angular.module('mpf.wfm.directives', []);
 
 
 AppDirectives.directive('mpfNavbar',
-['MetadataService', 'RoleService', 'ClientState',
-function (MetadataService, RoleService, ClientState) {
+['MetadataService', 'RoleService', 'ClientState', 'csrf',
+function (MetadataService, RoleService, ClientState, csrf) {
     return {
         restrict: 'E',
         templateUrl: 'resources/layouts/directives/navbar.html',
         scope: {},
         link: function ($scope) {
+            $scope.csrfFormParam = csrf.formParam;
+            $scope.csrfToken = csrf.token;
+
             MetadataService.getMetadata().then(function (data) {
                 $scope.version = data.version;
                 $scope.dockerEnabled = data.dockerEnabled;
@@ -214,8 +217,8 @@ function (RoleService) {
 
 
 AppDirectives.directive('mpfComponentDropzone',
-['csrfHeaders',
-function (csrfHeaders) {
+['csrf',
+function (csrf) {
     return {
         restrict: 'E',
         templateUrl: 'resources/layouts/directives/component_dropzone.html',
@@ -226,7 +229,7 @@ function (csrfHeaders) {
             var dropzoneDiv = $el.find('.dropzone').get(0);
             var dropzone = new Dropzone(dropzoneDiv, {
                 url: "components",
-                headers: csrfHeaders(),
+                headers: csrf.headers(),
                 autoProcessQueue: true,
                 maxFiles: 1,
                 addRemoveLinks:false,

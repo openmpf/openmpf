@@ -24,41 +24,31 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.wfm.data.access.hibernate;
 
-import org.hibernate.SessionFactory;
-import org.mitre.mpf.wfm.data.access.UserDao;
-import org.mitre.mpf.wfm.data.entities.persistent.User;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+package org.mitre.mpf.mvc.security;
 
-import java.util.Optional;
+import java.io.IOException;
 
-import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-@Profile("!oidc")
-@Repository
-@Transactional(propagation = Propagation.REQUIRED)
-public class HibernateUserDaoImpl extends AbstractHibernateDao<User> implements UserDao {
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.stereotype.Component;
 
-    @Inject
-    public HibernateUserDaoImpl(SessionFactory sessionFactory) {
-        super(User.class, sessionFactory);
+
+@Component
+public class AjaxAuthenticationEntrypoint implements AuthenticationEntryPoint, RequestMatcher {
+
+    @Override
+    public boolean matches(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 
     @Override
-    public Optional<User> findByUserName(final String userName) {
-        var cb = getCriteriaBuilder();
-        var query = cb.createQuery(User.class);
-        var root = query.from(User.class);
-
-        query.where(cb.equal(root.get("userName"), userName));
-
-        return buildQuery(query)
-                .list()
-                .stream()
-                .findFirst();
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException authException) throws IOException {
+        response.sendError(401);
     }
 }

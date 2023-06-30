@@ -48,17 +48,22 @@ var App = angular.module('mpf.wfm', [
 ]);
 
 
-(function() {
+(() => {
 	// Get the CSRF configuration added to the page index.jsp.
-	var csrfHeader = $('#_csrf_header').attr('content');
-	var csrfToken = $('#_csrf').attr('content');
+	const header = $('#_csrf_header').attr('content');
+	const formParam = $('#_csrf_parameterName').attr('content')
+	const token = $('#_csrf').attr('content');
 
-	App.constant('csrfHeaders', function (obj) {
-		var result = obj || {};
-		result[csrfHeader] = csrfToken;
-		return result;
+	App.constant('csrf', {
+		headers: existing => {
+			const result = existing || {};
+			result[header] = token;
+			return result;
+		},
+		formParam,
+		token
 	});
-}());
+})();
 
 
 // Declare app level module which depends on filters, and services
@@ -178,10 +183,13 @@ App.config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $u
 }]);
 
 
-App.config(['$httpProvider', 'csrfHeaders', function($httpProvider, csrfHeaders) {
+App.config(['$httpProvider', 'csrf', function($httpProvider, csrf) {
 	//need to add explicitly but can cause problems with CORS
 	$httpProvider.defaults.headers.common["X-Requested-With"] = 'XMLHttpRequest';
-	csrfHeaders($httpProvider.defaults.headers.common);
+	const defaultHeaders = $httpProvider.defaults.headers;
+	for (let method of ['post', 'put', 'patch', 'delete']) {
+		defaultHeaders[method] = csrf.headers(defaultHeaders[method])
+	}
 
 	$httpProvider.interceptors.push('httpInterceptor');//services.js
 }]);

@@ -102,7 +102,7 @@ var templateUrlPath = 'resources/js/pipelines2';
     }]);
 
 
-    module.directive('action', [
+    module.directive('mpf-action', [
         'ActionService', 'TaskService',
         function ( ActionService, TaskService ) {
             return {

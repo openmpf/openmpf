@@ -24,44 +24,41 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
+package org.mitre.mpf.wfm.data.access.hibernate;
 
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.persistence.Entity;
 
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.csrf.InvalidCsrfTokenException;
-import org.springframework.stereotype.Service;
+import org.mitre.mpf.mvc.security.OidcSecurityConfig;
+import org.mitre.mpf.wfm.data.entities.persistent.User;
+import org.springframework.core.type.classreading.MetadataReader;
+import org.springframework.core.type.classreading.MetadataReaderFactory;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.TypeFilter;
 
-@Service("CustomAccessDeniedHandler")
-public class CustomAccessDeniedHandler extends AccessDeniedHandlerImpl {
+
+public class UserEntityFilter implements TypeFilter {
+
+    private final AnnotationTypeFilter _annotationTypeFilter
+            = new AnnotationTypeFilter(Entity.class);
+
+    private final boolean _oidcEnabled = OidcSecurityConfig.isEnabled();
 
     @Override
-    public void handle(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AccessDeniedException accessDeniedException) throws IOException, ServletException {
-
-        if (!(accessDeniedException instanceof InvalidCsrfTokenException)) {
-            super.handle(request, response, accessDeniedException);
+    public boolean match(
+            MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory)
+            throws IOException {
+        if (!_annotationTypeFilter.match(metadataReader, metadataReaderFactory)) {
+            return false;
         }
-        else if (isAjax(request)) {
-            response.sendError(403, "INVALID_CSRF_TOKEN");
-        }
-        else if ("/workflow-manager/login".equals(request.getRequestURI())) {
-            response.sendRedirect("/workflow-manager/");
+        else if (_oidcEnabled) {
+            // Prevent hibernate from creating user table when OIDC is enabled.
+            return !metadataReader.getClassMetadata().getClassName().equals(User.class.getName());
         }
         else {
-            super.handle(request, response, accessDeniedException);
+            return true;
         }
-    }
-
-    private static boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 }

@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * NOTICE                                                                     *
  *                                                                            *
@@ -25,54 +24,10 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-package org.mitre.mpf.mvc;
 
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
+package org.mitre.mpf.mvc.security;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-@Component
-public class AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
-
-    private static final String BAD_CREDENTIALS_MESSAGE = "Bad credentials";
-
-    @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
-
-        if (BAD_CREDENTIALS_MESSAGE.equals(exception.getMessage())) {
-            response.sendRedirect(request.getContextPath() + "/login?reason=error");
-        }
-    }
-
+public record OidcClaimConfig(
+        String adminClaimName, String adminClaimValue,
+        String userClaimName, String userClaimValue) {
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

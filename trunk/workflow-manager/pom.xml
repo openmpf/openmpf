@@ -929,7 +929,9 @@
                                      3 minutes. -->
                                 <maxAttempts>360</maxAttempts>
                                 <argument>--server.port=${wfm.port}</argument>
-                                <argument>--spring.profiles.active=jenkins</argument>
+                                <argument>
+                                    --spring.profiles.active=jenkins,test-with-security
+                                </argument>
                             </arguments>
                         </configuration>
                     </execution>

@@ -36,7 +36,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Profile(value = { "!oidc", "!jenkins" })
+@Profile("!oidc & !jenkins")
 public class LocalSecurityConfig {
 
     @Bean

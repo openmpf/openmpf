@@ -128,6 +128,7 @@ public class OidcSecurityConfig {
             .authorizeHttpRequests(x -> x.anyRequest().access(oidcAuthenticationManager))
             .oauth2ResourceServer(x -> x.jwt().jwtAuthenticationConverter(jwtAuthenticationConverter))
             .exceptionHandling(x -> x.accessDeniedHandler(jwtAccessDeniedHandler))
+            .csrf(x -> x.disable())
             .build();
     }
 

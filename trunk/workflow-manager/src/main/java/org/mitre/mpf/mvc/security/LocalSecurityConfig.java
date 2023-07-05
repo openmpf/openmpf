@@ -36,7 +36,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Profile("test-with-security | (!oidc & !jenkins)")
+@Profile("(!oidc & !jenkins) | test-with-security")
 public class LocalSecurityConfig {
 
     @Bean
@@ -47,6 +47,7 @@ public class LocalSecurityConfig {
         return http.antMatcher("/rest/**")
             .authorizeHttpRequests(x -> x.anyRequest().authenticated())
             .httpBasic(x -> x.authenticationEntryPoint(restBasicAuthEntryPoint))
+            .csrf(x -> x.disable())
             .build();
     }
 

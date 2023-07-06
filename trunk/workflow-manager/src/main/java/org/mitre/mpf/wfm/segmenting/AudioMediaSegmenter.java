@@ -26,6 +26,12 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -39,12 +45,6 @@ import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @Component(AudioMediaSegmenter.REF)
 public class AudioMediaSegmenter implements MediaSegmenter {

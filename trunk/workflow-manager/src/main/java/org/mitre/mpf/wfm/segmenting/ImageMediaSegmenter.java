@@ -26,6 +26,11 @@
 
 package org.mitre.mpf.wfm.segmenting;
 
+import java.util.Collections;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
@@ -35,11 +40,6 @@ import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.springframework.stereotype.Component;
-
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 @Component(ImageMediaSegmenter.REF)
 public class ImageMediaSegmenter implements MediaSegmenter {
@@ -96,4 +96,3 @@ public class ImageMediaSegmenter implements MediaSegmenter {
         return createProtobufMessage(media, ctx, imageRequest);
     }
 }
-

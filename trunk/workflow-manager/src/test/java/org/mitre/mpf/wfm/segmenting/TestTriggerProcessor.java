@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2022 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2022 The MITRE Corporation                                       *
+ * Copyright 2023 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -27,8 +27,11 @@
 package org.mitre.mpf.wfm.segmenting;
 
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,7 +50,6 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
 import org.mitre.mpf.test.MockitoTest;
@@ -117,12 +119,32 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
 
     @Test
-    public void doesNotFilterOnFirstTask() {
-        var tracks = builder()
+    public void canHandleNoTracksInPrevTask() {
+        var tracks0 = builder()
             .setCurrentTask(0)
             .setLangTrigger("EN", 0)
             .getTriggeredTracks();
-        assertTrue(tracks.isEmpty());
+        assertThat(tracks0, empty());
+
+        var tracks1 = builder()
+            .setCurrentTask(1)
+            .setLangTrigger("EN", 1)
+            .getTriggeredTracks();
+        assertThat(tracks1, empty());
+    }
+
+
+    @Test
+    public void canHandleNoTracksMatchingTrigger() {
+        var tracks = builder()
+            .setCurrentTask(3)
+            .setLangTrigger("ZH", 2)
+            .addTrack("ES", 2)
+            .addTrack("ES", 2)
+            .setLangTrigger("EN", 3)
+            .getTriggeredTracks();
+
+        assertThat(tracks, empty());
     }
 
 
@@ -190,6 +212,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 .setLangTrigger("ES", 1)
                 .addTrack("ES", 1)
                 .addTrack("ES", 1)
+                .addTrack(10, "EN", 1)
 
                 .setLangTrigger("RU", 2)
                 .addTrack("RU", 2)
@@ -198,24 +221,24 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 .setCurrentTask(3)
                 .getTriggeredTracks();
 
-        assertContainsTracks(tracks, 8, 9);
+        assertContainsTracks(tracks, 8, 9, 10);
     }
 
 
     @Test
     public void stopsCheckingPrevTasksWhenNoTriggerInMiddle() {
         var tracks = builder()
-            .setCurrentTask(4)
-            .setLangTrigger("EN", 4)
+            .setTrigger("", 2)
+            .addTrack(11, "EN", 2)
+            .addTrack("ES", 2)
 
             .setLangTrigger("ES", 3)
             .addTrack(10, "EN", 3)
             .addTrack("ES", 3)
 
-            .setTrigger("", 2)
-            .addTrack(11, "EN", 2)
-            .addTrack("ES", 2)
+            .setLangTrigger("EN", 4)
 
+            .setCurrentTask(4)
             .getTriggeredTracks();
 
         verify(_mockInProgressJobs, never())
@@ -226,7 +249,6 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
 
     @Test
-
     public void doesNotPassForwardPreviouslyTriggeredTracks() {
         var tracks = initDoesNotPassForwardPreviouslyTriggeredTracks()
             .setCurrentTask(4)
@@ -234,6 +256,7 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
         assertContainsTracks(tracks, 13, 14);
     }
+
 
     @Test
     public void doesNotPassForwardPreviouslyTriggeredTracksWhenNoTrigger() {
@@ -250,31 +273,30 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
 
     private TestCaseBuilder initDoesNotPassForwardPreviouslyTriggeredTracks() {
         return builder()
-            .setLangTrigger("EN", 4)
-
-            .setTrigger("OTHER_TRIGGER=ON", 3)
-
             .addTrack(12, Map.of("LANG", "EN", "OTHER_TRIGGER", "ON"), 2)
             .addTrack(13, Map.of("LANG", "EN", "OTHER_TRIGGER", "OFF"), 2)
             .addTrack(14, "EN", 2)
             .addTrack(15, Map.of("LANG", "ES", "OTHER_TRIGGER", "ON"), 2)
             .addTrack(16, Map.of("LANG", "ES", "OTHER_TRIGGER", "OFF"), 2)
             .addTrack(17, Map.of("OTHER_TRIGGER", "OFF"), 2)
-            .addTrack(18, Map.of("OTHER_TRIGGER", "ON"), 2);
+            .addTrack(18, Map.of("OTHER_TRIGGER", "ON"), 2)
+
+            .setTrigger("OTHER_TRIGGER=ON", 3)
+            .setLangTrigger("EN", 4);
     }
 
 
 
-    private static void assertContainsTracks(Collection<Track> tracks, int... ids) {
-        assertThat(tracks, Matchers.hasSize(ids.length));
-        var actualIds = tracks.stream()
+    private static void assertContainsTracks(Collection<Track> tracks, int... startFrames) {
+        assertThat(tracks, hasSize(startFrames.length));
+        var actualStartFrames = tracks.stream()
             .map(Track::getStartOffsetFrameInclusive)
             .collect(toSet());
 
-        for (int id : ids) {
-            assertTrue(
-                    "Expected there to be a track with a start frame of " + id,
-                    actualIds.contains(id));
+        for (int startFrame : startFrames) {
+            assertThat(
+                    "Expected there to be a track with a start frame of " + startFrame,
+                    startFrame, isIn(actualStartFrames));
         }
     }
 
@@ -340,37 +362,39 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
         }
 
         public Collection<Track> getTriggeredTracks() {
+            assertThat(_currentTask, greaterThan(-1));
+
             var media = mock(Media.class);
-            if (_currentTask > 0) {
-                lenient().when(media.getId())
-                    .thenReturn(MEDIA_ID);
+            lenient().when(media.getId())
+                .thenReturn(MEDIA_ID);
 
-                var job = mock(BatchJob.class);
-                lenient().when(job.getId())
-                    .thenReturn(JOB_ID);
-                when(_mockInProgressJobs.getJob(JOB_ID))
-                    .thenReturn(job);
+            var job = mock(BatchJob.class);
+            lenient().when(job.getId())
+                .thenReturn(JOB_ID);
+            when(_mockInProgressJobs.getJob(JOB_ID))
+                .thenReturn(job);
 
-                var pipelineElements = mock(JobPipelineElements.class);
-                when(job.getPipelineElements())
-                    .thenReturn(pipelineElements);
+            var pipelineElements = mock(JobPipelineElements.class);
+            lenient().when(job.getPipelineElements())
+                .thenReturn(pipelineElements);
 
-                for (var triggerEntry : _triggers.entrySet()) {
-                    if (triggerEntry.getKey() == _currentTask) {
-                        continue;
-                    }
-                    var action = mock(Action.class);
-                    when(pipelineElements.getAction(triggerEntry.getKey(), 0))
-                            .thenReturn(action);
-                    when(_mockAggPropUtil.getValue(MpfConstants.TRIGGER, job, media, action))
-                            .thenReturn(triggerEntry.getValue());
+            for (var triggerEntry : _triggers.entrySet()) {
+                if (triggerEntry.getKey() == _currentTask) {
+                    // The information about the current task will be provided in the
+                    // DetectionContext.
+                    continue;
                 }
-                for (var trackEntry : _tracks.asMap().entrySet()) {
-                    int taskIdx = trackEntry.getKey();
-                    if (taskIdx != _currentTask - 1) {
-                        when(_mockInProgressJobs.getTracksStream(JOB_ID, MEDIA_ID, taskIdx, 0))
-                            .thenReturn(trackEntry.getValue().stream());
-                    }
+                var action = mock(Action.class);
+                when(pipelineElements.getAction(triggerEntry.getKey(), 0))
+                        .thenReturn(action);
+                when(_mockAggPropUtil.getValue(MpfConstants.TRIGGER, job, media, action))
+                        .thenReturn(triggerEntry.getValue());
+            }
+            for (var trackEntry : _tracks.asMap().entrySet()) {
+                int taskIdx = trackEntry.getKey();
+                if (taskIdx != _currentTask - 1) {
+                    when(_mockInProgressJobs.getTracksStream(JOB_ID, MEDIA_ID, taskIdx, 0))
+                        .thenReturn(trackEntry.getValue().stream());
                 }
             }
 

@@ -26,13 +26,14 @@
 
 package org.mitre.mpf.wfm.data;
 
+import java.util.Collection;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.stream.Stream;
+
 import org.javasimon.aop.Monitored;
 import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
-
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.stream.Stream;
 
 @Monitored
 public interface Redis {
@@ -44,6 +45,10 @@ public interface Redis {
     SortedSet<Track> getTracks(long jobId, long mediaId, int taskIndex, int actionIndex);
 
     Stream<Track> getTracksStream(long jobId, long mediaId, int taskIndex, int actionIndex);
+
+    int getTrackCount(long jobId, long mediaId, int taskIndex, int actionIndex);
+
+    Optional<String> getTrackType(long jobId, long mediaId, int taskIndex, int actionIndex);
 
     void setTracks(long jobId, long mediaId, int taskIndex, int actionIndex, Collection<Track> tracks);
 }

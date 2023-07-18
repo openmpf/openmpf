@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.camel.operations.detection.DetectionContext;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
@@ -46,7 +48,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class TriggerProcessor {
 
-    private static final Predicate<Track> ALL_MATCH = t -> true;
+    public static final Predicate<Track> ALL_MATCH = t -> true;
+
+    private static final Predicate<Track> NONE_MATCH = t -> false;
 
     private final AggregateJobPropertiesUtil _aggregateJobPropertiesUtil;
 
@@ -82,33 +86,65 @@ public class TriggerProcessor {
     }
 
 
-    private Stream<Track> findPreviousUnTriggered(
-            Media media, DetectionContext context) {
-
-        record TriggerEntry(int task, Predicate<Track> trigger) { }
-
-        var job = _inProgressJobs.getJob(context.getJobId());
-        var triggerEntries = Stream.<TriggerEntry>builder();
-        var allPrevTriggers = ALL_MATCH;
-
-        for (var prevTaskIdx = context.getTaskIndex() - 1; prevTaskIdx > 0; prevTaskIdx--) {
-            var prevTrigger = createTriggerFilter(job, media, prevTaskIdx);
-            if (prevTrigger == ALL_MATCH) {
-                // Since the previous action didn't use a trigger, it would have processed all
-                // un-triggered tracks from earlier in the pipeline.
-                break;
+    public Predicate<Track> createWasTriggeredFilter(
+            BatchJob job, Media media, int creationTaskIdx, int lastTaskIdx) {
+        var fullTrigger = NONE_MATCH;
+        for (int taskIdx = creationTaskIdx + 1; taskIdx <= lastTaskIdx; taskIdx++) {
+            var taskFilter = getTaskFilter(job, media, taskIdx);
+            if (taskFilter == ALL_MATCH) {
+                return ALL_MATCH;
             }
-            allPrevTriggers = prevTrigger.negate().and(allPrevTriggers);
-            triggerEntries.add(new TriggerEntry(prevTaskIdx - 1, allPrevTriggers));
+            fullTrigger = taskFilter.or(fullTrigger);
         }
-
-        return triggerEntries.build()
-                .flatMap(te -> getTracks(te.task, media, context).filter(te.trigger));
+        return fullTrigger;
     }
 
 
-    private Predicate<Track> createTriggerFilter(BatchJob job, Media media, int taskIdx) {
-        var action = job.getPipelineElements().getAction(taskIdx, 0);
+    private Predicate<Track> getTaskFilter(BatchJob job, Media media, int taskIdx) {
+        var task = job.getPipelineElements().getTask(taskIdx);
+        var taskFilter = NONE_MATCH;
+        for (var action : job.getPipelineElements().getActionsInOrder(task)) {
+            var algo = job.getPipelineElements().getAlgorithm(action.getAlgorithm());
+            if (algo.getActionType() == ActionType.MARKUP) {
+                continue;
+            }
+            var filter = createTriggerFilter(job, media, action);
+            if (filter == ALL_MATCH) {
+                return ALL_MATCH;
+            }
+            taskFilter = filter.or(taskFilter);
+        }
+        return taskFilter;
+    }
+
+
+    private Stream<Track> findPreviousUnTriggered(
+            Media media, DetectionContext context) {
+
+        var job = _inProgressJobs.getJob(context.getJobId());
+        var tracks = Stream.<Track>empty();
+
+        for (var creationTaskIdx = context.getTaskIndex() - 2; creationTaskIdx >= 0;
+                creationTaskIdx--) {
+
+            var triggerFilter = createWasTriggeredFilter(
+                    job, media, creationTaskIdx, context.getTaskIndex() - 1);
+            if (triggerFilter == ALL_MATCH) {
+                // Since the previous task didn't use a trigger, it would have processed all
+                // un-triggered tracks from earlier in the pipeline.
+                break;
+            }
+
+            var taskTracks = getTracks(creationTaskIdx, media, context)
+                .filter(triggerFilter.negate());
+            tracks = Stream.concat(tracks, taskTracks);
+        }
+        return tracks;
+    }
+
+
+    private Predicate<Track> createTriggerFilter(
+            BatchJob job, Media media, Action action) {
         var trigger = _aggregateJobPropertiesUtil.getValue(
                 MpfConstants.TRIGGER, job, media, action);
         return createTriggerFilter(trigger);

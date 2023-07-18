@@ -52,6 +52,9 @@ import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Algorithm;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.test.MockitoTest;
 import org.mitre.mpf.test.TestUtil;
 import org.mitre.mpf.wfm.WfmProcessingException;
@@ -384,17 +387,18 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                     // DetectionContext.
                     continue;
                 }
-                var action = mock(Action.class);
-                when(pipelineElements.getAction(triggerEntry.getKey(), 0))
-                        .thenReturn(action);
-                when(_mockAggPropUtil.getValue(MpfConstants.TRIGGER, job, media, action))
-                        .thenReturn(triggerEntry.getValue());
+                createMockTask(
+                        triggerEntry.getKey(), pipelineElements, triggerEntry.getValue(),
+                        job, media);
             }
             for (var trackEntry : _tracks.asMap().entrySet()) {
                 int taskIdx = trackEntry.getKey();
                 if (taskIdx != _currentTask - 1) {
                     when(_mockInProgressJobs.getTracksStream(JOB_ID, MEDIA_ID, taskIdx, 0))
                         .thenReturn(trackEntry.getValue().stream());
+                }
+                if (!_triggers.containsKey(taskIdx)) {
+                    createMockTask(taskIdx, pipelineElements, null, job, media);
                 }
             }
 
@@ -409,6 +413,33 @@ public class TestTriggerProcessor extends MockitoTest.Strict {
                 Set.copyOf(_tracks.get(_currentTask - 1)),
                 null);
             return _triggerProcessor.getTriggeredTracks(media, detectionContext).toList();
+        }
+
+        private void createMockTask(
+                int taskIdx,
+                JobPipelineElements pipelineElements,
+                String trigger,
+                BatchJob job,
+                Media media) {
+            var algo = mock(Algorithm.class);
+            lenient().when(algo.getActionType())
+                    .thenReturn(ActionType.DETECTION);
+            lenient().when(pipelineElements.getAlgorithm("algo-" + String.valueOf(taskIdx)))
+                    .thenReturn(algo);
+
+            var action = mock(Action.class);
+            lenient().when(action.getAlgorithm())
+                    .thenReturn("algo-" + String.valueOf(taskIdx));
+
+            var task = mock(Task.class);
+            lenient().when(pipelineElements.getTask(taskIdx))
+                    .thenReturn(task);
+            lenient().when(pipelineElements.getActionsInOrder(task))
+                    .thenReturn(List.of(action));
+            if (trigger != null) {
+                when(_mockAggPropUtil.getValue(MpfConstants.TRIGGER, job, media, action))
+                        .thenReturn(trigger);
+            }
         }
     }
 

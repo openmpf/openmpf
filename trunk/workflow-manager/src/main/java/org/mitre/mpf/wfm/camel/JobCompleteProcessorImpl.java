@@ -26,7 +26,24 @@
 
 package org.mitre.mpf.wfm.camel;
 
-import com.google.common.collect.ImmutableMap;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentSkipListSet;
+
 import org.apache.camel.Exchange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -39,17 +56,40 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.mitre.mpf.interop.*;
-import org.mitre.mpf.rest.api.pipelines.*;
+import org.mitre.mpf.interop.JsonAction;
+import org.mitre.mpf.interop.JsonActionOutputObject;
+import org.mitre.mpf.interop.JsonCallbackBody;
+import org.mitre.mpf.interop.JsonDetectionOutputObject;
+import org.mitre.mpf.interop.JsonDetectionProcessingError;
+import org.mitre.mpf.interop.JsonMarkupOutputObject;
+import org.mitre.mpf.interop.JsonMediaOutputObject;
+import org.mitre.mpf.interop.JsonMediaRange;
+import org.mitre.mpf.interop.JsonOutputObject;
+import org.mitre.mpf.interop.JsonPipeline;
+import org.mitre.mpf.interop.JsonTask;
+import org.mitre.mpf.interop.JsonTrackOutputObject;
+import org.mitre.mpf.rest.api.pipelines.Action;
+import org.mitre.mpf.rest.api.pipelines.ActionProperty;
+import org.mitre.mpf.rest.api.pipelines.ActionType;
+import org.mitre.mpf.rest.api.pipelines.Pipeline;
+import org.mitre.mpf.rest.api.pipelines.Task;
 import org.mitre.mpf.wfm.WfmProcessingException;
 import org.mitre.mpf.wfm.data.InProgressBatchJobsService;
 import org.mitre.mpf.wfm.data.access.JobRequestDao;
 import org.mitre.mpf.wfm.data.access.MarkupResultDao;
-import org.mitre.mpf.wfm.data.entities.persistent.*;
+import org.mitre.mpf.wfm.data.entities.persistent.BatchJob;
+import org.mitre.mpf.wfm.data.entities.persistent.DetectionProcessingError;
+import org.mitre.mpf.wfm.data.entities.persistent.JobPipelineElements;
+import org.mitre.mpf.wfm.data.entities.persistent.JobRequest;
+import org.mitre.mpf.wfm.data.entities.persistent.Media;
 import org.mitre.mpf.wfm.data.entities.transients.Detection;
 import org.mitre.mpf.wfm.data.entities.transients.Track;
 import org.mitre.mpf.wfm.data.entities.transients.TrackCounter;
-import org.mitre.mpf.wfm.enums.*;
+import org.mitre.mpf.wfm.enums.ArtifactExtractionStatus;
+import org.mitre.mpf.wfm.enums.BatchJobStatusType;
+import org.mitre.mpf.wfm.enums.IssueCodes;
+import org.mitre.mpf.wfm.enums.MpfConstants;
+import org.mitre.mpf.wfm.enums.MpfHeaders;
 import org.mitre.mpf.wfm.event.JobCompleteNotification;
 import org.mitre.mpf.wfm.event.JobProgress;
 import org.mitre.mpf.wfm.event.NotificationConsumer;
@@ -58,23 +98,21 @@ import org.mitre.mpf.wfm.service.JobStatusBroadcaster;
 import org.mitre.mpf.wfm.service.StorageService;
 import org.mitre.mpf.wfm.service.TiesDbBeforeJobCheckService;
 import org.mitre.mpf.wfm.service.TiesDbService;
-import org.mitre.mpf.wfm.util.*;
+import org.mitre.mpf.wfm.util.AggregateJobPropertiesUtil;
+import org.mitre.mpf.wfm.util.CallbackStatus;
+import org.mitre.mpf.wfm.util.HttpClientUtils;
+import org.mitre.mpf.wfm.util.IoUtils;
+import org.mitre.mpf.wfm.util.JmsUtils;
+import org.mitre.mpf.wfm.util.JsonUtils;
+import org.mitre.mpf.wfm.util.PropertiesUtil;
+import org.mitre.mpf.wfm.util.TextUtils;
+import org.mitre.mpf.wfm.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.*;
+import com.google.common.collect.ImmutableMap;
 
 @Component(JobCompleteProcessorImpl.REF)
 public class JobCompleteProcessorImpl extends WfmProcessor implements JobCompleteProcessor {
@@ -124,6 +162,9 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
     @Autowired
     private TiesDbBeforeJobCheckService tiesDbBeforeJobCheckService;
+
+    @Autowired
+    private TrackOutputHelper trackOutputHelper;
 
     @Override
     public void wfmProcess(Exchange exchange) throws WfmProcessingException {
@@ -419,8 +460,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
 
         int mediaIndex = 0;
         for (Media media : job.getMedia()) {
-            StringBuilder stateKeyBuilder = new StringBuilder("+");
-
             var mediaOutputObject = new JsonMediaOutputObject(
                     media.getId(),
                     media.getParentId(),
@@ -454,132 +493,130 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
                                     mr.getMarkupUri(),
                                     mr.getMarkupStatus().name(),
                                     mr.getMessage())));
-
-            Set<Integer> tasksToSuppress = getTasksToSuppress(media, job);
-            Map<Integer, Integer> tasksToMerge = aggregateJobPropertiesUtil.getTasksToMerge(media, job);
-
-            String prevUnmergedTaskType = null;
-            String prevUnmergedAlgorithm = null;
-
-            for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
-                Task task = job.getPipelineElements().getTask(taskIndex);
-
-                for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
-                    String actionName = task.getActions().get(actionIndex);
-                    Action action = job.getPipelineElements().getAction(actionName);
-
-                    if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
-                        continue;
-                    }
-
-                    String stateKey = String.format("%s#%s", stateKeyBuilder, action.getName());
-
-                    for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
-                             job, media.getId(), taskIndex, actionIndex)) {
-                        JsonDetectionProcessingError jsonDetectionProcessingError =
-                                 new JsonDetectionProcessingError(
-                                         detectionProcessingError.getStartFrame(),
-                                         detectionProcessingError.getStopFrame(),
-                                         detectionProcessingError.getStartTime(),
-                                         detectionProcessingError.getStopTime(),
-                                         detectionProcessingError.getErrorCode(),
-                                         detectionProcessingError.getErrorMessage());
-                        if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
-                            mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
-                        }
-                        mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
-                        if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
-                            mediaOutputObject.setStatus("INCOMPLETE");
-                        }
-                    }
-
-                    SortedSet<Track> tracks = inProgressBatchJobs.getTracks(jobId, media.getId(),
-                                                                            taskIndex, actionIndex);
-                    if (tracks.isEmpty()) {
-                        trackCounter.set(media.getId(), taskIndex, actionIndex,
-                                         JsonActionOutputObject.NO_TRACKS_TYPE, 0);
-                    }
-                    else {
-                        var type = tracks.iterator().next().getType();
-                        trackCounter.set(media.getId(), taskIndex, actionIndex, type, tracks.size());
-                    }
-
-                    if (tracks.isEmpty()) {
-                        // Always include detection actions in the output object,
-                        // even if they do not generate any results.
-                        if (tasksToMerge.containsKey(taskIndex)) {
-                            addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
-                                                prevUnmergedAlgorithm, mediaOutputObject);
-                        }
-                        else {
-                            addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
-                                                action.getAlgorithm(), mediaOutputObject);
-                        }
-                    }
-                    else if (tasksToSuppress.contains(taskIndex)) {
-                        addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
-                                action.getAlgorithm(), mediaOutputObject);
-                    }
-                    else if (tasksToMerge.containsValue(taskIndex)) {
-                        // This task will be merged with one that follows.
-                        addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
-                                action.getAlgorithm(), mediaOutputObject);
-                    }
-                    else {
-                        int trackIndex = 0;
-                        for (Track track : tracks) {
-                            // tasksToMerge will never contain task 0, so the initial null values of
-                            // prevUnmergedTaskType and prevUnmergedAlgorithm are never used.
-                            String type = tasksToMerge.containsKey(taskIndex) ? prevUnmergedTaskType :
-                                    track.getType();
-                            String algo = tasksToMerge.containsKey(taskIndex) ? prevUnmergedAlgorithm :
-                                    action.getAlgorithm();
-
-                            JsonTrackOutputObject jsonTrackOutputObject
-                                    = createTrackOutputObject(track, trackIndex, stateKey, type, action, media, job);
-
-                            if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
-                                mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
-                            }
-
-                            SortedSet<JsonActionOutputObject> actionSet =
-                                    mediaOutputObject.getDetectionTypes().get(type);
-                            boolean stateFound = false;
-                            for (JsonActionOutputObject jsonAction : actionSet) {
-                                if (stateKey.equals(jsonAction.getSource())) {
-                                    stateFound = true;
-                                    jsonAction.getTracks().add(jsonTrackOutputObject);
-                                    break;
-                                }
-                            }
-                            if (!stateFound) {
-                                JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey, algo);
-                                actionSet.add(jsonAction);
-                                jsonAction.getTracks().add(jsonTrackOutputObject);
-                            }
-                            trackIndex++;
-                        }
-                    }
-
-                    if (!tasksToMerge.containsKey(taskIndex)) {
-                        // NOTE: If and when we support parallel actions in tasks other then the final one in a
-                        // pipeline, this code will need to be updated.
-                        prevUnmergedTaskType = tracks.isEmpty() ? JsonActionOutputObject.NO_TRACKS_TYPE :
-                                tracks.stream().findFirst().get().getType(); // all tracks from same task have same type
-                        prevUnmergedAlgorithm = action.getAlgorithm();
-                    }
-
-                    if (actionIndex == task.getActions().size() - 1) {
-                        stateKeyBuilder.append('#').append(action.getName());
-                    }
-                }
-            }
+            addTracksForMedia(job, media, mediaOutputObject, trackCounter);
             jsonOutputObject.getMedia().add(mediaOutputObject);
             mediaIndex++;
         }
 
         // this may update the job status
         return storageService.store(jsonOutputObject, outputSha);
+    }
+
+
+    private void addTracksForMedia(
+            BatchJob job,
+            Media media,
+            JsonMediaOutputObject mediaOutputObject,
+            TrackCounter trackCounter) {
+        var stateKeyBuilder = new StringBuilder("+");
+        String prevUnmergedTaskType = null;
+        String prevUnmergedAlgorithm = null;
+        for (int taskIndex = (media.getCreationTask() + 1); taskIndex < job.getPipelineElements().getTaskCount(); taskIndex++) {
+            Task task = job.getPipelineElements().getTask(taskIndex);
+
+            for (int actionIndex = 0; actionIndex < task.getActions().size(); actionIndex++) {
+                String actionName = task.getActions().get(actionIndex);
+                Action action = job.getPipelineElements().getAction(actionName);
+                var trackInfo = trackOutputHelper.getTrackInfo(job, media, taskIndex, actionIndex);
+
+                if (!aggregateJobPropertiesUtil.actionAppliesToMedia(job, media, action)) {
+                    continue;
+                }
+
+                String stateKey = String.format("%s#%s", stateKeyBuilder, action.getName());
+
+                for (DetectionProcessingError detectionProcessingError : getDetectionProcessingErrors(
+                            job, media.getId(), taskIndex, actionIndex)) {
+                    JsonDetectionProcessingError jsonDetectionProcessingError =
+                                new JsonDetectionProcessingError(
+                                        detectionProcessingError.getStartFrame(),
+                                        detectionProcessingError.getStopFrame(),
+                                        detectionProcessingError.getStartTime(),
+                                        detectionProcessingError.getStopTime(),
+                                        detectionProcessingError.getErrorCode(),
+                                        detectionProcessingError.getErrorMessage());
+                    if (!mediaOutputObject.getDetectionProcessingErrors().containsKey(stateKey)) {
+                        mediaOutputObject.getDetectionProcessingErrors().put(stateKey, new TreeSet<>());
+                    }
+                    mediaOutputObject.getDetectionProcessingErrors().get(stateKey).add(jsonDetectionProcessingError);
+                    if (!StringUtils.equalsIgnoreCase(mediaOutputObject.getStatus(), "COMPLETE")) {
+                        mediaOutputObject.setStatus("INCOMPLETE");
+                    }
+                }
+
+                trackCounter.set(
+                        media.getId(), taskIndex, actionIndex, trackInfo.trackType(),
+                        trackInfo.trackCount());
+
+                if (trackInfo.trackCount() == 0) {
+                    var algo = trackInfo.isMergeSource()
+                            ? prevUnmergedAlgorithm
+                            : action.getAlgorithm();
+                    // Always include detection actions in the output object,
+                    // even if they do not generate any results.
+                    addMissingTrackInfo(JsonActionOutputObject.NO_TRACKS_TYPE, stateKey,
+                                        algo, mediaOutputObject);
+                }
+                else if (trackInfo.isSuppressed()) {
+                    addMissingTrackInfo(JsonActionOutputObject.TRACKS_SUPPRESSED_TYPE, stateKey,
+                            action.getAlgorithm(), mediaOutputObject);
+                }
+                else if (trackInfo.isMergeTarget()) {
+                    // This task will be merged with one that follows.
+                    addMissingTrackInfo(JsonActionOutputObject.TRACKS_MERGED_TYPE, stateKey,
+                            action.getAlgorithm(), mediaOutputObject);
+                }
+                else {
+                    int trackIndex = 0;
+                    for (Track track : trackInfo.tracks()) {
+                        var type = track.getType();
+                        var algo = action.getAlgorithm();
+                        if (trackInfo.isMergeSource()) {
+                            // The first task will never be a merge source, so the initial null
+                            // values of prevUnmergedTaskType and prevUnmergedAlgorithm are never
+                            // used.
+                            type = prevUnmergedTaskType;
+                            algo = prevUnmergedAlgorithm;
+                        }
+
+                        JsonTrackOutputObject jsonTrackOutputObject
+                                = createTrackOutputObject(track, trackIndex, stateKey, type, action, media, job);
+
+                        if (!mediaOutputObject.getDetectionTypes().containsKey(type)) {
+                            mediaOutputObject.getDetectionTypes().put(type, new TreeSet<>());
+                        }
+
+                        SortedSet<JsonActionOutputObject> actionSet =
+                                mediaOutputObject.getDetectionTypes().get(type);
+                        boolean stateFound = false;
+                        for (JsonActionOutputObject jsonAction : actionSet) {
+                            if (stateKey.equals(jsonAction.getSource())) {
+                                stateFound = true;
+                                jsonAction.getTracks().add(jsonTrackOutputObject);
+                                break;
+                            }
+                        }
+                        if (!stateFound) {
+                            JsonActionOutputObject jsonAction = new JsonActionOutputObject(stateKey, algo);
+                            actionSet.add(jsonAction);
+                            jsonAction.getTracks().add(jsonTrackOutputObject);
+                        }
+                        trackIndex++;
+                    }
+                }
+
+                if (!trackInfo.isMergeSource()) {
+                    // NOTE: If and when we support parallel actions in tasks other then the final
+                    // one in a pipeline, this code will need to be updated.
+                    prevUnmergedTaskType = trackInfo.trackType();
+                    prevUnmergedAlgorithm = action.getAlgorithm();
+                }
+
+                if (actionIndex == task.getActions().size() - 1) {
+                    stateKeyBuilder.append('#').append(action.getName());
+                }
+            }
+        }
     }
 
 
@@ -686,26 +723,6 @@ public class JobCompleteProcessorImpl extends WfmProcessor implements JobComplet
     private static ActionType getActionType(JobPipelineElements pipeline, Task task) {
         Action action = pipeline.getAction(task.getActions().get(0));
         return pipeline.getAlgorithm(action.getAlgorithm()).getActionType();
-    }
-
-
-    private Set<Integer> getTasksToSuppress(Media media, BatchJob job) {
-        if (!aggregateJobPropertiesUtil.isOutputLastTaskOnly(media, job)) {
-            return Set.of();
-        }
-
-        List<String> taskNames = job.getPipelineElements().getPipeline().getTasks();
-        int lastDetectionTask = 0;
-        for (int i = taskNames.size() - 1; i >= 0; i--) {
-            ActionType actionType = job.getPipelineElements().getAlgorithm(i, 0).getActionType();
-            if (actionType == ActionType.DETECTION) {
-                lastDetectionTask = i;
-                break;
-            }
-        }
-        return IntStream.range(0, lastDetectionTask)
-                .boxed()
-                .collect(toSet());
     }
 
 

@@ -173,7 +173,7 @@ public class OidcSecurityConfig {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
         var commaSeparatedScopes = System.getenv().getOrDefault(Keys.SCOPES, "");
-        var envScopes = Stream.of(commaSeparatedScopes);
+        var envScopes = Stream.of(commaSeparatedScopes.split(","));
         // OIDC requires the "openid" scope.
         var scopes = Stream.concat(envScopes, Stream.of("openid"))
                 .map(String::strip)

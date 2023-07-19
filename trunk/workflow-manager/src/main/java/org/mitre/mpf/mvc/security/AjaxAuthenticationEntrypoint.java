@@ -49,6 +49,8 @@ public class AjaxAuthenticationEntrypoint implements AuthenticationEntryPoint, R
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException authException) throws IOException {
+        // User authentication can not be done using AJAX. When the Web UI receives the 401, it
+        // will cause the page to reload and the user will be redirected to the login page.
         response.sendError(401);
     }
 }

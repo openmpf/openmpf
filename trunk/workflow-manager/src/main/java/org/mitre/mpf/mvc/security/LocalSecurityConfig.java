@@ -79,5 +79,4 @@ public class LocalSecurityConfig {
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
-
 }

@@ -34,5 +34,4 @@ public class AccessDeniedWithUserMessageException extends AccessDeniedException 
     public AccessDeniedWithUserMessageException(String message) {
         super(message);
     }
-
 }

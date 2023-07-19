@@ -76,7 +76,6 @@ public class OidcAuthenticationManager implements
         _adminClaimValue = claimConfig.adminClaimValue();
         _userClaimName = claimConfig.userClaimName();
         _userClaimValue = claimConfig.userClaimValue();
-
     }
 
 

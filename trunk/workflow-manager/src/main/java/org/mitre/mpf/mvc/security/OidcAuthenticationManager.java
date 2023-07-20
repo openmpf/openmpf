@@ -79,6 +79,7 @@ public class OidcAuthenticationManager implements
     }
 
 
+    // Makes sure the user or client was assigned a WFM role.
     @Override
     public AuthorizationDecision check(
             Supplier<Authentication> authenticationSupplier,
@@ -101,25 +102,24 @@ public class OidcAuthenticationManager implements
         if (!(authentication.getPrincipal() instanceof ClaimAccessor claims)) {
             return new AuthorizationDecision(false);
         }
+        throw new AccessDeniedWithUserMessageException(getMissingClaimMessage(claims));
+    }
 
+
+    private String getMissingClaimMessage(ClaimAccessor claims) {
         var userClaimValues = claims.getClaimAsStringList(_userClaimName);
         if (_adminClaimName.equals(_userClaimName)) {
             if (userClaimValues == null) {
-                throw new AccessDeniedWithUserMessageException(
-                        "The token did not contain a claim named \"%s\"."
-                        .formatted(_userClaimName));
+                return "The token did not contain a claim named \"%s\".".formatted(_userClaimName);
             }
-            throw new AccessDeniedWithUserMessageException(
-                    "The token's \"%s\" claim did not contain \"%s\" or \"%s\"."
-                    .formatted(_userClaimName, _userClaimValue, _adminClaimValue));
+            return "The token's \"%s\" claim did not contain \"%s\" or \"%s\"."
+                    .formatted(_userClaimName, _userClaimValue, _adminClaimValue);
         }
-
 
         var adminClaimValues = claims.getClaimAsStringList(_adminClaimName);
         if (userClaimValues == null && adminClaimValues == null) {
-            throw new AccessDeniedWithUserMessageException(
-                    "The token did not contain a claim named \"%s\" or \"%s\"."
-                    .formatted(_adminClaimName, _userClaimName));
+            return "The token did not contain a claim named \"%s\" or \"%s\"."
+                    .formatted(_adminClaimName, _userClaimName);
         }
 
         String presentClaimName;
@@ -132,25 +132,26 @@ public class OidcAuthenticationManager implements
             presentClaimName = _userClaimName;
             requiredClaimValue = _userClaimValue;
         }
-        throw new AccessDeniedWithUserMessageException(
-                "The token's \"%s\" claim did not contain \"%s\"."
-                .formatted(presentClaimName, requiredClaimValue));
+        return "The token's \"%s\" claim did not contain \"%s\"."
+                .formatted(presentClaimName, requiredClaimValue);
     }
 
 
-    // Called when a user tries to log in to the Web UI.
+    // This is called when a user tries to log in to the Web UI to map OIDC to claims to
+    // Workflow Manager roles.
     @Override
     public Collection<GrantedAuthority> mapAuthorities(
             Collection<? extends GrantedAuthority> authorities) {
         var tokens = authorities.stream()
-                .filter(a -> a instanceof OidcUserAuthority)
+                .filter(OidcUserAuthority.class::isInstance)
                 .map(a -> ((OidcUserAuthority) a).getIdToken())
                 .toList();
         return convertClaimsToRoles(tokens, authorities);
     }
 
 
-    // Called when a client attempts to authenticate to the REST API.
+    // This is called when a client attempts to authenticate to the REST API to map OIDC to claims
+    // to Workflow Manager roles.
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
         var baseAuthorities = _jwtGrantedAuthoritiesConverter.convert(jwt);
@@ -163,7 +164,7 @@ public class OidcAuthenticationManager implements
             Collection<? extends GrantedAuthority> authorities) {
 
         var newAuthorities = new ArrayList<GrantedAuthority>(authorities);
-        boolean hasAdminClaim = claimAccessors.stream().anyMatch(c -> hasAdminClaim(c));
+        boolean hasAdminClaim = claimAccessors.stream().anyMatch(this::hasAdminClaim);
         if (hasAdminClaim) {
             addRole(UserRole.ADMIN, newAuthorities);
         }
@@ -171,14 +172,13 @@ public class OidcAuthenticationManager implements
             removeRole(UserRole.ADMIN, newAuthorities);
         }
 
-        boolean hasUserClaim = claimAccessors.stream().anyMatch(c -> hasUserClaim(c));
+        boolean hasUserClaim = claimAccessors.stream().anyMatch(this::hasUserClaim);
         if (hasUserClaim) {
             addRole(UserRole.USER, newAuthorities);
         }
         else {
             removeRole(UserRole.USER, newAuthorities);
         }
-
         return newAuthorities;
     }
 
@@ -204,7 +204,6 @@ public class OidcAuthenticationManager implements
         return authorities.stream()
                 .anyMatch(a -> a.getAuthority().equals(role.springName));
     }
-
 
     // Spring adds the USER role to anyone who successfully logs in to the OIDC provider,
     // so we need to remove it if the user does not have the correct claim.

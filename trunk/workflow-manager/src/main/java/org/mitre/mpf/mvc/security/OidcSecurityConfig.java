@@ -134,6 +134,8 @@ public class OidcSecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
+        // Normally, OIDC is configured using application.properties. Since we are using
+        // environment variables, we need to manually create the JwtDecoder.
         var jwtIssuerUri = System.getenv(Keys.JWT_ISSUER_URI);
         if (StringUtils.isBlank(jwtIssuerUri)) {
             jwtIssuerUri = System.getenv(Keys.ISSUER_URI);
@@ -172,6 +174,9 @@ public class OidcSecurityConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
+        // Normally, OIDC is configured using application.properties. Since we are using
+        // environment variables, we need to manually create the ClientRegistrationRepository
+        // and ClientRegistration.
         var commaSeparatedScopes = System.getenv().getOrDefault(Keys.SCOPES, "");
         var envScopes = Stream.of(commaSeparatedScopes.split(","));
         // OIDC requires the "openid" scope.

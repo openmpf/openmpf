@@ -26,10 +26,14 @@
 
 package org.mitre.mpf.mvc.security;
 
+import static java.util.stream.Collectors.joining;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -62,20 +66,20 @@ public class OidcAuthenticationManager implements
     private final JwtGrantedAuthoritiesConverter _jwtGrantedAuthoritiesConverter
             = new JwtGrantedAuthoritiesConverter();
 
-    private final String _adminClaimName;
+    private final Optional<String> _adminClaimName;
 
     private final String _adminClaimValue;
 
-    private final String _userClaimName;
+    private final Optional<String> _userClaimName;
 
     private final String _userClaimValue;
 
     @Inject
     OidcAuthenticationManager(OidcClaimConfig claimConfig) {
         _adminClaimName = claimConfig.adminClaimName();
-        _adminClaimValue = claimConfig.adminClaimValue();
+        _adminClaimValue = claimConfig.adminClaimValue().orElse(null);
         _userClaimName = claimConfig.userClaimName();
-        _userClaimValue = claimConfig.userClaimValue();
+        _userClaimValue = claimConfig.userClaimValue().orElse(null);
     }
 
 
@@ -107,33 +111,43 @@ public class OidcAuthenticationManager implements
 
 
     private String getMissingClaimMessage(ClaimAccessor claims) {
-        var userClaimValues = claims.getClaimAsStringList(_userClaimName);
-        if (_adminClaimName.equals(_userClaimName)) {
-            if (userClaimValues == null) {
-                return "The token did not contain a claim named \"%s\".".formatted(_userClaimName);
-            }
-            return "The token's \"%s\" claim did not contain \"%s\" or \"%s\"."
-                    .formatted(_userClaimName, _userClaimValue, _adminClaimValue);
+        boolean userClaimValuesPresent = _userClaimName
+                .map(claims::getClaimAsStringList)
+                .isPresent();
+        boolean adminClaimValuesPresent = _adminClaimName
+                .map(claims::getClaimAsStringList)
+                .isPresent();
+
+        if (!userClaimValuesPresent && !adminClaimValuesPresent) {
+            var configuredClaimNames = Stream.of(_adminClaimName, _userClaimName)
+                    .flatMap(Optional::stream)
+                    .distinct()
+                    .collect(joining("\" or \""));
+            return "The token did not contain a claim named \"%s\"."
+                    .formatted(configuredClaimNames);
         }
 
-        var adminClaimValues = claims.getClaimAsStringList(_adminClaimName);
-        if (userClaimValues == null && adminClaimValues == null) {
-            return "The token did not contain a claim named \"%s\" or \"%s\"."
-                    .formatted(_adminClaimName, _userClaimName);
+        boolean sameClaimName = _adminClaimName.equals(_userClaimName);
+        if (userClaimValuesPresent && adminClaimValuesPresent && !sameClaimName) {
+            return "The token's \"%s\" claim did not contain \"%s\" and the \"%s\" claim did not contain \"%s\"."
+                    .formatted(_userClaimName.orElseThrow(), _userClaimValue,
+                            _adminClaimName.orElseThrow(), _adminClaimName);
         }
 
         String presentClaimName;
         String requiredClaimValue;
-        if (userClaimValues == null) {
-            presentClaimName = _adminClaimName;
-            requiredClaimValue = _adminClaimValue;
+        if (sameClaimName || userClaimValuesPresent) {
+            presentClaimName = _userClaimName.orElseThrow();
+            requiredClaimValue = _userClaimValue.equals(_adminClaimValue)
+                    ? _userClaimValue
+                    : _userClaimValue + "\" or \"" + _adminClaimValue;
         }
         else {
-            presentClaimName = _userClaimName;
-            requiredClaimValue = _userClaimValue;
+            presentClaimName = _adminClaimName.orElseThrow();
+            requiredClaimValue = _adminClaimValue;
         }
-        return "The token's \"%s\" claim did not contain \"%s\"."
-                .formatted(presentClaimName, requiredClaimValue);
+        return "The token's \"%s\" claim did not contain \"%s\".".formatted(
+                presentClaimName, requiredClaimValue);
     }
 
 
@@ -183,13 +197,15 @@ public class OidcAuthenticationManager implements
     }
 
     private boolean hasAdminClaim(ClaimAccessor claimAccessor) {
-        var adminClaimValues = claimAccessor.getClaimAsStringList(_adminClaimName);
-        return adminClaimValues != null && adminClaimValues.contains(_adminClaimValue);
+        return _adminClaimName.map(claimAccessor::getClaimAsStringList)
+            .map(claims -> claims.contains(_adminClaimValue))
+            .orElse(false);
     }
 
     private boolean hasUserClaim(ClaimAccessor claimAccessor) {
-        var userClaimValues = claimAccessor.getClaimAsStringList(_userClaimName);
-        return userClaimValues != null && userClaimValues.contains(_userClaimValue);
+        return _userClaimName.map(claimAccessor::getClaimAsStringList)
+            .map(claims -> claims.contains(_userClaimValue))
+            .orElse(false);
     }
 
     private static void addRole(UserRole role, List<GrantedAuthority> authorities) {

@@ -27,6 +27,7 @@
 
 package org.mitre.mpf.mvc.security;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,35 +76,34 @@ public class OidcSecurityConfig {
 
     @Bean
     public OidcClaimConfig claimConfig() {
-        var adminClaimName = System.getenv(Keys.ADMIN_CLAIM_NAME);
-        var userClaimName = System.getenv(Keys.USER_CLAIM_NAME);
-
-        if (StringUtils.isBlank(adminClaimName) && StringUtils.isBlank(userClaimName)) {
+        var adminClaimName = getOptionalEnv(Keys.ADMIN_CLAIM_NAME);
+        var userClaimName = getOptionalEnv(Keys.USER_CLAIM_NAME);
+        if (adminClaimName.isEmpty() && userClaimName.isEmpty()) {
             throw new IllegalStateException(
                 "OIDC is enabled, but the \"%s\" and \"%s\" environment variable are not set."
                 .formatted(Keys.ADMIN_CLAIM_NAME, Keys.USER_CLAIM_NAME));
         }
 
-        var adminClaimValue = System.getenv(Keys.ADMIN_CLAIM_VALUE);
-        if (StringUtils.isNotBlank(adminClaimName) && StringUtils.isBlank(adminClaimValue)) {
+        var adminClaimValue = getOptionalEnv(Keys.ADMIN_CLAIM_VALUE);
+        if (adminClaimName.isPresent() && adminClaimValue.isEmpty()) {
             throw new IllegalStateException(
                 "When the \"%s\" environment variable is set, \"%s\" must also be set."
                 .formatted(Keys.ADMIN_CLAIM_NAME, Keys.ADMIN_CLAIM_VALUE));
         }
 
-        var userClaimValue = System.getenv(Keys.USER_CLAIM_VALUE);
-        if (StringUtils.isNotBlank(userClaimName) && StringUtils.isBlank(userClaimValue)) {
+        var userClaimValue = getOptionalEnv(Keys.USER_CLAIM_VALUE);
+        if (userClaimName.isPresent() && userClaimValue.isEmpty()) {
             throw new IllegalStateException(
                 "When the \"%s\" environment variable is set, \"%s\" must also be set."
                 .formatted(Keys.USER_CLAIM_NAME, Keys.USER_CLAIM_VALUE));
         }
 
-        if (StringUtils.isNotBlank(adminClaimName) && StringUtils.isBlank(userClaimName)) {
+        if (adminClaimName.isPresent() && userClaimName.isEmpty()) {
             LOG.warn(
                 "\"{}\" was not set. Only admin users can log in.",
                 Keys.USER_CLAIM_NAME);
         }
-        if (StringUtils.isNotBlank(userClaimName) && StringUtils.isBlank(adminClaimName)) {
+        if (userClaimName.isPresent() && adminClaimName.isEmpty()) {
             LOG.warn(
                 "\"{}\" was not set. No admin users can log in.",
                 Keys.ADMIN_CLAIM_NAME);
@@ -209,5 +209,10 @@ public class OidcSecurityConfig {
                 .formatted(varName));
         }
         return value;
+    }
+
+    private static final Optional<String> getOptionalEnv(String varName) {
+        return Optional.ofNullable(System.getenv(varName))
+                .filter(s -> !s.isBlank());
     }
 }

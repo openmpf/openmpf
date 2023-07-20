@@ -27,7 +27,11 @@
 
 package org.mitre.mpf.mvc.security;
 
+import java.util.Optional;
+
 public record OidcClaimConfig(
-        String adminClaimName, String adminClaimValue,
-        String userClaimName, String userClaimValue) {
+        Optional<String> adminClaimName,
+        Optional<String> adminClaimValue,
+        Optional<String> userClaimName,
+        Optional<String> userClaimValue) {
 }

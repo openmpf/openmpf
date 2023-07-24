@@ -197,7 +197,7 @@ public class OidcSecurityConfig {
         getOptionalEnv(Keys.REDIRECT_URI)
                 .ifPresent(registration::redirectUri);
         getOptionalEnv(Keys.USER_NAME_ATTR)
-            .ifPresent(registration::userNameAttributeName);
+                .ifPresent(registration::userNameAttributeName);
 
         return new InMemoryClientRegistrationRepository(registration.build());
     }

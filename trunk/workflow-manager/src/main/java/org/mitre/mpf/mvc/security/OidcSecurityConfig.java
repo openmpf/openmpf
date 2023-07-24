@@ -27,11 +27,11 @@
 
 package org.mitre.mpf.mvc.security;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -58,6 +58,7 @@ public class OidcSecurityConfig {
         public static final String
             ISSUER_URI = "OIDC_ISSUER_URI",
             JWT_ISSUER_URI = "OIDC_JWT_ISSUER_URI",
+            REDIRECT_URI = "OIDC_REDIRECT_URI",
             CLIENT_ID = "OIDC_CLIENT_ID",
             CLIENT_SECRET = "OIDC_CLIENT_SECRET",
             SCOPES = "OIDC_SCOPES",
@@ -69,8 +70,7 @@ public class OidcSecurityConfig {
     }
 
     public static boolean isEnabled() {
-        var issueUri = System.getenv(Keys.ISSUER_URI);
-        return StringUtils.isNotBlank(issueUri);
+        return getOptionalEnv(Keys.ISSUER_URI).isPresent();
     }
 
 
@@ -134,12 +134,10 @@ public class OidcSecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
+        var jwtIssuerUri = getOptionalEnv(Keys.JWT_ISSUER_URI)
+                .orElseGet(() -> getRequiredEnv(Keys.ISSUER_URI));
         // Normally, OIDC is configured using application.properties. Since we are using
         // environment variables, we need to manually create the JwtDecoder.
-        var jwtIssuerUri = System.getenv(Keys.JWT_ISSUER_URI);
-        if (StringUtils.isBlank(jwtIssuerUri)) {
-            jwtIssuerUri = System.getenv(Keys.ISSUER_URI);
-        }
         return JwtDecoders.fromIssuerLocation(jwtIssuerUri);
     }
 
@@ -177,13 +175,17 @@ public class OidcSecurityConfig {
         // Normally, OIDC is configured using application.properties. Since we are using
         // environment variables, we need to manually create the ClientRegistrationRepository
         // and ClientRegistration.
-        var commaSeparatedScopes = System.getenv().getOrDefault(Keys.SCOPES, "");
-        var envScopes = Stream.of(commaSeparatedScopes.split(","));
-        // OIDC requires the "openid" scope.
-        var scopes = Stream.concat(envScopes, Stream.of("openid"))
+        Stream<String> envScopes = getOptionalEnv(Keys.SCOPES)
+                .stream()
+                .flatMap(sc -> Stream.of(sc.split(",")))
                 .map(String::strip)
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.toSet());
+                .filter(s -> !s.isBlank());
+
+        var scopes = Stream.concat(
+                    envScopes,
+                    // OIDC requires the "openid" scope.
+                    Stream.of("openid"))
+                .collect(toSet());
 
         var registration = ClientRegistrations
                 .fromOidcIssuerLocation(getRequiredEnv(Keys.ISSUER_URI))
@@ -192,23 +194,20 @@ public class OidcSecurityConfig {
                 .clientSecret(getRequiredEnv(Keys.CLIENT_SECRET))
                 .scope(scopes);
 
-        var userNameAttr = System.getenv(Keys.USER_NAME_ATTR);
-        if (StringUtils.isNotBlank(userNameAttr)) {
-            registration.userNameAttributeName(userNameAttr);
-        }
+        getOptionalEnv(Keys.REDIRECT_URI)
+                .ifPresent(registration::redirectUri);
+        getOptionalEnv(Keys.USER_NAME_ATTR)
+            .ifPresent(registration::userNameAttributeName);
 
         return new InMemoryClientRegistrationRepository(registration.build());
     }
 
 
     private static final String getRequiredEnv(String varName) {
-        var value = System.getenv(varName);
-        if (StringUtils.isBlank(value)) {
-            throw new IllegalStateException(
-                "OIDC is enabled, but the %s environment variable is not set."
-                .formatted(varName));
-        }
-        return value;
+        return getOptionalEnv(varName)
+            .orElseThrow(() -> new IllegalStateException(
+                        "OIDC is enabled, but the \"%s\" environment variable is not set."
+                        .formatted(varName)));
     }
 
     private static final Optional<String> getOptionalEnv(String varName) {
